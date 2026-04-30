@@ -23,7 +23,9 @@ except Exception:
 " 2>/dev/null | tail -1)
 
     if [ "$NEEDS_LOAD" = "1" ]; then
-        echo "==> Database is empty. Loading data from /app/data_dump.json ..."
+        echo "==> Database has no employees. Resetting and loading data from /app/data_dump.json ..."
+        # Flush wipes all rows but keeps schema (fixes partial imports from previous failed runs).
+        python manage.py flush --noinput
         python manage.py loaddata /app/data_dump.json || echo "!! loaddata failed (check above for details)"
     else
         echo "==> Database already has data — skipping loaddata."
