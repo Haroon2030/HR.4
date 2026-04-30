@@ -16,10 +16,25 @@ document_extension_validator = FileExtensionValidator(
 
 
 def validate_file_size(file):
-    """تحقق من أن حجم الملف ضمن الحد المسموح."""
-    if file and file.size > MAX_UPLOAD_SIZE:
+    """تحقق من أن حجم الملف ضمن الحد المسموح.
+
+    يُطبَّق فقط على الملفات المرفوعة حديثاً (UploadedFile). الملفات
+    المخزّنة مسبقاً (FieldFile مع _committed=True) تُتجاهَل لأن
+    الوصول إلى .size سيستدعي HeadObject على المخزِّن البعيد ويفشل
+    إذا كان الملف غير موجود (مثل ملفات قديمة كانت محلية قبل R2).
+    """
+    if not file:
+        return
+    # تجاهل الملفات المخزّنة مسبقاً ولم تُستبدل بملف جديد
+    if getattr(file, '_committed', True):
+        return
+    try:
+        size = file.size
+    except Exception:
+        return
+    if size > MAX_UPLOAD_SIZE:
         raise ValidationError(
-            f'حجم الملف ({file.size / (1024*1024):.1f}MB) يتجاوز الحد المسموح ({MAX_UPLOAD_SIZE_MB}MB).'
+            f'حجم الملف ({size / (1024*1024):.1f}MB) يتجاوز الحد المسموح ({MAX_UPLOAD_SIZE_MB}MB).'
         )
 
 
