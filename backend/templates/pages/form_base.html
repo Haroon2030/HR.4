@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-3 md:space-y-4">
+    <!-- Header -->
+    <div class="flex items-center gap-3 md:gap-4">
+        <a href="{% block back_url %}#{% endblock %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        </a>
+        <p class="text-slate-500 text-sm md:text-base">{% block form_description %}{% endblock %}</p>
+    </div>
+
+    <form method="post" class="space-y-3 md:space-y-4" {% block form_attrs %}{% endblock %}>
+        {% csrf_token %}
+        
+        {% block form_content %}
+        <!-- محتوى النموذج -->
+        {% endblock %}
+
+        <!-- Actions -->
+        <div class="flex gap-3 sticky bottom-0 bg-slate-50 py-3 -mx-3 px-3 md:static md:bg-transparent md:py-0 md:mx-0 md:px-0">
+            <button type="submit" class="flex-1 md:flex-none px-4 py-2.5 md:px-6 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm md:text-base">
+                {% block submit_text %}حفظ{% endblock %}
+            </button>
+            <a href="{% block cancel_url %}#{% endblock %}" class="flex-1 md:flex-none px-4 py-2.5 md:px-6 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium text-center text-sm md:text-base">
+                إلغاء
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

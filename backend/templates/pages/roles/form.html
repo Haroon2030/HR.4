@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a href="{% url 'web:list_roles' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">{% if role %}تعديل الدور{% else %}إضافة دور جديد{% endif %}</h1>
+            <p class="text-slate-500 text-sm">{% if role %}تعديل تفاصيل الدور{% else %}إنشاء دور جديد{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-bold text-slate-900 mb-4">المعلومات الأساسية</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- اسم الدور -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wide">
+                        اسم الدور <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="name" 
+                        value="{% if role %}{{ role.name }}{% endif %}"
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" 
+                        required
+                        placeholder="مثال: مدير قسم المبيعات"
+                    >
+                </div>
+
+                <!-- نوع الدور -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wide">
+                        نوع الدور <span class="text-red-500">*</span>
+                    </label>
+                    <select 
+                        name="role_type" 
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                        required
+                    >
+                        <option value="">-- اختر نوع الدور --</option>
+                        <option value="admin" {% if role and role.role_type == 'admin' %}selected{% endif %}>الأدمن</option>
+                        <option value="hr_manager" {% if role and role.role_type == 'hr_manager' %}selected{% endif %}>الموارد البشرية</option>
+                        <option value="manager" {% if role and role.role_type == 'manager' %}selected{% endif %}>مدير</option>
+                        <option value="specialist" {% if role and role.role_type == 'specialist' %}selected{% endif %}>أخصائي</option>
+                        <option value="employee" {% if role and role.role_type == 'employee' %}selected{% endif %}>موظف</option>
+                    </select>
+                </div>
+
+                <!-- الوصف -->
+                <div class="space-y-1.5 md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wide">الوصف</label>
+                    <textarea 
+                        name="description" 
+                        rows="3"
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                        placeholder="وصف الدور ومسؤولياته..."
+                    >{% if role %}{{ role.description }}{% endif %}</textarea>
+                </div>
+
+                <!-- حالة التفعيل -->
+                <div class="space-y-1.5">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name="is_active" 
+                            value="1"
+                            {% if not role or role.is_active %}checked{% endif %}
+                            class="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
+                        >
+                        <span class="text-sm font-medium text-slate-700">الدور نشط</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end gap-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <a href="{% url 'web:list_roles' %}" class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                إلغاء
+            </a>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                {% if role %}حفظ التعديلات{% else %}إنشاء الدور{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>{{ statement.get_statement_type_display }} — {{ statement.serial_number }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#1e293b;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 0;">
+    <tr><td align="center">
+      <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.08);max-width:96%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:{{ theme.header_grad }};padding:24px 28px;color:#fff;">
+            <table width="100%"><tr>
+              <td>
+                <div style="font-size:11px;opacity:.85;letter-spacing:2px;text-transform:uppercase;">{{ site_name }}</div>
+                <div style="font-size:22px;font-weight:800;margin-top:6px;letter-spacing:.5px;">
+                  {{ statement.get_statement_type_display }}
+                </div>
+              </td>
+              <td align="left" style="vertical-align:top;">
+                <div style="background:rgba(255,255,255,.18);padding:6px 12px;border-radius:8px;font-size:11px;">
+                  <div style="opacity:.85;">رقم متسلسل</div>
+                  <div style="font-family:monospace;font-weight:800;font-size:14px;margin-top:2px;">{{ statement.serial_number }}</div>
+                </div>
+              </td>
+            </tr></table>
+          </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+          <td style="padding:22px 28px 4px 28px;">
+            <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;">الأخ / الأخت: {{ employee.name }} المحترم/ة</p>
+            <p style="margin:0;font-size:13px;line-height:1.8;color:#475569;">السلام عليكم ورحمة الله وبركاته،</p>
+            <p style="margin:8px 0 0 0;font-size:13.5px;line-height:1.85;color:#334155;">{{ theme.intro }}</p>
+          </td>
+        </tr>
+
+        <!-- Info card -->
+        <tr>
+          <td style="padding:14px 28px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+              <tr><td style="padding:14px 18px;">
+                <table width="100%" cellpadding="6" cellspacing="0" style="font-size:13px;">
+                  <tr>
+                    <td width="35%" style="color:#64748b;">اسم الموظف</td>
+                    <td style="font-weight:700;">{{ employee.name }}</td>
+                  </tr>
+                  {% if employee.employee_id %}
+                  <tr>
+                    <td style="color:#64748b;">الرقم الوظيفي</td>
+                    <td style="font-weight:700;">{{ employee.employee_id }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if employee.profession %}
+                  <tr>
+                    <td style="color:#64748b;">المسمى الوظيفي</td>
+                    <td style="font-weight:700;">{{ employee.profession }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if employee.branch %}
+                  <tr>
+                    <td style="color:#64748b;">الفرع</td>
+                    <td style="font-weight:700;">{{ employee.branch }}</td>
+                  </tr>
+                  {% endif %}
+                  <tr><td colspan="2" style="border-top:1px dashed #cbd5e1;padding:0;"></td></tr>
+                  <tr>
+                    <td style="color:#64748b;">العنوان</td>
+                    <td style="font-weight:700;">{{ statement.title }}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#64748b;">التاريخ</td>
+                    <td style="font-weight:700;">{{ statement.statement_date|date:"Y-m-d" }}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#64748b;">النوع</td>
+                    <td>
+                      <span style="background:{{ theme.badge_bg }};color:{{ theme.badge_fg }};padding:4px 12px;border-radius:6px;font-size:12px;font-weight:800;">
+                        {{ statement.get_statement_type_display }}
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Content -->
+        {% if statement.content %}
+        <tr>
+          <td style="padding:6px 28px 16px 28px;">
+            <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:8px;">نص {{ statement.get_statement_type_display }}:</div>
+            <div style="background:#fffbeb;border-right:4px solid {{ theme.accent }};padding:14px 16px;border-radius:8px;font-size:13.5px;line-height:1.95;color:#1e293b;white-space:pre-wrap;">{{ statement.content }}</div>
+          </td>
+        </tr>
+        {% endif %}
+
+        <!-- Closing -->
+        <tr>
+          <td style="padding:0 28px 18px 28px;">
+            <p style="margin:0;font-size:13px;line-height:1.85;color:#475569;">{{ theme.closing }}</p>
+            <p style="margin:14px 0 0 0;font-size:13px;color:#334155;">وتفضّلوا بقبول فائق الاحترام والتقدير،</p>
+            <p style="margin:4px 0 0 0;font-size:13px;font-weight:800;color:#0f172a;">إدارة الموارد البشرية</p>
+          </td>
+        </tr>
+
+        {% if statement.document %}
+        <tr>
+          <td style="padding:0 28px 18px 28px;">
+            <div style="background:#ecfeff;border:1px dashed #06b6d4;border-radius:8px;padding:12px 14px;font-size:12px;color:#0e7490;">
+              📎 مرفق مع هذه الرسالة نسخة من المستند للرجوع إليها.
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#0f172a;color:#cbd5e1;padding:14px 24px;text-align:center;font-size:11px;line-height:1.6;">
+            هذه رسالة آلية صادرة من <b style="color:#fff;">{{ site_name }}</b><br>
+            للاستفسار يُرجى التواصل مع إدارة الموارد البشرية. — لا تردّ على هذه الرسالة.
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

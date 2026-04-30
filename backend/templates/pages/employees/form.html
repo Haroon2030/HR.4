@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a href="{% url 'web:list_employees' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">إضافة موظف جديد</h1>
+            <p class="text-slate-500 text-xs">أدخل البيانات الأساسية للموظف</p>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- الاسم -->
+            <div class="space-y-1.5 sm:col-span-2">
+                <label class="block text-sm font-bold text-slate-800">الاسم <span class="text-red-500">*</span></label>
+                <input type="text" name="name" required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                       placeholder="اسم الموظف الكامل">
+            </div>
+
+            <!-- الفرع -->
+            <div class="space-y-1.5">
+                <label class="block text-sm font-bold text-slate-800">الفرع</label>
+                <select name="branch"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                    <option value="">-- اختر --</option>
+                    {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <!-- القسم -->
+            <div class="space-y-1.5">
+                <label class="block text-sm font-bold text-slate-800">القسم</label>
+                <select name="department"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                    <option value="">-- اختر --</option>
+                    {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <!-- مركز التكلفة -->
+            <div class="space-y-1.5 sm:col-span-2">
+                <label class="block text-sm font-bold text-slate-800">مركز التكلفة</label>
+                <select name="cost_center"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                    <option value="">-- اختر --</option>
+                    {% for c in cost_centers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <!-- مستند المباشرة -->
+            <div class="space-y-1.5 sm:col-span-2">
+                {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' %}
+                <p class="text-xs text-slate-500">ارفع مستند المباشرة بصيغة PDF أو صورة (يمكنك تعديل اسم الملف بعد الاختيار)</p>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
+            <a href="{% url 'web:list_employees' %}"
+               class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">إلغاء</a>
+            <button type="submit"
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                حفظ الموظف
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+</script>
+{% endblock %}

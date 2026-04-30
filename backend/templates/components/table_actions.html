@@ -1,0 +1,19 @@
+<!-- Table Row Actions -->
+<div class="flex items-center justify-center gap-1">
+    {% if edit_url %}
+    <a href="{{ edit_url }}" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors" title="تعديل">
+        <i data-lucide="edit-2" class="w-4 h-4"></i>
+    </a>
+    {% endif %}
+    
+    {% if delete_url %}
+    <button onclick="if(confirm('هل أنت متأكد من الحذف؟')) window.location='{{ delete_url }}'" 
+            class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="حذف">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+    </button>
+    {% endif %}
+    
+    {% if extra_actions %}
+    {{ extra_actions }}
+    {% endif %}
+</div>

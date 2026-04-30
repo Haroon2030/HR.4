@@ -1,0 +1,205 @@
+"""
+Django Template Views - واجهة الويب
+نظام إدارة الموارد البشرية
+"""
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from functools import wraps
+
+from apps.core.models import Branch
+from apps.cost_centers.models import CostCenter
+from apps.departments.models import Department
+
+
+# =============================================================================
+# Custom Decorators
+# =============================================================================
+
+
+from apps.core.web_views._helpers import (
+    admin_required, _is_branch_manager, branch_manager_required,
+    _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
+)
+
+@login_required
+def list_employees(request):
+    """قائمة الموظفين"""
+    from apps.employees.models import Employee
+    employees = Employee.objects.select_related(
+        'branch', 'department', 'cost_center', 'nationality'
+    ).all()
+    return render(request, 'pages/employees/list.html', {'employees': employees})
+
+
+@login_required
+def add_employee(request):
+    """إنشاء طلب توظيف جديد (يحتاج موافقة مدير الفرع)"""
+    from apps.employees.forms import EmploymentRequestForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    if request.method == 'POST':
+        # استبدال الملف بعد تطبيق إعادة التسمية
+        files = request.FILES.copy()
+        renamed = apply_uploaded_file_rename(request, 'commencement_document')
+        if renamed is not None:
+            files['commencement_document'] = renamed
+        form = EmploymentRequestForm(request.POST, files)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.requested_by = request.user
+            obj.save()
+            messages.success(request, f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الفرع للمراجعة')
+            return redirect('web:list_employment_requests')
+        for err in form.errors.values():
+            messages.error(request, err[0])
+
+    return render(request, 'pages/employees/form.html', {
+        'branches': Branch.objects.filter(is_active=True),
+        'departments': Department.objects.all(),
+        'cost_centers': CostCenter.objects.all(),
+    })
+
+
+# =============================================================================
+# Employment Requests (مدير الفرع)
+# =============================================================================
+@login_required
+def create_employee_full(request):
+    """إنشاء موظف مباشرة عبر النموذج الرئيسي الكامل (7 تبويبات)"""
+    from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
+    from apps.employees.models import Employee
+    from apps.employees.forms import EmployeeForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    if request.method == 'POST':
+        # تطبيق إعادة تسمية الملفات قبل تمريرها للـ form
+        files = request.FILES.copy()
+        for f in ('id_document', 'passport_document', 'contract_document',
+                  'other_documents', 'commencement_document'):
+            renamed = apply_uploaded_file_rename(request, f)
+            if renamed is not None:
+                files[f] = renamed
+
+        form = EmployeeForm(request.POST, files)
+        if form.is_valid():
+            emp = form.save()
+            messages.success(request, f'تم إضافة الموظف "{emp.name}" بنجاح')
+            return redirect('web:list_employees')
+        for err in form.errors.values():
+            messages.error(request, err[0])
+
+    return render(request, 'pages/employees/edit.html', {
+        'employee': Employee(),  # كائن فارغ لإعادة استخدام نفس القالب
+        'is_create': True,
+        'nationalities': Nationality.objects.filter(is_active=True),
+        'professions': Profession.objects.filter(is_active=True),
+        'sponsorships': Sponsorship.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(is_active=True),
+        'departments': Department.objects.all(),
+        'cost_centers': CostCenter.objects.all(),
+        'insurances': Insurance.objects.filter(is_active=True),
+        'insurance_classes': InsuranceClass.objects.filter(is_active=True),
+    })
+
+
+@login_required
+def view_employee(request, employee_id):
+    """عرض بيانات موظف للقراءة فقط"""
+    from apps.employees.models import Employee
+    from apps.departments.models import Department
+    from apps.core.models import Branch
+
+    employee = get_object_or_404(
+        Employee.objects.select_related(
+            'branch', 'department', 'cost_center', 'nationality',
+            'profession', 'sponsorship', 'insurance', 'insurance_class',
+            'employment_request', 'employment_request__requested_by',
+            'employment_request__reviewed_by',
+        ),
+        id=employee_id,
+    )
+    departments = Department.objects.order_by('name')
+    branches = Branch.objects.order_by('name')
+    statements_count = employee.statements_log.filter(
+        statement_type__in=['statement', 'warning', 'final_warning', 'acknowledgment', 'other']
+    ).count()
+
+    # توقّع الرقم المتسلسل التالي للإفادات (للمعاينة في النموذج)
+    from apps.employees.models import EmployeeStatement
+    next_statement_serial = EmployeeStatement.generate_serial('statement')
+
+    # جدول الدوام: قراءة JSON كصناديق شهرية
+    import json as _json
+    schedule_boxes = []
+    try:
+        _data = _json.loads(employee.work_schedule or '') if employee.work_schedule else None
+        if isinstance(_data, dict) and isinstance(_data.get('boxes'), list):
+            schedule_boxes = _data['boxes']
+    except (ValueError, TypeError):
+        schedule_boxes = []
+
+    return render(request, 'pages/employees/view.html', {
+        'employee': employee,
+        'departments': departments,
+        'branches': branches,
+        'statements_count': statements_count,
+        'next_statement_serial': next_statement_serial,
+        'schedule_boxes_json': schedule_boxes,
+    })
+
+
+@login_required
+@employee_branch_access_required
+def edit_employee(request, employee_id):
+    """تعديل ملف موظف - يكمل الأخصائي بقية الحقول"""
+    from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
+    from apps.employees.models import Employee
+    from apps.employees.forms import EmployeeForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+
+    if request.method == 'POST':
+        files = request.FILES.copy()
+        for f in ('id_document', 'passport_document', 'contract_document',
+                  'other_documents', 'commencement_document'):
+            renamed = apply_uploaded_file_rename(request, f)
+            if renamed is not None:
+                files[f] = renamed
+
+        form = EmployeeForm(request.POST, files, instance=employee)
+        if form.is_valid():
+            employee = form.save()
+            messages.success(request, f'تم حفظ بيانات الموظف "{employee.name}"')
+            return redirect('web:list_employees')
+        for err in form.errors.values():
+            messages.error(request, err[0])
+
+    return render(request, 'pages/employees/edit.html', {
+        'employee': employee,
+        'nationalities': Nationality.objects.filter(is_active=True),
+        'professions': Profession.objects.filter(is_active=True),
+        'sponsorships': Sponsorship.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(is_active=True),
+        'departments': Department.objects.all(),
+        'cost_centers': CostCenter.objects.all(),
+        'insurances': Insurance.objects.filter(is_active=True),
+        'insurance_classes': InsuranceClass.objects.filter(is_active=True),
+    })
+
+
+@login_required
+@admin_required
+def delete_employee(request, employee_id):
+    """حذف موظف (admin فقط)"""
+    from apps.employees.models import Employee
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method == 'POST':
+        name = employee.name
+        employee.delete()
+        messages.success(request, f'تم حذف الموظف "{name}"')
+    return redirect('web:list_employees')
+
+

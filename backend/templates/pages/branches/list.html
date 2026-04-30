@@ -1,0 +1,685 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: (window.location.hash ? window.location.hash.substring(1) : 'branches') }" x-init="$watch('activeTab', val => { history.replaceState(null, '', '#' + val); })">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">إدارة الهيكل التنظيمي</h1>
+            <p class="text-slate-500 text-xs">الفروع ومراكز التكلفة والأقسام</p>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div class="border-b border-slate-200">
+            <nav class="flex -mb-px overflow-x-auto">
+                <button @click="activeTab = 'branches'; lucide.createIcons()" 
+                    :class="activeTab === 'branches' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                    الفروع
+                </button>
+                <button @click="activeTab = 'cost_centers'; lucide.createIcons()" 
+                    :class="activeTab === 'cost_centers' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="target" class="w-4 h-4"></i>
+                    مراكز التكلفة
+                </button>
+                <button @click="activeTab = 'departments'; lucide.createIcons()" 
+                    :class="activeTab === 'departments' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="folder" class="w-4 h-4"></i>
+                    الأقسام
+                </button>
+                <button @click="activeTab = 'nationalities'; lucide.createIcons()" 
+                    :class="activeTab === 'nationalities' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="flag" class="w-4 h-4"></i>
+                    الجنسيات
+                </button>
+                <button @click="activeTab = 'professions'; lucide.createIcons()" 
+                    :class="activeTab === 'professions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="briefcase" class="w-4 h-4"></i>
+                    المهن
+                </button>
+                <button @click="activeTab = 'sponsorships'; lucide.createIcons()" 
+                    :class="activeTab === 'sponsorships' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    الكفالات
+                </button>
+                <button @click="activeTab = 'insurances'; lucide.createIcons()" 
+                    :class="activeTab === 'insurances' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                    التأمينات
+                </button>
+                <button @click="activeTab = 'insurance_classes'; lucide.createIcons()" 
+                    :class="activeTab === 'insurance_classes' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
+                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    فئات التأمين
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab 1: الفروع -->
+        <div x-show="activeTab === 'branches'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_branch' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة فرع جديد
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الفرع</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">عدد الموظفين</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for branch in branches %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="building-2" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ branch.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">
+                                        {{ branch.code }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="users" class="w-3 h-3"></i>
+                                        {{ branch.employees_count }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if branch.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        نشط
+                                    </span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">
+                                        معطل
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:view_branch' branch.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </a>
+                                        <a href="{% url 'web:edit_branch' branch.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_branch' branch.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الفرع \'{{ branch.name|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="px-6 py-8 text-center text-slate-500">
+                                    <i data-lucide="building-2" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد فروع مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: مراكز التكلفة -->
+        <div x-show="activeTab === 'cost_centers'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_cost_center_global' %}"
+                        class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة مركز تكلفة
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم المركز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">عدد الأقسام</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for cc in cost_centers %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="target" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ cc.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">
+                                        {{ cc.code }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="folder" class="w-3 h-3"></i>
+                                        {{ cc.departments_count }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if cc.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        نشط
+                                    </span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">
+                                        معطل
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        {% if cc.branch %}
+                                        <a href="{% url 'web:view_branch' cc.branch.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض الفرع">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'web:edit_cost_center' cc.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_cost_center' cc.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف مركز التكلفة \'{{ cc.name|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="target" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد مراكز تكلفة مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: الأقسام -->
+        <div x-show="activeTab === 'departments'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_department_global' %}"
+                        class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة قسم
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم القسم</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">عدد الموظفين</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for dept in departments %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="folder" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ dept.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">
+                                        {{ dept.code }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="users" class="w-3 h-3"></i>
+                                        {{ dept.employees_count }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if dept.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        نشط
+                                    </span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">
+                                        معطل
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        {% if dept.branch %}
+                                        <a href="{% url 'web:view_branch' dept.branch.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض الفرع">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'web:edit_department' dept.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_department' dept.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف القسم \'{{ dept.name|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="folder" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد أقسام مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: الجنسيات -->
+        <div x-show="activeTab === 'nationalities'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_nationality' %}?tab=nationalities" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة جنسية
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الجنسية</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for nat in nationalities %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="flag" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ nat.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ nat.code }}</span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if nat.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:edit_nationality' nat.id %}?tab=nationalities" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_nationality' nat.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الجنسية \'{{ nat.name|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="flag" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد جنسيات مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: المهن -->
+        <div x-show="activeTab === 'professions'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_profession' %}?tab=professions" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة مهنة
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم المهنة</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for prof in professions %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="briefcase" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ prof.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ prof.code }}</span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if prof.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:edit_profession' prof.id %}?tab=professions" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_profession' prof.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف المهنة \'{{ prof.name|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="briefcase" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد مهن مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: الكفالات -->
+        <div x-show="activeTab === 'sponsorships'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_sponsorship' %}?tab=sponsorships" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة كفالة
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الشركة</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for sponsor in sponsorships %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="file-text" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ sponsor.company_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ sponsor.code }}</span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if sponsor.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:edit_sponsorship' sponsor.id %}?tab=sponsorships" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_sponsorship' sponsor.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الكفالة \'{{ sponsor.company_name|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="file-text" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد كفالات مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 7: التأمينات -->
+        <div x-show="activeTab === 'insurances'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_insurance' %}?tab=insurances" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة تأمين
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">نوع التأمين</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for ins in insurances %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="shield" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ ins.insurance_type }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ ins.code }}</span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if ins.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:edit_insurance' ins.id %}?tab=insurances" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_insurance' ins.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف التأمين \'{{ ins.insurance_type|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="shield" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد تأمينات مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 8: فئات التأمين -->
+        <div x-show="activeTab === 'insurance_classes'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_insurance_class' %}?tab=insurance_classes" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة فئة تأمين
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">نوع الفئة</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for ic in insurance_classes %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="layers" class="w-4 h-4 text-primary-600"></i>
+                                        <span class="text-xs font-medium text-slate-900">{{ ic.class_type }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ ic.code }}</span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if ic.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:edit_insurance_class' ic.id %}?tab=insurance_classes" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'web:delete_insurance_class' ic.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف فئة التأمين \'{{ ic.class_type|escapejs }}\' ؟');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="layers" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد فئات تأمين مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        lucide.createIcons();
+    });
+</script>
+
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}

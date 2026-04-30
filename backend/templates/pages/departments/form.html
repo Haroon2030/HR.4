@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% if branch %}{% url 'web:view_branch' branch.id %}{% else %}{% url 'web:list_all_departments' %}{% endif %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">
+                {% if department %}تعديل القسم{% else %}إضافة قسم جديد{% endif %}
+            </h1>
+            <p class="text-slate-500 text-sm">{% if branch %}{{ branch.name }}{% else %}بدون فرع محدد{% endif %}</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <form method="POST" class="p-6">
+            {% csrf_token %}
+
+            <div class="space-y-6">
+                <!-- Code & Name -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="code" class="block text-sm font-semibold text-slate-700 mb-2">
+                            رقم القسم <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="code"
+                            name="code"
+                            value="{% if department %}{{ department.code }}{% endif %}"
+                            required
+                            class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="مثال: DEPT001"
+                        >
+                    </div>
+
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-slate-700 mb-2">
+                            اسم القسم <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            value="{% if department %}{{ department.name }}{% endif %}"
+                            required
+                            class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="مثال: قسم المبيعات"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3 mt-8 pt-6 border-t border-slate-200">
+                <button
+                    type="submit"
+                    class="px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+                >
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    {% if department %}تحديث{% else %}إضافة{% endif %}
+                </button>
+                <a
+                    href="{% if branch %}{% url 'web:view_branch' branch.id %}{% else %}{% url 'web:list_all_departments' %}{% endif %}"
+                    class="px-6 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                    إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

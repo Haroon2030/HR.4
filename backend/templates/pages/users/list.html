@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block page_title %}المستخدمون والأدوار{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <!-- Tabs Header -->
+    <div class="border-b border-slate-200" x-data="{ activeTab: 'users' }">
+        <div class="flex gap-4 px-6">
+            <button 
+                @click="activeTab = 'users'; lucide.createIcons()" 
+                :class="activeTab === 'users' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="py-4 px-1 border-b-2 font-medium text-xs transition-colors flex items-center gap-2">
+                <i data-lucide="user-cog" class="w-4 h-4"></i>
+                المستخدمون
+            </button>
+            <button 
+                @click="activeTab = 'roles'; lucide.createIcons()" 
+                :class="activeTab === 'roles' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="py-4 px-1 border-b-2 font-medium text-xs transition-colors flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4"></i>
+                الأدوار
+            </button>
+        </div>
+
+        <!-- Tab 1: المستخدمون -->
+        <div x-show="activeTab === 'users'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_user' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة مستخدم جديد
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">المستخدم</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">البريد الإلكتروني</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الدور</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for user in users %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                            <i data-lucide="user" class="w-4 h-4 text-primary-600"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs font-medium text-slate-900">
+                                                {{ user.get_full_name|default:user.username }}
+                                            </div>
+                                            <div class="text-xs text-slate-500">@{{ user.username }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">
+                                    {{ user.email|default:"—" }}
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if user.profile.role %}
+                                    <span class="px-2 py-1 text-xs rounded-md
+                                        {% if user.profile.role.role_type == 'admin' %}bg-purple-100 text-purple-800
+                                        {% elif user.profile.role.role_type == 'hr_manager' %}bg-blue-100 text-blue-800
+                                        {% elif user.profile.role.role_type == 'manager' %}bg-emerald-100 text-emerald-800
+                                        {% elif user.profile.role.role_type == 'specialist' %}bg-amber-100 text-amber-800
+                                        {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                        {{ user.profile.role.get_role_type_display }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-xs text-slate-400">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if user.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        نشط
+                                    </span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">
+                                        معطل
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:view_user' user.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </a>
+                                        <a href="{% url 'web:edit_user' user.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' %}
+                                            {% if user.id != request.user.id and not user.profile.is_protected %}
+                                            <form method="POST" action="{% url 'web:delete_user' user.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف المستخدم \'{{ user.username|escapejs }}\' ؟');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="users" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا يوجد مستخدمون مسجلون</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: الأدوار -->
+        <div x-show="activeTab === 'roles'" x-cloak>
+            <div class="p-4">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'web:add_role' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        إضافة دور جديد
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-auto divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الدور</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">النوع</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">عدد المستخدمين</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            {% for role in roles %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        {% if role.is_system_role %}
+                                        <i data-lucide="shield-check" class="w-4 h-4 text-primary-600"></i>
+                                        {% else %}
+                                        <i data-lucide="shield" class="w-4 h-4 text-primary-600"></i>
+                                        {% endif %}
+                                        <span class="text-xs font-medium text-slate-900">{{ role.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 text-xs rounded-md
+                                        {% if role.role_type == 'admin' %}bg-purple-100 text-purple-800
+                                        {% elif role.role_type == 'hr_manager' %}bg-blue-100 text-blue-800
+                                        {% elif role.role_type == 'manager' %}bg-emerald-100 text-emerald-800
+                                        {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                        {{ role.get_role_type_display }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="users" class="w-3 h-3"></i>
+                                        {{ role.users.count }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if role.is_active %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        نشط
+                                    </span>
+                                    {% else %}
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-600">
+                                        معطل
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-left">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'web:view_role' role.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </a>
+                                        {% if not role.is_system_role or role.role_type == 'admin' %}
+                                        <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">
+                                    <i data-lucide="shield-off" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                                    <p>لا توجد أدوار مسجلة</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        lucide.createIcons();
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,420 @@
+"""
+النظام الأساسي - Core Models
+"""
+
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+from simple_history.models import HistoricalRecords
+
+from apps.core.validators import DOCUMENT_VALIDATORS
+
+# ══════════════════════════════════════════════════════════════════════════════
+# أدوات الـ Soft Delete
+# ══════════════════════════════════════════════════════════════════════════════
+class SoftDeleteQuerySet(models.QuerySet):
+    """إدارة الحذف الوهمي (إخفاء السجلات بدلاً من مسحها فعلياً من قاعدة البيانات)"""
+    def delete(self):
+        return super().update(is_deleted=True, deleted_at=timezone.now())
+
+    def hard_delete(self):
+        return super().delete()
+
+    def active(self):
+        return self.filter(is_deleted=False)
+
+    def deleted(self):
+        return self.filter(is_deleted=True)
+
+class SoftDeleteManager(models.Manager):
+    """دعم الـ Manager بالـ SoftDeleteQuerySet"""
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db).filter(is_deleted=False)
+    
+    def all_with_deleted(self):
+        return SoftDeleteQuerySet(self.model, using=self._db)
+
+class BaseModel(models.Model):
+    """
+    النموذج الأب (Base Model) الذي يجب أن ترث منه جميع نماذج النظام السابقة والقادمة:
+    - يوفر تاريخ الإنشاء والتحديث
+    - يدعم الـ Soft Delete الافتراضي
+    """
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+    updated_at = models.DateTimeField("تاريخ التحديث", auto_now=True)
+    
+    is_deleted = models.BooleanField("محذوف", default=False, db_index=True)
+    deleted_at = models.DateTimeField("تاريخ الحذف", null=True, blank=True)
+
+    # مدير الاستعلامات
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['is_deleted', 'deleted_at'])
+
+    def hard_delete(self, using=None, keep_parents=False):
+        super().delete(using=using, keep_parents=keep_parents)
+
+    def restore(self):
+        self.is_deleted = False
+        self.deleted_at = None
+        self.save(update_fields=['is_deleted', 'deleted_at'])
+
+# ══════════════════════════════════════════════════════════════════════════════
+# الشركة المركزية
+# ══════════════════════════════════════════════════════════════════════════════
+class Company(BaseModel):
+    """المنشأة الأم (مبني على نظام Single-tenant، شركة واحدة بعدة فروع)"""
+    name = models.CharField("اسم الشركة", max_length=200)
+    tax_number = models.CharField("الرقم الضريبي", max_length=50, blank=True)
+    commercial_record = models.CharField("السجل التجاري", max_length=50, blank=True)
+    logo = models.ImageField("شعار الشركة", upload_to='company/logos/', blank=True)
+    contact_email = models.EmailField("البريد الإلكتروني", blank=True)
+    contact_phone = models.CharField("رقم التواصل", max_length=20, blank=True)
+    address = models.TextField("العنوان", blank=True)
+
+    # تفعيل سجل التدقيق لالتقاط التغيرات (Audit Log)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "شركة"
+        verbose_name_plural = "الشركات"
+
+    def __str__(self):
+        return self.name
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# الفروع
+# ══════════════════════════════════════════════════════════════════════════════
+class Branch(BaseModel):
+    """فرع من فروع الشركة"""
+    name = models.CharField("اسم الفرع", max_length=200)
+    code = models.CharField("رمز الفرع", max_length=20, unique=True, help_text="رمز مختصر للفرع")
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        verbose_name="الشركة",
+        related_name="branches"
+    )
+    manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        verbose_name="مدير الفرع",
+        related_name="managed_branches",
+        null=True,
+        blank=True,
+        help_text="المدير المسؤول عن هذا الفرع"
+    )
+    address = models.TextField("العنوان", blank=True)
+    phone = models.CharField("رقم الهاتف", max_length=20, blank=True)
+    email = models.EmailField("البريد الإلكتروني", blank=True)
+    is_active = models.BooleanField("نشط", default=True)
+    
+    history = HistoricalRecords()
+    
+    class Meta:
+        verbose_name = "فرع"
+        verbose_name_plural = "الفروع"
+        ordering = ['name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+    
+    @property
+    def employees_count(self):
+        """عدد الموظفين في هذا الفرع"""
+        return self.employees.filter(is_deleted=False).count()
+    
+    @property
+    def active_employees_count(self):
+        """عدد الموظفين النشطين في هذا الفرع"""
+        return self.employees.filter(is_deleted=False, user__is_active=True).count()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# الأدوار - Role Based Access Control مبسط
+# ══════════════════════════════════════════════════════════════════════════════
+class Role(BaseModel):
+    """دور المستخدم - نظام RBAC مبسط"""
+    
+    class RoleType(models.TextChoices):
+        ADMIN = 'admin', 'مدير النظام'
+        HR_MANAGER = 'hr_manager', 'مدير موارد بشرية'
+        MANAGER = 'manager', 'مدير قسم'
+        SPECIALIST = 'specialist', 'أخصائي'
+        EMPLOYEE = 'employee', 'موظف'
+    
+    name = models.CharField("اسم الدور", max_length=100, unique=True)
+    role_type = models.CharField(
+        "نوع الدور",
+        max_length=20,
+        choices=RoleType.choices,
+        default=RoleType.EMPLOYEE
+    )
+    description = models.TextField("الوصف", blank=True)
+    is_system_role = models.BooleanField("دور نظام", default=False, help_text="الأدوار الأساسية لا يمكن حذفها")
+    is_active = models.BooleanField("نشط", default=True)
+    
+    history = HistoricalRecords()  # تتبع الأمان للأدوار
+    
+    class Meta:
+        verbose_name = "دور"
+        verbose_name_plural = "الأدوار"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+    
+    def save(self, *args, **kwargs):
+        # منع تعديل أنواع الأدوار الأساسية
+        if self.pk and self.is_system_role:
+            old_instance = Role.objects.filter(pk=self.pk).first()
+            if old_instance:
+                self.role_type = old_instance.role_type
+        super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        if self.is_system_role:
+            raise ValueError("لا يمكن حذف أدوار النظام")
+        super().delete(*args, **kwargs)
+
+
+class UserProfile(BaseModel):
+    """ملف المستخدم الموسع"""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="المستخدم",
+        related_name="profile",
+    )
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        verbose_name="الدور",
+        related_name="users",
+        null=True,
+        blank=True
+    )
+    
+    # ربط المستخدم بفرع معين
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.SET_NULL,
+        verbose_name="الفرع",
+        related_name="employees",
+        null=True,
+        blank=True,
+        help_text="الفرع الذي ينتمي له المستخدم"
+    )
+    
+    # الفروع المخصصة للأخصائيين (يمكنهم الوصول لبيانات هذه الفروع)
+    assigned_branches = models.ManyToManyField(
+        Branch,
+        verbose_name="الفروع المكلف بها",
+        related_name="assigned_specialists",
+        blank=True,
+        help_text="الفروع التي يمكن للأخصائي الوصول إليها (يحددها مدير الموارد البشرية)"
+    )
+    
+    user_number = models.CharField(
+        "رقم المستخدم",
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="رقم المستخدم للدخول"
+    )
+    phone = models.CharField("رقم الهاتف", max_length=20, blank=True)
+    department = models.ForeignKey(
+        'departments.Department',
+        on_delete=models.SET_NULL,
+        verbose_name="القسم",
+        related_name="employees",
+        null=True,
+        blank=True,
+        help_text="القسم الذي ينتمي له الموظف"
+    )
+    position = models.CharField("المنصب", max_length=100, blank=True)
+    avatar = models.ImageField("الصورة الشخصية", upload_to="avatars/", blank=True)
+    is_protected = models.BooleanField("محمي", default=False, help_text="المستخدمين المحميين لا يمكن حذفهم أو تعديلهم")
+    
+    history = HistoricalRecords()
+    
+    class Meta:
+        verbose_name = "ملف مستخدم"
+        verbose_name_plural = "ملفات المستخدمين"
+
+    def __str__(self):
+        return f"ملف {self.user.username}"
+    
+    def get_permissions(self):
+        if self.role:
+            return list(self.role.permissions.filter(is_active=True).values_list('code', flat=True))
+        return []
+    
+    @property
+    def role_type(self):
+        if self.role:
+            return self.role.role_type
+        return None
+    
+    @property
+    def is_admin(self):
+        return self.role and self.role.role_type == Role.RoleType.ADMIN
+    
+    @property
+    def is_hr_manager(self):
+        """هل المستخدم مدير موارد بشرية؟"""
+        return self.role and self.role.role_type == Role.RoleType.HR_MANAGER
+    
+    @property
+    def is_manager(self):
+        return self.role and self.role.role_type == Role.RoleType.MANAGER
+    
+    @property
+    def is_specialist(self):
+        """هل المستخدم أخصائي؟"""
+        return self.role and self.role.role_type == Role.RoleType.SPECIALIST
+    
+    @property
+    def is_employee(self):
+        """هل المستخدم موظف عادي؟"""
+        return self.role and self.role.role_type == Role.RoleType.EMPLOYEE
+    
+    def get_accessible_branches(self):
+        """
+        الحصول على الفروع التي يمكن للمستخدم الوصول إليها بناءً على دوره:
+        - الأدمن: جميع الفروع
+        - مدير الموارد البشرية: جميع الفروع
+        - المدير: فرعه فقط
+        - الأخصائي: الفروع المكلف بها
+        - الموظف: فرعه فقط
+        """
+        if not self.role:
+            return Branch.objects.none()
+        
+        # الأدمن ومدير الموارد البشرية يرون كل شيء
+        if self.role.role_type in [Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER]:
+            return Branch.objects.all()
+        
+        # الأخصائي يرى الفروع المكلف بها
+        if self.role.role_type == Role.RoleType.SPECIALIST:
+            return self.assigned_branches.all()
+        
+        # المدير والموظف يرون فرعهم فقط
+        if self.branch:
+            return Branch.objects.filter(id=self.branch.id)
+        
+        return Branch.objects.none()
+    
+    def can_access_branch(self, branch):
+        """هل يمكن للمستخدم الوصول لهذا الفرع؟"""
+        if not self.role:
+            return False
+        
+        # الأدمن ومدير الموارد البشرية يمكنهم الوصول لكل الفروع
+        if self.role.role_type in [Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER]:
+            return True
+        
+        # الأخصائي يمكنه الوصول للفروع المكلف بها
+        if self.role.role_type == Role.RoleType.SPECIALIST:
+            return self.assigned_branches.filter(id=branch.id).exists()
+        
+        # المدير والموظف يمكنهم الوصول لفرعهم فقط
+        return self.branch and self.branch.id == branch.id
+    
+    def can_manage_specialist_branches(self):
+        """هل يمكن للمستخدم تعيين فروع للأخصائيين؟ (مدير الموارد البشرية فقط)"""
+        return self.role and self.role.role_type == Role.RoleType.HR_MANAGER
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# طلبات العمليات السريعة المعلّقة (تنتظر موافقة مدير الفرع)
+# ══════════════════════════════════════════════════════════════════════════════
+class PendingAction(BaseModel):
+    """
+    طلب عملية سريعة معلّقة على موظف، يحتاج موافقة مدير الفرع قبل التنفيذ.
+    تُستخدم لـ: الإجازة / النقل / تعديل الراتب / إنهاء الخدمة / إعادة التنشيط.
+    الإفادات والحضور لا تمرّ من هنا.
+    """
+
+    class ActionType(models.TextChoices):
+        LEAVE = 'leave', 'تقديم إجازة'
+        TRANSFER = 'transfer', 'نقل'
+        SALARY_ADJUST = 'salary_adjust', 'تعديل راتب'
+        TERMINATE = 'terminate', 'إنهاء خدمة'
+        REACTIVATE = 'reactivate', 'إعادة تنشيط'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'بانتظار الموافقة'
+        APPROVED = 'approved', 'موافق عليه'
+        REJECTED = 'rejected', 'مرفوض'
+
+    action_type = models.CharField(
+        "نوع العملية", max_length=20, choices=ActionType.choices, db_index=True
+    )
+    status = models.CharField(
+        "الحالة", max_length=12, choices=Status.choices,
+        default=Status.PENDING, db_index=True
+    )
+
+    employee = models.ForeignKey(
+        'employees.Employee', on_delete=models.CASCADE,
+        related_name='pending_actions', verbose_name="الموظف"
+    )
+    branch = models.ForeignKey(
+        Branch, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pending_actions', verbose_name="الفرع",
+        help_text="يُستخدم لتوجيه الطلب لمدير الفرع المسؤول"
+    )
+
+    # حمولة العملية كاملةً (الحقول التي أدخلها الأخصائي)
+    payload = models.JSONField("بيانات العملية", default=dict, blank=True)
+    attachment = models.FileField(
+        "مرفق", upload_to='pending_actions/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    # تتبّع الطلب
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name='requested_pending_actions', verbose_name="مقدّم الطلب"
+    )
+    requested_at = models.DateTimeField("تاريخ الطلب", auto_now_add=True)
+
+    # تتبّع المراجعة
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reviewed_pending_actions', verbose_name="راجعها"
+    )
+    reviewed_at = models.DateTimeField("تاريخ المراجعة", null=True, blank=True)
+    review_notes = models.TextField("ملاحظات المراجعة", blank=True)
+
+    # نتيجة التنفيذ بعد الموافقة
+    executed_at = models.DateTimeField("تاريخ التنفيذ", null=True, blank=True)
+    execution_error = models.TextField("خطأ التنفيذ", blank=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "طلب عملية معلّق"
+        verbose_name_plural = "طلبات العمليات المعلّقة"
+        ordering = ['-requested_at']
+        indexes = [
+            models.Index(fields=['status', '-requested_at']),
+            models.Index(fields=['branch', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_action_type_display()} — {self.employee.name} ({self.get_status_display()})"
+
+    @property
+    def is_pending(self):
+        return self.status == self.Status.PENDING
+

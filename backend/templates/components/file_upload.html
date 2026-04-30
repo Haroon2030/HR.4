@@ -1,0 +1,54 @@
+{% comment %}
+   مكوّن مرفق ملف مع إمكانية تعديل الاسم.
+   الاستخدام:
+     {% include 'components/file_upload.html' with name='document' label='المرفق' accept='image/*,.pdf' %}
+
+   البارامترات:
+     name     : اسم حقل الملف (مطلوب)
+     label    : عنوان ظاهر للمستخدم (افتراضي: "مرفق")
+     accept   : نوع الملفات المسموحة (افتراضي: image/*,.pdf,.doc,.docx)
+     required : هل الملف مطلوب؟ (افتراضي: false)
+     icon     : أيقونة Lucide (افتراضي: paperclip)
+
+   ملاحظة الخادم:
+     سيُرسل اسم الملف الجديد في حقل: <name>__rename
+     استخدم helper apply_uploaded_file_rename(request, file_field_name) في الـ view.
+{% endcomment %}
+<div x-data="{
+        fileName: '',
+        customName: '',
+        ext: '',
+        onPick(e){
+            const f = e.target.files[0];
+            if(!f){ this.fileName=''; this.customName=''; this.ext=''; return; }
+            this.fileName = f.name;
+            const dot = f.name.lastIndexOf('.');
+            this.ext = dot > -1 ? f.name.substring(dot) : '';
+            this.customName = dot > -1 ? f.name.substring(0, dot) : f.name;
+        }
+     }">
+    <label class="block text-[11px] font-bold text-slate-600 mb-0.5 flex items-center gap-1">
+        <i data-lucide="{{ icon|default:'paperclip' }}" class="w-3.5 h-3.5"></i>
+        {{ label|default:"مرفق" }}{% if required %} <span class="text-red-500">*</span>{% endif %}
+    </label>
+
+    <div class="flex items-center gap-2">
+        <input type="file" name="{{ name }}"
+               accept="{{ accept|default:'image/*,.pdf,.doc,.docx' }}"
+               {% if required %}required{% endif %}
+               @change="onPick($event)"
+               class="flex-1 min-w-0 px-2 py-1 border border-slate-300 rounded text-xs bg-slate-50 file:ml-2 file:rounded file:border-0 file:bg-primary-100 file:text-primary-700 file:px-2 file:py-0.5 file:text-[11px]">
+    </div>
+
+    <!-- إعادة التسمية: تظهر بعد اختيار الملف -->
+    <div x-show="fileName" x-cloak class="mt-1.5">
+        <div class="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+            <i data-lucide="edit-3" class="w-3 h-3 text-amber-600 shrink-0"></i>
+            <span class="text-[10px] text-slate-500 shrink-0">اسم الملف:</span>
+            <input type="text" name="{{ name }}__rename" x-model="customName"
+                   class="flex-1 min-w-0 px-1.5 py-0.5 border border-amber-300 rounded text-xs bg-white"
+                   placeholder="عدّل اسم الملف...">
+            <span class="text-[10px] font-mono text-slate-500 shrink-0" x-text="ext"></span>
+        </div>
+    </div>
+</div>

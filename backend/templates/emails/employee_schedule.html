@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>جدول الدوام</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:24px 0;">
+    <tr><td align="center">
+      <table width="680" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(15,23,42,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#0f766e,#14b8a6);padding:18px 22px;color:#fff;">
+            <div style="font-size:18px;font-weight:700;">جدول الدوام الشهري</div>
+            <div style="font-size:13px;opacity:.92;margin-top:4px;">{{ employee.name }}</div>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:20px 22px;font-size:14px;line-height:1.7;color:#334155;">
+            <p style="margin:0 0 8px;">السلام عليكم،</p>
+            <p style="margin:0 0 18px;">نُرفق لكم جدول الدوام للأشهر التالية. الأيام المُظلّلة بالأزرق هي أيام الدوام:</p>
+
+            {% for box in boxes %}
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;border:1px solid #e2e8f0;border-radius:10px;background:#ffffff;">
+                <tr>
+                  <td style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;border-radius:10px 10px 0 0;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="font-weight:700;color:#0f766e;font-size:14px;">
+                          {{ box.month_name }} {{ box.year }}
+                        </td>
+                        <td align="left" style="font-size:12px;color:#475569;font-weight:600;">
+                          <span style="display:inline-block;background:#ccfbf1;color:#115e59;padding:2px 8px;border-radius:10px;">{{ box.days_count }} يوم دوام</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px 14px;">
+                    <table width="100%" cellpadding="0" cellspacing="3" border="0" style="text-align:center;">
+                      <tr>
+                        {% for wd in week_days %}
+                          <td width="14.28%" style="font-size:11px;font-weight:700;color:#64748b;padding:4px 0;">{{ wd }}</td>
+                        {% endfor %}
+                      </tr>
+                      {% for week in box.weeks %}
+                        <tr>
+                          {% for cell in week %}
+                            {% if cell.day %}
+                              {% if cell.on %}
+                                <td style="background:#2563eb;color:#ffffff;font-weight:700;font-size:12px;border-radius:6px;padding:8px 0;">{{ cell.day }}</td>
+                              {% else %}
+                                <td style="background:#f1f5f9;color:#475569;font-size:12px;border-radius:6px;padding:8px 0;">{{ cell.day }}</td>
+                              {% endif %}
+                            {% else %}
+                              <td style="background:transparent;padding:8px 0;">&nbsp;</td>
+                            {% endif %}
+                          {% endfor %}
+                        </tr>
+                      {% endfor %}
+                    </table>
+                  </td>
+                </tr>
+                {% if box.days %}
+                <tr>
+                  <td style="padding:0 14px 12px;font-size:11px;color:#64748b;">
+                    <strong style="color:#334155;">أيام الدوام:</strong> {{ box.days_str }}
+                  </td>
+                </tr>
+                {% endif %}
+              </table>
+            {% endfor %}
+
+            <p style="margin:18px 0 0;color:#64748b;font-size:12px;">
+              في حال وجود أي استفسار، يُرجى التواصل مع إدارة الموارد البشرية.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:#f8fafc;padding:12px 22px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
+            هذه رسالة تلقائية صادرة عن نظام HR Pro.
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'web:list_users' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+            </a>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-2xl font-bold text-slate-900">{{ user_obj.get_full_name|default:user_obj.username }}</h1>
+                    {% if user_obj.profile.is_protected %}
+                    <span class="px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-800 rounded-md flex items-center gap-1">
+                        <i data-lucide="shield" class="w-3 h-3"></i>
+                        محمي
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="text-slate-500 text-sm mt-1">@{{ user_obj.username }}</p>
+            </div>
+        </div>
+        <a href="{% url 'web:edit_user' user_obj.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+            <i data-lucide="edit-2" class="w-4 h-4"></i>
+            تعديل المستخدم
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Role -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 mb-1">الدور الوظيفي</p>
+                    {% if user_obj.profile.role %}
+                    <p class="text-xl font-bold text-slate-900">{{ user_obj.profile.role.name }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ user_obj.profile.role.get_role_type_display }}</p>
+                    {% else %}
+                    <p class="text-xl font-bold text-slate-400">غير محدد</p>
+                    {% endif %}
+                </div>
+                <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="badge" class="w-6 h-6 text-primary-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branch -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 mb-1">الفرع</p>
+                    {% if user_obj.profile.branch %}
+                    <p class="text-xl font-bold text-slate-900">{{ user_obj.profile.branch.name }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ user_obj.profile.branch.code }}</p>
+                    {% else %}
+                    <p class="text-xl font-bold text-slate-400">غير محدد</p>
+                    {% endif %}
+                </div>
+                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="building-2" class="w-6 h-6 text-emerald-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 mb-1">حالة الحساب</p>
+                    <p class="text-xl font-bold {% if user_obj.is_active %}text-emerald-600{% else %}text-slate-600{% endif %}">
+                        {% if user_obj.is_active %}نشط{% else %}معطل{% endif %}
+                    </p>
+                </div>
+                <div class="w-12 h-12 {% if user_obj.is_active %}bg-emerald-100{% else %}bg-slate-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i data-lucide="{% if user_obj.is_active %}check-circle{% else %}x-circle{% endif %}" class="w-6 h-6 {% if user_obj.is_active %}text-emerald-600{% else %}text-slate-600{% endif %}"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Personal Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="text-lg font-bold text-slate-900">المعلومات الشخصية</h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">الاسم الكامل</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.get_full_name|default:"—" }}</p>
+                </div>
+                
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">البريد الإلكتروني</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.email|default:"—" }}</p>
+                </div>
+                
+                {% if user_obj.profile.phone %}
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">رقم الهاتف</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.profile.phone }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">تاريخ الانضمام</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.date_joined|date:"d/m/Y - h:i A" }}</p>
+                </div>
+                
+                {% if user_obj.last_login %}
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">آخر تسجيل دخول</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.last_login|date:"d/m/Y - h:i A" }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Work Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="text-lg font-bold text-slate-900">معلومات العمل</h2>
+            </div>
+            <div class="p-6 space-y-4">
+                {% if user_obj.profile.department %}
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">القسم</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.profile.department }}</p>
+                </div>
+                {% endif %}
+                
+                {% if user_obj.profile.position %}
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">المنصب</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.profile.position }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="space-y-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">صلاحيات الإدارة</p>
+                    <div class="flex gap-2">
+                        {% if user_obj.is_superuser %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-md">مدير نظام</span>
+                        {% endif %}
+                        {% if user_obj.is_staff %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md">موظف إداري</span>
+                        {% endif %}
+                        {% if not user_obj.is_superuser and not user_obj.is_staff %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">مستخدم عادي</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assigned Branches (للأخصائيين) -->
+    {% if user_obj.profile.role and user_obj.profile.role.role_type == 'specialist' %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-lg font-bold text-slate-900">الفروع المكلف بها</h2>
+            <p class="text-sm text-slate-500 mt-1">الفروع التي يمكن للأخصائي الوصول إليها</p>
+        </div>
+        
+        {% if user_obj.profile.assigned_branches.all %}
+        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for branch in user_obj.profile.assigned_branches.all %}
+            <div class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg">
+                <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="building-2" class="w-5 h-5 text-primary-600"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-slate-900">{{ branch.name }}</div>
+                    <div class="text-xs text-slate-500">{{ branch.code }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-6 py-12 text-center">
+            <i data-lucide="building-2" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
+            <p class="text-slate-500">لم يتم تعيين فروع لهذا الأخصائي</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

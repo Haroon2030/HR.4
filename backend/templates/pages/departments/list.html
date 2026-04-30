@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            {% if branch %}
+            <a href="{% url 'web:view_branch' branch.id %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+            </a>
+            {% endif %}
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">الأقسام</h1>
+                <p class="text-slate-500 text-sm">
+                    {% if branch %}{{ branch.name }}{% else %}جميع الأقسام في النظام{% endif %}
+                </p>
+            </div>
+        </div>
+        <a href="{% if branch %}{% url 'web:add_department' branch.id %}{% else %}{% url 'web:add_department_global' %}{% endif %}"
+           class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>إضافة قسم</span>
+        </a>
+    </div>
+
+    <!-- List -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {% if departments %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 text-right">الرقم</th>
+                        <th class="px-4 py-3 text-right">الاسم</th>
+                        {% if not branch %}<th class="px-4 py-3 text-right">الفرع</th>{% endif %}
+                        <th class="px-4 py-3 text-right">مركز التكلفة</th>
+                        <th class="px-4 py-3 text-right">المدير</th>
+                        <th class="px-4 py-3 text-right">الحالة</th>
+                        <th class="px-4 py-3 text-right">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for dept in departments %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-slate-900">{{ dept.code }}</td>
+                        <td class="px-4 py-3 text-slate-700">{{ dept.name }}</td>
+                        {% if not branch %}
+                        <td class="px-4 py-3 text-slate-600">{{ dept.branch.name|default:"—" }}</td>
+                        {% endif %}
+                        <td class="px-4 py-3 text-slate-600">{{ dept.cost_center.name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-slate-600">
+                            {% if dept.manager %}{{ dept.manager.user.get_full_name|default:dept.manager.user.username }}{% else %}—{% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept.is_active %}
+                            <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded">نشط</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded">غير نشط</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <a href="{% url 'web:edit_department' dept.id %}"
+                               class="text-primary-600 hover:text-primary-700 text-sm font-medium">تعديل</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i data-lucide="network" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+            <p class="text-slate-500">لا توجد أقسام بعد</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

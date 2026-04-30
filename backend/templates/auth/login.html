@@ -1,0 +1,94 @@
+{% extends "base_public.html" %}
+
+{% block title %}تسجيل الدخول - نظام الموارد البشرية{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-primary-50 flex items-center justify-center p-4">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full opacity-20 blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-300 rounded-full opacity-20 blur-3xl"></div>
+    </div>
+
+    <div class="w-full max-w-md relative z-10">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary-500/50" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-2" style="font-weight: 900 !important;">نظام الموارد البشرية</h1>
+            <p class="text-slate-600 text-lg font-semibold" style="font-weight: 600 !important;">نظام إدارة شؤون الموظفين</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900" style="font-weight: 800 !important;">تسجيل الدخول</h2>
+                <p class="text-slate-600 mt-2 text-base font-medium" style="font-weight: 600 !important;">أدخل بياناتك للوصول إلى حسابك</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-base font-semibold">
+                <p>اسم المستخدم أو كلمة المرور غير صحيحة</p>
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="username" class="block text-base font-bold text-slate-800 mb-2" style="font-weight: 700 !important;">رقم المستخدم أو اسم المستخدم</label>
+                    <input 
+                        type="text" 
+                        name="username" 
+                        id="username"
+                        required
+                        autocomplete="username"
+                        class="w-full px-4 py-3.5 text-base font-medium border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                        placeholder="أدخل رقم المستخدم أو اسم المستخدم"
+                        style="font-weight: 500 !important;"
+                    >
+                </div>
+
+                <div x-data="{ showPassword: false }">
+                    <label for="password" class="block text-base font-bold text-slate-800 mb-2" style="font-weight: 700 !important;">كلمة المرور</label>
+                    <div class="relative">
+                        <input 
+                            :type="showPassword ? 'text' : 'password'"
+                            name="password" 
+                            id="password"
+                            required
+                            autocomplete="current-password"
+                            class="w-full px-4 py-3.5 text-base font-medium border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="أدخل كلمة المرور"
+                            style="font-weight: 500 !important;"
+                        >
+                        <button 
+                            type="button"
+                            @click="showPassword = !showPassword"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary-600 transition-colors p-1"
+                        >
+                            <i x-show="!showPassword" data-lucide="eye" class="w-5 h-5"></i>
+                            <i x-show="showPassword" data-lucide="eye-off" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button 
+                    type="submit"
+                    class="w-full py-4 px-4 text-white text-lg font-bold rounded-lg shadow-xl transition-all hover:shadow-2xl"
+                    style="background: linear-gradient(to left, #2563eb, #3b82f6); font-weight: 800 !important;"
+                    onmouseover="this.style.background='linear-gradient(to left, #1d4ed8, #2563eb)'"
+                    onmouseout="this.style.background='linear-gradient(to left, #2563eb, #3b82f6)'"
+                >
+                    تسجيل الدخول
+                </button>
+            </form>
+        </div>
+
+        <div class="text-center mt-8">
+            <p class="text-slate-600 text-base font-semibold">© 2026 نظام الموارد البشرية. جميع الحقوق محفوظة</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

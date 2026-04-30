@@ -1,0 +1,391 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام الموارد البشرية{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>م</text></svg>">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    
+    <!-- Custom primary colors -->
+    <style>
+        .bg-primary-50 { background-color: #eff6ff; }
+        .bg-primary-100 { background-color: #dbeafe; }
+        .bg-primary-500 { background-color: #3b82f6; }
+        .bg-primary-600 { background-color: #2563eb; }
+        .bg-primary-700 { background-color: #1d4ed8; }
+        .text-primary-500 { color: #3b82f6; }
+        .text-primary-600 { color: #2563eb; }
+        .text-primary-700 { color: #1d4ed8; }
+        .text-primary-800 { color: #1e40af; }
+        .border-primary-200 { border-color: #bfdbfe; }
+        .border-primary-500 { border-color: #3b82f6; }
+        .border-primary-600 { border-color: #2563eb; }
+        .ring-primary-500 { --tw-ring-color: #3b82f6; }
+        .focus\:ring-primary-500:focus { --tw-ring-color: #3b82f6; }
+        .focus\:border-primary-500:focus { border-color: #3b82f6; }
+        .hover\:bg-primary-700:hover { background-color: #1d4ed8; }
+        .hover\:text-primary-600:hover { color: #2563eb; }
+        .hover\:text-primary-800:hover { color: #1e40af; }
+        .from-primary-500 { --tw-gradient-from: #3b82f6; }
+        .to-primary-700 { --tw-gradient-to: #1d4ed8; }
+
+        /* Slate (TW v3 -> mapped) */
+        .bg-slate-50  { background-color: #f8fafc; }
+        .bg-slate-100 { background-color: #f1f5f9; }
+        .bg-slate-200 { background-color: #e2e8f0; }
+        .bg-slate-300 { background-color: #cbd5e1; }
+        .bg-slate-500 { background-color: #64748b; }
+        .bg-slate-600 { background-color: #475569; }
+        .bg-slate-700 { background-color: #334155; }
+        .bg-slate-800 { background-color: #1e293b; }
+        .bg-slate-900 { background-color: #0f172a; }
+        .text-slate-300 { color: #cbd5e1; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-600 { color: #475569; }
+        .text-slate-700 { color: #334155; }
+        .text-slate-800 { color: #1e293b; }
+        .text-slate-900 { color: #0f172a; }
+        .border-slate-100 { border-color: #f1f5f9; }
+        .border-slate-200 { border-color: #e2e8f0; }
+        .border-slate-300 { border-color: #cbd5e1; }
+        .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #f1f5f9; }
+        .hover\:bg-slate-100:hover { background-color: #f1f5f9; }
+        .hover\:bg-slate-200:hover { background-color: #e2e8f0; }
+        .hover\:text-slate-600:hover { color: #475569; }
+        .hover\:text-slate-700:hover { color: #334155; }
+        .hover\:text-slate-800:hover { color: #1e293b; }
+        .hover\:border-slate-300:hover { border-color: #cbd5e1; }
+
+        /* Emerald */
+        .bg-emerald-50  { background-color: #ecfdf5; }
+        .bg-emerald-100 { background-color: #d1fae5; }
+        .bg-emerald-200 { background-color: #a7f3d0; }
+        .bg-emerald-600 { background-color: #059669; }
+        .bg-emerald-700 { background-color: #047857; }
+        .text-emerald-600 { color: #059669; }
+        .text-emerald-700 { color: #047857; }
+        .text-emerald-800 { color: #065f46; }
+        .border-emerald-200 { border-color: #a7f3d0; }
+        .hover\:bg-emerald-700:hover { background-color: #047857; }
+
+        /* Amber */
+        .bg-amber-50  { background-color: #fffbeb; }
+        .bg-amber-100 { background-color: #fef3c7; }
+        .bg-amber-200 { background-color: #fde68a; }
+        .bg-amber-600 { background-color: #d97706; }
+        .text-amber-600 { color: #d97706; }
+        .text-amber-700 { color: #b45309; }
+        .text-amber-800 { color: #92400e; }
+        .border-amber-200 { border-color: #fde68a; }
+
+        /* Cyan */
+        .bg-cyan-50 { background-color: #ecfeff; }
+        .bg-cyan-100 { background-color: #cffafe; }
+        .bg-cyan-600 { background-color: #0891b2; }
+        .text-cyan-600 { color: #0891b2; }
+        .text-cyan-700 { color: #0e7490; }
+    </style>
+    
+    <!-- HTMX -->
+    <script src="/static/js/htmx.min.js"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="/static/js/alpine.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="/static/js/lucide.min.js"></script>
+    
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        [x-cloak] { display: none !important; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; border: 2px solid #f1f5f9; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        /* HTMX loading indicator */
+        .htmx-request .htmx-indicator { display: inline-flex; }
+        .htmx-indicator { display: none; }
+        
+        /* Transitions */
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-slate-50 min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }">
+    <!-- Mobile Overlay -->
+    <div 
+        x-show="mobileMenuOpen" 
+        @click="mobileMenuOpen = false"
+        x-transition:enter="transition-opacity ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+        style="display: none;"
+    ></div>
+
+    <!-- Main Layout -->
+    <div class="flex flex-col h-screen overflow-hidden">
+        <!-- Header -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6">
+            <div class="flex items-center gap-2 md:gap-4">
+                <!-- Desktop Toggle -->
+                <button @click="sidebarOpen = !sidebarOpen" class="hidden md:block p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="menu" class="w-5 h-5 text-slate-600"></i>
+                </button>
+                <!-- Mobile Menu Toggle -->
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="menu" class="w-5 h-5 text-slate-600"></i>
+                </button>
+                <div class="flex items-center gap-2 md:gap-3">
+                    <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg md:rounded-xl flex items-center justify-center">
+                        <i data-lucide="briefcase" class="w-4 h-4 md:w-6 md:h-6 text-white"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-xl text-slate-800 hidden sm:inline">نظام الموارد البشرية</span>
+                    <span class="font-bold text-base text-slate-800 sm:hidden">HR</span>
+                </div>
+            </div>
+            
+            <h1 class="text-sm md:text-xl font-bold text-slate-800 truncate max-w-[150px] md:max-w-none">{% block page_title %}{% endblock %}</h1>
+            
+            <div class="flex items-center gap-1 md:gap-3">
+                <!-- Notifications -->
+                <button class="p-2 hover:bg-slate-100 rounded-lg transition-colors relative">
+                    <i data-lucide="bell" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                
+                <!-- Logout -->
+                <a href="{% url 'web:auth:logout' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="تسجيل الخروج">
+                    <i data-lucide="log-out" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
+                </a>
+            </div>
+        </header>
+        
+        <!-- Content with Sidebar -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Desktop Sidebar -->
+            <aside 
+                class="hidden md:flex bg-white border-l border-slate-200 transition-all duration-300 flex-col"
+                :class="sidebarOpen ? 'w-64' : 'w-20'"
+            >
+                <!-- Navigation -->
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpen: ['list_employees','add_employee'].includes('{{ request.resolver_match.url_name }}') }">
+                    {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" %}
+
+                    <!-- الموظفين مع قائمة فرعية -->
+                    <div>
+                        <button type="button" @click="employeesOpen = !employeesOpen"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                            <i data-lucide="users" class="w-5 h-5 flex-shrink-0"></i>
+                            <span x-show="sidebarOpen" class="font-semibold text-base flex-1 text-right">الموظفين</span>
+                            <i data-lucide="chevron-down" x-show="sidebarOpen" class="w-4 h-4 transition-transform" :class="employeesOpen ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="employeesOpen && sidebarOpen" x-cloak class="mt-1 mr-6 space-y-1">
+                            <a href="{% url 'web:list_employees' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if request.resolver_match.url_name == 'list_employees' %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                                قائمة الموظفين
+                            </a>
+                            <a href="{% url 'web:add_employee' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if request.resolver_match.url_name == 'add_employee' %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                                إضافة موظف
+                            </a>
+                        </div>
+                    </div>
+
+                    {% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" %}
+                    {% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}
+
+                    <a href="{% url 'web:list_pending_actions' %}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                        <i data-lucide="list-checks" class="w-5 h-5 flex-shrink-0"></i>
+                        <span x-show="sidebarOpen" class="font-semibold text-base flex items-center gap-2">
+                            طلبات العمليات
+                            {% if pending_actions_count %}<span class="px-2 py-0.5 bg-amber-500 text-white rounded-full text-xs">{{ pending_actions_count }}</span>{% endif %}
+                        </span>
+                    </a>
+                </nav>
+                
+                <!-- User Info -->
+                <div class="border-t border-slate-200 p-4 mb-8">
+                    <div class="flex items-center gap-3" x-show="sidebarOpen">
+                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-slate-800 truncate">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-sm font-medium text-slate-600">{{ user.profile.role.name|default:"مستخدم" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Mobile Sidebar -->
+            <aside 
+                x-show="mobileMenuOpen"
+                @click.away="mobileMenuOpen = false"
+                x-transition:enter="transition-transform ease-out duration-300"
+                x-transition:enter-start="translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition-transform ease-in duration-200"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="translate-x-full"
+                class="md:hidden fixed top-0 right-0 bottom-0 w-64 bg-white border-l border-slate-200 flex flex-col z-40"
+                style="display: none;"
+            >
+                <!-- Mobile Header -->
+                <div class="h-16 flex items-center justify-between border-b border-slate-200 px-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
+                            <i data-lucide="briefcase" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="font-bold text-lg text-slate-800">القائمة</span>
+                    </div>
+                    <button @click="mobileMenuOpen = false" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpenM: ['list_employees','add_employee'].includes('{{ request.resolver_match.url_name }}') }">
+                    {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" %}
+
+                    <!-- الموظفين مع قائمة فرعية -->
+                    <div>
+                        <button type="button" @click="employeesOpenM = !employeesOpenM"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                            <i data-lucide="users" class="w-5 h-5 flex-shrink-0"></i>
+                            <span class="font-semibold text-base flex-1 text-right">الموظفين</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="employeesOpenM ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="employeesOpenM" x-cloak class="mt-1 mr-6 space-y-1">
+                            <a href="{% url 'web:list_employees' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if request.resolver_match.url_name == 'list_employees' %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                                قائمة الموظفين
+                            </a>
+                            <a href="{% url 'web:add_employee' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if request.resolver_match.url_name == 'add_employee' %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                                إضافة موظف
+                            </a>
+                        </div>
+                    </div>
+
+                    {% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" %}
+                    {% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}
+
+                    <a href="{% url 'web:list_pending_actions' %}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                        <i data-lucide="list-checks" class="w-5 h-5 flex-shrink-0"></i>
+                        <span class="font-semibold text-base flex items-center gap-2">
+                            طلبات العمليات
+                            {% if pending_actions_count %}<span class="px-2 py-0.5 bg-amber-500 text-white rounded-full text-xs">{{ pending_actions_count }}</span>{% endif %}
+                        </span>
+                    </a>
+                </nav>
+                
+                <!-- User Info -->
+                <div class="border-t border-slate-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-slate-800 truncate">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-sm font-medium text-slate-600">{{ user.profile.role.name|default:"مستخدم" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-scroll p-3 pb-12 md:p-6 md:pb-10" style="direction:ltr;">
+                <div style="direction:rtl;">
+                {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+    <!-- Footer -->
+    <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 py-1.5 text-center z-30">
+        <p class="text-xs text-slate-400 px-2">
+            <span class="hidden sm:inline">تطوير وتصميم </span>
+            <span class="font-semibold text-slate-500">هارون الأهدل</span> 
+            <span class="hidden sm:inline">&mdash;</span>
+            <a href="tel:0531847156" class="hover:text-primary-600 transition-colors">0531847156</a>
+        </p>
+    </div>
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed bottom-4 left-4 z-50 space-y-2"></div>
+    
+    <!-- Django Messages Data -->
+    {% if messages %}
+    <div id="django-messages" style="display: none;">
+        {% for message in messages %}
+        <div data-message="{{ message }}" data-type="{{ message.tags }}"></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg fade-in flex items-center gap-2`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+        
+        // HTMX event handlers
+        document.body.addEventListener('htmx:afterSwap', function(e) {
+            lucide.createIcons();
+        });
+        
+        // Show Django messages as toasts
+        const messagesContainer = document.getElementById('django-messages');
+        if (messagesContainer) {
+            const messages = messagesContainer.querySelectorAll('[data-message]');
+            messages.forEach(msg => {
+                showToast(msg.dataset.message, msg.dataset.type);
+            });
+        }
+
+        // Close mobile menu when clicking nav item
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('nav a')) {
+                Alpine.store('mobileMenuOpen', false);
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

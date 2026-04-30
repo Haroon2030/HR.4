@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'main' }">
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a href="{% url 'web:list_employees' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">{% if is_create %}إضافة موظف جديد{% else %}ملف الموظف: {{ employee.name }}{% endif %}</h1>
+            <p class="text-slate-500 text-xs">{% if is_create %}أدخل بيانات الموظف الكاملة{% else %}إكمال وتعديل بيانات الموظف{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+            <!-- Tabs Nav -->
+            <div class="border-b border-slate-200">
+                <nav class="flex -mb-px overflow-x-auto">
+                    <button type="button" @click="activeTab = 'main'" :class="activeTab === 'main' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="user" class="w-4 h-4"></i> بيانات الموظف
+                    </button>
+                    <button type="button" @click="activeTab = 'salary'" :class="activeTab === 'salary' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="wallet" class="w-4 h-4"></i> الراتب
+                    </button>
+                    <button type="button" @click="activeTab = 'leaves'" :class="activeTab === 'leaves' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="palmtree" class="w-4 h-4"></i> الإجازات
+                    </button>
+                    <button type="button" @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="calendar-clock" class="w-4 h-4"></i> الجدول
+                    </button>
+                    <button type="button" @click="activeTab = 'warnings'" :class="activeTab === 'warnings' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> الإفادات والإنذارات
+                    </button>
+                    <button type="button" @click="activeTab = 'docs'" :class="activeTab === 'docs' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="files" class="w-4 h-4"></i> المستندات
+                    </button>
+                    <button type="button" @click="activeTab = 'archive'" :class="activeTab === 'archive' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="archive" class="w-4 h-4"></i> أرشيف الحركة
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab 1: بيانات الموظف -->
+            <div x-show="activeTab === 'main'" x-cloak class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الاسم <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" required value="{{ employee.name }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">رقم الهوية</label>
+                        <input type="text" name="id_number" value="{{ employee.id_number }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">رقم الجوال</label>
+                        <input type="text" name="phone" value="{{ employee.phone }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الإيميل</label>
+                        <input type="email" name="email" value="{{ employee.email }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الرقم الوظيفي</label>
+                        <input type="text" name="employee_number" value="{{ employee.employee_number }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الجنسية</label>
+                        <select name="nationality" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for n in nationalities %}<option value="{{ n.id }}" {% if employee.nationality_id == n.id %}selected{% endif %}>{{ n.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">المهنة</label>
+                        <select name="profession" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for p in professions %}<option value="{{ p.id }}" {% if employee.profession_id == p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الكفالة</label>
+                        <select name="sponsorship" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for s in sponsorships %}<option value="{{ s.id }}" {% if employee.sponsorship_id == s.id %}selected{% endif %}>{{ s.company_name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الفرع</label>
+                        <select name="branch" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for b in branches %}<option value="{{ b.id }}" {% if employee.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">القسم</label>
+                        <select name="department" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for d in departments %}<option value="{{ d.id }}" {% if employee.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">مركز التكلفة</label>
+                        <select name="cost_center" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for c in cost_centers %}<option value="{{ c.id }}" {% if employee.cost_center_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">التأمين الطبي</label>
+                        <select name="insurance" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for i in insurances %}<option value="{{ i.id }}" {% if employee.insurance_id == i.id %}selected{% endif %}>{{ i.insurance_type }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">فئة التأمين</label>
+                        <select name="insurance_class" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for ic in insurance_classes %}<option value="{{ ic.id }}" {% if employee.insurance_class_id == ic.id %}selected{% endif %}>{{ ic.class_type }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ المباشرة</label>
+                        <input type="date" name="hire_date" value="{{ employee.hire_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ التوقف</label>
+                        <input type="date" name="end_date" value="{{ employee.end_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء الجواز</label>
+                        <input type="date" name="passport_expiry_date" value="{{ employee.passport_expiry_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">حالة الموظف</label>
+                        <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="active" {% if employee.status == 'active' %}selected{% endif %}>على رأس العمل</option>
+                            <option value="leave" {% if employee.status == 'leave' %}selected{% endif %}>في إجازة</option>
+                            <option value="suspended" {% if employee.status == 'suspended' %}selected{% endif %}>موقوف</option>
+                            <option value="terminated" {% if employee.status == 'terminated' %}selected{% endif %}>منتهي الخدمة</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">سبب الانتهاء</label>
+                        <input type="text" name="end_reason" value="{{ employee.end_reason }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: الراتب -->
+            <div x-show="activeTab === 'salary'" x-cloak class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الراتب الأساسي</label>
+                        <input type="number" step="0.01" name="basic_salary" value="{{ employee.basic_salary }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">بدل سكن</label>
+                        <input type="number" step="0.01" name="housing_allowance" value="{{ employee.housing_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">بدل نقل</label>
+                        <input type="number" step="0.01" name="transport_allowance" value="{{ employee.transport_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">بدل إضافي</label>
+                        <input type="number" step="0.01" name="other_allowance" value="{{ employee.other_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">كاش</label>
+                        <input type="number" step="0.01" name="cash_amount" value="{{ employee.cash_amount }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">نسبة خصم التأمينات (%)</label>
+                        <input type="number" step="0.01" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                        <label class="block text-xs font-bold text-slate-800">الإجمالي</label>
+                        <input type="text" readonly value="{{ employee.total_salary }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-sm font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: الإجازات -->
+            <div x-show="activeTab === 'leaves'" x-cloak class="p-5">
+                {% if not employee.hire_date or not employee.sponsorship_id %}
+                <div class="mb-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs flex items-start gap-2">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5"></i>
+                    <span>يبدأ احتساب الإجازات تلقائياً (21 يوم سنوياً) فور تعبئة <b>تاريخ المباشرة</b> و <b>الكفالة</b> في تبويب "بيانات الموظف".</span>
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                        <div class="text-xs font-bold text-emerald-700 mb-1">الرصيد المستحق</div>
+                        <div class="text-lg font-bold text-emerald-800">{{ employee.accrued_leave_days|default:"0.0" }} يوم</div>
+                        <div class="text-[10px] text-emerald-600 mt-1">21 يوم/سنة من تاريخ المباشرة</div>
+                    </div>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="text-xs font-bold text-red-700 mb-1">الإجازات المستخدمة</div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" step="0.5" name="available_leave_balance" value="{{ employee.available_leave_balance }}" class="w-full px-2 py-1.5 border border-red-300 bg-white rounded-md text-sm text-red-800 font-bold">
+                            <span class="text-xs text-red-700">يوم</span>
+                        </div>
+                    </div>
+                    <div class="bg-primary-50 border border-primary-200 rounded-lg p-3">
+                        <div class="text-xs font-bold text-primary-700 mb-1">الرصيد المتبقي</div>
+                        <div class="text-lg font-bold text-primary-800">{{ employee.remaining_leave_days|default:"0.0" }} يوم</div>
+                        <div class="text-[10px] text-primary-600 mt-1">المستحق - المستخدم</div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-800">أرشيف الإجازات</label>
+                    <textarea name="leaves_archive" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="سجل الإجازات السابقة (التواريخ، الأنواع، الملاحظات...)">{{ employee.leaves_archive }}</textarea>
+                </div>
+            </div>
+
+            <!-- Tab 4: الجدول -->
+            <div x-show="activeTab === 'schedule'" x-cloak class="p-5">
+                <div class="space-y-3">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الحضور والانصراف الشهري</label>
+                        <textarea name="attendance_notes" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">{{ employee.attendance_notes }}</textarea>
+                    </div>
+                    {% if not is_create %}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                        <div class="flex-1">
+                            <div class="text-sm font-bold text-blue-900 mb-1">جدول الدوام</div>
+                            <div class="text-xs text-blue-700 mb-2">
+                                لإدارة جدول الدوام (إضافة/تعديل/حذف الأشهر وتحديد الأيام) يُرجى استخدام تبويب "الجدول" في صفحة عرض الموظف.
+                            </div>
+                            <a href="{% url 'web:view_employee' employee.id %}?tab=schedule"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-md">
+                                <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                                فتح إدارة الجدول
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tab 5: الإفادات والإنذارات -->
+            <div x-show="activeTab === 'warnings'" x-cloak class="p-5">
+                {% if not is_create %}
+                <!-- أرشيف الإفادات -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="archive" class="w-4 h-4 text-slate-600"></i> أرشيف الإفادات والإنذارات
+                    </h3>
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-100 text-slate-600">
+                                <tr>
+                                    <th class="px-3 py-2 text-right font-semibold">#</th>
+                                    <th class="px-3 py-2 text-right font-semibold">النوع</th>
+                                    <th class="px-3 py-2 text-right font-semibold">التاريخ</th>
+                                    <th class="px-3 py-2 text-right font-semibold">العنوان</th>
+                                    <th class="px-3 py-2 text-right font-semibold">التفاصيل</th>
+                                    <th class="px-3 py-2 text-right font-semibold">مرفق</th>
+                                    <th class="px-3 py-2 text-right font-semibold">المستخدم</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for st in employee.statements_log.all %}
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-3 py-2 text-slate-500">{{ forloop.counter }}</td>
+                                    <td class="px-3 py-2">
+                                        {% if st.statement_type == 'warning' or st.statement_type == 'final_warning' %}
+                                        <span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">{{ st.get_statement_type_display }}</span>
+                                        {% elif st.statement_type == 'acknowledgment' %}
+                                        <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">{{ st.get_statement_type_display }}</span>
+                                        {% else %}
+                                        <span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">{{ st.get_statement_type_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-2 text-slate-700">{{ st.statement_date|date:"Y-m-d" }}</td>
+                                    <td class="px-3 py-2 font-medium text-slate-800">{{ st.title }}</td>
+                                    <td class="px-3 py-2 text-slate-600 text-xs max-w-xs truncate" title="{{ st.content }}">{{ st.content|default:"—" }}</td>
+                                    <td class="px-3 py-2">
+                                        {% if st.document %}
+                                        <a href="{{ st.document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs flex items-center gap-1">
+                                            <i data-lucide="file-text" class="w-4 h-4"></i> عرض
+                                        </a>
+                                        {% else %}<span class="text-slate-400 text-xs">—</span>{% endif %}
+                                    </td>
+                                    <td class="px-3 py-2 text-slate-500 text-xs">{{ st.created_by.get_full_name|default:st.created_by.username|default:"—" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="px-3 py-6 text-center text-slate-400 text-sm">لا توجد إفادات أو إنذارات مسجّلة بعد</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="p-4 rounded-lg border border-slate-200 bg-slate-50 text-center text-slate-500 text-sm">
+                    احفظ بيانات الموظف أولاً ليتم عرض الإفادات والإنذارات.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tab 6: المستندات -->
+            <div x-show="activeTab === 'docs'" x-cloak class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div class="space-y-1.5">
+                        {% if employee.commencement_document %}<a href="{{ employee.commencement_document.url }}" target="_blank" class="text-xs text-primary-600 hover:underline block mb-1"><i data-lucide="paperclip" class="w-3 h-3 inline-block"></i> الحالي</a>{% endif %}
+                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' %}
+                    </div>
+                    <div class="space-y-1.5">
+                        {% if employee.id_document %}<a href="{{ employee.id_document.url }}" target="_blank" class="text-xs text-primary-600 hover:underline block mb-1"><i data-lucide="paperclip" class="w-3 h-3 inline-block"></i> الحالي</a>{% endif %}
+                        {% include 'components/file_upload.html' with name='id_document' label='صورة الهوية' accept='image/*,.pdf' %}
+                    </div>
+                    <div class="space-y-1.5">
+                        {% if employee.passport_document %}<a href="{{ employee.passport_document.url }}" target="_blank" class="text-xs text-primary-600 hover:underline block mb-1"><i data-lucide="paperclip" class="w-3 h-3 inline-block"></i> الحالي</a>{% endif %}
+                        {% include 'components/file_upload.html' with name='passport_document' label='جواز السفر' accept='image/*,.pdf' %}
+                    </div>
+                    <div class="space-y-1.5">
+                        {% if employee.contract_document %}<a href="{{ employee.contract_document.url }}" target="_blank" class="text-xs text-primary-600 hover:underline block mb-1"><i data-lucide="paperclip" class="w-3 h-3 inline-block"></i> الحالي</a>{% endif %}
+                        {% include 'components/file_upload.html' with name='contract_document' label='العقد' accept='image/*,.pdf' %}
+                    </div>
+                    <div class="space-y-1.5">
+                        {% if employee.other_documents %}<a href="{{ employee.other_documents.url }}" target="_blank" class="text-xs text-primary-600 hover:underline block mb-1"><i data-lucide="paperclip" class="w-3 h-3 inline-block"></i> الحالي</a>{% endif %}
+                        {% include 'components/file_upload.html' with name='other_documents' label='مستندات أخرى' accept='image/*,.pdf' %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 7: أرشيف الحركة -->
+            <div x-show="activeTab === 'archive'" x-cloak class="p-5">
+                {% if employee.employment_request %}
+                <div class="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5"></i>
+                        <div class="flex-1 text-xs space-y-1">
+                            <p class="font-bold text-emerald-800">تمت الموافقة على طلب التوظيف</p>
+                            <p class="text-slate-600">مقدم الطلب: <span class="font-semibold">{{ employee.employment_request.requested_by.get_full_name|default:employee.employment_request.requested_by.username|default:"-" }}</span></p>
+                            <p class="text-slate-600">تاريخ الطلب: <span class="font-semibold">{{ employee.employment_request.created_at|date:"Y-m-d H:i" }}</span></p>
+                            <p class="text-slate-600">اعتمدها: <span class="font-semibold">{{ employee.employment_request.reviewed_by.get_full_name|default:employee.employment_request.reviewed_by.username|default:"-" }}</span></p>
+                            <p class="text-slate-600">تاريخ الاعتماد: <span class="font-semibold">{{ employee.employment_request.reviewed_at|date:"Y-m-d H:i" }}</span></p>
+                            {% if employee.employment_request.review_notes %}
+                            <p class="text-slate-600">ملاحظات: <span class="font-semibold">{{ employee.employment_request.review_notes }}</span></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="p-4 bg-slate-50 rounded-lg text-center text-xs text-slate-500">
+                    <i data-lucide="info" class="w-4 h-4 inline-block ml-1"></i>
+                    سيظهر هنا أرشيف حركة الموظف (التنقلات بين الفروع، التغييرات في الراتب، إلخ)
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <a href="{% url 'web:list_employees' %}" class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">إلغاء</a>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> {% if is_create %}حفظ الموظف{% else %}حفظ التغييرات{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => { lucide.createIcons(); });
+    document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+</script>
+<style>[x-cloak] { display: none !important; }</style>
+{% endblock %}

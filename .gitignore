@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# Django
+*.sqlite3
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# Django migrations (uncomment if you want to ignore migrations)
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# Media and Static files
+backend/media/
+backend/staticfiles/
+backend/static/admin/
+backend/static/rest_framework/
+
+# Environment variables
+.env
+.env.*
+*.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# Backup files
+*.bak
+*.backup
+*_backup.html
+*_old.*
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker (if needed in future)
+# docker-compose.override.yml
+# Dockerfile.dev
+
+# Temporary files
+*.tmp
+temp/
+tmp/

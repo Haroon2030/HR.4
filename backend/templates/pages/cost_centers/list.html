@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            {% if branch %}
+            <a href="{% url 'web:view_branch' branch.id %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+            </a>
+            {% endif %}
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">مراكز التكلفة</h1>
+                <p class="text-slate-500 text-sm">
+                    {% if branch %}{{ branch.name }}{% else %}جميع مراكز التكلفة في النظام{% endif %}
+                </p>
+            </div>
+        </div>
+        <a href="{% if branch %}{% url 'web:add_cost_center' branch.id %}{% else %}{% url 'web:add_cost_center_global' %}{% endif %}"
+           class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>إضافة مركز تكلفة</span>
+        </a>
+    </div>
+
+    <!-- List -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {% if cost_centers %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 text-right">الرقم</th>
+                        <th class="px-4 py-3 text-right">الاسم</th>
+                        {% if not branch %}<th class="px-4 py-3 text-right">الفرع</th>{% endif %}
+                        <th class="px-4 py-3 text-right">الميزانية</th>
+                        <th class="px-4 py-3 text-right">الحالة</th>
+                        <th class="px-4 py-3 text-right">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for cc in cost_centers %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-slate-900">{{ cc.code }}</td>
+                        <td class="px-4 py-3 text-slate-700">{{ cc.name }}</td>
+                        {% if not branch %}
+                        <td class="px-4 py-3 text-slate-600">{{ cc.branch.name|default:"—" }}</td>
+                        {% endif %}
+                        <td class="px-4 py-3 text-slate-600">{{ cc.budget|floatformat:2 }}</td>
+                        <td class="px-4 py-3">
+                            {% if cc.is_active %}
+                            <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded">نشط</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded">غير نشط</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <a href="{% url 'web:edit_cost_center' cc.id %}"
+                               class="text-primary-600 hover:text-primary-700 text-sm font-medium">تعديل</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i data-lucide="wallet" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+            <p class="text-slate-500">لا توجد مراكز تكلفة بعد</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
