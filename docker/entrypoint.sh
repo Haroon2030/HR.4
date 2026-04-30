@@ -23,10 +23,19 @@ except Exception:
 " 2>/dev/null | tail -1)
 
     if [ "$NEEDS_LOAD" = "1" ]; then
-        echo "==> Database has no employees. Resetting and loading data from /app/data_dump.json ..."
+        echo "==> Database has no employees. Resetting and loading data ..."
         # Flush wipes all rows but keeps schema (fixes partial imports from previous failed runs).
         python manage.py flush --noinput
-        python manage.py loaddata /app/data_dump.json || echo "!! loaddata failed (check above for details)"
+
+        echo "==> Loading main data from /app/data_dump.json ..."
+        python manage.py loaddata /app/data_dump.json || echo "!! main loaddata failed"
+
+        # UserProfile is auto-created by post_save signal on User → wipe & reload to restore real data.
+        if [ -f /app/data_profiles.json ]; then
+            echo "==> Restoring user profiles ..."
+            python manage.py shell -c "from apps.core.models import UserProfile; UserProfile.objects.all().delete()" || true
+            python manage.py loaddata /app/data_profiles.json || echo "!! profiles loaddata failed"
+        fi
     else
         echo "==> Database already has data — skipping loaddata."
     fi
