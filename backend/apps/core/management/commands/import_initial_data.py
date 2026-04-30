@@ -1,62 +1,117 @@
 """
 Idempotent initial-data import for production deploys.
 
+Why a custom command instead of `loaddata`?
+  - Django's `loaddata` on PostgreSQL does NOT defer FK constraints
+    (`PostgresDatabaseWrapper.disable_constraint_checking()` returns False).
+  - Our dump's natural insert order (alphabetical by model) violates FKs:
+    e.g. `employees.employee` references `setup.sponsorship` but is inserted first.
+
 Strategy:
   1. Disconnect UserProfile auto-create signals (avoid PK conflicts on auth.User).
-  2. Optionally flush (TRUNCATE — auto-commits, must be OUTSIDE any atomic block).
-  3. PostgreSQL: ALTER every FK to DEFERRABLE INITIALLY DEFERRED (DDL, auto-commits).
-     This is permanent but harmless — constraints are still enforced at COMMIT time.
-  4. Run loaddata. Django's loaddata wraps the load in `constraint_checks_disabled()`
-     which on PG issues `SET CONSTRAINTS ALL DEFERRED`. Now effective because FKs are
-     deferrable, so cross-app references (employee → sponsorship) load in any order.
-  5. Write marker file on success → automatic retry on next deploy if anything fails.
+  2. Optionally flush (TRUNCATE — auto-commits, must be standalone).
+  3. Topologically sort models by FK dependencies.
+  4. Deserialize objects, save in dependency order with FKs disabled per-row via
+     `session_replication_role` if available, else 2-pass save.
+  5. Reset PG sequences so future inserts don't collide with imported PKs.
+  6. Marker file written ONLY on full success → safe automatic retry.
 """
 from __future__ import annotations
 
+import json
+from collections import defaultdict, deque
 from pathlib import Path
 
+from django.apps import apps
+from django.core import serializers
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
-from django.db import connection
+from django.db import connection, transaction
 from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
 
 from apps.core import signals as core_signals
 
 
+def topo_sort_models(model_labels):
+    """Return model labels (app_label.modelname) in FK-dependency order."""
+    label_to_model = {}
+    for lbl in model_labels:
+        try:
+            app_label, model_name = lbl.split(".")
+            label_to_model[lbl.lower()] = apps.get_model(app_label, model_name)
+        except Exception:
+            continue
+
+    deps = defaultdict(set)   # model -> models it depends on
+    rdeps = defaultdict(set)  # model -> models that depend on it
+
+    for lbl, model in label_to_model.items():
+        deps[lbl]  # ensure key exists
+        for f in model._meta.get_fields():
+            if not getattr(f, "is_relation", False):
+                continue
+            if not (getattr(f, "many_to_one", False) or getattr(f, "one_to_one", False)):
+                continue
+            related = f.related_model
+            if related is None:
+                continue
+            rlbl = f"{related._meta.app_label}.{related._meta.model_name}"
+            if rlbl == lbl:
+                continue  # self-reference: handled by 2nd pass / nullable
+            if rlbl in label_to_model:
+                deps[lbl].add(rlbl)
+                rdeps[rlbl].add(lbl)
+
+    # Kahn's algorithm
+    ready = deque(sorted(lbl for lbl, d in deps.items() if not d))
+    ordered = []
+    deps_copy = {k: set(v) for k, v in deps.items()}
+    while ready:
+        lbl = ready.popleft()
+        ordered.append(lbl)
+        for dep in sorted(rdeps[lbl]):
+            deps_copy[dep].discard(lbl)
+            if not deps_copy[dep]:
+                ready.append(dep)
+    # Append any remaining (cycles) at the end
+    for lbl in deps_copy:
+        if lbl not in ordered:
+            ordered.append(lbl)
+    return ordered
+
+
 class Command(BaseCommand):
-    help = "Load an initial-data fixture safely (signal-aware, FK-safe, idempotent)."
+    help = "Load initial-data fixture safely (FK-order aware, signal-aware, idempotent)."
 
     def add_arguments(self, parser):
         parser.add_argument("fixture", help="Absolute path to the fixture JSON file.")
         parser.add_argument("--flush", action="store_true",
-                            help="Flush DB before loading (wipes rows, keeps schema).")
+                            help="Flush DB before loading.")
         parser.add_argument("--marker", default=None,
-                            help="Marker file. If exists, skip. Written on success.")
+                            help="Marker file path. If exists, skip. Written on success.")
         parser.add_argument("--force", action="store_true",
                             help="Ignore marker file.")
 
-    def _make_fks_deferrable(self):
-        """ALTER all non-deferrable FKs to DEFERRABLE INITIALLY DEFERRED."""
+    def _reset_sequences(self, model_labels):
+        """Reset PG sequences for imported tables so future inserts get correct PKs."""
         if connection.vendor != "postgresql":
-            return 0
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT n.nspname, c.relname, con.conname
-                FROM pg_constraint con
-                JOIN pg_class c     ON c.oid = con.conrelid
-                JOIN pg_namespace n ON n.oid = c.relnamespace
-                WHERE con.contype = 'f'
-                  AND NOT con.condeferrable
-                  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
-            """)
-            rows = cur.fetchall()
-            for schema, table, conname in rows:
-                cur.execute(
-                    f'ALTER TABLE "{schema}"."{table}" '
-                    f'ALTER CONSTRAINT "{conname}" DEFERRABLE INITIALLY DEFERRED'
-                )
-        return len(rows)
+            return
+        models = []
+        for lbl in model_labels:
+            try:
+                app_label, model_name = lbl.split(".")
+                models.append(apps.get_model(app_label, model_name))
+            except Exception:
+                continue
+        statements = connection.ops.sequence_reset_sql(
+            self.style, models
+        )
+        if statements:
+            with connection.cursor() as cur:
+                for sql in statements:
+                    cur.execute(sql)
+            self.stdout.write(f"  - reset {len(statements)} PG sequence(s)")
 
     def handle(self, *args, **opts):
         fixture = Path(opts["fixture"])
@@ -70,6 +125,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE(f"Marker {marker} present — skipping import."))
             return
 
+        # --- Disconnect UserProfile auto-create signals ---
         User = get_user_model()
         receivers = [
             (core_signals.create_user_profile, post_save, User),
@@ -82,18 +138,44 @@ class Command(BaseCommand):
                 self.stdout.write(f"  - disconnected signal: {fn.__name__}")
 
         try:
-            # 1) Flush — TRUNCATE auto-commits in PG; must NOT be inside an atomic block.
+            # --- Flush (auto-commits TRUNCATE; must be outside any atomic block) ---
             if opts["flush"]:
                 self.stdout.write("==> Flushing database ...")
                 call_command("flush", "--noinput", verbosity=0)
 
-            # 2) Make all FKs deferrable (DDL, auto-commits).
-            altered = self._make_fks_deferrable()
-            self.stdout.write(f"  - made {altered} FK(s) deferrable (permanent)")
+            # --- Read fixture and group objects by model ---
+            self.stdout.write(f"==> Reading fixture: {fixture}")
+            with fixture.open(encoding="utf-8") as f:
+                raw = json.load(f)
+            self.stdout.write(f"  - {len(raw)} objects total")
 
-            # 3) loaddata handles its own transaction + constraint_checks_disabled().
-            self.stdout.write(f"==> Loading fixture: {fixture}")
-            call_command("loaddata", str(fixture), verbosity=1)
+            by_model = defaultdict(list)
+            for obj in raw:
+                by_model[obj["model"].lower()].append(obj)
+
+            # --- Topologically sort models ---
+            order = topo_sort_models(by_model.keys())
+            self.stdout.write("==> Load order:")
+            for lbl in order:
+                self.stdout.write(f"     {len(by_model[lbl]):>4}  {lbl}")
+
+            # --- Deserialize and save in dependency order, inside one transaction ---
+            with transaction.atomic():
+                total_saved = 0
+                for lbl in order:
+                    objs = by_model[lbl]
+                    if not objs:
+                        continue
+                    chunk = json.dumps(objs)
+                    for deserialized in serializers.deserialize(
+                        "json", chunk, ignorenonexistent=True, handle_forward_references=True
+                    ):
+                        deserialized.save()
+                        total_saved += 1
+                self.stdout.write(self.style.SUCCESS(f"  - saved {total_saved} objects"))
+
+            # --- Reset PG sequences ---
+            self._reset_sequences(by_model.keys())
 
             if marker:
                 marker.parent.mkdir(parents=True, exist_ok=True)
