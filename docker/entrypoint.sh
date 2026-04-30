@@ -23,19 +23,6 @@ fi
 # If 'admin' already exists, we leave it untouched. Password changes, role edits,
 # and email updates done via the UI are PRESERVED across redeploys.
 # To force a reset: delete the row in auth_user via Adminer, then redeploy.
-# ─── One-time wipe of legacy local file paths after switching to R2 ───────────
-# Runs ONCE per container volume (marker file). Safe to keep in entrypoint:
-# subsequent deploys see the marker and skip.
-if [ ! -f /app/.file_paths_cleared ]; then
-    echo "==> Clearing legacy file paths in DB (one-time, after R2 switch)..."
-    if python manage.py clear_file_paths --apply; then
-        touch /app/.file_paths_cleared
-        echo "==> Done. Marker /app/.file_paths_cleared written."
-    else
-        echo "!! clear_file_paths failed — will retry on next deploy"
-    fi
-fi
-
 echo "==> Checking superuser '${DJANGO_SUPERUSER_USERNAME:-admin}'..."
 python manage.py shell <<PYEOF
 import os
