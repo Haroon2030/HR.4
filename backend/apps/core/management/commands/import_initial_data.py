@@ -16,7 +16,7 @@ from pathlib import Path
 
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
 
@@ -74,6 +74,15 @@ class Command(BaseCommand):
                 if opts["flush"]:
                     self.stdout.write("==> Flushing database ...")
                     call_command("flush", "--noinput", verbosity=0)
+
+                # Defer FK checks to the end of the transaction. Django creates all
+                # FKs as DEFERRABLE INITIALLY DEFERRED on PostgreSQL, so this lets
+                # rows be inserted in any order without violating constraints
+                # mid-transaction (e.g. employee → sponsorship). No-op on SQLite.
+                if connection.vendor == "postgresql":
+                    with connection.cursor() as cur:
+                        cur.execute("SET CONSTRAINTS ALL DEFERRED")
+                    self.stdout.write("  - FK constraints deferred until commit")
 
                 self.stdout.write(f"==> Loading fixture: {fixture}")
                 call_command("loaddata", str(fixture), verbosity=1)
