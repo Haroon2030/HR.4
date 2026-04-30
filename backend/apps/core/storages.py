@@ -34,7 +34,7 @@ class HRMediaStorage(S3Boto3Storage):
         kwargs.setdefault("access_key", getattr(settings, "AWS_ACCESS_KEY_ID", None))
         kwargs.setdefault("secret_key", getattr(settings, "AWS_SECRET_ACCESS_KEY", None))
         kwargs.setdefault("region_name", getattr(settings, "AWS_S3_REGION_NAME", "auto"))
-        kwargs.setdefault("addressing_style", "virtual")
+        kwargs.setdefault("addressing_style", getattr(settings, "AWS_S3_ADDRESSING_STYLE", "path"))
         kwargs.setdefault("signature_version", "s3v4")
         super().__init__(*args, **kwargs)
 

@@ -119,11 +119,16 @@ if USE_R2:
     AWS_SECRET_ACCESS_KEY = env('R2_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET_NAME', default='erphr')
     AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT_URL')
+    # R2 requires region 'auto' for the bucket but boto3/SigV4 needs a real
+    # region for signing. 'auto' works with recent boto3 versions.
     AWS_S3_REGION_NAME = env('R2_REGION', default='auto')
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
     AWS_S3_SIGNATURE_VERSION = 's3v4'
-    AWS_S3_ADDRESSING_STYLE = 'virtual'
+    # Path-style is more reliable with R2's custom endpoint than virtual-host.
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_VERIFY = True
 
     # Optional public custom domain (e.g. media.yourdomain.com).
     # If empty, MEDIA_URL falls back to the bucket endpoint.
