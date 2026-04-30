@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     DJANGO_ENV=production \
     DJANGO_SETTINGS_MODULE=config.settings \
-    PORT=8000
+    PORT=8082
 
 # System deps for psycopg2 + Pillow + build
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -33,7 +33,7 @@ RUN chmod +x /entrypoint.sh
 # Create runtime dirs
 RUN mkdir -p /app/staticfiles /app/media /app/logs
 
-EXPOSE 8000
+EXPOSE 8082
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --timeout 120 --access-logfile - --error-logfile -"]
