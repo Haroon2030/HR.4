@@ -69,6 +69,60 @@
 },
 {
   "model": "core.branch",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-04-25T22:29:59.312Z",
+    "updated_at": "2026-04-25T22:29:59.312Z",
+    "is_deleted": true,
+    "deleted_at": "2026-04-26T12:30:13.770Z",
+    "name": "فرع الرياض الرئيسي",
+    "code": "RHQ",
+    "company": 1,
+    "manager": null,
+    "address": "طريق الملك فهد، الرياض",
+    "phone": "+966112345678",
+    "email": "riyadh@hr-company.com",
+    "is_active": true
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-04-25T22:29:59.325Z",
+    "updated_at": "2026-04-25T22:29:59.325Z",
+    "is_deleted": true,
+    "deleted_at": "2026-04-26T12:30:15.715Z",
+    "name": "فرع جدة",
+    "code": "JED",
+    "company": 1,
+    "manager": null,
+    "address": "طريق الكورنيش، جدة",
+    "phone": "+966122345678",
+    "email": "jeddah@hr-company.com",
+    "is_active": true
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-04-25T22:29:59.337Z",
+    "updated_at": "2026-04-25T22:29:59.337Z",
+    "is_deleted": true,
+    "deleted_at": "2026-04-26T12:30:11.727Z",
+    "name": "فرع الدمام",
+    "code": "DMM",
+    "company": 1,
+    "manager": null,
+    "address": "طريق الملك عبدالعزيز، الدمام",
+    "phone": "+966132345678",
+    "email": "dammam@hr-company.com",
+    "is_active": true
+  }
+},
+{
+  "model": "core.branch",
   "pk": 4,
   "fields": {
     "created_at": "2026-04-26T12:30:43.957Z",
@@ -668,6 +722,19 @@
 },
 {
   "model": "setup.sponsorship",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-04-27T21:01:06.095Z",
+    "updated_at": "2026-04-27T21:01:06.095Z",
+    "is_deleted": true,
+    "deleted_at": "2026-04-28T16:15:25.032Z",
+    "code": "2",
+    "company_name": "مؤسسة رشيد الرشيد",
+    "is_active": true
+  }
+},
+{
+  "model": "setup.sponsorship",
   "pk": 2,
   "fields": {
     "created_at": "2026-04-28T16:15:39.258Z",
@@ -694,6 +761,22 @@
 },
 {
   "model": "cost_centers.costcenter",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-04-26T06:03:33.055Z",
+    "updated_at": "2026-04-26T06:03:33.055Z",
+    "is_deleted": true,
+    "deleted_at": "2026-04-26T12:38:23.081Z",
+    "code": "CC001",
+    "name": "مركز تكلفة المشتريات",
+    "branch": 3,
+    "description": null,
+    "budget": "100000.00",
+    "is_active": true
+  }
+},
+{
+  "model": "cost_centers.costcenter",
   "pk": 2,
   "fields": {
     "created_at": "2026-04-26T19:16:16.540Z",
@@ -705,6 +788,23 @@
     "branch": null,
     "description": null,
     "budget": "0.00",
+    "is_active": true
+  }
+},
+{
+  "model": "departments.department",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-04-26T06:03:33.061Z",
+    "updated_at": "2026-04-26T06:03:33.061Z",
+    "is_deleted": true,
+    "deleted_at": "2026-04-26T12:40:05.727Z",
+    "code": "DEPT001",
+    "name": "قسم المبيعات",
+    "branch": 3,
+    "cost_center": 1,
+    "description": null,
+    "manager": null,
     "is_active": true
   }
 },
