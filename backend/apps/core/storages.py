@@ -27,13 +27,27 @@ PROJECT_PREFIX = "HR"
 
 
 def _r2_client_config() -> Config:
-    return Config(
+    """Build a botocore Config compatible with Cloudflare R2.
+
+    The new integrity checksum headers (added in boto3 1.36) are rejected
+    by R2 with HTTP 400. We disable them when the running botocore
+    version supports those Config keys; on older versions we silently
+    skip (R2 wasn't sending them anyway).
+    """
+    base_kwargs = dict(
         signature_version="s3v4",
         s3={"addressing_style": getattr(settings, "AWS_S3_ADDRESSING_STYLE", "path")},
-        request_checksum_calculation="when_required",
-        response_checksum_validation="when_required",
         retries={"max_attempts": 3, "mode": "standard"},
     )
+    # Only pass the new checksum kwargs if botocore is recent enough.
+    try:
+        return Config(
+            **base_kwargs,
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        )
+    except TypeError:
+        return Config(**base_kwargs)
 
 
 class HRMediaStorage(S3Boto3Storage):
