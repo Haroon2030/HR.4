@@ -26,8 +26,8 @@ RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 # Copy project
 COPY backend/ /app/
 
-# Optional: data dumps for one-time auto-import on first deploy
-COPY data_dump.json* data_profiles.json* /app/
+# Optional: data dump for one-time auto-import on first deploy
+COPY data_dump.json* /app/
 
 # Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
