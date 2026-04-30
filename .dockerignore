@@ -1,0 +1,49 @@
+# Git / VCS
+.git
+.gitignore
+.gitattributes
+.github
+
+# Virtualenv
+.venv
+venv
+env
+
+# Python caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Local DB & logs
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/logs/*
+backend/media/*
+backend/staticfiles/*
+
+# Env files (must NOT be baked in)
+.env
+.env.*
+!.env.example
+backend/.env
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs / misc
+docs
+README.md
+*.md
+!README.md
+
+# Tests / coverage
+.pytest_cache
+.coverage
+htmlcov

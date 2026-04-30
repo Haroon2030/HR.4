@@ -1,118 +1,95 @@
 """
-إعدادات الإنتاج - Production Settings
+إعدادات الإنتاج - Production Settings (Dokploy + PostgreSQL)
 """
 
-from .base import *
-from decouple import config
+import environ
+from .base import *  # noqa: F401,F403
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# ──────────────────────────────────────────────────────────────────────────────
+# Core
+# ──────────────────────────────────────────────────────────────────────────────
+SECRET_KEY = env('SECRET_KEY')
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='72.61.107.230,localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = env.list(
+    'ALLOWED_HOSTS',
+    default=['72.61.107.230', 'localhost', '127.0.0.1'],
+)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Database - MySQL/PostgreSQL for Production
-# ══════════════════════════════════════════════════════════════════════════════
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[
+        'http://72.61.107.230',
+        'http://72.61.107.230:8082',
+    ],
+)
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Database — PostgreSQL via DATABASE_URL
+# Example: postgres://hr_user:PASSWORD@hr-hrdba-xxxx:5432/hr_db
+# ──────────────────────────────────────────────────────────────────────────────
 DATABASES = {
-    'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.mysql'),
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
-    }
+    'default': env.db('DATABASE_URL'),
 }
+DATABASES['default'].setdefault('CONN_MAX_AGE', 60)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Security Settings
-# ══════════════════════════════════════════════════════════════════════════════
-
-SECURE_SSL_REDIRECT = False  # Handled by reverse proxy
+# ──────────────────────────────────────────────────────────────────────────────
+# Security (behind reverse proxy / Traefik in Dokploy)
+# ──────────────────────────────────────────────────────────────────────────────
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = False  # Set to True when using HTTPS
-CSRF_COOKIE_SECURE = False  # Set to True when using HTTPS
+USE_X_FORWARDED_HOST = True
+
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'SAMEORIGIN'
-# SECURE_HSTS_SECONDS = 31536000  # Enable when using HTTPS
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
 
-# ══════════════════════════════════════════════════════════════════════════════
-# CORS - Restricted origins
-# ══════════════════════════════════════════════════════════════════════════════
-
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    'http://72.61.107.230:8096',
-    'http://72.61.107.230',
-    'http://localhost:5173',
-    'http://localhost:8096',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:8096',
-]
+# ──────────────────────────────────────────────────────────────────────────────
+# CORS
+# ──────────────────────────────────────────────────────────────────────────────
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=[
+        'http://72.61.107.230',
+        'http://72.61.107.230:8082',
+    ],
+)
 CORS_ALLOW_CREDENTIALS = True
 
-# ══════════════════════════════════════════════════════════════════════════════
-# REST Framework - Production Settings
-# ══════════════════════════════════════════════════════════════════════════════
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'config.pagination.CustomPagination',
-    'PAGE_SIZE': 8,
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/hour',
-    },
-}
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Logging
-# ══════════════════════════════════════════════════════════════════════════════
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Logging — stdout (container friendly)
+# ──────────────────────────────────────────────────────────────────────────────
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {name} {message}',
             'style': '{',
         },
     },
     'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
     },
     'root': {
-        'handlers': ['file'],
-        'level': 'ERROR',
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
