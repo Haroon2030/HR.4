@@ -7,6 +7,13 @@ python manage.py migrate --noinput
 echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
 
+# One-time data import: set LOAD_INITIAL_DATA=1 in env, then unset after first run.
+if [ "${LOAD_INITIAL_DATA:-0}" = "1" ] && [ -f /app/data_dump.json ] && [ ! -f /app/.data_loaded ]; then
+    echo "==> Loading initial data from /app/data_dump.json..."
+    python manage.py loaddata /app/data_dump.json && touch /app/.data_loaded
+    echo "==> Data load complete. Set LOAD_INITIAL_DATA=0 to skip on next deploy."
+fi
+
 echo "==> Ensuring superuser '${DJANGO_SUPERUSER_USERNAME:-admin}' exists..."
 python manage.py shell <<PYEOF
 import os

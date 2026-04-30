@@ -26,6 +26,9 @@ RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 # Copy project
 COPY backend/ /app/
 
+# Optional: data dump for one-time import via `python manage.py loaddata /app/data_dump.json`
+COPY data_dump.json* /app/
+
 # Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
