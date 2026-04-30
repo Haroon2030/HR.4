@@ -7,13 +7,30 @@ python manage.py migrate --noinput
 echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
 
-# One-time data import: set LOAD_INITIAL_DATA=1 in env, then unset after first run.
-if [ "${LOAD_INITIAL_DATA:-0}" = "1" ] && [ -f /app/data_dump.json ] && [ ! -f /app/.data_loaded ]; then
-    echo "==> Loading initial data from /app/data_dump.json..."
-    python manage.py loaddata /app/data_dump.json && touch /app/.data_loaded
-    echo "==> Data load complete. Set LOAD_INITIAL_DATA=0 to skip on next deploy."
+# ─── Auto-load initial data on first deploy (idempotent) ───────────────────────
+# Loads /app/data_dump.json only if the database is "empty" (no employees yet).
+# Subsequent deploys skip automatically — no env var needed.
+if [ -f /app/data_dump.json ]; then
+    echo "==> Checking if initial data needs to be loaded..."
+    NEEDS_LOAD=$(python manage.py shell -c "
+from django.apps import apps
+from django.db.utils import OperationalError
+try:
+    Employee = apps.get_model('employees', 'Employee')
+    print('1' if Employee.objects.count() == 0 else '0')
+except Exception:
+    print('1')
+" 2>/dev/null | tail -1)
+
+    if [ "$NEEDS_LOAD" = "1" ]; then
+        echo "==> Database is empty. Loading data from /app/data_dump.json ..."
+        python manage.py loaddata /app/data_dump.json || echo "!! loaddata failed (check above for details)"
+    else
+        echo "==> Database already has data — skipping loaddata."
+    fi
 fi
 
+# ─── Ensure superuser exists (admin / 526400) ──────────────────────────────────
 echo "==> Ensuring superuser '${DJANGO_SUPERUSER_USERNAME:-admin}' exists..."
 python manage.py shell <<PYEOF
 import os
