@@ -75,14 +75,29 @@ class Command(BaseCommand):
                     self.stdout.write("==> Flushing database ...")
                     call_command("flush", "--noinput", verbosity=0)
 
-                # Defer FK checks to the end of the transaction. Django creates all
-                # FKs as DEFERRABLE INITIALLY DEFERRED on PostgreSQL, so this lets
-                # rows be inserted in any order without violating constraints
-                # mid-transaction (e.g. employee → sponsorship). No-op on SQLite.
+                # Defer FK checks to the end of the transaction so rows can be
+                # inserted in any order (e.g. employee → sponsorship). Django does
+                # NOT create FKs as DEFERRABLE by default, so we first alter every
+                # non-deferrable FK to DEFERRABLE INITIALLY DEFERRED, then defer.
+                # This is a permanent schema change but is semantically harmless —
+                # constraints are still enforced, just at COMMIT time.
                 if connection.vendor == "postgresql":
                     with connection.cursor() as cur:
+                        cur.execute(
+                            "SELECT conname, conrelid::regclass::text "
+                            "FROM pg_constraint "
+                            "WHERE contype = 'f' AND NOT condeferrable"
+                        )
+                        rows = cur.fetchall()
+                        for conname, tbl in rows:
+                            cur.execute(
+                                f'ALTER TABLE {tbl} ALTER CONSTRAINT "{conname}" '
+                                f'DEFERRABLE INITIALLY DEFERRED'
+                            )
                         cur.execute("SET CONSTRAINTS ALL DEFERRED")
-                    self.stdout.write("  - FK constraints deferred until commit")
+                    self.stdout.write(
+                        f"  - made {len(rows)} FK(s) deferrable; constraints deferred until commit"
+                    )
 
                 self.stdout.write(f"==> Loading fixture: {fixture}")
                 call_command("loaddata", str(fixture), verbosity=1)
