@@ -107,3 +107,39 @@ LOGGING = {
         },
     },
 }
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Cloudflare R2 (S3-compatible) media storage
+# Files organized as:  HR/<operation>/<year>/<filename>
+# ──────────────────────────────────────────────────────────────────────────────
+USE_R2 = env.bool('USE_R2', default=False)
+
+if USE_R2:
+    AWS_ACCESS_KEY_ID = env('R2_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = env('R2_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET_NAME', default='erphr')
+    AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT_URL')
+    AWS_S3_REGION_NAME = env('R2_REGION', default='auto')
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_ADDRESSING_STYLE = 'virtual'
+
+    # Optional public custom domain (e.g. media.yourdomain.com).
+    # If empty, MEDIA_URL falls back to the bucket endpoint.
+    AWS_S3_CUSTOM_DOMAIN = env('R2_PUBLIC_DOMAIN', default='')
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'apps.core.storages.HRMediaStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    else:
+        MEDIA_URL = f'{AWS_S3_ENDPOINT_URL.rstrip("/")}/{AWS_STORAGE_BUCKET_NAME}/'
+
