@@ -125,6 +125,9 @@ def view_employee(request, employee_id):
     statements_count = employee.statements_log.filter(
         statement_type__in=['statement', 'warning', 'final_warning', 'acknowledgment', 'other']
     ).count()
+    salary_adjusts = employee.statements_log.filter(
+        statement_type='salary_adjust'
+    ).select_related('created_by').order_by('-statement_date', '-created_at')
 
     # توقّع الرقم المتسلسل التالي للإفادات (للمعاينة في النموذج)
     from apps.employees.models import EmployeeStatement
@@ -147,6 +150,7 @@ def view_employee(request, employee_id):
         'statements_count': statements_count,
         'next_statement_serial': next_statement_serial,
         'schedule_boxes_json': schedule_boxes,
+        'salary_adjusts': salary_adjusts,
     })
 
 
