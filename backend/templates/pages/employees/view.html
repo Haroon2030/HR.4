@@ -70,6 +70,11 @@
             </div>
             {% endif %}
 
+            <a href="{% url 'web:export_employee_salary_excel' employee.id %}"
+               class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-2">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> تصدير Excel
+            </a>
+
             <a href="{% url 'web:edit_employee' employee.id %}" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2">
                 <i data-lucide="edit-2" class="w-4 h-4"></i> تعديل / إكمال البيانات
             </a>
@@ -777,13 +782,6 @@
 
             <!-- Salary -->
             <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
-                <div class="flex justify-end">
-                    <a href="{% url 'web:export_employee_salary_excel' employee.id %}"
-                       class="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 transition-colors">
-                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
-                        تصدير Excel
-                    </a>
-                </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الراتب الأساسي</div><div class="text-sm text-slate-800">{{ employee.basic_salary|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل السكن</div><div class="text-sm text-slate-800">{{ employee.housing_allowance|default:"—" }}</div></div>

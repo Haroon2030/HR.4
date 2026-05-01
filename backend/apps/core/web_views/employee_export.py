@@ -1,4 +1,4 @@
-"""تصدير راتب الموظف إلى Excel ملوّن."""
+"""تصدير بيانات الموظف إلى Excel ملوّن (بيانات تبويب الموظف فقط)."""
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -11,16 +11,15 @@ from apps.core.web_views._helpers import employee_branch_access_required
 @login_required
 @employee_branch_access_required
 def export_employee_salary_excel(request, employee_id):
-    """يُنشئ ملف Excel ملوّن يحتوي على تفصيل راتب الموظف."""
+    """يُنشئ ملف Excel ملوّن يحتوي على بيانات تبويب الموظف فقط."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.utils import get_column_letter
 
     employee = get_object_or_404(Employee, id=employee_id)
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "كشف راتب"
+    ws.title = "بيانات الموظف"
     ws.sheet_view.rightToLeft = True
 
     # ──────────── أنماط ────────────
@@ -61,7 +60,7 @@ def export_employee_salary_excel(request, employee_id):
     # ──────────── العنوان ────────────
     ws.merge_cells('A1:B1')
     c = ws['A1']
-    c.value = "كشف راتب الموظف"
+    c.value = "بيانات الموظف"
     c.font = title_font
     c.fill = title_fill
     c.alignment = center
@@ -105,73 +104,33 @@ def export_employee_salary_excel(request, employee_id):
         ws.row_dimensions[row].height = 22
         row += 1
 
-    # ──────────── معلومات الموظف ────────────
+    # ──────────── بيانات الموظف (نفس حقول تبويب "بيانات الموظف") ────────────
     section_header("بيانات الموظف")
     kv("الاسم", employee.name)
     kv("رقم الموظف", employee.employee_number)
     kv("رقم الهوية", employee.id_number)
+    kv("الجوال", employee.phone)
+    kv("البريد الإلكتروني", employee.email)
+    kv("الجنسية", getattr(employee.nationality, 'name', None))
+    kv("المهنة", getattr(employee.profession, 'name', None))
+    kv("الكفالة", getattr(employee.sponsorship, 'name', None))
     kv("الفرع", getattr(employee.branch, 'name', None))
     kv("القسم", getattr(employee.department, 'name', None))
-    kv("المهنة", getattr(employee.profession, 'name', None))
+    kv("مركز التكلفة", getattr(employee.cost_center, 'name', None))
     kv("تاريخ المباشرة", employee.hire_date)
-    kv("الحالة", employee.get_status_display())
-    row += 1
-
-    # ──────────── تفصيل الراتب ────────────
-    section_header("تفصيل الراتب")
-    kv("الراتب الأساسي", float(employee.basic_salary or 0), salary_label_fill, salary_value_fill)
-    kv("بدل السكن", float(employee.housing_allowance or 0), allowance_label_fill, allowance_fill)
-    kv("بدل النقل", float(employee.transport_allowance or 0), allowance_label_fill, allowance_fill)
-    kv("بدل إضافي", float(employee.other_allowance or 0), allowance_label_fill, allowance_fill)
-    kv("نقدي / كاش", float(employee.cash_amount or 0), allowance_label_fill, allowance_fill)
-    row += 1
-
-    # ──────────── الاستقطاعات ────────────
-    section_header("الاستقطاعات والتأمين")
-    kv("نسبة خصم التأمينات (%)", float(employee.insurance_deduction_rate or 0), deduction_label_fill, deduction_fill)
-    kv("التأمين الطبي", getattr(employee.insurance, 'name', None))
+    kv("تاريخ الانتهاء", employee.end_date)
+    kv("تاريخ انتهاء الجواز", employee.passport_expiry_date)
+    kv("التأمين", getattr(employee.insurance, 'name', None))
     kv("فئة التأمين", getattr(employee.insurance_class, 'name', None))
-
-    # احتساب الخصم
-    basic = float(employee.basic_salary or 0)
-    rate = float(employee.insurance_deduction_rate or 0)
-    deduction_amount = round(basic * rate / 100, 2)
-    kv("قيمة خصم التأمينات", deduction_amount, deduction_label_fill, deduction_fill)
-    row += 1
-
-    # ──────────── الإجمالي ────────────
-    gross = (
-        float(employee.basic_salary or 0)
-        + float(employee.housing_allowance or 0)
-        + float(employee.transport_allowance or 0)
-        + float(employee.other_allowance or 0)
-        + float(employee.cash_amount or 0)
-    )
-    net = gross - deduction_amount
-
-    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
-    c = ws.cell(row=row, column=1, value=f"إجمالي الراتب قبل الخصم: {gross:,.2f}")
-    c.font = Font(name='Arial', size=12, bold=True, color='1E40AF')
-    c.fill = PatternFill('solid', fgColor='DBEAFE')
-    c.alignment = center
-    c.border = border
-    ws.row_dimensions[row].height = 28
-    row += 1
-
-    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
-    c = ws.cell(row=row, column=1, value=f"صافي الراتب المستحق: {net:,.2f}")
-    c.font = total_font
-    c.fill = total_fill
-    c.alignment = center
-    c.border = border
-    ws.row_dimensions[row].height = 36
+    kv("الحالة", employee.get_status_display())
+    kv("سبب الانتهاء", employee.end_reason)
 
     # ──────────── إخراج الملف ────────────
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     safe_name = (employee.name or 'employee').replace(' ', '_')
-    filename = f"salary_{safe_name}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+    filename = f"employee_{safe_name}_{timezone.now().strftime('%Y%m%d')}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
