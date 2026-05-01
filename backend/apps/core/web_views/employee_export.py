@@ -76,10 +76,10 @@ def export_employee_salary_excel(request, employee_id):
         ("سبب الانتهاء", employee.end_reason),
     ]
 
-    # عرض الأعمدة
+    # عرض الأعمدة (مضغوط)
     for idx, (label, _v) in enumerate(columns, start=1):
         col_letter = get_column_letter(idx)
-        ws.column_dimensions[col_letter].width = max(16, len(label) + 6)
+        ws.column_dimensions[col_letter].width = 14
 
     n = len(columns)
     last_col = get_column_letter(n)
@@ -100,26 +100,28 @@ def export_employee_salary_excel(request, employee_id):
     c.alignment = center
     ws.row_dimensions[2].height = 22
 
-    # صف العناوين (الأعمدة)
+    # صف العناوين (الأعمدة) - بخط أصغر والتفاف للأسطر
     header_row = 4
+    compact_header_font = Font(name='Arial', size=10, bold=True, color='FFFFFF')
     for idx, (label, _v) in enumerate(columns, start=1):
         c = ws.cell(row=header_row, column=idx, value=label)
-        c.font = header_font
+        c.font = compact_header_font
         c.fill = header_fill
         c.alignment = center
         c.border = border
-    ws.row_dimensions[header_row].height = 32
+    ws.row_dimensions[header_row].height = 48
 
     # صف القيم
     value_row = header_row + 1
+    compact_value_font = Font(name='Arial', size=10, color='0F172A')
     for idx, (_label, value) in enumerate(columns, start=1):
         c = ws.cell(row=value_row, column=idx,
                     value=value if value not in (None, '') else '—')
-        c.font = value_font
+        c.font = compact_value_font
         c.fill = value_fill
         c.alignment = center
         c.border = border
-    ws.row_dimensions[value_row].height = 26
+    ws.row_dimensions[value_row].height = 22
 
     # تجميد صف العناوين
     ws.freeze_panes = ws.cell(row=value_row, column=1)
