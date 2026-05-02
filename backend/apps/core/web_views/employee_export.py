@@ -79,7 +79,7 @@ def export_employee_salary_excel(request, employee_id):
     # عرض الأعمدة (مضغوط)
     for idx, (label, _v) in enumerate(columns, start=1):
         col_letter = get_column_letter(idx)
-        ws.column_dimensions[col_letter].width = 14
+        ws.column_dimensions[col_letter].width = 10
 
     n = len(columns)
     last_col = get_column_letter(n)
@@ -102,18 +102,18 @@ def export_employee_salary_excel(request, employee_id):
 
     # صف العناوين (الأعمدة) - بخط أصغر والتفاف للأسطر
     header_row = 4
-    compact_header_font = Font(name='Arial', size=10, bold=True, color='FFFFFF')
+    compact_header_font = Font(name='Arial', size=9, bold=True, color='FFFFFF')
     for idx, (label, _v) in enumerate(columns, start=1):
         c = ws.cell(row=header_row, column=idx, value=label)
         c.font = compact_header_font
         c.fill = header_fill
         c.alignment = center
         c.border = border
-    ws.row_dimensions[header_row].height = 48
+    ws.row_dimensions[header_row].height = 60
 
     # صف القيم
     value_row = header_row + 1
-    compact_value_font = Font(name='Arial', size=10, color='0F172A')
+    compact_value_font = Font(name='Arial', size=9, color='0F172A')
     for idx, (_label, value) in enumerate(columns, start=1):
         c = ws.cell(row=value_row, column=idx,
                     value=value if value not in (None, '') else '—')
