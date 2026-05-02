@@ -36,3 +36,22 @@ def notify_branch_on_pending_action_created(sender, instance, created, **kwargs)
     except Exception:
         # لا نُفشل المعاملة بسبب فشل الإشعار
         pass
+
+
+def _register_employment_request_signal():
+    """تسجيل إشعار إنشاء طلب توظيف (lazy لتجنّب دوّار الاستيراد)."""
+    from apps.employees.models import EmploymentRequest
+
+    @receiver(post_save, sender=EmploymentRequest, weak=False,
+              dispatch_uid='notify_branch_on_employment_request_created')
+    def _notify(sender, instance, created, **kwargs):
+        if not created:
+            return
+        try:
+            from apps.core.services.employment_requests import notify_branch_on_create
+            notify_branch_on_create(instance)
+        except Exception:
+            pass
+
+
+_register_employment_request_signal()

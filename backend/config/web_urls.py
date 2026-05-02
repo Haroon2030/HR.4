@@ -36,9 +36,11 @@ urlpatterns = [
     path('employees/<int:employee_id>/schedule/', web_views.set_work_schedule, name='set_work_schedule'),
     path('employees/<int:employee_id>/salary/export/', web_views.export_employee_salary_excel, name='export_employee_salary_excel'),
 
-    # Employment Requests (مدير الفرع)
+    # Employment Requests (دورة ثلاثية: مدير فرع → مدير الموارد → أخصائي)
     path('employment-requests/', web_views.list_employment_requests, name='list_employment_requests'),
     path('employment-requests/<int:request_id>/approve/', web_views.approve_employment_request, name='approve_employment_request'),
+    path('employment-requests/<int:request_id>/gm-approve/', web_views.gm_approve_employment_request, name='gm_approve_employment_request'),
+    path('employment-requests/<int:request_id>/officer-approve/', web_views.officer_approve_employment_request, name='officer_approve_employment_request'),
     path('employment-requests/<int:request_id>/reject/', web_views.reject_employment_request, name='reject_employment_request'),
 
     # Pending Actions (دورة موافقات متعدّدة المراحل)

@@ -8,23 +8,35 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">طلبات التوظيف</h1>
-            <p class="text-slate-500 text-xs">مراجعة طلبات التوظيف الواردة لفروعك</p>
+            <p class="text-slate-500 text-xs">دورة موافقات: مدير الفرع ← مدير الموارد البشرية ← أخصائي الموارد</p>
         </div>
     </div>
 
     {% include "components/operations_tabs.html" %}
 
     <!-- Status Filters -->
-    <div class="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2">
-        <a href="?status=pending" class="px-4 py-2 rounded-lg text-sm font-semibold transition-colors {% if current_status == 'pending' %}bg-amber-100 text-amber-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+    <div class="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 p-2">
+        <a href="?status=pending" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending' %}bg-amber-100 text-amber-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
             <i data-lucide="clock" class="w-4 h-4 inline-block ml-1"></i>
-            قيد المراجعة
+            قيد المراجعة (الكل)
         </a>
-        <a href="?status=approved" class="px-4 py-2 rounded-lg text-sm font-semibold transition-colors {% if current_status == 'approved' %}bg-emerald-100 text-emerald-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+        <a href="?status=pending_branch" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending_branch' %}bg-primary-100 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+            <i data-lucide="user-check" class="w-4 h-4 inline-block ml-1"></i>
+            مدير الفرع
+        </a>
+        <a href="?status=pending_gm" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending_gm' %}bg-amber-100 text-amber-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+            <i data-lucide="user-cog" class="w-4 h-4 inline-block ml-1"></i>
+            مدير الموارد
+        </a>
+        <a href="?status=pending_officer" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending_officer' %}bg-indigo-100 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+            <i data-lucide="clipboard-check" class="w-4 h-4 inline-block ml-1"></i>
+            الأخصائي
+        </a>
+        <a href="?status=approved" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'approved' %}bg-emerald-100 text-emerald-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
             <i data-lucide="check-circle" class="w-4 h-4 inline-block ml-1"></i>
             مقبولة
         </a>
-        <a href="?status=rejected" class="px-4 py-2 rounded-lg text-sm font-semibold transition-colors {% if current_status == 'rejected' %}bg-red-100 text-red-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+        <a href="?status=rejected" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'rejected' %}bg-red-100 text-red-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
             <i data-lucide="x-circle" class="w-4 h-4 inline-block ml-1"></i>
             مرفوضة
         </a>
@@ -36,15 +48,15 @@
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 border-b border-slate-200">
                     <tr>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الموظف</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الفرع</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">القسم</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">مركز التكلفة</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">المستند</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">مقدم الطلب</th>
-                        <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">التاريخ</th>
-                        <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">#</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">اسم الموظف</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">الفرع</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">القسم</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">المرحلة</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">المستند</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">مقدم الطلب</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">التاريخ</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -54,7 +66,21 @@
                         <td class="px-3 py-2 text-xs font-medium text-slate-900">{{ r.name }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.branch.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.department.name|default:"-" }}</td>
-                        <td class="px-3 py-2 text-xs text-slate-500">{{ r.cost_center.name|default:"-" }}</td>
+                        <td class="px-3 py-2 text-xs">
+                            {% if r.status == 'pending_branch' or r.status == 'pending' %}
+                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-primary-100 text-primary-700">بانتظار مدير الفرع</span>
+                            {% elif r.status == 'pending_gm' %}
+                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700">بانتظار مدير الموارد</span>
+                            {% elif r.status == 'pending_officer' %}
+                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-700">
+                                    أخصائي: {{ r.assigned_officer.get_full_name|default:r.assigned_officer.username|default:"—" }}
+                                </span>
+                            {% elif r.status == 'approved' %}
+                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">مقبول</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">مرفوض</span>
+                            {% endif %}
+                        </td>
                         <td class="px-3 py-2 text-xs">
                             {% if r.commencement_document %}
                                 <a href="{{ r.commencement_document.url }}" target="_blank" class="text-primary-600 hover:underline inline-flex items-center gap-1">
@@ -65,28 +91,61 @@
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.requested_by.get_full_name|default:r.requested_by.username|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.created_at|date:"Y-m-d H:i" }}</td>
                         <td class="px-3 py-2 text-left">
-                            <div class="flex items-center justify-end gap-2">
-                                {% if r.status == 'pending' %}
-                                    <form method="POST" action="{% url 'web:approve_employment_request' r.id %}" class="inline" onsubmit="return confirm('الموافقة على هذا الطلب وإضافته لقائمة الموظفين؟');">
+                            <div class="flex items-center justify-end gap-2 flex-wrap">
+
+                                {% if r.status == 'pending_branch' or r.status == 'pending' %}
+                                    {% if is_branch_manager or request.user.is_superuser %}
+                                    <form method="POST" action="{% url 'web:approve_employment_request' r.id %}" class="inline" onsubmit="return confirm('الموافقة وتحويل الطلب لمدير الموارد البشرية؟');">
                                         {% csrf_token %}
-                                        <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors inline-flex items-center gap-1">
-                                            <i data-lucide="check" class="w-3 h-3"></i> موافقة
+                                        <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded inline-flex items-center gap-1">
+                                            <i data-lucide="check" class="w-3 h-3"></i> موافقة (مدير الفرع)
                                         </button>
                                     </form>
-                                    <form method="POST" action="{% url 'web:reject_employment_request' r.id %}" class="inline" onsubmit="return confirm('رفض هذا الطلب؟');">
+                                    {% endif %}
+
+                                {% elif r.status == 'pending_gm' %}
+                                    {% if is_general_manager or request.user.is_superuser %}
+                                    <form method="POST" action="{% url 'web:gm_approve_employment_request' r.id %}" class="flex items-center gap-1" onsubmit="return this.assigned_officer.value && confirm('الموافقة وإسناد الطلب للأخصائي المختار؟');">
                                         {% csrf_token %}
-                                        <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors inline-flex items-center gap-1">
-                                            <i data-lucide="x" class="w-3 h-3"></i> رفض
+                                        <select name="assigned_officer" required class="px-2 py-1 text-xs border border-slate-300 rounded">
+                                            <option value="">اختر أخصائي...</option>
+                                            {% for o in hr_officers %}
+                                                <option value="{{ o.id }}">{{ o.get_full_name|default:o.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded inline-flex items-center gap-1">
+                                            <i data-lucide="check" class="w-3 h-3"></i> موافقة + إسناد
                                         </button>
                                     </form>
+                                    {% endif %}
+
+                                {% elif r.status == 'pending_officer' %}
+                                    {% if r.assigned_officer_id == request.user.id or request.user.is_superuser %}
+                                    <form method="POST" action="{% url 'web:officer_approve_employment_request' r.id %}" class="inline" onsubmit="return confirm('الموافقة النهائية وإضافة الموظف لقائمة العاملين؟');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded inline-flex items-center gap-1">
+                                            <i data-lucide="check-check" class="w-3 h-3"></i> موافقة نهائية
+                                        </button>
+                                    </form>
+                                    {% endif %}
+
                                 {% elif r.status == 'approved' %}
                                     <span class="px-2 py-1 text-xs font-semibold rounded bg-emerald-100 text-emerald-700">
-                                        <i data-lucide="check-circle" class="w-3 h-3 inline-block"></i> مقبول
+                                        <i data-lucide="check-circle" class="w-3 h-3 inline-block"></i> مكتمل
                                     </span>
                                 {% else %}
                                     <span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-700">
                                         <i data-lucide="x-circle" class="w-3 h-3 inline-block"></i> مرفوض
                                     </span>
+                                {% endif %}
+
+                                {% if r.status != 'approved' and r.status != 'rejected' %}
+                                <form method="POST" action="{% url 'web:reject_employment_request' r.id %}" class="inline" onsubmit="return confirm('رفض هذا الطلب نهائياً؟');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded inline-flex items-center gap-1">
+                                        <i data-lucide="x" class="w-3 h-3"></i> رفض
+                                    </button>
+                                </form>
                                 {% endif %}
                             </div>
                         </td>

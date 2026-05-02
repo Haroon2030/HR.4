@@ -34,7 +34,10 @@ def dashboard_view(request):
         context['is_branch_manager'] = True
         qs = EmploymentRequest.objects.select_related(
             'branch', 'department', 'cost_center', 'requested_by'
-        ).filter(status=EmploymentRequest.Status.PENDING)
+        ).filter(status__in=[
+            EmploymentRequest.Status.PENDING,
+            EmploymentRequest.Status.PENDING_BRANCH,
+        ])
         if not request.user.is_superuser:
             managed = list(request.user.managed_branches.values_list('id', flat=True))
             qs = qs.filter(branch_id__in=managed)

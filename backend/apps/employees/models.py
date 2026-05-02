@@ -18,7 +18,10 @@ class EmploymentRequest(BaseModel):
     """طلب توظيف ينشئه الأخصائي وينتظر موافقة مدير الفرع"""
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'قيد المراجعة'
+        PENDING = 'pending', 'قيد المراجعة'  # legacy — تجري ترقيتها إلى PENDING_BRANCH
+        PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'
+        PENDING_GM = 'pending_gm', 'بانتظار مدير الموارد'
+        PENDING_OFFICER = 'pending_officer', 'بانتظار أخصائي الموارد'
         APPROVED = 'approved', 'مقبول'
         REJECTED = 'rejected', 'مرفوض'
 
@@ -41,7 +44,7 @@ class EmploymentRequest(BaseModel):
     )
 
     status = models.CharField(
-        "الحالة", max_length=20, choices=Status.choices, default=Status.PENDING
+        "الحالة", max_length=20, choices=Status.choices, default=Status.PENDING_BRANCH
     )
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -55,6 +58,32 @@ class EmploymentRequest(BaseModel):
     )
     reviewed_at = models.DateTimeField("تاريخ المراجعة", null=True, blank=True)
     review_notes = models.TextField("ملاحظات المراجعة", blank=True)
+
+    # ─ دورة الموافقات متعدّدة المراحل ───────────────────────────
+    branch_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='branch_reviewed_employment_requests',
+        verbose_name="مدير الفرع المراجِع", null=True, blank=True,
+    )
+    branch_reviewed_at = models.DateTimeField("تاريخ موافقة مدير الفرع", null=True, blank=True)
+    branch_notes = models.TextField("ملاحظات مدير الفرع", blank=True)
+
+    gm_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='gm_reviewed_employment_requests',
+        verbose_name="مدير الموارد المراجِع", null=True, blank=True,
+    )
+    gm_reviewed_at = models.DateTimeField("تاريخ موافقة مدير الموارد", null=True, blank=True)
+    gm_notes = models.TextField("ملاحظات مدير الموارد", blank=True)
+
+    assigned_officer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='assigned_employment_requests',
+        verbose_name="أخصائي الموارد المُسند", null=True, blank=True,
+    )
+    assigned_at = models.DateTimeField("تاريخ الإسناد", null=True, blank=True)
+    officer_reviewed_at = models.DateTimeField("تاريخ موافقة الأخصائي", null=True, blank=True)
+    officer_notes = models.TextField("ملاحظات الأخصائي", blank=True)
 
     history = HistoricalRecords()
 
