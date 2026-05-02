@@ -8,15 +8,41 @@ echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
 
 # ─── Auto-load initial data on first deploy (idempotent via marker file) ──────
-# Uses the custom `import_initial_data` command which:
-#   - disconnects UserProfile auto-create signals during loaddata (avoids PK conflicts)
-#   - flushes the DB first (clears any partial state from previous failed deploys)
-#   - writes a marker file ONLY on full success → safe automatic retry on failure
-if [ -f /app/data_dump.json ]; then
-    python manage.py import_initial_data /app/data_dump.json \
-        --flush \
-        --marker /app/.data_loaded \
-        || echo "!! import_initial_data failed — will retry on next deploy"
+# DOUBLE-SAFE: never flushes if the DB already contains user data, even if the
+# marker file is missing (e.g. container recreated without a persistent volume).
+#
+# Marker file logic alone:
+#   - First deploy: marker absent → flush + load → write marker.
+#   - Subsequent: marker present → skip entirely → DB preserved.
+#
+# Extra safety check below: if Branch / Employee / Role rows exist, we ALWAYS
+# skip the import — even when the marker is missing. This prevents accidental
+# data loss when the marker volume is lost.
+if [ -f /app/data_dump.json ] && [ ! -f /app/.data_loaded ]; then
+    HAS_DATA=$(python manage.py shell -c "
+from django.db import connection
+try:
+    with connection.cursor() as c:
+        for table in ['core_branch', 'employees_employee', 'core_role']:
+            c.execute(f'SELECT COUNT(*) FROM {table}')
+            if c.fetchone()[0] > 0:
+                print('YES'); break
+        else:
+            print('NO')
+except Exception:
+    print('NO')
+" 2>/dev/null | tail -n 1)
+
+    if [ "$HAS_DATA" = "YES" ]; then
+        echo "==> Database already contains data — creating marker WITHOUT import (safety)."
+        touch /app/.data_loaded
+    else
+        echo "==> Empty database detected — loading initial data from data_dump.json ..."
+        python manage.py import_initial_data /app/data_dump.json \
+            --flush \
+            --marker /app/.data_loaded \
+            || echo "!! import_initial_data failed — will retry on next deploy"
+    fi
 fi
 
 # ─── Ensure superuser exists (created ONCE on first deploy, never overwritten) ─
