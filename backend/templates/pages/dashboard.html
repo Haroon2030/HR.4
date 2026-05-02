@@ -82,5 +82,136 @@
         {% endif %}
     </div>
     {% endif %}
+
+    {% if is_hr_officer %}
+    <!-- ─── طلبات التوظيف المُسندة لأخصائي الموارد ─── -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-indigo-50">
+            <div class="flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i>
+                <h3 class="text-sm md:text-base font-bold text-slate-800">طلبات توظيف مُسندة إليك</h3>
+                {% if officer_employment_requests %}
+                <span class="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-800 rounded-full">{{ officer_employment_requests|length }}</span>
+                {% endif %}
+            </div>
+            <a href="{% url 'web:list_employment_requests' %}?status=pending_officer" class="text-xs md:text-sm text-indigo-600 hover:underline flex items-center gap-1">
+                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+        {% if officer_employment_requests %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">اسم الموظف</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">القسم</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">تاريخ الإسناد</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">المستند</th>
+                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for req in officer_employment_requests %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-slate-800">{{ req.name }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ req.branch.name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ req.department.name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">{{ req.assigned_at|date:"Y-m-d H:i" }}</td>
+                        <td class="px-4 py-3">
+                            {% if req.commencement_document %}
+                            <a href="{{ req.commencement_document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs flex items-center gap-1">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> عرض
+                            </a>
+                            {% else %}<span class="text-slate-400 text-xs">—</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-2">
+                                <form method="post" action="{% url 'web:officer_approve_employment_request' req.id %}" class="inline" onsubmit="return confirm('الموافقة النهائية وإضافة الموظف لقائمة العاملين؟');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1">
+                                        <i data-lucide="check-check" class="w-4 h-4"></i> اعتماد نهائي
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'web:reject_employment_request' req.id %}" class="inline" onsubmit="return confirm('رفض هذا الطلب؟');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-1">
+                                        <i data-lucide="x" class="w-4 h-4"></i> رفض
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-slate-400">
+            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
+            <p class="text-sm">لا توجد طلبات توظيف مُسندة إليك حالياً</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ─── عمليات أخرى مُسندة (إجازات، رواتب، نقل...) ─── -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-amber-50">
+            <div class="flex items-center gap-2">
+                <i data-lucide="clipboard-check" class="w-5 h-5 text-amber-600"></i>
+                <h3 class="text-sm md:text-base font-bold text-slate-800">عمليات مُسندة إليك</h3>
+                {% if officer_pending_actions %}
+                <span class="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 rounded-full">{{ officer_pending_actions|length }}</span>
+                {% endif %}
+            </div>
+            <a href="{% url 'web:list_pending_actions' %}?tab=pending_officer" class="text-xs md:text-sm text-amber-600 hover:underline flex items-center gap-1">
+                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+        {% if officer_pending_actions %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">نوع العملية</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">الموظف</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold">تاريخ الإسناد</th>
+                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for a in officer_pending_actions %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-slate-800">{{ a.get_action_type_display }}</td>
+                        <td class="px-4 py-3 text-slate-700">{{ a.employee.name }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ a.employee.branch.name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ a.requested_by.get_full_name|default:a.requested_by.username }}</td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">{{ a.assigned_at|date:"Y-m-d H:i" }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'web:pending_action_detail' a.id %}" class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-1">
+                                    <i data-lucide="eye" class="w-4 h-4"></i> عرض ومعالجة
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-slate-400">
+            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
+            <p class="text-sm">لا توجد عمليات مُسندة إليك حالياً</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
