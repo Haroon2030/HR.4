@@ -146,6 +146,7 @@ class Role(BaseModel):
     class RoleType(models.TextChoices):
         ADMIN = 'admin', 'مدير النظام'
         HR_MANAGER = 'hr_manager', 'مدير موارد بشرية'
+        HR_OFFICER = 'hr_officer', 'موظف موارد'
         MANAGER = 'manager', 'مدير قسم'
         SPECIALIST = 'specialist', 'أخصائي'
         EMPLOYEE = 'employee', 'موظف'
@@ -335,13 +336,17 @@ class UserProfile(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# طلبات العمليات السريعة المعلّقة (تنتظر موافقة مدير الفرع)
+# طلبات العمليات السريعة المعلّقة (دورة موافقات متعددة المراحل)
 # ══════════════════════════════════════════════════════════════════════════════
 class PendingAction(BaseModel):
     """
-    طلب عملية سريعة معلّقة على موظف، يحتاج موافقة مدير الفرع قبل التنفيذ.
-    تُستخدم لـ: الإجازة / النقل / تعديل الراتب / إنهاء الخدمة / إعادة التنشيط.
-    الإفادات والحضور لا تمرّ من هنا.
+    طلب عملية معلّق على موظف يمرّ بأربع مراحل قبل التنفيذ:
+       1) الأخصائي ينشئ الطلب                       → pending_branch
+       2) مدير الفرع يوافق                          → pending_gm
+       3) المدير العام يوافق ويسند لموظف موارد       → pending_officer
+       4) موظف الموارد يوافق فيُنفَّذ تلقائياً        → approved
+    أي رفض في أي مرحلة يُعيد الطلب إلى الأخصائي بحالة returned مع ملاحظات،
+    ويستطيع تعديله وإعادة إرساله ليبدأ من جديد من مدير الفرع.
     """
 
     class ActionType(models.TextChoices):
@@ -352,16 +357,23 @@ class PendingAction(BaseModel):
         REACTIVATE = 'reactivate', 'إعادة تنشيط'
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'بانتظار الموافقة'
-        APPROVED = 'approved', 'موافق عليه'
-        REJECTED = 'rejected', 'مرفوض'
+        PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'
+        PENDING_GM = 'pending_gm', 'بانتظار المدير العام'
+        PENDING_OFFICER = 'pending_officer', 'بانتظار موظف الموارد'
+        APPROVED = 'approved', 'مُنفَّذ'
+        RETURNED = 'returned', 'مُرتجَع للتعديل'
+
+    class Stage(models.TextChoices):
+        BRANCH = 'branch', 'مدير الفرع'
+        GM = 'gm', 'المدير العام'
+        OFFICER = 'officer', 'موظف الموارد'
 
     action_type = models.CharField(
         "نوع العملية", max_length=20, choices=ActionType.choices, db_index=True
     )
     status = models.CharField(
-        "الحالة", max_length=12, choices=Status.choices,
-        default=Status.PENDING, db_index=True
+        "الحالة", max_length=20, choices=Status.choices,
+        default=Status.PENDING_BRANCH, db_index=True
     )
 
     employee = models.ForeignKey(
@@ -381,24 +393,65 @@ class PendingAction(BaseModel):
         validators=DOCUMENT_VALIDATORS,
     )
 
-    # تتبّع الطلب
+    # ── تتبّع الإنشاء ──
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name='requested_pending_actions', verbose_name="مقدّم الطلب"
     )
     requested_at = models.DateTimeField("تاريخ الطلب", auto_now_add=True)
 
-    # تتبّع المراجعة
-    reviewed_by = models.ForeignKey(
+    # ── المرحلة 1: مدير الفرع ──
+    branch_reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='reviewed_pending_actions', verbose_name="راجعها"
+        related_name='branch_reviewed_actions', verbose_name="موافقة مدير الفرع"
     )
-    reviewed_at = models.DateTimeField("تاريخ المراجعة", null=True, blank=True)
-    review_notes = models.TextField("ملاحظات المراجعة", blank=True)
+    branch_reviewed_at = models.DateTimeField("تاريخ موافقة مدير الفرع", null=True, blank=True)
+    branch_notes = models.TextField("ملاحظات مدير الفرع", blank=True)
 
-    # نتيجة التنفيذ بعد الموافقة
+    # ── المرحلة 2: المدير العام ──
+    gm_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='gm_reviewed_actions', verbose_name="موافقة المدير العام"
+    )
+    gm_reviewed_at = models.DateTimeField("تاريخ موافقة المدير العام", null=True, blank=True)
+    gm_notes = models.TextField("ملاحظات المدير العام", blank=True)
+
+    # ── المرحلة 3: الإسناد لموظف موارد ──
+    assigned_officer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='assigned_pending_actions', verbose_name="موظف الموارد المُعيَّن"
+    )
+    assigned_at = models.DateTimeField("تاريخ التعيين", null=True, blank=True)
+
+    # ── المرحلة 4: موظف الموارد ──
+    officer_reviewed_at = models.DateTimeField("تاريخ موافقة موظف الموارد", null=True, blank=True)
+    officer_notes = models.TextField("ملاحظات موظف الموارد", blank=True)
+
+    # ── الإرجاع للتعديل ──
+    returned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='returned_pending_actions', verbose_name="مَن أرجعه"
+    )
+    returned_at = models.DateTimeField("تاريخ الإرجاع", null=True, blank=True)
+    returned_from_stage = models.CharField(
+        "المرحلة التي رُجِع منها", max_length=10,
+        choices=Stage.choices, blank=True, default=''
+    )
+    return_notes = models.TextField("ملاحظات الإرجاع", blank=True)
+    resubmit_count = models.PositiveSmallIntegerField("عدد مرات إعادة الإرسال", default=0)
+
+    # ── نتيجة التنفيذ بعد الموافقة النهائية ──
     executed_at = models.DateTimeField("تاريخ التنفيذ", null=True, blank=True)
     execution_error = models.TextField("خطأ التنفيذ", blank=True)
+
+    # ── حقول قديمة (للتوافق فقط — لم تعد مستخدمة) ──
+    # نُبقي reviewed_by / reviewed_at / review_notes كحقول مهجورة لتفادي data loss
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reviewed_pending_actions', verbose_name="(قديم) راجعها"
+    )
+    reviewed_at = models.DateTimeField("(قديم) تاريخ المراجعة", null=True, blank=True)
+    review_notes = models.TextField("(قديم) ملاحظات المراجعة", blank=True)
 
     history = HistoricalRecords()
 
@@ -409,12 +462,86 @@ class PendingAction(BaseModel):
         indexes = [
             models.Index(fields=['status', '-requested_at']),
             models.Index(fields=['branch', 'status']),
+            models.Index(fields=['assigned_officer', 'status']),
         ]
 
     def __str__(self):
         return f"{self.get_action_type_display()} — {self.employee.name} ({self.get_status_display()})"
 
+    # ── خصائص مساعدة ──
     @property
     def is_pending(self):
-        return self.status == self.Status.PENDING
+        return self.status in {
+            self.Status.PENDING_BRANCH,
+            self.Status.PENDING_GM,
+            self.Status.PENDING_OFFICER,
+        }
+
+    @property
+    def is_done(self):
+        return self.status == self.Status.APPROVED
+
+    @property
+    def current_stage(self):
+        """يُرجع الجهة المنتظَر منها الإجراء حالياً (Stage) أو None."""
+        mapping = {
+            self.Status.PENDING_BRANCH: self.Stage.BRANCH,
+            self.Status.PENDING_GM: self.Stage.GM,
+            self.Status.PENDING_OFFICER: self.Stage.OFFICER,
+        }
+        return mapping.get(self.status)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# الإشعارات الداخلية (الجرس)
+# ══════════════════════════════════════════════════════════════════════════════
+class Notification(BaseModel):
+    """إشعار داخل النظام يظهر للمستخدم في قائمة الجرس."""
+
+    class Color(models.TextChoices):
+        PRIMARY = 'primary', 'أزرق'
+        EMERALD = 'emerald', 'أخضر'
+        AMBER = 'amber', 'برتقالي'
+        RED = 'red', 'أحمر'
+        INDIGO = 'indigo', 'بنفسجي'
+        SLATE = 'slate', 'رمادي'
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='notifications', verbose_name="المستلم"
+    )
+    title = models.CharField("العنوان", max_length=200)
+    message = models.TextField("الرسالة", blank=True)
+    link = models.CharField("الرابط", max_length=300, blank=True)
+    icon = models.CharField("الأيقونة", max_length=40, default='bell')
+    color = models.CharField(
+        "اللون", max_length=12, choices=Color.choices, default=Color.PRIMARY
+    )
+    is_read = models.BooleanField("مقروء", default=False, db_index=True)
+    read_at = models.DateTimeField("وقت القراءة", null=True, blank=True)
+
+    # ربط اختياري بطلب معلّق
+    related_action = models.ForeignKey(
+        PendingAction, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='notifications', verbose_name="الطلب المرتبط"
+    )
+
+    class Meta:
+        verbose_name = "إشعار"
+        verbose_name_plural = "الإشعارات"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', 'is_read', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.recipient} — {self.title}"
+
+    def mark_read(self):
+        if not self.is_read:
+            from django.utils import timezone
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
 

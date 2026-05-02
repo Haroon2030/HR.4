@@ -147,6 +147,23 @@ class Command(BaseCommand):
                     'attendance.view',  # (يرى حضوره فقط)
                 ],
             },
+
+            # ═══════════════════════════════════════════════════════════
+            # 5️⃣ موظف موارد (المرحلة الرابعة في دورة الموافقات)
+            # ═══════════════════════════════════════════════════════════
+            {
+                'name': 'موظف موارد',
+                'role_type': Role.RoleType.HR_OFFICER,
+                'description': 'يستلم المهام المُسندة من المدير العام وينفّذها بعد موافقته (المرحلة الأخيرة في دورة الموافقات).',
+                'is_system_role': True,
+                'permissions': [
+                    'employees.view',
+                    'employees.edit',
+                    'leaves.view',
+                    'leaves.manage',
+                    'attendance.view',
+                ],
+            },
         ]
         
         for role_config in roles_config:

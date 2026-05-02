@@ -41,10 +41,23 @@ urlpatterns = [
     path('employment-requests/<int:request_id>/approve/', web_views.approve_employment_request, name='approve_employment_request'),
     path('employment-requests/<int:request_id>/reject/', web_views.reject_employment_request, name='reject_employment_request'),
 
-    # Pending Actions (طلبات العمليات السريعة المعلّقة)
+    # Pending Actions (دورة موافقات متعدّدة المراحل)
     path('pending-actions/', web_views.list_pending_actions, name='list_pending_actions'),
+    path('pending-actions/<int:action_id>/', web_views.pending_action_detail, name='pending_action_detail'),
+    path('pending-actions/<int:action_id>/branch-approve/', web_views.branch_approve_action, name='branch_approve_action'),
+    path('pending-actions/<int:action_id>/gm-approve/', web_views.gm_approve_action, name='gm_approve_action'),
+    path('pending-actions/<int:action_id>/officer-approve/', web_views.officer_approve_action, name='officer_approve_action'),
+    path('pending-actions/<int:action_id>/return/', web_views.return_pending_action, name='return_pending_action'),
+    path('pending-actions/<int:action_id>/resubmit/', web_views.resubmit_pending_action, name='resubmit_pending_action'),
+    # توافق خلفي
     path('pending-actions/<int:action_id>/approve/', web_views.approve_pending_action, name='approve_pending_action'),
     path('pending-actions/<int:action_id>/reject/', web_views.reject_pending_action, name='reject_pending_action'),
+
+    # Notifications (الإشعارات)
+    path('notifications/', web_views.list_notifications, name='list_notifications'),
+    path('notifications/dropdown/', web_views.notifications_dropdown, name='notifications_dropdown'),
+    path('notifications/<int:notif_id>/read/', web_views.read_notification, name='read_notification'),
+    path('notifications/read-all/', web_views.read_all_notifications, name='read_all_notifications'),
 
     # Roles & Permissions
     path('roles/', web_views.list_roles, name='list_roles'),

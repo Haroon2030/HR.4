@@ -245,3 +245,201 @@ def execute_pending_action(action, executor_user):
         action.execution_error = str(e)[:1000]
         action.save(update_fields=['execution_error'])
         raise
+
+
+# =============================================================================
+# دورة الموافقات متعدّدة المراحل (Phase 2)
+# =============================================================================
+
+def _notify(*args, **kwargs):
+    """import كسول لتجنّب الدوّار."""
+    from apps.core.services import notifications as notif
+    return notif
+
+
+@transaction.atomic
+def branch_approve(action, user, notes=''):
+    """مدير الفرع يوافق → ينتقل الطلب إلى المدير العام."""
+    from apps.core.models import PendingAction
+    if action.status != PendingAction.Status.PENDING_BRANCH:
+        raise ValueError('هذا الطلب ليس في مرحلة موافقة مدير الفرع.')
+
+    action.status = PendingAction.Status.PENDING_GM
+    action.branch_reviewed_by = user
+    action.branch_reviewed_at = timezone.now()
+    action.branch_notes = notes or ''
+    action.save(update_fields=[
+        'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'
+    ])
+
+    notif = _notify()
+    notif.notify_general_managers(
+        action,
+        title=f'طلب جديد بانتظار موافقتك — {action.get_action_type_display()}',
+        message=f'الموظف: {action.employee.name} • وافق عليه مدير الفرع',
+        icon='user-cog', color='amber',
+    )
+    return action
+
+
+@transaction.atomic
+def gm_approve_and_assign(action, user, officer, notes=''):
+    """المدير العام يوافق ويُسند المهمة لموظف موارد."""
+    from apps.core.models import PendingAction, Role
+
+    if action.status != PendingAction.Status.PENDING_GM:
+        raise ValueError('هذا الطلب ليس في مرحلة موافقة المدير العام.')
+    if not officer or not officer.is_active:
+        raise ValueError('يجب اختيار موظف موارد فعّال للإسناد.')
+    profile = getattr(officer, 'profile', None)
+    if not profile or not profile.role or profile.role.role_type != Role.RoleType.HR_OFFICER:
+        raise ValueError('المستخدم المختار ليس "موظف موارد".')
+
+    now = timezone.now()
+    action.status = PendingAction.Status.PENDING_OFFICER
+    action.gm_reviewed_by = user
+    action.gm_reviewed_at = now
+    action.gm_notes = notes or ''
+    action.assigned_officer = officer
+    action.assigned_at = now
+    action.save(update_fields=[
+        'status', 'gm_reviewed_by', 'gm_reviewed_at', 'gm_notes',
+        'assigned_officer', 'assigned_at'
+    ])
+
+    notif = _notify()
+    notif.notify_user(
+        officer, action,
+        title=f'مهمة جديدة مُسندة إليك — {action.get_action_type_display()}',
+        message=f'الموظف: {action.employee.name} • أسندها {user.get_full_name() or user.username}',
+        icon='clipboard-check', color='indigo',
+    )
+    return action
+
+
+@transaction.atomic
+def officer_approve(action, user, notes=''):
+    """موظف الموارد يوافق → يتم التنفيذ تلقائياً."""
+    from apps.core.models import PendingAction
+
+    if action.status != PendingAction.Status.PENDING_OFFICER:
+        raise ValueError('هذا الطلب ليس في مرحلة موظف الموارد.')
+    if action.assigned_officer_id != user.id and not user.is_superuser:
+        raise ValueError('هذا الطلب غير مُسند إليك.')
+
+    action.status = PendingAction.Status.APPROVED
+    action.officer_reviewed_at = timezone.now()
+    action.officer_notes = notes or ''
+    action.save(update_fields=[
+        'status', 'officer_reviewed_at', 'officer_notes'
+    ])
+
+    # التنفيذ الفعلي
+    msg = execute_pending_action(action, user)
+
+    # إشعار مقدّم الطلب بالاكتمال
+    notif = _notify()
+    if action.requested_by_id:
+        notif.notify_user(
+            action.requested_by, action,
+            title=f'تم تنفيذ طلبك — {action.get_action_type_display()}',
+            message=f'الموظف: {action.employee.name}',
+            icon='check-circle', color='emerald',
+        )
+    return msg
+
+
+@transaction.atomic
+def return_action(action, user, notes):
+    """إرجاع الطلب للأخصائي للتعديل من أي مرحلة."""
+    from apps.core.models import PendingAction
+
+    if action.status not in {
+        PendingAction.Status.PENDING_BRANCH,
+        PendingAction.Status.PENDING_GM,
+        PendingAction.Status.PENDING_OFFICER,
+    }:
+        raise ValueError('لا يمكن إرجاع طلب ليس قيد الموافقة.')
+    if not notes or not str(notes).strip():
+        raise ValueError('ملاحظات الإرجاع إجبارية.')
+
+    # تحديد المرحلة التي رُجِع منها
+    stage_map = {
+        PendingAction.Status.PENDING_BRANCH: PendingAction.Stage.BRANCH,
+        PendingAction.Status.PENDING_GM: PendingAction.Stage.GM,
+        PendingAction.Status.PENDING_OFFICER: PendingAction.Stage.OFFICER,
+    }
+
+    action.returned_from_stage = stage_map[action.status]
+    action.status = PendingAction.Status.RETURNED
+    action.returned_by = user
+    action.returned_at = timezone.now()
+    action.return_notes = notes
+    action.save(update_fields=[
+        'status', 'returned_by', 'returned_at',
+        'returned_from_stage', 'return_notes'
+    ])
+
+    notif = _notify()
+    if action.requested_by_id:
+        notif.notify_user(
+            action.requested_by, action,
+            title=f'طلبك مرتجع للتعديل — {action.get_action_type_display()}',
+            message=f'السبب: {notes}',
+            icon='undo-2', color='amber',
+        )
+    return action
+
+
+@transaction.atomic
+def resubmit_action(action, user):
+    """الأخصائي يعيد إرسال الطلب بعد التعديل → يبدأ من جديد."""
+    from apps.core.models import PendingAction
+
+    if action.status != PendingAction.Status.RETURNED:
+        raise ValueError('لا يمكن إعادة إرسال طلب غير مُرتجَع.')
+    if action.requested_by_id != user.id and not user.is_superuser:
+        raise ValueError('فقط مقدّم الطلب يمكنه إعادة إرساله.')
+
+    action.status = PendingAction.Status.PENDING_BRANCH
+    action.resubmit_count = (action.resubmit_count or 0) + 1
+    # نُبقي بيانات الإرجاع للسجل التاريخي ولكن نمسح "صناديق" المراحل القديمة
+    action.branch_reviewed_by = None
+    action.branch_reviewed_at = None
+    action.branch_notes = ''
+    action.gm_reviewed_by = None
+    action.gm_reviewed_at = None
+    action.gm_notes = ''
+    action.assigned_officer = None
+    action.assigned_at = None
+    action.officer_reviewed_at = None
+    action.officer_notes = ''
+    action.save(update_fields=[
+        'status', 'resubmit_count',
+        'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
+        'gm_reviewed_by', 'gm_reviewed_at', 'gm_notes',
+        'assigned_officer', 'assigned_at',
+        'officer_reviewed_at', 'officer_notes',
+    ])
+
+    # إشعار مدير الفرع بإعادة الإرسال
+    notif = _notify()
+    notif.notify_branch_managers(
+        action,
+        title=f'طلب مُعاد بعد التعديل — {action.get_action_type_display()}',
+        message=f'الموظف: {action.employee.name} • محاولة #{action.resubmit_count + 1}',
+        icon='refresh-cw', color='primary',
+    )
+    return action
+
+
+def notify_branch_on_create(action):
+    """يُستدعى مرة واحدة بعد إنشاء PendingAction جديد."""
+    notif = _notify()
+    notif.notify_branch_managers(
+        action,
+        title=f'طلب جديد بانتظار موافقتك — {action.get_action_type_display()}',
+        message=f'الموظف: {action.employee.name}'
+                f' • مقدّم الطلب: {action.requested_by.get_full_name() or action.requested_by.username}',
+        icon='inbox', color='primary',
+    )

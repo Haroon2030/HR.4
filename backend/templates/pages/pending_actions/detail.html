@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block page_title %}تفاصيل طلب #{{ action.id }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4 max-w-5xl mx-auto" x-data="{ panel: null }">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <a href="{% url 'web:list_pending_actions' %}" class="text-sm text-slate-500 hover:text-primary-600 inline-flex items-center gap-1">
+                <i data-lucide="arrow-right" class="w-4 h-4"></i> رجوع للقائمة
+            </a>
+            <h1 class="text-2xl font-bold text-slate-900 mt-1">طلب #{{ action.id }} — {{ action.get_action_type_display }}</h1>
+            <p class="text-slate-500 text-xs">الموظف: <span class="font-semibold text-slate-700">{{ action.employee.name }}</span> • الفرع: {{ action.branch.name|default:"-" }}</p>
+        </div>
+        <div>
+            {% if action.status == 'pending_branch' %}<span class="px-3 py-1 rounded bg-amber-100 text-amber-800 text-sm font-semibold">⏳ بانتظار مدير الفرع</span>
+            {% elif action.status == 'pending_gm' %}<span class="px-3 py-1 rounded bg-indigo-100 text-indigo-800 text-sm font-semibold">⏳ بانتظار المدير العام</span>
+            {% elif action.status == 'pending_officer' %}<span class="px-3 py-1 rounded bg-violet-100 text-violet-800 text-sm font-semibold">⏳ بانتظار موظف الموارد</span>
+            {% elif action.status == 'returned' %}<span class="px-3 py-1 rounded bg-rose-100 text-rose-800 text-sm font-semibold">↩ مُرتجَع للتعديل</span>
+            {% elif action.status == 'approved' %}<span class="px-3 py-1 rounded bg-emerald-100 text-emerald-800 text-sm font-semibold">✓ مُنفَّذ</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Main Details -->
+        <div class="lg:col-span-2 space-y-4">
+            <!-- Payload -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <h3 class="text-sm font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
+                    <i data-lucide="file-text" class="w-4 h-4 inline-block ml-1"></i> تفاصيل الطلب
+                </h3>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    {% with p=action.payload %}
+                    {% if action.action_type == 'leave' %}
+                        <div><dt class="text-slate-400 text-xs">نوع الإجازة</dt><dd class="text-slate-800 font-medium">{{ p.leave_type }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">الأيام</dt><dd class="text-slate-800 font-medium">{{ p.days }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">من</dt><dd class="text-slate-800 font-medium">{{ p.date_from }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">إلى</dt><dd class="text-slate-800 font-medium">{{ p.date_to }}</dd></div>
+                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'salary_adjust' %}
+                        <div><dt class="text-slate-400 text-xs">الراتب الأساسي الجديد</dt><dd class="text-slate-800 font-medium">{{ p.new_basic_salary }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">تاريخ السريان</dt><dd class="text-slate-800 font-medium">{{ p.effective_date }}</dd></div>
+                        {% if p.reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.reason }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'transfer' %}
+                        <div><dt class="text-slate-400 text-xs">تاريخ النقل</dt><dd class="text-slate-800 font-medium">{{ p.transfer_date }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">الفرع الجديد</dt><dd class="text-slate-800 font-medium">{{ p.new_branch_id }}</dd></div>
+                        {% if p.new_department_id %}<div><dt class="text-slate-400 text-xs">القسم الجديد</dt><dd class="text-slate-800 font-medium">{{ p.new_department_id }}</dd></div>{% endif %}
+                        {% if p.reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.reason }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'terminate' %}
+                        <div><dt class="text-slate-400 text-xs">تاريخ الإنهاء</dt><dd class="text-slate-800 font-medium">{{ p.end_date }}</dd></div>
+                        <div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.end_reason }}</dd></div>
+                    {% elif action.action_type == 'reactivate' %}
+                        <div><dt class="text-slate-400 text-xs">تاريخ الالتحاق</dt><dd class="text-slate-800 font-medium">{{ p.new_hire_date }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">الحالة</dt><dd class="text-slate-800 font-medium">{{ p.new_status }}</dd></div>
+                        {% if p.reactivation_reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.reactivation_reason }}</dd></div>{% endif %}
+                    {% else %}
+                        <div class="sm:col-span-2 text-slate-500 text-xs"><pre>{{ p }}</pre></div>
+                    {% endif %}
+                    {% endwith %}
+                </dl>
+                {% if action.attachment %}
+                    <div class="mt-3 pt-3 border-t border-slate-100">
+                        <a href="{{ action.attachment.url }}" target="_blank" class="text-primary-600 hover:underline text-sm inline-flex items-center gap-1">
+                            <i data-lucide="paperclip" class="w-4 h-4"></i> عرض المرفق
+                        </a>
+                    </div>
+                {% endif %}
+                {% if action.execution_error %}
+                    <div class="mt-3 px-3 py-2 bg-red-50 text-red-700 text-xs rounded border border-red-200">
+                        <i data-lucide="alert-triangle" class="w-3 h-3 inline-block"></i>
+                        خطأ في التنفيذ: {{ action.execution_error }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Action Panel -->
+            {% if can_act or can_resubmit %}
+            <div class="bg-white rounded-xl shadow-sm border border-primary-200 p-4">
+                <h3 class="text-sm font-bold text-primary-800 mb-3 pb-2 border-b border-primary-100">
+                    <i data-lucide="zap" class="w-4 h-4 inline-block ml-1"></i> اتخاذ قرار
+                </h3>
+
+                {% if can_resubmit %}
+                    <p class="text-xs text-slate-500 mb-3">طلبك مرتجَع للتعديل. عدّل البيانات الأصلية ثم أعد الإرسال.</p>
+                    {% if action.return_notes %}
+                        <div class="mb-3 px-3 py-2 bg-rose-50 text-rose-700 text-xs rounded border border-rose-200">
+                            <strong>ملاحظات الإرجاع:</strong> {{ action.return_notes }}
+                        </div>
+                    {% endif %}
+                    <form method="POST" action="{% url 'web:resubmit_pending_action' action.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> إعادة الإرسال
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if can_act and current_stage == 'branch' %}
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
+                        <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="check" class="w-4 h-4"></i> موافقة كمدير فرع
+                        </button>
+                        <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
+                        </button>
+                    </div>
+                    <form method="POST" action="{% url 'web:branch_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
+                        {% csrf_token %}
+                        <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
+                        <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg">تأكيد الموافقة</button>
+                        </div>
+                    </form>
+                {% endif %}
+
+                {% if can_act and current_stage == 'gm' %}
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
+                        <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="user-cog" class="w-4 h-4"></i> موافقة وإسناد لموظف موارد
+                        </button>
+                        <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
+                        </button>
+                    </div>
+                    <form method="POST" action="{% url 'web:gm_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
+                        {% csrf_token %}
+                        <label class="block text-xs font-semibold text-slate-600">إسناد إلى موظف موارد <span class="text-red-500">*</span></label>
+                        <select name="officer_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                            <option value="">— اختر موظف موارد —</option>
+                            {% for u in officers %}
+                                <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}{% if u.profile.branch %} ({{ u.profile.branch.name }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        <label class="block text-xs font-semibold text-slate-600 mt-2">ملاحظات (اختياري)</label>
+                        <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">موافقة وإسناد</button>
+                        </div>
+                    </form>
+                {% endif %}
+
+                {% if can_act and current_stage == 'officer' %}
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
+                        <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> موافقة وتنفيذ نهائي
+                        </button>
+                        <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
+                        </button>
+                    </div>
+                    <form method="POST" action="{% url 'web:officer_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
+                        {% csrf_token %}
+                        <div class="px-3 py-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200">
+                            ⚠ بمجرد موافقتك سيتم تنفيذ العملية فعلياً على بيانات الموظف.
+                        </div>
+                        <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
+                        <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg">أوافق وأنفّذ</button>
+                        </div>
+                    </form>
+                {% endif %}
+
+                {% if can_act %}
+                    <form method="POST" action="{% url 'web:return_pending_action' action.id %}" x-show="panel=='return'" x-cloak class="space-y-2 mt-3">
+                        {% csrf_token %}
+                        <label class="block text-xs font-semibold text-slate-600">سبب الإرجاع <span class="text-red-500">*</span></label>
+                        <textarea name="notes" required rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="اشرح ما يحتاج تعديل..."></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg">إرجاع</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
+                <i data-lucide="git-branch" class="w-4 h-4 inline-block ml-1"></i> الخط الزمني
+            </h3>
+            <ol class="relative border-r-2 border-slate-200 space-y-4 pr-4">
+                <!-- 1. Created -->
+                <li>
+                    <div class="absolute -right-2 w-4 h-4 rounded-full bg-primary-500 border-2 border-white"></div>
+                    <p class="text-xs font-bold text-slate-800">إنشاء الطلب</p>
+                    <p class="text-xs text-slate-500">{{ action.requested_by.get_full_name|default:action.requested_by.username }}</p>
+                    <p class="text-xs text-slate-400">{{ action.requested_at|date:"Y-m-d H:i" }}</p>
+                </li>
+                <!-- 2. Branch -->
+                <li>
+                    <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.branch_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
+                    <p class="text-xs font-bold {% if action.branch_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">مدير الفرع</p>
+                    {% if action.branch_reviewed_at %}
+                        <p class="text-xs text-slate-500">{{ action.branch_reviewed_by.get_full_name|default:action.branch_reviewed_by.username }}</p>
+                        <p class="text-xs text-slate-400">{{ action.branch_reviewed_at|date:"Y-m-d H:i" }}</p>
+                        {% if action.branch_notes %}<p class="text-xs text-slate-600 mt-1 px-2 py-1 bg-slate-50 rounded">{{ action.branch_notes }}</p>{% endif %}
+                    {% else %}
+                        <p class="text-xs text-slate-400">— بانتظار —</p>
+                    {% endif %}
+                </li>
+                <!-- 3. GM -->
+                <li>
+                    <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.gm_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
+                    <p class="text-xs font-bold {% if action.gm_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">المدير العام</p>
+                    {% if action.gm_reviewed_at %}
+                        <p class="text-xs text-slate-500">{{ action.gm_reviewed_by.get_full_name|default:action.gm_reviewed_by.username }}</p>
+                        <p class="text-xs text-slate-400">{{ action.gm_reviewed_at|date:"Y-m-d H:i" }}</p>
+                        {% if action.assigned_officer %}<p class="text-xs text-indigo-700 mt-1">أُسند إلى: <strong>{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}</strong></p>{% endif %}
+                        {% if action.gm_notes %}<p class="text-xs text-slate-600 mt-1 px-2 py-1 bg-slate-50 rounded">{{ action.gm_notes }}</p>{% endif %}
+                    {% else %}
+                        <p class="text-xs text-slate-400">— بانتظار —</p>
+                    {% endif %}
+                </li>
+                <!-- 4. Officer -->
+                <li>
+                    <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.officer_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
+                    <p class="text-xs font-bold {% if action.officer_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">موظف الموارد</p>
+                    {% if action.officer_reviewed_at %}
+                        <p class="text-xs text-slate-500">{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}</p>
+                        <p class="text-xs text-slate-400">{{ action.officer_reviewed_at|date:"Y-m-d H:i" }}</p>
+                        {% if action.officer_notes %}<p class="text-xs text-slate-600 mt-1 px-2 py-1 bg-slate-50 rounded">{{ action.officer_notes }}</p>{% endif %}
+                    {% else %}
+                        <p class="text-xs text-slate-400">— بانتظار —</p>
+                    {% endif %}
+                </li>
+                <!-- 5. Returned (إن وُجد) -->
+                {% if action.returned_at %}
+                <li>
+                    <div class="absolute -right-2 w-4 h-4 rounded-full bg-rose-500 border-2 border-white"></div>
+                    <p class="text-xs font-bold text-rose-700">إرجاع للتعديل</p>
+                    <p class="text-xs text-slate-500">{{ action.returned_by.get_full_name|default:action.returned_by.username }}</p>
+                    <p class="text-xs text-slate-400">{{ action.returned_at|date:"Y-m-d H:i" }}</p>
+                    {% if action.return_notes %}<p class="text-xs text-rose-700 mt-1 px-2 py-1 bg-rose-50 rounded">{{ action.return_notes }}</p>{% endif %}
+                </li>
+                {% endif %}
+                <!-- 6. Executed -->
+                {% if action.executed_at %}
+                <li>
+                    <div class="absolute -right-2 w-4 h-4 rounded-full bg-emerald-600 border-2 border-white"></div>
+                    <p class="text-xs font-bold text-emerald-700">تم التنفيذ</p>
+                    <p class="text-xs text-slate-400">{{ action.executed_at|date:"Y-m-d H:i" }}</p>
+                </li>
+                {% endif %}
+            </ol>
+
+            {% if action.resubmit_count %}
+                <div class="mt-4 px-3 py-2 bg-slate-50 text-slate-600 text-xs rounded border border-slate-200">
+                    <i data-lucide="refresh-cw" class="w-3 h-3 inline-block"></i>
+                    عدد مرات إعادة الإرسال: <strong>{{ action.resubmit_count }}</strong>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+</script>
+{% endblock %}

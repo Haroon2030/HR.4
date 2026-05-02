@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block page_title %}الإشعارات{% endblock %}
+
+{% block content %}
+<div class="space-y-4 max-w-3xl mx-auto">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">الإشعارات</h1>
+            <p class="text-slate-500 text-xs">{{ unread_count }} غير مقروء</p>
+        </div>
+        {% if unread_count %}
+        <form method="POST" action="{% url 'web:read_all_notifications' %}">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg inline-flex items-center gap-1">
+                <i data-lucide="check-check" class="w-4 h-4"></i> تحديد الكل كمقروء
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 divide-y divide-slate-100">
+        {% for n in notifications %}
+            <a href="{% if n.link %}{{ n.link }}{% else %}#{% endif %}"
+               class="flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors {% if not n.is_read %}bg-primary-50/30{% endif %}">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                    {% if n.color == 'emerald' %}bg-emerald-100 text-emerald-700
+                    {% elif n.color == 'amber' %}bg-amber-100 text-amber-700
+                    {% elif n.color == 'rose' %}bg-rose-100 text-rose-700
+                    {% elif n.color == 'red' %}bg-red-100 text-red-700
+                    {% elif n.color == 'indigo' %}bg-indigo-100 text-indigo-700
+                    {% elif n.color == 'violet' %}bg-violet-100 text-violet-700
+                    {% else %}bg-primary-100 text-primary-700{% endif %}">
+                    <i data-lucide="{{ n.icon|default:'bell' }}" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-slate-800">{{ n.title }}</p>
+                    {% if n.message %}<p class="text-sm text-slate-600 mt-0.5">{{ n.message }}</p>{% endif %}
+                    <p class="text-xs text-slate-400 mt-1">{{ n.created_at|date:"Y-m-d H:i" }}</p>
+                </div>
+                {% if not n.is_read %}<span class="w-2.5 h-2.5 bg-primary-500 rounded-full flex-shrink-0 mt-2"></span>{% endif %}
+            </a>
+        {% empty %}
+            <div class="px-4 py-12 text-center text-sm text-slate-400">
+                <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                <p>لا توجد إشعارات</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+</script>
+{% endblock %}

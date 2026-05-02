@@ -167,11 +167,29 @@
             
             <div class="flex items-center gap-1 md:gap-3">
                 <!-- Notifications -->
-                <button class="p-2 hover:bg-slate-100 rounded-lg transition-colors relative">
-                    <i data-lucide="bell" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-                
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                    <button @click="open = !open; if(open){ htmx.trigger('#notif-dropdown-content', 'load'); }"
+                            class="p-2 hover:bg-slate-100 rounded-lg transition-colors relative">
+                        <i data-lucide="bell" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
+                        {% if unread_notifications_count %}
+                        <span class="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {{ unread_notifications_count }}
+                        </span>
+                        {% endif %}
+                    </button>
+                    <div x-show="open" x-cloak x-transition
+                         class="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                        <div id="notif-dropdown-content"
+                             hx-get="{% url 'web:notifications_dropdown' %}"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="p-6 text-center text-sm text-slate-400">
+                                <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Logout -->
                 <a href="{% url 'web:auth:logout' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="تسجيل الخروج">
                     <i data-lucide="log-out" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>

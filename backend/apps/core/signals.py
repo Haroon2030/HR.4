@@ -4,7 +4,7 @@ Django Signals للنظام الأساسي
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from .models import UserProfile
+from .models import UserProfile, PendingAction
 
 User = get_user_model()
 
@@ -23,3 +23,16 @@ def save_user_profile(sender, instance, **kwargs):
         instance.profile.save()
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=PendingAction)
+def notify_branch_on_pending_action_created(sender, instance, created, **kwargs):
+    """عند إنشاء طلب جديد → أبلغ مدير الفرع."""
+    if not created:
+        return
+    try:
+        from apps.core.services.pending_actions import notify_branch_on_create
+        notify_branch_on_create(instance)
+    except Exception:
+        # لا نُفشل المعاملة بسبب فشل الإشعار
+        pass

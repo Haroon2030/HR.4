@@ -105,3 +105,70 @@ def _can_review_action(user, action):
     return False
 
 
+# =============================================================================
+# دورة الموافقات متعدّدة المراحل (Phase 2)
+# =============================================================================
+
+def _user_role_type(user):
+    """يُرجع role_type للمستخدم أو None."""
+    profile = getattr(user, 'profile', None)
+    if profile and profile.role:
+        return profile.role.role_type
+    return None
+
+
+def _is_general_manager(user):
+    """المدير العام = superuser أو دور admin أو hr_manager."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    rt = _user_role_type(user)
+    return rt in {Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER}
+
+
+def _is_hr_officer(user):
+    """موظف موارد = الذي يستلم المهام المُسندة من المدير العام."""
+    if not user.is_authenticated:
+        return False
+    return _user_role_type(user) == Role.RoleType.HR_OFFICER
+
+
+def _can_act_at_stage(user, action, stage):
+    """يحدّد إن كان للمستخدم حق الموافقة/الإرجاع في هذه المرحلة."""
+    from apps.core.models import PendingAction
+    if user.is_superuser:
+        return True
+    if stage == PendingAction.Stage.BRANCH:
+        return _can_review_action(user, action)
+    if stage == PendingAction.Stage.GM:
+        return _is_general_manager(user)
+    if stage == PendingAction.Stage.OFFICER:
+        return action.assigned_officer_id == user.id
+    return False
+
+
+def general_manager_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('web:auth:login')
+        if _is_general_manager(request.user):
+            return view_func(request, *args, **kwargs)
+        messages.error(request, 'هذه الصفحة متاحة للمدير العام / مدير الموارد فقط')
+        return redirect('web:dashboard')
+    return wrapper
+
+
+def hr_officer_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('web:auth:login')
+        if _is_hr_officer(request.user) or request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        messages.error(request, 'هذه الصفحة متاحة لموظفي الموارد فقط')
+        return redirect('web:dashboard')
+    return wrapper
+
+

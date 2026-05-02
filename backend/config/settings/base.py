@@ -126,6 +126,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.pending_actions_count',
+                'apps.core.context_processors.approval_inbox',
             ],
         },
     },
