@@ -27,7 +27,8 @@ def dashboard_view(request):
     """لوحة التحكم الرئيسية"""
     from apps.employees.models import EmploymentRequest
     from apps.core.models import PendingAction
-    from apps.core.web_views._helpers import _is_hr_officer
+    from apps.core.web_views._helpers import _is_hr_officer, _is_general_manager
+    from apps.core.web_views.employment_requests import get_hr_officers
 
     context = {
         'is_branch_manager': False,
@@ -35,6 +36,10 @@ def dashboard_view(request):
         'is_hr_officer': False,
         'officer_employment_requests': [],
         'officer_pending_actions': [],
+        'is_general_manager': False,
+        'gm_employment_requests': [],
+        'gm_pending_actions': [],
+        'hr_officers': [],
     }
 
     # طلبات التوظيف المعلقة الخاصة بفروع المستخدم (لمدير الفرع / السوبر)
@@ -72,6 +77,21 @@ def dashboard_view(request):
             status=PendingAction.Status.PENDING_OFFICER,
         )
         context['officer_pending_actions'] = actions_qs.order_by('-assigned_at')
+
+    # ─── المهام في مرحلة المدير العام / مدير الموارد ────────────────────────
+    if _is_general_manager(request.user):
+        context['is_general_manager'] = True
+        context['hr_officers'] = get_hr_officers()
+
+        gm_emp_qs = EmploymentRequest.objects.select_related(
+            'branch', 'department', 'cost_center', 'requested_by',
+        ).filter(status=EmploymentRequest.Status.PENDING_GM)
+        context['gm_employment_requests'] = gm_emp_qs.order_by('-branch_reviewed_at', '-created_at')
+
+        gm_actions_qs = PendingAction.objects.select_related(
+            'employee', 'employee__branch', 'requested_by',
+        ).filter(status=PendingAction.Status.PENDING_GM)
+        context['gm_pending_actions'] = gm_actions_qs.order_by('-created_at')
 
     return render(request, 'pages/dashboard.html', context)
 
