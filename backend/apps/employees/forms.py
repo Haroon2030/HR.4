@@ -10,16 +10,28 @@ from django.core.exceptions import ValidationError
 from apps.employees.models import Employee, EmploymentRequest, EmployeeStatement
 
 
-# 🏷️ خريطة عرض الحقول المرجعية (FK) في القوائم المنسدلة — الاسم بدل الرقم
+# 🏷️ خريطة عرض الحقول المرجعية (FK) في القوائم المنسدلة — الرقم/الكود ثم الاسم
+def _code_then_name(obj):
+    code = (getattr(obj, 'code', None) or '').strip()
+    name = (getattr(obj, 'name', None) or '').strip()
+    if code and name and code != name:
+        return f"{code} — {name}"
+    return code or name or str(obj)
+
+
+def _name_only(obj):
+    return getattr(obj, 'name', None) or str(obj)
+
+
 FK_LABEL_OVERRIDES = {
-    'branch': lambda obj: getattr(obj, 'name', None) or getattr(obj, 'code', None) or str(obj),
-    'department': lambda obj: getattr(obj, 'name', None) or getattr(obj, 'code', None) or str(obj),
-    'cost_center': lambda obj: getattr(obj, 'name', None) or getattr(obj, 'code', None) or str(obj),
-    'nationality': lambda obj: getattr(obj, 'name', None) or str(obj),
-    'profession': lambda obj: getattr(obj, 'name', None) or str(obj),
-    'sponsorship': lambda obj: getattr(obj, 'name', None) or str(obj),
-    'insurance': lambda obj: getattr(obj, 'name', None) or str(obj),
-    'insurance_class': lambda obj: getattr(obj, 'name', None) or str(obj),
+    'branch': _code_then_name,
+    'department': _code_then_name,
+    'cost_center': _code_then_name,
+    'nationality': _name_only,
+    'profession': _name_only,
+    'sponsorship': _name_only,
+    'insurance': _name_only,
+    'insurance_class': _name_only,
 }
 
 

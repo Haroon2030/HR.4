@@ -31,7 +31,7 @@
                 <select name="branch"
                         class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     <option value="">-- اختر --</option>
-                    {% for b in branches %}<option value="{{ b.id }}">{{ b.name|default:b.code }}{% if b.code and b.name and b.code != b.name %} — {{ b.code }}{% endif %}</option>{% endfor %}
+                    {% for b in branches %}<option value="{{ b.id }}">{% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}</option>{% endfor %}
                 </select>
             </div>
 
@@ -41,7 +41,7 @@
                 <select name="department"
                         class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     <option value="">-- اختر --</option>
-                    {% for d in departments %}<option value="{{ d.id }}">{{ d.name|default:d.code }}{% if d.code and d.name and d.code != d.name %} — {{ d.code }}{% endif %}</option>{% endfor %}
+                    {% for d in departments %}<option value="{{ d.id }}">{% if d.code %}{{ d.code }}{% if d.name and d.code != d.name %} — {{ d.name }}{% endif %}{% else %}{{ d.name }}{% endif %}</option>{% endfor %}
                 </select>
             </div>
 
@@ -51,7 +51,7 @@
                 <select name="cost_center"
                         class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     <option value="">-- اختر --</option>
-                    {% for c in cost_centers %}<option value="{{ c.id }}">{{ c.name|default:c.code }}{% if c.code and c.name and c.code != c.name %} — {{ c.code }}{% endif %}</option>{% endfor %}
+                    {% for c in cost_centers %}<option value="{{ c.id }}">{% if c.code %}{{ c.code }}{% if c.name and c.code != c.name %} — {{ c.name }}{% endif %}{% else %}{{ c.name }}{% endif %}</option>{% endfor %}
                 </select>
             </div>
 
