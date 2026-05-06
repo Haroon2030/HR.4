@@ -1,5 +1,8 @@
 """Template context processors."""
+import logging
 from django.db.models import Q
+
+logger = logging.getLogger(__name__)
 
 
 def _pending_statuses():
@@ -28,7 +31,8 @@ def pending_actions_count(request):
                 f |= Q(branch_id__in=managed_ids)
             count = qs.filter(f).distinct().count()
         return {'pending_actions_count': count}
-    except Exception:
+    except Exception as e:
+        logger.warning("pending_actions_count context failed: %s", e)
         return {'pending_actions_count': 0}
 
 
@@ -60,7 +64,8 @@ def approval_inbox(request):
             'pending_for_me_count': pending_for_me_count,
             'unread_notifications_count': unread,
         }
-    except Exception:
+    except Exception as e:
+        logger.warning("approval_inbox context failed: %s", e)
         return {
             'pending_for_me_count': 0,
             'unread_notifications_count': 0,

@@ -2,7 +2,24 @@
 
 {% block page_title %}شاشة الموظفين{% endblock %}
 
-{% block list_actions %}{% endblock %}
+{% block list_actions %}
+<form method="get" class="flex items-center gap-2 w-full sm:w-auto">
+    <div class="relative flex-1 sm:w-80">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+        <input type="text" name="q" value="{{ query }}"
+            placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..."
+            class="w-full pr-9 pl-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+    </div>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
+        <i data-lucide="search" class="w-4 h-4"></i> بحث
+    </button>
+    {% if query %}
+    <a href="{% url 'web:list_employees' %}" class="px-3 py-2 text-sm text-slate-600 hover:text-slate-800 inline-flex items-center gap-1" title="مسح البحث">
+        <i data-lucide="x" class="w-4 h-4"></i>
+    </a>
+    {% endif %}
+</form>
+{% endblock %}
 
 {% block table_headers %}
     <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -66,9 +83,38 @@
     <tr>
         <td colspan="7" class="px-3 py-8 text-center text-sm text-slate-400">
             <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-            <p>لا يوجد موظفين بعد</p>
-            <p class="text-xs mt-1">أضف طلب توظيف جديد ليظهر هنا بعد موافقة مدير الفرع</p>
+            <p>{% if query %}لا توجد نتائج للبحث "{{ query }}"{% else %}لا يوجد موظفين بعد{% endif %}</p>
+            <p class="text-xs mt-1">
+                {% if query %}جرّب كلمة بحث مختلفة.{% else %}أضف طلب توظيف جديد ليظهر هنا بعد موافقة مدير الفرع{% endif %}
+            </p>
         </td>
     </tr>
     {% endfor %}
+{% endblock %}
+
+{% block list_content %}{{ block.super }}
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3 mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs md:text-sm text-slate-600">
+    <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }} • إجمالي {{ total_count }} موظف</span>
+    <div class="flex items-center gap-1 flex-wrap">
+        {% if page_obj.has_previous %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
+        {% else %}
+            <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">السابق</span>
+        {% endif %}
+        {% for p in page_obj.paginator.page_range %}
+            {% if p == page_obj.number %}
+                <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg font-bold">{{ p }}</span>
+            {% else %}
+                <a href="?{% if query %}q={{ query }}&{% endif %}page={{ p }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.next_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
+        {% else %}
+            <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">التالي</span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

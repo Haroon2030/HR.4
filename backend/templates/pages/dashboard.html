@@ -5,350 +5,263 @@
 {% block page_title %}لوحة التحكم{% endblock %}
 
 {% block content %}
-<div class="space-y-4 md:space-y-6">
-    {% if is_branch_manager %}
-    <!-- طلبات التوظيف المعلقة (لمدير الفرع) -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-50">
-            <div class="flex items-center gap-2">
-                <i data-lucide="user-plus" class="w-5 h-5 text-primary-600"></i>
-                <h3 class="text-sm md:text-base font-bold text-slate-800">طلبات التوظيف المعلقة</h3>
-                {% if pending_requests %}
-                <span class="px-2 py-0.5 text-xs font-bold bg-yellow-100 text-yellow-800 rounded-full">{{ pending_requests|length }}</span>
-                {% endif %}
+<div class="space-y-6">
+
+    <!-- ═══ Welcome Header ═══ -->
+    <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-8">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <p class="text-slate-500 text-sm">مرحباً بك،</p>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{{ request.user.get_full_name|default:request.user.username }} 👋</h2>
+                <p class="text-slate-600 text-sm mt-2">
+                    {% if request.user.profile.role %}<span class="font-semibold text-slate-800">{{ request.user.profile.role.name }}</span> • {% endif %}
+                    {% now "l، j F Y" %}
+                </p>
             </div>
-            <a href="{% url 'web:list_employment_requests' %}" class="text-xs md:text-sm text-primary-600 hover:underline flex items-center gap-1">
-                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            </a>
+        </div>
+        <div class="absolute -left-10 -bottom-10 w-48 h-48 rounded-full bg-primary-50"></div>
+        <div class="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-indigo-50/60"></div>
+    </div>
+
+    {% if show_overview %}
+    <!-- ═══ KPI Stats Cards ═══ -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        <a href="{% url 'web:list_employees' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-primary-300 transition">
+            <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center mb-2 group-hover:bg-primary-100 transition">
+                <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">إجمالي الموظفين</p>
+            <p class="text-2xl font-bold text-slate-800 mt-1">{{ stats.employees_total|default:0 }}</p>
+        </a>
+
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                <i data-lucide="user-check" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">على رأس العمل</p>
+            <p class="text-2xl font-bold text-emerald-700 mt-1">{{ stats.employees_active|default:0 }}</p>
         </div>
 
-        {% if pending_requests %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">اسم الموظف</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">القسم</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">مركز التكلفة</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">التاريخ</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">المستند</th>
-                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for req in pending_requests %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-800">{{ req.name }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.branch.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.department.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.cost_center.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
-                        <td class="px-4 py-3 text-slate-500 text-xs">{{ req.created_at|date:"Y-m-d H:i" }}</td>
-                        <td class="px-4 py-3">
-                            {% if req.commencement_document %}
-                            <a href="{{ req.commencement_document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs flex items-center gap-1">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> عرض
-                            </a>
-                            {% else %}<span class="text-slate-400 text-xs">—</span>{% endif %}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-center gap-2">
-                                <form method="post" action="{% url 'web:approve_employment_request' req.id %}" class="inline" onsubmit="return confirm('تأكيد الموافقة على هذا الطلب؟');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg flex items-center gap-1">
-                                        <i data-lucide="check" class="w-4 h-4"></i> موافقة
-                                    </button>
-                                </form>
-                                <form method="post" action="{% url 'web:reject_employment_request' req.id %}" class="inline" onsubmit="return confirm('تأكيد رفض هذا الطلب؟');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-1">
-                                        <i data-lucide="x" class="w-4 h-4"></i> رفض
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
+                <i data-lucide="palmtree" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">في إجازة</p>
+            <p class="text-2xl font-bold text-amber-700 mt-1">{{ stats.employees_leave|default:0 }}</p>
         </div>
-        {% else %}
-        <div class="p-8 text-center text-slate-400">
-            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
-            <p class="text-sm">لا توجد طلبات معلقة حالياً</p>
+
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-2">
+                <i data-lucide="user-x" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">موقوفون</p>
+            <p class="text-2xl font-bold text-rose-700 mt-1">{{ stats.employees_suspended|default:0 }}</p>
         </div>
-        {% endif %}
+
+        <a href="{% url 'web:list_employment_requests' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-300 transition">
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:bg-indigo-100 transition">
+                <i data-lucide="file-plus" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">طلبات توظيف معلّقة</p>
+            <p class="text-2xl font-bold text-indigo-700 mt-1">{{ stats.employment_requests_open|default:0 }}</p>
+        </a>
+
+        <a href="{% url 'web:list_pending_actions' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-purple-300 transition">
+            <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-2 group-hover:bg-purple-100 transition">
+                <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">عمليات معلّقة</p>
+            <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.pending_actions_open|default:0 }}</p>
+        </a>
     </div>
     {% endif %}
 
-    {% if is_hr_officer %}
-    <!-- ─── طلبات التوظيف المُسندة لأخصائي الموارد ─── -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-indigo-50">
-            <div class="flex items-center gap-2">
-                <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i>
-                <h3 class="text-sm md:text-base font-bold text-slate-800">طلبات توظيف مُسندة إليك</h3>
-                {% if officer_employment_requests %}
-                <span class="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-800 rounded-full">{{ officer_employment_requests|length }}</span>
+    <!-- ═══ Main Grid: Tasks + Sidebar ═══ -->
+    <div class="grid grid-cols-1 {% if show_overview %}lg:grid-cols-3{% endif %} gap-6">
+
+        <!-- Tasks column -->
+        <div class="{% if show_overview %}lg:col-span-2{% endif %} space-y-6">
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Header + Search -->
+                <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-primary-500"></span>
+                        <h3 class="text-sm font-bold text-slate-800">صندوق المهام</h3>
+                        <span class="px-2 py-0.5 text-xs font-bold bg-primary-100 text-primary-800 rounded-full">{{ inbox_total }}</span>
+                    </div>
+                    <form method="get" class="flex items-center gap-2 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-64">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" name="q" value="{{ inbox_query }}" placeholder="ابحث عن مهمة..."
+                                class="w-full pr-9 pl-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        </div>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
+                            <i data-lucide="search" class="w-4 h-4"></i> بحث
+                        </button>
+                        {% if inbox_query %}
+                        <a href="{% url 'web:dashboard' %}" class="px-3 py-2 text-sm text-slate-600 hover:text-slate-800 inline-flex items-center gap-1">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+
+                {% if inbox_page.object_list %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600">
+                            <tr>
+                                <th class="px-4 py-3 text-right font-semibold">النوع</th>
+                                <th class="px-4 py-3 text-right font-semibold">الموضوع</th>
+                                <th class="px-4 py-3 text-right font-semibold hidden md:table-cell">التفاصيل</th>
+                                <th class="px-4 py-3 text-right font-semibold hidden md:table-cell">التاريخ</th>
+                                <th class="px-4 py-3 text-center font-semibold">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for t in inbox_page.object_list %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-0.5 text-xs font-bold bg-{{ t.badge }}-100 text-{{ t.badge }}-800 rounded-full whitespace-nowrap">{{ t.type }}</span>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">{{ t.title }}</td>
+                                <td class="px-4 py-3 text-slate-500 text-xs hidden md:table-cell">{{ t.subtitle }}</td>
+                                <td class="px-4 py-3 text-slate-500 text-xs hidden md:table-cell whitespace-nowrap">{{ t.date|date:"Y-m-d H:i" }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <a href="{{ t.action_url }}" class="px-3 py-1.5 text-xs font-medium text-white bg-{{ t.action_color }}-600 hover:bg-{{ t.action_color }}-700 rounded-lg inline-flex items-center gap-1">
+                                        <i data-lucide="{{ t.action_icon }}" class="w-3.5 h-3.5"></i> {{ t.action_label }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if inbox_page.paginator.num_pages > 1 %}
+                <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                    <span>صفحة {{ inbox_page.number }} من {{ inbox_page.paginator.num_pages }} • إجمالي {{ inbox_total }}</span>
+                    <div class="flex items-center gap-1">
+                        {% if inbox_page.has_previous %}
+                        <a href="?{% if inbox_query %}q={{ inbox_query }}&{% endif %}page={{ inbox_page.previous_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
+                        {% else %}
+                        <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">السابق</span>
+                        {% endif %}
+                        {% for p in inbox_page.paginator.page_range %}
+                            {% if p == inbox_page.number %}
+                                <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg font-bold">{{ p }}</span>
+                            {% else %}
+                                <a href="?{% if inbox_query %}q={{ inbox_query }}&{% endif %}page={{ p }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">{{ p }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if inbox_page.has_next %}
+                        <a href="?{% if inbox_query %}q={{ inbox_query }}&{% endif %}page={{ inbox_page.next_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
+                        {% else %}
+                        <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">التالي</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="p-10 text-center">
+                    <div class="w-16 h-16 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-800">
+                        {% if inbox_query %}لا توجد نتائج للبحث "{{ inbox_query }}"{% else %}كل شيء على ما يرام 🎉{% endif %}
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-1">
+                        {% if inbox_query %}جرّب كلمة بحث مختلفة.{% else %}لا توجد مهام بانتظارك حالياً.{% endif %}
+                    </p>
+                </div>
                 {% endif %}
             </div>
-            <a href="{% url 'web:list_employment_requests' %}?status=pending_officer" class="text-xs md:text-sm text-indigo-600 hover:underline flex items-center gap-1">
-                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            </a>
+
         </div>
 
-        {% if officer_employment_requests %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">اسم الموظف</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">القسم</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">تاريخ الإسناد</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">المستند</th>
-                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for req in officer_employment_requests %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-800">{{ req.name }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.branch.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.department.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
-                        <td class="px-4 py-3 text-slate-500 text-xs">{{ req.assigned_at|date:"Y-m-d H:i" }}</td>
-                        <td class="px-4 py-3">
-                            {% if req.commencement_document %}
-                            <a href="{{ req.commencement_document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs flex items-center gap-1">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> عرض
-                            </a>
-                            {% else %}<span class="text-slate-400 text-xs">—</span>{% endif %}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-center gap-2">
-                                <form method="post" action="{% url 'web:officer_approve_employment_request' req.id %}" class="inline" onsubmit="return confirm('الموافقة النهائية وإضافة الموظف لقائمة العاملين؟');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1">
-                                        <i data-lucide="check-check" class="w-4 h-4"></i> اعتماد نهائي
-                                    </button>
-                                </form>
-                                <form method="post" action="{% url 'web:reject_employment_request' req.id %}" class="inline" onsubmit="return confirm('رفض هذا الطلب؟');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-1">
-                                        <i data-lucide="x" class="w-4 h-4"></i> رفض
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
+        {% if show_overview %}
+        <!-- Sidebar column -->
+        <div class="space-y-6">
+
+            <!-- توزيع حالة الموظفين -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-800">توزيع حالة الموظفين</h3>
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-slate-400"></i>
+                </div>
+                {% with total=stats.employees_total %}
+                {% if total %}
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium">على رأس العمل</span>
+                            <span class="text-slate-800 font-bold">{{ stats.employees_active }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 rounded-full" style="width: {% widthratio stats.employees_active total 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium">في إجازة</span>
+                            <span class="text-slate-800 font-bold">{{ stats.employees_leave }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-amber-500 rounded-full" style="width: {% widthratio stats.employees_leave total 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium">موقوفون</span>
+                            <span class="text-slate-800 font-bold">{{ stats.employees_suspended }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-rose-500 rounded-full" style="width: {% widthratio stats.employees_suspended total 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium">منتهي الخدمة</span>
+                            <span class="text-slate-800 font-bold">{{ stats.employees_terminated }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-slate-400 rounded-full" style="width: {% widthratio stats.employees_terminated total 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-400 text-center py-6">لا توجد بيانات بعد</p>
+                {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- توزيع حسب الفرع -->
+            {% if branch_distribution %}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-800">الموظفون حسب الفرع</h3>
+                    <i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i>
+                </div>
+                <div class="space-y-3">
+                    {% for b in branch_distribution %}
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium truncate">{{ b.branch__name|default:"بدون فرع" }}</span>
+                            <span class="text-slate-800 font-bold">{{ b.c }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-l from-primary-500 to-indigo-500 rounded-full" style="width: {% widthratio b.c max_branch 100 %}%"></div>
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-8 text-center text-slate-400">
-            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
-            <p class="text-sm">لا توجد طلبات توظيف مُسندة إليك حالياً</p>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
         {% endif %}
     </div>
-
-    <!-- ─── عمليات أخرى مُسندة (إجازات، رواتب، نقل...) ─── -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-amber-50">
-            <div class="flex items-center gap-2">
-                <i data-lucide="clipboard-check" class="w-5 h-5 text-amber-600"></i>
-                <h3 class="text-sm md:text-base font-bold text-slate-800">عمليات مُسندة إليك</h3>
-                {% if officer_pending_actions %}
-                <span class="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 rounded-full">{{ officer_pending_actions|length }}</span>
-                {% endif %}
-            </div>
-            <a href="{% url 'web:list_pending_actions' %}?tab=pending_officer" class="text-xs md:text-sm text-amber-600 hover:underline flex items-center gap-1">
-                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            </a>
-        </div>
-
-        {% if officer_pending_actions %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">نوع العملية</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الموظف</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">تاريخ الإسناد</th>
-                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for a in officer_pending_actions %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-800">{{ a.get_action_type_display }}</td>
-                        <td class="px-4 py-3 text-slate-700">{{ a.employee.name }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ a.employee.branch.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ a.requested_by.get_full_name|default:a.requested_by.username }}</td>
-                        <td class="px-4 py-3 text-slate-500 text-xs">{{ a.assigned_at|date:"Y-m-d H:i" }}</td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'web:pending_action_detail' a.id %}" class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-1">
-                                    <i data-lucide="eye" class="w-4 h-4"></i> عرض ومعالجة
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-8 text-center text-slate-400">
-            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
-            <p class="text-sm">لا توجد عمليات مُسندة إليك حالياً</p>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    {% if is_general_manager %}
-    <!-- ─── طلبات توظيف بانتظار موافقة المدير العام / مدير الموارد ─── -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-blue-50">
-            <div class="flex items-center gap-2">
-                <i data-lucide="user-plus" class="w-5 h-5 text-blue-600"></i>
-                <h3 class="text-sm md:text-base font-bold text-slate-800">طلبات توظيف بانتظار موافقتك (مدير عام)</h3>
-                {% if gm_employment_requests %}
-                <span class="px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-800 rounded-full">{{ gm_employment_requests|length }}</span>
-                {% endif %}
-            </div>
-            <a href="{% url 'web:list_employment_requests' %}?status=pending_gm" class="text-xs md:text-sm text-blue-600 hover:underline flex items-center gap-1">
-                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            </a>
-        </div>
-
-        {% if gm_employment_requests %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">اسم الموظف</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">القسم</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">تاريخ موافقة الفرع</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">المستند</th>
-                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for req in gm_employment_requests %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-800">{{ req.name }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.branch.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.department.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
-                        <td class="px-4 py-3 text-slate-500 text-xs">{{ req.branch_reviewed_at|date:"Y-m-d H:i"|default:"—" }}</td>
-                        <td class="px-4 py-3">
-                            {% if req.commencement_document %}
-                            <a href="{{ req.commencement_document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs flex items-center gap-1">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> عرض
-                            </a>
-                            {% else %}<span class="text-slate-400 text-xs">—</span>{% endif %}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-center gap-2 flex-wrap">
-                                <form method="post" action="{% url 'web:gm_approve_employment_request' req.id %}" class="flex items-center gap-1" onsubmit="return this.assigned_officer.value && confirm('الموافقة وإسناد الطلب للأخصائي المختار؟');">
-                                    {% csrf_token %}
-                                    <select name="assigned_officer" required class="px-2 py-1 text-xs border border-slate-300 rounded">
-                                        <option value="">اختر أخصائي...</option>
-                                        {% for o in hr_officers %}
-                                            <option value="{{ o.id }}">{{ o.get_full_name|default:o.username }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1">
-                                        <i data-lucide="check" class="w-4 h-4"></i> موافقة + إسناد
-                                    </button>
-                                </form>
-                                <form method="post" action="{% url 'web:reject_employment_request' req.id %}" onsubmit="return confirm('رفض هذا الطلب؟');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-1">
-                                        <i data-lucide="x" class="w-4 h-4"></i> رفض
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-8 text-center text-slate-400">
-            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
-            <p class="text-sm">لا توجد طلبات توظيف بانتظار موافقتك</p>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- ─── عمليات بانتظار موافقتك (إجازات، رواتب، نقل...) ─── -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-purple-50">
-            <div class="flex items-center gap-2">
-                <i data-lucide="clipboard-list" class="w-5 h-5 text-purple-600"></i>
-                <h3 class="text-sm md:text-base font-bold text-slate-800">عمليات بانتظار موافقتك (مدير عام)</h3>
-                {% if gm_pending_actions %}
-                <span class="px-2 py-0.5 text-xs font-bold bg-purple-100 text-purple-800 rounded-full">{{ gm_pending_actions|length }}</span>
-                {% endif %}
-            </div>
-            <a href="{% url 'web:list_pending_actions' %}?tab=pending_gm" class="text-xs md:text-sm text-purple-600 hover:underline flex items-center gap-1">
-                عرض الكل <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            </a>
-        </div>
-
-        {% if gm_pending_actions %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">نوع العملية</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الموظف</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">الفرع</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">مقدّم الطلب</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold">التاريخ</th>
-                        <th class="px-4 py-3 text-center text-sm font-semibold">الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for a in gm_pending_actions %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-800">{{ a.get_action_type_display }}</td>
-                        <td class="px-4 py-3 text-slate-700">{{ a.employee.name }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ a.employee.branch.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ a.requested_by.get_full_name|default:a.requested_by.username }}</td>
-                        <td class="px-4 py-3 text-slate-500 text-xs">{{ a.created_at|date:"Y-m-d H:i" }}</td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'web:pending_action_detail' a.id %}" class="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1">
-                                    <i data-lucide="eye" class="w-4 h-4"></i> عرض ومعالجة
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-8 text-center text-slate-400">
-            <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2"></i>
-            <p class="text-sm">لا توجد عمليات بانتظار موافقتك</p>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

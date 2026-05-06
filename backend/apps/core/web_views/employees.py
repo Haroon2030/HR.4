@@ -25,12 +25,44 @@ from apps.core.web_views._helpers import (
 
 @login_required
 def list_employees(request):
-    """قائمة الموظفين"""
+    """قائمة الموظفين مع بحث ذكي وترقيم"""
     from apps.employees.models import Employee
-    employees = Employee.objects.select_related(
+    from django.db.models import Q
+    from django.core.paginator import Paginator
+
+    qs = Employee.objects.select_related(
         'branch', 'department', 'cost_center', 'nationality'
     ).all()
-    return render(request, 'pages/employees/list.html', {'employees': employees})
+
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        terms = [t for t in q.split() if t]
+        cond = Q()
+        for t in terms:
+            cond &= (
+                Q(name__icontains=t) |
+                Q(id_number__icontains=t) |
+                Q(phone__icontains=t) |
+                Q(branch__name__icontains=t) |
+                Q(department__name__icontains=t) |
+                Q(cost_center__name__icontains=t) |
+                Q(nationality__name__icontains=t) |
+                Q(profession__name__icontains=t) |
+                Q(status__icontains=t)
+            )
+        qs = qs.filter(cond)
+
+    qs = qs.order_by('-id')
+    paginator = Paginator(qs, 10)
+    page_obj = paginator.get_page(request.GET.get('page') or 1)
+
+    return render(request, 'pages/employees/list.html', {
+        'employees': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'query': q,
+        'total_count': paginator.count,
+    })
 
 
 @login_required

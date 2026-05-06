@@ -36,6 +36,55 @@ def _notify_branch_manager(req, **kwargs):
     _notify_user(manager, req, **kwargs)
 
 
+# ─── التحقق من اكتمال بيانات الموظف قبل الموافقة النهائية ────────────────
+# (label, attr) — نستخدم الـ FK suffix `_id` لتجنّب لمس DB لأجل استرجاع الكائن
+_REQUIRED_EMPLOYEE_FIELDS = [
+    # نصوص أساسية
+    ('رقم الهوية', 'id_number', 'str'),
+    ('رقم الجوال', 'phone', 'str'),
+    ('البريد الإلكتروني', 'email', 'str'),
+    ('الرقم الوظيفي', 'employee_number', 'str'),
+    # FKs
+    ('الجنسية', 'nationality_id', 'fk'),
+    ('المهنة', 'profession_id', 'fk'),
+    ('الكفالة', 'sponsorship_id', 'fk'),
+    # تواريخ
+    ('تاريخ المباشرة', 'hire_date', 'date'),
+    # راتب (نقبل صفر، نتأكد فقط أنها ليست None)
+    ('الراتب الأساسي', 'basic_salary', 'decimal'),
+    ('بدل سكن', 'housing_allowance', 'decimal'),
+    ('بدل نقل', 'transport_allowance', 'decimal'),
+    # مستندات
+    ('صورة الهوية', 'id_document', 'file'),
+]
+
+
+def validate_employee_data_complete(req):
+    """يرجع قائمة المسميات العربية للحقول الناقصة على طلب التوظيف.
+
+    تُستدعى قبل `officer_approve` لمنع الموافقة النهائية بدون بيانات الموظف.
+    """
+    missing = []
+    for label, attr, kind in _REQUIRED_EMPLOYEE_FIELDS:
+        value = getattr(req, attr, None)
+        if kind == 'str':
+            if not value or not str(value).strip():
+                missing.append(label)
+        elif kind == 'fk':
+            if value is None:
+                missing.append(label)
+        elif kind == 'date':
+            if value is None:
+                missing.append(label)
+        elif kind == 'decimal':
+            if value is None:
+                missing.append(label)
+        elif kind == 'file':
+            if not value:
+                missing.append(label)
+    return missing
+
+
 def _notify_general_managers(req, **kwargs):
     from django.contrib.auth import get_user_model
     from apps.core.models import Role
@@ -119,6 +168,16 @@ def officer_approve(req, user, notes=''):
     if req.assigned_officer_id != user.id and not user.is_superuser:
         raise ValueError('هذا الطلب غير مُسند إليك.')
 
+    # ✅ التحقق من اكتمال بيانات الموظف قبل السماح بالموافقة النهائية
+    missing = validate_employee_data_complete(req)
+    if missing:
+        missing_str = '، '.join(missing)
+        raise ValueError(
+            'لا يمكن إكمال الموافقة قبل تعبئة بيانات الموظف.\n'
+            f'الحقول الناقصة: {missing_str}.\n'
+            'استخدم زر "تعديل البيانات" لإكمال المعلومات ثم أعد المحاولة.'
+        )
+
     now = timezone.now()
     req.status = EmploymentRequest.Status.APPROVED
     req.officer_reviewed_at = now
@@ -134,6 +193,7 @@ def officer_approve(req, user, notes=''):
     # إنشاء الموظف فعلياً (إن لم يكن مُنشأ من قبل)
     if not Employee.objects.filter(employment_request=req).exists():
         Employee.objects.create(
+            # الحقول الأصلية
             name=req.name,
             branch=req.branch,
             department=req.department,
@@ -141,6 +201,28 @@ def officer_approve(req, user, notes=''):
             commencement_document=req.commencement_document,
             employment_request=req,
             status=Employee.Status.ACTIVE,
+            # ✅ بيانات الموظف الكاملة المنسوخة من الطلب
+            id_number=req.id_number,
+            phone=req.phone,
+            email=req.email,
+            employee_number=req.employee_number,
+            nationality=req.nationality,
+            profession=req.profession,
+            sponsorship=req.sponsorship,
+            insurance=req.insurance,
+            insurance_class=req.insurance_class,
+            hire_date=req.hire_date,
+            passport_expiry_date=req.passport_expiry_date,
+            basic_salary=req.basic_salary,
+            housing_allowance=req.housing_allowance,
+            transport_allowance=req.transport_allowance,
+            other_allowance=req.other_allowance,
+            cash_amount=req.cash_amount,
+            insurance_deduction_rate=req.insurance_deduction_rate,
+            id_document=req.id_document,
+            passport_document=req.passport_document,
+            contract_document=req.contract_document,
+            other_documents=req.other_documents,
         )
 
     # إشعارات الإكمال

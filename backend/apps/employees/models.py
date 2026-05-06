@@ -85,6 +85,77 @@ class EmploymentRequest(BaseModel):
     officer_reviewed_at = models.DateTimeField("تاريخ موافقة الأخصائي", null=True, blank=True)
     officer_notes = models.TextField("ملاحظات الأخصائي", blank=True)
 
+    # ─ بيانات الموظف الكاملة (يعبّيها الأخصائي قبل الموافقة النهائية) ────────
+    # بيانات أساسية
+    id_number = models.CharField("رقم الهوية", max_length=50, blank=True)
+    phone = models.CharField("رقم الجوال", max_length=20, blank=True)
+    email = models.EmailField("البريد الإلكتروني", blank=True)
+    employee_number = models.CharField("الرقم الوظيفي", max_length=50, blank=True)
+
+    # Setup References
+    nationality = models.ForeignKey(
+        'setup.Nationality', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="الجنسية"
+    )
+    profession = models.ForeignKey(
+        'setup.Profession', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="المهنة"
+    )
+    sponsorship = models.ForeignKey(
+        'setup.Sponsorship', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="الكفالة"
+    )
+    insurance = models.ForeignKey(
+        'setup.Insurance', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="التأمين الطبي"
+    )
+    insurance_class = models.ForeignKey(
+        'setup.InsuranceClass', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="فئة التأمين"
+    )
+
+    # تواريخ
+    hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
+    passport_expiry_date = models.DateField("تاريخ انتهاء الجواز", null=True, blank=True)
+
+    # الراتب
+    basic_salary = models.DecimalField(
+        "الراتب الأساسي", max_digits=12, decimal_places=2, default=0
+    )
+    housing_allowance = models.DecimalField(
+        "بدل سكن", max_digits=12, decimal_places=2, default=0
+    )
+    transport_allowance = models.DecimalField(
+        "بدل نقل", max_digits=12, decimal_places=2, default=0
+    )
+    other_allowance = models.DecimalField(
+        "بدل إضافي", max_digits=12, decimal_places=2, default=0
+    )
+    cash_amount = models.DecimalField(
+        "كاش", max_digits=12, decimal_places=2, default=0
+    )
+    insurance_deduction_rate = models.DecimalField(
+        "نسبة خصم التأمينات", max_digits=5, decimal_places=2, default=0
+    )
+
+    # المستندات
+    id_document = models.FileField(
+        "صورة الهوية", upload_to='employment_requests/id/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+    passport_document = models.FileField(
+        "جواز السفر", upload_to='employment_requests/passport/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+    contract_document = models.FileField(
+        "العقد", upload_to='employment_requests/contract/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+    other_documents = models.FileField(
+        "مستندات أخرى", upload_to='employment_requests/other/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
     history = HistoricalRecords()
 
     class Meta:
@@ -238,11 +309,14 @@ class Employee(BaseModel):
 
     @property
     def remaining_leave_days(self):
-        """الرصيد المتبقي = المستحق - المستخدم (available_leave_balance يُعتبر المستخدم)."""
+        """الرصيد المتبقي = المستحق - المستخدم (لا يقل عن صفر)."""
         from decimal import Decimal
         accrued = Decimal(self.accrued_leave_days or 0)
         used = Decimal(self.available_leave_balance or 0)
-        return (accrued - used).quantize(Decimal('0.1'))
+        remaining = accrued - used
+        if remaining < 0:
+            remaining = Decimal('0')
+        return remaining.quantize(Decimal('0.1'))
 
     @property
     def daily_wage(self):

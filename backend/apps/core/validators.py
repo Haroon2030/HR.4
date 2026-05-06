@@ -40,3 +40,35 @@ def validate_file_size(file):
 
 # قائمة validators جاهزة للاستخدام في FileField
 DOCUMENT_VALIDATORS = [document_extension_validator, validate_file_size]
+
+
+# ─── الصور (Images) ───────────────────────────────────────────────────
+ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+
+image_extension_validator = FileExtensionValidator(
+    allowed_extensions=ALLOWED_IMAGE_EXTENSIONS,
+    message=f'صيغة الصورة غير مدعومة. الصيغ المسموحة: {", ".join(ALLOWED_IMAGE_EXTENSIONS)}',
+)
+
+# الحد الأقصى للصور (5MB)
+MAX_IMAGE_SIZE_MB = 5
+MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024
+
+
+def validate_image_size(file):
+    """تحقق من حجم الصور المرفوعة (5MB)."""
+    if not file:
+        return
+    if getattr(file, '_committed', True):
+        return
+    try:
+        size = file.size
+    except Exception:
+        return
+    if size > MAX_IMAGE_SIZE:
+        raise ValidationError(
+            f'حجم الصورة ({size / (1024*1024):.1f}MB) يتجاوز الحد المسموح ({MAX_IMAGE_SIZE_MB}MB).'
+        )
+
+
+IMAGE_VALIDATORS = [image_extension_validator, validate_image_size]

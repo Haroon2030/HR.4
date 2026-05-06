@@ -10,11 +10,14 @@ Pending Actions — Views (دورة موافقات متعدّدة المراحل
     + return_pending_action  — إرجاع للأخصائي من أي مرحلة
     + resubmit_pending_action — الأخصائي يعيد الإرسال بعد التعديل
 """
+from types import SimpleNamespace
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from apps.core.models import PendingAction, Role
 from apps.core.web_views._helpers import (
@@ -80,32 +83,201 @@ def _inbox_for(user, qs):
     return qs.filter(f) if has_filter or True else qs.none()
 
 
+# =============================================================================
+# Unified Inbox Adapter — يدمج PendingAction + EmploymentRequest في عرض موحّد
+# =============================================================================
+
+# مَخطّط الحالات بين النموذجين (متطابقة فعلياً):
+#   pending_branch / pending_gm / pending_officer / approved / returned (PendingAction)
+#   pending_branch / pending_gm / pending_officer / approved / rejected (EmploymentRequest)
+# نعرضها بنفس البُنية في الـ template.
+
+def _user_visible_hire_requests(user):
+    """طلبات التوظيف المرئية للمستخدم بنفس منطق _user_visible_actions."""
+    from apps.employees.models import EmploymentRequest
+
+    qs = EmploymentRequest.objects.select_related(
+        'branch', 'requested_by', 'branch_reviewed_by',
+        'gm_reviewed_by', 'assigned_officer',
+    )
+    if user.is_superuser or _is_general_manager(user):
+        return qs
+
+    filters = Q(requested_by=user)
+    managed_ids = list(user.managed_branches.values_list('id', flat=True))
+    if managed_ids:
+        filters |= Q(branch_id__in=managed_ids)
+    if _is_hr_officer(user):
+        filters |= Q(assigned_officer=user)
+    return qs.filter(filters).distinct()
+
+
+def _inbox_for_hire(user, qs):
+    """فلترة طلبات التوظيف المنتظِرة إجراءً من المستخدم."""
+    from apps.employees.models import EmploymentRequest
+
+    f = Q()
+    has_filter = False
+    if user.is_superuser or _is_general_manager(user):
+        f |= Q(status=EmploymentRequest.Status.PENDING_GM)
+        has_filter = True
+    if _is_branch_manager(user):
+        managed_ids = list(user.managed_branches.values_list('id', flat=True))
+        if managed_ids:
+            f |= Q(status=EmploymentRequest.Status.PENDING_BRANCH, branch_id__in=managed_ids)
+            has_filter = True
+    if user.is_superuser:
+        f |= Q(status=EmploymentRequest.Status.PENDING_BRANCH)
+        has_filter = True
+    if _is_hr_officer(user) or user.is_superuser:
+        f |= (
+            Q(status=EmploymentRequest.Status.PENDING_OFFICER, assigned_officer=user)
+            if not user.is_superuser
+            else Q(status=EmploymentRequest.Status.PENDING_OFFICER)
+        )
+        has_filter = True
+    return qs.filter(f) if has_filter else qs.none()
+
+
+def _wrap_action(a):
+    """تحويل PendingAction إلى DTO موحّد للعرض."""
+    return SimpleNamespace(
+        kind='action',
+        id=a.id,
+        action_type=a.action_type,
+        action_type_display=a.get_action_type_display(),
+        employee_name=a.employee.name if a.employee_id else '-',
+        branch_name=a.branch.name if a.branch_id else '-',
+        status=a.status,
+        status_display=a.get_status_display(),
+        assigned_officer=a.assigned_officer,
+        requested_by=a.requested_by,
+        requested_at=a.requested_at,
+        updated_at=a.updated_at,
+        resubmit_count=a.resubmit_count or 0,
+        detail_url=reverse('web:pending_action_detail', args=[a.id]),
+    )
+
+
+def _wrap_hire(r):
+    """تحويل EmploymentRequest إلى DTO موحّد للعرض."""
+    return SimpleNamespace(
+        kind='hire',
+        id=r.id,
+        action_type='hire',
+        action_type_display='توظيف جديد',
+        employee_name=r.name,
+        branch_name=r.branch.name if r.branch_id else '-',
+        status=r.status,
+        status_display=r.get_status_display(),
+        assigned_officer=r.assigned_officer,
+        requested_by=r.requested_by,
+        requested_at=r.created_at,
+        updated_at=r.updated_at,
+        resubmit_count=0,
+        detail_url=reverse('web:list_employment_requests'),
+    )
+
+
 @login_required
 def list_pending_actions(request):
+    from apps.employees.models import EmploymentRequest
+
     tab = request.GET.get('tab', 'inbox')
     base = _user_visible_actions(request.user)
+    base_hire = _user_visible_hire_requests(request.user)
 
+    # ─ فلترة كل نموذج حسب التبويب ────────────────────────────────
     if tab == 'inbox':
         qs = _inbox_for(request.user, base)
+        qs_hire = _inbox_for_hire(request.user, base_hire)
     elif tab == 'mine':
         qs = base.filter(requested_by=request.user)
-    elif tab in TAB_FILTERS and TAB_FILTERS[tab]:
-        qs = base.filter(status=TAB_FILTERS[tab])
+        qs_hire = base_hire.filter(requested_by=request.user)
+    elif tab == 'pending_branch':
+        qs = base.filter(status=PendingAction.Status.PENDING_BRANCH)
+        qs_hire = base_hire.filter(status=EmploymentRequest.Status.PENDING_BRANCH)
+    elif tab == 'pending_gm':
+        qs = base.filter(status=PendingAction.Status.PENDING_GM)
+        qs_hire = base_hire.filter(status=EmploymentRequest.Status.PENDING_GM)
+    elif tab == 'pending_officer':
+        qs = base.filter(status=PendingAction.Status.PENDING_OFFICER)
+        qs_hire = base_hire.filter(status=EmploymentRequest.Status.PENDING_OFFICER)
+    elif tab == 'returned':
+        qs = base.filter(status=PendingAction.Status.RETURNED)
+        qs_hire = base_hire.none()  # EmploymentRequest ليس له حالة "مرتجع"
+    elif tab == 'approved':
+        qs = base.filter(status=PendingAction.Status.APPROVED)
+        qs_hire = base_hire.filter(status=EmploymentRequest.Status.APPROVED)
     else:
         qs = base
+        qs_hire = base_hire
 
+    # ─ دمج وفرز موحّد ────────────────────────────────────────────
+    rows = [_wrap_action(a) for a in qs.order_by('-requested_at')[:500]]
+    rows += [_wrap_hire(r) for r in qs_hire.order_by('-created_at')[:500]]
+    rows.sort(key=lambda x: x.updated_at or x.requested_at, reverse=True)
+
+    # ─ بحث ذكي عبر الحقول ────────────────────────────────────────
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        ql = q.lower()
+        def _match(r):
+            blobs = [
+                getattr(r, 'employee_name', '') or '',
+                getattr(r, 'branch_name', '') or '',
+                getattr(r, 'action_type_display', '') or '',
+                getattr(r, 'status_display', '') or '',
+                str(getattr(r, 'id', '') or ''),
+            ]
+            rb = getattr(r, 'requested_by', None)
+            if rb:
+                blobs.append(getattr(rb, 'get_full_name', lambda: '')() or getattr(rb, 'username', '') or '')
+            return any(ql in str(b).lower() for b in blobs)
+        rows = [r for r in rows if _match(r)]
+
+    total_rows = len(rows)
+
+    # ─ ترقيم: 10 صفوف/صفحة ───────────────────────────────────────
+    from django.core.paginator import Paginator
+    paginator = Paginator(rows, 10)
+    page_obj = paginator.get_page(request.GET.get('page') or 1)
+
+    # ─ العدّادات الموحّدة ─────────────────────────────────────────
     counts = {
-        'inbox': _inbox_for(request.user, base).count(),
-        'pending_branch': base.filter(status=PendingAction.Status.PENDING_BRANCH).count(),
-        'pending_gm': base.filter(status=PendingAction.Status.PENDING_GM).count(),
-        'pending_officer': base.filter(status=PendingAction.Status.PENDING_OFFICER).count(),
+        'inbox': (
+            _inbox_for(request.user, base).count()
+            + _inbox_for_hire(request.user, base_hire).count()
+        ),
+        'pending_branch': (
+            base.filter(status=PendingAction.Status.PENDING_BRANCH).count()
+            + base_hire.filter(status=EmploymentRequest.Status.PENDING_BRANCH).count()
+        ),
+        'pending_gm': (
+            base.filter(status=PendingAction.Status.PENDING_GM).count()
+            + base_hire.filter(status=EmploymentRequest.Status.PENDING_GM).count()
+        ),
+        'pending_officer': (
+            base.filter(status=PendingAction.Status.PENDING_OFFICER).count()
+            + base_hire.filter(status=EmploymentRequest.Status.PENDING_OFFICER).count()
+        ),
         'returned': base.filter(status=PendingAction.Status.RETURNED).count(),
-        'approved': base.filter(status=PendingAction.Status.APPROVED).count(),
-        'mine': base.filter(requested_by=request.user).count(),
+        'approved': (
+            base.filter(status=PendingAction.Status.APPROVED).count()
+            + base_hire.filter(status=EmploymentRequest.Status.APPROVED).count()
+        ),
+        'mine': (
+            base.filter(requested_by=request.user).count()
+            + base_hire.filter(requested_by=request.user).count()
+        ),
     }
 
     return render(request, 'pages/pending_actions/list.html', {
-        'actions': qs.order_by('-requested_at')[:200],
+        'actions': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'total_rows': total_rows,
+        'query': q,
         'tab': tab,
         'counts': counts,
         'is_gm': _is_general_manager(request.user),

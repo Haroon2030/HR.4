@@ -1,12 +1,14 @@
 """
 Django Signals للنظام الأساسي
 """
+import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from .models import UserProfile, PendingAction
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=User)
@@ -33,9 +35,9 @@ def notify_branch_on_pending_action_created(sender, instance, created, **kwargs)
     try:
         from apps.core.services.pending_actions import notify_branch_on_create
         notify_branch_on_create(instance)
-    except Exception:
+    except Exception as e:
         # لا نُفشل المعاملة بسبب فشل الإشعار
-        pass
+        logger.warning("notify_branch_on_pending_action_created failed: %s", e)
 
 
 def _register_employment_request_signal():
@@ -50,8 +52,8 @@ def _register_employment_request_signal():
         try:
             from apps.core.services.employment_requests import notify_branch_on_create
             notify_branch_on_create(instance)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("notify_employment_request signal failed: %s", e)
 
 
 _register_employment_request_signal()

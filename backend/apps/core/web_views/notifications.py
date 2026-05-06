@@ -43,6 +43,8 @@ def notifications_dropdown(request):
 def read_notification(request, notif_id):
     notif = get_object_or_404(Notification, id=notif_id, recipient=request.user)
     notif.mark_read()
+    if request.headers.get('HX-Request'):
+        return notifications_dropdown(request)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'ok': True})
     if notif.link:
@@ -56,6 +58,33 @@ def read_all_notifications(request):
     _user_notifications(request.user).filter(is_read=False).update(
         is_read=True, read_at=timezone.now()
     )
+    if request.headers.get('HX-Request'):
+        return notifications_dropdown(request)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
+    return redirect('web:list_notifications')
+
+
+@login_required
+@require_POST
+def delete_notification(request, notif_id):
+    """حذف إشعار واحد."""
+    notif = get_object_or_404(Notification, id=notif_id, recipient=request.user)
+    notif.delete()
+    if request.headers.get('HX-Request'):
+        return notifications_dropdown(request)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
+    return redirect('web:list_notifications')
+
+
+@login_required
+@require_POST
+def delete_all_notifications(request):
+    """حذف كل إشعارات المستخدم."""
+    _user_notifications(request.user).delete()
+    if request.headers.get('HX-Request'):
+        return notifications_dropdown(request)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'ok': True})
     return redirect('web:list_notifications')

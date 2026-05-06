@@ -29,10 +29,19 @@ env = environ.Env(
 environ.Env.read_env(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-vai3+nw&h-)4)vhivn&p1lc1c*=61-wm-(#4(mh=x*_oa0s)5c')
+# في dev فقط: نسمح بقيمة افتراضية كي يعمل المشروع محلياً.
+# في production: settings/production.py يستدعي env('SECRET_KEY') بدون default.
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-dev-only-NOT-FOR-PRODUCTION')
 
 # تفعيل وضع التطوير بناءً على ملف .env
 DEBUG = env('DEBUG')
+
+# منع استخدام مفتاح التطوير الافتراضي مع DEBUG=False
+if not DEBUG and SECRET_KEY.startswith('django-insecure-dev-only'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "SECRET_KEY غير مُعدّ في البيئة. حدّد SECRET_KEY في ملف .env قبل التشغيل في وضع الإنتاج."
+    )
 
 # الأجهزة المسموح لها بالوصول بناءً على البيئة
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
@@ -196,6 +205,12 @@ STORAGES = {
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Upload limits (defense-in-depth — مع validators على مستوى الحقول)
+# 15MB لإعطاء هامش أمان فوق MAX_UPLOAD_SIZE (10MB) من validators.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024  # 15MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024  # 15MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000  # الحد من POST كبيرة جداً
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Authentication Settings

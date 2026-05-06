@@ -114,6 +114,108 @@ class EmploymentRequestForm(forms.ModelForm):
         return name
 
 
+# الحقول الإلزامية لإكمال الموافقة النهائية من الأخصائي
+EMPLOYMENT_REQUEST_REQUIRED_FIELDS = [
+    'id_number', 'phone', 'email', 'employee_number',
+    'nationality', 'profession', 'sponsorship',
+    'hire_date',
+    'basic_salary', 'housing_allowance', 'transport_allowance',
+    'id_document',
+]
+
+
+class EmploymentRequestEditForm(forms.ModelForm):
+    """نموذج كامل لتعديل طلب التوظيف من قِبَل أخصائي الموارد قبل الموافقة النهائية.
+
+    يشمل كل بيانات الموظف التي ستُنسخ إلى Employee عند الموافقة.
+    الحقول في EMPLOYMENT_REQUEST_REQUIRED_FIELDS إلزامية على مستوى الـ form.
+    """
+
+    class Meta:
+        model = EmploymentRequest
+        fields = [
+            # الحقول الأصلية
+            'name', 'branch', 'department', 'cost_center', 'commencement_document',
+            # بيانات أساسية
+            'id_number', 'phone', 'email', 'employee_number',
+            # Setup
+            'nationality', 'profession', 'sponsorship', 'insurance', 'insurance_class',
+            # تواريخ
+            'hire_date', 'passport_expiry_date',
+            # راتب
+            'basic_salary', 'housing_allowance', 'transport_allowance',
+            'other_allowance', 'cash_amount', 'insurance_deduction_rate',
+            # مستندات
+            'id_document', 'passport_document', 'contract_document', 'other_documents',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # اجعل كل الحقول اختيارية ابتداءً ثم اضبط الإلزامي
+        for field_name, field in self.fields.items():
+            field.required = False
+        # تفعيل الإلزامي
+        for field_name in EMPLOYMENT_REQUEST_REQUIRED_FIELDS:
+            if field_name in self.fields:
+                self.fields[field_name].required = True
+        # الاسم دائماً إلزامي
+        if 'name' in self.fields:
+            self.fields['name'].required = True
+
+        # 🎨 تطبيق ستايل Tailwind على كل widgets النموذج
+        text_class = (
+            'w-full px-3 py-2 border border-slate-300 rounded-md text-sm '
+            'focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none'
+        )
+        file_class = (
+            'block w-full text-xs text-slate-600 mt-1 '
+            'file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 '
+            'file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 '
+            'hover:file:bg-primary-100'
+        )
+        for field_name, field in self.fields.items():
+            widget = field.widget
+            cls = widget.__class__.__name__
+            existing = widget.attrs.get('class', '')
+            if cls in ('ClearableFileInput', 'FileInput'):
+                widget.attrs['class'] = f'{existing} {file_class}'.strip()
+            elif cls in ('Textarea',):
+                widget.attrs['class'] = f'{existing} {text_class}'.strip()
+                widget.attrs.setdefault('rows', 3)
+            else:
+                widget.attrs['class'] = f'{existing} {text_class}'.strip()
+            # تحويل الحقول التاريخية إلى type="date"
+            if field_name in ('hire_date', 'passport_expiry_date'):
+                widget.input_type = 'date'
+            # خطوة الأرقام للراتب
+            if field_name in ('basic_salary', 'housing_allowance', 'transport_allowance',
+                              'other_allowance', 'cash_amount', 'insurance_deduction_rate'):
+                widget.attrs.setdefault('step', '0.01')
+                widget.attrs.setdefault('min', '0')
+
+        # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
+        # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة
+        if self.instance and self.instance.pk and self.data:
+            to_drop = []
+            for field_name in list(self.fields.keys()):
+                if field_name == 'name':
+                    continue
+                in_post = field_name in self.data or field_name in self.files
+                if in_post:
+                    continue
+                current = getattr(self.instance, field_name, None)
+                if current not in (None, '', 0):
+                    to_drop.append(field_name)
+            for fname in to_drop:
+                self.fields.pop(fname, None)
+
+    def clean_name(self):
+        name = (self.cleaned_data.get('name') or '').strip()
+        if not name:
+            raise ValidationError('اسم الموظف مطلوب')
+        return name
+
+
 class EmployeeStatementForm(forms.ModelForm):
     """نموذج إفادة/إنذار للموظف."""
     send_email = forms.BooleanField(required=False)

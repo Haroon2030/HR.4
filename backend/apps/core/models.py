@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
-from apps.core.validators import DOCUMENT_VALIDATORS
+from apps.core.validators import DOCUMENT_VALIDATORS, IMAGE_VALIDATORS
 
 # ══════════════════════════════════════════════════════════════════════════════
 # أدوات الـ Soft Delete
@@ -74,7 +74,7 @@ class Company(BaseModel):
     name = models.CharField("اسم الشركة", max_length=200)
     tax_number = models.CharField("الرقم الضريبي", max_length=50, blank=True)
     commercial_record = models.CharField("السجل التجاري", max_length=50, blank=True)
-    logo = models.ImageField("شعار الشركة", upload_to='company/logos/', blank=True)
+    logo = models.ImageField("شعار الشركة", upload_to='company/logos/', blank=True, validators=IMAGE_VALIDATORS)
     contact_email = models.EmailField("البريد الإلكتروني", blank=True)
     contact_phone = models.CharField("رقم التواصل", max_length=20, blank=True)
     address = models.TextField("العنوان", blank=True)
@@ -242,7 +242,7 @@ class UserProfile(BaseModel):
         help_text="القسم الذي ينتمي له الموظف"
     )
     position = models.CharField("المنصب", max_length=100, blank=True)
-    avatar = models.ImageField("الصورة الشخصية", upload_to="avatars/", blank=True)
+    avatar = models.ImageField("الصورة الشخصية", upload_to="avatars/", blank=True, validators=IMAGE_VALIDATORS)
     is_protected = models.BooleanField("محمي", default=False, help_text="المستخدمين المحميين لا يمكن حذفهم أو تعديلهم")
     
     history = HistoricalRecords()

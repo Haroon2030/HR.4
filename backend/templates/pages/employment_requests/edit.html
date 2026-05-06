@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'main' }">
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a href="{% url 'web:list_employment_requests' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">تعديل بيانات الموظف — {{ emp_req.name }}</h1>
+            <p class="text-slate-500 text-xs">يجب إكمال الحقول الإلزامية (المعلّمة بـ <span class="text-red-500 font-bold">*</span>) قبل الموافقة النهائية.</p>
+        </div>
+    </div>
+
+    {% if missing_fields %}
+    <div class="bg-amber-50 border border-amber-300 text-amber-900 rounded-lg p-4 flex items-start gap-3">
+        <i data-lucide="alert-triangle" class="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600"></i>
+        <div class="text-sm">
+            <p class="font-bold mb-1">الحقول التالية ناقصة ولا يمكن إكمال الموافقة قبل تعبئتها:</p>
+            <p>{{ missing_fields|join:" • " }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if form.errors %}
+    <div class="bg-red-50 border border-red-300 text-red-800 rounded-lg p-4">
+        <p class="font-bold text-sm mb-2">يوجد أخطاء في النموذج:</p>
+        <ul class="text-xs space-y-1 list-disc pr-5">
+            {% for field in form %}
+                {% for error in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+            <!-- Tabs Nav -->
+            <div class="border-b border-slate-200">
+                <nav class="flex -mb-px overflow-x-auto">
+                    <button type="button" @click="activeTab = 'main'"
+                            :class="activeTab === 'main' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="user" class="w-4 h-4"></i> بيانات الموظف
+                    </button>
+                    <button type="button" @click="activeTab = 'org'"
+                            :class="activeTab === 'org' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="building" class="w-4 h-4"></i> التنظيمي والتأمين
+                    </button>
+                    <button type="button" @click="activeTab = 'salary'"
+                            :class="activeTab === 'salary' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="wallet" class="w-4 h-4"></i> الراتب
+                    </button>
+                    <button type="button" @click="activeTab = 'docs'"
+                            :class="activeTab === 'docs' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="files" class="w-4 h-4"></i> المستندات
+                    </button>
+                </nav>
+            </div>
+
+            {# ─── Tab 1: بيانات الموظف الأساسية ──────────────────────── #}
+            <div x-show="activeTab === 'main'" class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% include "pages/employment_requests/_field.html" with field=form.name %}
+                    {% include "pages/employment_requests/_field.html" with field=form.id_number %}
+                    {% include "pages/employment_requests/_field.html" with field=form.phone %}
+                    {% include "pages/employment_requests/_field.html" with field=form.email %}
+                    {% include "pages/employment_requests/_field.html" with field=form.employee_number %}
+                    {% include "pages/employment_requests/_field.html" with field=form.hire_date %}
+                    {% include "pages/employment_requests/_field.html" with field=form.passport_expiry_date %}
+                </div>
+            </div>
+
+            {# ─── Tab 2: التنظيمي والتأمين ──────────────────────────── #}
+            <div x-show="activeTab === 'org'" x-cloak class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% include "pages/employment_requests/_field.html" with field=form.branch %}
+                    {% include "pages/employment_requests/_field.html" with field=form.department %}
+                    {% include "pages/employment_requests/_field.html" with field=form.cost_center %}
+                    {% include "pages/employment_requests/_field.html" with field=form.nationality %}
+                    {% include "pages/employment_requests/_field.html" with field=form.profession %}
+                    {% include "pages/employment_requests/_field.html" with field=form.sponsorship %}
+                    {% include "pages/employment_requests/_field.html" with field=form.insurance %}
+                    {% include "pages/employment_requests/_field.html" with field=form.insurance_class %}
+                </div>
+            </div>
+
+            {# ─── Tab 3: الراتب ──────────────────────────────────── #}
+            <div x-show="activeTab === 'salary'" x-cloak class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% include "pages/employment_requests/_field.html" with field=form.basic_salary %}
+                    {% include "pages/employment_requests/_field.html" with field=form.housing_allowance %}
+                    {% include "pages/employment_requests/_field.html" with field=form.transport_allowance %}
+                    {% include "pages/employment_requests/_field.html" with field=form.other_allowance %}
+                    {% include "pages/employment_requests/_field.html" with field=form.cash_amount %}
+                    {% include "pages/employment_requests/_field.html" with field=form.insurance_deduction_rate %}
+                </div>
+            </div>
+
+            {# ─── Tab 4: المستندات ────────────────────────────────── #}
+            <div x-show="activeTab === 'docs'" x-cloak class="p-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {% include "pages/employment_requests/_file_field.html" with field=form.commencement_document %}
+                    {% include "pages/employment_requests/_file_field.html" with field=form.id_document %}
+                    {% include "pages/employment_requests/_file_field.html" with field=form.passport_document %}
+                    {% include "pages/employment_requests/_file_field.html" with field=form.contract_document %}
+                    {% include "pages/employment_requests/_file_field.html" with field=form.other_documents %}
+                </div>
+            </div>
+        </div>
+
+        {# ─── أزرار الإجراءات ──────────────────────────────────── #}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <a href="{% url 'web:list_employment_requests' %}"
+               class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg text-center">
+                إلغاء
+            </a>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button type="submit" name="action" value="save"
+                        class="px-5 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> حفظ البيانات
+                </button>
+                <button type="submit" name="action" value="save_and_approve"
+                        onclick="return confirm('سيتم حفظ البيانات والموافقة النهائية وإضافة الموظف لقائمة العاملين. هل أنت متأكد؟');"
+                        class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg inline-flex items-center justify-center gap-2">
+                    <i data-lucide="check-check" class="w-4 h-4"></i> حفظ + موافقة نهائية
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+    document.addEventListener('alpine:initialized', () => {
+        setTimeout(() => lucide.createIcons(), 100);
+    });
+</script>
+{% endblock %}

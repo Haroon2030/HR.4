@@ -199,3 +199,64 @@ def reject_employment_request(request, request_id):
     except ValueError as e:
         messages.error(request, str(e))
     return redirect('web:list_employment_requests')
+
+
+# ─── تعديل بيانات الموظف على الطلب (قبل الموافقة النهائية) ──────────────
+@login_required
+@hr_officer_required
+def edit_employment_request(request, request_id):
+    """صفحة لإكمال بيانات الموظف على طلب التوظيف قبل الموافقة النهائية.
+
+    متاحة فقط للأخصائي المُسند (أو superuser) عندما تكون الحالة
+    PENDING_OFFICER.
+    """
+    from apps.employees.models import EmploymentRequest
+    from apps.employees.forms import EmploymentRequestEditForm
+
+    emp_req = _get_request_or_404(request_id)
+
+    # تحقق من المرحلة
+    if emp_req.status != EmploymentRequest.Status.PENDING_OFFICER:
+        messages.error(request, 'لا يمكن تعديل البيانات في هذه المرحلة.')
+        return redirect('web:list_employment_requests')
+
+    # تحقق من الإسناد
+    if emp_req.assigned_officer_id != request.user.id and not request.user.is_superuser:
+        messages.error(request, 'هذا الطلب غير مُسند إليك.')
+        return redirect('web:list_employment_requests')
+
+    if request.method == 'POST':
+        form = EmploymentRequestEditForm(request.POST, request.FILES, instance=emp_req)
+        if form.is_valid():
+            form.save()
+            # هل المستخدم ضغط "حفظ والموافقة"؟
+            if request.POST.get('action') == 'save_and_approve':
+                try:
+                    svc.officer_approve(emp_req, request.user,
+                                        notes=request.POST.get('review_notes', ''))
+                    messages.success(
+                        request,
+                        f'تم حفظ البيانات والموافقة النهائية على "{emp_req.name}".'
+                    )
+                    return redirect('web:list_employment_requests')
+                except ValueError as e:
+                    messages.error(request, str(e))
+                    # نبقى في صفحة التعديل
+            else:
+                messages.success(request, f'تم حفظ بيانات "{emp_req.name}" بنجاح.')
+                return redirect('web:edit_employment_request', request_id=emp_req.id)
+        else:
+            messages.error(request, 'يوجد أخطاء في النموذج، يرجى مراجعة الحقول.')
+    else:
+        form = EmploymentRequestEditForm(instance=emp_req)
+
+    # عرض الحقول الناقصة كتنبيه
+    missing = svc.validate_employee_data_complete(emp_req)
+
+    return render(request, 'pages/employment_requests/edit.html', {
+        'form': form,
+        'emp_req': emp_req,
+        'missing_fields': missing,
+        'title': f'تعديل بيانات الموظف — {emp_req.name}',
+    })
+
