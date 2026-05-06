@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.urls import reverse
 from functools import wraps
 
 from apps.core.models import Branch, Company
@@ -80,7 +81,7 @@ def edit_branch(request, branch_id):
         if form.is_valid():
             branch = form.save()
             messages.success(request, f'تم تحديث الفرع "{branch.name}" بنجاح')
-            return redirect('web:list_branches')
+            return redirect(reverse('web:list_branches') + '#branches')
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -112,7 +113,7 @@ def add_branch(request):
             branch.company = company
             branch.save()
             messages.success(request, f'تم إنشاء الفرع "{branch.name}" بنجاح')
-            return redirect('web:list_branches')
+            return redirect(reverse('web:list_branches') + '#branches')
         for err in form.errors.values():
             messages.error(request, err[0])
 

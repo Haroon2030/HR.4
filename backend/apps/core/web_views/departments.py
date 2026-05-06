@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.urls import reverse
 from functools import wraps
 
 from apps.core.models import Branch
@@ -70,9 +71,7 @@ def add_department(request, branch_id=None):
             department.is_active = True
             department.save()
             messages.success(request, f'تم إنشاء القسم "{department.name}" بنجاح')
-            if branch:
-                return redirect('web:list_departments', branch_id=branch.id)
-            return redirect('web:list_all_departments')
+            return redirect(reverse('web:list_branches') + '#departments')
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -91,9 +90,7 @@ def edit_department(request, department_id):
         if form.is_valid():
             department = form.save()
             messages.success(request, f'تم تحديث القسم "{department.name}" بنجاح')
-            if department.branch_id:
-                return redirect('web:list_departments', branch_id=department.branch_id)
-            return redirect('web:list_all_departments')
+            return redirect(reverse('web:list_branches') + '#departments')
         for err in form.errors.values():
             messages.error(request, err[0])
 

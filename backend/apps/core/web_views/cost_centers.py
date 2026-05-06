@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.urls import reverse
 from functools import wraps
 
 from apps.core.models import Branch
@@ -65,9 +66,7 @@ def add_cost_center(request, branch_id=None):
             cost_center.is_active = True
             cost_center.save()
             messages.success(request, f'تم إنشاء مركز التكلفة "{cost_center.name}" بنجاح')
-            if branch:
-                return redirect('web:list_cost_centers', branch_id=branch.id)
-            return redirect('web:list_all_cost_centers')
+            return redirect(reverse('web:list_branches') + '#cost_centers')
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -86,9 +85,7 @@ def edit_cost_center(request, cost_center_id):
         if form.is_valid():
             cost_center = form.save()
             messages.success(request, f'تم تحديث مركز التكلفة "{cost_center.name}" بنجاح')
-            if cost_center.branch_id:
-                return redirect('web:list_cost_centers', branch_id=cost_center.branch_id)
-            return redirect('web:list_all_cost_centers')
+            return redirect(reverse('web:list_branches') + '#cost_centers')
         for err in form.errors.values():
             messages.error(request, err[0])
 
