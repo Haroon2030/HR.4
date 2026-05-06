@@ -82,6 +82,7 @@ urlpatterns = [
     path('cost-centers/add/', web_views.add_cost_center, name='add_cost_center_global'),
     path('branches/<int:branch_id>/cost-centers/', web_views.list_cost_centers, name='list_cost_centers'),
     path('branches/<int:branch_id>/cost-centers/add/', web_views.add_cost_center, name='add_cost_center'),
+    path('cost-centers/<int:cost_center_id>/', web_views.view_cost_center, name='view_cost_center'),
     path('cost-centers/<int:cost_center_id>/edit/', web_views.edit_cost_center, name='edit_cost_center'),
     path('cost-centers/<int:cost_center_id>/delete/', web_views.delete_cost_center, name='delete_cost_center'),
     
@@ -90,6 +91,7 @@ urlpatterns = [
     path('departments/add/', web_views.add_department, name='add_department_global'),
     path('branches/<int:branch_id>/departments/', web_views.list_departments, name='list_departments'),
     path('branches/<int:branch_id>/departments/add/', web_views.add_department, name='add_department'),
+    path('departments/<int:department_id>/', web_views.view_department, name='view_department'),
     path('departments/<int:department_id>/edit/', web_views.edit_department, name='edit_department'),
     path('departments/<int:department_id>/delete/', web_views.delete_department, name='delete_department'),
     

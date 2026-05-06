@@ -46,6 +46,17 @@ def list_departments(request, branch_id=None):
 
 @login_required
 @admin_required
+def view_department(request, department_id):
+    """عرض تفاصيل قسم"""
+    department = get_object_or_404(
+        Department.objects.select_related('branch', 'cost_center', 'manager'),
+        id=department_id
+    )
+    return render(request, 'pages/departments/detail.html', {'department': department})
+
+
+@login_required
+@admin_required
 def add_department(request, branch_id=None):
     """إضافة قسم جديد"""
     from apps.core.forms import DepartmentForm
@@ -59,9 +70,7 @@ def add_department(request, branch_id=None):
             department.is_active = True
             department.save()
             messages.success(request, f'تم إنشاء القسم "{department.name}" بنجاح')
-            if branch:
-                return redirect('web:list_departments', branch_id=branch.id)
-            return redirect('web:list_all_departments')
+            return redirect('web:view_department', department_id=department.id)
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -80,9 +89,7 @@ def edit_department(request, department_id):
         if form.is_valid():
             department = form.save()
             messages.success(request, f'تم تحديث القسم "{department.name}" بنجاح')
-            if department.branch:
-                return redirect('web:list_departments', branch_id=department.branch.id)
-            return redirect('web:list_all_departments')
+            return redirect('web:view_department', department_id=department.id)
         for err in form.errors.values():
             messages.error(request, err[0])
 

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            {% if department.branch %}
+                <a href="{% url 'web:list_departments' branch_id=department.branch.id %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+                </a>
+            {% else %}
+                <a href="{% url 'web:list_all_departments' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+                </a>
+            {% endif %}
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-2xl font-bold text-slate-900">{{ department.name }}</h1>
+                    <span class="px-2 py-1 text-xs font-mono font-semibold bg-slate-100 text-slate-800 rounded-md">{{ department.code }}</span>
+                    {% if department.is_active %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-md">نشط</span>
+                    {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-slate-200 text-slate-700 rounded-md">غير نشط</span>
+                    {% endif %}
+                </div>
+                <p class="text-slate-500 text-sm mt-1">تفاصيل القسم</p>
+            </div>
+        </div>
+        <a href="{% url 'web:edit_department' department.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+            <i data-lucide="edit-2" class="w-4 h-4"></i>
+            تعديل
+        </a>
+    </div>
+
+    <!-- Info Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">رقم القسم</p>
+                <p class="text-base font-semibold text-slate-900">{{ department.code }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">اسم القسم</p>
+                <p class="text-base font-semibold text-slate-900">{{ department.name }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">الفرع</p>
+                <p class="text-base text-slate-900">{{ department.branch.name|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">مركز التكلفة</p>
+                <p class="text-base text-slate-900">{{ department.cost_center.name|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">مدير القسم</p>
+                <p class="text-base text-slate-900">{{ department.manager|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">عدد الموظفين</p>
+                <p class="text-base font-semibold text-blue-600">{{ department.employees_count }}</p>
+            </div>
+        </div>
+        {% if department.description %}
+            <div>
+                <p class="text-xs text-slate-500 mb-1">الوصف</p>
+                <p class="text-sm text-slate-800 whitespace-pre-line">{{ department.description }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+        {% if department.branch %}
+            <a href="{% url 'web:list_departments' branch_id=department.branch.id %}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm">
+                العودة لقائمة الأقسام
+            </a>
+        {% else %}
+            <a href="{% url 'web:list_all_departments' %}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm">
+                العودة لقائمة الأقسام
+            </a>
+        {% endif %}
+        <a href="{% url 'web:edit_department' department.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm">تعديل القسم</a>
+    </div>
+</div>
+{% endblock %}
