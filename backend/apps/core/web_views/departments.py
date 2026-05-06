@@ -70,7 +70,9 @@ def add_department(request, branch_id=None):
             department.is_active = True
             department.save()
             messages.success(request, f'تم إنشاء القسم "{department.name}" بنجاح')
-            return redirect('web:view_department', department_id=department.id)
+            if branch:
+                return redirect('web:list_departments', branch_id=branch.id)
+            return redirect('web:list_all_departments')
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -89,7 +91,9 @@ def edit_department(request, department_id):
         if form.is_valid():
             department = form.save()
             messages.success(request, f'تم تحديث القسم "{department.name}" بنجاح')
-            return redirect('web:view_department', department_id=department.id)
+            if department.branch_id:
+                return redirect('web:list_departments', branch_id=department.branch_id)
+            return redirect('web:list_all_departments')
         for err in form.errors.values():
             messages.error(request, err[0])
 

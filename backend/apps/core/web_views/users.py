@@ -128,7 +128,7 @@ def edit_user(request, user_id):
             profile.assigned_branches.clear()
         
         messages.success(request, f'تم تحديث المستخدم "{user.username}" بنجاح')
-        return redirect('web:view_user', user_id=user.id)
+        return redirect('web:list_users')
     
     return render(request, 'pages/users/form.html', {
         'user_obj': user,
@@ -183,7 +183,7 @@ def add_user(request):
             profile.assigned_branches.set(assigned_branches)
         
         messages.success(request, f'تم إنشاء المستخدم "{user.username}" بنجاح')
-        return redirect('web:view_user', user_id=user.id)
+        return redirect('web:list_users')
     
     return render(request, 'pages/users/form.html', {
         'roles': roles,

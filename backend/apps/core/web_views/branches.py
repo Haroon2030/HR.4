@@ -80,7 +80,7 @@ def edit_branch(request, branch_id):
         if form.is_valid():
             branch = form.save()
             messages.success(request, f'تم تحديث الفرع "{branch.name}" بنجاح')
-            return redirect('web:view_branch', branch_id=branch.id)
+            return redirect('web:list_branches')
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -112,7 +112,7 @@ def add_branch(request):
             branch.company = company
             branch.save()
             messages.success(request, f'تم إنشاء الفرع "{branch.name}" بنجاح')
-            return redirect('web:view_branch', branch_id=branch.id)
+            return redirect('web:list_branches')
         for err in form.errors.values():
             messages.error(request, err[0])
 

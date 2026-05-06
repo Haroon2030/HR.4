@@ -52,7 +52,7 @@ def edit_role(request, role_id):
         if form.is_valid():
             role = form.save()
             messages.success(request, f'تم تحديث الدور "{role.name}" بنجاح')
-            return redirect('web:view_role', role_id=role.id)
+            return redirect('web:list_roles')
         for err in form.errors.values():
             messages.error(request, err[0])
     
@@ -72,7 +72,7 @@ def add_role(request):
             role.is_system_role = False
             role.save()
             messages.success(request, f'تم إنشاء الدور "{role.name}" بنجاح')
-            return redirect('web:view_role', role_id=role.id)
+            return redirect('web:list_roles')
         for err in form.errors.values():
             messages.error(request, err[0])
     

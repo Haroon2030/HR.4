@@ -65,7 +65,9 @@ def add_cost_center(request, branch_id=None):
             cost_center.is_active = True
             cost_center.save()
             messages.success(request, f'تم إنشاء مركز التكلفة "{cost_center.name}" بنجاح')
-            return redirect('web:view_cost_center', cost_center_id=cost_center.id)
+            if branch:
+                return redirect('web:list_cost_centers', branch_id=branch.id)
+            return redirect('web:list_all_cost_centers')
         for err in form.errors.values():
             messages.error(request, err[0])
 
@@ -84,7 +86,9 @@ def edit_cost_center(request, cost_center_id):
         if form.is_valid():
             cost_center = form.save()
             messages.success(request, f'تم تحديث مركز التكلفة "{cost_center.name}" بنجاح')
-            return redirect('web:view_cost_center', cost_center_id=cost_center.id)
+            if cost_center.branch_id:
+                return redirect('web:list_cost_centers', branch_id=cost_center.branch_id)
+            return redirect('web:list_all_cost_centers')
         for err in form.errors.values():
             messages.error(request, err[0])
 
