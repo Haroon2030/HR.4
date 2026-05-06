@@ -10,6 +10,26 @@ from django.core.exceptions import ValidationError
 from apps.employees.models import Employee, EmploymentRequest, EmployeeStatement
 
 
+# 🏷️ خريطة عرض الحقول المرجعية (FK) في القوائم المنسدلة — الاسم بدل الرقم
+FK_LABEL_OVERRIDES = {
+    'branch': lambda obj: getattr(obj, 'name', None) or getattr(obj, 'code', None) or str(obj),
+    'department': lambda obj: getattr(obj, 'name', None) or getattr(obj, 'code', None) or str(obj),
+    'cost_center': lambda obj: getattr(obj, 'name', None) or getattr(obj, 'code', None) or str(obj),
+    'nationality': lambda obj: getattr(obj, 'name', None) or str(obj),
+    'profession': lambda obj: getattr(obj, 'name', None) or str(obj),
+    'sponsorship': lambda obj: getattr(obj, 'name', None) or str(obj),
+    'insurance': lambda obj: getattr(obj, 'name', None) or str(obj),
+    'insurance_class': lambda obj: getattr(obj, 'name', None) or str(obj),
+}
+
+
+def _apply_fk_label_overrides(form):
+    for fname, label_fn in FK_LABEL_OVERRIDES.items():
+        f = form.fields.get(fname)
+        if f is not None and hasattr(f, 'queryset'):
+            f.label_from_instance = label_fn
+
+
 # الحقول التي ستديرها الـ form (نستثني history + employment_request المُربَط لاحقاً)
 # ⚠️ تحذير مهم: لا تُضِف هنا حقولاً تُحفظ عبر endpoints مستقلة (مثل work_schedule,
 # statements, warnings). إذا أُضيفت هنا ولم تُرسَم في edit.html فإن form.save()
@@ -49,6 +69,7 @@ class EmployeeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        _apply_fk_label_overrides(self)
         # كل الحقول اختيارية على مستوى الـ form باستثناء name
         # (Model أصلاً يسمح بـ blank=True/null=True لمعظمها)
         for field_name, field in self.fields.items():
@@ -103,6 +124,7 @@ class EmploymentRequestForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        _apply_fk_label_overrides(self)
         for field_name, field in self.fields.items():
             if field_name != 'name':
                 field.required = False
@@ -152,19 +174,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # 🏷️ إظهار الاسم في القوائم المنسدلة بدلاً من الرقم/التمثيل الافتراضي
-        _label_overrides = {
-            'branch': lambda obj: obj.name or obj.code,
-            'department': lambda obj: obj.name or obj.code,
-            'cost_center': lambda obj: obj.name or obj.code,
-            'nationality': lambda obj: getattr(obj, 'name', None) or str(obj),
-            'profession': lambda obj: getattr(obj, 'name', None) or str(obj),
-            'sponsorship': lambda obj: getattr(obj, 'name', None) or str(obj),
-            'insurance': lambda obj: getattr(obj, 'name', None) or str(obj),
-            'insurance_class': lambda obj: getattr(obj, 'name', None) or str(obj),
-        }
-        for _fname, _label_fn in _label_overrides.items():
-            if _fname in self.fields and hasattr(self.fields[_fname], 'queryset'):
-                self.fields[_fname].label_from_instance = _label_fn
+        _apply_fk_label_overrides(self)
 
         # اجعل كل الحقول اختيارية ابتداءً ثم اضبط الإلزامي
         for field_name, field in self.fields.items():
