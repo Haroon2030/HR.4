@@ -66,5 +66,8 @@ else:
     print(f"Superuser '{username}' created.")
 PYEOF
 
+echo "==> Fixing swapped code/name records (idempotent)..."
+python manage.py fix_swapped_code_name || echo "!! fix_swapped_code_name failed (non-fatal)"
+
 echo "==> Starting: $@"
 exec "$@"
