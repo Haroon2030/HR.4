@@ -151,6 +151,21 @@ class EmploymentRequestEditForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # 🏷️ إظهار الاسم في القوائم المنسدلة بدلاً من الرقم/التمثيل الافتراضي
+        _label_overrides = {
+            'branch': lambda obj: obj.name or obj.code,
+            'department': lambda obj: obj.name or obj.code,
+            'cost_center': lambda obj: obj.name or obj.code,
+            'nationality': lambda obj: getattr(obj, 'name', None) or str(obj),
+            'profession': lambda obj: getattr(obj, 'name', None) or str(obj),
+            'sponsorship': lambda obj: getattr(obj, 'name', None) or str(obj),
+            'insurance': lambda obj: getattr(obj, 'name', None) or str(obj),
+            'insurance_class': lambda obj: getattr(obj, 'name', None) or str(obj),
+        }
+        for _fname, _label_fn in _label_overrides.items():
+            if _fname in self.fields and hasattr(self.fields[_fname], 'queryset'):
+                self.fields[_fname].label_from_instance = _label_fn
+
         # اجعل كل الحقول اختيارية ابتداءً ثم اضبط الإلزامي
         for field_name, field in self.fields.items():
             field.required = False
