@@ -122,7 +122,11 @@ urlpatterns = [
     path('users/<int:user_id>/', web_views.view_user, name='view_user'),
     path('users/<int:user_id>/edit/', web_views.edit_user, name='edit_user'),
     path('users/<int:user_id>/delete/', web_views.delete_user, name='delete_user'),
-    
+
+    # HR Forms (نماذج الموارد البشرية الرسمية القابلة للطباعة)
+    path('hr-forms/', web_views.hr_forms_index, name='hr_forms_index'),
+    path('hr-forms/<str:form_type>/<int:employee_id>/', web_views.hr_form_print, name='hr_form_print'),
+
     # Auth
     path('auth/', include((auth_patterns, 'auth'))),
     

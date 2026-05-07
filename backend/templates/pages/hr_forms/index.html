@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}النماذج الرسمية{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto" x-data="{ selected: {} }">
+
+    {# Header #}
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="file-text" class="w-7 h-7 text-primary-600"></i>
+            النماذج الرسمية
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            نماذج جاهزة قابلة للطباعة — اختر الموظف ثم النموذج المناسب
+        </p>
+    </div>
+
+    {# Cards grid #}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {% for f in forms %}
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col">
+            <div class="flex items-start gap-3 mb-3">
+                <div class="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
+                    <i data-lucide="{{ f.icon }}" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-slate-800 text-base">{{ f.title }}</h3>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">{{ f.description }}</p>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-4 border-t border-slate-100">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">اختر الموظف</label>
+                <select
+                    x-model="selected['{{ f.key }}']"
+                    class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                    <option value="">— اختر موظف —</option>
+                    {% for emp in employees %}
+                        <option value="{{ emp.id }}">{{ emp.name }}{% if emp.employee_number %} ({{ emp.employee_number }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+
+                <div class="mt-3 flex gap-2">
+                    <button
+                        type="button"
+                        :disabled="!selected['{{ f.key }}']"
+                        @click="if (selected['{{ f.key }}']) window.open('/hr-forms/{{ f.key }}/' + selected['{{ f.key }}'] + '/', '_blank')"
+                        class="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                    >
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        فتح النموذج
+                    </button>
+                    <button
+                        type="button"
+                        :disabled="!selected['{{ f.key }}']"
+                        @click="if (selected['{{ f.key }}']) window.open('/hr-forms/{{ f.key }}/' + selected['{{ f.key }}'] + '/?auto_print=1', '_blank')"
+                        class="px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                        title="فتح وطباعة مباشرة"
+                    >
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not employees %}
+    <div class="mt-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 text-sm">
+        <i data-lucide="alert-circle" class="w-4 h-4 inline-block ml-1"></i>
+        لا يوجد موظفون مسجّلون بعد. أضف موظفاً أولاً لاستخدام النماذج.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+</script>
+{% endblock %}

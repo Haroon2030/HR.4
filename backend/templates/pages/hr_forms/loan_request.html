@@ -1,0 +1,66 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_info.html" %}
+
+<div class="section">
+    <h3>تفاصيل السلفة المطلوبة</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">الراتب الأساسي:</span><span class="blank">{{ employee.basic_salary|floatformat:2 }} ر.س</span></div>
+        <div class="field"><span class="label">إجمالي الراتب:</span><span class="blank">{{ employee.total_salary|floatformat:2 }} ر.س</span></div>
+        <div class="field"><span class="label">المبلغ المطلوب (رقماً):</span><span class="blank"></span></div>
+        <div class="field"><span class="label">المبلغ كتابةً:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">عدد أشهر السداد:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">قيمة القسط الشهري:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ بدء الخصم:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">طريقة الاستلام:</span><span class="blank"></span></div>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">سبب طلب السلفة:</span>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<div class="clause">
+    <strong>إقرار وتعهد:</strong>
+    أُقرّ أنا الموظف <strong>{{ employee.name }}</strong>
+    ـ حامل الهوية رقم {{ employee.id_number|default:"............" }} ـ
+    بأنني طلبت سلفة بالمبلغ المذكور أعلاه من <strong>{{ company.name|default:"الشركة" }}</strong>،
+    وأتعهد بسدادها بالكامل عن طريق الخصم الشهري من راتبي وفق الأقساط المتفق عليها.
+    كما أتعهد بسداد كامل المبلغ المتبقي فوراً في حال انتهاء خدمتي لأي سبب،
+    وأُفوّض الشركة بخصم المبلغ المتبقي من مستحقاتي النهائية دون الرجوع إليّ.
+</div>
+
+<div class="section">
+    <h3>اعتماد الإدارة</h3>
+    <div class="checkbox-row">
+        <label><span class="box"></span> موافقة</label>
+        <label><span class="box"></span> رفض</label>
+        <label><span class="box"></span> موافقة بشروط</label>
+    </div>
+    <div style="margin-top: 12px;">
+        <span class="label" style="font-weight:600; color:#334155;">الملاحظات / الشروط:</span>
+        <div class="blank-block" style="min-height:50px;"></div>
+    </div>
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">طالب السلفة</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المالية / الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

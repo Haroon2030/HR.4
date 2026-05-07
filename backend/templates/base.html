@@ -230,6 +230,7 @@
 
                     {% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" %}
                     {% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}
+                    {% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
@@ -307,6 +308,7 @@
 
                     {% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" %}
                     {% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}
+                    {% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">

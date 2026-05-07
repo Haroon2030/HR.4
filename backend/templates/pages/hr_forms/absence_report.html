@@ -1,0 +1,56 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_info.html" %}
+
+<div class="section">
+    <h3>تفاصيل الغياب</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ الغياب من:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">إلى:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">عدد أيام الغياب:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">المدير المباشر:</span><span class="blank"></span></div>
+    </div>
+
+    <div class="checkbox-row" style="margin-top: 12px;">
+        <label><span class="box"></span> غياب بدون إذن</label>
+        <label><span class="box"></span> تأخر متكرر</label>
+        <label><span class="box"></span> ترك العمل أثناء الدوام</label>
+        <label><span class="box"></span> عدم تقديم عذر</label>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">وصف الواقعة:</span>
+        <div class="blank-block"></div>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">الإجراء المتخذ / التوصية:</span>
+        <div class="blank-block" style="min-height:60px;"></div>
+    </div>
+</div>
+
+<div class="clause">
+    بناءً على ما تقدّم، يُعرض هذا التقرير على إدارة الموارد البشرية لاتخاذ الإجراء النظامي المناسب،
+    وفقاً للائحة تنظيم العمل المعتمدة لدى الشركة ونظام العمل السعودي.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">معدّ التقرير</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,16 @@
+{# بطاقة معلومات الموظف — تُستخدم في كل النماذج #}
+<div class="section">
+    <h3>بيانات الموظف</h3>
+    <div class="info-grid">
+        <div class="row"><span class="label">الاسم:</span><span class="value">{{ employee.name|default:"—" }}</span></div>
+        <div class="row"><span class="label">الرقم الوظيفي:</span><span class="value">{{ employee.employee_number|default:"—" }}</span></div>
+        <div class="row"><span class="label">رقم الهوية:</span><span class="value">{{ employee.id_number|default:"—" }}</span></div>
+        <div class="row"><span class="label">الجنسية:</span><span class="value">{{ employee.nationality.name|default:"—" }}</span></div>
+        <div class="row"><span class="label">المهنة:</span><span class="value">{{ employee.profession.name|default:"—" }}</span></div>
+        <div class="row"><span class="label">القسم:</span><span class="value">{{ employee.department.name|default:"—" }}</span></div>
+        <div class="row"><span class="label">الفرع:</span><span class="value">{{ employee.branch.name|default:"—" }}</span></div>
+        <div class="row"><span class="label">تاريخ المباشرة:</span><span class="value">{{ employee.hire_date|date:"Y/m/d"|default:"—" }}</span></div>
+        <div class="row"><span class="label">رقم الجوال:</span><span class="value">{{ employee.phone|default:"—" }}</span></div>
+        <div class="row"><span class="label">الكفالة:</span><span class="value">{{ employee.sponsorship.name|default:"—" }}</span></div>
+    </div>
+</div>

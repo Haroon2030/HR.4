@@ -1,0 +1,68 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_info.html" %}
+
+<div class="section">
+    <h3>تفاصيل الإجازة</h3>
+
+    <div class="checkbox-row">
+        <label><span class="box"></span> إجازة سنوية</label>
+        <label><span class="box"></span> إجازة مرضية</label>
+        <label><span class="box"></span> إجازة اضطرارية</label>
+        <label><span class="box"></span> إجازة بدون راتب</label>
+        <label><span class="box"></span> إجازة أخرى: <span style="border-bottom:1.5px dotted #94a3b8; min-width:120px; display:inline-block;"></span></label>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
+        <div class="field"><span class="label">تاريخ بداية الإجازة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ نهاية الإجازة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">عدد الأيام:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank"></span></div>
+    </div>
+
+    <div class="field" style="margin-top:8px;">
+        <span class="label">رصيد الإجازات المتاح حالياً:</span>
+        <span class="blank">{{ employee.remaining_leave_days|default_if_none:"" }} يوم</span>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">سبب الإجازة / ملاحظات:</span>
+        <div class="blank-block"></div>
+    </div>
+
+    <div class="field" style="margin-top: 14px;">
+        <span class="label">عنوان الإقامة أثناء الإجازة:</span>
+        <span class="blank"></span>
+    </div>
+    <div class="field">
+        <span class="label">رقم التواصل أثناء الإجازة:</span>
+        <span class="blank"></span>
+    </div>
+</div>
+
+<div class="clause">
+    <strong>إقرار:</strong>
+    أُقرّ أنا الموظف المذكور أعلاه بأنني تسلّمت جميع المهام وقمت بتسليم العهد المسؤول عنها قبل بدء الإجازة،
+    وأنني سأعود لمباشرة العمل في التاريخ المحدد، وأتحمل كامل المسؤولية في حال التأخر دون عذر مقبول.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">طالب الإجازة</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">إدارة الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

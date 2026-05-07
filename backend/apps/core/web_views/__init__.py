@@ -15,3 +15,4 @@ from apps.core.web_views.departments import *  # noqa: F401,F403
 from apps.core.web_views.lookups import *  # noqa: F401,F403
 from apps.core.web_views.pending_actions import *  # noqa: F401,F403
 from apps.core.web_views.notifications import *  # noqa: F401,F403
+from apps.core.web_views.hr_forms import *  # noqa: F401,F403

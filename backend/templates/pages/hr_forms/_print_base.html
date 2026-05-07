@@ -1,0 +1,194 @@
+{# قالب أساسي لكل النماذج الرسمية القابلة للطباعة #}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ form_meta.title }} — {{ employee.name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { margin: 0; background: #f1f5f9; color: #0f172a; }
+        .toolbar {
+            position: sticky; top: 0; z-index: 50;
+            background: #1e293b; color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .toolbar h1 { margin: 0; font-size: 16px; font-weight: 600; }
+        .toolbar .actions { display: flex; gap: 8px; }
+        .btn {
+            padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;
+            font-family: inherit; font-size: 14px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            text-decoration: none;
+        }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #475569; color: #fff; }
+        .btn-secondary:hover { background: #334155; }
+
+        .page {
+            background: #fff; max-width: 21cm; min-height: 29.7cm;
+            margin: 24px auto; padding: 2.2cm 2cm 2cm 2cm;
+            box-shadow: 0 4px 20px rgba(0,0,0,.08);
+            position: relative;
+        }
+
+        /* Letterhead */
+        .letterhead {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 3px double #1e3a8a; padding-bottom: 16px; margin-bottom: 28px;
+        }
+        .letterhead .company { text-align: right; }
+        .letterhead .company .name { font-size: 22px; font-weight: 800; color: #1e3a8a; margin: 0; }
+        .letterhead .company .meta { font-size: 12px; color: #475569; margin-top: 4px; line-height: 1.7; }
+        .letterhead .logo {
+            width: 80px; height: 80px; border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #1e3a8a);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 32px; font-weight: 800;
+        }
+        .letterhead .logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
+
+        /* Document title */
+        .doc-title {
+            text-align: center; margin: 24px 0 28px;
+        }
+        .doc-title h2 {
+            display: inline-block; margin: 0; font-size: 22px; font-weight: 800;
+            color: #1e3a8a; padding: 8px 32px;
+            border-top: 2px solid #1e3a8a; border-bottom: 2px solid #1e3a8a;
+        }
+        .doc-meta {
+            display: flex; justify-content: space-between;
+            font-size: 13px; color: #334155; margin-bottom: 24px;
+        }
+
+        /* Sections */
+        .section { margin-bottom: 22px; }
+        .section h3 {
+            font-size: 15px; font-weight: 700; color: #1e3a8a;
+            border-right: 4px solid #2563eb; padding-right: 10px;
+            margin: 0 0 12px 0;
+        }
+
+        /* Info grid */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; font-size: 13.5px; }
+        .info-grid .row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px dotted #cbd5e1; }
+        .info-grid .row .label { font-weight: 600; color: #475569; min-width: 110px; }
+        .info-grid .row .value { color: #0f172a; flex: 1; font-weight: 500; }
+
+        /* Form fields (blank lines for handwriting) */
+        .field { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; font-size: 14px; }
+        .field .label { font-weight: 600; color: #334155; white-space: nowrap; }
+        .field .blank { flex: 1; border-bottom: 1.5px dotted #94a3b8; min-height: 20px; padding: 0 6px; }
+        .blank-block {
+            border: 1.5px dotted #94a3b8; border-radius: 4px;
+            min-height: 80px; padding: 8px; margin-top: 6px;
+        }
+
+        .checkbox-row { display: flex; gap: 24px; flex-wrap: wrap; margin: 8px 0; font-size: 14px; }
+        .checkbox-row label { display: inline-flex; align-items: center; gap: 6px; }
+        .checkbox-row .box {
+            display: inline-block; width: 14px; height: 14px;
+            border: 1.5px solid #475569; border-radius: 3px;
+        }
+
+        /* Signatures */
+        .signatures {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+            margin-top: 48px; padding-top: 16px;
+        }
+        .sig-box { text-align: center; font-size: 13px; }
+        .sig-box .role { font-weight: 700; color: #1e3a8a; margin-bottom: 40px; }
+        .sig-box .line { border-top: 1.5px solid #475569; padding-top: 6px; }
+        .sig-box .name-blank { color: #64748b; font-size: 12px; }
+
+        /* Acknowledgement / clause boxes */
+        .clause {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 6px; padding: 14px 16px; margin: 12px 0;
+            font-size: 13.5px; line-height: 1.9; color: #334155;
+        }
+
+        /* Footer */
+        .doc-footer {
+            position: absolute; bottom: 1.2cm; left: 2cm; right: 2cm;
+            font-size: 11px; color: #94a3b8; text-align: center;
+            border-top: 1px solid #e2e8f0; padding-top: 8px;
+        }
+
+        /* Print-only */
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            .page { box-shadow: none; margin: 0; max-width: none; min-height: auto; padding: 1.5cm 1.5cm; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>{{ form_meta.title }} — {{ employee.name }}</h1>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="window.print()">
+                طباعة 🖨
+            </button>
+            <a class="btn btn-secondary" href="{% url 'web:hr_forms_index' %}">
+                ← رجوع
+            </a>
+        </div>
+    </div>
+
+    <div class="page">
+        {# Letterhead #}
+        <div class="letterhead">
+            <div class="company">
+                <h1 class="name">{{ company.name|default:"اسم الشركة" }}</h1>
+                <div class="meta">
+                    {% if company.commercial_record %}س.ت: {{ company.commercial_record }} &nbsp;|&nbsp; {% endif %}
+                    {% if company.tax_number %}الرقم الضريبي: {{ company.tax_number }}{% endif %}
+                    {% if company.contact_phone or company.contact_email %}<br>
+                        {% if company.contact_phone %}هاتف: {{ company.contact_phone }} &nbsp;|&nbsp; {% endif %}
+                        {% if company.contact_email %}{{ company.contact_email }}{% endif %}
+                    {% endif %}
+                    {% if branch %}<br>الفرع: {{ branch.name }}{% endif %}
+                </div>
+            </div>
+            <div class="logo">
+                {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="logo">
+                {% else %}
+                    {{ company.name|default:"م"|slice:":1" }}
+                {% endif %}
+            </div>
+        </div>
+
+        {# Document title #}
+        <div class="doc-title">
+            <h2>{{ form_meta.title }}</h2>
+        </div>
+
+        <div class="doc-meta">
+            <span>التاريخ: ............... / ............... / 14......هـ &nbsp;&nbsp;&nbsp; الموافق: ......../......../20......م</span>
+            <span>رقم النموذج: ...............</span>
+        </div>
+
+        {% block body %}{% endblock %}
+
+        <div class="doc-footer">
+            تم الإنشاء من نظام الموارد البشرية — {{ company.name|default:"" }}
+        </div>
+    </div>
+
+    <script>
+        // Auto-focus print on load if ?auto_print=1
+        if (new URLSearchParams(window.location.search).get('auto_print') === '1') {
+            window.addEventListener('load', () => setTimeout(() => window.print(), 400));
+        }
+    </script>
+</body>
+</html>

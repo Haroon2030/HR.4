@@ -1,0 +1,73 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_info.html" %}
+
+<div class="section">
+    <h3>درجة الإشعار</h3>
+    <div class="checkbox-row">
+        <label><span class="box"></span> لفت نظر</label>
+        <label><span class="box"></span> إنذار أول</label>
+        <label><span class="box"></span> إنذار ثانٍ</label>
+        <label><span class="box"></span> إنذار نهائي</label>
+        <label><span class="box"></span> خصم</label>
+        <label><span class="box"></span> فصل</label>
+    </div>
+</div>
+
+<div class="section">
+    <h3>تفاصيل المخالفة</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ المخالفة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">مكان وقوعها:</span><span class="blank"></span></div>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">وصف المخالفة:</span>
+        <div class="blank-block"></div>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">المادة المخالَفة من لائحة العمل:</span>
+        <div class="blank-block" style="min-height:50px;"></div>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">العقوبة / الإجراء المتخذ:</span>
+        <div class="blank-block" style="min-height:50px;"></div>
+    </div>
+</div>
+
+<div class="clause">
+    <strong>تنبيه:</strong>
+    يُعدّ هذا الإشعار جزءاً من ملف الموظف الرسمي لدى إدارة الموارد البشرية،
+    وتكرار المخالفة قد يستوجب اتخاذ إجراءات تأديبية أشد، تصل إلى إنهاء العقد وفقاً لنظام العمل
+    واللائحة الداخلية المعتمدة بالشركة.
+</div>
+
+<div class="clause" style="background:#fef2f2; border-color:#fecaca;">
+    <strong>إقرار الموظف باستلام الإشعار:</strong>
+    أُقرّ أنا الموظف <strong>{{ employee.name }}</strong>
+    بأنني تسلّمت نسخة من هذا الإشعار، واطلعت على مضمونه ومسبباته،
+    وعلى العقوبة المترتبة في حال تكرار المخالفة.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">الموظف</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}
