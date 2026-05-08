@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}التقارير{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    {# Header #}
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-7 h-7 text-primary-600"></i>
+            التقارير
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            اختر التقرير الذي تريد عرضه من القائمة أدناه
+        </p>
+    </div>
+
+    {# Reports grid #}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for r in reports %}
+        <a href="{% url 'web:report_detail' report_type=r.key %}"
+           class="group bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:shadow-lg rounded-xl p-5 transition-all duration-200 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-lg bg-{{ r.color }}-50 text-{{ r.color }}-600 group-hover:bg-{{ r.color }}-100 flex items-center justify-center flex-shrink-0 transition-colors">
+                <i data-lucide="{{ r.icon }}" class="w-6 h-6"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <h3 class="font-bold text-slate-800 group-hover:text-{{ r.color }}-700 transition-colors">
+                    {{ r.title }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                    {{ r.description }}
+                </p>
+            </div>
+            <i data-lucide="chevron-left" class="w-5 h-5 text-slate-300 group-hover:text-{{ r.color }}-500 group-hover:-translate-x-1 transition-all flex-shrink-0"></i>
+        </a>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+</script>
+{% endblock %}

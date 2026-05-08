@@ -127,6 +127,10 @@ urlpatterns = [
     path('hr-forms/', web_views.hr_forms_index, name='hr_forms_index'),
     path('hr-forms/<str:form_type>/<int:employee_id>/', web_views.hr_form_print, name='hr_form_print'),
 
+    # Reports (التقارير)
+    path('reports/', web_views.reports_index, name='reports_index'),
+    path('reports/<str:report_type>/', web_views.report_detail, name='report_detail'),
+
     # Auth
     path('auth/', include((auth_patterns, 'auth'))),
     
