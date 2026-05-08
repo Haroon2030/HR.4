@@ -22,7 +22,7 @@ HR_FORMS = [
     },
     {
         'key': 'final_settlement',
-        'title': 'مخالصة نهاية الخدمة',
+        'title': 'تصفية نهاية خدمة',
         'description': 'إقرار وإخلاء طرف بنهاية خدمة الموظف',
         'icon': 'file-check',
         'color': 'amber',
