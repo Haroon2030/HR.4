@@ -7,7 +7,6 @@
     <h3>بيانات نهاية الخدمة</h3>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{{ employee.hire_date|date:"Y/m/d"|default:"" }}</span></div>
         <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank">{{ employee.end_date|date:"Y/m/d"|default:"" }}</span></div>
         <div class="field"><span class="label">مدة الخدمة:</span><span class="blank"></span></div>
         <div class="field"><span class="label">سبب نهاية الخدمة:</span><span class="blank">{{ employee.end_reason|default:"" }}</span></div>
