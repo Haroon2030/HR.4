@@ -298,8 +298,6 @@ function hrFormsApp() {
             this.$watch('pagedItems', () => this.$nextTick(() => lucide.createIcons()));
             this.$watch('query', () => { this.currentPage = 1; this.activeIndex = 0; });
             this.$watch('currentPage', () => { this.activeIndex = 0; });
-            // Auto-focus search on load for instant typing
-            this.$nextTick(() => this.$refs.searchInput && this.$refs.searchInput.focus());
         },
         moveActive(delta) {
             const max = this.pagedItems.length;
