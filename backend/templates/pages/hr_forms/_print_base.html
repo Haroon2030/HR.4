@@ -199,7 +199,7 @@
         {# Letterhead #}
         <div class="letterhead">
             <div class="company">
-                <h1 class="name">{{ company.name|default:"اسم الشركة" }}</h1>
+                <h1 class="name">شركة محمد رشيد الرشيد</h1>
                 <div class="meta">
                     {% if company.commercial_record %}س.ت: {{ company.commercial_record }} &nbsp;|&nbsp; {% endif %}
                     {% if company.tax_number %}الرقم الضريبي: {{ company.tax_number }}{% endif %}
@@ -214,7 +214,7 @@
                 {% if company.logo %}
                     <img src="{{ company.logo.url }}" alt="logo">
                 {% else %}
-                    {{ company.name|default:"م"|slice:":1" }}
+                    م
                 {% endif %}
             </div>
         </div>
@@ -232,7 +232,7 @@
         {% block body %}{% endblock %}
 
         <div class="doc-footer">
-            تم الإنشاء من نظام الموارد البشرية — {{ company.name|default:"" }}
+            تم الإنشاء من نظام الموارد البشرية — شركة محمد رشيد الرشيد
         </div>
     </div>
 
