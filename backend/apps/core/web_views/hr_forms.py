@@ -28,20 +28,6 @@ HR_FORMS = [
         'color': 'amber',
     },
     {
-        'key': 'absence_report',
-        'title': 'تقرير غياب',
-        'description': 'إثبات غياب الموظف عن العمل',
-        'icon': 'user-x',
-        'color': 'rose',
-    },
-    {
-        'key': 'employment_letter',
-        'title': 'إفادة عمل / راتب',
-        'description': 'شهادة رسمية بأن الموظف على رأس العمل وتفاصيل راتبه',
-        'icon': 'badge-check',
-        'color': 'cyan',
-    },
-    {
         'key': 'warning_notice',
         'title': 'إنذار / مخالفة',
         'description': 'إشعار رسمي بمخالفة أو إنذار للموظف',
