@@ -41,6 +41,48 @@ HR_FORMS = [
         'icon': 'wallet',
         'color': 'primary',
     },
+    {
+        'key': 'custody_receipt',
+        'title': 'استلام عهدة',
+        'description': 'إقرار باستلام الموظف لعهدة من الشركة',
+        'icon': 'package-check',
+        'color': 'emerald',
+    },
+    {
+        'key': 'custody_clearance',
+        'title': 'تصفية عهدة',
+        'description': 'إخلاء طرف من العهدة وإعادة الأصول للشركة',
+        'icon': 'package-x',
+        'color': 'rose',
+    },
+    {
+        'key': 'evaluation',
+        'title': 'تقييم موظف',
+        'description': 'نموذج رسمي لتقييم أداء الموظف',
+        'icon': 'clipboard-check',
+        'color': 'cyan',
+    },
+    {
+        'key': 'resumption_after_leave',
+        'title': 'مباشرة بعد الإجازة',
+        'description': 'إثبات مباشرة الموظف للعمل بعد انتهاء إجازته',
+        'icon': 'log-in',
+        'color': 'emerald',
+    },
+    {
+        'key': 'contract_termination',
+        'title': 'إنهاء عقد',
+        'description': 'إشعار رسمي بإنهاء عقد العمل',
+        'icon': 'file-x',
+        'color': 'rose',
+    },
+    {
+        'key': 'business_trip',
+        'title': 'رحلة عمل',
+        'description': 'إذن وتفاصيل رحلة عمل رسمية للموظف',
+        'icon': 'plane-takeoff',
+        'color': 'primary',
+    },
 ]
 
 

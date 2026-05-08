@@ -1,0 +1,81 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_brief.html" %}
+
+<div class="section">
+    <h3>بيانات التقييم</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">فترة التقييم من:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">إلى:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">نوع التقييم:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">المُقيِّم:</span><span class="blank"></span></div>
+    </div>
+</div>
+
+<div class="section">
+    <h3>عناصر التقييم</h3>
+    <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+            <tr style="background:#f1f5f9;">
+                <th style="border:1px solid #cbd5e1; padding:6px; width:35px;">م</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">عنصر التقييم</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:65px;">ممتاز</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:65px;">جيد جداً</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:55px;">جيد</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:65px;">مقبول</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:65px;">ضعيف</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">1</td><td style="border:1px solid #cbd5e1; padding:8px;">الالتزام بالدوام والحضور</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">2</td><td style="border:1px solid #cbd5e1; padding:8px;">جودة العمل ودقته</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">3</td><td style="border:1px solid #cbd5e1; padding:8px;">الإنتاجية وسرعة الإنجاز</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">4</td><td style="border:1px solid #cbd5e1; padding:8px;">التعاون مع الزملاء</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">5</td><td style="border:1px solid #cbd5e1; padding:8px;">الانضباط والمظهر العام</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">6</td><td style="border:1px solid #cbd5e1; padding:8px;">المبادرة وتحمّل المسؤولية</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">7</td><td style="border:1px solid #cbd5e1; padding:8px;">القدرة على حل المشكلات</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+            <tr><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">8</td><td style="border:1px solid #cbd5e1; padding:8px;">التطور والتعلم</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td><td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">☐</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h3>التقييم العام والتوصية</h3>
+    <div class="checkbox-row">
+        <label><span class="box"></span> تثبيت / استمرار</label>
+        <label><span class="box"></span> ترقية</label>
+        <label><span class="box"></span> زيادة راتب</label>
+        <label><span class="box"></span> تدريب وتطوير</label>
+        <label><span class="box"></span> إنذار</label>
+        <label><span class="box"></span> إنهاء عقد</label>
+    </div>
+    <div style="margin-top: 10px;">
+        <span class="label" style="font-weight:600; color:#334155;">نقاط القوة:</span>
+        <div class="blank-block" style="min-height:38px;"></div>
+    </div>
+    <div style="margin-top: 8px;">
+        <span class="label" style="font-weight:600; color:#334155;">نقاط تحتاج للتحسين:</span>
+        <div class="blank-block" style="min-height:38px;"></div>
+    </div>
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">المُقيِّم (المدير المباشر)</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الموظف</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

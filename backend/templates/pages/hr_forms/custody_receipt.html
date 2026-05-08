@@ -1,0 +1,67 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_brief.html" %}
+
+<div class="section">
+    <h3>تفاصيل العهدة المُستلَمة</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ الاستلام:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">جهة التسليم:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">رقم سند التسليم:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">القيمة الإجمالية:</span><span class="blank"></span></div>
+    </div>
+
+    <table style="width:100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
+        <thead>
+            <tr style="background:#f1f5f9;">
+                <th style="border:1px solid #cbd5e1; padding:6px; width:40px;">م</th>
+                <th style="border:1px solid #cbd5e1; padding:6px;">وصف العهدة / الصنف</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:80px;">العدد</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:120px;">الرقم التسلسلي</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:90px;">الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in "12345"|make_list %}
+            <tr>
+                <td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">{{ forloop.counter }}</td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="clause">
+    <strong>إقرار الموظف:</strong>
+    أُقرّ أنا الموظف <strong>{{ employee.name }}</strong> ـ الرقم الوظيفي
+    {{ employee.employee_number|default:"............" }} ـ بأنني استلمت العهدة المذكورة أعلاه
+    من <strong>{{ company.name|default:"الشركة" }}</strong> بحالة جيدة وصالحة للاستخدام،
+    وأتعهّد بالمحافظة عليها واستخدامها فيما خُصِّصت له،
+    وأتحمّل كامل المسؤولية عن أي تلف أو فقدان أو نقص يطرأ عليها،
+    وأُفوّض الشركة بخصم قيمتها من راتبي أو مستحقاتي عند الإخلال بهذا التعهّد.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">المُستلِم (الموظف)</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المُسلِّم</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر / المخازن</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

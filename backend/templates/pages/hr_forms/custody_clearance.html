@@ -1,0 +1,75 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_brief.html" %}
+
+<div class="section">
+    <h3>تفاصيل تصفية العهدة</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ التصفية:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">سبب التصفية:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">رقم سند التسليم الأصلي:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">جهة الاستلام:</span><span class="blank"></span></div>
+    </div>
+
+    <table style="width:100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
+        <thead>
+            <tr style="background:#f1f5f9;">
+                <th style="border:1px solid #cbd5e1; padding:6px; width:40px;">م</th>
+                <th style="border:1px solid #cbd5e1; padding:6px;">وصف الصنف</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:70px;">العدد</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:90px;">الحالة</th>
+                <th style="border:1px solid #cbd5e1; padding:6px; width:110px;">قيمة النقص (ر.س)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in "12345"|make_list %}
+            <tr>
+                <td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">{{ forloop.counter }}</td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 12px;">
+        <div class="checkbox-row">
+            <label><span class="box"></span> تمّت التصفية بالكامل دون أي ملاحظات</label>
+            <label><span class="box"></span> توجد ملاحظات / نواقص</label>
+        </div>
+        <span class="label" style="font-weight:600; color:#334155;">الملاحظات:</span>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<div class="clause">
+    <strong>إقرار وإخلاء طرف:</strong>
+    تُقرّ <strong>{{ company.name|default:"الشركة" }}</strong> بأن الموظف
+    <strong>{{ employee.name }}</strong> ـ الرقم الوظيفي
+    {{ employee.employee_number|default:"............" }} ـ
+    قد سلّم العهدة المذكورة أعلاه وفق الحالة الموضّحة، ويُعدّ بريء الذمة
+    من جانب العهدة بعد توقيع هذا النموذج، مع احتفاظ الشركة بحقّها في المطالبة بأي نقص يثبت لاحقاً.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">الموظف (المُسلِّم)</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المُستلِم (المخازن)</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المالية / الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

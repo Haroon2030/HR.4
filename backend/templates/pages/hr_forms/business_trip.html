@@ -1,0 +1,65 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_brief.html" %}
+
+<div class="section">
+    <h3>تفاصيل رحلة العمل</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">الجهة / المدينة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">الغرض من الرحلة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ الذهاب:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ العودة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">عدد الأيام:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">وسيلة النقل:</span><span class="blank"></span></div>
+    </div>
+
+    <div style="margin-top: 10px;">
+        <span class="label" style="font-weight:600; color:#334155;">تفاصيل المهمة:</span>
+        <div class="blank-block" style="min-height:45px;"></div>
+    </div>
+</div>
+
+<div class="section">
+    <h3>التكاليف والبدلات</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">بدل المواصلات:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">بدل الإقامة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">بدل اليومي:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">إجمالي السلفة:</span><span class="blank"></span></div>
+    </div>
+    <div class="checkbox-row" style="margin-top:6px;">
+        <label><span class="box"></span> الشركة تتكفّل بالتذاكر</label>
+        <label><span class="box"></span> الشركة تتكفّل بالإقامة</label>
+        <label><span class="box"></span> صرف سلفة نقدية</label>
+    </div>
+</div>
+
+<div class="clause">
+    <strong>إذن وتفويض رسمي:</strong>
+    تأذن <strong>{{ company.name|default:"الشركة" }}</strong> للموظف
+    <strong>{{ employee.name }}</strong> ـ الرقم الوظيفي
+    {{ employee.employee_number|default:"............" }} ـ بالقيام برحلة العمل المُبيَّنة أعلاه،
+    ويلتزم الموظف بإنجاز المهمّة الموكلة إليه على الوجه الأمثل،
+    وتسليم تقرير عن الرحلة وفواتير المصروفات الفعلية فور عودته خلال مدّة لا تتجاوز ثلاثة أيام عمل.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">الموظف</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الإدارة العامة / المالية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

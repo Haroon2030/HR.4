@@ -1,0 +1,60 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_brief.html" %}
+
+<div class="section">
+    <h3>تفاصيل إنهاء العقد</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ مباشرة العمل:</span><span class="blank">{{ employee.hire_date|date:"Y/m/d"|default:"............" }}</span></div>
+        <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">رقم العقد:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">مدة الإشعار:</span><span class="blank"></span></div>
+    </div>
+
+    <div style="margin-top: 10px;">
+        <span class="label" style="font-weight:600; color:#334155;">سبب إنهاء العقد:</span>
+        <div class="checkbox-row">
+            <label><span class="box"></span> استقالة من الموظف</label>
+            <label><span class="box"></span> إنهاء من الشركة</label>
+            <label><span class="box"></span> انتهاء مدة العقد</label>
+            <label><span class="box"></span> اتفاق الطرفين</label>
+            <label><span class="box"></span> أخرى</label>
+        </div>
+    </div>
+
+    <div style="margin-top: 10px;">
+        <span class="label" style="font-weight:600; color:#334155;">التفاصيل والأسباب:</span>
+        <div class="blank-block" style="min-height:50px;"></div>
+    </div>
+</div>
+
+<div class="clause">
+    <strong>إشعار رسمي بإنهاء العقد:</strong>
+    تُشعر <strong>{{ company.name|default:"الشركة" }}</strong> الموظف
+    <strong>{{ employee.name }}</strong> ـ الرقم الوظيفي
+    {{ employee.employee_number|default:"............" }} ـ بإنهاء عقد عمله
+    اعتباراً من التاريخ المُبيَّن أعلاه، وذلك وفق ما تنصّ عليه أحكام نظام العمل والعقد المُبرم بين الطرفَين.
+    وعلى الموظف تسليم كافة العهد والمستندات المتعلقة بعمله، وإجراء إخلاء الطرف اللازم
+    قبل استلام مستحقاته النهائية.
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">الموظف (إقرار بالاستلام)</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}
