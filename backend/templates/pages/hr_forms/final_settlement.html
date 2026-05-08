@@ -9,7 +9,11 @@
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
         <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank">{{ employee.end_date|date:"Y/m/d"|default:"" }}</span></div>
         <div class="field"><span class="label">مدة الخدمة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">سبب نهاية الخدمة:</span><span class="blank">{{ employee.end_reason|default:"" }}</span></div>
+    </div>
+
+    <div style="margin-top: 12px;">
+        <span class="label" style="font-weight:600; color:#334155;">سبب الإنهاء:</span>
+        <div class="blank-block" style="min-height:60px;">{{ employee.end_reason|default:"" }}</div>
     </div>
 </div>
 
