@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from .models import (
     SystemSettings, Nationality, Profession,
-    Sponsorship, Insurance, InsuranceClass,
+    Sponsorship, Insurance, InsuranceClass, Building,
 )
 
 
@@ -46,3 +46,10 @@ class InsuranceClassAdmin(admin.ModelAdmin):
     list_display = ('code', 'class_type', 'is_active', 'created_at')
     list_filter = ('is_active',)
     search_fields = ('code', 'class_type')
+
+
+@admin.register(Building)
+class BuildingAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name', 'rent_cost', 'water_cost', 'electricity_cost', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('code', 'name', 'address')

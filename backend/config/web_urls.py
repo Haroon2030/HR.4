@@ -115,6 +115,10 @@ urlpatterns = [
     path('setup/insurance-class/add/', web_views.add_insurance_class, name='add_insurance_class'),
     path('setup/insurance-class/<int:insurance_class_id>/edit/', web_views.edit_insurance_class, name='edit_insurance_class'),
     path('setup/insurance-class/<int:insurance_class_id>/delete/', web_views.delete_insurance_class, name='delete_insurance_class'),
+
+    path('setup/building/add/', web_views.add_building, name='add_building'),
+    path('setup/building/<int:building_id>/edit/', web_views.edit_building, name='edit_building'),
+    path('setup/building/<int:building_id>/delete/', web_views.delete_building, name='delete_building'),
     
     # Users
     path('users/', web_views.list_users, name='list_users'),

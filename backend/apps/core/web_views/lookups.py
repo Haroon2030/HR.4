@@ -229,6 +229,37 @@ def delete_insurance_class(request, insurance_class_id):
                           'فئة التأمين', lambda o: o.class_type)
 
 
+# ───────────────────────────────────────────────────────────────────────────
+# Building (السكن)
+# ───────────────────────────────────────────────────────────────────────────
+
+@login_required
+@admin_required
+def add_building(request):
+    from apps.setup.forms import BuildingForm
+    return _lookup_create(request, BuildingForm,
+                          'pages/setup/building_form.html',
+                          'العمارة', lambda o: o.name)
+
+
+@login_required
+@admin_required
+def edit_building(request, building_id):
+    from apps.setup.models import Building
+    from apps.setup.forms import BuildingForm
+    return _lookup_update(request, Building, building_id, BuildingForm,
+                          'pages/setup/building_form.html',
+                          'العمارة', lambda o: o.name, 'building')
+
+
+@login_required
+@admin_required
+def delete_building(request, building_id):
+    from apps.setup.models import Building
+    return _lookup_delete(request, Building, building_id,
+                          'العمارة', lambda o: o.name)
+
+
 
 # =============================================================================
 # Pending Actions Approval Workflow (Branch Manager)

@@ -5,7 +5,7 @@ Forms للنماذج الخاصة بـ apps.setup (Lookups).
 from django import forms
 from django.core.exceptions import ValidationError
 
-from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
+from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass, Building
 
 
 def _validate_unique_code(model, code, instance):
@@ -86,3 +86,20 @@ class InsuranceClassForm(forms.ModelForm):
 
     def clean_class_type(self):
         return _validate_required(self.cleaned_data.get('class_type'), 'نوع الفئة')
+
+
+class BuildingForm(forms.ModelForm):
+    class Meta:
+        model = Building
+        fields = [
+            'code', 'name', 'address',
+            'rent_cost', 'water_cost', 'electricity_cost', 'cleaning_cost',
+            'transport_cost', 'furniture_cost', 'tools_cost',
+            'notes', 'is_active',
+        ]
+
+    def clean_code(self):
+        return _validate_unique_code(Building, self.cleaned_data.get('code'), self.instance)
+
+    def clean_name(self):
+        return _validate_required(self.cleaned_data.get('name'), 'اسم العمارة')

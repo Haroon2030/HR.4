@@ -115,3 +115,38 @@ class InsuranceClass(BaseModel):
 
     def __str__(self):
         return self.class_type
+
+
+class Building(BaseModel):
+    """العمارات السكنية للموظفين"""
+    code = models.CharField("رقم العمارة", max_length=20, unique=True)
+    name = models.CharField("اسم العمارة", max_length=150)
+    address = models.CharField("العنوان", max_length=255, blank=True)
+
+    rent_cost = models.DecimalField("الإيجار", max_digits=12, decimal_places=2, default=0)
+    water_cost = models.DecimalField("تكلفة الماء", max_digits=12, decimal_places=2, default=0)
+    electricity_cost = models.DecimalField("تكلفة الكهرباء", max_digits=12, decimal_places=2, default=0)
+    cleaning_cost = models.DecimalField("تكلفة النظافة", max_digits=12, decimal_places=2, default=0)
+    transport_cost = models.DecimalField("تكلفة النقل", max_digits=12, decimal_places=2, default=0)
+    furniture_cost = models.DecimalField("تكلفة المفروشات", max_digits=12, decimal_places=2, default=0)
+    tools_cost = models.DecimalField("تكلفة الأدوات", max_digits=12, decimal_places=2, default=0)
+
+    notes = models.TextField("ملاحظات", blank=True)
+    is_active = models.BooleanField("نشط", default=True)
+
+    history = HistoricalRecords(table_name='setup_historicalbuilding')
+
+    class Meta:
+        db_table = 'setup_building'
+        verbose_name = "عمارة"
+        verbose_name_plural = "العمارات"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def total_cost(self):
+        return (self.rent_cost + self.water_cost + self.electricity_cost +
+                self.cleaning_cost + self.transport_cost +
+                self.furniture_cost + self.tools_cost)
