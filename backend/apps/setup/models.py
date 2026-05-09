@@ -150,3 +150,21 @@ class Building(BaseModel):
         return (self.rent_cost + self.water_cost + self.electricity_cost +
                 self.cleaning_cost + self.transport_cost +
                 self.furniture_cost + self.tools_cost)
+
+
+class Bank(BaseModel):
+    """البنوك"""
+    code = models.CharField("رقم البنك", max_length=20, unique=True)
+    name = models.CharField("اسم البنك", max_length=150)
+    is_active = models.BooleanField("نشط", default=True)
+
+    history = HistoricalRecords(table_name='setup_historicalbank')
+
+    class Meta:
+        db_table = 'setup_bank'
+        verbose_name = "بنك"
+        verbose_name_plural = "البنوك"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

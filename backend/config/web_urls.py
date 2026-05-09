@@ -119,6 +119,10 @@ urlpatterns = [
     path('setup/building/add/', web_views.add_building, name='add_building'),
     path('setup/building/<int:building_id>/edit/', web_views.edit_building, name='edit_building'),
     path('setup/building/<int:building_id>/delete/', web_views.delete_building, name='delete_building'),
+
+    path('setup/bank/add/', web_views.add_bank, name='add_bank'),
+    path('setup/bank/<int:bank_id>/edit/', web_views.edit_bank, name='edit_bank'),
+    path('setup/bank/<int:bank_id>/delete/', web_views.delete_bank, name='delete_bank'),
     
     # Users
     path('users/', web_views.list_users, name='list_users'),

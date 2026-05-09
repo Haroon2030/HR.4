@@ -260,6 +260,37 @@ def delete_building(request, building_id):
                           'العمارة', lambda o: o.name)
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Bank (البنوك)
+# ──────────────────────────────────────────────────────────────────────
+
+@login_required
+@admin_required
+def add_bank(request):
+    from apps.setup.forms import BankForm
+    return _lookup_create(request, BankForm,
+                          'pages/setup/bank_form.html',
+                          'البنك', lambda o: o.name)
+
+
+@login_required
+@admin_required
+def edit_bank(request, bank_id):
+    from apps.setup.models import Bank
+    from apps.setup.forms import BankForm
+    return _lookup_update(request, Bank, bank_id, BankForm,
+                          'pages/setup/bank_form.html',
+                          'البنك', lambda o: o.name, 'bank')
+
+
+@login_required
+@admin_required
+def delete_bank(request, bank_id):
+    from apps.setup.models import Bank
+    return _lookup_delete(request, Bank, bank_id,
+                          'البنك', lambda o: o.name)
+
+
 
 # =============================================================================
 # Pending Actions Approval Workflow (Branch Manager)
