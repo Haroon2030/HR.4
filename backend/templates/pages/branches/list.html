@@ -688,20 +688,12 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200">
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم العمارة</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الإيجار</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الماء</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الكهرباء</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">النظافة</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">النقل</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">المفروشات</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الأدوات</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجمالي</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
                                 <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
                             </tr>
@@ -717,14 +709,6 @@
                                         <span class="text-xs font-medium text-slate-900">{{ b.name }}</span>
                                     </div>
                                 </td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.rent_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.water_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.electricity_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.cleaning_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.transport_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.furniture_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs text-slate-700">{{ b.tools_cost|floatformat:2 }}</td>
-                                <td class="px-3 py-2 text-xs font-semibold text-primary-700">{{ b.total_cost|floatformat:2 }}</td>
                                 <td class="px-3 py-2">
                                     {% if b.is_active %}
                                     <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
@@ -748,7 +732,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="13" class="px-3 py-8 text-center text-slate-500">
+                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
                                     <i data-lucide="home" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
                                     <p>لا توجد عمارات مسجلة</p>
                                 </td>
