@@ -28,6 +28,11 @@ def _buildings_qs():
     from apps.setup.models import Building
     return Building.objects.filter(is_active=True, is_deleted=False).order_by('name')
 
+
+def _banks_qs():
+    from apps.setup.models import Bank
+    return Bank.objects.filter(is_active=True, is_deleted=False).order_by('name')
+
 @login_required
 def list_employees(request):
     """قائمة الموظفين مع بحث ذكي وترقيم"""
@@ -139,6 +144,7 @@ def create_employee_full(request):
         'insurances': Insurance.objects.filter(is_active=True),
         'insurance_classes': InsuranceClass.objects.filter(is_active=True),
         'buildings': _buildings_qs(),
+        'banks': _banks_qs(),
     })
 
 
@@ -230,6 +236,7 @@ def edit_employee(request, employee_id):
         'insurances': Insurance.objects.filter(is_active=True),
         'insurance_classes': InsuranceClass.objects.filter(is_active=True),
         'buildings': _buildings_qs(),
+        'banks': _banks_qs(),
     })
 
 

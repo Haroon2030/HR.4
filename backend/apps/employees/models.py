@@ -250,6 +250,11 @@ class Employee(BaseModel):
     insurance_deduction_rate = models.DecimalField(
         "نسبة خصم التأمينات", max_digits=5, decimal_places=2, default=0
     )
+    bank = models.ForeignKey(
+        'setup.Bank', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employees', verbose_name="البنك"
+    )
+    iban = models.CharField("رقم الآيبان", max_length=34, blank=True)
 
     # ── الإجازات ───────────────────────────────────────────────
     available_leave_balance = models.DecimalField(

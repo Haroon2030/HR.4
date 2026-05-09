@@ -196,6 +196,17 @@
                         <label class="block text-xs font-bold text-slate-800">نسبة خصم التأمينات (%)</label>
                         <input type="number" step="0.01" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">البنك</label>
+                        <select name="bank" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for bk in banks %}<option value="{{ bk.id }}" {% if employee.bank_id == bk.id %}selected{% endif %}>{{ bk.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5 sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-800">رقم الآيبان</label>
+                        <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm font-mono">
+                    </div>
                     <div class="space-y-1.5 sm:col-span-2 lg:col-span-3">
                         <label class="block text-xs font-bold text-slate-800">الإجمالي</label>
                         <input type="text" readonly value="{{ employee.total_salary }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-sm font-bold">

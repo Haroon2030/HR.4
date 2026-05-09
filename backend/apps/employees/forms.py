@@ -33,6 +33,7 @@ FK_LABEL_OVERRIDES = {
     'insurance': _name_only,
     'insurance_class': _name_only,
     'housing': _name_only,
+    'bank': _name_only,
 }
 
 
@@ -60,6 +61,7 @@ _EMPLOYEE_FIELDS = [
     # راتب
     'basic_salary', 'housing_allowance', 'transport_allowance',
     'other_allowance', 'cash_amount', 'insurance_deduction_rate',
+    'bank', 'iban',
     # إجازات (leaves_archive و attendance_notes معروضة كـ textarea في edit.html)
     'available_leave_balance', 'leaves_archive', 'attendance_notes',
     # ملفات
