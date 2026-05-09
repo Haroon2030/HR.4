@@ -51,6 +51,7 @@ def _apply_fk_label_overrides(form):
 _EMPLOYEE_FIELDS = [
     # نصوص أساسية
     'name', 'id_number', 'phone', 'email', 'employee_number',
+    'gender',
     # FKs
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
     'cost_center', 'insurance', 'insurance_class', 'housing',

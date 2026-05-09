@@ -763,6 +763,7 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الاسم</div><div class="text-sm text-slate-800">{{ employee.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الموظف</div><div class="text-sm text-slate-800">{{ employee.employee_number|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الهوية</div><div class="text-sm text-slate-800">{{ employee.id_number|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">الجنس</div><div class="text-sm text-slate-800">{{ employee.get_gender_display|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الجوال</div><div class="text-sm text-slate-800">{{ employee.phone|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني</div><div class="text-sm text-slate-800">{{ employee.email|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الجنسية</div><div class="text-sm text-slate-800">{{ employee.nationality.name|default:"—" }}</div></div>

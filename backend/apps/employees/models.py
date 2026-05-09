@@ -179,8 +179,15 @@ class Employee(BaseModel):
         SUSPENDED = 'suspended', 'موقوف'
         TERMINATED = 'terminated', 'منتهي الخدمة'
 
+    class Gender(models.TextChoices):
+        MALE = 'male', 'ذكر'
+        FEMALE = 'female', 'أنثى'
+
     # ── بيانات أساسية ───────────────────────────────────────────
     name = models.CharField("الاسم", max_length=200)
+    gender = models.CharField(
+        "الجنس", max_length=10, choices=Gender.choices, default=Gender.MALE, blank=True
+    )
     id_number = models.CharField("رقم الهوية", max_length=50, blank=True)
     phone = models.CharField("رقم الجوال", max_length=20, blank=True)
     email = models.EmailField("البريد الإلكتروني", blank=True)

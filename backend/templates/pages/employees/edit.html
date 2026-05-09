@@ -52,6 +52,13 @@
                         <input type="text" name="name" required value="{{ employee.name }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     </div>
                     <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الجنس</label>
+                        <select name="gender" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="male" {% if employee.gender == 'male' or not employee.gender %}selected{% endif %}>ذكر</option>
+                            <option value="female" {% if employee.gender == 'female' %}selected{% endif %}>أنثى</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">رقم الهوية</label>
                         <input type="text" name="id_number" value="{{ employee.id_number }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>
