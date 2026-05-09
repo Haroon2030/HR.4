@@ -23,6 +23,11 @@ from apps.core.web_views._helpers import (
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
 
+
+def _buildings_qs():
+    from apps.setup.models import Building
+    return Building.objects.filter(is_active=True, is_deleted=False).order_by('name')
+
 @login_required
 def list_employees(request):
     """قائمة الموظفين مع بحث ذكي وترقيم"""
@@ -133,6 +138,7 @@ def create_employee_full(request):
         'cost_centers': CostCenter.objects.all(),
         'insurances': Insurance.objects.filter(is_active=True),
         'insurance_classes': InsuranceClass.objects.filter(is_active=True),
+        'buildings': _buildings_qs(),
     })
 
 
@@ -223,6 +229,7 @@ def edit_employee(request, employee_id):
         'cost_centers': CostCenter.objects.all(),
         'insurances': Insurance.objects.filter(is_active=True),
         'insurance_classes': InsuranceClass.objects.filter(is_active=True),
+        'buildings': _buildings_qs(),
     })
 
 

@@ -32,6 +32,7 @@ FK_LABEL_OVERRIDES = {
     'sponsorship': _name_only,
     'insurance': _name_only,
     'insurance_class': _name_only,
+    'housing': _name_only,
 }
 
 
@@ -51,9 +52,11 @@ _EMPLOYEE_FIELDS = [
     'name', 'id_number', 'phone', 'email', 'employee_number',
     # FKs
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
-    'cost_center', 'insurance', 'insurance_class',
+    'cost_center', 'insurance', 'insurance_class', 'housing',
     # تواريخ + حالة
     'hire_date', 'end_date', 'passport_expiry_date', 'status', 'end_reason',
+    # الكرت الصحي
+    'health_card_status', 'health_card_expiry',
     # راتب
     'basic_salary', 'housing_allowance', 'transport_allowance',
     'other_allowance', 'cash_amount', 'insurance_deduction_rate',

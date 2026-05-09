@@ -218,6 +218,20 @@ class Employee(BaseModel):
         'setup.InsuranceClass', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='employees', verbose_name="فئة التأمين"
     )
+    housing = models.ForeignKey(
+        'setup.Building', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employees', verbose_name="السكن"
+    )
+
+    class HealthCardStatus(models.TextChoices):
+        AVAILABLE = 'available', 'متوفر'
+        NOT_AVAILABLE = 'not_available', 'غير متوفر'
+
+    health_card_status = models.CharField(
+        "حالة الكرت الصحي", max_length=20,
+        choices=HealthCardStatus.choices, default=HealthCardStatus.NOT_AVAILABLE, blank=True,
+    )
+    health_card_expiry = models.DateField("تاريخ انتهاء الكرت الصحي", null=True, blank=True)
 
     hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
     end_date = models.DateField("تاريخ التوقف", null=True, blank=True)

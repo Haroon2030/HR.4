@@ -124,6 +124,24 @@
                         </select>
                     </div>
                     <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">السكن</label>
+                        <select name="housing" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="">-- اختر --</option>
+                            {% for bld in buildings %}<option value="{{ bld.id }}" {% if employee.housing_id == bld.id %}selected{% endif %}>{{ bld.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">الكرت الصحي</label>
+                        <select name="health_card_status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <option value="not_available" {% if employee.health_card_status == 'not_available' or not employee.health_card_status %}selected{% endif %}>غير متوفر</option>
+                            <option value="available" {% if employee.health_card_status == 'available' %}selected{% endif %}>متوفر</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء الكرت الصحي</label>
+                        <input type="date" name="health_card_expiry" value="{{ employee.health_card_expiry|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">تاريخ المباشرة</label>
                         <input type="date" name="hire_date" value="{{ employee.hire_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>
