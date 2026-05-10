@@ -80,6 +80,60 @@ def add_role(request):
 
 
 # =============================================================================
+# Role Permissions Management
+# =============================================================================
+@login_required
+@admin_required
+def manage_role_permissions(request, role_id):
+    """إدارة صلاحيات دور (جدول وحدات × عمليات)"""
+    from apps.core.models import AppModule, Permission
+
+    role = get_object_or_404(Role, id=role_id)
+    is_admin_role = role.role_type == Role.RoleType.ADMIN
+
+    if request.method == 'POST':
+        if is_admin_role:
+            messages.warning(request, 'دور الأدمن لديه جميع الصلاحيات تلقائياً ولا يمكن تعديلها')
+            return redirect('web:manage_role_permissions', role_id=role.id)
+
+        selected_ids = request.POST.getlist('permissions')
+        try:
+            selected_ids = [int(x) for x in selected_ids if str(x).isdigit()]
+        except (TypeError, ValueError):
+            selected_ids = []
+        perms = Permission.objects.filter(id__in=selected_ids, is_active=True)
+        role.permissions.set(perms)
+        messages.success(request, f'تم حفظ صلاحيات الدور "{role.name}" ({perms.count()} صلاحية)')
+        return redirect('web:manage_role_permissions', role_id=role.id)
+
+    # بناء جدول وحدات × عمليات
+    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
+    operations = list(Permission.Operation.choices)  # [('view','عرض'),...]
+    role_perm_ids = set(role.permissions.values_list('id', flat=True))
+
+    matrix = []
+    for m in modules:
+        cells = []
+        for op_code, op_label in operations:
+            perm = next((p for p in m.permissions.all() if p.operation == op_code and p.is_active), None)
+            cells.append({
+                'op_code': op_code,
+                'op_label': op_label,
+                'perm': perm,
+                'checked': bool(perm and (is_admin_role or perm.id in role_perm_ids)),
+                'available': perm is not None,
+            })
+        matrix.append({'module': m, 'cells': cells})
+
+    return render(request, 'pages/roles/permissions.html', {
+        'role': role,
+        'is_admin_role': is_admin_role,
+        'operations': operations,
+        'matrix': matrix,
+    })
+
+
+# =============================================================================
 # Branches Management
 # =============================================================================
 

@@ -43,6 +43,11 @@ def permission_required(permission_code, raise_exception=False):
                     raise PermissionDenied('لم يتم تعيين دور')
                 return redirect('web:dashboard')
             
+            # الأدمن (RoleType.ADMIN) يمرّ تلقائياً
+            from apps.core.models import Role
+            if profile.role.role_type == Role.RoleType.ADMIN:
+                return view_func(request, *args, **kwargs)
+            
             # التحقق من الصلاحية
             user_permissions = profile.role.permissions.filter(
                 code=permission_code,
@@ -91,6 +96,11 @@ def any_permission_required(*permission_codes, raise_exception=False):
                 if raise_exception:
                     raise PermissionDenied('لم يتم تعيين دور')
                 return redirect('web:dashboard')
+            
+            # الأدمن (RoleType.ADMIN) يمرّ تلقائياً
+            from apps.core.models import Role
+            if profile.role.role_type == Role.RoleType.ADMIN:
+                return view_func(request, *args, **kwargs)
             
             # التحقق من وجود أي صلاحية من القائمة
             has_permission = profile.role.permissions.filter(
@@ -141,6 +151,11 @@ def all_permissions_required(*permission_codes, raise_exception=False):
                     raise PermissionDenied('لم يتم تعيين دور')
                 return redirect('web:dashboard')
             
+            # الأدمن (RoleType.ADMIN) يمرّ تلقائياً
+            from apps.core.models import Role
+            if profile.role.role_type == Role.RoleType.ADMIN:
+                return view_func(request, *args, **kwargs)
+            
             # التحقق من وجود كل الصلاحيات
             user_permission_codes = set(
                 profile.role.permissions.filter(is_active=True).values_list('code', flat=True)
@@ -180,7 +195,12 @@ def has_permission(user, permission_code):
     # التحقق من وجود profile ودور
     if not hasattr(user, 'profile') or not user.profile or not user.profile.role:
         return False
-    
+
+    # الأدمن (RoleType.ADMIN) يحصل تلقائياً على كل الصلاحيات
+    from apps.core.models import Role
+    if user.profile.role.role_type == Role.RoleType.ADMIN:
+        return True
+
     # التحقق من الصلاحية
     return user.profile.role.permissions.filter(
         code=permission_code,
@@ -205,7 +225,12 @@ def get_user_permissions(user):
     # التحقق من وجود profile ودور
     if not hasattr(user, 'profile') or not user.profile or not user.profile.role:
         return []
-    
+
+    # الأدمن (RoleType.ADMIN) يحصل تلقائياً على كل الصلاحيات
+    from apps.core.models import Permission, Role
+    if user.profile.role.role_type == Role.RoleType.ADMIN:
+        return list(Permission.objects.filter(is_active=True).values_list('code', flat=True))
+
     # إرجاع قائمة الصلاحيات
     return list(
         user.profile.role.permissions.filter(is_active=True).values_list('code', flat=True)

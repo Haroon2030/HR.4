@@ -69,6 +69,7 @@ urlpatterns = [
     path('roles/add/', web_views.add_role, name='add_role'),
     path('roles/<int:role_id>/', web_views.view_role, name='view_role'),
     path('roles/<int:role_id>/edit/', web_views.edit_role, name='edit_role'),
+    path('roles/<int:role_id>/permissions/', web_views.manage_role_permissions, name='manage_role_permissions'),
     
     # Branches
     path('branches/', web_views.list_branches, name='list_branches'),

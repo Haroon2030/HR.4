@@ -58,6 +58,9 @@
                 <a href="{% url 'web:view_role' role.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
                     <i data-lucide="eye" class="w-4 h-4"></i>
                 </a>
+                <a href="{% url 'web:manage_role_permissions' role.id %}" class="p-1.5 text-slate-400 hover:text-primary-600 transition-colors" title="إدارة الصلاحيات">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </a>
                 {% if not role.is_system_role or role.role_type == 'admin' %}
                 <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
                     <i data-lucide="edit-2" class="w-4 h-4"></i>

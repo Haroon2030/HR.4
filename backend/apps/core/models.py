@@ -140,6 +140,61 @@ class Branch(BaseModel):
 # ══════════════════════════════════════════════════════════════════════════════
 # الأدوار - Role Based Access Control مبسط
 # ══════════════════════════════════════════════════════════════════════════════
+class AppModule(BaseModel):
+    """وحدة (نظام فرعي) في التطبيق — مثل الموظفين، الفروع، الأقسام..."""
+    code = models.CharField("الرمز", max_length=50, unique=True, help_text="مثل: employees, branches")
+    name = models.CharField("الاسم", max_length=100)
+    icon = models.CharField("الأيقونة", max_length=50, default='package', help_text="اسم أيقونة Lucide")
+    order = models.IntegerField("الترتيب", default=0)
+    is_active = models.BooleanField("نشط", default=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "وحدة"
+        verbose_name_plural = "الوحدات"
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Permission(BaseModel):
+    """صلاحية محددة = وحدة + عملية (view/add/edit/delete)"""
+
+    class Operation(models.TextChoices):
+        VIEW = 'view', 'عرض'
+        ADD = 'add', 'إضافة'
+        EDIT = 'edit', 'تعديل'
+        DELETE = 'delete', 'حذف'
+
+    module = models.ForeignKey(
+        AppModule,
+        on_delete=models.CASCADE,
+        verbose_name="الوحدة",
+        related_name="permissions"
+    )
+    operation = models.CharField(
+        "العملية",
+        max_length=20,
+        choices=Operation.choices,
+    )
+    code = models.CharField("الرمز", max_length=100, unique=True, help_text="مثل: employees.view")
+    name = models.CharField("الاسم", max_length=200)
+    is_active = models.BooleanField("نشط", default=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "صلاحية"
+        verbose_name_plural = "الصلاحيات"
+        ordering = ['module__order', 'operation']
+        unique_together = [('module', 'operation')]
+
+    def __str__(self):
+        return self.name
+
+
 class Role(BaseModel):
     """دور المستخدم - نظام RBAC مبسط"""
     
@@ -161,7 +216,14 @@ class Role(BaseModel):
     description = models.TextField("الوصف", blank=True)
     is_system_role = models.BooleanField("دور نظام", default=False, help_text="الأدوار الأساسية لا يمكن حذفها")
     is_active = models.BooleanField("نشط", default=True)
-    
+
+    permissions = models.ManyToManyField(
+        Permission,
+        verbose_name="الصلاحيات",
+        related_name="roles",
+        blank=True,
+    )
+
     history = HistoricalRecords()  # تتبع الأمان للأدوار
     
     class Meta:
