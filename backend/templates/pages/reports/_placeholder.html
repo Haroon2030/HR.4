@@ -10,6 +10,13 @@
             <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
             التقارير
         </a>
+        {% if group_meta %}
+        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        <a href="{% url 'web:reports_index' %}#group-{{ group_meta.key }}" class="hover:text-{{ group_meta.color }}-700 inline-flex items-center gap-1">
+            <i data-lucide="{{ group_meta.icon }}" class="w-3.5 h-3.5"></i>
+            {{ group_meta.title }}
+        </a>
+        {% endif %}
         <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
         <span class="text-slate-700 font-semibold">{{ report_meta.title }}</span>
     </nav>
@@ -43,24 +50,24 @@
         </a>
     </div>
 
-    {# Other reports quick-access #}
+    {# Sibling reports in the same group #}
+    {% if siblings %}
     <div class="mt-8">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-            <i data-lucide="layout-grid" class="w-4 h-4"></i>
-            تقارير أخرى
+            {% if group_meta %}<i data-lucide="{{ group_meta.icon }}" class="w-4 h-4"></i>{% else %}<i data-lucide="layout-grid" class="w-4 h-4"></i>{% endif %}
+            تقارير أخرى ضمن: {{ group_meta.title|default:"نفس المجموعة" }}
         </h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {% for r in reports %}
-                {% if r.key != report_meta.key %}
-                <a href="{% url 'web:report_detail' report_type=r.key %}"
-                   class="bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:bg-{{ r.color }}-50 rounded-lg px-3 py-2 text-xs text-slate-700 hover:text-{{ r.color }}-700 font-semibold flex items-center gap-2 transition-colors">
-                    <i data-lucide="{{ r.icon }}" class="w-3.5 h-3.5"></i>
-                    <span class="truncate">{{ r.title }}</span>
-                </a>
-                {% endif %}
+            {% for r in siblings %}
+            <a href="{% url 'web:report_detail' report_type=r.key %}"
+               class="bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:bg-{{ r.color }}-50 rounded-lg px-3 py-2 text-xs text-slate-700 hover:text-{{ r.color }}-700 font-semibold flex items-center gap-2 transition-colors">
+                <i data-lucide="{{ r.icon }}" class="w-3.5 h-3.5"></i>
+                <span class="truncate">{{ r.title }}</span>
+            </a>
             {% endfor %}
         </div>
     </div>
+    {% endif %}
 
 </div>
 

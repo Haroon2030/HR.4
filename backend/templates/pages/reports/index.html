@@ -2,7 +2,7 @@
 {% block title %}التقارير{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="max-w-7xl mx-auto">
 
     {# Header #}
     <div class="mb-6">
@@ -11,30 +11,57 @@
             التقارير
         </h1>
         <p class="text-sm text-slate-500 mt-1">
-            اختر التقرير الذي تريد عرضه من القائمة أدناه
+            مجموعات تقارير مترابطة تغطي جميع جوانب الموارد البشرية
         </p>
     </div>
 
-    {# Reports grid #}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for r in reports %}
-        <a href="{% url 'web:report_detail' report_type=r.key %}"
-           class="group bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:shadow-lg rounded-xl p-5 transition-all duration-200 flex items-start gap-4">
-            <div class="w-12 h-12 rounded-lg bg-{{ r.color }}-50 text-{{ r.color }}-600 group-hover:bg-{{ r.color }}-100 flex items-center justify-center flex-shrink-0 transition-colors">
-                <i data-lucide="{{ r.icon }}" class="w-6 h-6"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-                <h3 class="font-bold text-slate-800 group-hover:text-{{ r.color }}-700 transition-colors">
-                    {{ r.title }}
-                </h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                    {{ r.description }}
-                </p>
-            </div>
-            <i data-lucide="chevron-left" class="w-5 h-5 text-slate-300 group-hover:text-{{ r.color }}-500 group-hover:-translate-x-1 transition-all flex-shrink-0"></i>
+    {# Group quick-nav #}
+    <div class="bg-white border border-slate-200 rounded-xl p-3 mb-6 flex flex-wrap gap-2">
+        {% for g in report_groups %}
+        <a href="#group-{{ g.key }}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-{{ g.color }}-50 text-{{ g.color }}-700 hover:bg-{{ g.color }}-100 border border-{{ g.color }}-200 transition-colors">
+            <i data-lucide="{{ g.icon }}" class="w-3.5 h-3.5"></i>
+            {{ g.title }}
+            <span class="bg-white/70 text-{{ g.color }}-700 rounded-full px-1.5 text-[10px] font-bold">{{ g.items|length }}</span>
         </a>
         {% endfor %}
     </div>
+
+    {# Grouped sections #}
+    {% for g in report_groups %}
+    <section id="group-{{ g.key }}" class="mb-8 scroll-mt-24">
+        <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-{{ g.color }}-50 text-{{ g.color }}-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="{{ g.icon }}" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h2 class="text-lg font-bold text-slate-800">{{ g.title }}</h2>
+                <p class="text-xs text-slate-500">{{ g.description }}</p>
+            </div>
+            <div class="flex-1 h-px bg-gradient-to-l from-{{ g.color }}-200 to-transparent"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {% for r in g.items %}
+            <a href="{% url 'web:report_detail' report_type=r.key %}"
+               class="group bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:shadow-md rounded-xl p-4 transition-all duration-200 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-{{ r.color }}-50 text-{{ r.color }}-600 group-hover:bg-{{ r.color }}-100 flex items-center justify-center flex-shrink-0 transition-colors">
+                    <i data-lucide="{{ r.icon }}" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="font-bold text-sm text-slate-800 group-hover:text-{{ r.color }}-700 transition-colors">
+                        {{ r.title }}
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
+                        {{ r.description }}
+                    </p>
+                </div>
+                <i data-lucide="chevron-left" class="w-4 h-4 text-slate-300 group-hover:text-{{ r.color }}-500 group-hover:-translate-x-1 transition-all flex-shrink-0 mt-1"></i>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
 
 </div>
 
