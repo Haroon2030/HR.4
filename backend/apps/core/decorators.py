@@ -9,234 +9,206 @@ from django.core.exceptions import PermissionDenied
 from apps.core.permissions_registry import register_permission as _register_perm
 
 
+# ============================================================================
+# Helpers — مشتركة بين كل decorators لتجنب التكرار وتقليل الـ queries
+# ============================================================================
+
+def _ensure_profile_role(request, raise_exception):
+    """يتأكد من وجود profile + role. يُرجع profile أو response عند الفشل.
+
+    Returns:
+        UserProfile إذا الكل موجود، أو HttpResponse (redirect) إذا لا.
+    """
+    user = request.user
+    if not hasattr(user, 'profile') or not user.profile:
+        messages.error(request, 'لا يوجد ملف مستخدم مرتبط بحسابك')
+        if raise_exception:
+            raise PermissionDenied('لا يوجد ملف مستخدم')
+        return redirect('web:dashboard')
+
+    profile = user.profile
+    if not profile.role:
+        messages.error(request, 'لم يتم تعيين دور لحسابك')
+        if raise_exception:
+            raise PermissionDenied('لم يتم تعيين دور')
+        return redirect('web:dashboard')
+
+    return profile
+
+
+def _is_super_or_admin(user):
+    """فحص سريع — superuser أو role.role_type == ADMIN."""
+    if user.is_superuser:
+        return True
+    if not hasattr(user, 'profile') or not user.profile or not user.profile.role:
+        return False
+    from apps.core.models import Role
+    return user.profile.role.role_type == Role.RoleType.ADMIN
+
+
+def get_user_permissions(user):
+    """
+    صلاحيات المستخدم كـ set من الأكواد. يُحسب مرة واحدة لكل instance ويُخزَّن مؤقتاً.
+
+    - superuser / admin → كل الصلاحيات النشطة
+    - غيرهم → (صلاحيات الدور ∪ extra) − denied
+
+    استخدام:
+        codes = get_user_permissions(request.user)
+        if 'employees.edit' in codes: ...
+    """
+    # Cache على المستخدم نفسه — يُحدَّد على instance واحد لكل request (django.contrib.auth)
+    cached = getattr(user, '_perm_codes_cache', None)
+    if cached is not None:
+        return cached
+
+    from apps.core.models import Permission, Role
+
+    if user.is_superuser:
+        codes = set(Permission.objects.filter(is_active=True).values_list('code', flat=True))
+    elif not hasattr(user, 'profile') or not user.profile or not user.profile.role:
+        codes = set()
+    elif user.profile.role.role_type == Role.RoleType.ADMIN:
+        codes = set(Permission.objects.filter(is_active=True).values_list('code', flat=True))
+    else:
+        profile = user.profile
+        # 3 queries فقط — ثم لا queries إضافية لبقية الـ request
+        role_codes = set(profile.role.permissions.filter(is_active=True).values_list('code', flat=True))
+        extra_codes = set(profile.extra_permissions.filter(is_active=True).values_list('code', flat=True))
+        denied_codes = set(profile.denied_permissions.filter(is_active=True).values_list('code', flat=True))
+        codes = (role_codes | extra_codes) - denied_codes
+
+    user._perm_codes_cache = codes
+    return codes
+
+
+def has_permission(user, permission_code):
+    """
+    فحص O(1) لصلاحية واحدة (يستخدم cache المستخدم).
+
+    Template:
+        {% if request.user|has_permission:'employees.edit' %}
+    View:
+        if has_permission(request.user, 'employees.edit'): ...
+    """
+    if not user or not user.is_authenticated:
+        return False
+    return permission_code in get_user_permissions(user)
+
+
+def _check_or_redirect(request, has_perm, raise_exception, deny_msg, exc_msg):
+    """مساعد مشترك: يُرجع None إذا الصلاحية موجودة، أو redirect/raise إذا لا."""
+    if has_perm:
+        return None
+    messages.error(request, deny_msg)
+    if raise_exception:
+        raise PermissionDenied(exc_msg)
+    return redirect('web:dashboard')
+
+
+# ============================================================================
+# Decorators
+# ============================================================================
+
 def permission_required(permission_code, raise_exception=False):
     """
     Decorator للتحقق من أن المستخدم لديه صلاحية معينة
-    
-    الاستخدام:
-        @login_required
-        @permission_required('employees.view')
-        def list_employees(request):
-            ...
-    
+
     Args:
         permission_code (str): كود الصلاحية مثل 'employees.view'
         raise_exception (bool): رفع استثناء 403 بدلاً من redirect
     """
-    # تسجيل تلقائي في الـ registry (وحدة + عملية)
     _register_perm(permission_code)
 
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            # السوبر يوزر لديه كل الصلاحيات
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
-            
-            # التحقق من وجود profile
-            if not hasattr(request.user, 'profile') or not request.user.profile:
-                messages.error(request, 'لا يوجد ملف مستخدم مرتبط بحسابك')
-                if raise_exception:
-                    raise PermissionDenied('لا يوجد ملف مستخدم')
-                return redirect('web:dashboard')
-            
-            # التحقق من وجود دور
-            profile = request.user.profile
-            if not profile.role:
-                messages.error(request, 'لم يتم تعيين دور لحسابك')
-                if raise_exception:
-                    raise PermissionDenied('لم يتم تعيين دور')
-                return redirect('web:dashboard')
-            
-            # الأدمن (RoleType.ADMIN) يمرّ تلقائياً
-            from apps.core.models import Role
-            if profile.role.role_type == Role.RoleType.ADMIN:
+
+            profile_or_resp = _ensure_profile_role(request, raise_exception)
+            if not hasattr(profile_or_resp, 'role'):  # response
+                return profile_or_resp
+
+            if _is_super_or_admin(request.user):
                 return view_func(request, *args, **kwargs)
 
-            # التحقق من الصلاحية (يشمل extra/denied على مستوى المستخدم)
-            if not has_permission(request.user, permission_code):
-                messages.error(request, f'ليس لديك صلاحية للوصول إلى هذه الصفحة')
-                if raise_exception:
-                    raise PermissionDenied(f'الصلاحية {permission_code} مطلوبة')
-                return redirect('web:dashboard')
-            
+            resp = _check_or_redirect(
+                request,
+                has_permission(request.user, permission_code),
+                raise_exception,
+                'ليس لديك صلاحية للوصول إلى هذه الصفحة',
+                f'الصلاحية {permission_code} مطلوبة',
+            )
+            if resp is not None:
+                return resp
             return view_func(request, *args, **kwargs)
-        
         return wrapper
     return decorator
 
 
 def any_permission_required(*permission_codes, raise_exception=False):
-    """
-    Decorator للتحقق من أن المستخدم لديه أي صلاحية من القائمة
-    
-    الاستخدام:
-        @login_required
-        @any_permission_required('employees.view', 'employees.manage')
-        def list_employees(request):
-            ...
-    """
+    """التحقق من أن المستخدم لديه أي صلاحية من القائمة."""
     for _c in permission_codes:
         _register_perm(_c)
 
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            # السوبر يوزر لديه كل الصلاحيات
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
-            
-            # التحقق من وجود profile وdور
-            if not hasattr(request.user, 'profile') or not request.user.profile:
-                messages.error(request, 'لا يوجد ملف مستخدم مرتبط بحسابك')
-                if raise_exception:
-                    raise PermissionDenied('لا يوجد ملف مستخدم')
-                return redirect('web:dashboard')
-            
-            profile = request.user.profile
-            if not profile.role:
-                messages.error(request, 'لم يتم تعيين دور لحسابك')
-                if raise_exception:
-                    raise PermissionDenied('لم يتم تعيين دور')
-                return redirect('web:dashboard')
-            
-            # الأدمن (RoleType.ADMIN) يمرّ تلقائياً
-            from apps.core.models import Role
-            if profile.role.role_type == Role.RoleType.ADMIN:
+
+            profile_or_resp = _ensure_profile_role(request, raise_exception)
+            if not hasattr(profile_or_resp, 'role'):
+                return profile_or_resp
+
+            if _is_super_or_admin(request.user):
                 return view_func(request, *args, **kwargs)
 
-            # التحقق من وجود أي صلاحية (يشمل extra/denied)
-            if not any(has_permission(request.user, code) for code in permission_codes):
-                messages.error(request, 'ليس لديك صلاحية للوصول إلى هذه الصفحة')
-                if raise_exception:
-                    raise PermissionDenied(f'أحد الصلاحيات {permission_codes} مطلوبة')
-                return redirect('web:dashboard')
-            
+            user_perms = get_user_permissions(request.user)
+            resp = _check_or_redirect(
+                request,
+                any(c in user_perms for c in permission_codes),
+                raise_exception,
+                'ليس لديك صلاحية للوصول إلى هذه الصفحة',
+                f'أحد الصلاحيات {permission_codes} مطلوبة',
+            )
+            if resp is not None:
+                return resp
             return view_func(request, *args, **kwargs)
-        
         return wrapper
     return decorator
 
 
 def all_permissions_required(*permission_codes, raise_exception=False):
-    """
-    Decorator للتحقق من أن المستخدم لديه جميع الصلاحيات في القائمة
-    
-    الاستخدام:
-        @login_required
-        @all_permissions_required('employees.view', 'employees.edit')
-        def edit_employee(request, employee_id):
-            ...
-    """
+    """التحقق من أن المستخدم لديه جميع الصلاحيات في القائمة."""
     for _c in permission_codes:
         _register_perm(_c)
 
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            # السوبر يوزر لديه كل الصلاحيات
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
-            
-            # التحقق من وجود profile ودور
-            if not hasattr(request.user, 'profile') or not request.user.profile:
-                messages.error(request, 'لا يوجد ملف مستخدم مرتبط بحسابك')
-                if raise_exception:
-                    raise PermissionDenied('لا يوجد ملف مستخدم')
-                return redirect('web:dashboard')
-            
-            profile = request.user.profile
-            if not profile.role:
-                messages.error(request, 'لم يتم تعيين دور لحسابك')
-                if raise_exception:
-                    raise PermissionDenied('لم يتم تعيين دور')
-                return redirect('web:dashboard')
-            
-            # الأدمن (RoleType.ADMIN) يمرّ تلقائياً
-            from apps.core.models import Role
-            if profile.role.role_type == Role.RoleType.ADMIN:
+
+            profile_or_resp = _ensure_profile_role(request, raise_exception)
+            if not hasattr(profile_or_resp, 'role'):
+                return profile_or_resp
+
+            if _is_super_or_admin(request.user):
                 return view_func(request, *args, **kwargs)
 
-            # التحقق من وجود كل الصلاحيات (يشمل extra/denied)
-            missing = [code for code in permission_codes if not has_permission(request.user, code)]
-            if missing:
-                messages.error(request, f'تحتاج إلى صلاحيات إضافية للوصول')
-                if raise_exception:
-                    raise PermissionDenied(f'الصلاحيات {set(missing)} مطلوبة')
-                return redirect('web:dashboard')
-            
+            user_perms = get_user_permissions(request.user)
+            missing = [c for c in permission_codes if c not in user_perms]
+            resp = _check_or_redirect(
+                request,
+                not missing,
+                raise_exception,
+                'تحتاج إلى صلاحيات إضافية للوصول',
+                f'الصلاحيات {set(missing)} مطلوبة',
+            )
+            if resp is not None:
+                return resp
             return view_func(request, *args, **kwargs)
-        
         return wrapper
     return decorator
-
-
-def has_permission(user, permission_code):
-    """
-    Helper function للتحقق من صلاحية في Template أو View
-    
-    الاستخدام في View:
-        if has_permission(request.user, 'employees.edit'):
-            # السماح بالتعديل
-    
-    الاستخدام في Template:
-        {% if request.user|has_permission:'employees.edit' %}
-            <button>تعديل</button>
-        {% endif %}
-    """
-    # السوبر يوزر لديه كل الصلاحيات
-    if user.is_superuser:
-        return True
-    
-    # التحقق من وجود profile ودور
-    if not hasattr(user, 'profile') or not user.profile or not user.profile.role:
-        return False
-
-    # الأدمن (RoleType.ADMIN) يحصل تلقائياً على كل الصلاحيات
-    from apps.core.models import Role
-    if user.profile.role.role_type == Role.RoleType.ADMIN:
-        return True
-
-    # رفض صريح على مستوى المستخدم يفوز
-    if user.profile.denied_permissions.filter(code=permission_code, is_active=True).exists():
-        return False
-
-    # صلاحية إضافية على مستوى المستخدم
-    if user.profile.extra_permissions.filter(code=permission_code, is_active=True).exists():
-        return True
-
-    # التحقق من صلاحيات الدور
-    return user.profile.role.permissions.filter(
-        code=permission_code,
-        is_active=True
-    ).exists()
-
-
-def get_user_permissions(user):
-    """
-    الحصول على قائمة كل صلاحيات المستخدم
-    
-    الاستخدام:
-        permissions = get_user_permissions(request.user)
-        if 'employees.edit' in permissions:
-            # السماح بالتعديل
-    """
-    # السوبر يوزر لديه كل الصلاحيات
-    if user.is_superuser:
-        from apps.core.models import Permission
-        return list(Permission.objects.filter(is_active=True).values_list('code', flat=True))
-    
-    # التحقق من وجود profile ودور
-    if not hasattr(user, 'profile') or not user.profile or not user.profile.role:
-        return []
-
-    # الأدمن (RoleType.ADMIN) يحصل تلقائياً على كل الصلاحيات
-    from apps.core.models import Permission, Role
-    if user.profile.role.role_type == Role.RoleType.ADMIN:
-        return list(Permission.objects.filter(is_active=True).values_list('code', flat=True))
-
-    # دمج صلاحيات الدور + extra − denied
-    role_codes = set(user.profile.role.permissions.filter(is_active=True).values_list('code', flat=True))
-    extra_codes = set(user.profile.extra_permissions.filter(is_active=True).values_list('code', flat=True))
-    denied_codes = set(user.profile.denied_permissions.filter(is_active=True).values_list('code', flat=True))
-    return list((role_codes | extra_codes) - denied_codes)
