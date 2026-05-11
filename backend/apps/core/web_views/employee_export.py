@@ -6,9 +6,11 @@ from django.utils import timezone
 
 from apps.employees.models import Employee
 from apps.core.web_views._helpers import employee_branch_access_required
+from apps.core.decorators import permission_required
 
 
 @login_required
+@permission_required('employees.view')
 @employee_branch_access_required
 def export_employee_salary_excel(request, employee_id):
     """يُنشئ ملف Excel ملوّن يحتوي على بيانات تبويب الموظف فقط."""

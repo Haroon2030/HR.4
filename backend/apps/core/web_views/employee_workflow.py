@@ -20,8 +20,10 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def add_employee_leave(request, employee_id):
     """تقديم إجازة للموظف مع التحقق من الكفالة والرصيد المتاح."""
@@ -89,6 +91,7 @@ def add_employee_leave(request, employee_id):
 
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def terminate_employee(request, employee_id):
     """تقديم طلب تصفية (ينتظر موافقة مدير الفرع)."""
@@ -122,6 +125,7 @@ def terminate_employee(request, employee_id):
 
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def reactivate_employee(request, employee_id):
     """تقديم طلب إعادة تفعيل موظف مُصفّى (ينتظر موافقة مدير الفرع)."""
@@ -160,6 +164,7 @@ def reactivate_employee(request, employee_id):
 
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def adjust_employee_salary(request, employee_id):
     """تقديم طلب تعديل راتب (ينتظر موافقة مدير الفرع)."""
@@ -194,6 +199,7 @@ def adjust_employee_salary(request, employee_id):
 
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def transfer_employee(request, employee_id):
     """تقديم طلب نقل (ينتظر موافقة مدير الفرع)."""
@@ -237,6 +243,7 @@ def transfer_employee(request, employee_id):
 
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def set_work_schedule(request, employee_id):
     """حفظ جداول الدوام كصناديق شهرية بأيام مُظلَّلة.

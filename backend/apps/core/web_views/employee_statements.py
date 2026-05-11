@@ -19,8 +19,11 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 @login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
 def add_employee_statement(request, employee_id):
     """إضافة إفادة / إنذار للموظف مع رقم متسلسل وإرسال بريدي اختياري."""
     from django.utils import timezone
@@ -150,6 +153,7 @@ def add_employee_statement(request, employee_id):
 
 
 @login_required
+@permission_required('employees.delete')
 def delete_employee_statement(request, statement_id):
     """حذف إفادة / إنذار."""
     from apps.employees.models import EmployeeStatement
