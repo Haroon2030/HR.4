@@ -3,10 +3,8 @@ Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from functools import wraps
 
 from apps.core.models import Branch
 from apps.cost_centers.models import CostCenter
@@ -35,6 +33,7 @@ def _banks_qs():
     return Bank.objects.filter(is_active=True, is_deleted=False).order_by('name')
 
 @login_required
+@permission_required('employees.view')
 def list_employees(request):
     """قائمة الموظفين مع بحث ذكي وترقيم"""
     from apps.employees.models import Employee
@@ -77,6 +76,7 @@ def list_employees(request):
 
 
 @login_required
+@permission_required('employees.add')
 def add_employee(request):
     """إنشاء طلب توظيف جديد (يحتاج موافقة مدير الفرع)"""
     from apps.employees.forms import EmploymentRequestForm
@@ -109,6 +109,7 @@ def add_employee(request):
 # Employment Requests (مدير الفرع)
 # =============================================================================
 @login_required
+@permission_required('employees.add')
 def create_employee_full(request):
     """إنشاء موظف مباشرة عبر النموذج الرئيسي الكامل (7 تبويبات)"""
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
@@ -150,6 +151,7 @@ def create_employee_full(request):
 
 
 @login_required
+@permission_required('employees.view')
 def view_employee(request, employee_id):
     """عرض بيانات موظف للقراءة فقط"""
     from apps.employees.models import Employee
@@ -200,6 +202,7 @@ def view_employee(request, employee_id):
 
 
 @login_required
+@permission_required('employees.edit')
 @employee_branch_access_required
 def edit_employee(request, employee_id):
     """تعديل ملف موظف - يكمل الأخصائي بقية الحقول"""

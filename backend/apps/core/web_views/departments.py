@@ -3,11 +3,9 @@ Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from functools import wraps
 
 from apps.core.models import Branch
 from apps.cost_centers.models import CostCenter

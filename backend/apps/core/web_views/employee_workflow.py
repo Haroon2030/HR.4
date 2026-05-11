@@ -4,10 +4,8 @@ Django Template Views - واجهة الويب
 """
 import json
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from functools import wraps
 
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department

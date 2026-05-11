@@ -58,8 +58,7 @@ def list_employment_requests(request):
             if managed:
                 cond |= Q(branch_id__in=managed)
         if is_gm:
-            cond |= Q()  # المدير العام يرى الكل
-            qs = qs  # سيُفلتر فقط بالحالة أدناه
+            # المدير العام يرى الكل — أبطل الفلترة على الملكية/الفرع
             cond = Q()
         if is_officer:
             cond |= Q(assigned_officer=user)

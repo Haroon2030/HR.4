@@ -3,10 +3,8 @@ Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from functools import wraps
 
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
@@ -49,12 +47,6 @@ def add_employee_statement(request, employee_id):
 
     cd = form.cleaned_data
     send_email_flag = bool(request.POST.get('send_email'))
-
-    import logging
-    logging.getLogger('django').info(
-        f'[STATEMENT] send_email POST={request.POST.get("send_email")!r} flag={send_email_flag} '
-        f'emp_email={cd.get("employee_email")!r} hr_email={cd.get("hr_email")!r}'
-    )
 
     statement = form.save(commit=False)
     statement.employee = employee

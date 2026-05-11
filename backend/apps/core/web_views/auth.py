@@ -6,7 +6,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from functools import wraps
 
 from apps.core.models import UserProfile
 from apps.cost_centers.models import CostCenter
@@ -64,11 +63,9 @@ def login_view(request):
 
 def logout_view(request):
     """تسجيل الخروج"""
-    if request.method == 'POST' or request.method == 'GET':
-        logout(request)
-        messages.success(request, 'تم تسجيل الخروج بنجاح')
-        return redirect('web:auth:login')
-    return redirect('web:dashboard')
+    logout(request)
+    messages.success(request, 'تم تسجيل الخروج بنجاح')
+    return redirect('web:auth:login')
 
 
 # =============================================================================

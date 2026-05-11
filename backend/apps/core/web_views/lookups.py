@@ -3,10 +3,8 @@ Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from functools import wraps
 
 from apps.core.models import Branch
 from apps.cost_centers.models import CostCenter
@@ -30,9 +28,8 @@ from apps.core.decorators import permission_required
 # ───────────────────────────────────────────────────────────────────────────
 
 def _redirect_with_tab(request):
-    tab = request.POST.get('tab') or request.GET.get('tab') or ''
-    url = '/' if False else None
     from django.urls import reverse
+    tab = request.POST.get('tab') or request.GET.get('tab') or ''
     url = reverse('web:list_branches')
     if tab:
         url = f"{url}#{tab}"
