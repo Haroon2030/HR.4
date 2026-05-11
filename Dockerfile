@@ -39,4 +39,5 @@ RUN mkdir -p /app/staticfiles /app/media /app/logs
 EXPOSE 8082
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --timeout 120 --access-logfile - --error-logfile -"]
+# gthread workers — better for I/O-bound apps (DB-heavy). 3 workers × 4 threads = 12 concurrent.
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --threads 4 --worker-class gthread --timeout 120 --keep-alive 30 --access-logfile - --error-logfile -"]

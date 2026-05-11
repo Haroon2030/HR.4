@@ -34,14 +34,39 @@ CSRF_TRUSTED_ORIGINS = env.list(
 DATABASES = {
     'default': env.db('DATABASE_URL'),
 }
-DATABASES['default'].setdefault('CONN_MAX_AGE', 60)
+# Persistent connections — huge speedup for managed Postgres (Neon/Supabase).
+# Each request reuses an open connection instead of doing TLS handshake (~200ms).
+DATABASES['default'].setdefault('CONN_MAX_AGE', env.int('CONN_MAX_AGE', default=600))
+# Health check before reuse (Django 4.1+) — avoids stale-connection errors.
+DATABASES['default'].setdefault('CONN_HEALTH_CHECKS', True)
 
 # Neon / PgBouncer (transaction-pooler) compatibility:
 # - Disable server-side cursors (not supported in transaction pooling mode)
 # - Force SSL for any external managed Postgres (Neon, Supabase, etc.)
+# - TCP keepalives keep idle connections alive across NAT/proxies
 DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
 _db_options = DATABASES['default'].setdefault('OPTIONS', {})
 _db_options.setdefault('sslmode', env('DB_SSLMODE', default='require'))
+_db_options.setdefault('connect_timeout', 10)
+_db_options.setdefault('keepalives', 1)
+_db_options.setdefault('keepalives_idle', 30)
+_db_options.setdefault('keepalives_interval', 10)
+_db_options.setdefault('keepalives_count', 5)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Cache — local-memory (per-process). Fast for single-VPS deployments.
+# Switch to Redis if you scale to multiple workers/servers.
+# ──────────────────────────────────────────────────────────────────────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'hr-default',
+        'TIMEOUT': 300,
+        'OPTIONS': {'MAX_ENTRIES': 5000},
+    }
+}
+# Use the cache for sessions too — avoids a DB hit on every authenticated request.
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Security (behind reverse proxy / Traefik in Dokploy)
