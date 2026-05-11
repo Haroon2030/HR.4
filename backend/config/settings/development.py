@@ -2,7 +2,11 @@
 إعدادات التطوير - Development Settings
 """
 
+import environ
 from .base import *
+
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-dev-key-change-in-production-!@#$%^&*()'
@@ -13,15 +17,22 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Database - SQLite for Development
+# Database - DATABASE_URL from .env (Neon Postgres) or fallback to SQLite
 # ══════════════════════════════════════════════════════════════════════════════
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if env('DATABASE_URL', default=''):
+    DATABASES = {'default': env.db('DATABASE_URL')}
+    DATABASES['default'].setdefault('CONN_MAX_AGE', 60)
+    DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
+    _opts = DATABASES['default'].setdefault('OPTIONS', {})
+    _opts.setdefault('sslmode', env('DB_SSLMODE', default='require'))
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CORS - Allow all origins in development

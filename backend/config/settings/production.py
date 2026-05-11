@@ -28,26 +28,12 @@ CSRF_TRUSTED_ORIGINS = env.list(
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Database — PostgreSQL
-# Supports two styles:
-#   1) DATABASE_URL=postgres://user:pass@host:5432/dbname  (preferred)
-#   2) DB_ENGINE / DB_NAME / DB_USER / DB_PASSWORD / DB_HOST / DB_PORT
+# Database — PostgreSQL (Neon)
+# DATABASE_URL=postgresql://user:pass@host/dbname?sslmode=require
 # ──────────────────────────────────────────────────────────────────────────────
-if env('DATABASE_URL', default=''):
-    DATABASES = {
-        'default': env.db('DATABASE_URL'),
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
-            'NAME': env('DB_NAME'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST'),
-            'PORT': env('DB_PORT', default='5432'),
-        }
-    }
+DATABASES = {
+    'default': env.db('DATABASE_URL'),
+}
 DATABASES['default'].setdefault('CONN_MAX_AGE', 60)
 
 # Neon / PgBouncer (transaction-pooler) compatibility:
