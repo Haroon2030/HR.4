@@ -2,12 +2,9 @@
 Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 
-from apps.cost_centers.models import CostCenter
-from apps.departments.models import Department
 
 
 # =============================================================================
@@ -16,8 +13,7 @@ from apps.departments.models import Department
 
 
 from apps.core.web_views._helpers import (
-    admin_required, _is_branch_manager, branch_manager_required,
-    _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
+    _user_accessible_branch_ids,
 )
 
 @login_required

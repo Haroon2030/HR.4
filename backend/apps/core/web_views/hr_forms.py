@@ -8,7 +8,6 @@ from django.http import Http404
 
 from apps.core.models import Company
 from apps.employees.models import Employee
-from apps.core.web_views._helpers import admin_required
 from apps.core.decorators import permission_required
 
 

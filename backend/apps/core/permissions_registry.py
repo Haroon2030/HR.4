@@ -12,7 +12,7 @@ Permissions Registry — تسجيل تلقائي للوحدات والصلاحي
 
 أو دع النظام يستخدم القيم الافتراضية ويعتمد فقط على decorators على الـ views.
 """
-from typing import Dict, Set
+from typing import Dict
 
 
 # ============== التسميات والأيقونات الافتراضية للوحدات المعروفة ==============

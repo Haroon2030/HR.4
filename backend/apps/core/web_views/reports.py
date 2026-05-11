@@ -6,7 +6,6 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 
-from apps.core.web_views._helpers import admin_required
 from apps.core.decorators import permission_required
 
 

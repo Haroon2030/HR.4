@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from .models import Role, UserProfile, Branch, Company
+from .models import Role, UserProfile, Branch, Company, Permission
 from .serializers import (
     RoleSerializer, 
     RoleListSerializer,

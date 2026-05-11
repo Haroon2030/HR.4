@@ -10,7 +10,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
-from apps.core.models import Role, Branch, UserProfile
+from apps.core.models import Role, Branch
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
 
