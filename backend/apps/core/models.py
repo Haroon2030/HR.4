@@ -306,7 +306,23 @@ class UserProfile(BaseModel):
     position = models.CharField("المنصب", max_length=100, blank=True)
     avatar = models.ImageField("الصورة الشخصية", upload_to="avatars/", blank=True, validators=IMAGE_VALIDATORS)
     is_protected = models.BooleanField("محمي", default=False, help_text="المستخدمين المحميين لا يمكن حذفهم أو تعديلهم")
-    
+
+    # صلاحيات على مستوى المستخدم (تعديل فوق صلاحيات الدور)
+    extra_permissions = models.ManyToManyField(
+        'Permission',
+        related_name='extra_users',
+        blank=True,
+        verbose_name='صلاحيات إضافية',
+        help_text='صلاحيات تُمنح لهذا المستخدم تحديداً بالإضافة إلى صلاحيات الدور'
+    )
+    denied_permissions = models.ManyToManyField(
+        'Permission',
+        related_name='denied_users',
+        blank=True,
+        verbose_name='صلاحيات مرفوضة',
+        help_text='صلاحيات تُسحب من هذا المستخدم حتى لو كانت في الدور'
+    )
+
     history = HistoricalRecords()
     
     class Meta:
@@ -317,9 +333,18 @@ class UserProfile(BaseModel):
         return f"ملف {self.user.username}"
     
     def get_permissions(self):
-        if self.role:
-            return list(self.role.permissions.filter(is_active=True).values_list('code', flat=True))
-        return []
+        """صلاحيات فعلية للمستخدم = (صلاحيات الدور ∪ extra) − denied"""
+        if not self.role:
+            extra = set(self.extra_permissions.filter(is_active=True).values_list('code', flat=True)) if self.pk else set()
+            denied = set(self.denied_permissions.filter(is_active=True).values_list('code', flat=True)) if self.pk else set()
+            return list(extra - denied)
+        role_perms = set(self.role.permissions.filter(is_active=True).values_list('code', flat=True))
+        if self.pk:
+            extra = set(self.extra_permissions.filter(is_active=True).values_list('code', flat=True))
+            denied = set(self.denied_permissions.filter(is_active=True).values_list('code', flat=True))
+        else:
+            extra, denied = set(), set()
+        return list((role_perms | extra) - denied)
     
     @property
     def role_type(self):

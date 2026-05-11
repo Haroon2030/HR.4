@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404
 
 from apps.core.web_views._helpers import admin_required
+from apps.core.decorators import permission_required
 
 
 # مجموعات التقارير المترابطة
@@ -78,7 +79,7 @@ def _grouped_reports():
 
 
 @login_required
-@admin_required
+@permission_required('reports.view')
 def reports_index(request):
     """الصفحة الرئيسية لقسم التقارير — مجموعات تقارير مترابطة"""
     return render(request, 'pages/reports/index.html', {
@@ -88,7 +89,7 @@ def reports_index(request):
 
 
 @login_required
-@admin_required
+@permission_required('reports.view')
 def report_detail(request, report_type):
     """شاشة تقرير فرعي (Placeholder حالياً — قيد الإنشاء)"""
     report_meta = next((r for r in REPORTS if r['key'] == report_type), None)

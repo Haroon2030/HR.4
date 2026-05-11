@@ -22,6 +22,7 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 
 def _buildings_qs():
@@ -241,7 +242,7 @@ def edit_employee(request, employee_id):
 
 
 @login_required
-@admin_required
+@permission_required('employees.delete')
 def delete_employee(request, employee_id):
     """حذف موظف (admin فقط)"""
     from apps.employees.models import Employee

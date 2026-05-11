@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <form method="post" class="space-y-4">
+    <form method="post" class="space-y-4" x-data="permsMatrix()">
         {% csrf_token %}
 
         <!-- Basic Information -->
@@ -81,6 +81,102 @@
             </div>
         </div>
 
+        {# ============== Permissions Matrix (only when editing) ============== #}
+        {% if role and matrix %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">الصلاحيات</h2>
+                        <p class="text-xs text-slate-500">حدد العمليات المسموح بها لهذا الدور</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <button type="button" @click="checkAll(true)"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold"
+                            {% if is_admin_role %}disabled{% endif %}>
+                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+                        تحديد الكل
+                    </button>
+                    <button type="button" @click="checkAll(false)"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-semibold"
+                            {% if is_admin_role %}disabled{% endif %}>
+                        <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                        إلغاء الكل
+                    </button>
+                    <span class="text-slate-500 mr-2">
+                        <span x-text="selectedCount()"></span> محددة
+                    </span>
+                </div>
+            </div>
+
+            {% if is_admin_role %}
+            <div class="bg-amber-50 border-b border-amber-200 text-amber-800 px-6 py-3 flex items-start gap-2 text-sm">
+                <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+                <span><strong>ملاحظة:</strong> دور "الأدمن" يمتلك جميع الصلاحيات تلقائياً ولا يمكن تعديلها.</span>
+            </div>
+            {% endif %}
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700">الوحدة</th>
+                            {% for op_code, op_label in operations %}
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-24">
+                                <div class="flex flex-col items-center gap-1">
+                                    <span>{{ op_label }}</span>
+                                    <button type="button" @click="checkColumn('{{ op_code }}', true)"
+                                            class="text-[10px] text-primary-600 hover:underline"
+                                            {% if is_admin_role %}disabled{% endif %}>الكل</button>
+                                </div>
+                            </th>
+                            {% endfor %}
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-20">الكل</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in matrix %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="{{ row.module.icon }}" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-sm font-bold text-slate-800">{{ row.module.name }}</span>
+                                </div>
+                            </td>
+                            {% for cell in row.cells %}
+                            <td class="px-4 py-3 text-center">
+                                {% if cell.available %}
+                                <input type="checkbox" name="permissions" value="{{ cell.perm.id }}"
+                                       data-op="{{ cell.op_code }}" data-module="{{ row.module.code }}"
+                                       {% if cell.checked %}checked{% endif %}
+                                       {% if is_admin_role %}disabled{% endif %}
+                                       class="perm-cb w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer disabled:opacity-50">
+                                {% else %}
+                                <span class="text-slate-300 text-lg">—</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="px-4 py-3 text-center">
+                                <button type="button" @click="checkRow('{{ row.module.code }}', !rowAllChecked('{{ row.module.code }}'))"
+                                        class="text-[11px] text-primary-600 hover:underline font-semibold"
+                                        {% if is_admin_role %}disabled{% endif %}>
+                                    تبديل
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Form Actions -->
         <div class="flex items-center justify-end gap-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <a href="{% url 'web:list_roles' %}" class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
@@ -93,4 +189,29 @@
         </div>
     </form>
 </div>
+
+<script>
+    function permsMatrix() {
+        return {
+            checkAll(state) {
+                document.querySelectorAll('.perm-cb:not(:disabled)').forEach(cb => cb.checked = state);
+            },
+            checkColumn(op, state) {
+                document.querySelectorAll(`.perm-cb[data-op="${op}"]:not(:disabled)`).forEach(cb => cb.checked = state);
+            },
+            checkRow(moduleCode, state) {
+                document.querySelectorAll(`.perm-cb[data-module="${moduleCode}"]:not(:disabled)`).forEach(cb => cb.checked = state);
+            },
+            rowAllChecked(moduleCode) {
+                const cbs = document.querySelectorAll(`.perm-cb[data-module="${moduleCode}"]:not(:disabled)`);
+                if (!cbs.length) return false;
+                return Array.from(cbs).every(cb => cb.checked);
+            },
+            selectedCount() {
+                return document.querySelectorAll('.perm-cb:checked').length;
+            },
+        };
+    }
+    document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
+</script>
 {% endblock %}

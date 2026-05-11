@@ -69,6 +69,7 @@ urlpatterns = [
     path('roles/add/', web_views.add_role, name='add_role'),
     path('roles/<int:role_id>/', web_views.view_role, name='view_role'),
     path('roles/<int:role_id>/edit/', web_views.edit_role, name='edit_role'),
+    path('roles/<int:role_id>/delete/', web_views.delete_role, name='delete_role'),
     path('roles/<int:role_id>/permissions/', web_views.manage_role_permissions, name='manage_role_permissions'),
     
     # Branches
@@ -130,6 +131,7 @@ urlpatterns = [
     path('users/add/', web_views.add_user, name='add_user'),
     path('users/<int:user_id>/', web_views.view_user, name='view_user'),
     path('users/<int:user_id>/edit/', web_views.edit_user, name='edit_user'),
+    path('users/<int:user_id>/permissions/', web_views.manage_user_permissions, name='manage_user_permissions'),
     path('users/<int:user_id>/delete/', web_views.delete_user, name='delete_user'),
 
     # HR Forms (نماذج الموارد البشرية الرسمية القابلة للطباعة)

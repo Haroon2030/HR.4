@@ -6,6 +6,8 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 
+from apps.core.permissions_registry import register_permission as _register_perm
+
 
 def permission_required(permission_code, raise_exception=False):
     """
@@ -21,6 +23,9 @@ def permission_required(permission_code, raise_exception=False):
         permission_code (str): كود الصلاحية مثل 'employees.view'
         raise_exception (bool): رفع استثناء 403 بدلاً من redirect
     """
+    # تسجيل تلقائي في الـ registry (وحدة + عملية)
+    _register_perm(permission_code)
+
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
@@ -47,14 +52,9 @@ def permission_required(permission_code, raise_exception=False):
             from apps.core.models import Role
             if profile.role.role_type == Role.RoleType.ADMIN:
                 return view_func(request, *args, **kwargs)
-            
-            # التحقق من الصلاحية
-            user_permissions = profile.role.permissions.filter(
-                code=permission_code,
-                is_active=True
-            ).exists()
-            
-            if not user_permissions:
+
+            # التحقق من الصلاحية (يشمل extra/denied على مستوى المستخدم)
+            if not has_permission(request.user, permission_code):
                 messages.error(request, f'ليس لديك صلاحية للوصول إلى هذه الصفحة')
                 if raise_exception:
                     raise PermissionDenied(f'الصلاحية {permission_code} مطلوبة')
@@ -76,6 +76,9 @@ def any_permission_required(*permission_codes, raise_exception=False):
         def list_employees(request):
             ...
     """
+    for _c in permission_codes:
+        _register_perm(_c)
+
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
@@ -101,14 +104,9 @@ def any_permission_required(*permission_codes, raise_exception=False):
             from apps.core.models import Role
             if profile.role.role_type == Role.RoleType.ADMIN:
                 return view_func(request, *args, **kwargs)
-            
-            # التحقق من وجود أي صلاحية من القائمة
-            has_permission = profile.role.permissions.filter(
-                code__in=permission_codes,
-                is_active=True
-            ).exists()
-            
-            if not has_permission:
+
+            # التحقق من وجود أي صلاحية (يشمل extra/denied)
+            if not any(has_permission(request.user, code) for code in permission_codes):
                 messages.error(request, 'ليس لديك صلاحية للوصول إلى هذه الصفحة')
                 if raise_exception:
                     raise PermissionDenied(f'أحد الصلاحيات {permission_codes} مطلوبة')
@@ -130,6 +128,9 @@ def all_permissions_required(*permission_codes, raise_exception=False):
         def edit_employee(request, employee_id):
             ...
     """
+    for _c in permission_codes:
+        _register_perm(_c)
+
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
@@ -155,18 +156,13 @@ def all_permissions_required(*permission_codes, raise_exception=False):
             from apps.core.models import Role
             if profile.role.role_type == Role.RoleType.ADMIN:
                 return view_func(request, *args, **kwargs)
-            
-            # التحقق من وجود كل الصلاحيات
-            user_permission_codes = set(
-                profile.role.permissions.filter(is_active=True).values_list('code', flat=True)
-            )
-            required_permissions = set(permission_codes)
-            
-            if not required_permissions.issubset(user_permission_codes):
-                missing = required_permissions - user_permission_codes
+
+            # التحقق من وجود كل الصلاحيات (يشمل extra/denied)
+            missing = [code for code in permission_codes if not has_permission(request.user, code)]
+            if missing:
                 messages.error(request, f'تحتاج إلى صلاحيات إضافية للوصول')
                 if raise_exception:
-                    raise PermissionDenied(f'الصلاحيات {missing} مطلوبة')
+                    raise PermissionDenied(f'الصلاحيات {set(missing)} مطلوبة')
                 return redirect('web:dashboard')
             
             return view_func(request, *args, **kwargs)
@@ -201,7 +197,15 @@ def has_permission(user, permission_code):
     if user.profile.role.role_type == Role.RoleType.ADMIN:
         return True
 
-    # التحقق من الصلاحية
+    # رفض صريح على مستوى المستخدم يفوز
+    if user.profile.denied_permissions.filter(code=permission_code, is_active=True).exists():
+        return False
+
+    # صلاحية إضافية على مستوى المستخدم
+    if user.profile.extra_permissions.filter(code=permission_code, is_active=True).exists():
+        return True
+
+    # التحقق من صلاحيات الدور
     return user.profile.role.permissions.filter(
         code=permission_code,
         is_active=True
@@ -231,7 +235,8 @@ def get_user_permissions(user):
     if user.profile.role.role_type == Role.RoleType.ADMIN:
         return list(Permission.objects.filter(is_active=True).values_list('code', flat=True))
 
-    # إرجاع قائمة الصلاحيات
-    return list(
-        user.profile.role.permissions.filter(is_active=True).values_list('code', flat=True)
-    )
+    # دمج صلاحيات الدور + extra − denied
+    role_codes = set(user.profile.role.permissions.filter(is_active=True).values_list('code', flat=True))
+    extra_codes = set(user.profile.extra_permissions.filter(is_active=True).values_list('code', flat=True))
+    denied_codes = set(user.profile.denied_permissions.filter(is_active=True).values_list('code', flat=True))
+    return list((role_codes | extra_codes) - denied_codes)

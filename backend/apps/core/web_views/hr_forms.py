@@ -9,6 +9,7 @@ from django.http import Http404
 from apps.core.models import Company
 from apps.employees.models import Employee
 from apps.core.web_views._helpers import admin_required
+from apps.core.decorators import permission_required
 
 
 # قائمة النماذج المعتمدة
@@ -87,7 +88,7 @@ HR_FORMS = [
 
 
 @login_required
-@admin_required
+@permission_required('hr_forms.view')
 def hr_forms_index(request):
     """صفحة قسم النماذج الرسمية — اختيار النموذج والموظف"""
     employees = (
@@ -102,7 +103,7 @@ def hr_forms_index(request):
 
 
 @login_required
-@admin_required
+@permission_required('hr_forms.view')
 def hr_form_print(request, form_type, employee_id):
     """عرض نموذج رسمي قابل للطباعة لموظف محدد"""
     form_meta = next((f for f in HR_FORMS if f['key'] == form_type), None)

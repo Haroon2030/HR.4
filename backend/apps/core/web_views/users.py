@@ -23,9 +23,10 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 @login_required
-@admin_required
+@permission_required('users.view')
 def list_users(request):
     """قائمة المستخدمين والأدوار"""
     from django.contrib.auth import get_user_model
@@ -38,7 +39,7 @@ def list_users(request):
     })
 
 @login_required
-@admin_required
+@permission_required('users.view')
 def view_user(request, user_id):
     """عرض تفاصيل مستخدم معين"""
     from django.contrib.auth import get_user_model
@@ -48,7 +49,7 @@ def view_user(request, user_id):
 
 
 @login_required
-@admin_required
+@permission_required('users.delete')
 def delete_user(request, user_id):
     """حذف مستخدم (للأدمن فقط)"""
     from django.contrib.auth import get_user_model
@@ -75,7 +76,7 @@ def delete_user(request, user_id):
     return redirect('web:list_users')
 
 @login_required
-@admin_required
+@permission_required('users.edit')
 def edit_user(request, user_id):
     """تعديل مستخدم"""
     from django.contrib.auth import get_user_model
@@ -137,7 +138,7 @@ def edit_user(request, user_id):
     })
 
 @login_required
-@admin_required
+@permission_required('users.add')
 def add_user(request):
     """إضافة مستخدم جديد"""
     from django.contrib.auth import get_user_model
@@ -192,6 +193,97 @@ def add_user(request):
 
 
 # =============================================================================
-# Cost Centers Views - إدارة مراكز التكلفة
+# User Permissions Override
 # =============================================================================
+@login_required
+@permission_required('users.edit')
+def manage_user_permissions(request, user_id):
+    """إدارة الصلاحيات على مستوى المستخدم (تعديل فوق صلاحيات الدور).
+
+    لكل خانة (وحدة×عملية) ثلاث حالات:
+      - inherit  : اتبع صلاحيات الدور (افتراضي)
+      - grant    : امنح صراحةً (ستظهر في extra_permissions)
+      - deny     : امنع صراحةً (ستظهر في denied_permissions)
+    """
+    from django.contrib.auth import get_user_model
+    from apps.core.models import AppModule, Permission
+
+    User = get_user_model()
+    user_obj = get_object_or_404(User.objects.select_related('profile__role'), id=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=user_obj)
+    role = profile.role
+    is_admin_user = bool(user_obj.is_superuser or (role and role.role_type == Role.RoleType.ADMIN))
+
+    if request.method == 'POST':
+        if is_admin_user:
+            messages.warning(request, 'الأدمن/السوبر يوزر يملك جميع الصلاحيات تلقائياً')
+            return redirect('web:manage_user_permissions', user_id=user_obj.id)
+
+        extra_ids, denied_ids = [], []
+        for key, val in request.POST.items():
+            if not key.startswith('perm_'):
+                continue
+            try:
+                pid = int(key[5:])
+            except ValueError:
+                continue
+            if val == 'grant':
+                extra_ids.append(pid)
+            elif val == 'deny':
+                denied_ids.append(pid)
+            # 'inherit' => لا شيء
+
+        extra_qs = Permission.objects.filter(id__in=extra_ids, is_active=True)
+        denied_qs = Permission.objects.filter(id__in=denied_ids, is_active=True)
+        profile.extra_permissions.set(extra_qs)
+        profile.denied_permissions.set(denied_qs)
+        messages.success(
+            request,
+            f'تم حفظ صلاحيات المستخدم "{user_obj.username}" '
+            f'(+{extra_qs.count()} ممنوحة، -{denied_qs.count()} مرفوضة)'
+        )
+        return redirect('web:manage_user_permissions', user_id=user_obj.id)
+
+    # بناء الجدول
+    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
+    operations = list(Permission.Operation.choices)
+    role_perm_ids = set(role.permissions.values_list('id', flat=True)) if role else set()
+    extra_ids = set(profile.extra_permissions.values_list('id', flat=True))
+    denied_ids = set(profile.denied_permissions.values_list('id', flat=True))
+
+    matrix = []
+    for m in modules:
+        cells = []
+        for op_code, op_label in operations:
+            perm = next((p for p in m.permissions.all() if p.operation == op_code and p.is_active), None)
+            if not perm:
+                cells.append({'op_code': op_code, 'op_label': op_label, 'available': False})
+                continue
+            in_role = perm.id in role_perm_ids
+            if perm.id in denied_ids:
+                state = 'deny'
+            elif perm.id in extra_ids:
+                state = 'grant'
+            else:
+                state = 'inherit'
+            effective = is_admin_user or (state == 'grant') or (state == 'inherit' and in_role)
+            cells.append({
+                'op_code': op_code,
+                'op_label': op_label,
+                'perm': perm,
+                'available': True,
+                'in_role': in_role,
+                'state': state,
+                'effective': effective,
+            })
+        matrix.append({'module': m, 'cells': cells})
+
+    return render(request, 'pages/users/permissions.html', {
+        'user_obj': user_obj,
+        'profile': profile,
+        'role': role,
+        'is_admin_user': is_admin_user,
+        'operations': operations,
+        'matrix': matrix,
+    })
 

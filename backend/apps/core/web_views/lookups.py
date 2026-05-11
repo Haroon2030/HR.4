@@ -22,6 +22,7 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ def _lookup_delete(request, model, pk, label, get_name):
 # ───────────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_nationality(request):
     from apps.setup.forms import NationalityForm
     return _lookup_create(request, NationalityForm,
@@ -88,7 +89,7 @@ def add_nationality(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_nationality(request, nationality_id):
     from apps.setup.models import Nationality
     from apps.setup.forms import NationalityForm
@@ -98,7 +99,7 @@ def edit_nationality(request, nationality_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_nationality(request, nationality_id):
     from apps.setup.models import Nationality
     return _lookup_delete(request, Nationality, nationality_id,
@@ -110,7 +111,7 @@ def delete_nationality(request, nationality_id):
 # ───────────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_profession(request):
     from apps.setup.forms import ProfessionForm
     return _lookup_create(request, ProfessionForm,
@@ -119,7 +120,7 @@ def add_profession(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_profession(request, profession_id):
     from apps.setup.models import Profession
     from apps.setup.forms import ProfessionForm
@@ -129,7 +130,7 @@ def edit_profession(request, profession_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_profession(request, profession_id):
     from apps.setup.models import Profession
     return _lookup_delete(request, Profession, profession_id,
@@ -141,7 +142,7 @@ def delete_profession(request, profession_id):
 # ───────────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_sponsorship(request):
     from apps.setup.forms import SponsorshipForm
     return _lookup_create(request, SponsorshipForm,
@@ -150,7 +151,7 @@ def add_sponsorship(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_sponsorship(request, sponsorship_id):
     from apps.setup.models import Sponsorship
     from apps.setup.forms import SponsorshipForm
@@ -160,7 +161,7 @@ def edit_sponsorship(request, sponsorship_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_sponsorship(request, sponsorship_id):
     from apps.setup.models import Sponsorship
     return _lookup_delete(request, Sponsorship, sponsorship_id,
@@ -172,7 +173,7 @@ def delete_sponsorship(request, sponsorship_id):
 # ───────────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_insurance(request):
     from apps.setup.forms import InsuranceForm
     return _lookup_create(request, InsuranceForm,
@@ -181,7 +182,7 @@ def add_insurance(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_insurance(request, insurance_id):
     from apps.setup.models import Insurance
     from apps.setup.forms import InsuranceForm
@@ -191,7 +192,7 @@ def edit_insurance(request, insurance_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_insurance(request, insurance_id):
     from apps.setup.models import Insurance
     return _lookup_delete(request, Insurance, insurance_id,
@@ -203,7 +204,7 @@ def delete_insurance(request, insurance_id):
 # ───────────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_insurance_class(request):
     from apps.setup.forms import InsuranceClassForm
     return _lookup_create(request, InsuranceClassForm,
@@ -212,7 +213,7 @@ def add_insurance_class(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_insurance_class(request, insurance_class_id):
     from apps.setup.models import InsuranceClass
     from apps.setup.forms import InsuranceClassForm
@@ -222,7 +223,7 @@ def edit_insurance_class(request, insurance_class_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_insurance_class(request, insurance_class_id):
     from apps.setup.models import InsuranceClass
     return _lookup_delete(request, InsuranceClass, insurance_class_id,
@@ -234,7 +235,7 @@ def delete_insurance_class(request, insurance_class_id):
 # ───────────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_building(request):
     from apps.setup.forms import BuildingForm
     return _lookup_create(request, BuildingForm,
@@ -243,7 +244,7 @@ def add_building(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_building(request, building_id):
     from apps.setup.models import Building
     from apps.setup.forms import BuildingForm
@@ -253,7 +254,7 @@ def edit_building(request, building_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_building(request, building_id):
     from apps.setup.models import Building
     return _lookup_delete(request, Building, building_id,
@@ -265,7 +266,7 @@ def delete_building(request, building_id):
 # ──────────────────────────────────────────────────────────────────────
 
 @login_required
-@admin_required
+@permission_required('system_data.add')
 def add_bank(request):
     from apps.setup.forms import BankForm
     return _lookup_create(request, BankForm,
@@ -274,7 +275,7 @@ def add_bank(request):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.edit')
 def edit_bank(request, bank_id):
     from apps.setup.models import Bank
     from apps.setup.forms import BankForm
@@ -284,7 +285,7 @@ def edit_bank(request, bank_id):
 
 
 @login_required
-@admin_required
+@permission_required('system_data.delete')
 def delete_bank(request, bank_id):
     from apps.setup.models import Bank
     return _lookup_delete(request, Bank, bank_id,

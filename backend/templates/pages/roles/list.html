@@ -58,18 +58,37 @@
                 <a href="{% url 'web:view_role' role.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
                     <i data-lucide="eye" class="w-4 h-4"></i>
                 </a>
-                <a href="{% url 'web:manage_role_permissions' role.id %}" class="p-1.5 text-slate-400 hover:text-primary-600 transition-colors" title="إدارة الصلاحيات">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i>
-                </a>
                 {% if not role.is_system_role or role.role_type == 'admin' %}
-                <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل وإدارة الصلاحيات">
                     <i data-lucide="edit-2" class="w-4 h-4"></i>
                 </a>
+                {% else %}
+                <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-primary-600 transition-colors" title="إدارة الصلاحيات">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </a>
                 {% endif %}
-                {% if not role.is_system_role %}
-                <button onclick="confirmDelete({{ role.id }}, '{{ role.name }}')" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                {% if role.is_system_role %}
+                <button type="button" disabled
+                        class="p-1.5 text-slate-300 cursor-not-allowed"
+                        title="لا يمكن حذف دور نظامي">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
+                {% elif role.users.count > 0 %}
+                <button type="button" disabled
+                        class="p-1.5 text-slate-300 cursor-not-allowed"
+                        title="لا يمكن الحذف: يوجد {{ role.users.count }} مستخدم مرتبط بهذا الدور">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+                {% else %}
+                <form method="post" action="{% url 'web:delete_role' role.id %}" class="inline"
+                      onsubmit="return confirm('هل أنت متأكد من حذف الدور \'{{ role.name|escapejs }}\'؟\n\nلا يمكن التراجع عن هذا الإجراء.');">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+                            title="حذف الدور">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </form>
                 {% endif %}
             </div>
         </td>

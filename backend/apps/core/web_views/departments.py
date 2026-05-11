@@ -23,9 +23,10 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 @login_required
-@admin_required
+@permission_required('departments.view')
 def list_departments(request, branch_id=None):
     """عرض قائمة الأقسام"""
     branch = None
@@ -46,7 +47,7 @@ def list_departments(request, branch_id=None):
 
 
 @login_required
-@admin_required
+@permission_required('departments.view')
 def view_department(request, department_id):
     """عرض تفاصيل قسم"""
     department = get_object_or_404(
@@ -57,7 +58,7 @@ def view_department(request, department_id):
 
 
 @login_required
-@admin_required
+@permission_required('departments.add')
 def add_department(request, branch_id=None):
     """إضافة قسم جديد"""
     from apps.core.forms import DepartmentForm
@@ -79,7 +80,7 @@ def add_department(request, branch_id=None):
 
 
 @login_required
-@admin_required
+@permission_required('departments.edit')
 def edit_department(request, department_id):
     """تعديل قسم"""
     from apps.core.forms import DepartmentForm
@@ -105,7 +106,7 @@ def edit_department(request, department_id):
 # =============================================================================
 
 @login_required
-@admin_required
+@permission_required('departments.delete')
 def delete_department(request, department_id):
     """حذف قسم (soft delete)"""
     department = get_object_or_404(Department, id=department_id)

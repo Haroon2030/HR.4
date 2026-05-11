@@ -23,9 +23,10 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 @login_required
-@admin_required
+@permission_required('branches.view')
 def list_branches(request):
     """قائمة الفروع - شاشة بتبويبات"""
     from apps.cost_centers.models import CostCenter
@@ -58,7 +59,7 @@ def list_branches(request):
     })
 
 @login_required
-@admin_required
+@permission_required('branches.view')
 def view_branch(request, branch_id):
     """عرض تفاصيل فرع معين"""
     branch = get_object_or_404(Branch.objects.select_related('company', 'manager'), id=branch_id)
@@ -74,7 +75,7 @@ def view_branch(request, branch_id):
     })
 
 @login_required
-@admin_required
+@permission_required('branches.edit')
 def edit_branch(request, branch_id):
     """تعديل فرع"""
     from apps.core.forms import BranchForm
@@ -97,7 +98,7 @@ def edit_branch(request, branch_id):
     })
 
 @login_required
-@admin_required
+@permission_required('branches.add')
 def add_branch(request):
     """إضافة فرع جديد"""
     from apps.core.forms import BranchForm
@@ -133,7 +134,7 @@ def add_branch(request):
 # =============================================================================
 
 @login_required
-@admin_required
+@permission_required('branches.delete')
 def delete_branch(request, branch_id):
     """حذف فرع (soft delete)"""
     branch = get_object_or_404(Branch, id=branch_id)

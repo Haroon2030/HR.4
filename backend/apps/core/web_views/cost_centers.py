@@ -23,9 +23,10 @@ from apps.core.web_views._helpers import (
     admin_required, _is_branch_manager, branch_manager_required,
     _user_accessible_branch_ids, employee_branch_access_required, _can_review_action,
 )
+from apps.core.decorators import permission_required
 
 @login_required
-@admin_required
+@permission_required('cost_centers.view')
 def list_cost_centers(request, branch_id=None):
     """عرض قائمة مراكز التكلفة"""
     branch = None
@@ -41,7 +42,7 @@ def list_cost_centers(request, branch_id=None):
 
 
 @login_required
-@admin_required
+@permission_required('cost_centers.view')
 def view_cost_center(request, cost_center_id):
     """عرض تفاصيل مركز تكلفة"""
     cost_center = get_object_or_404(
@@ -52,7 +53,7 @@ def view_cost_center(request, cost_center_id):
 
 
 @login_required
-@admin_required
+@permission_required('cost_centers.add')
 def add_cost_center(request, branch_id=None):
     """إضافة مركز تكلفة جديد"""
     from apps.core.forms import CostCenterForm
@@ -74,7 +75,7 @@ def add_cost_center(request, branch_id=None):
 
 
 @login_required
-@admin_required
+@permission_required('cost_centers.edit')
 def edit_cost_center(request, cost_center_id):
     """تعديل مركز تكلفة"""
     from apps.core.forms import CostCenterForm
@@ -100,7 +101,7 @@ def edit_cost_center(request, cost_center_id):
 # =============================================================================
 
 @login_required
-@admin_required
+@permission_required('cost_centers.delete')
 def delete_cost_center(request, cost_center_id):
     """حذف مركز تكلفة (soft delete)"""
     cost_center = get_object_or_404(CostCenter, id=cost_center_id)
