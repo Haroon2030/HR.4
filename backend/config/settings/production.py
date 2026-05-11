@@ -50,6 +50,13 @@ else:
     }
 DATABASES['default'].setdefault('CONN_MAX_AGE', 60)
 
+# Neon / PgBouncer (transaction-pooler) compatibility:
+# - Disable server-side cursors (not supported in transaction pooling mode)
+# - Force SSL for any external managed Postgres (Neon, Supabase, etc.)
+DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
+_db_options = DATABASES['default'].setdefault('OPTIONS', {})
+_db_options.setdefault('sslmode', env('DB_SSLMODE', default='require'))
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Security (behind reverse proxy / Traefik in Dokploy)
 # ──────────────────────────────────────────────────────────────────────────────
