@@ -687,3 +687,60 @@ class EmployeeLoan(BaseModel):
     def __str__(self):
         return f"{self.employee.name} — {self.amount} ({self.get_status_display()})"
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# غياب موظف (يخصم من الراتب)
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeAbsence(BaseModel):
+    """تسجيل غياب يوم/أيام مع خصم تلقائي على أساس راتب الشهر الفعلي."""
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='absences',
+        verbose_name="الموظف"
+    )
+    serial_number = models.CharField(
+        "الرقم المتسلسل", max_length=40, blank=True, db_index=True,
+        help_text="مثال: AB-260512-0005-A3F2"
+    )
+    absence_date = models.DateField("تاريخ الغياب", db_index=True)
+    days = models.PositiveIntegerField(
+        "عدد أيام الغياب", default=1,
+        validators=[MinValueValidator(1)]
+    )
+    month_days = models.PositiveIntegerField(
+        "أيام الشهر", default=30,
+        help_text="عدد أيام الشهر الذي وقع فيه الغياب (28/29/30/31) — لقطة عند الإنشاء"
+    )
+    total_salary_snapshot = models.DecimalField(
+        "إجمالي الراتب وقت الغياب", max_digits=12, decimal_places=2, default=0
+    )
+    daily_rate = models.DecimalField(
+        "سعر اليوم (محسوب)", max_digits=12, decimal_places=2, default=0,
+        help_text="إجمالي الراتب ÷ أيام الشهر"
+    )
+    deduction_amount = models.DecimalField(
+        "إجمالي الخصم", max_digits=12, decimal_places=2, default=0,
+        help_text="سعر اليوم × عدد أيام الغياب"
+    )
+    reason = models.CharField("سبب الغياب", max_length=300, blank=True)
+    notes = models.TextField("ملاحظات", blank=True)
+    document = models.FileField(
+        "مستند مرفق", upload_to='employees/absences/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_absences', verbose_name="أُضيف بواسطة"
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "غياب موظف"
+        verbose_name_plural = "غيابات الموظفين"
+        ordering = ['-absence_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.absence_date} ({self.days} يوم)"
+

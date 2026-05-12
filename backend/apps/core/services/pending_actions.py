@@ -348,11 +348,44 @@ def _execute_loan_request(action, executor):
     return f'تم صرف سلفة بمبلغ {loan.amount} للموظف {employee.name}'
 
 
+@transaction.atomic
+def _execute_absence(action, executor):
+    from apps.employees.models import EmployeeAbsence
+    from decimal import Decimal
+    from calendar import monthrange
+    p = action.payload
+    employee = action.employee
+    serial = p.get('serial_number') or _build_form_serial_local('AB', employee.id)
+    absence_date = _to_date(p['absence_date'])
+    days = int(p.get('days') or 1)
+    month_days = monthrange(absence_date.year, absence_date.month)[1]
+    total_salary = Decimal(employee.total_salary or 0)
+    daily_rate = (total_salary / Decimal(month_days)).quantize(Decimal('0.01'))
+    deduction = (daily_rate * Decimal(days)).quantize(Decimal('0.01'))
+    absence = EmployeeAbsence.objects.create(
+        employee=employee,
+        serial_number=serial,
+        absence_date=absence_date,
+        days=days,
+        month_days=month_days,
+        total_salary_snapshot=total_salary,
+        daily_rate=daily_rate,
+        deduction_amount=deduction,
+        reason=p.get('reason', ''),
+        notes=p.get('notes', ''),
+        document=action.attachment or None,
+        created_by=action.requested_by,
+    )
+    return (f'تم تسجيل غياب {absence.days} يوم للموظف {employee.name} '
+            f'(سعر اليوم {daily_rate} × {days} = خصم {deduction} ر.س)')
+
+
 EXECUTORS['custody_receive'] = _execute_custody_receive
 EXECUTORS['custody_clear'] = _execute_custody_clear
 EXECUTORS['job_offer'] = _execute_job_offer
 EXECUTORS['business_trip'] = _execute_business_trip
 EXECUTORS['loan_request'] = _execute_loan_request
+EXECUTORS['absence'] = _execute_absence
 
 
 def execute_pending_action(action, executor_user):

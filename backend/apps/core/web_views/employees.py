@@ -195,6 +195,7 @@ def view_employee(request, employee_id):
     business_trips = employee.business_trips.all().order_by('-start_date', '-id')
     job_offers = employee.job_offers.all().order_by('-issued_at', '-id')
     loans = employee.loans.all().order_by('-issued_at', '-id')
+    absences = employee.absences.all().order_by('-absence_date', '-id')
 
     return render(request, 'pages/employees/view.html', {
         'employee': employee,
@@ -209,6 +210,7 @@ def view_employee(request, employee_id):
         'business_trips': business_trips,
         'job_offers': job_offers,
         'loans': loans,
+        'absences': absences,
     })
 
 

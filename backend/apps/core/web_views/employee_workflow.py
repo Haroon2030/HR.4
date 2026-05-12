@@ -617,6 +617,49 @@ def add_employee_loan(request, employee_id):
     return redirect('web:view_employee', employee_id=employee.id)
 
 
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def add_employee_absence(request, employee_id):
+    """تسجيل غياب موظف (ينتظر دورة الموافقات، يُخصم من الراتب عند التنفيذ)."""
+    from apps.employees.models import Employee
+    from apps.core.models import PendingAction
+    from apps.core.forms import AbsenceForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = AbsenceForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    cd = form.cleaned_data
+    PendingAction.objects.create(
+        action_type=PendingAction.ActionType.ABSENCE,
+        employee=employee,
+        branch=employee.branch,
+        payload={
+            'absence_date': cd['absence_date'].isoformat(),
+            'days': int(cd['days']),
+            'reason': cd.get('reason', ''),
+            'notes': cd.get('notes', ''),
+        },
+        attachment=files.get('document') or None,
+        requested_by=request.user,
+    )
+    messages.success(request, 'تم إرسال طلب تسجيل الغياب إلى مدير الفرع للموافقة.')
+    return redirect('web:view_employee', employee_id=employee.id)
+
+
 # =============================================================================
 # Roles Management
 # =============================================================================

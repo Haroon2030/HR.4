@@ -385,6 +385,16 @@ class LoanRequestForm(forms.Form):
         return cd
 
 
+class AbsenceForm(forms.Form):
+    """تسجيل غياب موظف."""
+    absence_date = forms.DateField(error_messages={'required': 'تاريخ الغياب مطلوب', 'invalid': 'تاريخ الغياب غير صحيح'})
+    days = forms.IntegerField(min_value=1, initial=1,
+        error_messages={'required': 'عدد الأيام مطلوب', 'invalid': 'عدد الأيام غير صحيح',
+                        'min_value': 'لا يقل عن يوم واحد'})
+    reason = forms.CharField(required=False)
+    notes = forms.CharField(required=False)
+
+
 class ReviewNotesForm(forms.Form):
     """تستخدم في approve/reject - notes اختيارية للموافقة وإجبارية للرفض."""
     review_notes = forms.CharField(required=False)

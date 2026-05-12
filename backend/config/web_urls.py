@@ -40,6 +40,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/job-offer/add/', web_views.add_employee_job_offer, name='add_employee_job_offer'),
     path('employees/<int:employee_id>/business-trip/add/', web_views.add_employee_business_trip, name='add_employee_business_trip'),
     path('employees/<int:employee_id>/loan/add/', web_views.add_employee_loan, name='add_employee_loan'),
+    path('employees/<int:employee_id>/absence/add/', web_views.add_employee_absence, name='add_employee_absence'),
 
     # Employment Requests (دورة ثلاثية: مدير فرع → مدير الموارد → أخصائي)
     path('employment-requests/', web_views.list_employment_requests, name='list_employment_requests'),

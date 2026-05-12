@@ -82,6 +82,9 @@
                     <button type="button" @click="quickModal='loan'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="hand-coins" class="w-4 h-4 text-amber-600"></i> تقديم سلفة
                     </button>
+                    <button type="button" @click="quickModal='absence'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="user-minus" class="w-4 h-4 text-orange-600"></i> تسجيل غياب
+                    </button>
                 </div>
             </div>
             {% endif %}
@@ -1051,6 +1054,97 @@
         </div>
     </div>
 
+    <!-- Modal: تسجيل غياب -->
+    <div x-show="quickModal==='absence'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg"
+             x-data="{
+                totalSalary: {{ employee.total_salary|default:0 }},
+                absenceDate: '{% now "Y-m-d" %}',
+                days: 1,
+                get monthDays() {
+                    if (!this.absenceDate) return 30;
+                    const d = new Date(this.absenceDate);
+                    if (isNaN(d)) return 30;
+                    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+                },
+                get dailyRate() {
+                    const md = this.monthDays || 30;
+                    return md > 0 ? (this.totalSalary / md) : 0;
+                },
+                get totalDeduction() {
+                    return this.dailyRate * (parseInt(this.days) || 0);
+                },
+                fmt(v) { return (Math.round((v + Number.EPSILON) * 100) / 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+             }">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="user-minus" class="w-5 h-5 text-orange-600"></i>
+                    <span>تسجيل غياب موظف</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'web:add_employee_absence' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الغياب <span class="text-red-500">*</span></label>
+                        <input type="date" name="absence_date" required x-model="absenceDate"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">عدد أيام الغياب <span class="text-red-500">*</span></label>
+                        <input type="number" name="days" required min="1" x-model.number="days"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                </div>
+
+                <!-- بطاقة الحساب الحي -->
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600">إجمالي الراتب الشهري</span>
+                        <span class="font-bold text-slate-800" x-text="fmt(totalSalary) + ' ر.س'"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600">أيام الشهر الفعلية</span>
+                        <span class="font-bold text-slate-800" x-text="monthDays + ' يوم'"></span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-orange-200 pt-1.5">
+                        <span class="text-slate-700 font-bold">سعر اليوم</span>
+                        <span class="font-bold text-orange-700" x-text="fmt(dailyRate) + ' ر.س'"></span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-orange-200 pt-1.5">
+                        <span class="text-slate-700 font-bold">إجمالي الخصم (سعر اليوم × <span x-text="days"></span>)</span>
+                        <span class="font-bold text-rose-700 text-sm" x-text="fmt(totalDeduction) + ' ر.س'"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">سبب الغياب</label>
+                    <input type="text" name="reason" placeholder="مثال: غياب بدون عذر / مرض بدون تقرير"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded flex items-center gap-1">
+                        <i data-lucide="user-minus" class="w-4 h-4"></i> إرسال للموافقة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Tabs -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="flex flex-wrap border-b border-slate-200 bg-slate-50">
@@ -1063,6 +1157,7 @@
             <button @click="activeTab='trips'" :class="activeTab==='trips' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">رحلات العمل</button>
             <button @click="activeTab='offers'" :class="activeTab==='offers' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العروض الوظيفية</button>
             <button @click="activeTab='loans'" :class="activeTab==='loans' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">السلف</button>
+            <button @click="activeTab='absences'" :class="activeTab==='absences' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الغيابات</button>
             <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
             <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
         </div>
@@ -1730,6 +1825,67 @@
                 <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
                     <i data-lucide="hand-coins" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
                     لا توجد سلف مسجلة لهذا الموظف
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Absences -->
+            <div x-show="activeTab==='absences'" class="space-y-3" style="display:none">
+                {% if absences %}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                        <div class="text-xs text-slate-600 mb-1">إجمالي أيام الغياب</div>
+                        <div class="text-lg font-bold text-orange-700">
+                            <span x-data="{ total: {% for a in absences %}{{ a.days|default:0 }}{% if not forloop.last %}+{% endif %}{% endfor %} }" x-text="total"></span> يوم
+                        </div>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                        <div class="text-xs text-slate-600 mb-1">إجمالي الخصم التراكمي</div>
+                        <div class="text-lg font-bold text-rose-700">
+                            <span x-data="{ total: {% for a in absences %}{{ a.deduction_amount|default:0 }}{% if not forloop.last %}+{% endif %}{% endfor %} }" x-text="total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span> ر.س
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <div class="text-xs text-slate-600 mb-1">إجمالي الراتب الحالي</div>
+                        <div class="text-lg font-bold text-slate-800">{{ employee.total_salary|default:0 }} ر.س</div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                                <th class="px-3 py-2 text-right font-bold">تاريخ الغياب</th>
+                                <th class="px-3 py-2 text-right font-bold">عدد الأيام</th>
+                                <th class="px-3 py-2 text-right font-bold">أيام الشهر</th>
+                                <th class="px-3 py-2 text-right font-bold">الراتب وقتها</th>
+                                <th class="px-3 py-2 text-right font-bold">سعر اليوم</th>
+                                <th class="px-3 py-2 text-right font-bold">الخصم</th>
+                                <th class="px-3 py-2 text-right font-bold">السبب</th>
+                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for a in absences %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ a.serial_number|default:"—" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ a.absence_date|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700">{{ a.days }}</span></td>
+                                <td class="px-3 py-2 text-xs text-slate-600">{{ a.month_days }}</td>
+                                <td class="px-3 py-2 text-xs">{{ a.total_salary_snapshot }}</td>
+                                <td class="px-3 py-2 font-bold text-orange-700">{{ a.daily_rate }}</td>
+                                <td class="px-3 py-2 font-bold text-rose-700">{{ a.deduction_amount }}</td>
+                                <td class="px-3 py-2 text-xs">{{ a.reason|default:"—" }}</td>
+                                <td class="px-3 py-2">{% if a.document %}<a href="{{ a.document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs">عرض</a>{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
+                    <i data-lucide="user-minus" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+                    لا توجد غيابات مسجلة لهذا الموظف
                 </div>
                 {% endif %}
             </div>
