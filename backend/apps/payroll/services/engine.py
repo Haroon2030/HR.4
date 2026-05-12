@@ -48,6 +48,9 @@ def build_payroll_run(branch, year: int, month: int, user=None):
     if run.status == PayrollRun.Status.LOCKED:
         raise ValueError('المسير مُغلق ولا يمكن إعادة بنائه. أعد فتحه أولاً.')
 
+    # قفل صف على المسير لمنع أي بناء مواز لنفس (الفرع/السنة/الشهر)
+    PayrollRun.objects.select_for_update().filter(pk=run.pk).first()
+
     # امسح الأسطر القديمة للبناء النظيف (لم تُربط أي بنود بعد لأنه DRAFT)
     run.lines.all().delete()
 
@@ -57,9 +60,15 @@ def build_payroll_run(branch, year: int, month: int, user=None):
 
     employees = Employee.objects.filter(
         branch=branch, status=Employee.Status.ACTIVE
-    ).order_by('name')
+    ).order_by('name').distinct()
 
+    seen_ids = set()
     for emp in employees:
+        if emp.id in seen_ids:
+            continue
+        seen_ids.add(emp.id)
+        # دفاعياً: احذف أي سطر قديم لنفس الموظف في هذا المسير (race-safety)
+        PayrollLine.objects.filter(run=run, employee=emp).delete()
         line = PayrollLine(
             run=run, employee=emp,
             basic_salary=emp.basic_salary or 0,
