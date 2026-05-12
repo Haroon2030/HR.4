@@ -55,6 +55,46 @@
                         <div><dt class="text-slate-400 text-xs">تاريخ الالتحاق</dt><dd class="text-slate-800 font-medium">{{ p.new_hire_date }}</dd></div>
                         <div><dt class="text-slate-400 text-xs">الحالة</dt><dd class="text-slate-800 font-medium">{{ p.new_status }}</dd></div>
                         {% if p.reactivation_reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.reactivation_reason }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'custody_receive' %}
+                        <div><dt class="text-slate-400 text-xs">اسم العهدة</dt><dd class="text-slate-800 font-medium">{{ p.item_name }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">تاريخ الاستلام</dt><dd class="text-slate-800 font-medium">{{ p.received_at }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">الكمية</dt><dd class="text-slate-800 font-medium">{{ p.quantity|default:1 }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">القيمة التقديرية</dt><dd class="text-slate-800 font-medium">{{ p.estimated_value|default:"—" }}</dd></div>
+                        {% if p.item_details %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">التفاصيل</dt><dd class="text-slate-700">{{ p.item_details }}</dd></div>{% endif %}
+                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'custody_clear' %}
+                        <div><dt class="text-slate-400 text-xs">رقم العهدة</dt><dd class="text-slate-800 font-medium">{{ p.custody_id }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">تاريخ الإعادة</dt><dd class="text-slate-800 font-medium">{{ p.returned_at }}</dd></div>
+                        {% if p.return_notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات الإعادة</dt><dd class="text-slate-700">{{ p.return_notes }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'job_offer' %}
+                        <div><dt class="text-slate-400 text-xs">الجهة الموجَّه إليها</dt><dd class="text-slate-800 font-medium">{{ p.addressed_to }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">تاريخ الإصدار</dt><dd class="text-slate-800 font-medium">{{ p.issued_at }}</dd></div>
+                        {% if p.purpose %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">الغرض</dt><dd class="text-slate-700">{{ p.purpose }}</dd></div>{% endif %}
+                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'business_trip' %}
+                        <div><dt class="text-slate-400 text-xs">الوجهة</dt><dd class="text-slate-800 font-medium">{{ p.destination }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">التكلفة التقديرية</dt><dd class="text-slate-800 font-medium">{{ p.estimated_cost|default:"—" }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">من تاريخ</dt><dd class="text-slate-800 font-medium">{{ p.start_date }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">إلى تاريخ</dt><dd class="text-slate-800 font-medium">{{ p.end_date }}</dd></div>
+                        <div class="sm:col-span-2"><dt class="text-slate-400 text-xs">الغرض</dt><dd class="text-slate-700">{{ p.purpose }}</dd></div>
+                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'loan_request' %}
+                        <div><dt class="text-slate-400 text-xs">مبلغ السلفة</dt><dd class="text-slate-800 font-bold text-amber-700">{{ p.amount }} ر.س</dd></div>
+                        <div><dt class="text-slate-400 text-xs">الخصم الشهري</dt><dd class="text-slate-800 font-medium">{{ p.monthly_deduction }} ر.س</dd></div>
+                        <div><dt class="text-slate-400 text-xs">عدد الأقساط</dt><dd class="text-slate-800 font-medium">{{ p.installments|default:1 }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">تاريخ الصرف</dt><dd class="text-slate-800 font-medium">{{ p.issued_at }}</dd></div>
+                        {% if p.first_deduction_date %}<div><dt class="text-slate-400 text-xs">بداية الخصم</dt><dd class="text-slate-800 font-medium">{{ p.first_deduction_date }}</dd></div>{% endif %}
+                        {% if p.reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.reason }}</dd></div>{% endif %}
+                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
+                    {% elif action.action_type == 'absence' %}
+                        <div><dt class="text-slate-400 text-xs">تاريخ الغياب</dt><dd class="text-slate-800 font-medium">{{ p.absence_date }}</dd></div>
+                        <div><dt class="text-slate-400 text-xs">عدد الأيام</dt><dd class="text-slate-800 font-bold text-orange-700">{{ p.days }}</dd></div>
+                        {% if p.reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">سبب الغياب</dt><dd class="text-slate-700">{{ p.reason }}</dd></div>{% endif %}
+                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
+                        <div class="sm:col-span-2 mt-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-800">
+                            <i data-lucide="calculator" class="w-3 h-3 inline-block"></i>
+                            سيُحسب الخصم تلقائياً عند التنفيذ: <strong>إجمالي الراتب ÷ أيام الشهر × عدد أيام الغياب</strong>
+                        </div>
                     {% else %}
                         <div class="sm:col-span-2 text-slate-500 text-xs"><pre>{{ p }}</pre></div>
                     {% endif %}
