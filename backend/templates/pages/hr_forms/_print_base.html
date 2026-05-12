@@ -94,18 +94,54 @@
         /* Form fields (blank lines for handwriting) */
         .field { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; font-size: 14px; }
         .field .label { font-weight: 600; color: #334155; white-space: nowrap; }
-        .field .blank { flex: 1; border-bottom: 1.5px dotted #94a3b8; min-height: 20px; padding: 0 6px; }
+        .field .blank {
+            flex: 1; border: none; border-bottom: 1.5px dotted #94a3b8;
+            min-height: 24px; padding: 2px 6px; background: #fffefb;
+            font-family: inherit; font-size: 14px; color: #0f172a; outline: none;
+        }
+        .field .blank:focus { background: #eff6ff; border-bottom-color: #2563eb; border-bottom-style: solid; }
         .blank-block {
+            display: block; width: 100%;
             border: 1.5px dotted #94a3b8; border-radius: 4px;
             min-height: 80px; padding: 8px; margin-top: 6px;
+            background: #fffefb; font-family: inherit; font-size: 14px;
+            color: #0f172a; resize: vertical; outline: none;
         }
+        .blank-block:focus { background: #eff6ff; border-color: #2563eb; border-style: solid; }
 
         .checkbox-row { display: flex; gap: 24px; flex-wrap: wrap; margin: 8px 0; font-size: 14px; }
-        .checkbox-row label { display: inline-flex; align-items: center; gap: 6px; }
+        .checkbox-row label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
         .checkbox-row .box {
             display: inline-block; width: 14px; height: 14px;
             border: 1.5px solid #475569; border-radius: 3px;
+            margin: 0; padding: 0; vertical-align: middle;
+            -webkit-appearance: none; appearance: none;
+            background: #fff; cursor: pointer; position: relative;
         }
+        .checkbox-row .box:checked {
+            background: #2563eb; border-color: #2563eb;
+        }
+        .checkbox-row .box:checked::after {
+            content: "✓"; color: #fff; font-size: 11px; font-weight: 700;
+            position: absolute; top: -2px; left: 1.5px;
+        }
+
+        /* ملاحظة/سبب الإلكترونية الملحقة بكل مجموعة اختيارات */
+        .choice-note {
+            margin-top: 10px;
+            display: flex; gap: 8px; align-items: flex-start;
+            font-size: 13px;
+        }
+        .choice-note label {
+            font-weight: 600; color: #475569; padding-top: 8px; white-space: nowrap;
+        }
+        .choice-note textarea {
+            flex: 1; min-height: 48px; padding: 6px 8px;
+            border: 1.5px dotted #94a3b8; border-radius: 4px;
+            background: #fffefb; font-family: inherit; font-size: 13px;
+            color: #0f172a; resize: vertical; outline: none;
+        }
+        .choice-note textarea:focus { background: #eff6ff; border-color: #2563eb; border-style: solid; }
 
         /* Signatures */
         .signatures {
@@ -181,6 +217,31 @@
 
             .checkbox-row { gap: 14px; margin: 4px 0; font-size: 11px; }
             .checkbox-row .box { width: 11px; height: 11px; }
+            .checkbox-row .box:checked::after { font-size: 9px; top: -3px; left: 1px; }
+
+            .choice-note { margin-top: 4px; font-size: 10.5px; }
+            .choice-note textarea {
+                min-height: 22px; padding: 3px 5px;
+                border: none; border-bottom: 1px dotted #94a3b8;
+                background: transparent; border-radius: 0;
+            }
+
+            /* في الطباعة: أبقِ الحقول مرئية بدون خلفية ولا حدود زائدة */
+            .field .blank, .blank-block {
+                background: transparent !important;
+                border: none !important;
+                border-bottom: 1px dotted #94a3b8 !important;
+                border-radius: 0 !important;
+                outline: none !important;
+                box-shadow: none !important;
+                resize: none !important;
+                font-size: 11px !important;
+                padding: 1px 4px !important;
+            }
+            .blank-block {
+                border: 1px dotted #94a3b8 !important;
+                min-height: 36px !important;
+            }
 
             .clause { padding: 8px 10px; margin: 6px 0; font-size: 11px; line-height: 1.55; }
 
@@ -261,6 +322,38 @@
     </div>
 
     <script>
+        // ── تحويل النماذج إلى تعبئة إلكترونية ─────────────────────────────
+        // كل <span class="blank"></span> → input نصي
+        document.querySelectorAll('span.blank').forEach(el => {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'blank';
+            inp.setAttribute('aria-label', el.previousElementSibling?.textContent?.trim() || 'حقل');
+            el.replaceWith(inp);
+        });
+        // كل <div class="blank-block"></div> → textarea
+        document.querySelectorAll('div.blank-block').forEach(el => {
+            const ta = document.createElement('textarea');
+            ta.className = 'blank-block';
+            if (el.style.minHeight) ta.style.minHeight = el.style.minHeight;
+            el.replaceWith(ta);
+        });
+        // كل <span class="box"></span> داخل label → checkbox فعلي
+        document.querySelectorAll('label > span.box').forEach(el => {
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'box';
+            el.replaceWith(cb);
+        });
+        // إضافة مربع "ملاحظة / سبب" إلكتروني تحت كل مجموعة اختيارات
+        document.querySelectorAll('.checkbox-row').forEach(row => {
+            if (row.nextElementSibling?.classList?.contains('choice-note')) return;
+            const wrap = document.createElement('div');
+            wrap.className = 'choice-note';
+            wrap.innerHTML = '<label>سبب / ملاحظة:</label><textarea placeholder="اكتب السبب أو الملاحظة هنا..."></textarea>';
+            row.after(wrap);
+        });
+
         // Auto-focus print on load if ?auto_print=1
         if (new URLSearchParams(window.location.search).get('auto_print') === '1') {
             window.addEventListener('load', () => setTimeout(() => window.print(), 400));
