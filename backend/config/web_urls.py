@@ -35,6 +35,10 @@ urlpatterns = [
     path('employees/<int:employee_id>/transfer/', web_views.transfer_employee, name='transfer_employee'),
     path('employees/<int:employee_id>/schedule/', web_views.set_work_schedule, name='set_work_schedule'),
     path('employees/<int:employee_id>/salary/export/', web_views.export_employee_salary_excel, name='export_employee_salary_excel'),
+    path('employees/<int:employee_id>/custody/receive/', web_views.receive_employee_custody, name='receive_employee_custody'),
+    path('employees/<int:employee_id>/custody/clear/', web_views.clear_employee_custody, name='clear_employee_custody'),
+    path('employees/<int:employee_id>/job-offer/add/', web_views.add_employee_job_offer, name='add_employee_job_offer'),
+    path('employees/<int:employee_id>/business-trip/add/', web_views.add_employee_business_trip, name='add_employee_business_trip'),
 
     # Employment Requests (دورة ثلاثية: مدير فرع → مدير الموارد → أخصائي)
     path('employment-requests/', web_views.list_employment_requests, name='list_employment_requests'),

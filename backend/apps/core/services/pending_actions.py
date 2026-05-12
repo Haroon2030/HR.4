@@ -226,7 +226,110 @@ EXECUTORS = {
     'reactivate': _execute_reactivate,
     'salary_adjust': _execute_salary_adjust,
     'transfer': _execute_transfer,
+    'custody_receive': None,  # ملحقة أدناه بعد التعريف
+    'custody_clear': None,
+    'job_offer': None,
+    'business_trip': None,
 }
+
+
+def _build_form_serial_local(code, employee_id):
+    """مولّد سريال موحّد مع _build_form_serial في hr_forms.py"""
+    import hashlib
+    from datetime import datetime
+    now = datetime.now()
+    date_part = now.strftime('%y%m%d')
+    emp_part = f"{int(employee_id):04d}"
+    raw = f"{code}-{employee_id}-{now.strftime('%Y%m%d%H%M%S%f')}"
+    hash_part = hashlib.sha1(raw.encode()).hexdigest()[:4].upper()
+    return f"{code}-{date_part}-{emp_part}-{hash_part}"
+
+
+@transaction.atomic
+def _execute_custody_receive(action, executor):
+    from apps.employees.models import EmployeeCustody
+    p = action.payload
+    employee = action.employee
+    serial = p.get('serial_number') or _build_form_serial_local('CR', employee.id)
+    custody = EmployeeCustody.objects.create(
+        employee=employee,
+        serial_number=serial,
+        item_name=p['item_name'],
+        item_details=p.get('item_details', ''),
+        quantity=int(p.get('quantity', 1)),
+        estimated_value=_to_decimal(p['estimated_value']) if p.get('estimated_value') not in (None, '') else None,
+        received_at=_to_date(p['received_at']),
+        notes=p.get('notes', ''),
+        document=action.attachment or None,
+        status=EmployeeCustody.Status.ACTIVE,
+        created_by=action.requested_by,
+    )
+    return f'تم تسجيل استلام عهدة "{custody.item_name}" للموظف {employee.name}'
+
+
+@transaction.atomic
+def _execute_custody_clear(action, executor):
+    from apps.employees.models import EmployeeCustody
+    p = action.payload
+    employee = action.employee
+    custody = EmployeeCustody.objects.filter(
+        id=p.get('custody_id'), employee=employee, status=EmployeeCustody.Status.ACTIVE
+    ).first()
+    if not custody:
+        raise ValueError('العهدة غير موجودة أو سبق تصفيتها.')
+    custody.status = EmployeeCustody.Status.RETURNED
+    custody.returned_at = _to_date(p['returned_at'])
+    custody.return_notes = p.get('return_notes', '')
+    if action.attachment:
+        custody.return_document = action.attachment
+    custody.save(update_fields=['status', 'returned_at', 'return_notes', 'return_document'])
+    return f'تم تصفية عهدة "{custody.item_name}" من الموظف {employee.name}'
+
+
+@transaction.atomic
+def _execute_job_offer(action, executor):
+    from apps.employees.models import EmployeeJobOffer
+    p = action.payload
+    employee = action.employee
+    serial = p.get('serial_number') or _build_form_serial_local('EL', employee.id)
+    offer = EmployeeJobOffer.objects.create(
+        employee=employee,
+        serial_number=serial,
+        addressed_to=p['addressed_to'],
+        purpose=p.get('purpose', ''),
+        issued_at=_to_date(p['issued_at']),
+        notes=p.get('notes', ''),
+        document=action.attachment or None,
+        created_by=action.requested_by,
+    )
+    return f'تم إصدار عرض وظيفي إلى {offer.addressed_to} للموظف {employee.name}'
+
+
+@transaction.atomic
+def _execute_business_trip(action, executor):
+    from apps.employees.models import EmployeeBusinessTrip
+    p = action.payload
+    employee = action.employee
+    serial = p.get('serial_number') or _build_form_serial_local('BT', employee.id)
+    trip = EmployeeBusinessTrip.objects.create(
+        employee=employee,
+        serial_number=serial,
+        destination=p['destination'],
+        purpose=p['purpose'],
+        start_date=_to_date(p['start_date']),
+        end_date=_to_date(p['end_date']),
+        estimated_cost=_to_decimal(p['estimated_cost']) if p.get('estimated_cost') not in (None, '') else None,
+        notes=p.get('notes', ''),
+        document=action.attachment or None,
+        created_by=action.requested_by,
+    )
+    return f'تم تسجيل رحلة عمل إلى {trip.destination} للموظف {employee.name}'
+
+
+EXECUTORS['custody_receive'] = _execute_custody_receive
+EXECUTORS['custody_clear'] = _execute_custody_clear
+EXECUTORS['job_offer'] = _execute_job_offer
+EXECUTORS['business_trip'] = _execute_business_trip
 
 
 def execute_pending_action(action, executor_user):

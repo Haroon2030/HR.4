@@ -485,3 +485,146 @@ class EmployeeLeave(BaseModel):
     def __str__(self):
         return f"{self.employee.name} — {self.get_leave_type_display()} ({self.date_from} → {self.date_to})"
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# عهدة موظف (استلام / تصفية)
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeCustody(BaseModel):
+    """عهدة من ممتلكات الشركة بحوزة الموظف (لابتوب، جوال، مفاتيح…)"""
+
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'بالحوزة'
+        RETURNED = 'returned', 'مُعادة'
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='custodies',
+        verbose_name="الموظف"
+    )
+    serial_number = models.CharField(
+        "الرقم المتسلسل", max_length=40, blank=True, db_index=True,
+        help_text="مثال: CR-260512-0005-A3F2"
+    )
+    item_name = models.CharField("اسم العهدة", max_length=200)
+    item_details = models.TextField("التفاصيل (موديل/سيريال)", blank=True)
+    quantity = models.PositiveIntegerField("الكمية", default=1)
+    estimated_value = models.DecimalField(
+        "القيمة التقديرية", max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    received_at = models.DateField("تاريخ الاستلام")
+    notes = models.TextField("ملاحظات", blank=True)
+    document = models.FileField(
+        "مستند الاستلام", upload_to='employees/custody/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    status = models.CharField(
+        "الحالة", max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
+    returned_at = models.DateField("تاريخ الإعادة", null=True, blank=True)
+    return_notes = models.TextField("ملاحظات الإعادة", blank=True)
+    return_document = models.FileField(
+        "مستند التصفية", upload_to='employees/custody/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_custodies', verbose_name="أُضيفت بواسطة"
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "عهدة موظف"
+        verbose_name_plural = "عهد الموظفين"
+        ordering = ['-received_at', '-created_at']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.item_name} ({self.get_status_display()})"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# عرض وظيفي صادر للموظف
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeJobOffer(BaseModel):
+    """خطاب تعريف / عرض وظيفي صادر للموظف لجهة خارجية."""
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='job_offers',
+        verbose_name="الموظف"
+    )
+    serial_number = models.CharField(
+        "الرقم المتسلسل", max_length=40, blank=True, db_index=True,
+        help_text="مثال: EL-260512-0005-A3F2"
+    )
+    addressed_to = models.CharField("الجهة المُوجَّه إليها", max_length=200)
+    purpose = models.CharField("الغرض", max_length=300, blank=True)
+    issued_at = models.DateField("تاريخ الإصدار")
+    notes = models.TextField("ملاحظات", blank=True)
+    document = models.FileField(
+        "مستند مرفق", upload_to='employees/job_offers/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_job_offers', verbose_name="أُصدرت بواسطة"
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "عرض وظيفي"
+        verbose_name_plural = "العروض الوظيفية"
+        ordering = ['-issued_at', '-created_at']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.addressed_to} ({self.issued_at})"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# رحلة عمل
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeBusinessTrip(BaseModel):
+    """مهمة / رحلة عمل رسمية للموظف."""
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='business_trips',
+        verbose_name="الموظف"
+    )
+    serial_number = models.CharField(
+        "الرقم المتسلسل", max_length=40, blank=True, db_index=True,
+        help_text="مثال: BT-260512-0005-A3F2"
+    )
+    destination = models.CharField("الوجهة", max_length=200)
+    purpose = models.CharField("الغرض", max_length=300)
+    start_date = models.DateField("من تاريخ")
+    end_date = models.DateField("إلى تاريخ")
+    estimated_cost = models.DecimalField(
+        "التكلفة التقديرية", max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    notes = models.TextField("ملاحظات", blank=True)
+    document = models.FileField(
+        "مستند مرفق", upload_to='employees/business_trips/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_business_trips', verbose_name="أُضيفت بواسطة"
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "رحلة عمل"
+        verbose_name_plural = "رحلات العمل"
+        ordering = ['-start_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.destination} ({self.start_date} → {self.end_date})"
+
+    @property
+    def days(self):
+        return (self.end_date - self.start_date).days + 1
+

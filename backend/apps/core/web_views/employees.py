@@ -189,6 +189,12 @@ def view_employee(request, employee_id):
     except (ValueError, TypeError):
         schedule_boxes = []
 
+    # Custodies / Business Trips / Job Offers (historical tabs)
+    custodies = employee.custodies.all().order_by('-received_at', '-id')
+    active_custodies = employee.custodies.filter(status='active').order_by('-received_at')
+    business_trips = employee.business_trips.all().order_by('-start_date', '-id')
+    job_offers = employee.job_offers.all().order_by('-issued_at', '-id')
+
     return render(request, 'pages/employees/view.html', {
         'employee': employee,
         'departments': departments,
@@ -197,6 +203,10 @@ def view_employee(request, employee_id):
         'next_statement_serial': next_statement_serial,
         'schedule_boxes_json': schedule_boxes,
         'salary_adjusts': salary_adjusts,
+        'custodies': custodies,
+        'active_custodies': active_custodies,
+        'business_trips': business_trips,
+        'job_offers': job_offers,
     })
 
 

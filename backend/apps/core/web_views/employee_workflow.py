@@ -385,6 +385,193 @@ def set_work_schedule(request, employee_id):
 
 
 # =============================================================================
+# Custody / Job Offer / Business Trip — تذهب لدورة الموافقات (PendingAction)
+# =============================================================================
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def receive_employee_custody(request, employee_id):
+    """طلب استلام عهدة جديدة (ينتظر دورة الموافقات)."""
+    from apps.employees.models import Employee
+    from apps.core.models import PendingAction
+    from apps.core.forms import CustodyReceiveForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = CustodyReceiveForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    cd = form.cleaned_data
+    PendingAction.objects.create(
+        action_type=PendingAction.ActionType.CUSTODY_RECEIVE,
+        employee=employee,
+        branch=employee.branch,
+        payload={
+            'item_name': cd['item_name'],
+            'item_details': cd.get('item_details', ''),
+            'quantity': int(cd.get('quantity') or 1),
+            'estimated_value': str(cd['estimated_value']) if cd.get('estimated_value') is not None else None,
+            'received_at': cd['received_at'].isoformat(),
+            'notes': cd.get('notes', ''),
+        },
+        attachment=files.get('document') or None,
+        requested_by=request.user,
+    )
+    messages.success(request, 'تم إرسال طلب استلام العهدة إلى مدير الفرع للموافقة.')
+    return redirect('web:view_employee', employee_id=employee.id)
+
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def clear_employee_custody(request, employee_id):
+    """طلب تصفية عهدة موجودة (ينتظر دورة الموافقات)."""
+    from apps.employees.models import Employee, EmployeeCustody
+    from apps.core.models import PendingAction
+    from apps.core.forms import CustodyClearForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = CustodyClearForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    cd = form.cleaned_data
+    custody = EmployeeCustody.objects.filter(
+        id=cd['custody_id'], employee=employee, status=EmployeeCustody.Status.ACTIVE
+    ).first()
+    if not custody:
+        messages.error(request, 'العهدة غير موجودة أو سبق تصفيتها.')
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    PendingAction.objects.create(
+        action_type=PendingAction.ActionType.CUSTODY_CLEAR,
+        employee=employee,
+        branch=employee.branch,
+        payload={
+            'custody_id': custody.id,
+            'item_name': custody.item_name,
+            'returned_at': cd['returned_at'].isoformat(),
+            'return_notes': cd.get('return_notes', ''),
+        },
+        attachment=files.get('document') or None,
+        requested_by=request.user,
+    )
+    messages.success(request, f'تم إرسال طلب تصفية العهدة "{custody.item_name}" إلى مدير الفرع للموافقة.')
+    return redirect('web:view_employee', employee_id=employee.id)
+
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def add_employee_job_offer(request, employee_id):
+    """طلب إصدار عرض وظيفي / خطاب تعريف (ينتظر دورة الموافقات)."""
+    from apps.employees.models import Employee
+    from apps.core.models import PendingAction
+    from apps.core.forms import JobOfferForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = JobOfferForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    cd = form.cleaned_data
+    PendingAction.objects.create(
+        action_type=PendingAction.ActionType.JOB_OFFER,
+        employee=employee,
+        branch=employee.branch,
+        payload={
+            'addressed_to': cd['addressed_to'],
+            'purpose': cd.get('purpose', ''),
+            'issued_at': cd['issued_at'].isoformat(),
+            'notes': cd.get('notes', ''),
+        },
+        attachment=files.get('document') or None,
+        requested_by=request.user,
+    )
+    messages.success(request, 'تم إرسال طلب العرض الوظيفي إلى مدير الفرع للموافقة.')
+    return redirect('web:view_employee', employee_id=employee.id)
+
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def add_employee_business_trip(request, employee_id):
+    """طلب رحلة عمل (ينتظر دورة الموافقات)."""
+    from apps.employees.models import Employee
+    from apps.core.models import PendingAction
+    from apps.core.forms import BusinessTripForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = BusinessTripForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    cd = form.cleaned_data
+    PendingAction.objects.create(
+        action_type=PendingAction.ActionType.BUSINESS_TRIP,
+        employee=employee,
+        branch=employee.branch,
+        payload={
+            'destination': cd['destination'],
+            'purpose': cd['purpose'],
+            'start_date': cd['start_date'].isoformat(),
+            'end_date': cd['end_date'].isoformat(),
+            'estimated_cost': str(cd['estimated_cost']) if cd.get('estimated_cost') is not None else None,
+            'notes': cd.get('notes', ''),
+        },
+        attachment=files.get('document') or None,
+        requested_by=request.user,
+    )
+    messages.success(request, 'تم إرسال طلب رحلة العمل إلى مدير الفرع للموافقة.')
+    return redirect('web:view_employee', employee_id=employee.id)
+
+
+# =============================================================================
 # Roles Management
 # =============================================================================
 

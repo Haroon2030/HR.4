@@ -66,6 +66,19 @@
                     <button type="button" @click="quickModal='schedule'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="calendar-days" class="w-4 h-4 text-teal-600"></i> جدول الدوام
                     </button>
+                    <div class="border-t border-slate-100 my-1"></div>
+                    <button type="button" @click="quickModal='custody_receive'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="package-check" class="w-4 h-4 text-emerald-600"></i> استلام عهدة
+                    </button>
+                    <button type="button" @click="quickModal='custody_clear'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="package-x" class="w-4 h-4 text-rose-600"></i> تصفية عهدة
+                    </button>
+                    <button type="button" @click="quickModal='job_offer'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="file-badge" class="w-4 h-4 text-primary-600"></i> عرض وظيفي
+                    </button>
+                    <button type="button" @click="quickModal='business_trip'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="plane-takeoff" class="w-4 h-4 text-sky-600"></i> رحلة عمل
+                    </button>
                 </div>
             </div>
             {% endif %}
@@ -744,6 +757,229 @@
         </div>
     </div>
 
+    <!-- Modal: استلام عهدة -->
+    <div x-show="quickModal==='custody_receive'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="package-check" class="w-5 h-5 text-emerald-600"></i>
+                    <span>استلام عهدة جديدة</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'web:receive_employee_custody' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم العهدة <span class="text-red-500">*</span></label>
+                    <input type="text" name="item_name" required placeholder="مثال: لابتوب Dell"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">التفاصيل (موديل/سيريال)</label>
+                    <textarea name="item_details" rows="2" placeholder="مثال: Dell Latitude 5420 — S/N: ABCD1234"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الكمية</label>
+                        <input type="number" name="quantity" min="1" value="1"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">القيمة التقديرية (ر.س)</label>
+                        <input type="number" name="estimated_value" min="0" step="0.01" placeholder="0.00"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الاستلام <span class="text-red-500">*</span></label>
+                        <input type="date" name="received_at" required value="{% now 'Y-m-d' %}"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند الاستلام (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-emerald-50 file:border-0 file:text-emerald-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1">
+                        <i data-lucide="package-check" class="w-4 h-4"></i> إرسال للموافقة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: تصفية عهدة -->
+    <div x-show="quickModal==='custody_clear'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="package-x" class="w-5 h-5 text-rose-600"></i>
+                    <span>تصفية عهدة</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'web:clear_employee_custody' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">العهدة المراد تصفيتها <span class="text-red-500">*</span></label>
+                    <select name="custody_id" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-rose-500 focus:border-rose-500 bg-white">
+                        <option value="">— اختر عهدة —</option>
+                        {% for c in active_custodies %}
+                        <option value="{{ c.id }}">{{ c.item_name }} — استُلمت {{ c.received_at|date:"Y/m/d" }}{% if c.quantity > 1 %} (×{{ c.quantity }}){% endif %}</option>
+                        {% empty %}
+                        <option value="" disabled>لا توجد عهد نشطة</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الإعادة <span class="text-red-500">*</span></label>
+                    <input type="date" name="returned_at" required value="{% now 'Y-m-d' %}"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-rose-500 focus:border-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات الإعادة</label>
+                    <textarea name="return_notes" rows="2" placeholder="حالة العهدة عند الإعادة"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-rose-500 focus:border-rose-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند التصفية (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-rose-50 file:border-0 file:text-rose-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded flex items-center gap-1">
+                        <i data-lucide="package-x" class="w-4 h-4"></i> إرسال للموافقة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: عرض وظيفي -->
+    <div x-show="quickModal==='job_offer'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="file-badge" class="w-5 h-5 text-primary-600"></i>
+                    <span>إصدار عرض وظيفي / خطاب تعريف</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'web:add_employee_job_offer' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الجهة الموجَّه إليها <span class="text-red-500">*</span></label>
+                    <input type="text" name="addressed_to" required placeholder="مثال: السفارة الأمريكية / البنك الأهلي"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الغرض</label>
+                    <input type="text" name="purpose" placeholder="مثال: تأشيرة سفر / فتح حساب بنكي"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الإصدار <span class="text-red-500">*</span></label>
+                    <input type="date" name="issued_at" required value="{% now 'Y-m-d' %}"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-primary-50 file:border-0 file:text-primary-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded flex items-center gap-1">
+                        <i data-lucide="file-badge" class="w-4 h-4"></i> إرسال للموافقة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: رحلة عمل -->
+    <div x-show="quickModal==='business_trip'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="plane-takeoff" class="w-5 h-5 text-sky-600"></i>
+                    <span>تسجيل رحلة عمل</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'web:add_employee_business_trip' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الوجهة <span class="text-red-500">*</span></label>
+                        <input type="text" name="destination" required placeholder="مثال: جدة"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">التكلفة التقديرية (ر.س)</label>
+                        <input type="number" name="estimated_cost" min="0" step="0.01" placeholder="0.00"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الغرض <span class="text-red-500">*</span></label>
+                    <input type="text" name="purpose" required placeholder="مثال: زيارة عميل / حضور مؤتمر"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">من تاريخ <span class="text-red-500">*</span></label>
+                        <input type="date" name="start_date" required
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">إلى تاريخ <span class="text-red-500">*</span></label>
+                        <input type="date" name="end_date" required
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-sky-50 file:border-0 file:text-sky-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded flex items-center gap-1">
+                        <i data-lucide="plane-takeoff" class="w-4 h-4"></i> إرسال للموافقة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Tabs -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="flex flex-wrap border-b border-slate-200 bg-slate-50">
@@ -752,6 +988,9 @@
             <button @click="activeTab='leaves'"   :class="activeTab==='leaves'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الإجازات</button>
             <button @click="activeTab='schedule'" :class="activeTab==='schedule' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الجدول</button>
             <button @click="activeTab='warnings'" :class="activeTab==='warnings' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الإفادات والإنذارات</button>
+            <button @click="activeTab='custodies'" :class="activeTab==='custodies' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العهد</button>
+            <button @click="activeTab='trips'" :class="activeTab==='trips' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">رحلات العمل</button>
+            <button @click="activeTab='offers'" :class="activeTab==='offers' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العروض الوظيفية</button>
             <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
             <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
         </div>
@@ -1247,6 +1486,129 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">صورة جواز السفر</div>{% if employee.passport_document %}<a href="{{ employee.passport_document.url }}" target="_blank" class="text-primary-600 hover:underline text-sm flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> عرض الملف</a>{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">العقد</div>{% if employee.contract_document %}<a href="{{ employee.contract_document.url }}" target="_blank" class="text-primary-600 hover:underline text-sm flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> عرض الملف</a>{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مستندات أخرى</div>{% if employee.other_documents %}<a href="{{ employee.other_documents.url }}" target="_blank" class="text-primary-600 hover:underline text-sm flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> عرض الملف</a>{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
+            </div>
+
+            <!-- Custodies -->
+            <div x-show="activeTab==='custodies'" class="space-y-3" style="display:none">
+                {% if custodies %}
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                                <th class="px-3 py-2 text-right font-bold">العهدة</th>
+                                <th class="px-3 py-2 text-right font-bold">الكمية</th>
+                                <th class="px-3 py-2 text-right font-bold">القيمة</th>
+                                <th class="px-3 py-2 text-right font-bold">تاريخ الاستلام</th>
+                                <th class="px-3 py-2 text-right font-bold">الحالة</th>
+                                <th class="px-3 py-2 text-right font-bold">تاريخ الإعادة</th>
+                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for c in custodies %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ c.serial_number|default:"—" }}</td>
+                                <td class="px-3 py-2"><div class="font-bold text-slate-800">{{ c.item_name }}</div>{% if c.item_details %}<div class="text-xs text-slate-500">{{ c.item_details|truncatechars:60 }}</div>{% endif %}</td>
+                                <td class="px-3 py-2">{{ c.quantity }}</td>
+                                <td class="px-3 py-2">{{ c.estimated_value|default:"—" }}</td>
+                                <td class="px-3 py-2">{{ c.received_at|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2">
+                                    {% if c.status == 'active' %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">بالحوزة</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">مُعادة</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-xs">{{ c.returned_at|date:"Y/m/d"|default:"—" }}</td>
+                                <td class="px-3 py-2">{% if c.document %}<a href="{{ c.document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs">استلام</a>{% endif %}{% if c.return_document %} · <a href="{{ c.return_document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs">إعادة</a>{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
+                    <i data-lucide="package" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+                    لا توجد عهد مسجلة على هذا الموظف
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Business Trips -->
+            <div x-show="activeTab==='trips'" class="space-y-3" style="display:none">
+                {% if business_trips %}
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                                <th class="px-3 py-2 text-right font-bold">الوجهة</th>
+                                <th class="px-3 py-2 text-right font-bold">الغرض</th>
+                                <th class="px-3 py-2 text-right font-bold">من</th>
+                                <th class="px-3 py-2 text-right font-bold">إلى</th>
+                                <th class="px-3 py-2 text-right font-bold">الأيام</th>
+                                <th class="px-3 py-2 text-right font-bold">التكلفة</th>
+                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for t in business_trips %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ t.serial_number|default:"—" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ t.destination }}</td>
+                                <td class="px-3 py-2">{{ t.purpose|truncatechars:60 }}</td>
+                                <td class="px-3 py-2">{{ t.start_date|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2">{{ t.end_date|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2">{{ t.days }}</td>
+                                <td class="px-3 py-2">{{ t.estimated_cost|default:"—" }}</td>
+                                <td class="px-3 py-2">{% if t.document %}<a href="{{ t.document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs">عرض</a>{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
+                    <i data-lucide="plane" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+                    لا توجد رحلات عمل مسجلة على هذا الموظف
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Job Offers -->
+            <div x-show="activeTab==='offers'" class="space-y-3" style="display:none">
+                {% if job_offers %}
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                                <th class="px-3 py-2 text-right font-bold">الجهة الموجَّه إليها</th>
+                                <th class="px-3 py-2 text-right font-bold">الغرض</th>
+                                <th class="px-3 py-2 text-right font-bold">تاريخ الإصدار</th>
+                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for o in job_offers %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ o.serial_number|default:"—" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ o.addressed_to }}</td>
+                                <td class="px-3 py-2">{{ o.purpose|default:"—" }}</td>
+                                <td class="px-3 py-2">{{ o.issued_at|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2">{% if o.document %}<a href="{{ o.document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs">عرض</a>{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
+                    <i data-lucide="file-badge" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+                    لا توجد عروض وظيفية مسجلة لهذا الموظف
+                </div>
+                {% endif %}
             </div>
 
             <!-- Archive -->
