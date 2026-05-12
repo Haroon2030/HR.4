@@ -2,6 +2,9 @@
 نماذج الموارد البشرية الرسمية — صفحات قابلة للطباعة
 Leave Request / Final Settlement / Absence Report / Employment Letter / Warning / Loan Request
 """
+import hashlib
+from datetime import datetime
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
@@ -9,6 +12,37 @@ from django.http import Http404
 from apps.core.models import Company
 from apps.employees.models import Employee
 from apps.core.decorators import permission_required
+
+
+# اختصارات قصيرة لكود النموذج تظهر في السريال (لو ما وجد، يُؤخذ أول 3 حروف من الـ key)
+FORM_CODE_MAP = {
+    'leave_request': 'LR',
+    'final_settlement': 'FS',
+    'warning_notice': 'WN',
+    'loan_request': 'LN',
+    'custody_receipt': 'CR',
+    'custody_clearance': 'CC',
+    'evaluation': 'EV',
+    'resumption_after_leave': 'RL',
+    'contract_termination': 'CT',
+    'business_trip': 'BT',
+    'absence_report': 'AR',
+    'employment_letter': 'EL',
+}
+
+
+def _build_form_serial(form_type, employee_id):
+    """
+    يولّد رقم نموذج تقني فريد بصيغة: <CODE>-<YYMMDD>-<EMP4>-<HASH4>
+    مثال: LR-260512-0005-A3F2
+    """
+    code = FORM_CODE_MAP.get(form_type, form_type[:3].upper())
+    now = datetime.now()
+    date_part = now.strftime('%y%m%d')
+    emp_part = f"{int(employee_id):04d}"
+    raw = f"{form_type}-{employee_id}-{now.strftime('%Y%m%d%H%M%S%f')}"
+    hash_part = hashlib.sha1(raw.encode()).hexdigest()[:4].upper()
+    return f"{code}-{date_part}-{emp_part}-{hash_part}"
 
 
 # قائمة النماذج المعتمدة
@@ -123,4 +157,5 @@ def hr_form_print(request, form_type, employee_id):
         'employee': employee,
         'company': company,
         'branch': employee.branch,
+        'form_serial': _build_form_serial(form_type, employee.id),
     })

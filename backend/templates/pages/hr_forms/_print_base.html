@@ -65,6 +65,18 @@
             display: flex; justify-content: space-between;
             font-size: 13px; color: #334155; margin-bottom: 24px;
         }
+        .doc-meta .date-picker {
+            font-family: inherit; font-size: 13px; color: #0f172a;
+            padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px;
+            background: #fff; cursor: pointer;
+        }
+        .doc-meta .date-picker:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
+        .doc-meta .serial-no {
+            font-family: 'Courier New', ui-monospace, monospace;
+            font-weight: 700; letter-spacing: 0.5px; color: #1e3a8a;
+            background: #eff6ff; padding: 2px 8px; border-radius: 4px;
+            border: 1px solid #dbeafe;
+        }
 
         /* Sections */
         .section { margin-bottom: 22px; }
@@ -149,6 +161,15 @@
             .doc-title { margin: 8px 0 12px; }
             .doc-title h2 { font-size: 16px; padding: 4px 18px; }
             .doc-meta { font-size: 10.5px; margin-bottom: 10px; }
+            .doc-meta .date-picker {
+                border: none; padding: 0; background: transparent;
+                font-size: 10.5px; color: #0f172a; -webkit-appearance: none; appearance: none;
+            }
+            .doc-meta .date-picker::-webkit-calendar-picker-indicator { display: none; }
+            .doc-meta .serial-no {
+                background: transparent; border: none; padding: 0;
+                font-size: 10.5px; color: #0f172a; font-weight: 700;
+            }
 
             .section { margin-bottom: 10px; }
             .section h3 { font-size: 12.5px; margin-bottom: 6px; padding-right: 8px; }
@@ -224,8 +245,13 @@
         </div>
 
         <div class="doc-meta">
-            <span>التاريخ: ............... / ............... / 14......هـ &nbsp;&nbsp;&nbsp; الموافق: ......../......../20......م</span>
-            <span>رقم النموذج: ...............</span>
+            <span class="doc-meta-date">
+                التاريخ:
+                <input type="date" class="date-picker" value="{% now 'Y-m-d' %}" aria-label="تاريخ النموذج">
+            </span>
+            <span class="doc-meta-serial">
+                رقم النموذج: <span class="serial-no">{{ form_serial }}</span>
+            </span>
         </div>
 
         {% block body %}{% endblock %}
