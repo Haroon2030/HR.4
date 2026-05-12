@@ -3,6 +3,8 @@
 """
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator
+from decimal import Decimal
 from simple_history.models import HistoricalRecords
 
 from apps.core.models import BaseModel, Branch
@@ -627,4 +629,61 @@ class EmployeeBusinessTrip(BaseModel):
     @property
     def days(self):
         return (self.end_date - self.start_date).days + 1
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# سلفة موظف
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeLoan(BaseModel):
+    """سلفة مالية ممنوحة للموظف، تُسدَّد على دفعات شهرية."""
+
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'قيد السداد'
+        PAID = 'paid', 'مُسدَّدة'
+        CANCELLED = 'cancelled', 'مُلغاة'
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='loans',
+        verbose_name="الموظف"
+    )
+    serial_number = models.CharField(
+        "الرقم المتسلسل", max_length=40, blank=True, db_index=True,
+        help_text="مثال: LN-260512-0005-A3F2"
+    )
+    amount = models.DecimalField(
+        "مبلغ السلفة", max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    monthly_deduction = models.DecimalField(
+        "الخصم الشهري", max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    installments = models.PositiveIntegerField("عدد الأقساط", default=1)
+    reason = models.CharField("سبب السلفة", max_length=300, blank=True)
+    issued_at = models.DateField("تاريخ الصرف")
+    first_deduction_date = models.DateField("تاريخ بداية الخصم", null=True, blank=True)
+    notes = models.TextField("ملاحظات", blank=True)
+    document = models.FileField(
+        "مستند مرفق", upload_to='employees/loans/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
+
+    status = models.CharField(
+        "الحالة", max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_loans', verbose_name="أُضيفت بواسطة"
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "سلفة موظف"
+        verbose_name_plural = "سلف الموظفين"
+        ordering = ['-issued_at', '-created_at']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.amount} ({self.get_status_display()})"
 

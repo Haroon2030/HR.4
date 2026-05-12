@@ -9,6 +9,7 @@ Django Forms - التحقق من صحة المدخلات للعمليات الح
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from decimal import Decimal
 
 from apps.core.models import Role, Branch
 from apps.cost_centers.models import CostCenter
@@ -356,6 +357,31 @@ class BusinessTripForm(forms.Form):
         e = cd.get('end_date')
         if s and e and e < s:
             raise ValidationError('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
+        return cd
+
+
+class LoanRequestForm(forms.Form):
+    """تقديم سلفة موظف."""
+    amount = forms.DecimalField(min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
+        error_messages={'required': 'مبلغ السلفة مطلوب', 'invalid': 'المبلغ غير صحيح',
+                        'min_value': 'يجب أن يكون المبلغ أكبر من صفر'})
+    monthly_deduction = forms.DecimalField(min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
+        error_messages={'required': 'الخصم الشهري مطلوب', 'invalid': 'الخصم غير صحيح',
+                        'min_value': 'يجب أن يكون الخصم أكبر من صفر'})
+    installments = forms.IntegerField(min_value=1, required=False,
+        error_messages={'invalid': 'عدد الأقساط غير صحيح', 'min_value': 'لا يقل عن قسط واحد'})
+    reason = forms.CharField(required=False)
+    issued_at = forms.DateField(error_messages={'required': 'تاريخ الصرف مطلوب', 'invalid': 'تاريخ الصرف غير صحيح'})
+    first_deduction_date = forms.DateField(required=False,
+        error_messages={'invalid': 'تاريخ بداية الخصم غير صحيح'})
+    notes = forms.CharField(required=False)
+
+    def clean(self):
+        cd = super().clean()
+        amount = cd.get('amount')
+        monthly = cd.get('monthly_deduction')
+        if amount and monthly and monthly > amount:
+            raise ValidationError('الخصم الشهري لا يمكن أن يكون أكبر من مبلغ السلفة')
         return cd
 
 

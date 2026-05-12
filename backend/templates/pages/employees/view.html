@@ -79,6 +79,9 @@
                     <button type="button" @click="quickModal='business_trip'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="plane-takeoff" class="w-4 h-4 text-sky-600"></i> رحلة عمل
                     </button>
+                    <button type="button" @click="quickModal='loan'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="hand-coins" class="w-4 h-4 text-amber-600"></i> تقديم سلفة
+                    </button>
                 </div>
             </div>
             {% endif %}
@@ -980,6 +983,74 @@
         </div>
     </div>
 
+    <!-- Modal: تقديم سلفة -->
+    <div x-show="quickModal==='loan'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="hand-coins" class="w-5 h-5 text-amber-600"></i>
+                    <span>تقديم سلفة</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'web:add_employee_loan' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">مبلغ السلفة (ر.س) <span class="text-red-500">*</span></label>
+                        <input type="number" name="amount" required min="0.01" step="0.01" placeholder="0.00"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الخصم الشهري (ر.س) <span class="text-red-500">*</span></label>
+                        <input type="number" name="monthly_deduction" required min="0.01" step="0.01" placeholder="0.00"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">عدد الأقساط</label>
+                        <input type="number" name="installments" min="1" value="1"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الصرف <span class="text-red-500">*</span></label>
+                        <input type="date" name="issued_at" required value="{% now 'Y-m-d' %}"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">بداية الخصم</label>
+                        <input type="date" name="first_deduction_date"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">سبب السلفة</label>
+                    <input type="text" name="reason" placeholder="مثال: زواج / علاج / طارئ"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-amber-500 focus:border-amber-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-amber-50 file:border-0 file:text-amber-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded flex items-center gap-1">
+                        <i data-lucide="hand-coins" class="w-4 h-4"></i> إرسال للموافقة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Tabs -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="flex flex-wrap border-b border-slate-200 bg-slate-50">
@@ -991,6 +1062,7 @@
             <button @click="activeTab='custodies'" :class="activeTab==='custodies' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العهد</button>
             <button @click="activeTab='trips'" :class="activeTab==='trips' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">رحلات العمل</button>
             <button @click="activeTab='offers'" :class="activeTab==='offers' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العروض الوظيفية</button>
+            <button @click="activeTab='loans'" :class="activeTab==='loans' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">السلف</button>
             <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
             <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
         </div>
@@ -1607,6 +1679,57 @@
                 <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
                     <i data-lucide="file-badge" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
                     لا توجد عروض وظيفية مسجلة لهذا الموظف
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Loans -->
+            <div x-show="activeTab==='loans'" class="space-y-3" style="display:none">
+                {% if loans %}
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                                <th class="px-3 py-2 text-right font-bold">المبلغ</th>
+                                <th class="px-3 py-2 text-right font-bold">الخصم الشهري</th>
+                                <th class="px-3 py-2 text-right font-bold">عدد الأقساط</th>
+                                <th class="px-3 py-2 text-right font-bold">السبب</th>
+                                <th class="px-3 py-2 text-right font-bold">تاريخ الصرف</th>
+                                <th class="px-3 py-2 text-right font-bold">بداية الخصم</th>
+                                <th class="px-3 py-2 text-right font-bold">الحالة</th>
+                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for l in loans %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ l.serial_number|default:"—" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ l.amount }}</td>
+                                <td class="px-3 py-2">{{ l.monthly_deduction }}</td>
+                                <td class="px-3 py-2">{{ l.installments }}</td>
+                                <td class="px-3 py-2">{{ l.reason|default:"—" }}</td>
+                                <td class="px-3 py-2">{{ l.issued_at|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2 text-xs">{{ l.first_deduction_date|date:"Y/m/d"|default:"—" }}</td>
+                                <td class="px-3 py-2">
+                                    {% if l.status == 'active' %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">قيد السداد</span>
+                                    {% elif l.status == 'paid' %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">مُسدَّدة</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">مُلغاة</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2">{% if l.document %}<a href="{{ l.document.url }}" target="_blank" class="text-primary-600 hover:underline text-xs">عرض</a>{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
+                    <i data-lucide="hand-coins" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+                    لا توجد سلف مسجلة لهذا الموظف
                 </div>
                 {% endif %}
             </div>

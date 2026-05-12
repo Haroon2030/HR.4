@@ -326,10 +326,33 @@ def _execute_business_trip(action, executor):
     return f'تم تسجيل رحلة عمل إلى {trip.destination} للموظف {employee.name}'
 
 
+@transaction.atomic
+def _execute_loan_request(action, executor):
+    from apps.employees.models import EmployeeLoan
+    p = action.payload
+    employee = action.employee
+    serial = p.get('serial_number') or _build_form_serial_local('LN', employee.id)
+    loan = EmployeeLoan.objects.create(
+        employee=employee,
+        serial_number=serial,
+        amount=_to_decimal(p['amount']),
+        monthly_deduction=_to_decimal(p['monthly_deduction']),
+        installments=int(p.get('installments') or 1),
+        reason=p.get('reason', ''),
+        issued_at=_to_date(p['issued_at']),
+        first_deduction_date=_to_date(p['first_deduction_date']) if p.get('first_deduction_date') else None,
+        notes=p.get('notes', ''),
+        document=action.attachment or None,
+        created_by=action.requested_by,
+    )
+    return f'تم صرف سلفة بمبلغ {loan.amount} للموظف {employee.name}'
+
+
 EXECUTORS['custody_receive'] = _execute_custody_receive
 EXECUTORS['custody_clear'] = _execute_custody_clear
 EXECUTORS['job_offer'] = _execute_job_offer
 EXECUTORS['business_trip'] = _execute_business_trip
+EXECUTORS['loan_request'] = _execute_loan_request
 
 
 def execute_pending_action(action, executor_user):

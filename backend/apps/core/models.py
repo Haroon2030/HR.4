@@ -446,6 +446,7 @@ class PendingAction(BaseModel):
         CUSTODY_CLEAR = 'custody_clear', 'تصفية عهدة'
         JOB_OFFER = 'job_offer', 'عرض وظيفي'
         BUSINESS_TRIP = 'business_trip', 'رحلة عمل'
+        LOAN_REQUEST = 'loan_request', 'تقديم سلفة'
 
     class Status(models.TextChoices):
         PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'
