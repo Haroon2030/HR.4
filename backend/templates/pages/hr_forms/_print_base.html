@@ -281,13 +281,14 @@
             <div class="company">
                 <h1 class="name">شركة محمد رشيد الرشيد</h1>
                 <div class="meta">
-                    {% if company.commercial_record %}س.ت: {{ company.commercial_record }} &nbsp;|&nbsp; {% endif %}
+                    س.ت: 1010055714 &nbsp;|&nbsp;
                     {% if company.tax_number %}الرقم الضريبي: {{ company.tax_number }}{% endif %}
                     {% if company.contact_phone or company.contact_email %}<br>
                         {% if company.contact_phone %}هاتف: {{ company.contact_phone }} &nbsp;|&nbsp; {% endif %}
                         {% if company.contact_email %}{{ company.contact_email }}{% endif %}
                     {% endif %}
                     {% if branch %}<br>الفرع: {{ branch.name }}{% endif %}
+                    {% if employee.sponsorship %}<br>الشركة (الكفالة): <strong>{{ employee.sponsorship.company_name }}</strong>{% endif %}
                 </div>
             </div>
             <div class="logo">
