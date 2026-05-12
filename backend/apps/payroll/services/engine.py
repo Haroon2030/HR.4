@@ -51,8 +51,8 @@ def build_payroll_run(branch, year: int, month: int, user=None):
     # قفل صف على المسير لمنع أي بناء مواز لنفس (الفرع/السنة/الشهر)
     PayrollRun.objects.select_for_update().filter(pk=run.pk).first()
 
-    # امسح الأسطر القديمة للبناء النظيف (لم تُربط أي بنود بعد لأنه DRAFT)
-    run.lines.all().delete()
+    # امسح الأسطر القديمة فعلياً لتفادي تعارض القيد الفريد (BaseModel.objects.delete = soft)
+    PayrollLine.all_objects.filter(run=run).delete()
 
     month_days = monthrange(year, month)[1]
     period_start = date(year, month, 1)
@@ -67,8 +67,8 @@ def build_payroll_run(branch, year: int, month: int, user=None):
         if emp.id in seen_ids:
             continue
         seen_ids.add(emp.id)
-        # دفاعياً: احذف أي سطر قديم لنفس الموظف في هذا المسير (race-safety)
-        PayrollLine.objects.filter(run=run, employee=emp).delete()
+        # دفاعياً: hard-delete أي سطر قديم لنفس الموظف في هذا المسير
+        PayrollLine.all_objects.filter(run=run, employee=emp).delete()
         line = PayrollLine(
             run=run, employee=emp,
             basic_salary=emp.basic_salary or 0,
