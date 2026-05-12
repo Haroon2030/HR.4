@@ -46,9 +46,8 @@
         .letterhead .company .meta { font-size: 12px; color: #475569; margin-top: 4px; line-height: 1.7; }
         .letterhead .logo {
             width: 80px; height: 80px; border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #1e3a8a);
+            background: #fff; overflow: hidden;
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 32px; font-weight: 800;
         }
         .letterhead .logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
 
@@ -234,7 +233,7 @@
                 {% if company.logo %}
                     <img src="{{ company.logo.url }}" alt="logo">
                 {% else %}
-                    <img src="{% static 'favicon.svg' %}" alt="logo">
+                    <img src="{% static 'company_logo.ico' %}" alt="logo">
                 {% endif %}
             </div>
         </div>
