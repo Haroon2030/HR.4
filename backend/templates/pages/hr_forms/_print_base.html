@@ -323,12 +323,15 @@
 
     <script>
         // ── تحويل النماذج إلى تعبئة إلكترونية ─────────────────────────────
-        // كل <span class="blank"></span> → input نصي
+        // كل <span class="blank"></span> → input نصي (أو date إذا كان عنوانه يدل على تاريخ)
+        const DATE_HINTS = ['تاريخ', 'بتاريخ', 'بدء', 'انتهاء', 'إلى:', 'من:'];
         document.querySelectorAll('span.blank').forEach(el => {
+            const labelText = (el.previousElementSibling?.textContent || '').trim();
+            const isDate = DATE_HINTS.some(h => labelText.includes(h));
             const inp = document.createElement('input');
-            inp.type = 'text';
+            inp.type = isDate ? 'date' : 'text';
             inp.className = 'blank';
-            inp.setAttribute('aria-label', el.previousElementSibling?.textContent?.trim() || 'حقل');
+            inp.setAttribute('aria-label', labelText || 'حقل');
             el.replaceWith(inp);
         });
         // كل <div class="blank-block"></div> → textarea
