@@ -5,6 +5,7 @@ Web URLs - روابط واجهة الويب
 from django.urls import path, include
 from django.views.generic import RedirectView
 from apps.core import web_views
+from apps.payroll import views as payroll_views
 
 app_name = 'web'
 
@@ -147,6 +148,15 @@ urlpatterns = [
     # Reports (التقارير)
     path('reports/', web_views.reports_index, name='reports_index'),
     path('reports/<str:report_type>/', web_views.report_detail, name='report_detail'),
+
+    # Payroll (مسير الرواتب الشهري)
+    path('payroll/', payroll_views.list_payroll_runs, name='list_payroll_runs'),
+    path('payroll/create/', payroll_views.create_payroll_run, name='create_payroll_run'),
+    path('payroll/<int:run_id>/', payroll_views.view_payroll_run, name='view_payroll_run'),
+    path('payroll/<int:run_id>/rebuild/', payroll_views.rebuild_payroll_run, name='rebuild_payroll_run'),
+    path('payroll/<int:run_id>/lock/', payroll_views.lock_payroll_run_view, name='lock_payroll_run'),
+    path('payroll/<int:run_id>/unlock/', payroll_views.unlock_payroll_run_view, name='unlock_payroll_run'),
+    path('payroll/<int:run_id>/export/', payroll_views.export_payroll_run_excel, name='export_payroll_run_excel'),
 
     # Auth
     path('auth/', include((auth_patterns, 'auth'))),

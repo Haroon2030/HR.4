@@ -345,6 +345,7 @@ def _execute_loan_request(action, executor):
         document=action.attachment or None,
         created_by=action.requested_by,
     )
+    loan.generate_installments()
     return f'تم صرف سلفة بمبلغ {loan.amount} للموظف {employee.name}'
 
 

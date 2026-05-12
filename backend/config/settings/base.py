@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'apps.cost_centers',
     'apps.departments',
     'apps.employees',
+    'apps.payroll',
 ]
 
 MIDDLEWARE = [

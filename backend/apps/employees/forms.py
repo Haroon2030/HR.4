@@ -268,7 +268,7 @@ class EmployeeStatementForm(forms.ModelForm):
     class Meta:
         model = EmployeeStatement
         fields = ['statement_type', 'title', 'statement_date', 'content',
-                  'employee_email', 'hr_email']
+                  'deduction_amount', 'employee_email', 'hr_email']
 
     def clean_title(self):
         v = (self.cleaned_data.get('title') or '').strip()

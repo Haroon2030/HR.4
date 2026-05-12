@@ -371,6 +371,7 @@ class EmployeeStatement(BaseModel):
         STATEMENT = 'statement', 'إفادة'
         WARNING = 'warning', 'إنذار'
         FINAL_WARNING = 'final_warning', 'إنذار نهائي'
+        PENALTY = 'penalty', 'مخالفة (خصم مالي)'
         ACKNOWLEDGMENT = 'acknowledgment', 'إقرار'
         TERMINATE = 'terminate', 'تصفية'
         REACTIVATE = 'reactivate', 'إعادة تفعيل'
@@ -400,6 +401,16 @@ class EmployeeStatement(BaseModel):
     hr_email = models.EmailField("بريد الموارد البشرية", blank=True)
     email_sent_at = models.DateTimeField("تاريخ إرسال الإيميل", null=True, blank=True)
     email_error = models.TextField("خطأ الإرسال", blank=True)
+
+    # ── حقول الخصم (للنوع PENALTY) ──
+    deduction_amount = models.DecimalField(
+        "مبلغ الخصم", max_digits=12, decimal_places=2, default=0,
+        help_text="يُطبَّق فقط عند النوع 'مخالفة' ويظهر تلقائياً في المسير الشهري"
+    )
+    applied_to_payroll = models.ForeignKey(
+        'payroll.PayrollRun', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consumed_penalties', verbose_name="المسير المُحتسب فيه"
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='created_statements', verbose_name="أُضيفت بواسطة"
@@ -475,6 +486,11 @@ class EmployeeLeave(BaseModel):
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='created_leaves', verbose_name="أُضيفت بواسطة"
+    )
+    applied_to_payroll = models.ForeignKey(
+        'payroll.PayrollRun', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consumed_unpaid_leaves',
+        verbose_name="المسير المُحتسب فيه (للإجازات بدون راتب)"
     )
 
     history = HistoricalRecords()
@@ -687,6 +703,92 @@ class EmployeeLoan(BaseModel):
     def __str__(self):
         return f"{self.employee.name} — {self.amount} ({self.get_status_display()})"
 
+    @property
+    def remaining_balance(self):
+        """الرصيد المتبقي = المبلغ - مجموع الأقساط المحصّلة فعلياً."""
+        from decimal import Decimal
+        paid = self.installments_log.filter(status='paid').aggregate(
+            total=models.Sum('amount')
+        )['total'] or Decimal('0')
+        return (Decimal(self.amount) - Decimal(paid)).quantize(Decimal('0.01'))
+
+    def generate_installments(self):
+        """يولّد سجلات LoanInstallment حسب عدد الأقساط وتاريخ بداية الخصم."""
+        from decimal import Decimal
+        from datetime import date
+        if self.installments_log.exists():
+            return  # موجودة بالفعل
+        first = self.first_deduction_date or self.issued_at
+        n = max(1, int(self.installments or 1))
+        amount = Decimal(self.monthly_deduction)
+        # قسط أخير = الباقي بعد قسمة لتجنّب التقريب
+        per = amount
+        from calendar import monthrange
+        y, m = first.year, first.month
+        for i in range(n):
+            # تاريخ القسط: نفس يوم الشهر الأول، أو آخر يوم في الشهر إن لم يوجد
+            try:
+                due = date(y, m, first.day)
+            except ValueError:
+                last_day = monthrange(y, m)[1]
+                due = date(y, m, last_day)
+            LoanInstallment.objects.create(
+                loan=self,
+                period_year=y, period_month=m,
+                due_date=due,
+                amount=per,
+                status=LoanInstallment.Status.PENDING,
+            )
+            # تقدم شهراً
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# قسط سلفة (سجل شهري لكل قسط)
+# ══════════════════════════════════════════════════════════════════════════════
+class LoanInstallment(BaseModel):
+    """قسط شهري واحد من سلفة. يُولَّد تلقائياً عند الموافقة على السلفة.
+
+    يضمن idempotency للمسير: كل قسط يُحتسب في مسير واحد فقط.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'مستحق'
+        PAID = 'paid', 'مُحصَّل'
+        SKIPPED = 'skipped', 'مؤجَّل'
+        CANCELLED = 'cancelled', 'ملغى'
+
+    loan = models.ForeignKey(
+        EmployeeLoan, on_delete=models.CASCADE, related_name='installments_log',
+        verbose_name="السلفة"
+    )
+    period_year = models.PositiveIntegerField("السنة", db_index=True)
+    period_month = models.PositiveSmallIntegerField("الشهر", db_index=True)
+    due_date = models.DateField("تاريخ الاستحقاق")
+    amount = models.DecimalField("المبلغ", max_digits=12, decimal_places=2)
+    status = models.CharField(
+        "الحالة", max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    applied_to_payroll = models.ForeignKey(
+        'payroll.PayrollRun', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consumed_loan_installments', verbose_name="المسير المُحتسب فيه"
+    )
+    notes = models.TextField("ملاحظات", blank=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "قسط سلفة"
+        verbose_name_plural = "أقساط السلف"
+        ordering = ['period_year', 'period_month']
+        unique_together = [('loan', 'period_year', 'period_month')]
+
+    def __str__(self):
+        return f"{self.loan.employee.name} — {self.period_year}/{self.period_month:02d} = {self.amount}"
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # غياب موظف (يخصم من الراتب)
@@ -732,6 +834,10 @@ class EmployeeAbsence(BaseModel):
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='created_absences', verbose_name="أُضيف بواسطة"
+    )
+    applied_to_payroll = models.ForeignKey(
+        'payroll.PayrollRun', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consumed_absences', verbose_name="المسير المُحتسب فيه"
     )
 
     history = HistoricalRecords()

@@ -215,6 +215,7 @@
                         <option value="statement">إفادة</option>
                         <option value="warning">إنذار</option>
                         <option value="final_warning">إنذار نهائي</option>
+                        <option value="penalty">مخالفة (خصم مالي)</option>
                         <option value="acknowledgment">إقرار</option>
                         <option value="other">أخرى</option>
                     </select>
@@ -225,6 +226,12 @@
                 </div>
                 <div class="md:col-span-2">
                     {% include 'components/file_upload.html' with name='document' label='المرفق (PDF/صورة)' accept='image/*,.pdf' %}
+                </div>
+
+                <div class="md:col-span-3" x-show="stype === 'penalty'" x-cloak>
+                    <label class="block text-[11px] font-bold text-rose-700 mb-0.5">مبلغ الخصم (ر.س) <span class="text-red-500">*</span></label>
+                    <input type="number" name="deduction_amount" min="0" step="0.01" placeholder="0.00" class="w-full px-2 py-1.5 border border-rose-300 rounded text-xs bg-rose-50">
+                    <p class="text-[10px] text-rose-600 mt-0.5">سيُخصم تلقائياً من راتب الشهر عند بناء المسير.</p>
                 </div>
 
                 <div class="md:col-span-6">

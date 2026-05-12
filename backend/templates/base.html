@@ -236,6 +236,7 @@
                     {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}{% endif %}
                     {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" %}{% endif %}
                     {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" %}{% endif %}
+                    {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
@@ -319,6 +320,7 @@
                     {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" force_show_label=True %}{% endif %}
                     {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" force_show_label=True %}{% endif %}
                     {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" force_show_label=True %}{% endif %}
+                    {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" force_show_label=True %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
