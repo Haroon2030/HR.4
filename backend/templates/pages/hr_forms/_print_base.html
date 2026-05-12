@@ -234,7 +234,7 @@
                 {% if company.logo %}
                     <img src="{{ company.logo.url }}" alt="logo">
                 {% else %}
-                    م
+                    <img src="{% static 'favicon.svg' %}" alt="logo">
                 {% endif %}
             </div>
         </div>
