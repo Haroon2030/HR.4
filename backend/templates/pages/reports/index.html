@@ -2,7 +2,7 @@
 {% block title %}التقارير{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto" x-data="reportsFilter()">
+<div class="max-w-7xl mx-auto" x-data="reportsFilter()">
 
     {# Header #}
     <div class="mb-5 flex items-end justify-between gap-3 flex-wrap">
@@ -11,83 +11,94 @@
                 <i data-lucide="bar-chart-3" class="w-5 h-5 text-primary-600"></i>
                 التقارير
             </h1>
-            <p class="text-xs text-slate-500 mt-0.5">ابحث وفلتر عن التقرير الذي تريده</p>
+            <p class="text-xs text-slate-500 mt-0.5">ابحث وحدد تقريراً أو أكثر لفتحها</p>
         </div>
         <div class="text-xs text-slate-400">
             <span x-text="filtered.length"></span> من {{ reports|length }} تقرير
         </div>
     </div>
 
-    {# Filter bar #}
-    <div class="bg-white border border-slate-200 rounded-xl p-3 mb-4 shadow-sm">
-        <div class="flex flex-col md:flex-row gap-2">
-            <div class="relative flex-1">
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                <input type="text" x-model="search" @input="apply()"
-                    placeholder="ابحث عن تقرير..."
-                    class="w-full bg-slate-50 border border-slate-200 rounded-lg pr-9 pl-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-400 transition">
-            </div>
-            <button type="button" @click="search=''; groups=[]; apply()" x-show="search || groups.length"
-                class="px-3 py-2 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition flex items-center gap-1">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                مسح
-            </button>
-        </div>
+    {# Search box #}
+    <div class="relative mb-4">
+        <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        <input type="text" x-model="search" @input="apply()"
+            placeholder="ابحث عن تقرير..."
+            class="w-full bg-white border border-slate-200 rounded-xl pr-11 pl-10 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-400 transition">
+        <button type="button" x-show="search" @click="search=''; apply()"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    </div>
 
-        {# Multi-select group checkboxes #}
-        <div class="mt-3 pt-3 border-t border-slate-100">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">تصفية حسب المجموعة</span>
-                <div class="flex items-center gap-2 text-[11px]">
-                    <button type="button" @click="groups = [{% for g in report_groups %}'{{ g.key }}'{% if not forloop.last %},{% endif %}{% endfor %}]; apply()"
-                        class="text-primary-600 hover:text-primary-800 font-semibold">تحديد الكل</button>
-                    <span class="text-slate-300">|</span>
-                    <button type="button" @click="groups=[]; apply()"
-                        class="text-slate-500 hover:text-slate-700 font-semibold">إلغاء الكل</button>
-                </div>
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-                {% for g in report_groups %}
-                <label
-                    :class="groups.includes('{{ g.key }}') ? 'bg-{{ g.color }}-600 text-white border-{{ g.color }}-600 shadow-sm' : 'bg-white text-{{ g.color }}-700 border-{{ g.color }}-200 hover:bg-{{ g.color }}-50'"
-                    class="cursor-pointer text-[11px] font-semibold px-2.5 py-1.5 rounded-md border transition inline-flex items-center gap-1.5 select-none">
-                    <input type="checkbox" value="{{ g.key }}" x-model="groups" @change="apply()" class="sr-only">
-                    <i data-lucide="{{ g.icon }}" class="w-3 h-3"></i>
-                    <span>{{ g.title }}</span>
-                    <span :class="groups.includes('{{ g.key }}') ? 'bg-white/25' : 'bg-{{ g.color }}-100'"
-                        class="text-[10px] px-1 rounded">{{ g.items|length }}</span>
-                </label>
-                {% endfor %}
-            </div>
+    {# Selection bar #}
+    <div x-show="selected.length > 0" x-transition
+        class="sticky top-2 z-20 mb-4 bg-primary-600 text-white rounded-xl shadow-lg px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2 text-sm font-semibold">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            <span x-text="selected.length"></span> تقرير محدد
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="selectAll()"
+                class="text-xs bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-md font-semibold transition flex items-center gap-1">
+                <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
+                تحديد كل المعروض
+            </button>
+            <button type="button" @click="selected=[]"
+                class="text-xs bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-md font-semibold transition flex items-center gap-1">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                إلغاء
+            </button>
+            <button type="button" @click="openSelected()"
+                class="text-xs bg-white text-primary-700 hover:bg-primary-50 px-3 py-1.5 rounded-md font-bold transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                فتح المحدد
+            </button>
         </div>
     </div>
 
-    {# Results list #}
-    <div class="space-y-1.5" x-show="filtered.length > 0">
+    {# Reports grid #}
+    <div x-show="filtered.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <template x-for="r in filtered" :key="r.key">
-            <a :href="r.url"
-               class="group flex items-center gap-3 bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm rounded-lg px-3 py-2.5 transition-all">
-                <div :class="`w-8 h-8 rounded-md bg-${r.color}-50 text-${r.color}-600 flex items-center justify-center flex-shrink-0`">
-                    <i :data-lucide="r.icon" class="w-4 h-4"></i>
+            <div :class="selected.includes(r.key) ? `border-${r.color}-500 ring-2 ring-${r.color}-200 bg-${r.color}-50/40` : 'border-slate-200 hover:border-slate-300'"
+                @click="toggle(r.key)"
+                class="relative cursor-pointer bg-white border rounded-xl p-3 transition-all hover:shadow-md group">
+
+                {# Checkbox indicator #}
+                <div :class="selected.includes(r.key) ? `bg-${r.color}-600 border-${r.color}-600` : 'bg-white border-slate-300 group-hover:border-slate-400'"
+                    class="absolute top-2 left-2 w-5 h-5 rounded-md border-2 flex items-center justify-center transition">
+                    <i x-show="selected.includes(r.key)" data-lucide="check" class="w-3 h-3 text-white"></i>
                 </div>
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                        <h3 class="font-semibold text-sm text-slate-800 group-hover:text-primary-700 transition-colors" x-text="r.title"></h3>
-                        <span :class="`text-[10px] font-bold px-1.5 py-0.5 rounded bg-${r.color}-50 text-${r.color}-700`" x-text="r.group_title"></span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-1" x-text="r.description"></p>
+
+                {# Icon #}
+                <div :class="`w-10 h-10 rounded-lg bg-${r.color}-100 text-${r.color}-600 flex items-center justify-center mb-2`">
+                    <i :data-lucide="r.icon" class="w-5 h-5"></i>
                 </div>
-                <i data-lucide="chevron-left" class="w-4 h-4 text-slate-300 group-hover:text-primary-500 group-hover:-translate-x-1 transition-all flex-shrink-0"></i>
-            </a>
+
+                {# Title #}
+                <h3 class="font-bold text-sm text-slate-800 mb-1 line-clamp-2 leading-tight" x-text="r.title"></h3>
+
+                {# Description #}
+                <p class="text-[11px] text-slate-500 line-clamp-2 mb-2" x-text="r.description"></p>
+
+                {# Footer #}
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span :class="`text-[10px] font-bold px-1.5 py-0.5 rounded bg-${r.color}-50 text-${r.color}-700`" x-text="r.group_title"></span>
+                    <a :href="r.url" @click.stop
+                        class="text-[10px] text-primary-600 hover:text-primary-800 font-semibold flex items-center gap-0.5">
+                        فتح
+                        <i data-lucide="chevron-left" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
         </template>
     </div>
 
     {# Empty state #}
-    <div x-show="filtered.length === 0" class="bg-white border border-dashed border-slate-300 rounded-xl py-12 text-center">
-        <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
-        <p class="text-sm text-slate-500">لا توجد تقارير مطابقة للبحث</p>
-        <button type="button" @click="search=''; groups=[]; apply()" class="mt-3 text-xs text-primary-600 hover:text-primary-800 font-semibold">
-            إعادة تعيين الفلاتر
+    <div x-show="filtered.length === 0" class="bg-white border border-dashed border-slate-300 rounded-xl py-16 text-center">
+        <i data-lucide="search-x" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+        <p class="text-sm text-slate-500">لا توجد تقارير مطابقة لبحثك</p>
+        <button type="button" @click="search=''; apply()" class="mt-3 text-xs text-primary-600 hover:text-primary-800 font-semibold">
+            مسح البحث
         </button>
     </div>
 
@@ -100,7 +111,7 @@ function reportsFilter() {
     };
     return {
         search: '',
-        groups: [],
+        selected: [],
         all: [
             {% for r in reports %}{
                 key: '{{ r.key }}',
@@ -120,12 +131,26 @@ function reportsFilter() {
         },
         apply() {
             const q = this.search.trim().toLowerCase();
-            this.filtered = this.all.filter(r => {
-                if (this.groups.length && !this.groups.includes(r.group)) return false;
-                if (q && !(r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q))) return false;
-                return true;
-            });
+            this.filtered = q
+                ? this.all.filter(r => r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || (r.group_title || '').toLowerCase().includes(q))
+                : this.all;
             this.$nextTick(() => lucide.createIcons());
+        },
+        toggle(key) {
+            const i = this.selected.indexOf(key);
+            if (i >= 0) this.selected.splice(i, 1);
+            else this.selected.push(key);
+            this.$nextTick(() => lucide.createIcons());
+        },
+        selectAll() {
+            const keys = this.filtered.map(r => r.key);
+            const merged = [...new Set([...this.selected, ...keys])];
+            this.selected = merged;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        openSelected() {
+            const map = Object.fromEntries(this.all.map(r => [r.key, r.url]));
+            this.selected.forEach(k => { if (map[k]) window.open(map[k], '_blank'); });
         }
     };
 }
