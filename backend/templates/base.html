@@ -289,7 +289,7 @@
 
                 <!-- Navigation -->
                 <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpenM: ['list_employees','add_employee'].includes('{{ request.resolver_match.url_name }}') }">
-                    {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" %}
+                    {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" force_show_label=True %}
 
                     <!-- الموظفين مع قائمة فرعية -->
                     {% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
@@ -315,10 +315,10 @@
                     </div>
                     {% endif %}
 
-                    {% if user|has_permission:'branches.view' %}{% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" %}{% endif %}
-                    {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}{% endif %}
-                    {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" %}{% endif %}
-                    {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" %}{% endif %}
+                    {% if user|has_permission:'branches.view' %}{% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" force_show_label=True %}{% endif %}
+                    {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" force_show_label=True %}{% endif %}
+                    {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" force_show_label=True %}{% endif %}
+                    {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" force_show_label=True %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
