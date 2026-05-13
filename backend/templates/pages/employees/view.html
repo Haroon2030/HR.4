@@ -168,7 +168,7 @@
                     <input type="text" name="reactivation_reason" required placeholder="مثال: عاد بعد انتهاء تأشيرة الخروج" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1">
                         <i data-lucide="user-check" class="w-4 h-4"></i> تأكيد إعادة التفعيل
@@ -380,7 +380,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-3 py-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit"
                             :class="sendEmail ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-primary-600 hover:bg-primary-700'"
@@ -488,7 +488,7 @@
                     <span>تتجاوز الرصيد المتاح (<span x-text="balance"></span> يوم)</span>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" :disabled="!canSubmit"
                             :class="canSubmit ? 'bg-primary-600 hover:bg-primary-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
@@ -562,7 +562,7 @@
                     <input type="text" name="end_reason" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded">تأكيد التصفية</button>
                 </div>
@@ -673,7 +673,7 @@
                            class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" :disabled="parseFloat(raise || 0) === 0"
                             :class="parseFloat(raise || 0) !== 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
@@ -759,7 +759,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit"
                             class="px-4 py-2 text-sm font-medium rounded bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1">
@@ -821,7 +821,7 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-emerald-50 file:border-0 file:text-emerald-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1">
                         <i data-lucide="package-check" class="w-4 h-4"></i> إرسال للموافقة
@@ -871,7 +871,7 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-rose-50 file:border-0 file:text-rose-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded flex items-center gap-1">
                         <i data-lucide="package-x" class="w-4 h-4"></i> إرسال للموافقة
@@ -920,7 +920,7 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-primary-50 file:border-0 file:text-primary-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded flex items-center gap-1">
                         <i data-lucide="file-badge" class="w-4 h-4"></i> إرسال للموافقة
@@ -983,7 +983,7 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-sky-50 file:border-0 file:text-sky-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded flex items-center gap-1">
                         <i data-lucide="plane-takeoff" class="w-4 h-4"></i> إرسال للموافقة
@@ -1051,7 +1051,7 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-amber-50 file:border-0 file:text-amber-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded flex items-center gap-1">
                         <i data-lucide="hand-coins" class="w-4 h-4"></i> إرسال للموافقة
@@ -1154,7 +1154,7 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded flex items-center gap-1">
                         <i data-lucide="user-minus" class="w-4 h-4"></i> إرسال للموافقة
