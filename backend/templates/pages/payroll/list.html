@@ -98,8 +98,36 @@
                         <td class="px-4 py-3 text-left font-mono text-emerald-700">{{ run.total_earnings }}</td>
                         <td class="px-4 py-3 text-left font-mono text-rose-700">{{ run.total_deductions }}</td>
                         <td class="px-4 py-3 text-left font-mono font-bold text-slate-900">{{ run.total_net }}</td>
-                        <td class="px-4 py-3 text-center">
-                            <a href="{% url 'web:view_payroll_run' run.id %}" class="text-primary-600 hover:underline text-xs font-semibold">عرض</a>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                <a href="{% url 'web:view_payroll_run' run.id %}" class="px-2.5 py-1 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-md inline-flex items-center gap-1" title="عرض التفاصيل">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> عرض
+                                </a>
+                                <a href="{% url 'web:export_payroll_run_excel' run.id %}" class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md inline-flex items-center gap-1" title="تصدير Excel">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel
+                                </a>
+                                {% if run.status == 'draft' %}
+                                <form method="POST" action="{% url 'web:rebuild_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم إعادة بناء المسير. هل تريد المتابعة؟');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md inline-flex items-center gap-1" title="إعادة بناء">
+                                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> بناء
+                                    </button>
+                                </form>
+                                <form method="POST" action="{% url 'web:lock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('بمجرد الترحيل لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md inline-flex items-center gap-1" title="ترحيل وإغلاق">
+                                        <i data-lucide="lock" class="w-3.5 h-3.5"></i> ترحيل
+                                    </button>
+                                </form>
+                                {% elif run.status == 'locked' and request.user.is_superuser %}
+                                <form method="POST" action="{% url 'web:unlock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم فك ربط جميع البنود. هل أنت متأكد؟');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md inline-flex items-center gap-1" title="إعادة فتح">
+                                        <i data-lucide="unlock" class="w-3.5 h-3.5"></i> فتح
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
