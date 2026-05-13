@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}تقارير متعددة — التقارير{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    {# Breadcrumb #}
+    <nav class="text-xs text-slate-500 mb-4 flex items-center gap-1">
+        <a href="{% url 'web:reports_index' %}" class="hover:text-primary-600 inline-flex items-center gap-1">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> التقارير
+        </a>
+        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        <span class="text-slate-700 font-semibold">عرض تقارير متعددة ({{ reports_count }})</span>
+    </nav>
+
+    {# Global Actions #}
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 mb-6 flex items-center justify-between gap-4 flex-wrap no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="files" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800">حزمة التقارير المجمعة</h1>
+                <p class="text-xs text-slate-500">تم جلب وتجميع {{ reports_count }} تقرير بشكل تقني لعرضها أو طباعتها كوثيقة واحدة.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-semibold transition inline-flex items-center gap-2 shadow-sm">
+                <i data-lucide="printer" class="w-4 h-4"></i> طباعة الحزمة
+            </button>
+        </div>
+    </div>
+
+    {# Reports Loop #}
+    <div class="space-y-10">
+        {% for item in reports_data %}
+        <div class="report-section page-break-container">
+            
+            {# Report Header #}
+            <div class="flex items-center justify-between gap-4 mb-3 pb-2 border-b border-slate-200">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="{{ item.meta.icon }}" class="w-5 h-5 text-{{ item.meta.color }}-600"></i>
+                    <h2 class="text-xl font-bold text-slate-800">{{ item.meta.title }}</h2>
+                </div>
+                <div class="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded">
+                    {{ item.data.rows|length }} سجل
+                </div>
+            </div>
+
+            {# Report Table #}
+            {% if item.data.rows %}
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-2">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200">
+                                <th class="text-center p-2 text-slate-500 font-semibold w-10">#</th>
+                                {% for col in item.data.columns %}
+                                <th class="text-right p-2 text-slate-600 font-semibold whitespace-nowrap">{{ col }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in item.data.rows %}
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                <td class="text-center p-1.5 text-slate-400 text-xs">{{ forloop.counter }}</td>
+                                {% for cell in row %}
+                                <td class="p-1.5 text-slate-700 whitespace-nowrap">{{ cell }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if item.data.note %}
+            <p class="text-xs text-slate-500 mt-1"><i data-lucide="info" class="w-3.5 h-3.5 inline align-text-bottom mr-1"></i>{{ item.data.note }}</p>
+            {% endif %}
+            {% else %}
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 text-center">
+                <i data-lucide="inbox" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                <p class="text-sm text-slate-500">لا توجد بيانات في هذا التقرير</p>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<style>
+@media print {
+    nav, button, .no-print, .sidebar, header, .navbar { display: none !important; }
+    .max-w-7xl { max-width: 100% !important; }
+    body { background-color: white !important; }
+    .report-section { page-break-inside: avoid; margin-bottom: 30px; }
+    .page-break-container:not(:last-child) { page-break-after: always; }
+    table { font-size: 10px !important; width: 100% !important; border: 1px solid #e2e8f0; }
+    th, td { padding: 4px !important; border-bottom: 1px solid #e2e8f0; }
+    th { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; }
+    .shadow-sm { box-shadow: none !important; }
+    .rounded-xl { border-radius: 4px !important; }
+}
+</style>
+<script>document.addEventListener('DOMContentLoaded', () => lucide.createIcons());</script>
+{% endblock %}

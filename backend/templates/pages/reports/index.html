@@ -166,8 +166,15 @@ function reportsFilter() {
             this.selected = [...new Set([...this.selected, ...keys])];
         },
         openSelected() {
-            const map = Object.fromEntries(this.all.map(r => [r.key, r.url]));
-            this.selected.forEach(k => { if (map[k]) window.open(map[k], '_blank'); });
+            if (this.selected.length === 0) return;
+            if (this.selected.length === 1) {
+                const map = Object.fromEntries(this.all.map(r => [r.key, r.url]));
+                const k = this.selected[0];
+                if (map[k]) window.open(map[k], '_blank');
+            } else {
+                const multiUrl = '{% url "web:multi_report_detail" %}?reports=' + this.selected.join(',');
+                window.open(multiUrl, '_blank');
+            }
         }
     };
 }

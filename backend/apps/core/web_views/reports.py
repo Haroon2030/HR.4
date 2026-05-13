@@ -248,6 +248,33 @@ def reports_index(request):
 
 @login_required
 @permission_required('reports.view')
+def multi_report_detail(request):
+    report_keys = request.GET.get('reports', '').split(',')
+    selected_reports = []
+    
+    for key in report_keys:
+        key = key.strip()
+        if not key:
+            continue
+        meta = next((r for r in REPORTS if r['key'] == key), None)
+        if meta:
+            builder = BUILDERS.get(key)
+            data = builder(request) if builder else {'columns': [], 'rows': []}
+            selected_reports.append({
+                'meta': meta,
+                'data': data
+            })
+            
+    if not selected_reports:
+        raise Http404("لا توجد تقارير محددة لعرضها")
+        
+    return render(request, 'pages/reports/multi_detail.html', {
+        'reports_data': selected_reports,
+        'reports_count': len(selected_reports)
+    })
+
+@login_required
+@permission_required('reports.view')
 def report_detail(request, report_type):
     meta = next((r for r in REPORTS if r['key'] == report_type), None)
     if not meta:
