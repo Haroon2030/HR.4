@@ -1,24 +1,36 @@
 """
-إعدادات الإنتاج - Production Settings (Dokploy + PostgreSQL)
+إعدادات بيئة الإنتاج — Production Settings
+=============================================
+هذا الملف يحتوي على إعدادات سيرفر الإنتاج الذي يعمل عبر Dokploy.
+يعتمد على قاعدة بيانات PostgreSQL (Neon) وتخزين ملفات عبر Cloudflare R2.
+
+⚠️ جميع القيم الحساسة (مفاتيح، كلمات مرور) تُقرأ من ملف .env — لا تكتبها هنا مباشرة!
 """
 
 import environ
 from .base import *  # noqa: F401,F403
 
+# ── قراءة متغيرات البيئة من ملف .env ──
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Core
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# الإعدادات الأساسية
+# ══════════════════════════════════════════════════════════════════════════════
+
+# المفتاح السري — يُقرأ من .env (إجباري)
 SECRET_KEY = env('SECRET_KEY')
+
+# وضع التصحيح — يجب أن يكون False في الإنتاج دائماً
 DEBUG = env.bool('DEBUG', default=False)
 
+# النطاقات/العناوين المسموح لها بالوصول للسيرفر
 ALLOWED_HOSTS = env.list(
     'ALLOWED_HOSTS',
     default=['72.61.107.230', 'localhost', '127.0.0.1'],
 )
 
+# النطاقات الموثوقة لحماية CSRF (مطلوبة لنماذج POST)
 CSRF_TRUSTED_ORIGINS = env.list(
     'CSRF_TRUSTED_ORIGINS',
     default=[
@@ -27,63 +39,76 @@ CSRF_TRUSTED_ORIGINS = env.list(
     ],
 )
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Database — PostgreSQL (Neon)
-# DATABASE_URL=postgresql://user:pass@host/dbname?sslmode=require
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# قاعدة البيانات — PostgreSQL عبر Neon (خدمة سحابية)
+# صيغة الرابط: postgresql://user:pass@host/dbname?sslmode=require
+# ══════════════════════════════════════════════════════════════════════════════
 DATABASES = {
     'default': env.db('DATABASE_URL'),
 }
-# Persistent connections — huge speedup for managed Postgres (Neon/Supabase).
-# Each request reuses an open connection instead of doing TLS handshake (~200ms).
+
+# الاتصال المستمر — يعيد استخدام الاتصال بدل فتح جديد لكل طلب (توفير ~200ms)
 DATABASES['default'].setdefault('CONN_MAX_AGE', env.int('CONN_MAX_AGE', default=600))
-# Health check before reuse (Django 4.1+) — avoids stale-connection errors.
+
+# فحص صحة الاتصال قبل إعادة استخدامه (Django 4.1+) — يمنع أخطاء الاتصال المنتهي
 DATABASES['default'].setdefault('CONN_HEALTH_CHECKS', True)
 
-# Neon / PgBouncer (transaction-pooler) compatibility:
-# - Disable server-side cursors (not supported in transaction pooling mode)
-# - Force SSL for any external managed Postgres (Neon, Supabase, etc.)
-# - TCP keepalives keep idle connections alive across NAT/proxies
+# إعدادات التوافق مع Neon / PgBouncer:
+# - تعطيل المؤشرات من جانب السيرفر (غير مدعومة في وضع transaction pooling)
+# - تشفير SSL إجباري لقواعد البيانات السحابية
+# - إبقاء الاتصال حياً عبر TCP keepalives لمنع قطعه بواسطة الشبكة
 DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
 _db_options = DATABASES['default'].setdefault('OPTIONS', {})
 _db_options.setdefault('sslmode', env('DB_SSLMODE', default='require'))
-_db_options.setdefault('connect_timeout', 10)
-_db_options.setdefault('keepalives', 1)
-_db_options.setdefault('keepalives_idle', 30)
-_db_options.setdefault('keepalives_interval', 10)
-_db_options.setdefault('keepalives_count', 5)
+_db_options.setdefault('connect_timeout', 10)        # مهلة الاتصال: 10 ثوانٍ
+_db_options.setdefault('keepalives', 1)               # تفعيل keepalive
+_db_options.setdefault('keepalives_idle', 30)          # إرسال أول keepalive بعد 30 ثانية من السكون
+_db_options.setdefault('keepalives_interval', 10)      # تكرار keepalive كل 10 ثوانٍ
+_db_options.setdefault('keepalives_count', 5)           # إغلاق الاتصال بعد 5 محاولات فاشلة
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Cache — local-memory (per-process). Fast for single-VPS deployments.
-# Switch to Redis if you scale to multiple workers/servers.
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# التخزين المؤقت (Cache)
+# يستخدم ذاكرة العملية (LocMemCache) — مناسب لسيرفر واحد (VPS).
+# إذا توسّع النظام لأكثر من worker، استخدم Redis بدلاً منه.
+# ══════════════════════════════════════════════════════════════════════════════
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'hr-default',
-        'TIMEOUT': 300,
-        'OPTIONS': {'MAX_ENTRIES': 5000},
+        'TIMEOUT': 300,                      # انتهاء الصلاحية: 5 دقائق
+        'OPTIONS': {'MAX_ENTRIES': 5000},     # الحد الأقصى للعناصر المُخزّنة
     }
 }
-# Use the cache for sessions too — avoids a DB hit on every authenticated request.
+
+# استخدام التخزين المؤقت للجلسات أيضاً — يقلل الضغط على قاعدة البيانات
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Security (behind reverse proxy / Traefik in Dokploy)
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# الأمان — السيرفر خلف Reverse Proxy (Traefik عبر Dokploy)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# قراءة بروتوكول HTTPS من ترويسة X-Forwarded-Proto (يرسلها Traefik)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
+# إعادة التوجيه لـ HTTPS — معطّل لأن Traefik يتولى ذلك
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+
+# حماية ملفات الكوكيز — تُفعّل عند استخدام HTTPS
 SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
 CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)
+
+# حماية المتصفح من هجمات XSS وContent-Type sniffing
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# منع تحميل الموقع داخل iframe من مواقع خارجية (حماية من Clickjacking)
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CORS
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# CORS — مشاركة الموارد بين المواقع
+# مطلوب إذا كانت الواجهة الأمامية على نطاق مختلف عن الـ API
+# ══════════════════════════════════════════════════════════════════════════════
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
@@ -92,11 +117,11 @@ CORS_ALLOWED_ORIGINS = env.list(
         'http://72.61.107.230:8082',
     ],
 )
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True  # السماح بإرسال الكوكيز مع الطلبات
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Logging — stdout (container friendly)
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# تسجيل الأحداث (Logging) — الإخراج إلى stdout (مناسب للحاويات/Docker)
+# ══════════════════════════════════════════════════════════════════════════════
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -126,43 +151,51 @@ LOGGING = {
     },
 }
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Cloudflare R2 (S3-compatible) media storage
-# Files organized as:  HR/<operation>/<year>/<filename>
-# ──────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# تخزين الملفات — Cloudflare R2 (متوافق مع S3)
+# تنظيم الملفات: HR/<نوع العملية>/<السنة>/<اسم الملف>
+#
+# عند تفعيل USE_R2=True:
+#   - المستندات والمرفقات تُرفع مباشرة على R2
+#   - الملفات الثابتة (CSS/JS) تُخدم عبر WhiteNoise
+# عند USE_R2=False:
+#   - الملفات تُخزّن محلياً على السيرفر (مناسب للتطوير فقط)
+# ══════════════════════════════════════════════════════════════════════════════
 USE_R2 = env.bool('USE_R2', default=False)
 
 if USE_R2:
+    # مفاتيح الوصول لـ Cloudflare R2
     AWS_ACCESS_KEY_ID = env('R2_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('R2_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET_NAME', default='erphr')
     AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT_URL')
-    # R2 requires region 'auto' for the bucket but boto3/SigV4 needs a real
-    # region for signing. 'auto' works with recent boto3 versions.
-    AWS_S3_REGION_NAME = env('R2_REGION', default='auto')
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = None
-    AWS_S3_SIGNATURE_VERSION = 's3v4'
-    # Path-style is more reliable with R2's custom endpoint than virtual-host.
-    AWS_S3_ADDRESSING_STYLE = 'path'
-    AWS_QUERYSTRING_AUTH = False
-    AWS_S3_VERIFY = True
 
-    # Optional public custom domain (e.g. media.yourdomain.com).
-    # If empty, MEDIA_URL falls back to the bucket endpoint.
+    # المنطقة — R2 يستخدم 'auto' لكن boto3 يحتاج قيمة حقيقية للتوقيع
+    AWS_S3_REGION_NAME = env('R2_REGION', default='auto')
+
+    AWS_S3_FILE_OVERWRITE = False    # لا تكتب فوق ملف موجود — أنشئ اسماً جديداً
+    AWS_DEFAULT_ACL = None            # بدون صلاحيات عامة افتراضية
+    AWS_S3_SIGNATURE_VERSION = 's3v4' # إصدار التوقيع المطلوب
+    AWS_S3_ADDRESSING_STYLE = 'path'  # أسلوب path أكثر موثوقية مع R2
+    AWS_QUERYSTRING_AUTH = False       # روابط الملفات بدون توقيع (عامة)
+    AWS_S3_VERIFY = True              # التحقق من شهادة SSL
+
+    # نطاق مخصص للملفات (مثل: media.yourdomain.com)
+    # إذا فارغ، يُستخدم رابط الـ bucket مباشرة
     AWS_S3_CUSTOM_DOMAIN = env('R2_PUBLIC_DOMAIN', default='')
 
+    # محركات التخزين
     STORAGES = {
         'default': {
-            'BACKEND': 'apps.core.storages.HRMediaStorage',
+            'BACKEND': 'apps.core.storages.HRMediaStorage',   # تخزين الملفات المرفوعة
         },
         'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',  # الملفات الثابتة
         },
     }
 
+    # رابط الوصول للملفات المرفوعة
     if AWS_S3_CUSTOM_DOMAIN:
         MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
     else:
         MEDIA_URL = f'{AWS_S3_ENDPOINT_URL.rstrip("/")}/{AWS_STORAGE_BUCKET_NAME}/'
-

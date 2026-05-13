@@ -1,5 +1,24 @@
 """
-واجهات مسير الرواتب الشهري.
+واجهات مسير الرواتب الشهري — Payroll Views
+============================================
+هذا الملف يحتوي على كل شاشات إدارة مسير الرواتب:
+
+  1. list_payroll_runs   — قائمة المسيرات (مع فلاتر + ترقيم صفحات)
+  2. create_payroll_run  — إنشاء/بناء مسير جديد لفرع وشهر
+  3. view_payroll_run    — عرض تفاصيل مسير (أسطر الموظفين)
+  4. rebuild_payroll_run — إعادة بناء مسير DRAFT (يحدّث الأرقام)
+  5. lock_payroll_run    — ترحيل المسير (ربط البنود وتأكيدها)
+  6. unlock_payroll_run  — إلغاء الترحيل (سوبر يوزر فقط)
+  7. export_payroll_run  — تصدير المسير إلى Excel
+
+دورة حياة المسير:
+  DRAFT (مسودة) → بناء/إعادة بناء → LOCKED (مُرحَّل) → تصدير Excel
+  LOCKED → unlock (سوبر يوزر فقط) → DRAFT مرة أخرى
+
+الصلاحيات:
+  - عرض: employees.view
+  - إنشاء/تعديل/ترحيل: employees.edit
+  - إلغاء ترحيل: employees.edit + superuser فقط
 """
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,42 +37,54 @@ from apps.payroll.services.engine import (
 
 
 def _user_branches(user):
-    """يعيد فروع المستخدم (أو كل الفروع للسوبر يوزر / مدير الموارد)."""
+    """
+    جلب الفروع المتاحة للمستخدم.
+    
+    القواعد:
+      - superuser / admin / hr_manager → كل الفروع النشطة
+      - غيرهم → فرعه الشخصي + الفروع التي يديرها + المُسندة إليه
+    """
     from apps.core.models import Role
     if user.is_superuser:
         return Branch.objects.filter(is_active=True).order_by('name')
 
     profile = getattr(user, 'profile', None)
-    # Admin / HR_MANAGER → كل الفروع
+    # الأدمن ومدير الموارد يرون كل الفروع
     if profile and profile.role and profile.role.role_type in (
         Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER,
     ):
         return Branch.objects.filter(is_active=True).order_by('name')
 
-    # باقي المستخدمين: فرعه + الفروع التي يديرها + المُسندة إليه
+    # باقي المستخدمين: تجميع فروعهم المتاحة
     from django.db.models import Q
     branch_ids = set()
     if profile:
         if profile.branch_id:
-            branch_ids.add(profile.branch_id)
-        branch_ids.update(profile.assigned_branches.values_list('id', flat=True))
-    branch_ids.update(user.managed_branches.values_list('id', flat=True))
+            branch_ids.add(profile.branch_id)           # فرعه الشخصي
+        branch_ids.update(profile.assigned_branches.values_list('id', flat=True))  # المُعيّنة
+    branch_ids.update(user.managed_branches.values_list('id', flat=True))           # التي يديرها
 
     if branch_ids:
         return Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name')
     return Branch.objects.none()
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 1. قائمة المسيرات — مع فلاتر (سنة/شهر/فرع/حالة) + ترقيم صفحات
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.view')
 def list_payroll_runs(request):
-    """قائمة المسيرات."""
+    """عرض قائمة مسيرات الرواتب مع إمكانية الفلترة والترقيم."""
     qs = PayrollRun.objects.select_related('branch', 'created_by', 'locked_by')
     user_branches = _user_branches(request.user)
+
+    # تقييد بالفروع المتاحة للمستخدم
     if not request.user.is_superuser:
         qs = qs.filter(branch__in=user_branches)
 
-    # فلاتر
+    # ── تطبيق الفلاتر من معاملات URL ──
     year = request.GET.get('year')
     month = request.GET.get('month')
     branch_id = request.GET.get('branch')
@@ -67,16 +98,17 @@ def list_payroll_runs(request):
     if status:
         qs = qs.filter(status=status)
 
+    # ── ترقيم الصفحات — 20 مسير في كل صفحة ──
     from django.core.paginator import Paginator
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     today = date.today()
     return render(request, 'pages/payroll/list.html', {
-        'runs': page_obj.object_list,
-        'page_obj': page_obj,
-        'paginator': paginator,
-        'branches': user_branches,
+        'runs': page_obj.object_list,        # المسيرات في الصفحة الحالية
+        'page_obj': page_obj,                # كائن الصفحة (للترقيم)
+        'paginator': paginator,              # كائن الترقيم
+        'branches': user_branches,           # الفروع (للقائمة المنسدلة)
         'current_year': today.year,
         'current_month': today.month,
         'years_range': range(today.year - 2, today.year + 1),
@@ -87,13 +119,19 @@ def list_payroll_runs(request):
     })
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 2. إنشاء/بناء مسير — POST فقط
+# يبني مسير DRAFT جديد أو يُحدّث الموجود (إذا لم يكن مُغلقاً)
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.edit')
 def create_payroll_run(request):
-    """إنشاء/إعادة بناء مسير لشهر وفرع محددين."""
+    """إنشاء أو إعادة بناء مسير لشهر وفرع محددين."""
     if request.method != 'POST':
         return redirect('web:list_payroll_runs')
 
+    # قراءة البيانات من النموذج
     try:
         branch_id = int(request.POST.get('branch_id') or 0)
         year = int(request.POST.get('year') or 0)
@@ -102,16 +140,19 @@ def create_payroll_run(request):
         messages.error(request, 'بيانات غير صحيحة.')
         return redirect('web:list_payroll_runs')
 
+    # التحقق من صحة البيانات
     if not (branch_id and 2020 <= year <= 2100 and 1 <= month <= 12):
         messages.error(request, 'يرجى تحديد الفرع والسنة والشهر.')
         return redirect('web:list_payroll_runs')
 
+    # التحقق من صلاحية الوصول للفرع
     branch = get_object_or_404(Branch, id=branch_id)
     user_branches = _user_branches(request.user)
     if not request.user.is_superuser and branch not in user_branches:
         messages.error(request, 'لا تملك صلاحية على هذا الفرع.')
         return redirect('web:list_payroll_runs')
 
+    # بناء المسير عبر محرك الرواتب
     try:
         run = build_payroll_run(branch, year, month, request.user)
     except ValueError as e:
@@ -122,14 +163,19 @@ def create_payroll_run(request):
     return redirect('web:view_payroll_run', run_id=run.id)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 3. عرض تفاصيل مسير — أسطر الموظفين مع كل البنود
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.view')
 def view_payroll_run(request, run_id):
-    """عرض تفاصيل مسير."""
+    """عرض تفاصيل المسير وأسطر الموظفين."""
     run = get_object_or_404(
         PayrollRun.objects.select_related('branch', 'created_by', 'locked_by'),
         id=run_id
     )
+    # فحص صلاحية الفرع
     user_branches = _user_branches(request.user)
     if not request.user.is_superuser and run.branch not in user_branches:
         raise Http404()
@@ -141,12 +187,17 @@ def view_payroll_run(request, run_id):
     })
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 4. إعادة بناء مسير DRAFT — يُحدّث الأرقام بالبيانات الحالية
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.edit')
 def rebuild_payroll_run(request, run_id):
-    """إعادة بناء مسير DRAFT."""
+    """إعادة بناء مسير DRAFT — يمسح الأسطر القديمة ويعيد حسابها."""
     if request.method != 'POST':
         return redirect('web:view_payroll_run', run_id=run_id)
+
     run = get_object_or_404(PayrollRun, id=run_id)
     user_branches = _user_branches(request.user)
     if not request.user.is_superuser and run.branch not in user_branches:
@@ -159,12 +210,17 @@ def rebuild_payroll_run(request, run_id):
     return redirect('web:view_payroll_run', run_id=run.id)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. ترحيل المسير (قفل) — يربط كل بنود الخصم بالمسير ويمنع التعديل
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.edit')
 def lock_payroll_run_view(request, run_id):
-    """ترحيل المسير."""
+    """ترحيل المسير — يُغلق التعديل ويربط بنود الخصم."""
     if request.method != 'POST':
         return redirect('web:view_payroll_run', run_id=run_id)
+
     run = get_object_or_404(PayrollRun, id=run_id)
     user_branches = _user_branches(request.user)
     if not request.user.is_superuser and run.branch not in user_branches:
@@ -177,15 +233,28 @@ def lock_payroll_run_view(request, run_id):
     return redirect('web:view_payroll_run', run_id=run.id)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. إلغاء الترحيل — سوبر يوزر فقط!
+# يفك ربط كل بنود الخصم ويعيد المسير لحالة DRAFT
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.edit')
 def unlock_payroll_run_view(request, run_id):
-    """إعادة فتح المسير (سوبر يوزر فقط)."""
+    """
+    إعادة فتح مسير مُرحَّل — سوبر يوزر فقط!
+    
+    ⚠️ تحذير: هذا يفك ربط كل بنود الخصم (غياب، سلف، مخالفات)
+    ويعيدها لحالة "غير مُحتسبة" — يجب إعادة بناء المسير بعدها.
+    """
     if request.method != 'POST':
         return redirect('web:view_payroll_run', run_id=run_id)
+
+    # فحص مزدوج: decorator + فحص داخلي
     if not request.user.is_superuser:
         messages.error(request, 'صلاحية إعادة فتح المسير للسوبر يوزر فقط.')
         return redirect('web:view_payroll_run', run_id=run_id)
+
     run = get_object_or_404(PayrollRun, id=run_id)
     try:
         unlock_payroll_run(run, request.user)
@@ -195,10 +264,20 @@ def unlock_payroll_run_view(request, run_id):
     return redirect('web:view_payroll_run', run_id=run.id)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 7. تصدير المسير إلى Excel — ملف .xlsx قابل للتنزيل
+# ══════════════════════════════════════════════════════════════════════════════
+
 @login_required
 @permission_required('employees.view')
 def export_payroll_run_excel(request, run_id):
-    """تصدير المسير إلى Excel."""
+    """
+    تصدير المسير إلى ملف Excel (.xlsx).
+    يتطلب مكتبة openpyxl.
+    
+    أعمدة الملف:
+      الموظف | الراتب الأساسي | البدلات | الإجمالي | الخصومات | الصافي
+    """
     try:
         from openpyxl import Workbook
     except ImportError:
@@ -206,15 +285,19 @@ def export_payroll_run_excel(request, run_id):
         return redirect('web:view_payroll_run', run_id=run_id)
 
     run = get_object_or_404(PayrollRun.objects.select_related('branch'), id=run_id)
+
+    # فحص صلاحية الفرع
     user_branches = _user_branches(request.user)
     if not request.user.is_superuser and run.branch not in user_branches:
         raise Http404()
 
+    # إنشاء ملف Excel
     wb = Workbook()
     ws = wb.active
     ws.title = 'مسير الرواتب'
-    ws.sheet_view.rightToLeft = True
+    ws.sheet_view.rightToLeft = True  # دعم RTL للعربية
 
+    # ── رؤوس الأعمدة ──
     headers = [
         'الموظف', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي',
         'مكافأة', 'ساعات إضافية',
@@ -223,6 +306,8 @@ def export_payroll_run_excel(request, run_id):
         'إجمالي الاستحقاقات', 'إجمالي الخصومات', 'الصافي'
     ]
     ws.append(headers)
+
+    # ── أسطر الموظفين ──
     for line in run.lines.select_related('employee').order_by('employee__name'):
         ws.append([
             line.employee.name,
@@ -238,6 +323,7 @@ def export_payroll_run_excel(request, run_id):
             float(line.net_salary),
         ])
 
+    # ── إرسال الملف كتنزيل ──
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )

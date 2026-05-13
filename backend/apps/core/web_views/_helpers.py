@@ -1,6 +1,20 @@
 """
-Django Template Views - واجهة الويب
-نظام إدارة الموارد البشرية
+دوال مساعدة لواجهات الويب — Web Views Helpers
+===============================================
+هذا الملف يحتوي على أدوات مشتركة تُستخدم من قِبل كل Views الويب:
+
+1. Decorators لفحص الأدوار:
+   - admin_required — يتطلب دور أدمن
+   - branch_manager_required — يتطلب أن يكون مدير فرع
+   - general_manager_required — يتطلب مدير عام أو مدير موارد
+   - hr_officer_required — يتطلب موظف موارد
+   - employee_branch_access_required — يتحقق من أن المستخدم له حق الوصول لفرع الموظف
+
+2. دوال فحص الأدوار:
+   - _is_branch_manager — هل يدير فرعاً واحداً على الأقل؟
+   - _is_general_manager — هل هو مدير عام / مدير موارد / سوبر يوزر؟
+   - _is_hr_officer — هل هو موظف موارد؟
+   - _can_act_at_stage — هل يحق له اتخاذ قرار في مرحلة معينة من دورة الموافقات؟
 """
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
@@ -9,28 +23,31 @@ from functools import wraps
 from apps.core.models import Role
 
 
-# =============================================================================
-# Custom Decorators
-# =============================================================================
+# ══════════════════════════════════════════════════════════════════════════════
+# Decorator: فحص دور الأدمن
+# ══════════════════════════════════════════════════════════════════════════════
 
 def admin_required(view_func):
-    """تحقق من أن المستخدم لديه دور أدمن"""
+    """
+    يتحقق من أن المستخدم لديه دور أدمن أو أنه superuser.
+    يُستخدم لحماية صفحات الإدارة العامة (إعدادات، مستخدمين، إلخ).
+    """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('web:auth:login')
         
-        # السماح لـ superuser بالدخول مباشرة
+        # السوبر يوزر يمر مباشرة
         if request.user.is_superuser:
             return view_func(request, *args, **kwargs)
         
-        # التحقق من دور الأدمن عبر الـ Profile
+        # فحص دور الأدمن عبر الـ Profile
         try:
             user_profile = request.user.profile
             if user_profile.role and user_profile.role.role_type == Role.RoleType.ADMIN:
                 return view_func(request, *args, **kwargs)
         except Exception as e:
-            # لا يوجد profile للمستخدم
+            # المستخدم ليس لديه profile
             pass
         
         messages.error(request, 'ليس لديك صلاحية للوصول إلى هذه الصفحة')
@@ -38,16 +55,21 @@ def admin_required(view_func):
     return wrapper
 
 
-# =============================================================================
-# Authentication Views
-# =============================================================================
+# ══════════════════════════════════════════════════════════════════════════════
+# دوال فحص الأدوار
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _is_branch_manager(user):
-    """هل المستخدم مدير فرع؟ (يدير فرعاً واحداً على الأقل)"""
+    """
+    هل المستخدم مدير فرع؟ 
+    يكون مديراً إذا كان يدير فرعاً واحداً على الأقل (عبر managed_branches).
+    السوبر يوزر يُعتبر مديراً لكل الفروع.
+    """
     return user.is_superuser or user.managed_branches.filter(is_deleted=False).exists()
 
 
 def branch_manager_required(view_func):
+    """Decorator: يتطلب أن يكون المستخدم مدير فرع."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -60,22 +82,38 @@ def branch_manager_required(view_func):
 
 
 def _user_accessible_branch_ids(user):
-    """قائمة الفروع التي يحقّ للمستخدم العمل عليها (admin/superuser = الكل)."""
+    """
+    قائمة معرّفات الفروع التي يحق للمستخدم العمل عليها.
+    
+    القواعد:
+      - admin / superuser → None (أي فرع)
+      - غيرهم → الفروع التي يديرها + فرعه الشخصي + الفروع المُعيّنة له
+    """
     if user.is_superuser:
-        return None  # أي فرع
+        return None  # بدون قيود — يصل لأي فرع
+    
     profile = getattr(user, 'profile', None)
     if profile and profile.role and profile.role.role_type == Role.RoleType.ADMIN:
-        return None
-    ids = set(user.managed_branches.values_list('id', flat=True))
+        return None  # الأدمن مثل السوبر يوزر
+    
+    # تجميع كل الفروع المتاحة
+    ids = set(user.managed_branches.values_list('id', flat=True))  # الفروع التي يديرها
     if profile:
         if profile.branch_id:
-            ids.add(profile.branch_id)
-        ids.update(profile.assigned_branches.values_list('id', flat=True))
+            ids.add(profile.branch_id)  # فرعه الشخصي
+        ids.update(profile.assigned_branches.values_list('id', flat=True))  # الفروع المُعيّنة
     return ids
 
 
 def employee_branch_access_required(view_func):
-    """يمنع الوصول للموظف ما لم يكن المستخدم admin/مدير الفرع/أخصائي الفرع."""
+    """
+    Decorator: يمنع الوصول لملف الموظف ما لم يكن المستخدم:
+      - admin / superuser
+      - أو مدير فرع الموظف
+      - أو أخصائي مُعيّن على فرع الموظف
+    
+    ⚠️ يتوقع أن المعامل الأول بعد request هو employee_id.
+    """
     @wraps(view_func)
     def wrapper(request, employee_id, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -91,9 +129,13 @@ def employee_branch_access_required(view_func):
 
 
 def _can_review_action(user, action):
-    """يحدّد ما إذا كان المستخدم يستطيع الموافقة/الرفض على هذا الطلب."""
+    """
+    هل يستطيع المستخدم الموافقة/الرفض على طلب معيّن؟
+    يُستخدم في المرحلة الأولى (مدير الفرع).
+    """
     if user.is_superuser:
         return True
+    # هل يدير فرع الطلب؟
     if action.branch_id and action.branch_id in list(
         user.managed_branches.values_list('id', flat=True)
     ):
@@ -101,12 +143,12 @@ def _can_review_action(user, action):
     return False
 
 
-# =============================================================================
-# دورة الموافقات متعدّدة المراحل (Phase 2)
-# =============================================================================
+# ══════════════════════════════════════════════════════════════════════════════
+# دورة الموافقات متعددة المراحل — فحص الصلاحيات
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _user_role_type(user):
-    """يُرجع role_type للمستخدم أو None."""
+    """يُرجع نوع دور المستخدم (role_type) أو None إذا بدون دور."""
     profile = getattr(user, 'profile', None)
     if profile and profile.role:
         return profile.role.role_type
@@ -114,7 +156,11 @@ def _user_role_type(user):
 
 
 def _is_general_manager(user):
-    """المدير العام = superuser أو دور admin أو hr_manager."""
+    """
+    هل المستخدم مدير عام؟
+    المدير العام = superuser أو دور admin أو دور hr_manager.
+    هؤلاء هم من يرون كل الطلبات ويوافقون في مرحلة PENDING_GM.
+    """
     if not user.is_authenticated:
         return False
     if user.is_superuser:
@@ -124,27 +170,44 @@ def _is_general_manager(user):
 
 
 def _is_hr_officer(user):
-    """موظف موارد = الذي يستلم المهام المُسندة من المدير العام."""
+    """
+    هل المستخدم موظف موارد؟
+    موظف الموارد = الذي يستلم المهام المُسندة من المدير العام وينفّذها.
+    """
     if not user.is_authenticated:
         return False
     return _user_role_type(user) == Role.RoleType.HR_OFFICER
 
 
 def _can_act_at_stage(user, action, stage):
-    """يحدّد إن كان للمستخدم حق الموافقة/الإرجاع في هذه المرحلة."""
+    """
+    هل يحق للمستخدم اتخاذ قرار (موافقة/إرجاع) في مرحلة معينة؟
+    
+    المراحل:
+      BRANCH  → مدير الفرع (يدير فرع الطلب)
+      GM      → المدير العام (admin / hr_manager / superuser)
+      OFFICER → موظف الموارد (المُسند إليه هذا الطلب تحديداً)
+    """
     from apps.core.models import PendingAction
+    
+    # السوبر يوزر يقدر على كل شيء
     if user.is_superuser:
         return True
+    
     if stage == PendingAction.Stage.BRANCH:
-        return _can_review_action(user, action)
+        return _can_review_action(user, action)  # مدير فرع الطلب
+    
     if stage == PendingAction.Stage.GM:
-        return _is_general_manager(user)
+        return _is_general_manager(user)  # مدير عام / مدير موارد
+    
     if stage == PendingAction.Stage.OFFICER:
-        return action.assigned_officer_id == user.id
+        return action.assigned_officer_id == user.id  # الموظف المُسند إليه فقط
+    
     return False
 
 
 def general_manager_required(view_func):
+    """Decorator: يتطلب أن يكون المستخدم مديراً عاماً أو مدير موارد."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -157,6 +220,7 @@ def general_manager_required(view_func):
 
 
 def hr_officer_required(view_func):
+    """Decorator: يتطلب أن يكون المستخدم موظف موارد أو سوبر يوزر."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -166,5 +230,3 @@ def hr_officer_required(view_func):
         messages.error(request, 'هذه الصفحة متاحة لموظفي الموارد فقط')
         return redirect('web:dashboard')
     return wrapper
-
-
