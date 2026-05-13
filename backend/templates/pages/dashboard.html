@@ -76,11 +76,12 @@
     </div>
     {% endif %}
 
-    <!-- ═══ Main Grid: Tasks + Sidebar ═══ -->
-    <div class="grid grid-cols-1 {% if show_overview %}lg:grid-cols-3{% endif %} gap-6">
+    <!-- ═══ Main Grid: Tasks + Charts ═══ -->
+    <div class="grid grid-cols-1 {% if show_overview %}lg:grid-cols-2{% endif %} gap-6">
 
+        {% if not show_overview %}
         <!-- Tasks column -->
-        <div class="{% if show_overview %}lg:col-span-2{% endif %} space-y-6">
+        <div class="space-y-6">
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <!-- Header + Search -->
@@ -180,10 +181,10 @@
             </div>
 
         </div>
+        {% endif %}
 
         {% if show_overview %}
-        <!-- Sidebar column -->
-        <div class="space-y-6">
+        <!-- Charts (Admin/Manager View) -->
 
             <!-- توزيع حالة الموظفين -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
@@ -260,7 +261,6 @@
             </div>
             {% endif %}
 
-        </div>
         {% endif %}
     </div>
 </div>
