@@ -58,6 +58,14 @@ def dashboard_view(request):
         PendingAction.Status.APPROVED,
     ]).count()
 
+    clearance_count = pa_qs.filter(
+        action_type__in=[
+            PendingAction.ActionType.CUSTODY_CLEAR,
+            PendingAction.ActionType.TERMINATE,
+            PendingAction.ActionType.CONTRACT_END
+        ]
+    ).exclude(status=PendingAction.Status.APPROVED).count()
+
     # توزيع الموظفين حسب الفرع (Top 6)
     branch_distribution = list(
         emp_qs_all.values('branch__name')
@@ -65,6 +73,22 @@ def dashboard_view(request):
         .order_by('-c')[:6]
     )
     max_branch = max((b['c'] for b in branch_distribution), default=1) or 1
+
+    # توزيع حسب الجنس
+    gender_distribution = list(
+        emp_qs_all.values('gender')
+        .annotate(c=Count('id'))
+        .order_by('-c')
+    )
+    max_gender = max((g['c'] for g in gender_distribution), default=1) or 1
+
+    # توزيع حسب الجنسية (Top 6)
+    nationality_distribution = list(
+        emp_qs_all.values('nationality__name')
+        .annotate(c=Count('id'))
+        .order_by('-c')[:6]
+    )
+    max_nationality = max((n['c'] for n in nationality_distribution), default=1) or 1
 
     stats = {
         'employees_total': emp_status_counts['total'] or 0,
@@ -74,6 +98,7 @@ def dashboard_view(request):
         'employees_terminated': emp_status_counts['terminated'] or 0,
         'employment_requests_open': er_open_count,
         'pending_actions_open': pa_open_count,
+        'clearance_open': clearance_count,
         'branches_count': Branch.objects.filter(is_deleted=False).count() if request.user.is_superuser else len(accessible_branch_ids),
     }
 
@@ -81,6 +106,10 @@ def dashboard_view(request):
         'stats': stats,
         'branch_distribution': branch_distribution,
         'max_branch': max_branch,
+        'gender_distribution': gender_distribution,
+        'max_gender': max_gender,
+        'nationality_distribution': nationality_distribution,
+        'max_nationality': max_nationality,
         'show_overview': bool(request.user.is_superuser or _is_general_manager(request.user)),
         'is_branch_manager': False,
         'pending_requests': [],

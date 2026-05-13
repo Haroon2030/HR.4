@@ -25,7 +25,7 @@
 
     {% if show_overview %}
     <!-- ═══ KPI Stats Cards ═══ -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 md:gap-4">
         <a href="{% url 'web:list_employees' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-primary-300 transition">
             <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center mb-2 group-hover:bg-primary-100 transition">
                 <i data-lucide="users" class="w-5 h-5"></i>
@@ -73,6 +73,22 @@
             <p class="text-xs text-slate-500 font-medium">عمليات معلّقة</p>
             <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.pending_actions_open|default:0 }}</p>
         </a>
+
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="w-10 h-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center mb-2">
+                <i data-lucide="user-minus" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">منتهية العقود</p>
+            <p class="text-2xl font-bold text-slate-700 mt-1">{{ stats.employees_terminated|default:0 }}</p>
+        </div>
+
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">قيد التصفية</p>
+            <p class="text-2xl font-bold text-orange-700 mt-1">{{ stats.clearance_open|default:0 }}</p>
+        </div>
     </div>
     {% endif %}
 
@@ -254,6 +270,52 @@
                         </div>
                         <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div class="h-full bg-gradient-to-l from-primary-500 to-indigo-500 rounded-full" style="width: {% widthratio b.c max_branch 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- توزيع حسب الجنس -->
+            {% if gender_distribution %}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-800">الموظفون حسب الجنس</h3>
+                    <i data-lucide="users" class="w-4 h-4 text-slate-400"></i>
+                </div>
+                <div class="space-y-3">
+                    {% for g in gender_distribution %}
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium truncate">{% if g.gender == 'male' %}ذكر{% elif g.gender == 'female' %}أنثى{% else %}غير محدد{% endif %}</span>
+                            <span class="text-slate-800 font-bold">{{ g.c }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full {% if g.gender == 'female' %}bg-pink-500{% else %}bg-blue-500{% endif %} rounded-full" style="width: {% widthratio g.c max_gender 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- توزيع حسب الجنسية -->
+            {% if nationality_distribution %}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-800">الموظفون حسب الجنسية</h3>
+                    <i data-lucide="globe" class="w-4 h-4 text-slate-400"></i>
+                </div>
+                <div class="space-y-3">
+                    {% for n in nationality_distribution %}
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-medium truncate">{{ n.nationality__name|default:"بدون جنسية" }}</span>
+                            <span class="text-slate-800 font-bold">{{ n.c }}</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-l from-emerald-500 to-teal-500 rounded-full" style="width: {% widthratio n.c max_nationality 100 %}%"></div>
                         </div>
                     </div>
                     {% endfor %}
