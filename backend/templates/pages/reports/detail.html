@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}{{ report_meta.title }} — التقارير{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    {# Breadcrumb #}
+    <nav class="text-xs text-slate-500 mb-4 flex items-center gap-1">
+        <a href="{% url 'web:reports_index' %}" class="hover:text-primary-600 inline-flex items-center gap-1">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> التقارير
+        </a>
+        {% if group_meta %}
+        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        <span class="text-slate-600">{{ group_meta.title }}</span>
+        {% endif %}
+        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        <span class="text-slate-700 font-semibold">{{ report_meta.title }}</span>
+    </nav>
+
+    {# Header #}
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-{{ report_meta.color }}-50 text-{{ report_meta.color }}-600 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="{{ report_meta.icon }}" class="w-6 h-6"></i>
+        </div>
+        <div class="min-w-0">
+            <h1 class="text-xl font-bold text-slate-800">{{ report_meta.title }}</h1>
+            <p class="text-xs text-slate-500 mt-0.5">{{ report_meta.description }}</p>
+        </div>
+    </div>
+
+    {# ═══════ Report Body ═══════ #}
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5">
+
+    {% if report_type == 'headcount_summary' %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+            <div class="bg-primary-50 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-primary-700">{{ data.total }}</div>
+                <div class="text-xs text-primary-600 mt-1">إجمالي الموظفين</div>
+            </div>
+            <div class="bg-emerald-50 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-emerald-700">{{ data.active }}</div>
+                <div class="text-xs text-emerald-600 mt-1">نشط / في إجازة</div>
+            </div>
+        </div>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الحالة</th><th class="text-center p-2.5">العدد</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.status }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'branches' %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">الموظفين</th><th class="text-left p-2.5">إجمالي الرواتب</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.name|default:"غير محدد" }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td><td class="text-left p-2.5 text-emerald-700 font-semibold">{{ r.total_salary|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr class="border-t-2 border-slate-300 bg-slate-50 font-bold"><td class="p-2.5">المجموع</td><td class="text-center p-2.5">{{ data.total }}</td><td></td></tr></tfoot></table>
+
+    {% elif report_type == 'departments_overview' %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الفرع</th><th class="text-right p-2.5">القسم</th><th class="text-center p-2.5">العدد</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="p-2.5">{{ r.dept_name|default:"غير محدد" }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'cost_centers_overview' %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">مركز التكلفة</th><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">العدد</th><th class="text-left p-2.5">التكلفة</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.cc_name|default:"غير محدد" }}</td><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td><td class="text-left p-2.5 text-emerald-700">{{ r.total_salary|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'salary_expenses' %}
+        <div class="bg-emerald-50 rounded-lg p-4 text-center mb-5">
+            <div class="text-2xl font-bold text-emerald-700">{{ data.grand_total|floatformat:2 }} <span class="text-sm font-normal">ر.س</span></div>
+            <div class="text-xs text-emerald-600 mt-1">إجمالي مصاريف الرواتب الشهرية</div>
+        </div>
+        <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2">الفرع</th><th class="text-center p-2">عدد</th><th class="p-2">أساسي</th><th class="p-2">سكن</th><th class="p-2">نقل</th><th class="p-2">إضافي</th><th class="p-2">كاش</th><th class="p-2 font-bold">الإجمالي</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2">{{ r.name|default:"—" }}</td><td class="text-center p-2">{{ r.count }}</td><td class="p-2">{{ r.basic|floatformat:0 }}</td><td class="p-2">{{ r.housing|floatformat:0 }}</td><td class="p-2">{{ r.transport|floatformat:0 }}</td><td class="p-2">{{ r.other|floatformat:0 }}</td><td class="p-2">{{ r.cash|floatformat:0 }}</td><td class="p-2 font-bold text-emerald-700">{{ r.total|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>
+
+    {% elif report_type == 'allowances_breakdown' %}
+        <div class="bg-emerald-50 rounded-lg p-4 text-center mb-5">
+            <div class="text-2xl font-bold text-emerald-700">{{ data.total|floatformat:2 }} <span class="text-sm font-normal">ر.س</span></div>
+            <div class="text-xs text-emerald-600 mt-1">إجمالي البدلات الشهرية</div>
+        </div>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">نوع البدل</th><th class="text-left p-2.5">المبلغ</th></tr></thead>
+        <tbody>{% for i in data.items %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ i.name }}</td><td class="text-left p-2.5 font-bold text-emerald-700">{{ i.amount|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'deductions_breakdown' %}
+        {% if data.run %}
+        <p class="text-xs text-slate-500 mb-3">من آخر مسير مُرحَّل: {{ data.run }}</p>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">نوع الخصم</th><th class="text-left p-2.5">المبلغ</th></tr></thead>
+        <tbody>{% for i in data.items %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ i.name }}</td><td class="text-left p-2.5 font-bold text-rose-600">{{ i.amount|floatformat:2 }}</td></tr>{% endfor %}
+        <tr class="border-t-2 border-slate-300 bg-slate-50"><td class="p-2.5 font-bold">الإجمالي</td><td class="text-left p-2.5 font-bold text-rose-700">{{ data.total|floatformat:2 }}</td></tr></tbody></table>
+        {% else %}<p class="text-center text-slate-500 py-8">لا يوجد مسير مُرحَّل حتى الآن.</p>{% endif %}
+
+    {% elif report_type == 'insurance_costs' %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">شركة التأمين</th><th class="text-right p-2.5">الفئة</th><th class="text-center p-2.5">العدد</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.insurance_name|default:"—" }}</td><td class="p-2.5">{{ r.class_name|default:"—" }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr class="border-t-2 border-slate-300 bg-slate-50"><td colspan="2" class="p-2.5 font-bold">إجمالي المؤمّن عليهم</td><td class="text-center p-2.5 font-bold">{{ data.total }}</td></tr></tfoot></table>
+
+    {% elif report_type == 'new_hires' %}
+        <p class="text-xs text-slate-500 mb-3">{{ data.period }} — {{ data.total }} موظف</p>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الاسم</th><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">تاريخ التعيين</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.name }}</td><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="text-center p-2.5">{{ r.hire_date }}</td></tr>{% endfor %}</tbody></table>
+        {% if not data.rows %}<p class="text-center text-slate-400 py-6">لا توجد تعيينات في هذه الفترة</p>{% endif %}
+
+    {% elif report_type == 'terminations' %}
+        <p class="text-xs text-slate-500 mb-3">{{ data.period }} — {{ data.total }} موظف</p>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الاسم</th><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">تاريخ الإنهاء</th><th class="text-right p-2.5">السبب</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.name }}</td><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="text-center p-2.5">{{ r.end_date }}</td><td class="p-2.5 text-xs text-slate-500">{{ r.end_reason|default:"—" }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'turnover_rate' %}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-indigo-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-indigo-700">{{ data.active }}</div><div class="text-xs text-indigo-600 mt-1">نشط حالياً</div></div>
+            <div class="bg-emerald-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-emerald-700">{{ data.hired }}</div><div class="text-xs text-emerald-600 mt-1">تعيينات جديدة</div></div>
+            <div class="bg-rose-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-rose-700">{{ data.terminated }}</div><div class="text-xs text-rose-600 mt-1">إنهاء خدمات</div></div>
+            <div class="bg-amber-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-amber-700">{{ data.rate }}%</div><div class="text-xs text-amber-600 mt-1">معدل الدوران</div></div>
+        </div>
+
+    {% elif report_type == 'tenure_analysis' %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">فترة الخدمة</th><th class="text-center p-2.5">العدد</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.label }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'passport_expiry' %}
+        <div class="grid grid-cols-2 gap-3 mb-5">
+            <div class="bg-rose-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-rose-700">{{ data.expired_count }}</div><div class="text-xs text-rose-600 mt-1">منتهي</div></div>
+            <div class="bg-amber-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-amber-700">{{ data.expiring_count }}</div><div class="text-xs text-amber-600 mt-1">ينتهي خلال 90 يوم</div></div>
+        </div>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الاسم</th><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">تاريخ الانتهاء</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.name }}</td><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="text-center p-2.5">{{ r.passport_expiry_date }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'health_cards' %}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-emerald-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-emerald-700">{{ data.available }}</div><div class="text-xs text-emerald-600 mt-1">ساري</div></div>
+            <div class="bg-amber-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-amber-700">{{ data.expiring }}</div><div class="text-xs text-amber-600 mt-1">ينتهي قريباً</div></div>
+            <div class="bg-rose-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-rose-700">{{ data.expired }}</div><div class="text-xs text-rose-600 mt-1">منتهي</div></div>
+            <div class="bg-slate-100 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-slate-700">{{ data.not_available }}</div><div class="text-xs text-slate-600 mt-1">غير متوفر</div></div>
+        </div>
+
+    {% elif report_type == 'warnings' %}
+        <p class="text-xs text-slate-500 mb-3">آخر سنة — {{ data.total }} سجل</p>
+        {% if data.type_rows %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">{% for t in data.type_rows %}<div class="bg-rose-50 rounded-lg p-3 text-center"><div class="text-lg font-bold text-rose-700">{{ t.count }}</div><div class="text-[11px] text-rose-600">{{ t.type }}</div></div>{% endfor %}</div>
+        {% endif %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الموظف</th><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">العدد</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.emp_name }}</td><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="text-center p-2.5 font-bold text-rose-600">{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'leaves' %}
+        <p class="text-xs text-slate-500 mb-3">سنة {{ data.year }} — {{ data.total }} إجازة</p>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">نوع الإجازة</th><th class="text-center p-2.5">العدد</th><th class="text-center p-2.5">إجمالي الأيام</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.type }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td><td class="text-center p-2.5">{{ r.days }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'leave_balance' %}
+        <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2">الموظف</th><th class="text-right p-2">الفرع</th><th class="text-center p-2">المستحق</th><th class="text-center p-2">المستخدم</th><th class="text-center p-2">المتبقي</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2">{{ r.name }}</td><td class="p-2">{{ r.branch }}</td><td class="text-center p-2">{{ r.accrued }}</td><td class="text-center p-2">{{ r.used }}</td><td class="text-center p-2 font-bold {% if r.remaining <= 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">{{ r.remaining }}</td></tr>{% endfor %}</tbody></table></div>
+
+    {% elif report_type == 'absences' %}
+        <p class="text-xs text-slate-500 mb-3">سنة {{ data.year }}</p>
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">الموظف</th><th class="text-right p-2.5">الفرع</th><th class="text-center p-2.5">مرات</th><th class="text-center p-2.5">أيام</th><th class="text-left p-2.5">خصم</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.emp_name }}</td><td class="p-2.5">{{ r.branch_name|default:"—" }}</td><td class="text-center p-2.5">{{ r.count }}</td><td class="text-center p-2.5 font-bold">{{ r.total_days }}</td><td class="text-left p-2.5 text-rose-600">{{ r.total_deduction|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'gender' %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {% for r in data.rows %}<div class="bg-amber-50 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-amber-700">{{ r.count }}</div><div class="text-xs text-amber-600 mt-1">{{ r.label }}</div></div>{% endfor %}
+            <div class="bg-slate-100 rounded-lg p-4 text-center"><div class="text-2xl font-bold text-slate-700">{{ data.total }}</div><div class="text-xs text-slate-600 mt-1">المجموع</div></div>
+        </div>
+
+    {% elif report_type == 'nationality' or report_type == 'professions' %}
+        <table class="w-full text-sm"><thead><tr class="bg-slate-50 text-slate-600"><th class="text-right p-2.5">{% if report_type == 'nationality' %}الجنسية{% else %}المهنة{% endif %}</th><th class="text-center p-2.5">العدد</th></tr></thead>
+        <tbody>{% for r in data.rows %}<tr class="border-t border-slate-100"><td class="p-2.5">{{ r.label }}</td><td class="text-center p-2.5 font-bold">{{ r.count }}</td></tr>{% endfor %}</tbody></table>
+
+    {% elif report_type == 'id_expiry' %}
+        <div class="text-center py-8">
+            <p class="text-sm text-slate-500">{{ data.note }}</p>
+        </div>
+
+    {% elif report_type == 'age_distribution' %}
+        <div class="text-center py-8">
+            <p class="text-sm text-slate-500">{{ data.note }}</p>
+        </div>
+
+    {% else %}
+        <div class="text-center py-12">
+            <i data-lucide="construction" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
+            <p class="text-sm text-slate-500">هذا التقرير قيد التطوير</p>
+        </div>
+    {% endif %}
+
+    </div>
+
+    {# Siblings #}
+    {% if siblings %}
+    <div class="mt-6">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">تقارير أخرى: {{ group_meta.title }}</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {% for r in siblings %}
+            <a href="{% url 'web:report_detail' report_type=r.key %}"
+               class="bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:bg-{{ r.color }}-50 rounded-lg px-3 py-2 text-xs text-slate-700 font-semibold flex items-center gap-2 transition-colors">
+                <i data-lucide="{{ r.icon }}" class="w-3.5 h-3.5"></i>
+                <span class="truncate">{{ r.title }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+<script>document.addEventListener('DOMContentLoaded', () => lucide.createIcons());</script>
+{% endblock %}
