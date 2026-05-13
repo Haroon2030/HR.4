@@ -101,6 +101,20 @@ def build_payroll_run(branch, year: int, month: int, user=None):
             continue
         seen_ids.add(emp.id)
 
+        # ── حماية النقل نصف الشهر ─────────────────────────────
+        # إذا الموظف مُحتسب في مسير LOCKED لفرع آخر لنفس الشهر → تخطّي
+        # هذا يمنع ازدواج الراتب عند النقل بين الفروع خلال الشهر
+        already_in_locked = PayrollLine.objects.filter(
+            employee=emp,
+            run__period_year=year,
+            run__period_month=month,
+            run__status=PayrollRun.Status.LOCKED,
+        ).exclude(run=run).exists()
+        if already_in_locked:
+            # الموظف محسوب في مسير مُرحَّل لفرع آخر — لا نحسبه مرتين
+            PayrollLine.all_objects.filter(run=run, employee=emp).delete()
+            continue
+
         # حذف أي سطر قديم لنفس الموظف (حماية من القيد الفريد)
         PayrollLine.all_objects.filter(run=run, employee=emp).delete()
 
