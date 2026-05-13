@@ -80,7 +80,7 @@ def _inbox_for(user, qs):
             else Q(status=PendingAction.Status.PENDING_OFFICER)
         has_filter = True
     f |= Q(status=PendingAction.Status.RETURNED, requested_by=user)
-    return qs.filter(f) if has_filter or True else qs.none()
+    return qs.filter(f) if has_filter else qs.none()
 
 
 # =============================================================================
@@ -243,33 +243,34 @@ def list_pending_actions(request):
     paginator = Paginator(rows, 10)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
-    # ─ العدّادات الموحّدة ─────────────────────────────────────────
+    # ─ العدّادات الموحّدة (aggregate لتقليل الاستعلامات) ────────
+    from django.db.models import Count, Case, When, IntegerField
+    pa_agg = base.aggregate(
+        c_branch=Count('id', filter=Q(status=PendingAction.Status.PENDING_BRANCH)),
+        c_gm=Count('id', filter=Q(status=PendingAction.Status.PENDING_GM)),
+        c_officer=Count('id', filter=Q(status=PendingAction.Status.PENDING_OFFICER)),
+        c_returned=Count('id', filter=Q(status=PendingAction.Status.RETURNED)),
+        c_approved=Count('id', filter=Q(status=PendingAction.Status.APPROVED)),
+        c_mine=Count('id', filter=Q(requested_by=request.user)),
+    )
+    hr_agg = base_hire.aggregate(
+        c_branch=Count('id', filter=Q(status=EmploymentRequest.Status.PENDING_BRANCH)),
+        c_gm=Count('id', filter=Q(status=EmploymentRequest.Status.PENDING_GM)),
+        c_officer=Count('id', filter=Q(status=EmploymentRequest.Status.PENDING_OFFICER)),
+        c_approved=Count('id', filter=Q(status=EmploymentRequest.Status.APPROVED)),
+        c_mine=Count('id', filter=Q(requested_by=request.user)),
+    )
     counts = {
         'inbox': (
             _inbox_for(request.user, base).count()
             + _inbox_for_hire(request.user, base_hire).count()
         ),
-        'pending_branch': (
-            base.filter(status=PendingAction.Status.PENDING_BRANCH).count()
-            + base_hire.filter(status=EmploymentRequest.Status.PENDING_BRANCH).count()
-        ),
-        'pending_gm': (
-            base.filter(status=PendingAction.Status.PENDING_GM).count()
-            + base_hire.filter(status=EmploymentRequest.Status.PENDING_GM).count()
-        ),
-        'pending_officer': (
-            base.filter(status=PendingAction.Status.PENDING_OFFICER).count()
-            + base_hire.filter(status=EmploymentRequest.Status.PENDING_OFFICER).count()
-        ),
-        'returned': base.filter(status=PendingAction.Status.RETURNED).count(),
-        'approved': (
-            base.filter(status=PendingAction.Status.APPROVED).count()
-            + base_hire.filter(status=EmploymentRequest.Status.APPROVED).count()
-        ),
-        'mine': (
-            base.filter(requested_by=request.user).count()
-            + base_hire.filter(requested_by=request.user).count()
-        ),
+        'pending_branch': pa_agg['c_branch'] + hr_agg['c_branch'],
+        'pending_gm': pa_agg['c_gm'] + hr_agg['c_gm'],
+        'pending_officer': pa_agg['c_officer'] + hr_agg['c_officer'],
+        'returned': pa_agg['c_returned'],
+        'approved': pa_agg['c_approved'] + hr_agg['c_approved'],
+        'mine': pa_agg['c_mine'] + hr_agg['c_mine'],
     }
 
     return render(request, 'pages/pending_actions/list.html', {

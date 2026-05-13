@@ -28,10 +28,14 @@ def _execute_leave(action, executor):
     p = action.payload
     employee = action.employee
 
+    # ── تحقق: الإجازة السنوية تتطلب كفالة ──
+    leave_type = p.get('leave_type', EmployeeLeave.LeaveType.ANNUAL)
+    if leave_type == EmployeeLeave.LeaveType.ANNUAL and not employee.sponsorship_id:
+        raise ValueError('لا يمكن تسجيل إجازة سنوية: الموظف غير مُسجَّل على كفالة.')
+
     d_from = _to_date(p['date_from'])
     d_to = _to_date(p['date_to'])
     days = _to_decimal(p['days'])
-    leave_type = p.get('leave_type', EmployeeLeave.LeaveType.ANNUAL)
 
     EmployeeLeave.objects.create(
         employee=employee,
@@ -59,6 +63,21 @@ def _execute_terminate(action, executor):
     from apps.employees.models import Employee, EmployeeStatement
     p = action.payload
     employee = action.employee
+
+    # ── تحذير: إذا كان الموظف موجوداً في مسير DRAFT ──
+    from apps.payroll.models import PayrollRun, PayrollLine
+    draft_runs = PayrollLine.objects.filter(
+        employee=employee,
+        run__status=PayrollRun.Status.DRAFT,
+    ).select_related('run').values_list('run__branch__name', 'run__period_year', 'run__period_month')
+    if draft_runs.exists():
+        import logging
+        logger = logging.getLogger(__name__)
+        runs_info = ', '.join(f'{r[0]} {r[1]}/{r[2]:02d}' for r in draft_runs)
+        logger.warning(
+            f'تصفية الموظف {employee.name} وهو موجود في مسير DRAFT: {runs_info}. '
+            'يُنصح بإعادة بناء المسير لتحديث بيانات الموظف.'
+        )
 
     end_date = _to_date(p['end_date'])
     end_reason = p.get('end_reason', '')

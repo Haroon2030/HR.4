@@ -220,10 +220,15 @@ def unlock_payroll_run(run: PayrollRun, user):
     EmployeeStatement.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
 
     # لو كانت سلفة قد أصبحت PAID بسبب آخر قسط في هذا المسير، أعدها ACTIVE
+    # ─ نستهدف فقط السلف التي كانت أقساطها مربوطة بهذا المسير (فُكّت أعلاه) ─
     from apps.employees.models import EmployeeLoan
-    for loan in EmployeeLoan.objects.filter(installments_log__loan__isnull=False).distinct():
-        if loan.installments_log.filter(status=LoanInstallment.Status.PENDING).exists() \
-                and loan.status == EmployeeLoan.Status.PAID:
+    affected_loan_ids = LoanInstallment.objects.filter(
+        applied_to_payroll__isnull=True,        # أقساط فُكّ ربطها للتو
+        loan__status=EmployeeLoan.Status.PAID,  # سلفتها مُعلَّمة مدفوعة
+    ).values_list('loan_id', flat=True).distinct()
+
+    for loan in EmployeeLoan.objects.filter(id__in=affected_loan_ids):
+        if loan.installments_log.filter(status=LoanInstallment.Status.PENDING).exists():
             loan.status = EmployeeLoan.Status.ACTIVE
             loan.save(update_fields=['status'])
 

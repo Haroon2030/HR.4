@@ -29,7 +29,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['is_active']
+    filterset_fields = ['is_deleted']
     search_fields = ['name', 'tax_number', 'commercial_record']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']

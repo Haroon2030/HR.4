@@ -266,8 +266,12 @@ class Employee(BaseModel):
     iban = models.CharField("رقم الآيبان", max_length=34, blank=True)
 
     # ── الإجازات ───────────────────────────────────────────────
+    # ⚠️ هذا الحقل يُراكم الأيام *المأخوذة* (المستهلكة) وليس المتوفرة.
+    # التسمية القديمة 'available_leave_balance' أُبقيت للتوافق مع DB/الكود القائم.
     available_leave_balance = models.DecimalField(
-        "رصيد الإجازات المتوفر", max_digits=6, decimal_places=1, default=0
+        "أيام الإجازة المستخدمة", max_digits=8, decimal_places=2, default=0,
+        help_text="عدد أيام الإجازات السنوية المأخوذة فعلياً — يزداد مع كل إجازة معتمدة. "
+                  "الرصيد المتبقي = المستحق − هذا الحقل."
     )
     leaves_archive = models.TextField("أرشيف الإجازات", blank=True)
 
@@ -439,6 +443,7 @@ class EmployeeStatement(BaseModel):
             'reactivate': 'RAC',
             'salary_adjust': 'SAL',
             'transfer': 'TRF',
+            'penalty': 'PEN',
             'other': 'OTH',
         }
         prefix = prefix_map.get(statement_type, 'STM')

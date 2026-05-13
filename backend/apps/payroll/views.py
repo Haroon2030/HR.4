@@ -18,12 +18,29 @@ from apps.payroll.services.engine import (
 
 
 def _user_branches(user):
-    """يعيد فروع المستخدم (أو كل الفروع للسوبر يوزر)."""
+    """يعيد فروع المستخدم (أو كل الفروع للسوبر يوزر / مدير الموارد)."""
+    from apps.core.models import Role
     if user.is_superuser:
         return Branch.objects.filter(is_active=True).order_by('name')
+
     profile = getattr(user, 'profile', None)
-    if profile and profile.branch_id:
-        return Branch.objects.filter(id=profile.branch_id)
+    # Admin / HR_MANAGER → كل الفروع
+    if profile and profile.role and profile.role.role_type in (
+        Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER,
+    ):
+        return Branch.objects.filter(is_active=True).order_by('name')
+
+    # باقي المستخدمين: فرعه + الفروع التي يديرها + المُسندة إليه
+    from django.db.models import Q
+    branch_ids = set()
+    if profile:
+        if profile.branch_id:
+            branch_ids.add(profile.branch_id)
+        branch_ids.update(profile.assigned_branches.values_list('id', flat=True))
+    branch_ids.update(user.managed_branches.values_list('id', flat=True))
+
+    if branch_ids:
+        return Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name')
     return Branch.objects.none()
 
 

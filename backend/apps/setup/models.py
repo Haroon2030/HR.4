@@ -80,6 +80,11 @@ class Sponsorship(BaseModel):
     def __str__(self):
         return self.company_name
 
+    @property
+    def name(self):
+        """توافق مع _name_only() في forms.py."""
+        return self.company_name
+
 
 class Insurance(BaseModel):
     """التأمين"""
@@ -98,6 +103,11 @@ class Insurance(BaseModel):
     def __str__(self):
         return self.insurance_type
 
+    @property
+    def name(self):
+        """توافق مع _name_only() في forms.py."""
+        return self.insurance_type
+
 
 class InsuranceClass(BaseModel):
     """فئات التأمين"""
@@ -114,6 +124,11 @@ class InsuranceClass(BaseModel):
         ordering = ['class_type']
 
     def __str__(self):
+        return self.class_type
+
+    @property
+    def name(self):
+        """توافق مع _name_only() في forms.py."""
         return self.class_type
 
 
