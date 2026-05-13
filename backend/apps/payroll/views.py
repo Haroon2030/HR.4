@@ -67,9 +67,15 @@ def list_payroll_runs(request):
     if status:
         qs = qs.filter(status=status)
 
+    from django.core.paginator import Paginator
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get('page') or 1)
+
     today = date.today()
     return render(request, 'pages/payroll/list.html', {
-        'runs': qs[:200],
+        'runs': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginator': paginator,
         'branches': user_branches,
         'current_year': today.year,
         'current_month': today.month,
@@ -172,6 +178,7 @@ def lock_payroll_run_view(request, run_id):
 
 
 @login_required
+@permission_required('employees.edit')
 def unlock_payroll_run_view(request, run_id):
     """إعادة فتح المسير (سوبر يوزر فقط)."""
     if request.method != 'POST':

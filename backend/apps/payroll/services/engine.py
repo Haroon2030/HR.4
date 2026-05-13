@@ -59,7 +59,8 @@ def build_payroll_run(branch, year: int, month: int, user=None):
     period_end = date(year, month, month_days)
 
     employees = Employee.objects.filter(
-        branch=branch, status=Employee.Status.ACTIVE
+        branch=branch,
+        status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
     ).order_by('name').distinct()
 
     seen_ids = set()

@@ -30,6 +30,9 @@ def add_employee_leave(request, employee_id):
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن تقديم إجازة لموظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -97,6 +100,9 @@ def terminate_employee(request, employee_id):
     from apps.core.forms import TerminateEmployeeForm
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'الموظف منتهي الخدمة بالفعل.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -170,6 +176,9 @@ def adjust_employee_salary(request, employee_id):
     from apps.core.forms import SalaryAdjustForm
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن تعديل راتب موظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -205,6 +214,9 @@ def transfer_employee(request, employee_id):
     from apps.core.forms import TransferEmployeeForm
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن نقل موظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -399,6 +411,9 @@ def receive_employee_custody(request, employee_id):
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن تسجيل عهدة لموظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -494,6 +509,9 @@ def add_employee_job_offer(request, employee_id):
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن إصدار عرض وظيفي لموظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -537,6 +555,9 @@ def add_employee_business_trip(request, employee_id):
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن تسجيل رحلة عمل لموظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -582,6 +603,9 @@ def add_employee_loan(request, employee_id):
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن تقديم سلفة لموظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
@@ -628,6 +652,9 @@ def add_employee_absence(request, employee_id):
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'لا يمكن تسجيل غياب لموظف منتهي الخدمة.')
+        return redirect('web:view_employee', employee_id=employee.id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
