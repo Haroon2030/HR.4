@@ -448,6 +448,7 @@ class PendingAction(BaseModel):
         BUSINESS_TRIP = 'business_trip', 'رحلة عمل'
         LOAN_REQUEST = 'loan_request', 'تقديم سلفة'
         ABSENCE = 'absence', 'تسجيل غياب'
+        CONTRACT_END = 'contract_end', 'انتهاء عقد'
 
     class Status(models.TextChoices):
         PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'

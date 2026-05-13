@@ -85,6 +85,10 @@
                     <button type="button" @click="quickModal='absence'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="user-minus" class="w-4 h-4 text-orange-600"></i> تسجيل غياب
                     </button>
+                    <div class="border-t border-slate-100 my-1"></div>
+                    <button type="button" @click="quickModal='contract_end'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-red-50">
+                        <i data-lucide="file-x-2" class="w-4 h-4 text-red-600"></i> انتهاء عقد (EOSB)
+                    </button>
                 </div>
             </div>
             {% endif %}
@@ -565,6 +569,186 @@
                 <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded">تأكيد التصفية</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: انتهاء عقد — مكافأة نهاية الخدمة (EOSB) -->
+    <div x-show="quickModal==='contract_end'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null"
+         x-data="{
+            hireDate: '{{ employee.hire_date|date:"Y-m-d" }}',
+            endDate: '',
+            terminatedBy: 'company',
+            totalSalary: {{ employee.total_salary|default:0 }},
+            remainingLeave: {{ employee.remaining_leave_days|default:0 }},
+            hasSponsor: {{ employee.sponsorship_id|yesno:'true,false' }},
+
+            get serviceDays() {
+                if (!this.hireDate || !this.endDate) return 0;
+                return Math.max(0, Math.floor((new Date(this.endDate) - new Date(this.hireDate)) / 86400000));
+            },
+            get serviceYears() { return +(this.serviceDays / 365.25).toFixed(4); },
+            get category() {
+                if (this.serviceDays <= 180) return 'trial';
+                if (this.serviceYears <= 5) return 'first5';
+                return 'above5';
+            },
+            get categoryLabel() {
+                if (this.category === 'trial') return 'فترة تجربة (بدون مكافأة مالية)';
+                if (this.category === 'first5') return 'أول 5 سنوات — ½ راتب × ' + this.serviceYears.toFixed(2) + ' سنة';
+                let extra = (this.serviceYears - 5).toFixed(2);
+                return '½ راتب × 5 + راتب كامل × ' + extra + ' سنة';
+            },
+            get eosbBase() {
+                let half = this.totalSalary / 2;
+                if (this.category === 'trial') return 0;
+                if (this.category === 'first5') return +(half * this.serviceYears).toFixed(2);
+                let first5 = half * 5;
+                let extra = this.totalSalary * (this.serviceYears - 5);
+                return +(first5 + extra).toFixed(2);
+            },
+            get resignFactor() {
+                if (this.terminatedBy !== 'employee') return 1;
+                if (this.serviceYears < 2) return 0;
+                if (this.serviceYears < 5) return 1/3;
+                if (this.serviceYears < 10) return 2/3;
+                return 1;
+            },
+            get resignLabel() {
+                if (this.terminatedBy !== 'employee') return '';
+                if (this.serviceYears < 2) return 'أقل من سنتين — لا مكافأة';
+                if (this.serviceYears < 5) return '2-5 سنوات — ثلث المكافأة';
+                if (this.serviceYears < 10) return '5-10 سنوات — ثلثي المكافأة';
+                return '+10 سنوات — كاملة';
+            },
+            get eosb() { return +(this.eosbBase * this.resignFactor).toFixed(2); },
+            get dailyWage() { return +(this.totalSalary / 30).toFixed(2); },
+            get leaveComp() { return this.hasSponsor ? +(this.dailyWage * this.remainingLeave).toFixed(2) : 0; },
+            get grandTotal() { return +(this.eosb + this.leaveComp).toFixed(2); }
+         }">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="file-x-2" class="w-5 h-5 text-red-600"></i>
+                    <span>انتهاء عقد — مكافأة نهاية الخدمة</span>
+                </h3>
+                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form method="post" action="{% url 'web:contract_end_employee' employee.id %}" class="p-4 space-y-3">
+                {% csrf_token %}
+
+                <!-- حقل الطرف المنهي -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الطرف المنهي <span class="text-red-500">*</span></label>
+                    <select name="terminated_by" x-model="terminatedBy" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                        <option value="company">الشركة</option>
+                        <option value="employee">الموظف (استقالة)</option>
+                    </select>
+                </div>
+
+                <!-- تاريخ الانتهاء -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الانتهاء <span class="text-red-500">*</span></label>
+                    <input type="date" name="end_date" x-model="endDate" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                </div>
+
+                <!-- حاسبة EOSB التفاعلية -->
+                <template x-if="endDate && serviceDays > 0">
+                    <div class="space-y-2">
+                        <!-- معلومات الخدمة -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
+                            <div class="text-xs font-bold text-slate-600 flex items-center gap-1">
+                                <i data-lucide="info" class="w-3.5 h-3.5"></i> بيانات الخدمة
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">مدة الخدمة</span>
+                                    <span class="font-bold" x-text="serviceDays + ' يوم (' + serviceYears.toFixed(2) + ' سنة)'"></span>
+                                </div>
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">آخر راتب</span>
+                                    <span class="font-bold" x-text="totalSalary.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- فئة المكافأة -->
+                        <div class="rounded-lg p-3 space-y-1.5"
+                             :class="category === 'trial' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'">
+                            <div class="text-xs font-bold flex items-center gap-1"
+                                 :class="category === 'trial' ? 'text-amber-700' : 'text-emerald-700'">
+                                <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                                <span x-text="categoryLabel"></span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">المكافأة الأساسية</span>
+                                    <span class="font-bold text-emerald-700" x-text="eosbBase.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <template x-if="terminatedBy === 'employee' && resignLabel">
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500" x-text="resignLabel"></span>
+                                        <span class="font-bold text-amber-700" x-text="eosb.toFixed(2) + ' ر.س'"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- مستحقات الإجازة -->
+                        <template x-if="hasSponsor">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1.5">
+                                <div class="text-xs font-bold text-blue-700 flex items-center gap-1">
+                                    <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i> مستحقات الإجازة (21 يوم/سنة)
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-xs">
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">الرصيد</span>
+                                        <span class="font-bold" x-text="remainingLeave + ' يوم'"></span>
+                                    </div>
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">الأجر اليومي</span>
+                                        <span class="font-bold" x-text="dailyWage.toFixed(2)"></span>
+                                    </div>
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">المستحق</span>
+                                        <span class="font-bold text-blue-700" x-text="leaveComp.toFixed(2) + ' ر.س'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- الإجمالي -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-red-800 flex items-center gap-1">
+                                    <i data-lucide="banknote" class="w-4 h-4"></i> إجمالي المستحقات
+                                </span>
+                                <span class="text-lg font-bold text-red-700" x-text="grandTotal.toFixed(2) + ' ر.س'"></span>
+                            </div>
+                            <div class="text-[10px] text-red-600 mt-1" x-text="'مكافأة: ' + eosb.toFixed(2) + ' + إجازة: ' + leaveComp.toFixed(2)"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- السبب -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">سبب الإنهاء</label>
+                    <input type="text" name="end_reason" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500" placeholder="مثال: انتهاء فترة التجربة / انتهاء مدة العقد">
+                </div>
+
+                <!-- ملاحظات -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500"></textarea>
+                </div>
+
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded">تأكيد انتهاء العقد</button>
                 </div>
             </form>
         </div>

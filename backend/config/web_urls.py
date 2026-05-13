@@ -67,6 +67,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/business-trip/add/', web_views.add_employee_business_trip, name='add_employee_business_trip'),  # رحلة عمل
     path('employees/<int:employee_id>/loan/add/', web_views.add_employee_loan, name='add_employee_loan'),                      # سلفة
     path('employees/<int:employee_id>/absence/add/', web_views.add_employee_absence, name='add_employee_absence'),              # تسجيل غياب
+    path('employees/<int:employee_id>/contract-end/', web_views.contract_end_employee, name='contract_end_employee'),          # انتهاء عقد (EOSB)
 
     # ══════════════════════════════════════════════════════════════
     # 3. طلبات التوظيف — دورة: أخصائي → مدير فرع → مدير الموارد → أخصائي ينفّذ

@@ -243,6 +243,28 @@ class TerminateEmployeeForm(forms.Form):
         return (self.cleaned_data.get('end_reason') or '').strip()
 
 
+class ContractEndForm(forms.Form):
+    """نموذج انتهاء عقد بموجب نظام العمل مع مكافأة نهاية الخدمة."""
+    TERMINATED_BY_CHOICES = [
+        ('company', 'الشركة'),
+        ('employee', 'الموظف (استقالة)'),
+    ]
+    end_date = forms.DateField(
+        error_messages={'invalid': 'تاريخ الانتهاء غير صحيح', 'required': 'تاريخ الانتهاء مطلوب'}
+    )
+    terminated_by = forms.ChoiceField(
+        choices=TERMINATED_BY_CHOICES,
+        error_messages={'required': 'يجب تحديد الطرف المنهي'}
+    )
+    end_reason = forms.CharField(required=False)
+    notes = forms.CharField(required=False)
+
+    def clean_end_reason(self):
+        return (self.cleaned_data.get('end_reason') or '').strip()
+
+    def clean_notes(self):
+        return (self.cleaned_data.get('notes') or '').strip()
+
 class ReactivateEmployeeForm(forms.Form):
     new_hire_date = forms.DateField(error_messages={'invalid': 'تاريخ المباشرة الجديد غير صحيح', 'required': 'تاريخ المباشرة الجديد مطلوب'})
     reactivation_reason = forms.CharField(error_messages={'required': 'سبب إعادة التفعيل مطلوب'})
