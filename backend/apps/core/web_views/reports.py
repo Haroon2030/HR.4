@@ -1,438 +1,262 @@
 """
-التقارير — منطق بناء البيانات وعرض التقارير
-=============================================
-كل تقرير له دالة _build_xxx تُرجع dict يحتوي البيانات + العنوان.
+التقارير — بيانات تفصيلية بصفوف وأعمدة
+كل تقرير يُرجع: columns (أعمدة) + rows (صفوف) + title
 """
 from datetime import date, timedelta
 from decimal import Decimal
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
-from django.db.models import Count, Sum, Q, F, Value, CharField
+from django.db.models import Count, Sum, Q, F
 from django.db.models.functions import Coalesce
 
 from apps.core.decorators import permission_required
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# تعريف المجموعات والتقارير
-# ══════════════════════════════════════════════════════════════════════════════
-
 REPORT_GROUPS = [
-    {'key': 'workforce',    'title': 'القوى العاملة',         'icon': 'users-round',     'color': 'primary',
-     'description': 'نظرة عامة على توزيع الموظفين على الفروع والأقسام ومراكز التكلفة'},
-    {'key': 'salary',       'title': 'الرواتب والمصاريف',      'icon': 'wallet',          'color': 'emerald',
-     'description': 'تحليل الرواتب والبدلات والاستقطاعات والتأمينات'},
-    {'key': 'turnover',     'title': 'الدوران الوظيفي',        'icon': 'refresh-cw',      'color': 'indigo',
-     'description': 'متابعة التعيينات الجديدة وإنهاء الخدمات ومعدل الدوران'},
-    {'key': 'compliance',   'title': 'الالتزام والوثائق',      'icon': 'shield-check',    'color': 'rose',
-     'description': 'متابعة الوثائق الرسمية والكروت الصحية والإنذارات'},
-    {'key': 'leaves',       'title': 'الإجازات والغياب',       'icon': 'calendar-days',   'color': 'cyan',
-     'description': 'تقارير الرصيد والمستهلك من الإجازات والغياب'},
-    {'key': 'demographics', 'title': 'تقارير ديموغرافية',      'icon': 'pie-chart',       'color': 'amber',
-     'description': 'توزيع الموظفين حسب الجنس والجنسية والمهنة والسن'},
+    {'key': 'workforce',    'title': 'القوى العاملة',    'icon': 'users-round',   'color': 'primary',  'description': 'توزيع الموظفين على الفروع والأقسام'},
+    {'key': 'salary',       'title': 'الرواتب والمصاريف', 'icon': 'wallet',        'color': 'emerald',  'description': 'تحليل الرواتب والبدلات والاستقطاعات'},
+    {'key': 'turnover',     'title': 'الدوران الوظيفي',   'icon': 'refresh-cw',    'color': 'indigo',   'description': 'التعيينات والإنهاءات ومعدل الدوران'},
+    {'key': 'compliance',   'title': 'الالتزام والوثائق', 'icon': 'shield-check',  'color': 'rose',     'description': 'الوثائق والكروت الصحية والإنذارات'},
+    {'key': 'leaves',       'title': 'الإجازات والغياب',  'icon': 'calendar-days', 'color': 'cyan',     'description': 'تقارير الإجازات والغياب'},
+    {'key': 'demographics', 'title': 'تقارير ديموغرافية', 'icon': 'pie-chart',     'color': 'amber',    'description': 'توزيع حسب الجنس والجنسية والمهنة'},
 ]
 
 REPORTS = [
-    # القوى العاملة
-    {'group': 'workforce', 'key': 'headcount_summary',    'title': 'ملخص القوى العاملة',         'description': 'إجمالي الموظفين حسب الحالة',                'icon': 'users-round',  'color': 'primary'},
-    {'group': 'workforce', 'key': 'branches',             'title': 'الموظفون حسب الفروع',        'description': 'توزيع وأعداد الموظفين على كل فرع',          'icon': 'building-2',   'color': 'primary'},
-    {'group': 'workforce', 'key': 'departments_overview', 'title': 'الموظفون حسب الأقسام',       'description': 'توزيع الموظفين على الأقسام',                'icon': 'network',      'color': 'primary'},
-    {'group': 'workforce', 'key': 'cost_centers_overview', 'title': 'الموظفون حسب مراكز التكلفة', 'description': 'توزيع الموظفين والتكلفة',                   'icon': 'layers',       'color': 'primary'},
-    # الرواتب
-    {'group': 'salary', 'key': 'salary_expenses',      'title': 'إجمالي مصاريف الرواتب', 'description': 'إجمالي الرواتب الشهرية حسب الفرع',      'icon': 'wallet',       'color': 'emerald'},
-    {'group': 'salary', 'key': 'allowances_breakdown', 'title': 'تفصيل البدلات',         'description': 'تحليل تفصيلي لجميع أنواع البدلات',       'icon': 'plus-circle',  'color': 'emerald'},
-    {'group': 'salary', 'key': 'deductions_breakdown', 'title': 'تفصيل الاستقطاعات',     'description': 'تحليل تفصيلي لجميع الاستقطاعات',         'icon': 'minus-circle', 'color': 'emerald'},
-    {'group': 'salary', 'key': 'insurance_costs',      'title': 'مصاريف التأمينات',       'description': 'تكلفة التأمينات على المنشأة',             'icon': 'shield',       'color': 'emerald'},
-    # الدوران الوظيفي
-    {'group': 'turnover', 'key': 'new_hires',       'title': 'التعيينات الجديدة',      'description': 'الموظفون المعينون حديثاً',               'icon': 'user-plus',    'color': 'indigo'},
-    {'group': 'turnover', 'key': 'terminations',    'title': 'إنهاء الخدمات',          'description': 'الموظفون المنتهية خدماتهم',              'icon': 'user-minus',   'color': 'indigo'},
-    {'group': 'turnover', 'key': 'turnover_rate',   'title': 'معدل الدوران الوظيفي',   'description': 'مقارنة التعيينات والإنهاءات',             'icon': 'refresh-cw',   'color': 'indigo'},
-    {'group': 'turnover', 'key': 'tenure_analysis', 'title': 'تحليل فترة الخدمة',      'description': 'متوسط فترة بقاء الموظفين',               'icon': 'hourglass',    'color': 'indigo'},
-    # الالتزام
-    {'group': 'compliance', 'key': 'id_expiry',        'title': 'انتهاء الهويات',         'description': 'الهويات المنتهية أو القاربة على الانتهاء', 'icon': 'id-card',      'color': 'rose'},
-    {'group': 'compliance', 'key': 'passport_expiry',  'title': 'انتهاء الجوازات',        'description': 'الجوازات القاربة على الانتهاء',            'icon': 'book-open',    'color': 'rose'},
-    {'group': 'compliance', 'key': 'health_cards',     'title': 'الكروت الصحية',          'description': 'متابعة الكروت الصحية',                    'icon': 'heart-pulse',  'color': 'rose'},
-    {'group': 'compliance', 'key': 'warnings',         'title': 'الإنذارات والمخالفات',   'description': 'الإنذارات والمخالفات الصادرة',             'icon': 'alert-triangle','color': 'rose'},
-    # الإجازات
-    {'group': 'leaves', 'key': 'leaves',        'title': 'الإجازات الممنوحة', 'description': 'تقرير الإجازات بأنواعها',       'icon': 'plane',         'color': 'cyan'},
-    {'group': 'leaves', 'key': 'leave_balance', 'title': 'رصيد الإجازات',     'description': 'الرصيد المتاح لكل موظف',        'icon': 'calendar-clock','color': 'cyan'},
-    {'group': 'leaves', 'key': 'absences',      'title': 'تقرير الغياب',      'description': 'إحصائيات الغياب حسب الفرع',     'icon': 'user-x',        'color': 'cyan'},
-    # ديموغرافيا
-    {'group': 'demographics', 'key': 'gender',           'title': 'حسب الجنس',          'description': 'توزيع الموظفين حسب الجنس',       'icon': 'users',     'color': 'amber'},
-    {'group': 'demographics', 'key': 'nationality',      'title': 'حسب الجنسية',        'description': 'توزيع الموظفين حسب الجنسية',     'icon': 'flag',      'color': 'amber'},
-    {'group': 'demographics', 'key': 'professions',      'title': 'حسب المهنة',         'description': 'توزيع الموظفين حسب المهنة',      'icon': 'briefcase', 'color': 'amber'},
-    {'group': 'demographics', 'key': 'age_distribution', 'title': 'حسب الفئة العمرية',  'description': 'توزيع الموظفين حسب العمر',       'icon': 'cake',      'color': 'amber'},
+    {'group': 'workforce', 'key': 'headcount_summary',     'title': 'ملخص القوى العاملة',          'icon': 'users-round',   'color': 'primary',  'description': 'إجمالي الموظفين حسب الحالة والفرع'},
+    {'group': 'workforce', 'key': 'branches',              'title': 'الموظفون حسب الفروع',         'icon': 'building-2',    'color': 'primary',  'description': 'توزيع الموظفين على الفروع'},
+    {'group': 'workforce', 'key': 'departments_overview',  'title': 'الموظفون حسب الأقسام',        'icon': 'network',       'color': 'primary',  'description': 'توزيع الموظفين على الأقسام'},
+    {'group': 'workforce', 'key': 'cost_centers_overview', 'title': 'الموظفون حسب مراكز التكلفة',  'icon': 'layers',        'color': 'primary',  'description': 'توزيع الموظفين والتكلفة'},
+    {'group': 'salary',    'key': 'salary_expenses',       'title': 'تفاصيل الرواتب',              'icon': 'wallet',        'color': 'emerald',  'description': 'رواتب كل موظف بالتفصيل'},
+    {'group': 'salary',    'key': 'allowances_breakdown',  'title': 'تفصيل البدلات',               'icon': 'plus-circle',   'color': 'emerald',  'description': 'بدلات كل موظف'},
+    {'group': 'salary',    'key': 'deductions_breakdown',  'title': 'تفصيل الاستقطاعات',           'icon': 'minus-circle',  'color': 'emerald',  'description': 'استقطاعات آخر مسير'},
+    {'group': 'salary',    'key': 'insurance_costs',       'title': 'بيانات التأمين',              'icon': 'shield',        'color': 'emerald',  'description': 'تأمين كل موظف'},
+    {'group': 'turnover',  'key': 'new_hires',             'title': 'التعيينات الجديدة',           'icon': 'user-plus',     'color': 'indigo',   'description': 'الموظفون المعينون حديثاً'},
+    {'group': 'turnover',  'key': 'terminations',          'title': 'إنهاء الخدمات',               'icon': 'user-minus',    'color': 'indigo',   'description': 'الموظفون المنتهية خدماتهم'},
+    {'group': 'turnover',  'key': 'tenure_analysis',       'title': 'تحليل فترة الخدمة',           'icon': 'hourglass',     'color': 'indigo',   'description': 'مدة خدمة كل موظف'},
+    {'group': 'compliance','key': 'passport_expiry',       'title': 'انتهاء الجوازات',             'icon': 'book-open',     'color': 'rose',     'description': 'الجوازات المنتهية أو القاربة'},
+    {'group': 'compliance','key': 'health_cards',          'title': 'الكروت الصحية',               'icon': 'heart-pulse',   'color': 'rose',     'description': 'حالة الكروت الصحية'},
+    {'group': 'compliance','key': 'warnings',              'title': 'الإنذارات والمخالفات',        'icon': 'alert-triangle','color': 'rose',     'description': 'الإنذارات والمخالفات'},
+    {'group': 'leaves',    'key': 'leaves',                'title': 'سجل الإجازات',                'icon': 'plane',         'color': 'cyan',     'description': 'كل الإجازات المسجلة'},
+    {'group': 'leaves',    'key': 'leave_balance',         'title': 'رصيد الإجازات',               'icon': 'calendar-clock','color': 'cyan',     'description': 'رصيد كل موظف'},
+    {'group': 'leaves',    'key': 'absences',              'title': 'سجل الغياب',                  'icon': 'user-x',        'color': 'cyan',     'description': 'كل سجلات الغياب'},
+    {'group': 'demographics','key': 'gender',              'title': 'حسب الجنس',                   'icon': 'users',         'color': 'amber',    'description': 'توزيع الموظفين حسب الجنس'},
+    {'group': 'demographics','key': 'nationality',         'title': 'حسب الجنسية',                 'icon': 'flag',          'color': 'amber',    'description': 'توزيع حسب الجنسية'},
+    {'group': 'demographics','key': 'professions',         'title': 'حسب المهنة',                  'icon': 'briefcase',     'color': 'amber',    'description': 'توزيع حسب المهنة'},
 ]
 
-
 def _grouped_reports():
-    grouped = []
-    for g in REPORT_GROUPS:
-        grouped.append({**g, 'items': [r for r in REPORTS if r.get('group') == g['key']]})
-    return grouped
+    return [{**g, 'items': [r for r in REPORTS if r['group'] == g['key']]} for g in REPORT_GROUPS]
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# دوال بناء البيانات — كل دالة تُرجع dict بالبيانات اللازمة للقالب
-# ══════════════════════════════════════════════════════════════════════════════
-
-def _get_employees():
+def _emp_qs():
     from apps.employees.models import Employee
     return Employee.objects.filter(is_deleted=False)
 
-
-def _active_employees():
+def _active():
     from apps.employees.models import Employee
-    return _get_employees().filter(status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE])
+    return _emp_qs().filter(status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE])
 
+# ══════════════════════════════════════════════════════════════════════════════
+# دوال البناء — كل واحدة تُرجع columns + rows
+# ══════════════════════════════════════════════════════════════════════════════
 
-# ── القوى العاملة ──
-
-def _build_headcount_summary(request):
+def _build_headcount_summary(req):
     from apps.employees.models import Employee
-    qs = _get_employees()
-    statuses = qs.values('status').annotate(count=Count('id')).order_by('-count')
-    status_labels = dict(Employee.Status.choices)
-    rows = [{'status': status_labels.get(s['status'], s['status']), 'count': s['count']} for s in statuses]
-    total = sum(s['count'] for s in rows)
-    active = qs.filter(status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE]).count()
-    return {'rows': rows, 'total': total, 'active': active}
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الحالة', 'تاريخ المباشرة']
+    labels = dict(Employee.Status.choices)
+    qs = _emp_qs().select_related('branch', 'department').order_by('branch__name', 'name')
+    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', labels.get(e.status, e.status), str(e.hire_date or '—')] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
+def _build_branches(req):
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي']
+    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.total_salary)] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
-def _build_branches(request):
-    qs = _active_employees()
-    rows = qs.values(name=F('branch__name')).annotate(
-        count=Count('id'),
-        total_salary=Coalesce(Sum(F('basic_salary') + F('housing_allowance') + F('transport_allowance') + F('other_allowance') + F('cash_amount')), Decimal('0'))
-    ).order_by('-count')
-    return {'rows': list(rows), 'total': sum(r['count'] for r in rows)}
+def _build_departments_overview(req):
+    cols = ['الاسم', 'الفرع', 'القسم', 'مركز التكلفة', 'المسمى الوظيفي']
+    qs = _active().select_related('branch', 'department', 'cost_center', 'profession').order_by('branch__name', 'department__name', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', e.department.name if e.department else '—', e.cost_center.name if e.cost_center else '—', e.profession.name if e.profession else '—'] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
+def _build_cost_centers_overview(req):
+    cols = ['الاسم', 'مركز التكلفة', 'الفرع', 'القسم', 'الإجمالي']
+    qs = _active().select_related('branch', 'department', 'cost_center').order_by('cost_center__name', 'name')
+    rows = [[e.name, e.cost_center.name if e.cost_center else '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.total_salary)] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
-def _build_departments_overview(request):
-    qs = _active_employees()
-    rows = qs.values(
-        branch_name=F('branch__name'), dept_name=F('department__name')
-    ).annotate(count=Count('id')).order_by('branch_name', '-count')
-    return {'rows': list(rows)}
+def _build_salary_expenses(req):
+    cols = ['الاسم', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي']
+    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.total_salary)] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
+def _build_allowances_breakdown(req):
+    cols = ['الاسم', 'الفرع', 'سكن', 'نقل', 'إضافي', 'كاش', 'إجمالي البدلات']
+    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    rows = []
+    for e in qs:
+        t = e.housing_allowance + e.transport_allowance + e.other_allowance + e.cash_amount
+        rows.append([e.name, e.branch.name if e.branch else '—', str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(t)])
+    return {'columns': cols, 'rows': rows}
 
-def _build_cost_centers_overview(request):
-    qs = _active_employees()
-    rows = qs.values(
-        cc_name=F('cost_center__name'), branch_name=F('branch__name')
-    ).annotate(
-        count=Count('id'),
-        total_salary=Coalesce(Sum(F('basic_salary') + F('housing_allowance') + F('transport_allowance') + F('other_allowance') + F('cash_amount')), Decimal('0'))
-    ).order_by('-count')
-    return {'rows': list(rows)}
-
-
-# ── الرواتب ──
-
-def _build_salary_expenses(request):
-    qs = _active_employees()
-    rows = qs.values(name=F('branch__name')).annotate(
-        count=Count('id'),
-        basic=Coalesce(Sum('basic_salary'), Decimal('0')),
-        housing=Coalesce(Sum('housing_allowance'), Decimal('0')),
-        transport=Coalesce(Sum('transport_allowance'), Decimal('0')),
-        other=Coalesce(Sum('other_allowance'), Decimal('0')),
-        cash=Coalesce(Sum('cash_amount'), Decimal('0')),
-    ).order_by('-count')
-    for r in rows:
-        r['total'] = r['basic'] + r['housing'] + r['transport'] + r['other'] + r['cash']
-    rows = list(rows)
-    grand = sum(r['total'] for r in rows)
-    return {'rows': rows, 'grand_total': grand}
-
-
-def _build_allowances_breakdown(request):
-    qs = _active_employees()
-    agg = qs.aggregate(
-        housing=Coalesce(Sum('housing_allowance'), Decimal('0')),
-        transport=Coalesce(Sum('transport_allowance'), Decimal('0')),
-        other=Coalesce(Sum('other_allowance'), Decimal('0')),
-        cash=Coalesce(Sum('cash_amount'), Decimal('0')),
-    )
-    items = [
-        {'name': 'بدل سكن', 'amount': agg['housing']},
-        {'name': 'بدل نقل', 'amount': agg['transport']},
-        {'name': 'بدل إضافي', 'amount': agg['other']},
-        {'name': 'كاش', 'amount': agg['cash']},
-    ]
-    total = sum(i['amount'] for i in items)
-    return {'items': items, 'total': total}
-
-
-def _build_deductions_breakdown(request):
+def _build_deductions_breakdown(req):
     from apps.payroll.models import PayrollRun
-    last_run = PayrollRun.objects.filter(status=PayrollRun.Status.LOCKED).order_by('-period_year', '-period_month').first()
-    if not last_run:
-        return {'run': None, 'items': [], 'total': Decimal('0')}
-    agg = last_run.lines.aggregate(
-        absence=Coalesce(Sum('absence_deduction'), Decimal('0')),
-        unpaid=Coalesce(Sum('unpaid_leave_deduction'), Decimal('0')),
-        loan=Coalesce(Sum('loan_deduction'), Decimal('0')),
-        penalty=Coalesce(Sum('penalty_deduction'), Decimal('0')),
-        insurance=Coalesce(Sum('insurance_deduction'), Decimal('0')),
-        other=Coalesce(Sum('other_deduction'), Decimal('0')),
-    )
-    items = [
-        {'name': 'خصم غياب', 'amount': agg['absence']},
-        {'name': 'إجازة بدون راتب', 'amount': agg['unpaid']},
-        {'name': 'أقساط سلف', 'amount': agg['loan']},
-        {'name': 'مخالفات', 'amount': agg['penalty']},
-        {'name': 'تأمينات', 'amount': agg['insurance']},
-        {'name': 'خصومات أخرى', 'amount': agg['other']},
-    ]
-    total = sum(i['amount'] for i in items)
-    return {'run': last_run, 'items': items, 'total': total}
+    last = PayrollRun.objects.filter(status=PayrollRun.Status.LOCKED).order_by('-period_year', '-period_month').first()
+    cols = ['الموظف', 'غياب', 'إجازة بدون راتب', 'سلف', 'مخالفات', 'تأمينات', 'أخرى', 'إجمالي الخصم']
+    if not last:
+        return {'columns': cols, 'rows': [], 'note': 'لا يوجد مسير مُرحَّل'}
+    lines = last.lines.select_related('employee').order_by('employee__name')
+    rows = [[l.employee.name, str(l.absence_deduction), str(l.unpaid_leave_deduction), str(l.loan_deduction), str(l.penalty_deduction), str(l.insurance_deduction), str(l.other_deduction), str(l.total_deductions)] for l in lines]
+    return {'columns': cols, 'rows': rows, 'note': f'من مسير: {last}'}
 
+def _build_insurance_costs(req):
+    cols = ['الاسم', 'الفرع', 'شركة التأمين', 'فئة التأمين', 'نسبة الخصم %']
+    qs = _active().select_related('branch', 'insurance', 'insurance_class').order_by('insurance__name', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', e.insurance.name if e.insurance else '—', e.insurance_class.name if e.insurance_class else '—', str(e.insurance_deduction_rate)] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
-def _build_insurance_costs(request):
-    qs = _active_employees().exclude(insurance__isnull=True)
-    rows = qs.values(
-        insurance_name=F('insurance__name'),
-        class_name=F('insurance_class__name'),
-    ).annotate(count=Count('id')).order_by('-count')
-    return {'rows': list(rows), 'total': qs.count()}
-
-
-# ── الدوران الوظيفي ──
-
-def _build_new_hires(request):
+def _build_new_hires(req):
     from apps.employees.models import Employee
-    today = date.today()
-    start = today - timedelta(days=90)
-    qs = _get_employees().filter(hire_date__gte=start).exclude(status=Employee.Status.TERMINATED)
-    rows = qs.values('name', 'hire_date', branch_name=F('branch__name')).order_by('-hire_date')
-    return {'rows': list(rows), 'total': qs.count(), 'period': f'آخر 90 يوم'}
+    start = date.today() - timedelta(days=180)
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'تاريخ المباشرة', 'الجنسية']
+    qs = _emp_qs().filter(hire_date__gte=start).exclude(status=Employee.Status.TERMINATED).select_related('branch', 'department', 'nationality').order_by('-hire_date')
+    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.hire_date or '—'), e.nationality.name if e.nationality else '—'] for e in qs]
+    return {'columns': cols, 'rows': rows, 'note': 'آخر 6 أشهر'}
 
-
-def _build_terminations(request):
+def _build_terminations(req):
     from apps.employees.models import Employee
+    start = date.today() - timedelta(days=365)
+    cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'تاريخ الإنهاء', 'السبب']
+    qs = _emp_qs().filter(status=Employee.Status.TERMINATED, end_date__gte=start).select_related('branch').order_by('-end_date')
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—'] for e in qs]
+    return {'columns': cols, 'rows': rows, 'note': 'آخر سنة'}
+
+def _build_tenure_analysis(req):
     today = date.today()
-    start = today - timedelta(days=365)
-    qs = _get_employees().filter(status=Employee.Status.TERMINATED, end_date__gte=start)
-    rows = qs.values('name', 'end_date', 'end_reason', branch_name=F('branch__name')).order_by('-end_date')
-    return {'rows': list(rows), 'total': qs.count(), 'period': f'آخر سنة'}
-
-
-def _build_turnover_rate(request):
-    from apps.employees.models import Employee
-    today = date.today()
-    start = today - timedelta(days=365)
-    hired = _get_employees().filter(hire_date__gte=start).count()
-    terminated = _get_employees().filter(status=Employee.Status.TERMINATED, end_date__gte=start).count()
-    active = _active_employees().count()
-    rate = round((terminated / active * 100), 1) if active > 0 else 0
-    return {'hired': hired, 'terminated': terminated, 'active': active, 'rate': rate}
-
-
-def _build_tenure_analysis(request):
-    today = date.today()
-    qs = _active_employees().exclude(hire_date__isnull=True)
-    brackets = [
-        ('أقل من سنة', 0, 365),
-        ('1 - 2 سنة', 365, 730),
-        ('2 - 5 سنوات', 730, 1825),
-        ('5 - 10 سنوات', 1825, 3650),
-        ('أكثر من 10 سنوات', 3650, 999999),
-    ]
+    cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'مدة الخدمة (سنة)', 'مدة الخدمة (يوم)']
+    qs = _active().exclude(hire_date__isnull=True).select_related('branch').order_by('hire_date')
     rows = []
-    for label, lo, hi in brackets:
-        d_from = today - timedelta(days=hi)
-        d_to = today - timedelta(days=lo)
-        c = qs.filter(hire_date__gt=d_from, hire_date__lte=d_to).count()
-        rows.append({'label': label, 'count': c})
-    return {'rows': rows}
+    for e in qs:
+        days = (today - e.hire_date).days
+        years = round(days / 365.25, 1)
+        rows.append([e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(years), str(days)])
+    return {'columns': cols, 'rows': rows}
 
-
-# ── الالتزام والوثائق ──
-
-def _build_id_expiry(request):
+def _build_passport_expiry(req):
     today = date.today()
     soon = today + timedelta(days=90)
-    qs = _active_employees().exclude(id_number='')
-    expired = qs.filter(end_date__lt=today).count()  # تقريبي — حقل انتهاء الهوية غير متاح حالياً
-    return {'expired': expired, 'note': 'يعتمد على حقل end_date كتقريب — يُنصح بإضافة حقل id_expiry_date'}
+    cols = ['الاسم', 'الفرع', 'تاريخ انتهاء الجواز', 'الحالة']
+    qs = _active().exclude(passport_expiry_date__isnull=True).select_related('branch').order_by('passport_expiry_date')
+    rows = []
+    for e in qs:
+        if e.passport_expiry_date < today:
+            status = '❌ منتهي'
+        elif e.passport_expiry_date <= soon:
+            status = '⚠️ ينتهي قريباً'
+        else:
+            status = '✅ ساري'
+        rows.append([e.name, e.branch.name if e.branch else '—', str(e.passport_expiry_date), status])
+    return {'columns': cols, 'rows': rows}
 
-
-def _build_passport_expiry(request):
+def _build_health_cards(req):
     today = date.today()
     soon = today + timedelta(days=90)
-    qs = _active_employees().exclude(passport_expiry_date__isnull=True)
-    expired = qs.filter(passport_expiry_date__lt=today)
-    expiring = qs.filter(passport_expiry_date__gte=today, passport_expiry_date__lte=soon)
-    # جمع المنتهي والقارب بـ OR بدلاً من union
-    combined = qs.filter(Q(passport_expiry_date__lt=today) | Q(passport_expiry_date__gte=today, passport_expiry_date__lte=soon))
-    rows = list(combined.values('name', 'passport_expiry_date', branch_name=F('branch__name')).order_by('passport_expiry_date'))
-    return {'rows': rows, 'expired_count': expired.count(), 'expiring_count': expiring.count()}
+    cols = ['الاسم', 'الفرع', 'حالة الكرت', 'تاريخ الانتهاء', 'الوضع']
+    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    labels = {'available': 'متوفر', 'not_available': 'غير متوفر'}
+    rows = []
+    for e in qs:
+        st = labels.get(e.health_card_status, e.health_card_status)
+        exp = str(e.health_card_expiry) if e.health_card_expiry else '—'
+        if not e.health_card_expiry:
+            flag = '—'
+        elif e.health_card_expiry < today:
+            flag = '❌ منتهي'
+        elif e.health_card_expiry <= soon:
+            flag = '⚠️ ينتهي قريباً'
+        else:
+            flag = '✅ ساري'
+        rows.append([e.name, e.branch.name if e.branch else '—', st, exp, flag])
+    return {'columns': cols, 'rows': rows}
 
-
-def _build_health_cards(request):
-    today = date.today()
-    soon = today + timedelta(days=90)
-    qs = _active_employees()
-    not_available = qs.filter(health_card_status='not_available').count()
-    expired = qs.filter(health_card_expiry__lt=today).count()
-    expiring = qs.filter(health_card_expiry__gte=today, health_card_expiry__lte=soon).count()
-    available = qs.filter(health_card_status='available', health_card_expiry__gt=soon).count()
-    return {'not_available': not_available, 'expired': expired, 'expiring': expiring, 'available': available}
-
-
-def _build_warnings(request):
+def _build_warnings(req):
     from apps.employees.models import EmployeeStatement
-    today = date.today()
-    start = today - timedelta(days=365)
+    cols = ['الموظف', 'الفرع', 'النوع', 'العنوان', 'التاريخ', 'مبلغ الخصم']
     types = [EmployeeStatement.StatementType.WARNING, EmployeeStatement.StatementType.FINAL_WARNING, EmployeeStatement.StatementType.PENALTY]
-    qs = EmployeeStatement.objects.filter(statement_type__in=types, statement_date__gte=start, is_deleted=False)
-    rows = qs.values(
-        emp_name=F('employee__name'), branch_name=F('employee__branch__name'),
-    ).annotate(count=Count('id')).order_by('-count')
-    type_summary = qs.values('statement_type').annotate(count=Count('id')).order_by('-count')
+    qs = EmployeeStatement.objects.filter(statement_type__in=types, is_deleted=False).select_related('employee', 'employee__branch').order_by('-statement_date')[:200]
     labels = dict(EmployeeStatement.StatementType.choices)
-    type_rows = [{'type': labels.get(t['statement_type'], t['statement_type']), 'count': t['count']} for t in type_summary]
-    return {'rows': list(rows), 'type_rows': type_rows, 'total': qs.count()}
+    rows = [[s.employee.name, s.employee.branch.name if s.employee.branch else '—', labels.get(s.statement_type, s.statement_type), s.title, str(s.statement_date), str(s.deduction_amount)] for s in qs]
+    return {'columns': cols, 'rows': rows}
 
-
-# ── الإجازات ──
-
-def _build_leaves(request):
+def _build_leaves(req):
     from apps.employees.models import EmployeeLeave
-    today = date.today()
-    start = date(today.year, 1, 1)
-    qs = EmployeeLeave.objects.filter(date_from__gte=start, is_deleted=False)
-    by_type = qs.values('leave_type').annotate(count=Count('id'), total_days=Coalesce(Sum('days'), Decimal('0'))).order_by('-count')
+    cols = ['الموظف', 'الفرع', 'نوع الإجازة', 'من', 'إلى', 'عدد الأيام']
     labels = dict(EmployeeLeave.LeaveType.choices)
-    rows = [{'type': labels.get(r['leave_type'], r['leave_type']), 'count': r['count'], 'days': r['total_days']} for r in by_type]
-    return {'rows': rows, 'year': today.year, 'total': qs.count()}
+    qs = EmployeeLeave.objects.filter(is_deleted=False).select_related('employee', 'employee__branch').order_by('-date_from')[:300]
+    rows = [[l.employee.name, l.employee.branch.name if l.employee.branch else '—', labels.get(l.leave_type, l.leave_type), str(l.date_from), str(l.date_to), str(l.days)] for l in qs]
+    return {'columns': cols, 'rows': rows}
 
+def _build_leave_balance(req):
+    cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'المستحق', 'المستخدم', 'المتبقي']
+    qs = _active().exclude(hire_date__isnull=True).exclude(sponsorship__isnull=True).select_related('branch').order_by('branch__name', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(e.accrued_leave_days), str(e.available_leave_balance), str(e.remaining_leave_days)] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
-def _build_leave_balance(request):
-    qs = _active_employees().exclude(hire_date__isnull=True).exclude(sponsorship__isnull=True).order_by('branch__name', 'name')
-    rows = []
-    for emp in qs[:200]:
-        rows.append({
-            'name': emp.name,
-            'branch': emp.branch.name if emp.branch else '—',
-            'accrued': emp.accrued_leave_days,
-            'used': emp.available_leave_balance,
-            'remaining': emp.remaining_leave_days,
-        })
-    return {'rows': rows}
-
-
-def _build_absences(request):
+def _build_absences(req):
     from apps.employees.models import EmployeeAbsence
-    today = date.today()
-    start = date(today.year, 1, 1)
-    qs = EmployeeAbsence.objects.filter(absence_date__gte=start, is_deleted=False)
-    rows = qs.values(
-        emp_name=F('employee__name'), branch_name=F('employee__branch__name')
-    ).annotate(
-        total_days=Coalesce(Sum('days'), Decimal('0')),
-        total_deduction=Coalesce(Sum('deduction_amount'), Decimal('0')),
-        count=Count('id'),
-    ).order_by('-total_days')
-    return {'rows': list(rows), 'year': today.year}
+    cols = ['الموظف', 'الفرع', 'تاريخ الغياب', 'عدد الأيام', 'مبلغ الخصم', 'محتسب في مسير']
+    qs = EmployeeAbsence.objects.filter(is_deleted=False).select_related('employee', 'employee__branch', 'applied_to_payroll').order_by('-absence_date')[:300]
+    rows = [[a.employee.name, a.employee.branch.name if a.employee.branch else '—', str(a.absence_date), str(a.days), str(a.deduction_amount), str(a.applied_to_payroll or '—')] for a in qs]
+    return {'columns': cols, 'rows': rows}
 
-
-# ── ديموغرافيا ──
-
-def _build_gender(request):
+def _build_gender(req):
     from apps.employees.models import Employee
-    qs = _active_employees()
-    rows = qs.values('gender').annotate(count=Count('id')).order_by('-count')
+    cols = ['الاسم', 'الفرع', 'الجنس', 'الجنسية', 'المهنة']
     labels = dict(Employee.Gender.choices)
-    result = [{'label': labels.get(r['gender'], r['gender'] or 'غير محدد'), 'count': r['count']} for r in rows]
-    total = sum(r['count'] for r in result)
-    return {'rows': result, 'total': total}
+    qs = _active().select_related('branch', 'nationality', 'profession').order_by('gender', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', labels.get(e.gender, e.gender or 'غير محدد'), e.nationality.name if e.nationality else '—', e.profession.name if e.profession else '—'] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
+def _build_nationality(req):
+    cols = ['الاسم', 'الفرع', 'الجنسية', 'رقم الهوية', 'رقم الجوال']
+    qs = _active().select_related('branch', 'nationality').order_by('nationality__name', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', e.nationality.name if e.nationality else '—', e.id_number or '—', e.phone or '—'] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
-def _build_nationality(request):
-    qs = _active_employees()
-    rows = qs.values(label=Coalesce(F('nationality__name'), Value('غير محدد'))).annotate(count=Count('id')).order_by('-count')
-    return {'rows': list(rows)}
-
-
-def _build_professions(request):
-    qs = _active_employees()
-    rows = qs.values(label=Coalesce(F('profession__name'), Value('غير محدد'))).annotate(count=Count('id')).order_by('-count')
-    return {'rows': list(rows)}
-
-
-def _build_age_distribution(request):
-    today = date.today()
-    qs = _active_employees().exclude(hire_date__isnull=True)
-    # لا يوجد حقل birth_date حالياً — نستخدم hire_date كبديل
-    return {'rows': [], 'note': 'لا يوجد حقل تاريخ الميلاد حالياً. يُنصح بإضافة حقل birth_date للحصول على تقرير دقيق.'}
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ربط المفاتيح بدوال البناء
-# ══════════════════════════════════════════════════════════════════════════════
+def _build_professions(req):
+    cols = ['الاسم', 'الفرع', 'المهنة', 'الجنسية', 'الراتب الإجمالي']
+    qs = _active().select_related('branch', 'profession', 'nationality').order_by('profession__name', 'name')
+    rows = [[e.name, e.branch.name if e.branch else '—', e.profession.name if e.profession else '—', e.nationality.name if e.nationality else '—', str(e.total_salary)] for e in qs]
+    return {'columns': cols, 'rows': rows}
 
 BUILDERS = {
-    'headcount_summary': _build_headcount_summary,
-    'branches': _build_branches,
-    'departments_overview': _build_departments_overview,
-    'cost_centers_overview': _build_cost_centers_overview,
-    'salary_expenses': _build_salary_expenses,
-    'allowances_breakdown': _build_allowances_breakdown,
-    'deductions_breakdown': _build_deductions_breakdown,
-    'insurance_costs': _build_insurance_costs,
-    'new_hires': _build_new_hires,
-    'terminations': _build_terminations,
-    'turnover_rate': _build_turnover_rate,
-    'tenure_analysis': _build_tenure_analysis,
-    'id_expiry': _build_id_expiry,
-    'passport_expiry': _build_passport_expiry,
-    'health_cards': _build_health_cards,
-    'warnings': _build_warnings,
-    'leaves': _build_leaves,
-    'leave_balance': _build_leave_balance,
-    'absences': _build_absences,
-    'gender': _build_gender,
-    'nationality': _build_nationality,
-    'professions': _build_professions,
-    'age_distribution': _build_age_distribution,
+    'headcount_summary': _build_headcount_summary, 'branches': _build_branches,
+    'departments_overview': _build_departments_overview, 'cost_centers_overview': _build_cost_centers_overview,
+    'salary_expenses': _build_salary_expenses, 'allowances_breakdown': _build_allowances_breakdown,
+    'deductions_breakdown': _build_deductions_breakdown, 'insurance_costs': _build_insurance_costs,
+    'new_hires': _build_new_hires, 'terminations': _build_terminations, 'tenure_analysis': _build_tenure_analysis,
+    'passport_expiry': _build_passport_expiry, 'health_cards': _build_health_cards, 'warnings': _build_warnings,
+    'leaves': _build_leaves, 'leave_balance': _build_leave_balance, 'absences': _build_absences,
+    'gender': _build_gender, 'nationality': _build_nationality, 'professions': _build_professions,
 }
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Views
-# ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
 @permission_required('reports.view')
 def reports_index(request):
-    return render(request, 'pages/reports/index.html', {
-        'report_groups': _grouped_reports(),
-        'reports': REPORTS,
-    })
-
+    return render(request, 'pages/reports/index.html', {'report_groups': _grouped_reports(), 'reports': REPORTS})
 
 @login_required
 @permission_required('reports.view')
 def report_detail(request, report_type):
-    report_meta = next((r for r in REPORTS if r['key'] == report_type), None)
-    if not report_meta:
+    meta = next((r for r in REPORTS if r['key'] == report_type), None)
+    if not meta:
         raise Http404("تقرير غير معروف")
-
-    group_meta = next((g for g in REPORT_GROUPS if g['key'] == report_meta.get('group')), None)
-    siblings = [r for r in REPORTS if r.get('group') == report_meta.get('group') and r['key'] != report_type]
-
-    # بناء البيانات الفعلية
+    group = next((g for g in REPORT_GROUPS if g['key'] == meta.get('group')), None)
+    siblings = [r for r in REPORTS if r.get('group') == meta.get('group') and r['key'] != report_type]
     builder = BUILDERS.get(report_type)
-    report_data = builder(request) if builder else {}
-
+    data = builder(request) if builder else {'columns': [], 'rows': []}
     return render(request, 'pages/reports/detail.html', {
-        'report_meta': report_meta,
-        'group_meta': group_meta,
-        'siblings': siblings,
-        'reports': REPORTS,
-        'data': report_data,
-        'report_type': report_type,
+        'report_meta': meta, 'group_meta': group, 'siblings': siblings,
+        'reports': REPORTS, 'data': data, 'report_type': report_type,
     })
