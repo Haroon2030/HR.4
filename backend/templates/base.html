@@ -239,8 +239,13 @@
                     {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
-                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                        <i data-lucide="list-checks" class="w-5 h-5 flex-shrink-0"></i>
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                        <span class="relative flex-shrink-0">
+                            <i data-lucide="list-checks" class="w-5 h-5"></i>
+                            {% if pending_actions_count %}
+                            <span x-show="!sidebarOpen" class="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{{ pending_actions_count }}</span>
+                            {% endif %}
+                        </span>
                         <span x-show="sidebarOpen" class="font-semibold text-base flex items-center gap-2">
                             طلبات العمليات
                             {% if pending_actions_count %}<span class="px-2 py-0.5 bg-amber-500 text-white rounded-full text-xs">{{ pending_actions_count }}</span>{% endif %}
