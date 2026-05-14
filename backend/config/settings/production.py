@@ -163,6 +163,23 @@ LOGGING = {
 # ══════════════════════════════════════════════════════════════════════════════
 USE_R2 = env.bool('USE_R2', default=False)
 
+# #region agent log - Temporary debug for R2 settings verification
+import json
+import time
+log_data = {
+    'USE_R2': USE_R2,
+    'R2_ACCESS_KEY_SET': bool(env('R2_ACCESS_KEY_ID', default='')),
+    'R2_SECRET_KEY_SET': bool(env('R2_SECRET_ACCESS_KEY', default='')), 
+    'R2_BUCKET_NAME': env('R2_BUCKET_NAME', default=''),
+    'R2_ENDPOINT_URL': env('R2_ENDPOINT_URL', default=''),
+}
+try:
+    with open('debug-7f44e5.log', 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'sessionId': '7f44e5', 'location': 'production.py:164', 'message': 'Production settings loaded', 'data': log_data, 'timestamp': time.time() * 1000, 'hypothesisId': 'SETTINGS'}) + '\n')
+except Exception:
+    pass
+# #endregion
+
 if USE_R2:
     # مفاتيح الوصول لـ Cloudflare R2
     AWS_ACCESS_KEY_ID = env('R2_ACCESS_KEY_ID')

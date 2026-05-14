@@ -67,7 +67,48 @@ class HRMediaStorage(S3Boto3Storage):
         super().__init__(*args, **kwargs)
 
     def _save(self, name, content):
-        return super()._save(name, content)
+        # #region agent log - R2 upload verification
+        import json
+        import time
+        log_data = {
+            'name': name,
+            'content_size': getattr(content, 'size', 0),
+            'bucket_name': getattr(self, 'bucket_name', ''),
+            'endpoint_url': getattr(self, 'endpoint_url', ''),
+        }
+        try:
+            with open('debug-7f44e5.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'sessionId': '7f44e5', 'location': 'storages.py:70', 'message': 'R2 _save called', 'data': log_data, 'timestamp': time.time() * 1000, 'hypothesisId': 'R2_UPLOAD'}) + '\n')
+        except Exception:
+            pass
+        # #endregion
+        
+        try:
+            result = super()._save(name, content)
+            
+            # #region agent log
+            try:
+                with open('debug-7f44e5.log', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({'sessionId': '7f44e5', 'location': 'storages.py:81', 'message': 'R2 _save success', 'data': {'result': result}, 'timestamp': time.time() * 1000, 'hypothesisId': 'R2_UPLOAD'}) + '\n')
+            except Exception:
+                pass
+            # #endregion
+            
+            return result
+        except Exception as e:
+            # #region agent log
+            error_data = {
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'name': name,
+            }
+            try:
+                with open('debug-7f44e5.log', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({'sessionId': '7f44e5', 'location': 'storages.py:93', 'message': 'R2 _save failed', 'data': error_data, 'timestamp': time.time() * 1000, 'hypothesisId': 'R2_UPLOAD'}) + '\n')
+            except Exception:
+                pass
+            # #endregion
+            raise
 
     def get_available_name(self, name, max_length=None):
         """Build a unique key WITHOUT calling HeadObject on R2."""
