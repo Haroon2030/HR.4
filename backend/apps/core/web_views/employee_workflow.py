@@ -733,3 +733,46 @@ def contract_end_employee(request, employee_id):
     )
     messages.success(request, 'تم إرسال طلب انتهاء العقد إلى مدير الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
+
+
+# =============================================================================
+# تصفية نهاية خدمة أو استقالة
+# =============================================================================
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def end_of_service_employee(request, employee_id):
+    """تقديم طلب تصفية نهاية خدمة أو استقالة مع حساب المكافأة وفقاً لـ EOSB."""
+    from apps.employees.models import Employee
+    from apps.core.models import PendingAction
+    from apps.core.forms import EndOfServiceForm
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if employee.status == Employee.Status.TERMINATED:
+        messages.error(request, 'الموظف منتهي الخدمة بالفعل.')
+        return redirect('web:view_employee', employee_id=employee.id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    form = EndOfServiceForm(request.POST)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    cd = form.cleaned_data
+    PendingAction.objects.create(
+        action_type=PendingAction.ActionType.END_OF_SERVICE,
+        employee=employee,
+        branch=employee.branch,
+        payload={
+            'end_date': cd['end_date'].isoformat(),
+            'terminated_by': cd['terminated_by'],
+            'end_reason': cd.get('end_reason', ''),
+            'notes': cd.get('notes', ''),
+        },
+        requested_by=request.user,
+    )
+    messages.success(request, 'تم إرسال طلب تصفية نهاية الخدمة إلى مدير الفرع للموافقة.')
+    return redirect('web:view_employee', employee_id=employee.id)

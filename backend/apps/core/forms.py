@@ -246,8 +246,8 @@ class TerminateEmployeeForm(forms.Form):
 class ContractEndForm(forms.Form):
     """نموذج انتهاء عقد بموجب نظام العمل مع مكافأة نهاية الخدمة."""
     TERMINATED_BY_CHOICES = [
-        ('company', 'تصفية نهاية خدمة (من قِبل الشركة)'),
-        ('employee', 'استقالة (من قِبل الموظف)'),
+        ('company', 'الشركة'),
+        ('employee', 'الموظف (استقالة)'),
     ]
     end_date = forms.DateField(
         error_messages={'invalid': 'تاريخ الانتهاء غير صحيح', 'required': 'تاريخ الانتهاء مطلوب'}
@@ -255,6 +255,29 @@ class ContractEndForm(forms.Form):
     terminated_by = forms.ChoiceField(
         choices=TERMINATED_BY_CHOICES,
         error_messages={'required': 'يجب تحديد الطرف المنهي'}
+    )
+    end_reason = forms.CharField(required=False)
+    notes = forms.CharField(required=False)
+
+    def clean_end_reason(self):
+        return (self.cleaned_data.get('end_reason') or '').strip()
+
+    def clean_notes(self):
+        return (self.cleaned_data.get('notes') or '').strip()
+
+
+class EndOfServiceForm(forms.Form):
+    """نموذج تصفية نهاية خدمة أو استقالة."""
+    TERMINATED_BY_CHOICES = [
+        ('company', 'تصفية نهاية خدمة (من قِبل الشركة)'),
+        ('employee', 'استقالة (من قِبل الموظف)'),
+    ]
+    end_date = forms.DateField(
+        error_messages={'invalid': 'تاريخ التصفية غير صحيح', 'required': 'تاريخ التصفية مطلوب'}
+    )
+    terminated_by = forms.ChoiceField(
+        choices=TERMINATED_BY_CHOICES,
+        error_messages={'required': 'يجب تحديد نوع التصفية'}
     )
     end_reason = forms.CharField(required=False)
     notes = forms.CharField(required=False)

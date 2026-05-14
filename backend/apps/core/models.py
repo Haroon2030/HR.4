@@ -449,6 +449,7 @@ class PendingAction(BaseModel):
         LOAN_REQUEST = 'loan_request', 'تقديم سلفة'
         ABSENCE = 'absence', 'تسجيل غياب'
         CONTRACT_END = 'contract_end', 'انتهاء عقد'
+        END_OF_SERVICE = 'end_of_service', 'تصفية نهاية خدمة / استقالة'
 
     class Status(models.TextChoices):
         PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'

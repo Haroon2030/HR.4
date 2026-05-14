@@ -62,7 +62,8 @@ def dashboard_view(request):
         action_type__in=[
             PendingAction.ActionType.CUSTODY_CLEAR,
             PendingAction.ActionType.TERMINATE,
-            PendingAction.ActionType.CONTRACT_END
+            PendingAction.ActionType.CONTRACT_END,
+            PendingAction.ActionType.END_OF_SERVICE
         ]
     ).exclude(status=PendingAction.Status.APPROVED).count()
 
