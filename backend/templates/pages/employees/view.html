@@ -2376,33 +2376,34 @@
                 <div class="space-y-4" x-data="{ count: $el.querySelectorAll('.termination-card').length }" x-init="$nextTick(() => { count = $el.querySelectorAll('.termination-card').length })">
                     {% for st in employee.statements_log.all %}
                         {% if st.statement_type == 'terminate' %}
-                            <div class="termination-card bg-white border border-rose-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                                <div class="absolute top-0 right-0 w-1.5 h-full bg-rose-500"></div>
-                                <div class="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
-                                            <i data-lucide="file-check-2" class="w-6 h-6 text-rose-600"></i>
+                            <div class="termination-card bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all" x-data="{ expanded: false }">
+                                <div class="flex items-center justify-between flex-wrap sm:flex-nowrap gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 flex-shrink-0">
+                                            <i data-lucide="file-check-2" class="w-6 h-6"></i>
                                         </div>
                                         <div>
-                                            <h3 class="font-bold text-slate-800 text-base mb-0.5">تصفية ومخالصة نهائية</h3>
-                                            <div class="flex items-center gap-3 text-xs text-slate-500">
-                                                <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"Y-m-d H:i" }}</span>
-                                                <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>
+                                            <h3 class="font-bold text-slate-800 text-base">تصفية ومخالصة نهائية</h3>
+                                            <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"Y-m-d H:i" }}</span>
+                                                <span class="flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 w-full sm:w-auto">
-                                        <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}?stmt_id={{ st.id }}" target="_blank" class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm">
-                                            <i data-lucide="printer" class="w-4 h-4"></i> طباعة ملف الـ PDF
+                                        <button @click="expanded = !expanded" class="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                            <span x-text="expanded ? 'إخفاء التفاصيل' : 'التفاصيل الحسابية'"></span>
+                                        </button>
+                                        <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}?stmt_id={{ st.id }}" target="_blank" class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                                            <i data-lucide="printer" class="w-4 h-4"></i>
+                                            <span>ملف التسوية PDF</span>
                                         </a>
                                     </div>
                                 </div>
-                                <div class="mt-4 pt-4 border-t border-slate-100">
-                                    <div class="text-sm text-slate-700 leading-relaxed max-w-4xl" x-data="{ expanded: false }">
-                                        <div :class="expanded ? '' : 'line-clamp-2'" class="whitespace-pre-line text-xs font-mono bg-slate-50 p-3 rounded border border-slate-100">{{ st.content }}</div>
-                                        <button @click="expanded = !expanded" class="text-xs text-blue-600 hover:underline mt-2 flex items-center gap-1">
-                                            <span x-text="expanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل الكاملة'"></span>
-                                        </button>
+                                <div x-show="expanded" x-collapse x-cloak class="mt-4 pt-4 border-t border-slate-100">
+                                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 font-mono text-xs text-slate-700 whitespace-pre-line leading-relaxed max-h-96 overflow-y-auto">
+                                        {{ st.content }}
                                     </div>
                                 </div>
                             </div>
