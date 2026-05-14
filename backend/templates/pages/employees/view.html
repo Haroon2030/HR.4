@@ -2561,7 +2561,7 @@
                         <i data-lucide="calendar" class="w-6 h-6 text-indigo-500 mb-2"></i>
                         <span class="text-xs font-bold text-indigo-700">أيام الإجازة المتراكمة</span>
                         <span class="text-xl font-black text-indigo-900 mt-1" dir="ltr">
-                            {{ accruals.first.cumulative_leave_days|default:"0.00"|floatformat:2 }}
+                            {% if accruals %}{{ accruals.0.cumulative_leave_days|floatformat:2 }}{% else %}0.00{% endif %}
                         </span>
                         <span class="text-[10px] text-indigo-600 mt-1">منذ {{ employee.hire_date|default:"تاريخ المباشرة" }}</span>
                     </div>
@@ -2569,14 +2569,14 @@
                         <i data-lucide="banknote" class="w-6 h-6 text-emerald-500 mb-2"></i>
                         <span class="text-xs font-bold text-emerald-700">قيمة الإجازات (ر.س)</span>
                         <span class="text-xl font-black text-emerald-900 mt-1" dir="ltr">
-                            {{ accruals.first.cumulative_leave_amount|default:"0.00"|floatformat:2 }}
+                            {% if accruals %}{{ accruals.0.cumulative_leave_amount|floatformat:2 }}{% else %}0.00{% endif %}
                         </span>
                     </div>
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
                         <i data-lucide="award" class="w-6 h-6 text-amber-500 mb-2"></i>
                         <span class="text-xs font-bold text-amber-700">مكافأة نهاية الخدمة (ر.س)</span>
                         <span class="text-xl font-black text-amber-900 mt-1" dir="ltr">
-                            {{ accruals.first.cumulative_eosb_amount|default:"0.00"|floatformat:2 }}
+                            {% if accruals %}{{ accruals.0.cumulative_eosb_amount|floatformat:2 }}{% else %}0.00{% endif %}
                         </span>
                     </div>
                 </div>
@@ -2650,13 +2650,7 @@
                         </table>
                     </div>
                 </div>
-                
-                <form method="post" action="{% url 'web:run_ledger_init' employee.id %}" class="mt-4 flex justify-end">
-                    {% csrf_token %}
-                    <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-xs rounded hover:bg-slate-700 flex items-center gap-2">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> تهيئة الرصيد الافتتاحي (للموظفين القدامى)
-                    </button>
-                </form>
+
             </div>
 
             <!-- Termination Tab -->

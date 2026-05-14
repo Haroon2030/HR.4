@@ -197,8 +197,46 @@ def view_employee(request, employee_id):
     loans = employee.loans.all().order_by('-issued_at', '-id')
     absences = employee.absences.all().order_by('-absence_date', '-id')
     
-    # Ledger accruals (safe: table may not exist yet before migration)
+    # Ledger accruals — تهيئة تلقائية إذا لم يكن هناك سجل
+    accruals = []
     try:
+        from apps.employees.models import EmployeeLedger
+        from decimal import Decimal
+        from django.utils import timezone
+
+        accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
+
+        # تهيئة تلقائية: إذا لم يكن هناك أي سجل وعنده تاريخ مباشرة
+        if not accruals_qs.exists() and employee.hire_date:
+            today = timezone.now().date()
+            service_days = (today - employee.hire_date).days
+            if service_days >= 1:
+                service_years = Decimal(str(round(service_days / 365.25, 4)))
+                leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
+                total_salary = Decimal(str(employee.total_salary or 0))
+                daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
+                leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
+
+                half_salary = (total_salary / Decimal('2')).quantize(Decimal('0.01'))
+                if service_years <= 5:
+                    eosb = (half_salary * service_years).quantize(Decimal('0.01'))
+                else:
+                    eosb = ((half_salary * Decimal('5')) + (total_salary * (service_years - Decimal('5')))).quantize(Decimal('0.01'))
+
+                EmployeeLedger.objects.create(
+                    employee=employee,
+                    transaction_type='initial',
+                    date=today,
+                    leave_days_change=leave_days,
+                    leave_amount_change=leave_amount,
+                    eosb_amount_change=eosb,
+                    cumulative_leave_days=leave_days,
+                    cumulative_leave_amount=leave_amount,
+                    cumulative_eosb_amount=eosb,
+                    notes=f'رصيد افتتاحي تلقائي من تاريخ المباشرة ({employee.hire_date}) حتى اليوم',
+                    created_by=request.user
+                )
+
         accruals = list(employee.accruals_ledger.all().order_by('-date', '-created_at'))
     except Exception:
         accruals = []
