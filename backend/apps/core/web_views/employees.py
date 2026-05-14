@@ -204,11 +204,6 @@ def view_employee(request, employee_id):
         from decimal import Decimal
         from django.utils import timezone
 
-        # حذف السجلات الافتتاحية القديمة لإعادة إنشائها بتفاصيل حسابية
-        employee.accruals_ledger.filter(
-            transaction_type='initial'
-        ).delete()
-
         accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
 
         # تهيئة تلقائية: إذا لم يكن هناك أي سجل وعنده تاريخ مباشرة
