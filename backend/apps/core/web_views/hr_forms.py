@@ -161,7 +161,12 @@ def hr_form_print(request, form_type, employee_id):
     }
 
     if form_type == 'final_settlement':
-        stmt = employee.statements_log.filter(statement_type='terminate').last()
+        stmt_id = request.GET.get('stmt_id')
+        if stmt_id and stmt_id.isdigit():
+            stmt = employee.statements_log.filter(id=stmt_id).first()
+        else:
+            stmt = employee.statements_log.filter(statement_type='terminate').last()
+        
         if stmt:
             import re
             m = re.search(r'\(مكافأة ([\d\.]+) \+ إجازة ([\d\.]+)\)', stmt.content)

@@ -1368,7 +1368,7 @@
             <button @click="activeTab='absences'" :class="activeTab==='absences' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الغيابات</button>
             <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
             <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
-            <button @click="activeTab='termination'" :class="activeTab==='termination' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-rose-700 hover:text-rose-800">انتهاء العقد</button>
+            <button @click="activeTab='termination'" :class="activeTab==='termination' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-rose-700 hover:text-rose-800">التصفيات</button>
         </div>
 
         <div class="p-6">
@@ -2371,54 +2371,52 @@
                 </p>
             </div>
             <!-- Termination Tab -->
+            <!-- Termination Tab -->
             <div x-show="activeTab==='termination'" x-cloak>
-                {% if employee.status == 'terminated' %}
-                <div class="bg-white border border-rose-100 rounded-xl p-6 shadow-sm">
-                    <div class="flex items-center gap-3 border-b border-rose-100 pb-4 mb-4">
-                        <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
-                            <i data-lucide="user-x" class="w-5 h-5 text-rose-600"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-lg">بيانات التصفية وانتهاء العقد</h3>
-                            <p class="text-xs text-slate-500">تم طي قيد الموظف وإجراء التسوية النهائية.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-                        <div>
-                            <div class="text-xs font-bold text-slate-500 mb-1">تاريخ التصفية</div>
-                            <div class="text-sm font-bold text-slate-800">{{ employee.end_date|default:"—" }}</div>
-                        </div>
-                        <div class="md:col-span-2">
-                            <div class="text-xs font-bold text-slate-500 mb-1">سبب الإنهاء</div>
-                            <div class="text-sm font-semibold text-slate-800">{{ employee.end_reason|default:"—" }}</div>
-                        </div>
-                        {% if employee.sponsorship_id %}
-                        <div>
-                            <div class="text-xs font-bold text-slate-500 mb-1">بدل الإجازة المستحق</div>
-                            <div class="text-sm font-bold text-emerald-600">{{ employee.leave_compensation|floatformat:2 }} ر.س</div>
-                        </div>
+                <div class="space-y-4" x-data="{ count: $el.querySelectorAll('.termination-card').length }" x-init="$nextTick(() => { count = $el.querySelectorAll('.termination-card').length })">
+                    {% for st in employee.statements_log.all %}
+                        {% if st.statement_type == 'terminate' %}
+                            <div class="termination-card bg-white border border-rose-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-1.5 h-full bg-rose-500"></div>
+                                <div class="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="file-check-2" class="w-6 h-6 text-rose-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-800 text-base mb-0.5">تصفية ومخالصة نهائية</h3>
+                                            <div class="flex items-center gap-3 text-xs text-slate-500">
+                                                <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"Y-m-d H:i" }}</span>
+                                                <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}?stmt_id={{ st.id }}" target="_blank" class="flex-1 sm:flex-none px-4 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm">
+                                            <i data-lucide="printer" class="w-4 h-4"></i> طباعة ملف الـ PDF
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-100">
+                                    <div class="text-sm text-slate-700 leading-relaxed max-w-4xl" x-data="{ expanded: false }">
+                                        <div :class="expanded ? '' : 'line-clamp-2'" class="whitespace-pre-line text-xs font-mono bg-slate-50 p-3 rounded border border-slate-100">{{ st.content }}</div>
+                                        <button @click="expanded = !expanded" class="text-xs text-blue-600 hover:underline mt-2 flex items-center gap-1">
+                                            <span x-text="expanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل الكاملة'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         {% endif %}
-                    </div>
+                    {% endfor %}
                     
-                    <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-                        <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}" target="_blank" class="px-5 py-2.5 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-2 transition-colors border border-blue-200">
-                            <i data-lucide="printer" class="w-4 h-4"></i> طباعة التسوية والمخالصة
-                        </a>
-                        <button type="button" @click="quickModal='reactivate'" class="px-5 py-2.5 text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center gap-2 transition-colors border border-emerald-200">
-                            <i data-lucide="user-check" class="w-4 h-4"></i> إعادة تفعيل الموظف
-                        </button>
+                    <div class="text-center py-16 bg-slate-50 border border-slate-200 rounded-xl border-dashed" x-show="count === 0" x-cloak>
+                        <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="shield-check" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-1">لا توجد تصفيات</h3>
+                        <p class="text-sm text-slate-500">سجل الموظف خالي من أي عمليات تصفية أو إنهاء عقود.</p>
                     </div>
                 </div>
-                {% else %}
-                <div class="text-center py-16 bg-slate-50 border border-slate-200 rounded-xl border-dashed">
-                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-lucide="shield-check" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="font-bold text-slate-800 text-lg mb-1">الموظف على رأس العمل</h3>
-                    <p class="text-sm text-slate-500">لا توجد بيانات تصفية أو انتهاء عقد حالياً، الموظف نشط ولم يتم إنهاء خدماته.</p>
-                </div>
-                {% endif %}
             </div>
 
         </div>
