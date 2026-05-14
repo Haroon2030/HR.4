@@ -189,13 +189,16 @@ def view_employee(request, employee_id):
     except (ValueError, TypeError):
         schedule_boxes = []
 
-    # Custodies / Business Trips / Job Offers (historical tabs)
+    # Custodies / Business Trips / Job Offers / Accruals (historical tabs)
     custodies = employee.custodies.all().order_by('-received_at', '-id')
     active_custodies = employee.custodies.filter(status='active').order_by('-received_at')
     business_trips = employee.business_trips.all().order_by('-start_date', '-id')
     job_offers = employee.job_offers.all().order_by('-issued_at', '-id')
     loans = employee.loans.all().order_by('-issued_at', '-id')
     absences = employee.absences.all().order_by('-absence_date', '-id')
+    
+    # Ledger accruals
+    accruals = employee.accruals_ledger.all().order_by('-date', '-created_at')
 
     return render(request, 'pages/employees/view.html', {
         'employee': employee,
@@ -211,6 +214,7 @@ def view_employee(request, employee_id):
         'job_offers': job_offers,
         'loans': loans,
         'absences': absences,
+        'accruals': accruals,
     })
 
 

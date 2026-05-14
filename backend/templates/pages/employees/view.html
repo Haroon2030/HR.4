@@ -1550,6 +1550,7 @@
             <button @click="activeTab='loans'" :class="activeTab==='loans' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">السلف</button>
             <button @click="activeTab='absences'" :class="activeTab==='absences' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الغيابات</button>
             <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
+            <button @click="activeTab='accruals'" :class="activeTab==='accruals' ? 'border-emerald-600 text-emerald-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-emerald-700 hover:text-emerald-800">المخصصات والأرصدة</button>
             <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
             <button @click="activeTab='termination'" :class="activeTab==='termination' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-rose-700 hover:text-rose-800">التصفيات</button>
         </div>
@@ -2553,6 +2554,111 @@
                     يتم تسجيل كل عملية تتم على الموظف تلقائياً في هذا الأرشيف الزمني
                 </p>
             </div>
+            <!-- Accruals Ledger -->
+            <div x-show="activeTab==='accruals'" x-cloak class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+                        <i data-lucide="calendar" class="w-6 h-6 text-indigo-500 mb-2"></i>
+                        <span class="text-xs font-bold text-indigo-700">أيام الإجازة المتراكمة</span>
+                        <span class="text-xl font-black text-indigo-900 mt-1" dir="ltr">
+                            {{ accruals.first.cumulative_leave_days|default:"0.00"|floatformat:2 }}
+                        </span>
+                        <span class="text-[10px] text-indigo-600 mt-1">منذ {{ employee.hire_date|default:"تاريخ المباشرة" }}</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+                        <i data-lucide="banknote" class="w-6 h-6 text-emerald-500 mb-2"></i>
+                        <span class="text-xs font-bold text-emerald-700">قيمة الإجازات (ر.س)</span>
+                        <span class="text-xl font-black text-emerald-900 mt-1" dir="ltr">
+                            {{ accruals.first.cumulative_leave_amount|default:"0.00"|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+                        <i data-lucide="award" class="w-6 h-6 text-amber-500 mb-2"></i>
+                        <span class="text-xs font-bold text-amber-700">مكافأة نهاية الخدمة (ر.س)</span>
+                        <span class="text-xl font-black text-amber-900 mt-1" dir="ltr">
+                            {{ accruals.first.cumulative_eosb_amount|default:"0.00"|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-right font-semibold">التاريخ</th>
+                                    <th class="px-4 py-3 text-right font-semibold">نوع الحركة</th>
+                                    <th class="px-4 py-3 text-center font-semibold border-x border-slate-200" colspan="2">الإجازة (أيام / قيمة)</th>
+                                    <th class="px-4 py-3 text-center font-semibold border-l border-slate-200">مكافأة نهاية الخدمة</th>
+                                    <th class="px-4 py-3 text-right font-semibold">ملاحظات</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for a in accruals %}
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-4 py-3 text-xs text-slate-800 font-mono">{{ a.date|date:"Y-m-d" }}</td>
+                                    <td class="px-4 py-3 text-xs font-bold
+                                        {% if a.transaction_type == 'monthly_payroll' %}text-indigo-600
+                                        {% elif a.transaction_type == 'leave_taken' %}text-rose-600
+                                        {% elif a.transaction_type == 'final_settlement' %}text-purple-600
+                                        {% else %}text-emerald-600{% endif %}">
+                                        {{ a.get_transaction_type_display }}
+                                    </td>
+                                    
+                                    <!-- Leave Changes & Cumulative -->
+                                    <td class="px-4 py-3 text-center border-r border-slate-200">
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="text-xs font-bold {% if a.leave_days_change > 0 %}text-emerald-600{% elif a.leave_days_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
+                                                {% if a.leave_days_change > 0 %}+{% endif %}{{ a.leave_days_change|floatformat:2 }} يوم
+                                            </span>
+                                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded" dir="ltr">Σ {{ a.cumulative_leave_days|floatformat:2 }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center border-l border-slate-200 bg-slate-50/50">
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="text-xs font-bold {% if a.leave_amount_change > 0 %}text-emerald-600{% elif a.leave_amount_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
+                                                {% if a.leave_amount_change > 0 %}+{% endif %}{{ a.leave_amount_change|floatformat:2 }} ر.س
+                                            </span>
+                                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded" dir="ltr">Σ {{ a.cumulative_leave_amount|floatformat:2 }}</span>
+                                        </div>
+                                    </td>
+
+                                    <!-- EOSB Changes & Cumulative -->
+                                    <td class="px-4 py-3 text-center border-l border-slate-200">
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="text-xs font-bold {% if a.eosb_amount_change > 0 %}text-emerald-600{% elif a.eosb_amount_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
+                                                {% if a.eosb_amount_change > 0 %}+{% endif %}{{ a.eosb_amount_change|floatformat:2 }} ر.س
+                                            </span>
+                                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded" dir="ltr">Σ {{ a.cumulative_eosb_amount|floatformat:2 }}</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-4 py-3 text-[11px] text-slate-500 leading-relaxed">{{ a.notes|default:"—" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="px-4 py-12 text-center">
+                                        <div class="inline-flex flex-col items-center gap-2 text-slate-400">
+                                            <i data-lucide="calculator" class="w-10 h-10"></i>
+                                            <span class="text-sm font-medium">لا توجد حركات مخصصات مسجلة</span>
+                                            <p class="text-xs mt-1">يتم إنشاء السجلات تلقائياً مع كل عملية إقفال للرواتب.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <form method="post" action="{% url 'web:run_ledger_init' employee.id %}" class="mt-4 flex justify-end">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-xs rounded hover:bg-slate-700 flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> تهيئة الرصيد الافتتاحي (للموظفين القدامى)
+                    </button>
+                </form>
+            </div>
+
             <!-- Termination Tab -->
             <!-- Termination Tab -->
             <div x-show="activeTab==='termination'" x-cloak>

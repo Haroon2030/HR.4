@@ -74,6 +74,30 @@ def _execute_leave(action, executor):
         )
         employee.save(update_fields=['available_leave_balance'])
 
+        # ── إنشاء سجل في المخصصات (خصم الإجازة من الرصيد التراكمي) ──
+        from apps.employees.models import EmployeeLedger
+        last_ledger = EmployeeLedger.objects.filter(employee=employee).order_by('-date', '-created_at').first()
+        prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
+        prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
+        prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
+
+        daily_wage = (Decimal(employee.total_salary or 0) / 30).quantize(Decimal('0.01'))
+        leave_amount_deducted = (days * daily_wage).quantize(Decimal('0.01'))
+
+        EmployeeLedger.objects.create(
+            employee=employee,
+            transaction_type=EmployeeLedger.TransactionType.LEAVE_TAKEN,
+            date=timezone.now().date(),
+            leave_days_change=-days,
+            leave_amount_change=-leave_amount_deducted,
+            eosb_amount_change=Decimal('0'),
+            cumulative_leave_days=prev_leave_days - days,
+            cumulative_leave_amount=prev_leave_amt - leave_amount_deducted,
+            cumulative_eosb_amount=prev_eosb,
+            notes=f'استخدام إجازة: {days} يوم',
+            created_by=executor
+        )
+
     return f'تم تسجيل إجازة ({days} يوم) للموظف {employee.name}'
 
 
@@ -565,6 +589,27 @@ def _execute_contract_end(action, executor):
         created_by=action.requested_by,
     )
 
+    # ── إنشاء سجل في المخصصات (تصفير الرصيد) ──
+    from apps.employees.models import EmployeeLedger
+    last_ledger = EmployeeLedger.objects.filter(employee=employee).order_by('-date', '-created_at').first()
+    prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
+    prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
+    prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
+
+    EmployeeLedger.objects.create(
+        employee=employee,
+        transaction_type=EmployeeLedger.TransactionType.FINAL_SETTLEMENT,
+        date=end_date,
+        leave_days_change=-prev_leave_days,
+        leave_amount_change=-prev_leave_amt,
+        eosb_amount_change=-prev_eosb,
+        cumulative_leave_days=Decimal('0'),
+        cumulative_leave_amount=Decimal('0'),
+        cumulative_eosb_amount=Decimal('0'),
+        notes='انتهاء عقد وتصفير الرصيد',
+        created_by=executor
+    )
+
     return (
         f'تم إنهاء عقد {employee.name} بتاريخ {end_date} — '
         f'مكافأة: {eosb} ر.س + إجازة: {leave_comp} ر.س = '
@@ -696,6 +741,27 @@ def _execute_end_of_service(action, executor):
         statement_date=end_date,
         content=content,
         created_by=action.requested_by,
+    )
+
+    # ── إنشاء سجل في المخصصات (تصفير الرصيد) ──
+    from apps.employees.models import EmployeeLedger
+    last_ledger = EmployeeLedger.objects.filter(employee=employee).order_by('-date', '-created_at').first()
+    prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
+    prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
+    prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
+
+    EmployeeLedger.objects.create(
+        employee=employee,
+        transaction_type=EmployeeLedger.TransactionType.FINAL_SETTLEMENT,
+        date=end_date,
+        leave_days_change=-prev_leave_days,
+        leave_amount_change=-prev_leave_amt,
+        eosb_amount_change=-prev_eosb,
+        cumulative_leave_days=Decimal('0'),
+        cumulative_leave_amount=Decimal('0'),
+        cumulative_eosb_amount=Decimal('0'),
+        notes='تصفية نهائية وتصفير الرصيد',
+        created_by=executor
     )
 
     return (

@@ -855,3 +855,62 @@ class EmployeeAbsence(BaseModel):
     def __str__(self):
         return f"{self.employee.name} — {self.absence_date} ({self.days} يوم)"
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# سجل الأرصدة والمخصصات الشهرية (Ledger for Leaves and EOSB)
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeLedger(BaseModel):
+    """
+    سجل مالي تراكمي لكل موظف يحسب رصيد الإجازات ومكافأة نهاية الخدمة.
+    يُضاف سطر تلقائياً عند اعتماد كل مسير رواتب، أو عند خصم إجازة، أو التصفية.
+    """
+    class TransactionType(models.TextChoices):
+        INITIAL_BALANCE = 'initial', 'رصيد افتتاحي (من المباشرة وحتى الآن)'
+        MONTHLY_PAYROLL = 'monthly', 'مخصص شهري (مسير رواتب)'
+        LEAVE_TAKEN = 'leave_taken', 'استخدام رصيد إجازة (خصم)'
+        FINAL_SETTLEMENT = 'settlement', 'تصفية نهائية (تصفير)'
+        MANUAL_ADJUSTMENT = 'adjustment', 'تسوية يدوية'
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='accruals_ledger',
+        verbose_name="الموظف"
+    )
+    transaction_type = models.CharField(
+        "نوع الحركة", max_length=20, choices=TransactionType.choices,
+        default=TransactionType.MONTHLY_PAYROLL
+    )
+    date = models.DateField("تاريخ الحركة", default=timezone.now)
+
+    # ── التغييرات في هذه الحركة (Change) ──
+    leave_days_change = models.DecimalField("التغير في أيام الإجازة", max_digits=8, decimal_places=4, default=0)
+    leave_amount_change = models.DecimalField("التغير في قيمة الإجازة", max_digits=12, decimal_places=2, default=0)
+    eosb_amount_change = models.DecimalField("التغير في قيمة نهاية الخدمة", max_digits=12, decimal_places=2, default=0)
+
+    # ── الرصيد المتراكم بعد هذه الحركة (Cumulative Balance) ──
+    cumulative_leave_days = models.DecimalField("رصيد أيام الإجازة المتراكم", max_digits=8, decimal_places=4, default=0)
+    cumulative_leave_amount = models.DecimalField("رصيد قيمة الإجازة المتراكم", max_digits=12, decimal_places=2, default=0)
+    cumulative_eosb_amount = models.DecimalField("رصيد نهاية الخدمة المتراكم", max_digits=12, decimal_places=2, default=0)
+
+    # ── المرجع (Reference) ──
+    payroll_run = models.ForeignKey(
+        'payroll.PayrollRun', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ledger_entries', verbose_name="مسير الرواتب المرتبط"
+    )
+    notes = models.TextField("ملاحظات / تفاصيل الحساب", blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="أُضيفت بواسطة"
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "سجل مخصصات موظف"
+        verbose_name_plural = "سجلات مخصصات الموظفين"
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.get_transaction_type_display()} ({self.date})"
+
+
