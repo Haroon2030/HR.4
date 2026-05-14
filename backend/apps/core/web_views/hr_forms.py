@@ -152,10 +152,32 @@ def hr_form_print(request, form_type, employee_id):
     )
     company = (employee.branch.company if employee.branch_id else None) or Company.objects.first()
 
-    return render(request, f'pages/hr_forms/{form_type}.html', {
+    context = {
         'form_meta': form_meta,
         'employee': employee,
         'company': company,
         'branch': employee.branch,
         'form_serial': _build_form_serial(form_type, employee.id),
-    })
+    }
+
+    if form_type == 'final_settlement':
+        stmt = employee.statements_log.filter(statement_type='terminate').last()
+        if stmt:
+            import re
+            m = re.search(r'\(مكافأة ([\d\.]+) \+ إجازة ([\d\.]+)\)', stmt.content)
+            if m:
+                context['eosb_amount'] = m.group(1)
+                context['leave_comp'] = m.group(2)
+            tot = re.search(r'إجمالي المستحقات:\s*([\d\.]+)', stmt.content)
+            if tot:
+                context['total_entitlement'] = tot.group(1)
+            srv = re.search(r'مدة الخدمة:\s*(.*?)$', stmt.content, re.MULTILINE)
+            if srv:
+                context['service_duration'] = srv.group(1).strip()
+            
+            # Extract leave days
+            ld = re.search(r'رصيد الإجازة:\s*([\d\.]+) يوم', stmt.content)
+            if ld:
+                context['leave_days'] = ld.group(1)
+
+    return render(request, f'pages/hr_forms/{form_type}.html', context)
