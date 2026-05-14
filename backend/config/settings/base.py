@@ -243,6 +243,26 @@ SESSION_SAVE_EVERY_REQUEST = True                   # تحديث الجلسة م
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False             # لا تنتهي عند إغلاق المتصفح
 
 # ══════════════════════════════════════════════════════════════════════════════
+# إعدادات البريد الإلكتروني (SMTP)
+# تُقرأ من .env — إذا لم تكن مُعدّة، يُستخدم console backend (للتطوير)
+# ══════════════════════════════════════════════════════════════════════════════
+
+EMAIL_HOST = env('EMAIL_HOST', default='')
+EMAIL_PORT = env.int('EMAIL_PORT', default=465)
+EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=True)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=False)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER or 'noreply@localhost')
+EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', default=30)
+
+# اختيار الـ backend: إذا EMAIL_HOST مُعدّ نستخدم SMTP، وإلا نستخدم console (للتطوير المحلي)
+if EMAIL_HOST:
+    EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+else:
+    EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+
+# ══════════════════════════════════════════════════════════════════════════════
 # إعدادات أمنية متنوعة
 # ══════════════════════════════════════════════════════════════════════════════
 
