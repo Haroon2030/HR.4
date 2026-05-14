@@ -227,8 +227,21 @@ def view_employee(request, employee_id):
                 half_salary = (total_salary / Decimal('2')).quantize(Decimal('0.01'))
                 if service_years <= 5:
                     eosb = (half_salary * service_years).quantize(Decimal('0.01'))
+                    eosb_detail = f'نصف الراتب × سنوات الخدمة = {half_salary} × {service_years} = {eosb}'
                 else:
-                    eosb = ((half_salary * Decimal('5')) + (total_salary * (service_years - Decimal('5')))).quantize(Decimal('0.01'))
+                    first5 = (half_salary * Decimal('5')).quantize(Decimal('0.01'))
+                    extra_yrs = (service_years - Decimal('5')).quantize(Decimal('0.0001'))
+                    extra_amt = (total_salary * extra_yrs).quantize(Decimal('0.01'))
+                    eosb = (first5 + extra_amt).quantize(Decimal('0.01'))
+                    eosb_detail = f'أول 5 سنوات: {half_salary} × 5 = {first5} | بعد 5 سنوات: {total_salary} × {extra_yrs} = {extra_amt} | الإجمالي = {eosb}'
+
+                notes = (
+                    f'تاريخ المباشرة: {employee.hire_date} | '
+                    f'مدة الخدمة: {service_days} يوم ({service_years} سنة)\n'
+                    f'الراتب الإجمالي: {total_salary} ر.س | أجر اليوم: {total_salary} ÷ 30 = {daily_wage} ر.س\n'
+                    f'الإجازات: {service_days} يوم × 21 ÷ 365.25 = {leave_days} يوم | القيمة: {leave_days} × {daily_wage} = {leave_amount} ر.س\n'
+                    f'نهاية الخدمة: {eosb_detail}'
+                )
 
                 EmployeeLedger.objects.create(
                     employee=employee,
@@ -240,7 +253,7 @@ def view_employee(request, employee_id):
                     cumulative_leave_days=leave_days,
                     cumulative_leave_amount=leave_amount,
                     cumulative_eosb_amount=eosb,
-                    notes=f'رصيد افتتاحي تلقائي من تاريخ المباشرة ({employee.hire_date}) حتى اليوم',
+                    notes=notes,
                     created_by=request.user
                 )
 
