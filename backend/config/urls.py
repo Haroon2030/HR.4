@@ -43,7 +43,11 @@ urlpatterns = [
 ]
 
 # في وضع التطوير: خدمة الملفات الثابتة والمرفقات محلياً
-# في الإنتاج: يتولى WhiteNoise (ثابتة) و R2 (مرفقات) ذلك
+# في الإنتاج: يتولى WhiteNoise (ثابتة) وDjango (مرفقات)
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# خدمة ملفات الميديا (المرفقات) دائماً — ضرورية لعرض المستندات المرفوعة
+urlpatterns += [
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+]
