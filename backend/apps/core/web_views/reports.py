@@ -31,7 +31,7 @@ REPORTS = [
     {'group': 'salary',    'key': 'deductions_breakdown',  'title': 'تفصيل الاستقطاعات',           'icon': 'minus-circle',  'color': 'emerald',  'description': 'استقطاعات آخر مسير'},
     {'group': 'salary',    'key': 'insurance_costs',       'title': 'بيانات التأمين',              'icon': 'shield',        'color': 'emerald',  'description': 'تأمين كل موظف'},
     {'group': 'turnover',  'key': 'new_hires',             'title': 'التعيينات الجديدة',           'icon': 'user-plus',     'color': 'indigo',   'description': 'الموظفون المعينون حديثاً'},
-    {'group': 'turnover',  'key': 'terminations',          'title': 'إنهاء الخدمات',               'icon': 'user-minus',    'color': 'indigo',   'description': 'الموظفون المنتهية خدماتهم'},
+    {'group': 'turnover',  'key': 'terminations',          'title': 'انتهاء العقود',               'icon': 'user-minus',    'color': 'indigo',   'description': 'الموظفون المنتهية عقودهم والمصفون'},
     {'group': 'turnover',  'key': 'tenure_analysis',       'title': 'تحليل فترة الخدمة',           'icon': 'hourglass',     'color': 'indigo',   'description': 'مدة خدمة كل موظف'},
     {'group': 'compliance','key': 'passport_expiry',       'title': 'انتهاء الجوازات',             'icon': 'book-open',     'color': 'rose',     'description': 'الجوازات المنتهية أو القاربة'},
     {'group': 'compliance','key': 'health_cards',          'title': 'الكروت الصحية',               'icon': 'heart-pulse',   'color': 'rose',     'description': 'حالة الكروت الصحية'},
@@ -126,11 +126,10 @@ def _build_new_hires(req):
 
 def _build_terminations(req):
     from apps.employees.models import Employee
-    start = date.today() - timedelta(days=365)
-    cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'تاريخ الإنهاء', 'السبب']
-    qs = _emp_qs().filter(status=Employee.Status.TERMINATED, end_date__gte=start).select_related('branch').order_by('-end_date')
-    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—'] for e in qs]
-    return {'columns': cols, 'rows': rows, 'note': 'آخر سنة'}
+    cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'تاريخ الانتهاء', 'السبب', 'إجمالي الراتب الأخير']
+    qs = _emp_qs().filter(status=Employee.Status.TERMINATED).select_related('branch').order_by('-end_date')
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—', str(e.total_salary)] for e in qs]
+    return {'columns': cols, 'rows': rows, 'note': 'قائمة بكل الموظفين المنتهية عقودهم والمُصفَّين'}
 
 def _build_tenure_analysis(req):
     today = date.today()
