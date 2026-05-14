@@ -246,8 +246,8 @@ class TerminateEmployeeForm(forms.Form):
 class ContractEndForm(forms.Form):
     """نموذج انتهاء عقد بموجب نظام العمل مع مكافأة نهاية الخدمة."""
     TERMINATED_BY_CHOICES = [
-        ('company', 'الشركة'),
-        ('employee', 'الموظف (استقالة)'),
+        ('company', 'تصفية نهاية خدمة (من قِبل الشركة)'),
+        ('employee', 'استقالة (من قِبل الموظف)'),
     ]
     end_date = forms.DateField(
         error_messages={'invalid': 'تاريخ الانتهاء غير صحيح', 'required': 'تاريخ الانتهاء مطلوب'}
