@@ -1526,7 +1526,33 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
+                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2"
+                     x-init="$nextTick(() => {
+                        const buttons = $el.querySelectorAll('button');
+                        const container = $el.getBoundingClientRect();
+                        const data = {
+                            container_w: container.width,
+                            container_scrollW: $el.scrollWidth,
+                            buttons: Array.from(buttons).map(b => ({
+                                text: b.textContent.trim().slice(0, 30),
+                                type: b.type,
+                                offsetW: b.offsetWidth,
+                                scrollW: b.scrollWidth,
+                                clientW: b.clientWidth,
+                                offsetLeft: b.offsetLeft,
+                                offsetRight: b.offsetLeft + b.offsetWidth,
+                                children: b.children.length,
+                                bg: getComputedStyle(b).backgroundColor,
+                            })),
+                            modalW: $el.closest('[class*=max-w-lg]')?.offsetWidth || 0,
+                            windowW: window.innerWidth,
+                        };
+                        fetch('http://127.0.0.1:7798/ingest/349265a0-7a45-4293-bb05-16ad73efb90b',{
+                            method:'POST',
+                            headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f44e5'},
+                            body:JSON.stringify({sessionId:'7f44e5',location:'view.html:1529',message:'absence modal buttons',data,timestamp:Date.now(),hypothesisId:'A_B_C_D_E'})
+                        }).catch(()=>{});
+                     })">
                     <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded flex items-center gap-1">
                         <i data-lucide="user-minus" class="w-4 h-4"></i> إرسال للموافقة
