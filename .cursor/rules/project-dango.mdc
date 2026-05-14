@@ -1,0 +1,352 @@
+---
+alwaysApply: true
+---
+
+# Advanced Django ERP & SaaS Development Rules
+
+## Core Stack
+- Backend framework: Django
+- API framework: Django REST Framework (DRF)
+- Database: PostgreSQL
+- Frontend: Bootstrap 5 RTL
+- Deployment: Docker + Gunicorn + Nginx
+- Authentication: JWT or Session Authentication
+- Cache: Redis when needed
+
+---
+
+# Architecture Rules
+
+## Project Structure
+- Use scalable app-based architecture.
+- Separate each business domain into its own Django app.
+- Keep business logic outside views.
+- Use:
+  - services/
+  - selectors/
+  - utils/
+  - repositories/
+  structure when appropriate.
+
+Example:
+apps/
+users/
+inventory/
+sales/
+purchases/
+reports/
+
+## Clean Code
+- Write production-ready code only.
+- Avoid quick fixes and dirty solutions.
+- Use reusable components.
+- Avoid duplicated logic.
+- Follow SOLID principles.
+
+## Naming
+- Use clear English naming conventions.
+- Variables and functions must be descriptive.
+- Database tables should use meaningful names.
+
+---
+
+# Database Rules
+
+## PostgreSQL
+- Optimize queries for large-scale ERP systems.
+- Always use indexes for:
+  - foreign keys
+  - barcode fields
+  - search fields
+  - frequently filtered columns
+
+## ORM Optimization
+- Use:
+  - select_related()
+  - prefetch_related()
+  aggressively where needed.
+
+- Avoid N+1 query problems.
+
+## Migrations
+- Create safe migrations.
+- Never remove production data automatically.
+- Use data migrations carefully.
+
+## Audit Logs
+- Track:
+  - created_by
+  - updated_by
+  - timestamps
+  - deleted status
+
+## Soft Delete
+- Prefer soft delete for ERP systems.
+- Never permanently delete critical business data.
+
+---
+
+# ERP Business Logic Rules
+
+## Multi Branch Support
+- All systems must support:
+  - branches
+  - warehouses
+  - multiple users
+  - centralized management
+
+## Permissions
+- Implement role-based permissions.
+- Support:
+  - admin
+  - manager
+  - employee
+  - data entry
+  roles.
+
+## Inventory
+- Prevent negative stock unless explicitly allowed.
+- Track stock movement history.
+- Keep barcode support optimized.
+
+## Financial Safety
+- Never modify financial records directly.
+- Use transaction-safe database operations.
+
+## Data Integrity
+- Use atomic transactions for critical operations.
+
+Example:
+with transaction.atomic():
+
+---
+
+# SaaS Rules
+
+## Multi Tenant
+- Build scalable SaaS-ready architecture.
+- Separate tenant data securely.
+- Never expose tenant data across accounts.
+
+## Security
+- Validate all permissions server-side.
+- Prevent privilege escalation.
+- Protect APIs with authentication and throttling.
+
+## Backups
+- Systems must be backup-friendly.
+- Design with disaster recovery in mind.
+
+---
+
+# API Rules
+
+## DRF Standards
+- Use ViewSets where appropriate.
+- Use serializers properly.
+- Keep APIs RESTful.
+
+## API Responses
+- Return clean JSON responses.
+
+Example:
+{
+  "success": true,
+  "message": "Item created successfully",
+  "data": {}
+}
+
+## Pagination
+- Use pagination for large datasets.
+
+## Filtering
+- Use:
+  - django-filter
+  - search filters
+  - ordering filters
+
+## Validation
+- Never trust frontend data.
+- Validate everything in serializers.
+
+---
+
+# Authentication Rules
+
+## JWT
+- Prefer JWT authentication for APIs.
+
+## Permissions
+- Use custom permissions when needed.
+- Protect all sensitive endpoints.
+
+## Sessions
+- Expire inactive sessions securely.
+
+---
+
+# Frontend Rules
+
+## UI Framework
+- Use Bootstrap 5 only.
+- Design must look modern and enterprise-level.
+
+## RTL
+- Always support Arabic RTL layout.
+- Navbar and tables must fully support RTL.
+
+## Components
+- Create reusable UI components.
+- Use:
+  - cards
+  - responsive tables
+  - dashboards
+  - charts
+  professionally.
+
+## UX
+- Prioritize:
+  - speed
+  - simplicity
+  - readability
+
+---
+
+# Django Admin Rules
+
+## Admin Optimization
+- Add:
+  - search
+  - filters
+  - autocomplete
+  - pagination
+
+## Large Data
+- Optimize admin for large ERP datasets.
+
+---
+
+# Performance Rules
+
+## Caching
+- Use Redis caching where beneficial.
+
+## Query Optimization
+- Avoid unnecessary database hits.
+
+## Static Files
+- Optimize static file delivery.
+
+## Async Tasks
+- Use Celery for:
+  - reports
+  - emails
+  - heavy background jobs
+
+---
+
+# Security Rules
+
+## Prevent Vulnerabilities
+- Protect against:
+  - SQL Injection
+  - XSS
+  - CSRF
+  - IDOR
+  - Mass Assignment
+
+## Secrets
+- Never hardcode secrets.
+- Use environment variables.
+
+## Uploads
+- Validate uploaded files securely.
+
+---
+
+# Docker Rules
+
+## Containers
+- Use separate containers for:
+  - web
+  - database
+  - redis
+  - celery
+
+## Environment
+- Use .env files.
+
+## Production
+- Use Gunicorn + Nginx.
+
+---
+
+# Coding Standards
+
+## Python
+- Follow PEP8.
+- Use type hints where possible.
+
+## Readability
+- Functions should remain short and clean.
+
+## Comments
+- Add comments only for complex logic.
+
+---
+
+# Reporting Rules
+
+## Reports
+- ERP systems must support:
+  - Excel export
+  - PDF export
+  - filtering
+  - date ranges
+
+## Data Tables
+- Use server-side pagination for large tables.
+
+---
+
+# AI Assistant Coding Behavior
+
+- Always generate scalable enterprise-grade code.
+- Prioritize maintainability over shortcuts.
+- Prefer secure implementations.
+- Prefer reusable architecture.
+- Think like a senior backend engineer.
+- Avoid generating toy examples unless requested.
+- Assume the project may scale to thousands of users and millions of records.
+
+---
+
+# Preferred Libraries
+
+## Django Packages
+- django-environ
+- django-filter
+- djangorestframework
+- drf-spectacular
+- psycopg2
+- celery
+- redis
+- django-cors-headers
+
+---
+
+# UI Preferences
+
+- Professional dark/light compatible UI
+- Enterprise dashboard style
+- Modern tables and statistics cards
+- Clean spacing and typography
+- Arabic-friendly interfaces
+- Responsive layouts
+
+---
+
+# Important
+- Always write code suitable for production deployment.
+- Avoid fake placeholder logic.
+- Generate complete working implementations whenever possible.
