@@ -136,7 +136,7 @@
 
     <!-- Modal: إعادة تفعيل موظف مُصفّى -->
     <div x-show="quickModal==='reactivate'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="user-check" class="w-5 h-5 text-emerald-600"></i>
@@ -422,7 +422,7 @@
             get exceeds(){ return this.ltype === 'annual' && this.days > this.balance; },
             get canSubmit(){ return this.hasSponsor && this.days > 0 && !this.exceeds; }
          }">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="calendar-plus" class="w-5 h-5 text-blue-600"></i>
@@ -513,7 +513,7 @@
 
     <!-- Modal: تصفية موظف -->
     <div x-show="quickModal==='terminate'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="user-x" class="w-5 h-5 text-red-600"></i>
@@ -957,7 +957,7 @@
             get diff(){ return this.newTotal - this.currentTotal; },
             get pct(){ return this.currentTotal ? ((this.diff/this.currentTotal)*100).toFixed(1) : 0; }
          }">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="dollar-sign" class="w-5 h-5 text-emerald-600"></i>
@@ -1059,7 +1059,7 @@
 
     <!-- Modal: نقل موظف -->
     <div x-show="quickModal==='transfer'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="move" class="w-5 h-5 text-indigo-600"></i>
@@ -1144,7 +1144,7 @@
 
     <!-- Modal: استلام عهدة -->
     <div x-show="quickModal==='custody_receive'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="package-check" class="w-5 h-5 text-emerald-600"></i>
@@ -1205,7 +1205,7 @@
 
     <!-- Modal: تصفية عهدة -->
     <div x-show="quickModal==='custody_clear'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="package-x" class="w-5 h-5 text-rose-600"></i>
@@ -1255,7 +1255,7 @@
 
     <!-- Modal: عرض وظيفي -->
     <div x-show="quickModal==='job_offer'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="file-badge" class="w-5 h-5 text-primary-600"></i>
@@ -1304,7 +1304,7 @@
 
     <!-- Modal: رحلة عمل -->
     <div x-show="quickModal==='business_trip'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="plane-takeoff" class="w-5 h-5 text-sky-600"></i>
@@ -1367,7 +1367,7 @@
 
     <!-- Modal: تقديم سلفة -->
     <div x-show="quickModal==='loan'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="hand-coins" class="w-5 h-5 text-amber-600"></i>
@@ -1435,7 +1435,7 @@
 
     <!-- Modal: تسجيل غياب -->
     <div x-show="quickModal==='absence'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg"
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
              x-data="{
                 totalSalary: {{ employee.total_salary|default:0 }},
                 absenceDate: '{% now "Y-m-d" %}',
