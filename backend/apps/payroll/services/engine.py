@@ -277,6 +277,7 @@ def lock_payroll_run(run: PayrollRun, user):
             EmployeeStatement.objects.filter(id__in=ids).update(applied_to_payroll=run)
 
         # ── إنشاء سجل المخصصات (Ledger) لهذا الشهر ──
+        sid = transaction.savepoint()
         try:
             from apps.employees.models import EmployeeLedger
             
@@ -319,8 +320,9 @@ def lock_payroll_run(run: PayrollRun, user):
                 notes=f'مخصص شهر {run.period_month}/{run.period_year}',
                 created_by=user
             )
+            transaction.savepoint_commit(sid)
         except Exception:
-            pass  # لا نوقف الترحيل بسبب خطأ في المخصصات
+            transaction.savepoint_rollback(sid)
 
     # تحديث حالة المسير إلى مُغلق
     run.status = PayrollRun.Status.LOCKED
@@ -359,11 +361,13 @@ def unlock_payroll_run(run: PayrollRun, user):
     EmployeeStatement.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
 
     # فك وحذف سجلات المخصصات (Ledger) التي تم إنشاؤها بهذا المسير
+    sid = transaction.savepoint()
     try:
         from apps.employees.models import EmployeeLedger
         EmployeeLedger.objects.filter(payroll_run=run).delete()
+        transaction.savepoint_commit(sid)
     except Exception:
-        pass
+        transaction.savepoint_rollback(sid)
 
     # إرجاع السلف التي أصبحت PAID بسبب آخر قسط في هذا المسير
     from apps.employees.models import EmployeeLoan
