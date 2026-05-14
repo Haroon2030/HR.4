@@ -2269,7 +2269,15 @@
                                         {% endwith %}
 
                                         {% else %}
-                                        {% if st.content %}<div class="text-slate-500 text-xs mt-0.5 whitespace-pre-line line-clamp-3">{{ st.content }}</div>{% endif %}
+                                        {% if st.content %}
+                                        <div class="mt-1.5">
+                                            {% if '───' in st.content or '═══' in st.content %}
+                                                {{ st.content|format_archive_text }}
+                                            {% else %}
+                                                <div class="text-slate-500 text-xs mt-0.5 whitespace-pre-line">{{ st.content }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
                                         {% endif %}
 
                                         {% if st.document %}

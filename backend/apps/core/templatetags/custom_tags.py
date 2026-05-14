@@ -13,6 +13,69 @@ def from_json(value):
         return None
 
 
+import re
+from django.utils.safestring import mark_safe
+
+@register.filter
+def format_archive_text(value):
+    """
+    يقوم بتحويل النصوص العادية (التي تحتوي على فواصل مثل ─── أو ═══) 
+    إلى عناصر HTML احترافية (Cards / Sections) لتبدو أكثر تنظيماً في الأرشيف الزمني.
+    """
+    if not value:
+        return ""
+    
+    value_str = str(value)
+    # Check if text contains structural elements
+    if '───' not in value_str and '═══' not in value_str:
+        return value_str
+        
+    lines = value_str.split('\n')
+    html = ['<div class="mt-2 space-y-1.5 text-[11px]">']
+    
+    current_block = []
+    
+    def flush_block():
+        if not current_block: return
+        content = "<br>".join(current_block)
+        
+        # Highlight key-value pairs (bolding the key)
+        content = re.sub(r'^([^:\n]+):', r'<span class="font-bold text-slate-700">\1:</span>', content, flags=re.MULTILINE)
+        
+        # Highlight total
+        content = content.replace('★ إجمالي المستحقات:', '<span class="font-bold text-emerald-700 text-xs inline-flex items-center gap-1 mt-1"><i data-lucide="coins" class="w-3.5 h-3.5"></i> إجمالي المستحقات:</span>')
+        content = content.replace('* إجمالي المستحقات:', '<span class="font-bold text-emerald-700 text-xs inline-flex items-center gap-1 mt-1"><i data-lucide="coins" class="w-3.5 h-3.5"></i> إجمالي المستحقات:</span>')
+        
+        # Highlight basic salary changes
+        content = content.replace('←', '<i data-lucide="arrow-left" class="w-3 h-3 text-primary-500 inline mx-1"></i>')
+        
+        html.append(f'<div class="bg-white border border-slate-200 rounded p-2 shadow-sm text-slate-600 leading-relaxed">{content}</div>')
+        current_block.clear()
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        if '═══' in line:
+            flush_block()
+            title = line.replace('═══', '').strip()
+            html.append(f'<div class="font-bold text-primary-700 text-xs mt-3 mb-1 border-b border-primary-100 pb-1 flex items-center gap-1"><i data-lucide="receipt" class="w-3.5 h-3.5"></i> {title}</div>')
+        elif '───' in line:
+            flush_block()
+        elif line.startswith('ملاحظات:'):
+            flush_block()
+            html.append(f'<div class="text-slate-500 bg-slate-50 rounded p-1.5 border border-slate-100 mt-1 italic"><span class="font-bold">ملاحظات:</span> {line.replace("ملاحظات:", "").strip()}</div>')
+        else:
+            current_block.append(line)
+            
+    flush_block()
+    html.append('</div>')
+    return mark_safe('\n'.join(html))
+
+
+
+
 @register.filter
 def startswith(value, arg):
     """Check if value starts with arg"""
