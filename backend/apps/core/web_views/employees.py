@@ -197,8 +197,11 @@ def view_employee(request, employee_id):
     loans = employee.loans.all().order_by('-issued_at', '-id')
     absences = employee.absences.all().order_by('-absence_date', '-id')
     
-    # Ledger accruals
-    accruals = employee.accruals_ledger.all().order_by('-date', '-created_at')
+    # Ledger accruals (safe: table may not exist yet before migration)
+    try:
+        accruals = list(employee.accruals_ledger.all().order_by('-date', '-created_at'))
+    except Exception:
+        accruals = []
 
     return render(request, 'pages/employees/view.html', {
         'employee': employee,
