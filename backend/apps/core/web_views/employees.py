@@ -204,11 +204,9 @@ def view_employee(request, employee_id):
         from decimal import Decimal
         from django.utils import timezone
 
-        # حذف السجلات الصفرية القديمة (من التهيئة الخاطئة)
+        # حذف السجلات الافتتاحية القديمة لإعادة إنشائها بتفاصيل حسابية
         employee.accruals_ledger.filter(
-            transaction_type='initial',
-            cumulative_leave_days=0,
-            cumulative_leave_amount=0
+            transaction_type='initial'
         ).delete()
 
         accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
