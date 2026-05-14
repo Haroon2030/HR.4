@@ -339,6 +339,24 @@
             inp.type = isDate ? 'date' : 'text';
             inp.className = 'blank';
             inp.setAttribute('aria-label', labelText || 'حقل');
+            
+            // Preserve existing value if any
+            let val = el.textContent.trim();
+            if (val) {
+                if (isDate) {
+                    // Try to format to YYYY-MM-DD if it's a date
+                    let d = new Date(val);
+                    if (!isNaN(d)) {
+                        inp.value = d.toISOString().split('T')[0];
+                    } else {
+                        inp.type = 'text'; // Fallback if invalid date format
+                        inp.value = val;
+                    }
+                } else {
+                    inp.value = val;
+                }
+            }
+            
             el.replaceWith(inp);
         });
         // كل <div class="blank-block"></div> → textarea
@@ -346,6 +364,7 @@
             const ta = document.createElement('textarea');
             ta.className = 'blank-block';
             if (el.style.minHeight) ta.style.minHeight = el.style.minHeight;
+            ta.value = el.textContent.trim(); // Preserve existing value
             el.replaceWith(ta);
         });
         // كل <span class="box"></span> داخل label → checkbox فعلي
