@@ -2383,7 +2383,7 @@
                                             <i data-lucide="file-check-2" class="w-6 h-6"></i>
                                         </div>
                                         <div>
-                                            <h3 class="font-bold text-slate-800 text-base">تصفية ومخالصة نهائية</h3>
+                                            <h3 class="font-bold text-slate-800 text-base">{{ st.title|default:"تصفية حساب" }}</h3>
                                             <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
                                                 <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"Y-m-d H:i" }}</span>
                                                 <span class="flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>
@@ -2415,7 +2415,7 @@
                             <i data-lucide="shield-check" class="w-8 h-8"></i>
                         </div>
                         <h3 class="font-bold text-slate-800 text-lg mb-1">لا توجد تصفيات</h3>
-                        <p class="text-sm text-slate-500">سجل الموظف خالي من أي عمليات تصفية أو إنهاء عقود.</p>
+                        <p class="text-sm text-slate-500">سجل الموظف خالي من أي عمليات تصفية.</p>
                     </div>
                 </div>
             </div>
