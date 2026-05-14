@@ -180,9 +180,9 @@
                     <input type="text" name="reactivation_reason" required placeholder="مثال: عاد بعد انتهاء تأشيرة الخروج" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="user-check" class="w-4 h-4"></i> تأكيد إعادة التفعيل
                     </button>
                 </div>
@@ -392,7 +392,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
                     <button type="button" @click="quickModal=null" class="px-3 py-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
                     <button type="submit"
                             :class="sendEmail ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-primary-600 hover:bg-primary-700'"
@@ -443,7 +443,7 @@
                     </div>
                 </div>
                 <div class="flex justify-end mt-4">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إغلاق</button>
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إغلاق</button>
                 </div>
             </div>
             {% else %}
@@ -500,8 +500,8 @@
                     <span>تتجاوز الرصيد المتاح (<span x-text="balance"></span> يوم)</span>
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                     <button type="submit" :disabled="!canSubmit"
                             :class="canSubmit ? 'bg-primary-600 hover:bg-primary-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                             class="px-4 py-2 text-sm font-medium rounded">حفظ الإجازة</button>
@@ -574,8 +574,8 @@
                     <input type="text" name="end_reason" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded">تأكيد التصفية</button>
                 </div>
             </form>
@@ -754,8 +754,8 @@
                     <textarea name="notes" rows="2" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500"></textarea>
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded">تأكيد انتهاء العقد</button>
                 </div>
             </form>
@@ -934,8 +934,8 @@
                     <textarea name="notes" rows="2" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500"></textarea>
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded">تأكيد التصفية</button>
                 </div>
             </form>
@@ -1045,8 +1045,8 @@
                            class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                     <button type="submit" :disabled="parseFloat(raise || 0) === 0"
                             :class="parseFloat(raise || 0) !== 0 ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                             class="px-4 py-2 text-sm font-medium rounded flex items-center gap-1">
@@ -1131,10 +1131,10 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                     <button type="submit"
-                            class="px-4 py-2 text-sm font-medium rounded bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1">
+                            class="px-4 py-2 text-sm font-medium rounded bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="move" class="w-4 h-4"></i> تأكيد النقل
                     </button>
                 </div>
@@ -1193,9 +1193,9 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-emerald-50 file:border-0 file:text-emerald-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="package-check" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1243,9 +1243,9 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-rose-50 file:border-0 file:text-rose-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded flex items-center gap-1">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="package-x" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1292,9 +1292,9 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-primary-50 file:border-0 file:text-primary-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded flex items-center gap-1">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="file-badge" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1355,9 +1355,9 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-sky-50 file:border-0 file:text-sky-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded flex items-center gap-1">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="plane-takeoff" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1423,9 +1423,9 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-amber-50 file:border-0 file:text-amber-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded flex items-center gap-1">
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded flex items-center gap-1 whitespace-nowrap">
                         <i data-lucide="hand-coins" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1526,36 +1526,10 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
                 </div>
-                <div class="flex items-center justify-start gap-3 pt-4 border-t border-slate-100 mt-2"
-                     x-init="$nextTick(() => {
-                        const buttons = $el.querySelectorAll('button');
-                        const container = $el.getBoundingClientRect();
-                        const data = {
-                            container_w: container.width,
-                            container_scrollW: $el.scrollWidth,
-                            buttons: Array.from(buttons).map(b => ({
-                                text: b.textContent.trim().slice(0, 30),
-                                type: b.type,
-                                offsetW: b.offsetWidth,
-                                scrollW: b.scrollWidth,
-                                clientW: b.clientWidth,
-                                offsetLeft: b.offsetLeft,
-                                offsetRight: b.offsetLeft + b.offsetWidth,
-                                children: b.children.length,
-                                bg: getComputedStyle(b).backgroundColor,
-                            })),
-                            modalW: $el.closest('[class*=max-w-lg]')?.offsetWidth || 0,
-                            windowW: window.innerWidth,
-                        };
-                        fetch('http://127.0.0.1:7798/ingest/349265a0-7a45-4293-bb05-16ad73efb90b',{
-                            method:'POST',
-                            headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f44e5'},
-                            body:JSON.stringify({sessionId:'7f44e5',location:'view.html:1529',message:'absence modal buttons',data,timestamp:Date.now(),hypothesisId:'A_B_C_D_E'})
-                        }).catch(()=>{});
-                     })">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded flex items-center gap-1">
-                        <i data-lucide="user-minus" class="w-4 h-4"></i> إرسال للموافقة
+                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded whitespace-nowrap">
+                        إرسال للموافقة
                     </button>
                 </div>
             </form>
