@@ -2275,9 +2275,24 @@
 
                                         {% else %}
                                         {% if st.content %}
-                                        <div class="mt-1.5">
+                                        <div class="mt-1.5" x-data="{ showDetails: false }">
                                             {% if '───' in st.content or '═══' in st.content %}
-                                                {{ st.content|format_archive_text }}
+                                                {% if st.statement_type == 'terminate' %}
+                                                    <div class="flex items-center gap-2 mt-2">
+                                                        <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded text-xs font-bold transition-colors">
+                                                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                                                            عرض ملف التسوية (PDF)
+                                                        </a>
+                                                        <button type="button" @click="showDetails = !showDetails" class="text-xs text-slate-500 hover:text-slate-700 underline">
+                                                            <span x-text="showDetails ? 'إخفاء التفاصيل' : 'عرض التفاصيل الحسابية'"></span>
+                                                        </button>
+                                                    </div>
+                                                    <div x-show="showDetails" x-collapse>
+                                                        {{ st.content|format_archive_text }}
+                                                    </div>
+                                                {% else %}
+                                                    {{ st.content|format_archive_text }}
+                                                {% endif %}
                                             {% else %}
                                                 <div class="text-slate-500 text-xs mt-0.5 whitespace-pre-line">{{ st.content }}</div>
                                             {% endif %}
