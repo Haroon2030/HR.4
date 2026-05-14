@@ -276,54 +276,51 @@ def lock_payroll_run(run: PayrollRun, user):
         if ids:
             EmployeeStatement.objects.filter(id__in=ids).update(applied_to_payroll=run)
 
-        # ── إنشاء أو تحديث سجل المخصصات (Ledger) لهذا الشهر ──
-        from apps.employees.models import EmployeeLedger
-        
-        # 1. جلب الرصيد التراكمي السابق (إن وُجد) لحساب الرصيد الجديد
-        last_ledger = EmployeeLedger.objects.filter(
-            employee=line.employee,
-            date__lt=date(run.period_year, run.period_month, 1)
-        ).order_by('-date', '-created_at').first()
-
-        prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
-        prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
-        prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
-
-        # 2. حساب مستحقات هذا الشهر (1.75 يوم إجازة)
-        leave_days_change = Decimal('1.75')
-        leave_amount_change = (leave_days_change * line.daily_rate).quantize(Decimal('0.01'))
-
-        # حساب مخصص نهاية الخدمة (هل هو أول 5 سنوات أم أكثر؟)
-        # نحسب بناءً على تاريخ المباشرة
-        hire_date = line.employee.hire_date
-        eosb_amount_change = Decimal('0')
-        if hire_date:
-            month_date = date(run.period_year, run.period_month, monthrange(run.period_year, run.period_month)[1])
-            service_days = (month_date - hire_date).days
-            service_years = service_days / 365.25
+        # ── إنشاء سجل المخصصات (Ledger) لهذا الشهر ──
+        try:
+            from apps.employees.models import EmployeeLedger
             
-            # نصف راتب سنوي لأول 5 سنوات (أي نصف راتب / 12 شهر) = إجمالي الراتب / 24
-            # راتب كامل سنوي بعد 5 سنوات = إجمالي الراتب / 12
-            if service_years <= 5:
-                eosb_amount_change = (line.gross_salary / Decimal('24')).quantize(Decimal('0.01'))
-            else:
-                eosb_amount_change = (line.gross_salary / Decimal('12')).quantize(Decimal('0.01'))
+            last_ledger = EmployeeLedger.objects.filter(
+                employee=line.employee,
+                date__lt=date(run.period_year, run.period_month, 1)
+            ).order_by('-date', '-created_at').first()
 
-        # 3. إنشاء السجل
-        EmployeeLedger.objects.create(
-            employee=line.employee,
-            transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
-            date=date(run.period_year, run.period_month, monthrange(run.period_year, run.period_month)[1]),
-            leave_days_change=leave_days_change,
-            leave_amount_change=leave_amount_change,
-            eosb_amount_change=eosb_amount_change,
-            cumulative_leave_days=prev_leave_days + leave_days_change,
-            cumulative_leave_amount=prev_leave_amt + leave_amount_change,
-            cumulative_eosb_amount=prev_eosb + eosb_amount_change,
-            payroll_run=run,
-            notes=f'مخصص شهر {run.period_month}/{run.period_year}',
-            created_by=user
-        )
+            prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
+            prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
+            prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
+
+            leave_days_change = Decimal('1.75')
+            safe_daily_rate = Decimal(line.daily_rate or 0) or (Decimal(line.gross_salary or 0) / Decimal('30'))
+            leave_amount_change = (leave_days_change * safe_daily_rate).quantize(Decimal('0.01'))
+
+            hire_date = line.employee.hire_date
+            eosb_amount_change = Decimal('0')
+            if hire_date:
+                month_date = date(run.period_year, run.period_month, monthrange(run.period_year, run.period_month)[1])
+                service_days = (month_date - hire_date).days
+                service_years = service_days / 365.25
+                
+                if service_years <= 5:
+                    eosb_amount_change = (Decimal(line.gross_salary or 0) / Decimal('24')).quantize(Decimal('0.01'))
+                else:
+                    eosb_amount_change = (Decimal(line.gross_salary or 0) / Decimal('12')).quantize(Decimal('0.01'))
+
+            EmployeeLedger.objects.create(
+                employee=line.employee,
+                transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
+                date=date(run.period_year, run.period_month, monthrange(run.period_year, run.period_month)[1]),
+                leave_days_change=leave_days_change,
+                leave_amount_change=leave_amount_change,
+                eosb_amount_change=eosb_amount_change,
+                cumulative_leave_days=prev_leave_days + leave_days_change,
+                cumulative_leave_amount=prev_leave_amt + leave_amount_change,
+                cumulative_eosb_amount=prev_eosb + eosb_amount_change,
+                payroll_run=run,
+                notes=f'مخصص شهر {run.period_month}/{run.period_year}',
+                created_by=user
+            )
+        except Exception:
+            pass  # لا نوقف الترحيل بسبب خطأ في المخصصات
 
     # تحديث حالة المسير إلى مُغلق
     run.status = PayrollRun.Status.LOCKED
@@ -362,8 +359,11 @@ def unlock_payroll_run(run: PayrollRun, user):
     EmployeeStatement.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
 
     # فك وحذف سجلات المخصصات (Ledger) التي تم إنشاؤها بهذا المسير
-    from apps.employees.models import EmployeeLedger
-    EmployeeLedger.objects.filter(payroll_run=run).delete()
+    try:
+        from apps.employees.models import EmployeeLedger
+        EmployeeLedger.objects.filter(payroll_run=run).delete()
+    except Exception:
+        pass
 
     # إرجاع السلف التي أصبحت PAID بسبب آخر قسط في هذا المسير
     from apps.employees.models import EmployeeLoan
