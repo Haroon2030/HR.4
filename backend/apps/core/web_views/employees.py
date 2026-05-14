@@ -297,6 +297,7 @@ def edit_employee(request, employee_id):
             employee = form.save()
             messages.success(request, f'تم حفظ بيانات الموظف "{employee.name}"')
             return redirect('web:list_employees')
+        
         for err in form.errors.values():
             messages.error(request, err[0])
 
