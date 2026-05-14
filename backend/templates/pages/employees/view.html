@@ -1526,11 +1526,11 @@
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
                 </div>
-                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded whitespace-nowrap">
-                        إرسال للموافقة
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="submit" class="px-5 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded shadow-sm whitespace-nowrap" data-bwignore="true">
+                        ✓ إرسال للموافقة
                     </button>
+                    <button type="button" @click="quickModal=null" class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 rounded whitespace-nowrap">إلغاء</button>
                 </div>
             </form>
         </div>
