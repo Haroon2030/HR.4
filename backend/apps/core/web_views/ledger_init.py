@@ -32,11 +32,12 @@ def run_ledger_init(request, employee_id):
 
         service_years = Decimal(str(round(service_days / 365.25, 4)))
 
-        current_leave_balance = Decimal(str(emp.available_leave_balance or 0))
+        # حساب أيام الإجازة المتراكمة: 21 يوم في السنة من تاريخ المباشرة
+        leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
         total_salary = Decimal(str(emp.total_salary or 0))
 
         daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
-        leave_amount = (current_leave_balance * daily_wage).quantize(Decimal('0.01'))
+        leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
 
         # حساب نهاية الخدمة
         half_salary = (total_salary / Decimal('2')).quantize(Decimal('0.01'))
@@ -53,10 +54,10 @@ def run_ledger_init(request, employee_id):
             employee=emp,
             transaction_type='initial',
             date=today,
-            leave_days_change=current_leave_balance,
+            leave_days_change=leave_days,
             leave_amount_change=leave_amount,
             eosb_amount_change=eosb_amount,
-            cumulative_leave_days=current_leave_balance,
+            cumulative_leave_days=leave_days,
             cumulative_leave_amount=leave_amount,
             cumulative_eosb_amount=eosb_amount,
             notes=f'رصيد افتتاحي من تاريخ المباشرة ({emp.hire_date}) وحتى اليوم',
