@@ -8,13 +8,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=config.settings \
     PORT=8082
 
-# System deps for psycopg2 + Pillow + build
+# System deps for psycopg2 + Pillow + build + pg_dump/psql for backups
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         libpq-dev \
         libjpeg-dev \
         zlib1g-dev \
         curl \
+        postgresql-client \
+        cron \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -33,8 +35,8 @@ COPY data_dump.json* /app/
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create runtime dirs
-RUN mkdir -p /app/staticfiles /app/media /app/logs
+# Create runtime dirs (including backups)
+RUN mkdir -p /app/staticfiles /app/media /app/logs /app/backups
 
 EXPOSE 8082
 

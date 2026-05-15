@@ -69,5 +69,26 @@ PYEOF
 echo "==> Fixing swapped code/name records (idempotent)..."
 python manage.py fix_swapped_code_name || echo "!! fix_swapped_code_name failed (non-fatal)"
 
+# ─── Setup daily automatic database backup via cron ─────────────────────────
+# Backup runs every day at 03:00 UTC and uploads to Cloudflare R2.
+# Disable by setting BACKUP_ENABLED=false in environment.
+if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
+    echo "==> Setting up daily database backup cron job (03:00 UTC) ..."
+    BACKUP_SCHEDULE="${BACKUP_SCHEDULE:-0 3 * * *}"
+    mkdir -p /app/backups
+    # Build a cron file that runs the Django backup command in the app environment.
+    cat > /etc/cron.d/hr-backup <<CRON_EOF
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+${BACKUP_SCHEDULE} root cd /app && python manage.py backup_db --cleanup >> /app/logs/backup.log 2>&1
+CRON_EOF
+    chmod 0644 /etc/cron.d/hr-backup
+    crontab /etc/cron.d/hr-backup
+    service cron start || cron || echo "!! cron service start failed (non-fatal)"
+    echo "==> Cron schedule: ${BACKUP_SCHEDULE}"
+else
+    echo "==> Auto backup disabled (BACKUP_ENABLED=false)"
+fi
+
 echo "==> Starting: $@"
 exec "$@"
