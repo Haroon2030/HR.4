@@ -358,6 +358,34 @@ class AuditHistoryViewTests(TestCase):
         self.assertEqual(r.status_code, 302)
 
 
+class HRFormPrintViewTests(TestCase):
+    """طباعة النماذج الرسمية تمرّر form_type ثم employee_id — لا تعارض مع فحص الفرع."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(name='شركة نماذج')
+        cls.branch = Branch.objects.create(name='فرع', code='HF-1', company=cls.company)
+        cls.employee = Employee.objects.create(
+            name='موظف للنماذج',
+            branch=cls.branch,
+            status=Employee.Status.ACTIVE,
+        )
+        cls.su = User.objects.create_user(
+            username='hrform_su', password='x', is_superuser=True, is_staff=True,
+        )
+
+    def test_warning_notice_print_returns_200(self):
+        c = Client()
+        self.assertTrue(c.login(username='hrform_su', password='x'))
+        url = reverse(
+            'web:hr_form_print',
+            kwargs={'form_type': 'warning_notice', 'employee_id': self.employee.id},
+        )
+        r = c.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, self.employee.name)
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Forms validation tests
 # ──────────────────────────────────────────────────────────────────────

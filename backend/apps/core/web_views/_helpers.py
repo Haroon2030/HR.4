@@ -122,20 +122,25 @@ def employee_branch_access_required(view_func):
       - admin / superuser
       - أو مدير فرع الموظف
       - أو أخصائي مُعيّن على فرع الموظف
-    
-    ⚠️ يتوقع أن المعامل الأول بعد request هو employee_id.
+
+    يعتمد على أن مسار الـ URL يتضمن مجموعة اسمها ``employee_id`` (مثل
+    ``<int:employee_id>`` أو ``…/<str:form_type>/<int:employee_id>/``).
     """
     @wraps(view_func)
-    def wrapper(request, employee_id, *args, **kwargs):
+    def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('web:auth:login')
         from apps.employees.models import Employee
+        employee_id = kwargs.get('employee_id')
+        if employee_id is None:
+            from django.http import Http404
+            raise Http404('employee_id غير موجود في الرابط')
         employee = get_object_or_404(Employee, id=employee_id)
         accessible = _user_accessible_branch_ids(request.user)
         if accessible is not None and employee.branch_id not in accessible:
             messages.error(request, 'لا تملك صلاحية على فرع هذا الموظف.')
             return redirect('web:list_employees')
-        return view_func(request, employee_id, *args, **kwargs)
+        return view_func(request, *args, **kwargs)
     return wrapper
 
 
