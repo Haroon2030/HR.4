@@ -358,6 +358,22 @@ class AuditHistoryViewTests(TestCase):
         self.assertEqual(r.status_code, 302)
 
 
+class FinalSettlementParseTests(TestCase):
+    def test_parse_tolerates_star_and_spacing(self):
+        from apps.core.web_views.hr_forms import _parse_final_settlement_statement
+
+        text = (
+            '★ إجمالي المستحقات: 3740.00 ر.س\n'
+            '  (مكافأة 3500.00 + إجازة 240.00)\n'
+            'رصيد الإجازة: 1.8 يوم × 133.33 = 240.00 ر.س\n'
+        )
+        d = _parse_final_settlement_statement(text)
+        self.assertEqual(d.get('total_entitlement'), '3740.00')
+        self.assertEqual(d.get('eosb_amount'), '3500.00')
+        self.assertEqual(d.get('leave_comp'), '240.00')
+        self.assertEqual(d.get('leave_days'), '1.8')
+
+
 class HRFormPrintViewTests(TestCase):
     """طباعة النماذج الرسمية تمرّر form_type ثم employee_id — لا تعارض مع فحص الفرع."""
 

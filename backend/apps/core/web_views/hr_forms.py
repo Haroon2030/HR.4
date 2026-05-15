@@ -3,14 +3,17 @@
 Leave Request / Final Settlement / Absence Report / Employment Letter / Warning / Loan Request
 """
 import hashlib
+import re
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
+from django.utils.html import strip_tags
 
 from apps.core.models import Company
-from apps.employees.models import Employee
+from apps.employees.models import Employee, EmployeeLoan, EmployeeStatement
 from apps.core.decorators import permission_required
 from apps.core.web_views._helpers import employee_branch_access_required
 
@@ -44,6 +47,94 @@ def _build_form_serial(form_type, employee_id):
     raw = f"{form_type}-{employee_id}-{now.strftime('%Y%m%d%H%M%S%f')}"
     hash_part = hashlib.sha1(raw.encode()).hexdigest()[:4].upper()
     return f"{code}-{date_part}-{emp_part}-{hash_part}"
+
+
+def _parse_final_settlement_statement(content: str) -> dict:
+    """يستخرج أرقام التصفية من نص إفادة التصفية (مع تسامح مع ★ ومسافات وHTML)."""
+    ctx: dict = {}
+    if not content or not str(content).strip():
+        return ctx
+    text = strip_tags(str(content))
+    text = text.replace('\r\n', '\n').replace('\u00a0', ' ')
+
+    for pat in (
+        r'\(\s*مكافأة\s*([\d\.]+)\s*\+\s*إجازة\s*([\d\.]+)\s*\)',
+        r'مكافأة\s*([\d\.]+)\s*\+\s*إجازة\s*([\d\.]+)',
+    ):
+        m = re.search(pat, text)
+        if m:
+            ctx['eosb_amount'] = m.group(1)
+            ctx['leave_comp'] = m.group(2)
+            break
+
+    tot = re.search(r'(?:[\*★]\s*)?إجمالي المستحقات:\s*([\d\.]+)', text)
+    if tot:
+        ctx['total_entitlement'] = tot.group(1)
+
+    srv = re.search(r'مدة الخدمة:\s*([^\n]+)', text)
+    if srv:
+        ctx['service_duration'] = srv.group(1).strip()
+
+    ld = re.search(r'رصيد الإجازة:\s*([\d\.]+)\s*يوم', text)
+    if ld:
+        ctx['leave_days'] = ld.group(1)
+
+    return ctx
+
+
+def _estimate_leave_comp_for_print(employee) -> tuple[str | None, str | None]:
+    """تعويض إجازة تقديري من الراتب الحالي ورصيد الأيام (نفس منطق المسير عند وجود كفالة)."""
+    if not employee.sponsorship_id:
+        return None, None
+    try:
+        last = Decimal(str(employee.total_salary or 0))
+    except (InvalidOperation, TypeError, ValueError):
+        return None, None
+    if last <= 0:
+        return None, None
+    try:
+        days = Decimal(str(employee.remaining_leave_days or 0))
+    except (InvalidOperation, TypeError, ValueError):
+        return None, None
+    daily = (last / Decimal('30')).quantize(Decimal('0.01'))
+    comp = (daily * days).quantize(Decimal('0.01'))
+    return str(comp), str(days.quantize(Decimal('0.1')))
+
+
+def _active_loans_total_str(employee) -> str | None:
+    total = Decimal('0')
+    for loan in employee.loans.filter(status=EmployeeLoan.Status.ACTIVE):
+        rb = loan.remaining_balance
+        if rb and rb > 0:
+            total += Decimal(str(rb))
+    if total <= 0:
+        return None
+    return str(total.quantize(Decimal('0.01')))
+
+
+def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
+    """إكمال الحقول الفارغة من النموذج: تعويض إجازة تقديري، سلف، صافي عند غياب سطر الإجمالي."""
+    leave_comp, leave_days = _estimate_leave_comp_for_print(employee)
+    if not context.get('leave_comp') and leave_comp is not None:
+        context['leave_comp'] = leave_comp
+    if not context.get('leave_days') and leave_days is not None:
+        context['leave_days'] = leave_days
+
+    loans = _active_loans_total_str(employee)
+    if loans:
+        context['loans_deduction'] = loans
+
+    if context.get('total_entitlement'):
+        return
+    try:
+        eosb = Decimal(str(context.get('eosb_amount') or '0'))
+        lc = Decimal(str(context.get('leave_comp') or '0'))
+        ded = Decimal(str(context.get('loans_deduction') or '0'))
+    except (InvalidOperation, TypeError, ValueError):
+        return
+    net = eosb + lc - ded
+    if eosb > 0 or lc > 0 or ded > 0:
+        context['total_entitlement'] = str(net.quantize(Decimal('0.01')))
 
 
 # قائمة النماذج المعتمدة
@@ -170,24 +261,12 @@ def hr_form_print(request, form_type, employee_id):
         if stmt_id and stmt_id.isdigit():
             stmt = employee.statements_log.filter(id=stmt_id).first()
         else:
-            stmt = employee.statements_log.filter(statement_type='terminate').last()
-        
-        if stmt:
-            import re
-            m = re.search(r'\(مكافأة ([\d\.]+) \+ إجازة ([\d\.]+)\)', stmt.content)
-            if m:
-                context['eosb_amount'] = m.group(1)
-                context['leave_comp'] = m.group(2)
-            tot = re.search(r'إجمالي المستحقات:\s*([\d\.]+)', stmt.content)
-            if tot:
-                context['total_entitlement'] = tot.group(1)
-            srv = re.search(r'مدة الخدمة:\s*(.*?)$', stmt.content, re.MULTILINE)
-            if srv:
-                context['service_duration'] = srv.group(1).strip()
-            
-            # Extract leave days
-            ld = re.search(r'رصيد الإجازة:\s*([\d\.]+) يوم', stmt.content)
-            if ld:
-                context['leave_days'] = ld.group(1)
+            stmt = employee.statements_log.filter(
+                statement_type=EmployeeStatement.StatementType.TERMINATE,
+            ).last()
+
+        if stmt and (stmt.content or '').strip():
+            context.update(_parse_final_settlement_statement(stmt.content))
+        _apply_final_settlement_fallbacks(employee, context)
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)
