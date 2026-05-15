@@ -66,6 +66,7 @@ class Command(BaseCommand):
                     'employees.edit',
                     # الأقسام والفروع
                     'departments.view',
+                    'branches.view',
                     # الإجازات (أكواد legacy — التنفيذ الفعلي عبر employees.edit)
                     'leaves.view',
                     'leaves.approve',

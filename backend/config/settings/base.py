@@ -141,6 +141,8 @@ REST_FRAMEWORK = {
     # ترقيم الصفحات المخصص
     'DEFAULT_PAGINATION_CLASS': 'config.pagination.CustomPagination',
     'PAGE_SIZE': 8,
+    # توثيق OpenAPI (drf-spectacular)
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     # معالج أخطاء مخصص — يوحّد شكل الاستجابة
     'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_api_exception_handler',
 }
@@ -168,6 +170,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
 }
 
 # ══════════════════════════════════════════════════════════════════════════════

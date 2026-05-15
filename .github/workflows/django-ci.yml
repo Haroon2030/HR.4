@@ -17,6 +17,8 @@ jobs:
       DJANGO_ENV: development
       DJANGO_SETTINGS_MODULE: config.settings
       PYTHONUNBUFFERED: '1'
+      # قاعدة SQLite في مجلد backend (Ubuntu CI — مسار مطلق لصيغة Django)
+      DATABASE_URL: 'sqlite:////${{ github.workspace }}/backend/ci.sqlite3'
 
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +35,9 @@ jobs:
 
       - name: Django system check
         run: python manage.py check
+
+      - name: Validate OpenAPI schema
+        run: python manage.py spectacular --validate
 
       - name: Migrate (SQLite default in development)
         run: python manage.py migrate --noinput

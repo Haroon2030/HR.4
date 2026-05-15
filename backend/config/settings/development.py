@@ -43,25 +43,12 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # ══════════════════════════════════════════════════════════════════════════════
-# REST Framework — نفس صلاحيات الإنتاج (IsAuthenticated)؛ لا تستخدم AllowAny
+# REST Framework — يُورث من base.py (JWT، throttling، spectacular، معالج الأخطاء)
+# تخصيص التطوير فقط: ترقيم أوضح للقوائم عند التجربة اليدوية
 # ══════════════════════════════════════════════════════════════════════════════
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
-}
+REST_FRAMEWORK['DEFAULT_PAGINATION_CLASS'] = 'rest_framework.pagination.PageNumberPagination'
+REST_FRAMEWORK['PAGE_SIZE'] = 20
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Debug Toolbar (optional)

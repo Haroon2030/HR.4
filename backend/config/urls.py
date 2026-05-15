@@ -7,6 +7,7 @@
   /api/v1/      → واجهة REST API (الإصدار الأول)
   /api/token/   → مصادقة JWT (إنشاء/تجديد/تحقق)
   /api/docs/    → توثيق Swagger التفاعلي
+  /health/      → فحص صحة خفيف (للبروكسي والمراقبة)
   /             → واجهة الويب (Django Templates)
 """
 from django.contrib import admin
