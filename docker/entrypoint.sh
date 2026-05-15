@@ -1,8 +1,26 @@
 #!/bin/sh
 set -e
 
-echo "==> Running migrations..."
-python manage.py migrate --noinput
+# ─── Django migrations (كل نشر / كل إعادة تشغيل للحاوية) ─────────────────────
+# يُنفَّذ هنا قبل Gunicorn — لا حاجة لتشغيل migrate يدوياً بعد الرفع إن وُجد ENTRYPOINT.
+# إعادة المحاولة تساعد عند اتصال قاعدة سحابية بطيئة الاستيقاظ (مثل Neon).
+MIGRATE_MAX_RETRIES="${MIGRATE_MAX_RETRIES:-5}"
+MIGRATE_RETRY_SECS="${MIGRATE_RETRY_SECS:-5}"
+n=1
+while [ "$n" -le "$MIGRATE_MAX_RETRIES" ]; do
+    echo "==> Database migrations (deploy start, attempt $n/$MIGRATE_MAX_RETRIES)..."
+    if python manage.py migrate --noinput; then
+        echo "==> Migrations applied successfully."
+        break
+    fi
+    if [ "$n" -eq "$MIGRATE_MAX_RETRIES" ]; then
+        echo "!! migrate failed after $MIGRATE_MAX_RETRIES attempts — aborting."
+        exit 1
+    fi
+    echo "!! migrate failed; retrying in ${MIGRATE_RETRY_SECS}s..."
+    sleep "$MIGRATE_RETRY_SECS"
+    n=$((n + 1))
+done
 
 echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
