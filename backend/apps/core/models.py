@@ -640,3 +640,38 @@ class Notification(BaseModel):
             self.save(update_fields=['is_read', 'read_at'])
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# سجل النسخ الاحتياطي لقاعدة البيانات (لوحة الإدارة + الداشبورد)
+# ══════════════════════════════════════════════════════════════════════════════
+class DatabaseBackupLog(models.Model):
+    """سجل لكل محاولة نسخ احتياطي (يدوي أو مجدول)."""
+
+    class Trigger(models.TextChoices):
+        MANUAL = 'manual', 'يدوي'
+        CRON = 'cron', 'مجدول (Cron)'
+
+    class Status(models.TextChoices):
+        SUCCESS = 'success', 'نجاح كامل'
+        PARTIAL = 'partial', 'نجاح جزئي (محلي — فشل الرفع لـ R2)'
+        FAILED = 'failed', 'فشل'
+
+    created_at = models.DateTimeField('وقت التنفيذ', auto_now_add=True, db_index=True)
+    trigger = models.CharField(
+        'المصدر', max_length=16, choices=Trigger.choices, default=Trigger.MANUAL, db_index=True
+    )
+    status = models.CharField('الحالة', max_length=16, choices=Status.choices, db_index=True)
+    filename = models.CharField('اسم الملف', max_length=255)
+    size_bytes = models.BigIntegerField('الحجم (بايت)', default=0)
+    r2_key = models.CharField('مفتاح R2', max_length=512, blank=True)
+    dump_error = models.TextField('خطأ النسخ', blank=True)
+    r2_error = models.TextField('خطأ رفع R2', blank=True)
+
+    class Meta:
+        verbose_name = 'سجل نسخ احتياطي'
+        verbose_name_plural = 'سجلات النسخ الاحتياطي'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.created_at:%Y-%m-%d %H:%M} — {self.get_status_display()}'
+
+

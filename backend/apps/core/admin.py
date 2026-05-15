@@ -1,11 +1,21 @@
 """
-إدارة الأدوار والمستخدمين
+إدارة الأدوار والمستخدمين وسجلات النسخ الاحتياطي
 """
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import path, reverse
+from django.utils.html import format_html
+
+from .backup_download import safe_local_backup_path
 from .models import (
-    Role, UserProfile, Company, Branch,
+    Role,
+    UserProfile,
+    Company,
+    Branch,
+    DatabaseBackupLog,
 )
 
 
@@ -173,6 +183,119 @@ class BranchAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(DatabaseBackupLog)
+class DatabaseBackupLogAdmin(admin.ModelAdmin):
+    """قائمة سجلات النسخ مع تحميل آمن للملف المحلي أو من R2."""
+
+    show_full_result_count = False
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    list_display = (
+        'created_at',
+        'trigger',
+        'status',
+        'filename',
+        'display_size_mb',
+        'download_link',
+    )
+    list_filter = ('status', 'trigger')
+    search_fields = ('filename', 'r2_key', 'dump_error', 'r2_error')
+    readonly_fields = (
+        'created_at',
+        'trigger',
+        'status',
+        'filename',
+        'display_size_mb',
+        'r2_key',
+        'dump_error',
+        'r2_error',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_staff
+
+    def has_delete_permission(self, request, obj=None):
+        return bool(request.user.is_superuser)
+
+    def has_module_permission(self, request):
+        return request.user.is_staff
+
+    @admin.display(description='الحجم (MB)')
+    def display_size_mb(self, obj):
+        mb = obj.size_bytes / (1024 * 1024) if obj.size_bytes else 0
+        return f'{mb:.2f}'
+
+    @admin.display(description='تحميل')
+    def download_link(self, obj: DatabaseBackupLog):
+        if obj.status == DatabaseBackupLog.Status.FAILED:
+            return '—'
+        url = reverse('admin:core_databasebackuplog_download', args=[obj.pk])
+        return format_html('<a href="{}">⬇ {}</a>', url, obj.filename)
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['subtitle'] = (
+            'التحميل من العمود «تحميل». الملف المحلي له أولوية؛ إذا أُزل محلياً يُحمّل من R2 إن وُجد مفتاح.'
+        )
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        opts = self.model._meta
+        info = opts.app_label, opts.model_name
+        custom = [
+            path(
+                '<int:object_id>/download-backup/',
+                self.admin_site.admin_view(self.download_backup_view),
+                name=f'{info[0]}_{info[1]}_download',
+            ),
+        ]
+        return custom + urls
+
+    def download_backup_view(self, request, object_id):
+        from io import BytesIO
+
+        obj = get_object_or_404(DatabaseBackupLog, pk=object_id)
+
+        changelist_url = reverse('admin:core_databasebackuplog_changelist')
+
+        if obj.status == DatabaseBackupLog.Status.FAILED:
+            messages.error(request, 'نسخ فاشلة — لا يوجد ملف للتحميل.')
+            return redirect(changelist_url)
+
+        local_path = safe_local_backup_path(obj.filename)
+        if local_path is not None:
+            fh = local_path.open('rb')
+            resp = FileResponse(fh, as_attachment=True, filename=obj.filename)
+            resp['Content-Type'] = 'application/gzip'
+            return resp
+
+        r2_key = (obj.r2_key or '').strip()
+        if r2_key.startswith('HR/backups/'):
+            try:
+                from apps.core.storages import HRMediaStorage
+
+                storage = HRMediaStorage()
+                with storage.open(r2_key, 'rb') as remote:
+                    payload = remote.read()
+                blob = BytesIO(payload)
+                resp = FileResponse(blob, as_attachment=True, filename=obj.filename)
+                resp['Content-Type'] = 'application/gzip'
+                return resp
+            except Exception as exc:
+                messages.error(request, f'فشل التحميل من التخزين السحابي: {exc}')
+                return redirect(changelist_url)
+
+        messages.warning(
+            request,
+            'الملف غير متوفر محلياً؛ لا توجد نسخة على R2 مرتبطة بهذا السجل.',
+        )
+        return redirect(changelist_url)
 
 
 # إعادة تسجيل User مع الـ UserAdmin المخصص

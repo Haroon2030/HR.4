@@ -263,6 +263,21 @@ else:
     EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 
 # ══════════════════════════════════════════════════════════════════════════════
+# النسخ الاحتياطي لقاعدة البيانات (إشعارات + مسار الملفات)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# مجلد النسخ المحلية (يتوافق مع أمر backup_db والحاوية Docker)
+BACKUP_STORAGE_DIR = env('BACKUP_STORAGE_DIR', default='/app/backups')
+
+# عناوين بريد تُرسل إليها نتيجة النسخ (مفصولة بفواصل). فارغ = لا إشعارات بريد
+_backup_notify_raw = env('BACKUP_NOTIFY_EMAIL', default='')
+BACKUP_NOTIFY_RECIPIENTS = [
+    addr.strip() for addr in _backup_notify_raw.split(',') if addr.strip()
+]
+BACKUP_NOTIFY_ON_SUCCESS = env.bool('BACKUP_NOTIFY_ON_SUCCESS', default=True)
+BACKUP_NOTIFY_ON_FAILURE = env.bool('BACKUP_NOTIFY_ON_FAILURE', default=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
 # إعدادات أمنية متنوعة
 # ══════════════════════════════════════════════════════════════════════════════
 

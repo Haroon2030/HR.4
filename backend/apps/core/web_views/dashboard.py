@@ -23,7 +23,7 @@ def dashboard_view(request):
     from django.urls import reverse
     from django.core.paginator import Paginator
     from apps.employees.models import EmploymentRequest, Employee
-    from apps.core.models import PendingAction, Branch
+    from apps.core.models import PendingAction, Branch, DatabaseBackupLog
     from apps.core.web_views._helpers import _is_hr_officer, _is_general_manager
     from apps.core.web_views.employment_requests import get_hr_officers
 
@@ -103,6 +103,12 @@ def dashboard_view(request):
         'branches_count': Branch.objects.filter(is_deleted=False).count() if request.user.is_superuser else len(accessible_branch_ids),
     }
 
+    last_database_backup = (
+        DatabaseBackupLog.objects.order_by('-created_at').first()
+        if (request.user.is_superuser or _is_general_manager(request.user))
+        else None
+    )
+
     context = {
         'stats': stats,
         'branch_distribution': branch_distribution,
@@ -112,6 +118,7 @@ def dashboard_view(request):
         'nationality_distribution': nationality_distribution,
         'max_nationality': max_nationality,
         'show_overview': bool(request.user.is_superuser or _is_general_manager(request.user)),
+        'last_database_backup': last_database_backup,
         'is_branch_manager': False,
         'pending_requests': [],
         'is_hr_officer': False,
