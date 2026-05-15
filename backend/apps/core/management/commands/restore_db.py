@@ -122,19 +122,19 @@ class Command(BaseCommand):
     # PostgreSQL restore
     # ──────────────────────────────────────────────────────────────────
     def _restore_postgres(self, gz_file: Path):
+        from urllib.parse import unquote
         db = settings.DATABASES['default']
         url = os.environ.get('DATABASE_URL', '')
         if url:
             parsed = urlparse(url)
-            env = {
-                **os.environ,
-                'PGPASSWORD': parsed.password or db.get('PASSWORD', ''),
-            }
+            user = unquote(parsed.username or '') or db.get('USER', 'postgres')
+            password = unquote(parsed.password or '') or db.get('PASSWORD', '')
+            env = {**os.environ, 'PGPASSWORD': password}
             cmd = [
                 'psql',
                 '-h', parsed.hostname or db.get('HOST', 'localhost'),
                 '-p', str(parsed.port or db.get('PORT') or 5432),
-                '-U', parsed.username or db.get('USER', 'postgres'),
+                '-U', user,
                 '-d', (parsed.path.lstrip('/') if parsed.path else db.get('NAME', '')),
                 '-v', 'ON_ERROR_STOP=1',
                 '--single-transaction',

@@ -125,20 +125,21 @@ class Command(BaseCommand):
     # ──────────────────────────────────────────────────────────────────
     def _dump_postgres(self, output_path: Path):
         """ينفذ pg_dump ويضغط الناتج بـ gzip."""
+        from urllib.parse import unquote
         db = settings.DATABASES['default']
         # دعم DATABASE_URL أو مفاتيح منفصلة
         url = os.environ.get('DATABASE_URL', '')
         if url:
             parsed = urlparse(url)
-            env = {
-                **os.environ,
-                'PGPASSWORD': parsed.password or db.get('PASSWORD', ''),
-            }
+            # URL-decode user/password (مثل %40 → @)
+            user = unquote(parsed.username or '') or db.get('USER', 'postgres')
+            password = unquote(parsed.password or '') or db.get('PASSWORD', '')
+            env = {**os.environ, 'PGPASSWORD': password}
             cmd = [
                 'pg_dump',
                 '-h', parsed.hostname or db.get('HOST', 'localhost'),
                 '-p', str(parsed.port or db.get('PORT') or 5432),
-                '-U', parsed.username or db.get('USER', 'postgres'),
+                '-U', user,
                 '-d', (parsed.path.lstrip('/') if parsed.path else db.get('NAME', '')),
                 '--no-owner',
                 '--no-acl',
