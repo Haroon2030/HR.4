@@ -649,6 +649,7 @@ class DatabaseBackupLog(models.Model):
     class Trigger(models.TextChoices):
         MANUAL = 'manual', 'يدوي'
         CRON = 'cron', 'مجدول (Cron)'
+        MIGRATE = 'migrate', 'قبل المهاجرات'
 
     class Status(models.TextChoices):
         SUCCESS = 'success', 'نجاح كامل'

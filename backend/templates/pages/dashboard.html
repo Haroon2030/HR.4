@@ -45,7 +45,9 @@
                     {% endif %}
                 </p>
                 <p class="text-xs text-slate-500 mt-1">
-                    {% if last_database_backup.trigger == 'cron' %}مجدول (Cron){% else %}تشغيل يدوي{% endif %}
+                    {% if last_database_backup.trigger == 'cron' %}مجدول (Cron)
+                    {% elif last_database_backup.trigger == 'migrate' %}قبل المهاجرات
+                    {% else %}تشغيل يدوي{% endif %}
                     {% if last_database_backup.size_bytes %}· {{ last_database_backup.size_bytes|filesizeformat }}{% endif %}
                 </p>
                 {% else %}

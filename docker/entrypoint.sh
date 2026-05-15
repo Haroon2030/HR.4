@@ -6,6 +6,8 @@ set -e
 # إعادة المحاولة تساعد عند اتصال قاعدة سحابية بطيئة الاستيقاظ (مثل Neon).
 MIGRATE_MAX_RETRIES="${MIGRATE_MAX_RETRIES:-5}"
 MIGRATE_RETRY_SECS="${MIGRATE_RETRY_SECS:-5}"
+# النسخ إلى R2 قبل migrate (إن وُجدت migrations معلّقة) يتم داخل أمر migrate في apps.core
+
 n=1
 while [ "$n" -le "$MIGRATE_MAX_RETRIES" ]; do
     echo "==> Database migrations (deploy start, attempt $n/$MIGRATE_MAX_RETRIES)..."

@@ -16,12 +16,18 @@
   python manage.py backup_db --label "before-migration"  # مع تسمية
   python manage.py backup_db --local-only     # محلي فقط (بدون R2)
   python manage.py backup_db --cleanup        # حذف النسخ القديمة محلياً (7 أيام)
-  python manage.py backup_db --trigger cron   # تمييز السجل كجدولة (cron)
-  python manage.py backup_db --no-notify      # عدم إرسال بريد لهذه المحاولة
+  python manage.py backup_db --trigger cron      # تمييز السجل كجدولة (cron)
+  python manage.py backup_db --trigger migrate     # قبل تطبيق migrations
+  python manage.py backup_db --if-pending-migrations  # فقط إن وُجدت migrations معلّقة
+  python manage.py backup_db --no-notify         # عدم إرسال بريد لهذه المحاولة
+
+قبل migrate (تلقائي عند النشر أو python manage.py migrate):
+  BACKUP_BEFORE_MIGRATE=true → نسخ إلى R2 ثم تطبيق الجداول/التغييرات
 """
 from __future__ import annotations
 
 import gzip
+import logging
 import os
 import re
 import shutil
@@ -36,6 +42,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.core.models import DatabaseBackupLog
+from apps.core.services.backup_migrate import backup_log_table_exists, has_pending_migrations
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_BACKUP_DIR = Path(getattr(settings, 'BACKUP_STORAGE_DIR', None) or '/app/backups')
 LOCAL_RETENTION_DAYS = 7
@@ -71,9 +80,14 @@ class Command(BaseCommand):
         parser.add_argument(
             '--trigger',
             type=str,
-            choices=['manual', 'cron'],
+            choices=['manual', 'cron', 'migrate'],
             default='manual',
             help='مصدر التشغيل (للسجل والتقارير)',
+        )
+        parser.add_argument(
+            '--if-pending-migrations',
+            action='store_true',
+            help='تنفيذ النسخ فقط عند وجود migrations لم تُطبَّق بعد',
         )
         parser.add_argument(
             '--no-notify',
@@ -82,20 +96,29 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **opts):
+        if opts['if_pending_migrations'] and not has_pending_migrations():
+            self.stdout.write(self.style.WARNING(
+                'لا توجد migrations معلّقة — تم تخطي النسخ الاحتياطي.'
+            ))
+            return
+
         backup_dir = Path(opts['output_dir'])
         backup_dir.mkdir(parents=True, exist_ok=True)
 
-        label = self._sanitize_label(opts['label'])
-        local_only = opts['local_only']
-        do_cleanup = opts['cleanup']
         trigger_opt = opts['trigger']
-        do_notify = not opts['no_notify']
+        label = self._sanitize_label(opts['label'])
+        if trigger_opt == 'migrate' and not label:
+            label = 'pre-migrate'
 
-        trigger = (
-            DatabaseBackupLog.Trigger.CRON
-            if trigger_opt == 'cron'
-            else DatabaseBackupLog.Trigger.MANUAL
-        )
+        local_only = opts['local_only']
+        if trigger_opt == 'migrate' and local_only:
+            raise CommandError(
+                'نسخ ما قبل المهاجرات يتطلب الرفع إلى R2 — لا تستخدم --local-only.'
+            )
+
+        do_cleanup = opts['cleanup']
+        do_notify = not opts['no_notify']
+        trigger = self._resolve_trigger(trigger_opt)
 
         ts = timezone.now().strftime('%Y%m%d_%H%M%S')
         suffix = f'_{label}' if label else ''
@@ -149,7 +172,7 @@ class Command(BaseCommand):
                 if r2_error_out and not local_only and getattr(settings, 'USE_R2', False)
                 else DatabaseBackupLog.Status.SUCCESS
             )
-            DatabaseBackupLog.objects.create(
+            self._safe_log_backup(
                 trigger=trigger,
                 status=status,
                 filename=filename,
@@ -179,7 +202,7 @@ class Command(BaseCommand):
             if isinstance(exc, CommandError):
                 err_text = err_text.strip() or repr(exc)
 
-            DatabaseBackupLog.objects.create(
+            self._safe_log_backup(
                 trigger=trigger,
                 status=DatabaseBackupLog.Status.FAILED,
                 filename=filename,
@@ -198,7 +221,7 @@ class Command(BaseCommand):
                     body_lines=[
                         'فشلت عملية النسخ الاحتياطي لقاعدة البيانات.',
                         f'الملف المخطط: {filename}',
-                        f'المصدر: {"مجدول (cron)" if trigger_opt == "cron" else "يدوي"}',
+                        f'المصدر: {self._trigger_display(trigger_opt)}',
                         '',
                         'تفاصيل الخطأ:',
                         err_text,
@@ -225,8 +248,10 @@ class Command(BaseCommand):
             'اكتملت عملية النسخ الاحتياطي لقاعدة البيانات.',
             f'الملف: {filename}',
             f'الحجم التقريبي: {size_mb:.2f} MB',
-            f'المصدر: {"مجدول (cron)" if trigger_opt == "cron" else "يدوي"}',
+            f'المصدر: {self._trigger_display(trigger_opt)}',
         ]
+        if trigger_opt == 'migrate':
+            lines.append('سبب: نسخة احتياطية قبل تطبيق migrations (جداول/تغييرات على البيانات).')
         if local_only or not getattr(settings, 'USE_R2', False):
             lines.append('التخزين: محلي فقط.')
         elif r2_key:
@@ -344,3 +369,31 @@ class Command(BaseCommand):
         if not label:
             return ''
         return re.sub(r'[^a-zA-Z0-9_-]+', '-', label).strip('-')[:40]
+
+    @staticmethod
+    def _resolve_trigger(trigger_opt: str) -> str:
+        mapping = {
+            'manual': DatabaseBackupLog.Trigger.MANUAL,
+            'cron': DatabaseBackupLog.Trigger.CRON,
+            'migrate': DatabaseBackupLog.Trigger.MIGRATE,
+        }
+        return mapping.get(trigger_opt, DatabaseBackupLog.Trigger.MANUAL)
+
+    @staticmethod
+    def _trigger_display(trigger_opt: str) -> str:
+        return {
+            'cron': 'مجدول (cron)',
+            'migrate': 'قبل المهاجرات',
+            'manual': 'يدوي',
+        }.get(trigger_opt, 'يدوي')
+
+    def _safe_log_backup(self, **fields) -> None:
+        if not backup_log_table_exists():
+            self.stdout.write(self.style.WARNING(
+                'جدول سجل النسخ غير موجود بعد — تم حفظ الملف دون تسجيل في قاعدة البيانات.'
+            ))
+            return
+        try:
+            DatabaseBackupLog.objects.create(**fields)
+        except Exception:
+            logger.exception('فشل تسجيل النسخة في DatabaseBackupLog')

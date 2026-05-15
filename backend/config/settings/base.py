@@ -277,6 +277,11 @@ BACKUP_NOTIFY_RECIPIENTS = [
 BACKUP_NOTIFY_ON_SUCCESS = env.bool('BACKUP_NOTIFY_ON_SUCCESS', default=True)
 BACKUP_NOTIFY_ON_FAILURE = env.bool('BACKUP_NOTIFY_ON_FAILURE', default=True)
 
+# نسخ تلقائي إلى R2 قبل تطبيق migrations (جداول / تغييرات على البيانات)
+BACKUP_BEFORE_MIGRATE = env.bool('BACKUP_BEFORE_MIGRATE', default=True)
+# إن true: فشل النسخ قبل migrate يوقف النشر (entrypoint) / يفشل أمر migrate
+BACKUP_BEFORE_MIGRATE_REQUIRED = env.bool('BACKUP_BEFORE_MIGRATE_REQUIRED', default=False)
+
 # ══════════════════════════════════════════════════════════════════════════════
 # إعدادات أمنية متنوعة
 # ══════════════════════════════════════════════════════════════════════════════
