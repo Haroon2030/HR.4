@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'corsheaders',                   # مشاركة الموارد بين المواقع
     'django_filters',               # فلاتر الاستعلامات
     'simple_history',                # سجل التدقيق التاريخي (Audit Log)
+    'drf_spectacular',               # توثيق OpenAPI (Swagger / ReDoc)
     
     # ── تطبيقات النظام المحلية ──
     'apps.core',                     # النواة (الصلاحيات، الإشعارات، دورة الموافقات)
@@ -155,6 +156,18 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),       # صلاحية تجديد التوكن: أسبوع
     'ROTATE_REFRESH_TOKENS': True,                     # إنشاء refresh جديد عند التجديد
     'BLACKLIST_AFTER_ROTATION': True,                  # حظر الـ refresh القديم
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# توثيق API — drf-spectacular
+# ══════════════════════════════════════════════════════════════════════════════
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'HR ERP API',
+    'DESCRIPTION': 'REST API للنظام (شركات، فروع، أدوار، مستخدمون، JWT).',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
 }
 
 # ══════════════════════════════════════════════════════════════════════════════

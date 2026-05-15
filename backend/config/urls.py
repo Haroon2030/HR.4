@@ -14,6 +14,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+
+from config.health import health
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from config.jwt_views import (
     ThrottledTokenObtainPairView,
@@ -24,6 +26,7 @@ from config.schema_permissions import StaffAuthenticated
 from apps.core.media_views import serve_protected_media
 
 urlpatterns = [
+    path('health/', health, name='health'),
     # أيقونة المتصفح — تُعيد التوجيه لملف SVG ثابت
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.svg', permanent=True)),
     

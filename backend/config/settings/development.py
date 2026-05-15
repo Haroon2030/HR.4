@@ -24,8 +24,9 @@ if env('DATABASE_URL', default=''):
     DATABASES = {'default': env.db('DATABASE_URL')}
     DATABASES['default'].setdefault('CONN_MAX_AGE', 60)
     DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
-    _opts = DATABASES['default'].setdefault('OPTIONS', {})
-    _opts.setdefault('sslmode', env('DB_SSLMODE', default='require'))
+    if DATABASES['default'].get('ENGINE', '').endswith('postgresql'):
+        _opts = DATABASES['default'].setdefault('OPTIONS', {})
+        _opts.setdefault('sslmode', env('DB_SSLMODE', default='require'))
 else:
     DATABASES = {
         'default': {

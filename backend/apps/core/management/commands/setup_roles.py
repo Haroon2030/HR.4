@@ -66,11 +66,7 @@ class Command(BaseCommand):
                     'employees.edit',
                     # الأقسام والفروع
                     'departments.view',
-                    # الحضور
-                    'attendance.view',
-                    'attendance.manage',
-                    'attendance.approve',
-                    # الإجازات
+                    # الإجازات (أكواد legacy — التنفيذ الفعلي عبر employees.edit)
                     'leaves.view',
                     'leaves.approve',
                     'leaves.manage',
@@ -93,33 +89,21 @@ class Command(BaseCommand):
                     'employees.add',
                     'employees.edit',
                     'employees.delete',
-                    'employees.manage',
                     # الأقسام - كل الصلاحيات
                     'departments.view',
                     'departments.add',
                     'departments.edit',
                     'departments.delete',
                     'departments.manage',
-                    # الحضور - كل الصلاحيات
-                    'attendance.view',
-                    'attendance.add',
-                    'attendance.edit',
-                    'attendance.delete',
-                    'attendance.manage',
-                    'attendance.approve',
-                    # الإجازات - كل الصلاحيات
+                    # الإجازات (أكواد legacy)
                     'leaves.view',
-                    'leaves.add',
-                    'leaves.edit',
-                    'leaves.delete',
                     'leaves.approve',
                     'leaves.manage',
-                    # الرواتب - كل الصلاحيات
+                    # الرواتب
                     'payroll.view',
-                    'payroll.add',
-                    'payroll.edit',
-                    'payroll.delete',
                     'payroll.manage',
+                    'payroll.process',
+                    'payroll.view_reports',
                     # المستخدمين - عرض وإضافة وتعديل
                     'users.view',
                     'users.add',
@@ -142,9 +126,7 @@ class Command(BaseCommand):
                     'employees.view',  # (سيتم تطبيق فلتر لرؤية نفسه فقط في الـ views)
                     # الإجازات
                     'leaves.view',  # (يرى إجازاته فقط)
-                    'leaves.add',    # طلب إجازة
-                    # الحضور
-                    'attendance.view',  # (يرى حضوره فقط)
+                    'leaves.request',    # طلب إجازة (يتوافق مع setup_permissions_and_roles)
                 ],
             },
 
@@ -161,7 +143,6 @@ class Command(BaseCommand):
                     'employees.edit',
                     'leaves.view',
                     'leaves.manage',
-                    'attendance.view',
                 ],
             },
         ]

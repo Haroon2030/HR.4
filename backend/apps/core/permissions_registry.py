@@ -8,7 +8,7 @@ Permissions Registry — تسجيل تلقائي للوحدات والصلاحي
 
 لإضافة وحدة جديدة بمسمى عربي وأيقونة، استعمل:
     from apps.core.permissions_registry import register_module
-    register_module('attendance', name='الحضور والانصراف', icon='clock', order=10)
+    register_module('payroll', name='الرواتب', icon='wallet', order=9)
 
 أو دع النظام يستخدم القيم الافتراضية ويعتمد فقط على decorators على الـ views.
 """
@@ -27,6 +27,8 @@ DEFAULT_MODULE_META: Dict[str, dict] = {
     'system_data':  {'name': 'بيانات النظام',       'icon': 'database',      'order': 6},
     'hr_forms':     {'name': 'النماذج الرسمية',     'icon': 'file-text',     'order': 7},
     'reports':      {'name': 'التقارير',            'icon': 'bar-chart-3',   'order': 8},
+    'payroll':      {'name': 'الرواتب',             'icon': 'banknote',      'order': 9},
+    'leaves':       {'name': 'الإجازات',            'icon': 'calendar-days', 'order': 10},
 }
 
 # تسميات العمليات

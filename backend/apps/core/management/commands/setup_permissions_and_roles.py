@@ -46,14 +46,7 @@ class Command(BaseCommand):
             {'code': 'branches.manage', 'name': 'إدارة الفروع', 'module': 'departments'},
             
             # ═══════════════════════════════════════════════════════════
-            # الحضور والغياب (Attendance)
-            # ═══════════════════════════════════════════════════════════
-            {'code': 'attendance.view', 'name': 'عرض الحضور والغياب', 'module': 'attendance'},
-            {'code': 'attendance.manage', 'name': 'إدارة الحضور والغياب', 'module': 'attendance'},
-            {'code': 'attendance.approve', 'name': 'الموافقة على التعديلات', 'module': 'attendance'},
-            
-            # ═══════════════════════════════════════════════════════════
-            # الإجازات (Leaves)
+            # الإجازات (أكواد legacy — سير الإجازات في الواجهة يعتمد employees.edit)
             # ═══════════════════════════════════════════════════════════
             {'code': 'leaves.view', 'name': 'عرض الإجازات', 'module': 'leaves'},
             {'code': 'leaves.request', 'name': 'طلب إجازة', 'module': 'leaves'},
@@ -141,11 +134,7 @@ class Command(BaseCommand):
                     # الأقسام والفروع
                     'departments.view',
                     'branches.view',
-                    # الحضور
-                    'attendance.view',
-                    'attendance.manage',
-                    'attendance.approve',
-                    # الإجازات
+                    # الإجازات (أكواد legacy)
                     'leaves.view',
                     'leaves.approve',
                     'leaves.manage',
@@ -176,11 +165,7 @@ class Command(BaseCommand):
                     'departments.manage',
                     'branches.view',
                     'branches.manage',
-                    # الحضور
-                    'attendance.view',
-                    'attendance.manage',
-                    'attendance.approve',
-                    # الإجازات
+                    # الإجازات (أكواد legacy)
                     'leaves.view',
                     'leaves.approve',
                     'leaves.manage',
@@ -214,8 +199,6 @@ class Command(BaseCommand):
                     # طلب إجازة
                     'leaves.request',
                     'leaves.view',  # (يرى إجازاته فقط)
-                    # عرض حضوره
-                    'attendance.view',  # (يرى حضوره فقط)
                 ],
             },
         ]

@@ -4,6 +4,7 @@
 
 ```
 HR/
+├── .github/                   # GitHub Actions (Django CI)
 ├── .git/                      # Git repository
 ├── .gitattributes             # Git attributes
 ├── .gitignore                 # Git ignore (محدّث)
@@ -19,12 +20,9 @@ HR/
 - `backend/` - المشروع بالكامل
 - `README.md` - توثيق شامل ومحدّث
 
-### ❌ ما تم حذفه:
-- `design-template/` - قوالب تصميم قديمة (موجودة الآن في backend/templates/)
-- `Dockerfile` - إعدادات Docker قديمة
-- `docker-compose.yml` - إعدادات Docker قديمة
-- `.dockerignore` - ملف Docker ignore
-- `.github/` - CI/CD قديم لـ frontend غير موجود
+### ❌ ما تم حذفه (تاريخي):
+- `design-template/` - قوالب تصميم قديمة
+- CI قديم لـ frontend غير المستخدم — يُستبدل بـ `.github/workflows/django-ci.yml`
 
 ---
 
@@ -33,29 +31,21 @@ HR/
 ```
 backend/
 ├── apps/                      # Django Applications
-│   ├── core/                 # ✅ التطبيق الأساسي (جاهز)
-│   │   ├── models.py         # Permission, Role, UserProfile
-│   │   ├── views.py          # API Views
-│   │   ├── web_views.py      # Web Views
-│   │   ├── serializers.py    # DRF Serializers
-│   │   ├── admin.py          # Django Admin
-│   │   └── migrations/       # DB Migrations
-│   │
-│   ├── employees/            # ⏳ إدارة الموظفين (قيد التطوير)
-│   ├── departments/          # ⏳ إدارة الأقسام (قيد التطوير)
-│   ├── attendance/           # ⏳ الحضور والغياب (قيد التطوير)
-│   ├── leaves/               # ⏳ الإجازات (قيد التطوير)
-│   └── payroll/              # ⏳ الرواتب (قيد التطوير)
+│   ├── core/                 # النواة: نماذج الشركة/الفرع، RBAC، موافقات، إشعارات، معظم web_views
+│   ├── employees/            # نماذج الموظفين والهجرات (واجهات HTTP في apps.core.web_views)
+│   ├── payroll/              # مسير الرواتب (نماذج + views ويب)
+│   ├── departments/          # نموذج القسم (واجهة CRUD في core.web_views)
+│   ├── cost_centers/         # مراكز التكلفة
+│   └── setup/                 # جداول مرجعية (جنسية، مهنة، بنك، …)
 │
 ├── config/                    # Django Configuration
-│   ├── settings/             # إعدادات منفصلة
-│   │   ├── base.py          # الإعدادات الأساسية
-│   │   ├── development.py   # إعدادات التطوير
-│   │   └── production.py    # إعدادات الإنتاج
-│   ├── urls.py              # المسارات الرئيسية
-│   ├── api_urls.py          # مسارات API
-│   ├── web_urls.py          # مسارات Web
-│   └── middleware.py        # Middleware مخصص
+│   ├── settings/             # base / development / production
+│   ├── urls.py               # المسارات الرئيسية + /health/
+│   ├── api_urls.py
+│   ├── web_urls.py
+│   ├── health.py             # فحص صحة خفيف
+│   ├── jwt_views.py          # JWT مع throttling
+│   └── middleware.py
 │
 ├── templates/                 # HTML Templates
 │   ├── base.html             # ✅ القالب الرئيسي (responsive)
@@ -104,12 +94,9 @@ backend/
 - `requirements.txt` - المتطلبات
 - `db.sqlite3` - قاعدة البيانات
 
-### ❌ ما تم حذفه من backend:
-- `Dockerfile` - ملف Docker قديم
-- `.dockerignore` - ملف Docker ignore
-- `entrypoint.sh` - Docker entrypoint script
-- `sync_data.py` - سكربت قديم للمزامنة
-- `venv/` - بيئة افتراضية (لا تُرفع على Git)
+### ❌ ما تم حذفه من backend (تاريخي):
+- نسخ قديمة من Dockerfile داخل backend — الـ Dockerfile الحالي في جذر المشروع
+- سكربتات مزامنة قديمة
 
 ---
 

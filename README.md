@@ -1,226 +1,96 @@
-# 👥 نظام إدارة الموارد البشرية (HR System)
+# نظام إدارة الموارد البشرية (HR ERP)
 
-نظام شامل ونظيف لإدارة الموارد البشرية مبني باستخدام Django مع واجهة عصرية ومتجاوبة.
+نظام موارد بشرية متعدد الفروع مبني على **Django 5** مع واجهة ويب عربية (RTL) باستخدام **Tailwind CSS** و**Alpine.js**. مصمّم لشركة واحدة بعدة فروع، مع صلاحيات ديناميكية، دورة موافقات، ومسير رواتب شهري.
 
-## ✨ الميزات الرئيسية
+## ما هو جاهز في المشروع
 
-### 📊 الجاهز للاستخدام:
-- ✅ نظام مصادقة متكامل (تسجيل دخول/خروج)
-- ✅ إدارة المستخدمين والصلاحيات (Roles & Permissions)
-- ✅ لوحة تحكم تفاعلية
-- ✅ واجهة متجاوبة بالكامل (Desktop, Tablet, Mobile)
-- ✅ قوالب جاهزة وقابلة لإعادة الاستخدام
-- ✅ دعم كامل للغة العربية
+| المجال | الوصف |
+|--------|--------|
+| **الموظفون** | ملف موظف كامل، مرفقات، إجازات، سلف، عهد، رحلات، غياب، كشوف، سجل إفادات، رصيد مخصصات (ledger) |
+| **الموافقات** | دورة موافقات متعددة المراحل + طلبات توظيف + صندوق وارد |
+| **الرواتب** | مسير شهري لكل فرع، قفل، إعادة بناء، تصدير Excel |
+| **التقارير** | تقارير جاهزة (قوائم وإحصائيات) |
+| **النماذج الرسمية** | نماذج قابلة للطباعة (إجازة، تسوية، إنذار، إلخ) |
+| **المنظمة** | فروع، أقسام، مراكز تكلفة، جداول إعداد (جنسية، مهنة، بنك، …) |
+| **المستخدمون والأدوار** | RBAC مع تزامن الصلاحيات من الـ decorators |
+| **النسخ الاحتياطي** | `backup_db`، رفع R2، إشعارات بريد، سجل في لوحة الإدارة |
+| **API** | JWT + مسارات أساسية (شركات، فروع، أدوار، مستخدمون، `/api/v1/me/`) — التوثيق عبر Swagger لـ staff في الإنتاج |
+| **النشر** | Docker + Gunicorn، إعدادات إنتاج (PostgreSQL، HTTPS اختياري) |
 
-### 🔜 قيد التطوير:
-- ⏳ إدارة الموظفين
-- ⏳ إدارة الأقسام
-- ⏳ نظام الحضور والغياب
-- ⏳ إدارة الإجازات
-- ⏳ نظام الرواتب
+## التقنيات
 
-## 🛠️ التقنيات المستخدمة
+- **Backend:** Django 5.2، Django REST Framework، SimpleJWT (مع token blacklist)، django-filter، simple-history، WhiteNoise، storages (R2).
+- **Frontend (القوالب):** Tailwind (offline)، Alpine.js، Lucide.
+- **قاعدة البيانات:** SQLite محلياً (افتراضي)، PostgreSQL في الإنتاج (`DATABASE_URL`).
 
-### Backend:
-- **Django 5.2.12** - إطار عمل Python قوي
-- **Django REST Framework** - لبناء APIs
-- **SQLite** - قاعدة بيانات (قابلة للتغيير بسهولة)
-- **Python 3.14**
-
-### Frontend:
-- **Tailwind CSS** (Offline) - تصميم عصري
-- **Alpine.js** - تفاعلية بسيطة
-- **HTMX** (اختياري) - تحديثات ديناميكية
-- **Lucide Icons** - أيقونات SVG جميلة
-- **خط Cairo** - للغة العربية
-
-## 📁 هيكل المشروع
+## هيكل المشروع (مختصر)
 
 ```
 HR/
-├── backend/                    # المشروع الرئيسي
-│   ├── apps/                  # تطبيقات Django
-│   │   ├── core/             # التطبيق الأساسي (مصادقة، صلاحيات)
-│   │   ├── employees/        # إدارة الموظفين (قيد التطوير)
-│   │   ├── departments/      # إدارة الأقسام (قيد التطوير)
-│   │   ├── attendance/       # الحضور والغياب (قيد التطوير)
-│   │   ├── leaves/           # الإجازات (قيد التطوير)
-│   │   └── payroll/          # الرواتب (قيد التطوير)
-│   │
-│   ├── config/               # إعدادات Django
-│   │   ├── settings/        # إعدادات منفصلة (dev/prod)
-│   │   ├── urls.py          # مسارات المشروع
-│   │   └── middleware.py    # Middleware مخصص
-│   │
-│   ├── templates/            # قوالب HTML
-│   │   ├── base.html        # القالب الرئيسي (responsive)
-│   │   ├── pages/           # صفحات القوالب
-│   │   ├── components/      # مكونات قابلة لإعادة الاستخدام
-│   │   ├── TEMPLATES_GUIDE.md
-│   │   ├── MOBILE_GUIDE.md
-│   │   └── README.md
-│   │
-│   ├── static/              # ملفات ثابتة
-│   │   ├── css/
-│   │   └── js/
-│   │
-│   ├── manage.py            # أداة إدارة Django
-│   └── requirements.txt     # المتطلبات
-│
-├── docs/                   # الوثائق والتوجيهات
-│   ├── CHANGELOG.md
-│   ├── PERMISSIONS_SYSTEM.md
-│   ├── PROJECT_STRUCTURE.md
-│   └── USAGE_GUIDE.md
-│
-├── .gitignore              # ملفات Git المستبعدة
-└── README.md              # هذا الملف
+├── backend/                 # مشروع Django
+│   ├── apps/
+│   │   ├── core/           # نواة: صلاحيات، موافقات، إشعارات، واجهات ويب كثيرة
+│   │   ├── employees/      # نماذج وبيانات الموظفين (الـ HTTP في core.web_views)
+│   │   ├── payroll/        # مسير الرواتب
+│   │   ├── departments/    # الأقسام (نماذج؛ الواجهة في core)
+│   │   ├── cost_centers/   # مراكز التكلفة
+│   │   └── setup/          # جداول الإعداد المرجعية
+│   ├── config/             # إعدادات، urls، middleware
+│   ├── templates/          # قوالب HTML
+│   ├── static/
+│   ├── manage.py
+│   └── requirements.txt
+├── docker/                  # entrypoint، cron نسخ احتياطي
+├── docs/                    # توثيق إضافي
+├── Dockerfile
+├── .env.example
+└── README.md
 ```
 
-## 🚀 التثبيت والتشغيل
+> **ملاحظة:** لا توجد تطبيقات منفصلة باسم `attendance/` أو `leaves/` — الحضور النصي ضمن ملف الموظف (`attendance_notes`)، والإجازات ضمن تطبيق الموظفين ودورة الموافقات. صلاحيات `leaves.*` قد تُستخدم كـ legacy مع سير العمل الفعلي عبر `employees.edit`.
 
-### المتطلبات:
-- Python 3.10 أو أحدث
-- pip
-
-### خطوات التثبيت:
+## التشغيل المحلي
 
 ```bash
-# 1. استنساخ المشروع
-git clone <repository-url>
-cd HR
-
-# 2. إنشاء بيئة افتراضية (اختياري لكن موصى به)
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# 3. تثبيت المتطلبات
 cd backend
+python -m venv .venv
+# Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
-# 4. تطبيق الهجرات (Migrations)
+copy ..\.env.example .env   # ثم عدّل القيم
 python manage.py migrate
-
-# 5. إنشاء مستخدم مدير (اختياري)
-python manage.py createsuperuser
-
-# 6. تشغيل السيرفر
 python manage.py runserver
 ```
 
-### الوصول للموقع:
-- الموقع الرئيسي: http://127.0.0.1:8000/
-- لوحة الإدارة: http://127.0.0.1:8000/admin/
-- API: http://127.0.0.1:8000/api/
+- الموقع: `http://127.0.0.1:8000/`
+- لوحة الإدارة: `http://127.0.0.1:8000/admin/`
+- فحص الصحة (للبروكسي): `http://127.0.0.1:8000/health/`
 
-## 📱 التصميم المتجاوب
+## الإنتاج
 
-النظام محسّن بالكامل للأجهزة المختلفة:
-- 📱 **الموبايل**: قائمة منزلقة، أزرار كبيرة، نصوص واضحة
-- 📟 **التابلت**: تخطيط مرن ومتوازن
-- 💻 **Desktop**: استغلال كامل للمساحة
+- عيّن `DJANGO_ENV=production` واملأ `.env` حسب `.env.example` (SECRET_KEY، ALLOWED_HOSTS، HTTPS، قاعدة البيانات، R2 إن لزم).
+- النشر عبر Docker: الهجرات وتجميع الملفات الثابتة تُنفَّذ في `docker/entrypoint.sh`.
 
-راجع [MOBILE_GUIDE.md](backend/templates/MOBILE_GUIDE.md) للتفاصيل.
-
-## 🎨 نظام القوالب
-
-النظام يحتوي على قوالب جاهزة وبسيطة:
-- `list_base.html` - لعرض القوائم والجداول
-- `form_base.html` - لنماذج الإضافة والتعديل
-- مكونات قابلة لإعادة الاستخدام (form_field, stat_card, إلخ)
-
-راجع [TEMPLATES_GUIDE.md](backend/templates/TEMPLATES_GUIDE.md) للأمثلة.
-
-## 🔧 الإعدادات
-
-### إعدادات التطوير:
-```bash
-python manage.py runserver --settings=config.settings.development
-```
-
-### إعدادات الإنتاج:
-```bash
-python manage.py runserver --settings=config.settings.production
-```
-
-## 📦 إضافة وحدات جديدة
-
-لإضافة وحدة جديدة (مثل: التدريب):
+## الاختبارات و CI
 
 ```bash
-# 1. إنشاء التطبيق
 cd backend
-python manage.py startapp training apps/training
-
-# 2. إضافته في INSTALLED_APPS
-# في config/settings/base.py
-
-# 3. إنشاء Models, Views, Templates
-# راجع apps/core كمثال
-
-# 4. إنشاء Migrations
-python manage.py makemigrations
-python manage.py migrate
+python manage.py test
 ```
 
-## 🎯 الحالة الحالية
+على GitHub: سير عمل **Django CI** يشغّل `check`، `migrate`، و`test` على كل push/PR لـ `main`.
 
-### ✅ جاهز:
-- بنية المشروع الأساسية
-- نظام المصادقة
-- إدارة الصلاحيات
-- قوالب متجاوبة
-- لوحة التحكم
-- نظام القوالب البسيط
+## الوثائق
 
-### 🔄 قيد التطوير:
-- تطبيقات HR الخمسة (employees, departments, attendance, leaves, payroll)
-- APIs
-- تقارير
-- إشعارات
+راجع مجلد [docs/](docs/) وخاصة:
 
-## 🤝 المساهمة
+- [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)
+- [PERMISSIONS_SYSTEM.md](docs/PERMISSIONS_SYSTEM.md)
+- [CHANGELOG.md](docs/CHANGELOG.md)
 
-المشروع مفتوح للتطوير! اتبع هذه الخطوات:
+## الترخيص والمساهمة
 
-1. Fork المشروع
-2. أنشئ branch جديد (`git checkout -b feature/amazing-feature`)
-3. Commit التغييرات (`git commit -m 'Add amazing feature'`)
-4. Push للـ branch (`git push origin feature/amazing-feature`)
-5. افتح Pull Request
-
-## 📄 الترخيص
-
-هذا المشروع مفتوح المصدر.
-
-## 👨‍💻 المطور
-
-**هارون الأهدل**
-- 📱 0531847156
-
-## � الوثائق الإضافية
-
-للمزيد من التفاصيل، راجع الملفات التالية في مجلد [docs/](docs/):
-
-- **[PERMISSIONS_SYSTEM.md](docs/PERMISSIONS_SYSTEM.md)** - شرح نظام الصلاحيات الديناميكي
-- **[DYNAMIC_PERMISSIONS_COMPLETED.md](docs/DYNAMIC_PERMISSIONS_COMPLETED.md)** - تفاصيل إنجاز نظام الصلاحيات
-- **[PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)** - هيكل المشروع المفصل
-- **[CHANGELOG.md](docs/CHANGELOG.md)** - سجل التغييرات والتحديثات
-- **[USAGE_GUIDE.md](docs/USAGE_GUIDE.md)** - دليل الاستخدام
-- **[example_add_module.py](docs/example_add_module.py)** - مثال إضافة وحدة جديدة
-
-## �📝 ملاحظات
-
-- المشروع نظيف وقابل للتوسع بسهولة
-- كل التطبيقات منفصلة ومستقلة
-- القوالب بسيطة وموثقة
-- مناسب للتطوير السريع
+المشروع مفتوح للتطوير الداخلي؛ لأي مساهمة استخدم branch منفصل ثم Pull Request.
 
 ---
 
-**⚠️ ملاحظة مهمة:** المشروع في مرحلة التطوير النشط. بعض الميزات قيد الإنشاء.
-
-**✨ استمتع بالتطوير!**
+**المطور:** هارون الأهدل
