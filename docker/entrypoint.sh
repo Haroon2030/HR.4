@@ -76,11 +76,16 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin')
-password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '526400')
+password = (os.environ.get('DJANGO_SUPERUSER_PASSWORD') or '').strip()
 email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
 
 if User.objects.filter(username=username).exists():
     print(f"Superuser '{username}' already exists \u2014 leaving it untouched.")
+elif not password:
+    print(
+        "!! DJANGO_SUPERUSER_PASSWORD is not set \u2014 "
+        "skipping superuser creation. Set it in .env before first deploy."
+    )
 else:
     User.objects.create_superuser(username=username, email=email, password=password)
     print(f"Superuser '{username}' created.")

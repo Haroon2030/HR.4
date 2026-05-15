@@ -2,10 +2,12 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.core.decorators import permission_required
+from apps.core.web_views._helpers import employee_branch_access_required
 
 
 @login_required
 @permission_required('employees.edit')
+@employee_branch_access_required
 def run_ledger_init(request, employee_id):
     from apps.employees.models import Employee, EmployeeLedger
     from django.utils import timezone

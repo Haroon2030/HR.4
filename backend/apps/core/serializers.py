@@ -155,9 +155,24 @@ class UserSerializer(serializers.ModelSerializer):
             'profile', 'role', 'password',
             'role_name', 'role_type'
         ]
-        read_only_fields = ['date_joined', 'last_login']
-    
+        read_only_fields = ['date_joined', 'last_login', 'is_staff', 'is_superuser']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        if request and request.user.is_superuser:
+            self.fields['is_staff'].read_only = False
+            self.fields['is_superuser'].read_only = False
+
+    def _strip_privileged_fields(self, validated_data):
+        request = self.context.get('request')
+        if not request or not request.user.is_superuser:
+            validated_data.pop('is_staff', None)
+            validated_data.pop('is_superuser', None)
+        return validated_data
+
     def create(self, validated_data):
+        validated_data = self._strip_privileged_fields(validated_data)
         role = validated_data.pop('role', None)
         password = validated_data.pop('password', None)
         user = User.objects.create(**validated_data)
@@ -169,9 +184,16 @@ class UserSerializer(serializers.ModelSerializer):
         return user
     
     def update(self, instance, validated_data):
+        validated_data = self._strip_privileged_fields(validated_data)
         role = validated_data.pop('role', None)
         password = validated_data.pop('password', None)
-        
+
+        request = self.context.get('request')
+        if request and not request.user.is_superuser and instance.is_superuser:
+            raise serializers.ValidationError(
+                {'detail': 'لا يمكن تعديل حساب مدير النظام بدون صلاحيات مدير النظام.'}
+            )
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         

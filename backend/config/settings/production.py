@@ -25,19 +25,10 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 
 # النطاقات/العناوين المسموح لها بالوصول للسيرفر
-ALLOWED_HOSTS = env.list(
-    'ALLOWED_HOSTS',
-    default=['72.61.107.230', 'localhost', '127.0.0.1'],
-)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
-# النطاقات الموثوقة لحماية CSRF (مطلوبة لنماذج POST)
-CSRF_TRUSTED_ORIGINS = env.list(
-    'CSRF_TRUSTED_ORIGINS',
-    default=[
-        'http://72.61.107.230',
-        'http://72.61.107.230:8082',
-    ],
-)
+# النطاقات الموثوقة لحماية CSRF (مطلوبة لنماذج POST) — حدّد https:// في .env
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
 # ══════════════════════════════════════════════════════════════════════════════
 # قاعدة البيانات — PostgreSQL عبر Neon (خدمة سحابية)
@@ -91,12 +82,28 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
-# إعادة التوجيه لـ HTTPS — معطّل لأن Traefik يتولى ذلك
-SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+# HTTPS — فعّل SECURE_SSL_REDIRECT=true في .env عند تفعيل TLS على البروكسي
+_USE_HTTPS = env.bool('USE_HTTPS', default=False)
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=_USE_HTTPS)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=_USE_HTTPS)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=_USE_HTTPS)
 
-# حماية ملفات الكوكيز — تُفعّل عند استخدام HTTPS
-SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
-CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)
+if _USE_HTTPS or SECURE_SSL_REDIRECT:
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
+    SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', default=False)
+
+if not DEBUG:
+    from django.core.exceptions import ImproperlyConfigured
+
+    if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['localhost', '127.0.0.1']:
+        raise ImproperlyConfigured(
+            'حدّد ALLOWED_HOSTS في .env بنطاق الإنتاج الفعلي قبل النشر.'
+        )
+    if _USE_HTTPS and not CSRF_TRUSTED_ORIGINS:
+        raise ImproperlyConfigured(
+            'حدّد CSRF_TRUSTED_ORIGINS بعناوين https:// عند USE_HTTPS=true.'
+        )
 
 # حماية المتصفح من هجمات XSS وContent-Type sniffing
 SECURE_BROWSER_XSS_FILTER = True
@@ -110,13 +117,7 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'
 # مطلوب إذا كانت الواجهة الأمامية على نطاق مختلف عن الـ API
 # ══════════════════════════════════════════════════════════════════════════════
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
-CORS_ALLOWED_ORIGINS = env.list(
-    'CORS_ALLOWED_ORIGINS',
-    default=[
-        'http://72.61.107.230',
-        'http://72.61.107.230:8082',
-    ],
-)
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True  # السماح بإرسال الكوكيز مع الطلبات
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -177,7 +178,9 @@ if USE_R2:
     AWS_DEFAULT_ACL = None            # بدون صلاحيات عامة افتراضية
     AWS_S3_SIGNATURE_VERSION = 's3v4' # إصدار التوقيع المطلوب
     AWS_S3_ADDRESSING_STYLE = 'path'  # أسلوب path أكثر موثوقية مع R2
-    AWS_QUERYSTRING_AUTH = False       # روابط الملفات بدون توقيع (عامة)
+    # روابط موقّعة — اضبط R2_SIGNED_URLS=false فقط إذا كان الـ bucket خاصاً بعناوين عامة موثوقة
+    AWS_QUERYSTRING_AUTH = env.bool('R2_SIGNED_URLS', default=True)
+    AWS_QUERYSTRING_EXPIRE = env.int('R2_SIGNED_URL_EXPIRE', default=3600)
     AWS_S3_VERIFY = True              # التحقق من شهادة SSL
 
     # نطاق مخصص للملفات (مثل: media.yourdomain.com)

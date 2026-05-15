@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     # ── تطبيقات الطرف الثالث ──
     'rest_framework',                # واجهة REST API
     'rest_framework_simplejwt',      # مصادقة JWT
+    'rest_framework_simplejwt.token_blacklist',  # إبطال refresh tokens بعد التدوير
     'corsheaders',                   # مشاركة الموارد بين المواقع
     'django_filters',               # فلاتر الاستعلامات
     'simple_history',                # سجل التدقيق التاريخي (Audit Log)
@@ -120,6 +121,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': env('DRF_ANON_THROTTLE', default='100/hour'),
+        'user': env('DRF_USER_THROTTLE', default='1000/hour'),
+        'login': env('DRF_LOGIN_THROTTLE', default='20/hour'),
+        'login_user': env('DRF_LOGIN_USER_THROTTLE', default='60/hour'),
+    },
     # محركات الفلترة: فلاتر + بحث + ترتيب
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -238,9 +249,13 @@ LOGIN_REDIRECT_URL = '/'                            # بعد تسجيل الدخ
 LOGOUT_REDIRECT_URL = '/auth/login/'                # بعد تسجيل الخروج → صفحة الدخول
 
 # إعدادات الجلسة
-SESSION_COOKIE_AGE = 86400                          # مدة الجلسة: 24 ساعة
+SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=43200)  # 12 ساعة افتراضياً
 SESSION_SAVE_EVERY_REQUEST = True                   # تحديث الجلسة مع كل طلب
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False             # لا تنتهي عند إغلاق المتصفح
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = env('SESSION_COOKIE_SAMESITE', default='Lax')
+CSRF_COOKIE_HTTPONLY = env.bool('CSRF_COOKIE_HTTPONLY', default=True)
+CSRF_COOKIE_SAMESITE = env('CSRF_COOKIE_SAMESITE', default='Lax')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # إعدادات البريد الإلكتروني (SMTP)

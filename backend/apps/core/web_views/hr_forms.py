@@ -12,6 +12,7 @@ from django.http import Http404
 from apps.core.models import Company
 from apps.employees.models import Employee
 from apps.core.decorators import permission_required
+from apps.core.web_views._helpers import employee_branch_access_required
 
 
 # اختصارات قصيرة لكود النموذج تظهر في السريال (لو ما وجد، يُؤخذ أول 3 حروف من الـ key)
@@ -124,10 +125,13 @@ HR_FORMS = [
 @permission_required('hr_forms.view')
 def hr_forms_index(request):
     """صفحة قسم النماذج الرسمية — اختيار النموذج والموظف"""
-    employees = (
+    from apps.core.web_views._helpers import filter_employees_queryset_for_user
+
+    employees = filter_employees_queryset_for_user(
+        request.user,
         Employee.objects.filter(is_deleted=False)
         .select_related('branch', 'department', 'profession')
-        .order_by('name')
+        .order_by('name'),
     )
     return render(request, 'pages/hr_forms/index.html', {
         'forms': HR_FORMS,
@@ -137,6 +141,7 @@ def hr_forms_index(request):
 
 @login_required
 @permission_required('hr_forms.view')
+@employee_branch_access_required
 def hr_form_print(request, form_type, employee_id):
     """عرض نموذج رسمي قابل للطباعة لموظف محدد"""
     form_meta = next((f for f in HR_FORMS if f['key'] == form_type), None)

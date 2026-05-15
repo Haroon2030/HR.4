@@ -217,7 +217,7 @@ class DatabaseBackupLogAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
-        return request.user.is_staff
+        return request.user.is_superuser
 
     def has_delete_permission(self, request, obj=None):
         return bool(request.user.is_superuser)
@@ -259,6 +259,10 @@ class DatabaseBackupLogAdmin(admin.ModelAdmin):
 
     def download_backup_view(self, request, object_id):
         from io import BytesIO
+
+        if not request.user.is_superuser:
+            messages.error(request, 'تحميل النسخ الاحتياطية متاح لمدير النظام فقط.')
+            return redirect('admin:index')
 
         obj = get_object_or_404(DatabaseBackupLog, pk=object_id)
 

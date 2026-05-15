@@ -81,6 +81,14 @@ def branch_manager_required(view_func):
     return wrapper
 
 
+def filter_employees_queryset_for_user(user, queryset):
+    """Restrict employee queryset to branches the user may access."""
+    branch_ids = _user_accessible_branch_ids(user)
+    if branch_ids is None:
+        return queryset
+    return queryset.filter(branch_id__in=branch_ids)
+
+
 def _user_accessible_branch_ids(user):
     """
     قائمة معرّفات الفروع التي يحق للمستخدم العمل عليها.
@@ -93,8 +101,11 @@ def _user_accessible_branch_ids(user):
         return None  # بدون قيود — يصل لأي فرع
     
     profile = getattr(user, 'profile', None)
-    if profile and profile.role and profile.role.role_type == Role.RoleType.ADMIN:
-        return None  # الأدمن مثل السوبر يوزر
+    if profile and profile.role and profile.role.role_type in (
+        Role.RoleType.ADMIN,
+        Role.RoleType.HR_MANAGER,
+    ):
+        return None  # الأدمن ومدير الموارد يرون كل الفروع
     
     # تجميع كل الفروع المتاحة
     ids = set(user.managed_branches.values_list('id', flat=True))  # الفروع التي يديرها

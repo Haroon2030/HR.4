@@ -19,5 +19,9 @@ environment = env('DJANGO_ENV', default=os.environ.get('DJANGO_ENV', 'developmen
 
 if environment == 'production':
     from .production import *
-else:
+elif environment == 'development':
     from .development import *
+else:
+    raise ValueError(
+        f"DJANGO_ENV must be 'production' or 'development', got: {environment!r}"
+    )

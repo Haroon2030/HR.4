@@ -5,8 +5,19 @@ Django Template Views - واجهة الويب
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.core.cache import cache
 
 from apps.core.models import UserProfile
+
+_LOGIN_ATTEMPT_LIMIT = 20
+_LOGIN_LOCKOUT_SECONDS = 3600
+
+
+def _login_throttle_key(request) -> str:
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+    if not ip:
+        ip = request.META.get('REMOTE_ADDR', 'unknown')
+    return f'login_throttle:{ip}'
 
 
 # =============================================================================
@@ -23,6 +34,15 @@ def login_view(request):
         return redirect('web:dashboard')
     
     if request.method == 'POST':
+        throttle_key = _login_throttle_key(request)
+        attempts = cache.get(throttle_key, 0)
+        if attempts >= _LOGIN_ATTEMPT_LIMIT:
+            messages.error(
+                request,
+                'تم تجاوز عدد محاولات تسجيل الدخول. حاول مرة أخرى لاحقاً.',
+            )
+            return render(request, 'auth/login.html')
+
         form = LoginForm(request.POST)
         if not form.is_valid():
             for err in form.errors.values():
@@ -43,13 +63,15 @@ def login_view(request):
                 pass
         
         if user is not None:
+            cache.delete(throttle_key)
             login(request, user)
             if not remember:
                 request.session.set_expiry(0)
             messages.success(request, f'مرحباً {user.get_full_name() or user.username}')
             return redirect('web:dashboard')
-        else:
-            messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
+
+        cache.set(throttle_key, attempts + 1, _LOGIN_LOCKOUT_SECONDS)
+        messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
     
     return render(request, 'auth/login.html')
 

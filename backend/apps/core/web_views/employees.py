@@ -18,6 +18,8 @@ from apps.departments.models import Department
 
 from apps.core.web_views._helpers import (
     employee_branch_access_required,
+    filter_employees_queryset_for_user,
+    general_manager_required,
 )
 from apps.core.decorators import permission_required
 
@@ -42,6 +44,7 @@ def list_employees(request):
     qs = Employee.objects.select_related(
         'branch', 'department', 'cost_center', 'nationality'
     ).all()
+    qs = filter_employees_queryset_for_user(request.user, qs)
 
     q = (request.GET.get('q') or '').strip()
     if q:
@@ -109,6 +112,7 @@ def add_employee(request):
 # =============================================================================
 @login_required
 @permission_required('employees.add')
+@general_manager_required
 def create_employee_full(request):
     """إنشاء موظف مباشرة عبر النموذج الرئيسي الكامل (7 تبويبات)"""
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
@@ -151,6 +155,7 @@ def create_employee_full(request):
 
 @login_required
 @permission_required('employees.view')
+@employee_branch_access_required
 def view_employee(request, employee_id):
     """عرض بيانات موظف للقراءة فقط"""
     from apps.employees.models import Employee
@@ -318,6 +323,7 @@ def edit_employee(request, employee_id):
 
 @login_required
 @permission_required('employees.delete')
+@employee_branch_access_required
 def delete_employee(request, employee_id):
     """حذف موظف (admin فقط)"""
     from apps.employees.models import Employee
