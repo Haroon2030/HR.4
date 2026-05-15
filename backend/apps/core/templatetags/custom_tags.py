@@ -132,6 +132,15 @@ def has_permission(user, permission_code):
     return check_permission(user, permission_code)
 
 
+@register.filter
+def is_general_manager(user):
+    """مدير عام / مدير موارد / سوبر يوزر — نفس منطق _is_general_manager في الويب."""
+    if not user or not user.is_authenticated:
+        return False
+    from apps.core.web_views._helpers import _is_general_manager
+    return _is_general_manager(user)
+
+
 @register.simple_tag(takes_context=True)
 def user_has_permission(context, permission_code):
     """

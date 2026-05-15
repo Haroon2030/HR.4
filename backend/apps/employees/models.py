@@ -20,6 +20,14 @@ from apps.cost_centers.models import CostCenter
 class EmploymentRequest(BaseModel):
     """طلب توظيف ينشئه الأخصائي وينتظر موافقة مدير الفرع"""
 
+    class Gender(models.TextChoices):
+        MALE = 'male', 'ذكر'
+        FEMALE = 'female', 'أنثى'
+
+    class HealthCardStatus(models.TextChoices):
+        AVAILABLE = 'available', 'متوفر'
+        NOT_AVAILABLE = 'not_available', 'غير متوفر'
+
     class Status(models.TextChoices):
         PENDING = 'pending', 'قيد المراجعة'  # legacy — تجري ترقيتها إلى PENDING_BRANCH
         PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'
@@ -116,10 +124,35 @@ class EmploymentRequest(BaseModel):
         'setup.InsuranceClass', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='employment_requests', verbose_name="فئة التأمين"
     )
+    housing = models.ForeignKey(
+        'setup.Building', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="السكن",
+    )
+
+    gender = models.CharField(
+        "الجنس", max_length=10, choices=Gender.choices, default=Gender.MALE, blank=True,
+    )
 
     # تواريخ
     hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
     passport_expiry_date = models.DateField("تاريخ انتهاء الجواز", null=True, blank=True)
+    residency_expiry_date = models.DateField(
+        "تاريخ انتهاء الإقامة", null=True, blank=True,
+        help_text="تاريخ انتهاء بطاقة الإقامة/الخروج والعودة إن وُجد.",
+    )
+    medical_insurance_expiry_date = models.DateField(
+        "تاريخ انتهاء التأمين الطبي", null=True, blank=True,
+        help_text="تاريخ تجديد بوليصة التأمين الصحي للموظف.",
+    )
+    contract_expiry_date = models.DateField(
+        "تاريخ انتهاء العقد", null=True, blank=True,
+        help_text="تاريخ نهاية العقد المخطط.",
+    )
+    health_card_status = models.CharField(
+        "حالة الكرت الصحي", max_length=20,
+        choices=HealthCardStatus.choices, default=HealthCardStatus.NOT_AVAILABLE, blank=True,
+    )
+    health_card_expiry = models.DateField("تاريخ انتهاء الكرت الصحي", null=True, blank=True)
 
     # الراتب
     basic_salary = models.DecimalField(
@@ -140,6 +173,11 @@ class EmploymentRequest(BaseModel):
     insurance_deduction_rate = models.DecimalField(
         "نسبة خصم التأمينات", max_digits=5, decimal_places=2, default=0
     )
+    bank = models.ForeignKey(
+        'setup.Bank', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="البنك",
+    )
+    iban = models.CharField("رقم الآيبان", max_length=34, blank=True)
 
     # المستندات
     id_document = models.FileField(
@@ -246,6 +284,18 @@ class Employee(BaseModel):
     hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
     end_date = models.DateField("تاريخ التوقف", null=True, blank=True)
     passport_expiry_date = models.DateField("تاريخ انتهاء الجواز", null=True, blank=True)
+    residency_expiry_date = models.DateField(
+        "تاريخ انتهاء الإقامة", null=True, blank=True,
+        help_text="تاريخ انتهاء بطاقة الإقامة/الخروج والعودة إن وُجد.",
+    )
+    medical_insurance_expiry_date = models.DateField(
+        "تاريخ انتهاء التأمين الطبي", null=True, blank=True,
+        help_text="تاريخ تجديد بوليصة التأمين الصحي للموظف (وليس جدول نوع التأمين في الإعدادات).",
+    )
+    contract_expiry_date = models.DateField(
+        "تاريخ انتهاء العقد", null=True, blank=True,
+        help_text="تاريخ نهاية العقد المخطط — منفصل عن «تاريخ التوقف» عند التصفية الفعلية.",
+    )
     status = models.CharField(
         "حالة الموظف", max_length=20, choices=Status.choices, default=Status.ACTIVE
     )

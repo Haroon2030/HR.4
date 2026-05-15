@@ -56,7 +56,8 @@ _EMPLOYEE_FIELDS = [
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
     'cost_center', 'insurance', 'insurance_class', 'housing',
     # تواريخ + حالة
-    'hire_date', 'end_date', 'passport_expiry_date', 'status', 'end_reason',
+    'hire_date', 'end_date', 'passport_expiry_date', 'residency_expiry_date',
+    'medical_insurance_expiry_date', 'contract_expiry_date', 'status', 'end_reason',
     # الكرت الصحي
     'health_card_status', 'health_card_expiry',
     # راتب
@@ -177,14 +178,18 @@ class EmploymentRequestEditForm(forms.ModelForm):
             # الحقول الأصلية
             'name', 'branch', 'department', 'cost_center', 'commencement_document',
             # بيانات أساسية
-            'id_number', 'phone', 'email', 'employee_number',
+            'id_number', 'phone', 'email', 'employee_number', 'gender',
             # Setup
             'nationality', 'profession', 'sponsorship', 'insurance', 'insurance_class',
-            # تواريخ
-            'hire_date', 'passport_expiry_date',
+            'housing',
+            # تواريخ وامتثال
+            'hire_date', 'passport_expiry_date', 'residency_expiry_date',
+            'medical_insurance_expiry_date', 'contract_expiry_date',
+            'health_card_status', 'health_card_expiry',
             # راتب
             'basic_salary', 'housing_allowance', 'transport_allowance',
             'other_allowance', 'cash_amount', 'insurance_deduction_rate',
+            'bank', 'iban',
             # مستندات
             'id_document', 'passport_document', 'contract_document', 'other_documents',
         ]
@@ -228,7 +233,15 @@ class EmploymentRequestEditForm(forms.ModelForm):
             else:
                 widget.attrs['class'] = f'{existing} {text_class}'.strip()
             # تحويل الحقول التاريخية إلى type="date"
-            if field_name in ('hire_date', 'passport_expiry_date'):
+            if field_name in (
+                'hire_date',
+                'end_date',
+                'passport_expiry_date',
+                'health_card_expiry',
+                'residency_expiry_date',
+                'medical_insurance_expiry_date',
+                'contract_expiry_date',
+            ):
                 widget.input_type = 'date'
             # خطوة الأرقام للراتب
             if field_name in ('basic_salary', 'housing_allowance', 'transport_allowance',
@@ -257,6 +270,9 @@ class EmploymentRequestEditForm(forms.ModelForm):
         if not name:
             raise ValidationError('اسم الموظف مطلوب')
         return name
+
+    def clean_email(self):
+        return self.cleaned_data.get('email') or ''
 
 
 class EmployeeStatementForm(forms.ModelForm):

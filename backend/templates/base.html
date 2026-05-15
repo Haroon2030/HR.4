@@ -281,7 +281,7 @@
                 :class="sidebarOpen ? 'w-64' : 'w-20'"
             >
                 <!-- Navigation -->
-                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpen: ['list_employees','add_employee'].includes('{{ request.resolver_match.url_name }}') }">
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}') }">
                     {% load custom_tags %}
                     {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" %}
 
@@ -289,7 +289,7 @@
                     {% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
                     <div>
                         <button type="button" @click="employeesOpen = !employeesOpen"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'document_expiry_dashboard' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
                             <i data-lucide="users" class="w-5 h-5 flex-shrink-0"></i>
                             <span x-show="sidebarOpen" class="font-semibold text-base flex-1 text-right">الموظفين</span>
                             <i data-lucide="chevron-down" x-show="sidebarOpen" class="w-4 h-4 transition-transform" :class="employeesOpen ? 'rotate-180' : ''"></i>
@@ -305,6 +305,12 @@
                                 إضافة موظف
                             </a>
                             {% endif %}
+                            {% if user|has_permission:'employees.view' %}
+                            <a href="{% url 'web:document_expiry_dashboard' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if request.resolver_match.url_name == 'document_expiry_dashboard' %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+                                وثائق تنتهي قريباً
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
@@ -313,6 +319,13 @@
                     {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" %}{% endif %}
                     {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" %}{% endif %}
                     {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" %}{% endif %}
+                    {% if user|is_general_manager %}
+                    <a href="{% url 'web:audit_history' %}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'audit_history' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                        <i data-lucide="clipboard-list" class="w-5 h-5 flex-shrink-0"></i>
+                        <span x-show="sidebarOpen" class="font-semibold text-base">سجل التدقيق</span>
+                    </a>
+                    {% endif %}
                     {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
@@ -371,14 +384,14 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpenM: ['list_employees','add_employee'].includes('{{ request.resolver_match.url_name }}') }">
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpenM: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}') }">
                     {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" force_show_label=True %}
 
                     <!-- الموظفين مع قائمة فرعية -->
                     {% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
                     <div>
                         <button type="button" @click="employeesOpenM = !employeesOpenM"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'document_expiry_dashboard' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
                             <i data-lucide="users" class="w-5 h-5 flex-shrink-0"></i>
                             <span class="font-semibold text-base flex-1 text-right">الموظفين</span>
                             <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="employeesOpenM ? 'rotate-180' : ''"></i>
@@ -394,6 +407,12 @@
                                 إضافة موظف
                             </a>
                             {% endif %}
+                            {% if user|has_permission:'employees.view' %}
+                            <a href="{% url 'web:document_expiry_dashboard' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if request.resolver_match.url_name == 'document_expiry_dashboard' %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+                                وثائق تنتهي قريباً
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
@@ -402,6 +421,13 @@
                     {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" force_show_label=True %}{% endif %}
                     {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" force_show_label=True %}{% endif %}
                     {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" force_show_label=True %}{% endif %}
+                    {% if user|is_general_manager %}
+                    <a href="{% url 'web:audit_history' %}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'audit_history' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                        <i data-lucide="clipboard-list" class="w-5 h-5 flex-shrink-0"></i>
+                        <span class="font-semibold text-base">سجل التدقيق</span>
+                    </a>
+                    {% endif %}
                     {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" force_show_label=True %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"

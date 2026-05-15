@@ -1,6 +1,7 @@
-# Fix: add missing is_deleted and deleted_at columns to existing table
+# EmployeeLedger و HistoricalEmployeeLedger في 0020 يتضمنان أصلاً is_deleted و deleted_at.
+# كانت 0021 السابقة تحاول إضافتهما مرة أخرى فتفشل على قواعد جديدة (duplicate column).
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -9,25 +10,4 @@ class Migration(migrations.Migration):
         ('employees', '0020_employeeledger_historicalemployeeledger'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='employeeledger',
-            name='is_deleted',
-            field=models.BooleanField(db_index=True, default=False, verbose_name='محذوف'),
-        ),
-        migrations.AddField(
-            model_name='employeeledger',
-            name='deleted_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='تاريخ الحذف'),
-        ),
-        migrations.AddField(
-            model_name='historicalemployeeledger',
-            name='is_deleted',
-            field=models.BooleanField(db_index=True, default=False, verbose_name='محذوف'),
-        ),
-        migrations.AddField(
-            model_name='historicalemployeeledger',
-            name='deleted_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='تاريخ الحذف'),
-        ),
-    ]
+    operations = []

@@ -1,0 +1,153 @@
+"""
+Tests for payroll engine — build, lock, unlock, deduction rules.
+"""
+from decimal import Decimal
+from datetime import date
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+
+from apps.core.models import Company, Branch
+from apps.employees.models import (
+    Employee,
+    EmployeeAbsence,
+    EmployeeLeave,
+    EmployeeStatement,
+    EmployeeLoan,
+    LoanInstallment,
+)
+from apps.payroll.models import PayrollRun
+from apps.payroll.services.engine import (
+    build_payroll_run,
+    lock_payroll_run,
+    unlock_payroll_run,
+)
+
+User = get_user_model()
+
+
+class PayrollEngineTests(TestCase):
+    """Integration tests against build_payroll_run / lock / unlock."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name='Test Co')
+        self.branch = Branch.objects.create(
+            name='Branch A', code='TST01', company=self.company,
+        )
+        self.user = User.objects.create_user(username='payroll_tester', password='test-pass-123')
+        self.employee = Employee.objects.create(
+            name='موظف تجريبي',
+            branch=self.branch,
+            status=Employee.Status.ACTIVE,
+            hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('3000'),
+            housing_allowance=Decimal('1000'),
+            transport_allowance=Decimal('500'),
+            other_allowance=Decimal('0'),
+            cash_amount=Decimal('0'),
+            insurance_deduction_rate=Decimal('10'),
+        )
+
+    def test_build_computes_gross_and_insurance(self):
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        line = run.lines.get(employee=self.employee)
+        self.assertEqual(line.gross_salary, Decimal('4500.00'))
+        self.assertEqual(line.insurance_deduction, Decimal('450.00'))
+        self.assertGreater(line.net_salary, Decimal('0'))
+
+    def test_build_includes_absence_deduction(self):
+        EmployeeAbsence.objects.create(
+            employee=self.employee,
+            absence_date=date(2026, 3, 10),
+            days=1,
+            month_days=31,
+            deduction_amount=Decimal('100.00'),
+        )
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        line = run.lines.get(employee=self.employee)
+        self.assertEqual(line.absence_deduction, Decimal('100.00'))
+
+    def test_build_unpaid_leave_deduction(self):
+        EmployeeLeave.objects.create(
+            employee=self.employee,
+            leave_type=EmployeeLeave.LeaveType.UNPAID,
+            date_from=date(2026, 3, 5),
+            date_to=date(2026, 3, 6),
+            days=Decimal('2'),
+        )
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        line = run.lines.get(employee=self.employee)
+        daily = (Decimal('4500') / Decimal('31')).quantize(Decimal('0.01'))
+        expected = (daily * Decimal('2')).quantize(Decimal('0.01'))
+        self.assertEqual(line.unpaid_leave_deduction, expected)
+
+    def test_build_penalty_deduction(self):
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.PENALTY,
+            title='غرامة',
+            statement_date=date(2026, 3, 15),
+            deduction_amount=Decimal('50.00'),
+        )
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        line = run.lines.get(employee=self.employee)
+        self.assertEqual(line.penalty_deduction, Decimal('50.00'))
+
+    def test_build_loan_installment(self):
+        loan = EmployeeLoan.objects.create(
+            employee=self.employee,
+            amount=Decimal('300'),
+            monthly_deduction=Decimal('100'),
+            installments=3,
+            issued_at=date(2026, 2, 1),
+            first_deduction_date=date(2026, 3, 1),
+        )
+        loan.generate_installments()
+        self.assertTrue(
+            loan.installments_log.filter(period_year=2026, period_month=3).exists()
+        )
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        line = run.lines.get(employee=self.employee)
+        self.assertEqual(line.loan_deduction, Decimal('100.00'))
+
+    def test_rebuild_locked_raises(self):
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        lock_payroll_run(run, self.user)
+        with self.assertRaises(ValueError) as ctx:
+            build_payroll_run(self.branch, 2026, 3, self.user)
+        self.assertIn('مُغلق', str(ctx.exception))
+
+    def test_lock_twice_raises(self):
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        lock_payroll_run(run, self.user)
+        with self.assertRaises(ValueError):
+            lock_payroll_run(run, self.user)
+
+    def test_lock_links_absence_to_run(self):
+        abs_rec = EmployeeAbsence.objects.create(
+            employee=self.employee,
+            absence_date=date(2026, 3, 12),
+            days=1,
+            month_days=31,
+            deduction_amount=Decimal('75.00'),
+        )
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        lock_payroll_run(run, self.user)
+        abs_rec.refresh_from_db()
+        self.assertEqual(abs_rec.applied_to_payroll_id, run.id)
+
+    def test_unlock_clears_payroll_links_and_returns_draft(self):
+        abs_rec = EmployeeAbsence.objects.create(
+            employee=self.employee,
+            absence_date=date(2026, 3, 12),
+            days=1,
+            month_days=31,
+            deduction_amount=Decimal('75.00'),
+        )
+        run = build_payroll_run(self.branch, 2026, 3, self.user)
+        lock_payroll_run(run, self.user)
+        unlock_payroll_run(run, self.user)
+        abs_rec.refresh_from_db()
+        run.refresh_from_db()
+        self.assertIsNone(abs_rec.applied_to_payroll_id)
+        self.assertEqual(run.status, PayrollRun.Status.DRAFT)

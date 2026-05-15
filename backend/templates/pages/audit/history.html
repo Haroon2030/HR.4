@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block page_title %}سجل التدقيق{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+            <p class="text-slate-600 text-sm max-w-2xl">
+                عرض آخر التغييرات المسجّلة تلقائياً (django-simple-history) على الموظفين، طلبات العمليات، مسيرات الرواتب، وملفات المستخدمين.
+                للتفاصيل الكاملة يمكن استخدام لوحة إدارة Django.
+            </p>
+        </div>
+        <form method="get" class="flex flex-wrap items-end gap-2">
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-600">المصدر</label>
+                <select name="source" class="px-3 py-2 border border-slate-200 rounded-lg text-sm min-w-[10rem]">
+                    <option value="all" {% if source == 'all' %}selected{% endif %}>الكل</option>
+                    <option value="employee" {% if source == 'employee' %}selected{% endif %}>موظف</option>
+                    <option value="pending_action" {% if source == 'pending_action' %}selected{% endif %}>طلب عملية</option>
+                    <option value="payroll_run" {% if source == 'payroll_run' %}selected{% endif %}>مسير رواتب</option>
+                    <option value="user_profile" {% if source == 'user_profile' %}selected{% endif %}>مستخدم</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-600">عدد السجلات</label>
+                <select name="limit" class="px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                    <option value="30" {% if limit == 30 %}selected{% endif %}>30</option>
+                    <option value="60" {% if limit == 60 %}selected{% endif %}>60</option>
+                    <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+                    <option value="150" {% if limit == 150 %}selected{% endif %}>150</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg">تطبيق</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs md:text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-3 py-2 text-right font-semibold text-slate-500">الوقت</th>
+                        <th class="px-3 py-2 text-right font-semibold text-slate-500">المصدر</th>
+                        <th class="px-3 py-2 text-right font-semibold text-slate-500">الإجراء</th>
+                        <th class="px-3 py-2 text-right font-semibold text-slate-500">المستخدم</th>
+                        <th class="px-3 py-2 text-right font-semibold text-slate-500">الملخص</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">رابط</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for ev in events %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-3 py-2 whitespace-nowrap text-slate-600 font-mono">{{ ev.when|date:"Y-m-d H:i" }}</td>
+                        <td class="px-3 py-2"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">{{ ev.source_label }}</span></td>
+                        <td class="px-3 py-2">
+                            {% if ev.verb_ar == 'إنشاء' %}
+                            <span class="text-emerald-700 font-semibold">{{ ev.verb_ar }}</span>
+                            {% elif ev.verb_ar == 'حذف' %}
+                            <span class="text-rose-700 font-semibold">{{ ev.verb_ar }}</span>
+                            {% else %}
+                            <span class="text-amber-700 font-semibold">{{ ev.verb_ar }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 text-slate-700">{{ ev.actor }}</td>
+                        <td class="px-3 py-2 text-slate-800">{{ ev.summary }}</td>
+                        <td class="px-3 py-2 text-left">
+                            {% if ev.link %}
+                            <a href="{{ ev.link }}" class="text-primary-600 hover:text-primary-800 text-xs font-semibold">فتح</a>
+                            {% else %}
+                            <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-10 text-center text-slate-500">لا توجد سجلات مطابقة ضمن نطاق الفروع والفلاتر الحالية.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

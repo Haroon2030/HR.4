@@ -1,0 +1,64 @@
+{% extends "pages/list_base.html" %}
+
+{% block page_title %}وثائق تنتهي قريباً{% endblock %}
+
+{% block list_description %}
+عرض الموظفين النشطين الذين تنتهي وثائقهم (جواز، إقامة، كرت صحي، تأمين طبي، عقد مخطط) خلال الفترة المحددة — يتماشى مع أمر
+<code class="text-xs bg-slate-100 px-1 rounded">notify_document_expiry</code>.
+{% endblock %}
+
+{% block list_actions %}
+<form method="get" class="flex flex-wrap items-center gap-2">
+    <label class="text-sm text-slate-600 flex items-center gap-2">
+        خلال (يوماً)
+        <input type="number" name="days" value="{{ horizon }}" min="1" max="365"
+            class="w-24 px-2 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
+    </label>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث
+    </button>
+</form>
+{% endblock %}
+
+{% block list_content %}
+<p class="text-xs text-slate-500">تاريخ المرجع: <span class="font-mono">{{ reference_date }}</span> — النافذة: {{ horizon }} يوماً</p>
+
+{% if not rows %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-800 text-sm">
+    لا توجد وثائق ضمن هذه النافذة ضمن نطاق فروعك.
+</div>
+{% else %}
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-xs md:text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-500">الموظف</th>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-500">نوع الوثيقة</th>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-500">تاريخ الانتهاء</th>
+                    <th class="px-3 py-2 text-right font-semibold text-slate-500">متبقي</th>
+                    <th class="px-3 py-2 text-left font-semibold text-slate-500">إجراء</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for r in rows %}
+                <tr class="hover:bg-slate-50">
+                    <td class="px-3 py-2 font-medium text-slate-800">{{ r.employee_name }}</td>
+                    <td class="px-3 py-2 text-slate-600">{{ r.document_label }}</td>
+                    <td class="px-3 py-2 text-slate-600 font-mono">{{ r.expiry_date }}</td>
+                    <td class="px-3 py-2">
+                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">{{ r.days_until }} يوماً</span>
+                    </td>
+                    <td class="px-3 py-2 text-left">
+                        <a href="{% url 'web:edit_employee' r.employee_id %}" class="text-primary-600 hover:text-primary-800 text-xs font-semibold inline-flex items-center gap-1">
+                            <i data-lucide="pencil" class="w-3 h-3"></i> تعديل
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

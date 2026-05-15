@@ -43,6 +43,7 @@ def list_employment_requests(request):
     qs = EmploymentRequest.objects.select_related(
         'branch', 'department', 'cost_center', 'requested_by',
         'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer',
+        'housing', 'bank',
     )
 
     user = request.user

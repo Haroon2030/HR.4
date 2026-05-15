@@ -3,6 +3,7 @@ from apps.core.web_views._helpers import *  # noqa: F401,F403
 from apps.core.web_views.auth import *  # noqa: F401,F403
 from apps.core.web_views.dashboard import *  # noqa: F401,F403
 from apps.core.web_views.employees import *  # noqa: F401,F403
+from apps.core.web_views.document_expiry import *  # noqa: F401,F403
 from apps.core.web_views.employee_export import *  # noqa: F401,F403
 from apps.core.web_views.employment_requests import *  # noqa: F401,F403
 from apps.core.web_views.employee_statements import *  # noqa: F401,F403
@@ -17,4 +18,5 @@ from apps.core.web_views.pending_actions import *  # noqa: F401,F403
 from apps.core.web_views.notifications import *  # noqa: F401,F403
 from apps.core.web_views.hr_forms import *  # noqa: F401,F403
 from apps.core.web_views.reports import *  # noqa: F401,F403
+from apps.core.web_views.audit_log import *  # noqa: F401,F403
 from apps.core.web_views.ledger_init import *  # noqa: F401,F403

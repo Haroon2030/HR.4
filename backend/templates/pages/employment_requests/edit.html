@@ -75,8 +75,14 @@
                     {% include "pages/employment_requests/_field.html" with field=form.phone %}
                     {% include "pages/employment_requests/_field.html" with field=form.email %}
                     {% include "pages/employment_requests/_field.html" with field=form.employee_number %}
+                    {% include "pages/employment_requests/_field.html" with field=form.gender %}
                     {% include "pages/employment_requests/_field.html" with field=form.hire_date %}
                     {% include "pages/employment_requests/_field.html" with field=form.passport_expiry_date %}
+                    {% include "pages/employment_requests/_field.html" with field=form.residency_expiry_date %}
+                    {% include "pages/employment_requests/_field.html" with field=form.medical_insurance_expiry_date %}
+                    {% include "pages/employment_requests/_field.html" with field=form.contract_expiry_date %}
+                    {% include "pages/employment_requests/_field.html" with field=form.health_card_status %}
+                    {% include "pages/employment_requests/_field.html" with field=form.health_card_expiry %}
                 </div>
             </div>
 
@@ -91,6 +97,7 @@
                     {% include "pages/employment_requests/_field.html" with field=form.sponsorship %}
                     {% include "pages/employment_requests/_field.html" with field=form.insurance %}
                     {% include "pages/employment_requests/_field.html" with field=form.insurance_class %}
+                    {% include "pages/employment_requests/_field.html" with field=form.housing %}
                 </div>
             </div>
 
@@ -103,6 +110,8 @@
                     {% include "pages/employment_requests/_field.html" with field=form.other_allowance %}
                     {% include "pages/employment_requests/_field.html" with field=form.cash_amount %}
                     {% include "pages/employment_requests/_field.html" with field=form.insurance_deduction_rate %}
+                    {% include "pages/employment_requests/_field.html" with field=form.bank %}
+                    {% include "pages/employment_requests/_field.html" with field=form.iban %}
                 </div>
             </div>
 

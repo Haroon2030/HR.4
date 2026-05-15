@@ -85,6 +85,7 @@ python manage.py test
 
 - [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)
 - [PERMISSIONS_SYSTEM.md](docs/PERMISSIONS_SYSTEM.md)
+- [ROADMAP.md](docs/ROADMAP.md) — مراحل التطوير القادمة
 - [CHANGELOG.md](docs/CHANGELOG.md)
 
 ## الترخيص والمساهمة

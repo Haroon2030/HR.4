@@ -41,12 +41,14 @@ urlpatterns = [
 
     # ── لوحة التحكم الرئيسية ────────────────────────────────────
     path('', web_views.dashboard_view, name='dashboard'),
+    path('audit/history/', web_views.audit_history_dashboard, name='audit_history'),
     
     # ══════════════════════════════════════════════════════════════
     # 2. إدارة الموظفين — CRUD + العمليات السريعة (Quick Actions)
     # كل عملية سريعة تنشئ PendingAction ينتظر دورة الموافقات
     # ══════════════════════════════════════════════════════════════
     path('employees/', web_views.list_employees, name='list_employees'),                                     # قائمة الموظفين
+    path('employees/document-expiry/', web_views.document_expiry_dashboard, name='document_expiry_dashboard'),  # وثائق تنتهي قريباً
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)
     path('employees/<int:employee_id>/', web_views.view_employee, name='view_employee'),                      # عرض ملف الموظف

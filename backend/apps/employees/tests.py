@@ -8,7 +8,10 @@ from apps.setup.models import Sponsorship
 class EmployeeModelTests(TestCase):
     def setUp(self):
         # Create a mock sponsorship to test accrued leave days calculation
-        self.sponsorship = Sponsorship.objects.create(name="Test Sponsorship")
+        self.sponsorship = Sponsorship.objects.create(
+            code="SP-TEST",
+            company_name="Test Sponsorship",
+        )
         
         # Create an employee
         self.employee = Employee.objects.create(

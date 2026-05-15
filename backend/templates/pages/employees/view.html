@@ -1574,11 +1574,14 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ المباشرة</div><div class="text-sm text-slate-800">{{ employee.hire_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الجواز</div><div class="text-sm text-slate-800">{{ employee.passport_expiry_date|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الإقامة</div><div class="text-sm text-slate-800">{{ employee.residency_expiry_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">التأمين</div><div class="text-sm text-slate-800">{{ employee.insurance.insurance_type|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء التأمين الطبي</div><div class="text-sm text-slate-800">{{ employee.medical_insurance_expiry_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">فئة التأمين</div><div class="text-sm text-slate-800">{{ employee.insurance_class.class_type|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">السكن</div><div class="text-sm text-slate-800">{{ employee.housing.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.get_health_card_status_display|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.health_card_expiry|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء العقد (مخطط)</div><div class="text-sm text-slate-800">{{ employee.contract_expiry_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الحالة</div><div class="text-sm text-slate-800">{{ employee.get_status_display|default:"—" }}</div></div>
                 <div class="md:col-span-3"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
