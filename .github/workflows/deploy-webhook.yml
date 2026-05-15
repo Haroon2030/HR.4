@@ -1,0 +1,35 @@
+# بعد نجاح الدمج إلى main: استدعاء رابط نشر لدى مزوّد الاستضافة (Coolify / CapRover / …)
+# أضف في GitHub → Settings → Secrets and variables → Actions:
+#   DEPLOY_WEBHOOK_URL = الرابط الكامل الذي يعطيك إياه لوحة النشر لـ «Redeploy»
+# اختياري:
+#   DEPLOY_WEBHOOK_AUTH = قيمة ترويسة Authorization كاملة (مثل: Bearer TOKEN)
+# إذا لم تُضف السرّ، الخطوة تُتخطّى دون فشل الـ workflow.
+name: Trigger deploy webhook
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  webhook:
+    runs-on: ubuntu-latest
+    # لا ننتظر CI هنا — غالباً النشر يعيد بناء الصورة ويشغّل الاختبارات هناك.
+    # إن رغبت بسلسلة: غيّر إلى workflow_run بعد django-ci.
+    steps:
+      - name: POST deploy webhook
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_WEBHOOK_AUTH: ${{ secrets.DEPLOY_WEBHOOK_AUTH }}
+        run: |
+          set -e
+          if [ -z "${DEPLOY_WEBHOOK_URL:-}" ]; then
+            echo "DEPLOY_WEBHOOK_URL غير مُعرّف — تخطي استدعاء النشر التلقائي."
+            exit 0
+          fi
+          echo "==> استدعاء webhook النشر..."
+          if [ -n "${DEPLOY_WEBHOOK_AUTH:-}" ]; then
+            curl -fsS --connect-timeout 30 --max-time 120 -X POST "$DEPLOY_WEBHOOK_URL" \
+              -H "Authorization: ${DEPLOY_WEBHOOK_AUTH}"
+          else
+            curl -fsS --connect-timeout 30 --max-time 120 -X POST "$DEPLOY_WEBHOOK_URL"
+          fi
