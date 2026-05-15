@@ -3,9 +3,11 @@ Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib import messages
 from django.core.cache import cache
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 
 from apps.core.models import UserProfile
 
@@ -81,6 +83,24 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'تم تسجيل الخروج بنجاح')
     return redirect('web:auth:login')
+
+
+@login_required
+def password_change_view(request):
+    """تغيير كلمة المرور للمستخدم الحالي (واجهة ويب)."""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'تم تغيير كلمة المرور بنجاح.')
+            return redirect('web:dashboard')
+        for errs in form.errors.values():
+            for err in errs:
+                messages.error(request, err)
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'auth/password_change.html', {'form': form})
 
 
 # =============================================================================

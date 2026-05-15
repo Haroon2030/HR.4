@@ -402,6 +402,43 @@ class HRFormPrintViewTests(TestCase):
         self.assertContains(r, self.employee.name)
 
 
+class PasswordChangeViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            username='pw_ch_user',
+            password='OldPwd29!xYz',
+            is_active=True,
+        )
+
+    def test_anonymous_redirects_to_login(self):
+        c = Client()
+        r = c.get(reverse('web:auth:password_change'))
+        self.assertEqual(r.status_code, 302)
+
+    def test_get_form_when_logged_in(self):
+        c = Client()
+        self.assertTrue(c.login(username='pw_ch_user', password='OldPwd29!xYz'))
+        r = c.get(reverse('web:auth:password_change'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_post_changes_password(self):
+        c = Client()
+        self.assertTrue(c.login(username='pw_ch_user', password='OldPwd29!xYz'))
+        new_pw = 'QazWsx#9mKp2vLx8'
+        r = c.post(
+            reverse('web:auth:password_change'),
+            {
+                'old_password': 'OldPwd29!xYz',
+                'new_password1': new_pw,
+                'new_password2': new_pw,
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(new_pw))
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Forms validation tests
 # ──────────────────────────────────────────────────────────────────────

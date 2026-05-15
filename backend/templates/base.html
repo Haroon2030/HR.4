@@ -266,10 +266,31 @@
                     </div>
                 </div>
 
-                <!-- Logout -->
-                <a href="{% url 'web:auth:logout' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="تسجيل الخروج">
-                    <i data-lucide="log-out" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
-                </a>
+                <!-- قائمة المستخدم: تغيير كلمة المرور + خروج -->
+                <div class="relative" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
+                    <button type="button"
+                            @click="userMenuOpen = !userMenuOpen; if(userMenuOpen){ setTimeout(() => lucide.createIcons(), 50); }"
+                            class="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            title="الحساب"
+                            aria-expanded="false"
+                            :aria-expanded="userMenuOpen">
+                        <i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
+                    </button>
+                    <div x-show="userMenuOpen" x-cloak x-transition
+                         class="absolute top-full mt-2 end-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 z-50 py-1 overflow-hidden">
+                        <a href="{% url 'web:auth:password_change' %}"
+                           class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                            <i data-lucide="key" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+                            <span>تغيير كلمة المرور</span>
+                        </a>
+                        <div class="border-t border-slate-100"></div>
+                        <a href="{% url 'web:auth:logout' %}"
+                           class="flex items-center gap-2 px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50 transition-colors">
+                            <i data-lucide="log-out" class="w-4 h-4 flex-shrink-0"></i>
+                            <span>تسجيل الخروج</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </header>
         
