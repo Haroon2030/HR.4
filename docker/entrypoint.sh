@@ -24,6 +24,18 @@ while [ "$n" -le "$MIGRATE_MAX_RETRIES" ]; do
     n=$((n + 1))
 done
 
+# ─── مزامنة سجل الصلاحيات من الـ decorators (مهم عند نشر migrations غير core فقط) ─
+echo "==> Syncing permission registry (post-migrate deploy)..."
+python manage.py shell <<'PY_SYNC'
+import apps.core.web_views  # noqa: F401 - load views so decorators register perms
+from apps.core.permissions_registry import sync_to_db
+try:
+    m, p, n = sync_to_db(verbose=False)
+    print(f"[permissions] deploy sync: {m} modules, {p} perms ({n} new)")
+except Exception as exc:
+    print(f"[permissions] deploy sync failed (non-fatal): {exc}")
+PY_SYNC
+
 echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
 
@@ -94,25 +106,41 @@ PYEOF
 echo "==> Fixing swapped code/name records (idempotent)..."
 python manage.py fix_swapped_code_name || echo "!! fix_swapped_code_name failed (non-fatal)"
 
-# ─── Setup daily automatic database backup via cron ─────────────────────────
-# Backup runs every day at 03:00 UTC and uploads to Cloudflare R2.
-# Disable by setting BACKUP_ENABLED=false in environment.
-if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
-    echo "==> Setting up daily database backup cron job (03:00 UTC) ..."
-    BACKUP_SCHEDULE="${BACKUP_SCHEDULE:-0 3 * * *}"
+# ─── Cron: نسخ احتياطي يومي + تنبيهات وثائق (اختياري لكل منهما) ───────────────
+CRON_NEEDED=false
+if [ "${BACKUP_ENABLED:-true}" = "true" ]; then CRON_NEEDED=true; fi
+if [ "${DOCUMENT_EXPIRY_CRON:-true}" = "true" ]; then CRON_NEEDED=true; fi
+
+if [ "$CRON_NEEDED" = "true" ]; then
     mkdir -p /app/backups /app/logs
-    # Build a cron file that runs the Django backup command in the app environment.
-    cat > /etc/cron.d/hr-backup <<CRON_EOF
-SHELL=/bin/sh
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-${BACKUP_SCHEDULE} root cd /app && python manage.py backup_db --cleanup --trigger cron >> /app/logs/backup.log 2>&1
-CRON_EOF
+    {
+        echo "SHELL=/bin/sh"
+        echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
+            BACKUP_SCHEDULE="${BACKUP_SCHEDULE:-0 3 * * *}"
+            echo "${BACKUP_SCHEDULE} root cd /app && python manage.py backup_db --cleanup --trigger cron >> /app/logs/backup.log 2>&1"
+        fi
+        if [ "${DOCUMENT_EXPIRY_CRON:-true}" = "true" ]; then
+            DOC_SCHED="${DOCUMENT_EXPIRY_CRON_SCHEDULE:-30 6 * * *}"
+            DOC_DAYS="${DOCUMENT_EXPIRY_CRON_DAYS:-30}"
+            DOC_EXTRA=""
+            if [ "${DOCUMENT_EXPIRY_CRON_SEND_EMAIL:-false}" = "true" ]; then
+                DOC_EXTRA=" --send-email"
+            fi
+            echo "${DOC_SCHED} root cd /app && python manage.py notify_document_expiry --days ${DOC_DAYS}${DOC_EXTRA} >> /app/logs/document_expiry.log 2>&1"
+        fi
+    } > /etc/cron.d/hr-backup
     chmod 0644 /etc/cron.d/hr-backup
     crontab /etc/cron.d/hr-backup
     service cron start || cron || echo "!! cron service start failed (non-fatal)"
-    echo "==> Cron schedule: ${BACKUP_SCHEDULE}"
+    if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
+        echo "==> Backup cron: ${BACKUP_SCHEDULE:-0 3 * * *}"
+    fi
+    if [ "${DOCUMENT_EXPIRY_CRON:-true}" = "true" ]; then
+        echo "==> Document expiry cron: ${DOCUMENT_EXPIRY_CRON_SCHEDULE:-30 6 * * *} (--days ${DOCUMENT_EXPIRY_CRON_DAYS:-30})"
+    fi
 else
-    echo "==> Auto backup disabled (BACKUP_ENABLED=false)"
+    echo "==> Cron disabled (BACKUP_ENABLED=false and DOCUMENT_EXPIRY_CRON=false)"
 fi
 
 echo "==> Starting: $@"
