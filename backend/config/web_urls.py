@@ -42,6 +42,11 @@ urlpatterns = [
 
     # ── لوحة التحكم الرئيسية ────────────────────────────────────
     path('', web_views.dashboard_view, name='dashboard'),
+    path(
+        'backups/<int:backup_id>/download/',
+        web_views.download_database_backup,
+        name='download_database_backup',
+    ),
     path('audit/history/', web_views.audit_history_dashboard, name='audit_history'),
     
     # ══════════════════════════════════════════════════════════════

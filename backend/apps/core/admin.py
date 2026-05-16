@@ -258,8 +258,6 @@ class DatabaseBackupLogAdmin(admin.ModelAdmin):
         return custom + urls
 
     def download_backup_view(self, request, object_id):
-        from io import BytesIO
-
         if not request.user.is_superuser:
             messages.error(request, 'تحميل النسخ الاحتياطية متاح لمدير النظام فقط.')
             return redirect('admin:index')
@@ -272,28 +270,15 @@ class DatabaseBackupLogAdmin(admin.ModelAdmin):
             messages.error(request, 'نسخ فاشلة — لا يوجد ملف للتحميل.')
             return redirect(changelist_url)
 
-        local_path = safe_local_backup_path(obj.filename)
-        if local_path is not None:
-            fh = local_path.open('rb')
-            resp = FileResponse(fh, as_attachment=True, filename=obj.filename)
-            resp['Content-Type'] = 'application/gzip'
+        from apps.core.backup_download import stream_database_backup_file
+
+        try:
+            resp = stream_database_backup_file(filename=obj.filename, r2_key=obj.r2_key or '')
+        except Exception as exc:
+            messages.error(request, f'فشل التحميل من التخزين السحابي: {exc}')
+            return redirect(changelist_url)
+        if resp is not None:
             return resp
-
-        r2_key = (obj.r2_key or '').strip()
-        if r2_key.startswith('HR/backups/'):
-            try:
-                from apps.core.storages import HRMediaStorage
-
-                storage = HRMediaStorage()
-                with storage.open(r2_key, 'rb') as remote:
-                    payload = remote.read()
-                blob = BytesIO(payload)
-                resp = FileResponse(blob, as_attachment=True, filename=obj.filename)
-                resp['Content-Type'] = 'application/gzip'
-                return resp
-            except Exception as exc:
-                messages.error(request, f'فشل التحميل من التخزين السحابي: {exc}')
-                return redirect(changelist_url)
 
         messages.warning(
             request,

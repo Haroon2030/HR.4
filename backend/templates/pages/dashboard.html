@@ -55,11 +55,12 @@
                 {% endif %}
             </div>
         </div>
-        {% if user.is_staff %}
+        {% if last_database_backup and last_database_backup.status != 'failed' %}
         <div class="flex items-center gap-2 shrink-0">
-            <a href="{% url 'admin:core_databasebackuplog_changelist' %}" class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg relative z-10">
-                <i data-lucide="download-cloud" class="w-4 h-4 shrink-0 pointer-events-none" aria-hidden="true"></i>
-                <span>تحميل من الإدارة</span>
+            <a href="{% url 'web:download_database_backup' last_database_backup.pk %}"
+               class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg">
+                <i data-lucide="download" class="w-4 h-4 shrink-0 pointer-events-none" aria-hidden="true"></i>
+                <span>تحميل النسخة</span>
             </a>
         </div>
         {% endif %}

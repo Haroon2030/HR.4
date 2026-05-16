@@ -2,8 +2,12 @@
 Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
-from django.shortcuts import render
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+
+from apps.core.backup_download import stream_database_backup_file
+from apps.core.models import DatabaseBackupLog
 
 
 
@@ -247,6 +251,38 @@ def dashboard_view(request):
     context['inbox_query'] = q
 
     return render(request, 'pages/dashboard.html', context)
+
+
+@login_required
+def download_database_backup(request, backup_id: int):
+    """تحميل ملف نسخة احتياطية من واجهة الويب (بدون الدخول إلى /admin/)."""
+    from apps.core.web_views._helpers import _is_general_manager
+
+    if not (request.user.is_superuser or _is_general_manager(request.user)):
+        messages.error(request, 'ليس لديك صلاحية تحميل النسخ الاحتياطية.')
+        return redirect('web:dashboard')
+
+    obj = get_object_or_404(DatabaseBackupLog, pk=backup_id)
+
+    if obj.status == DatabaseBackupLog.Status.FAILED:
+        messages.error(request, 'نسخ فاشلة — لا يوجد ملف للتحميل.')
+        return redirect('web:dashboard')
+
+    try:
+        response = stream_database_backup_file(filename=obj.filename, r2_key=obj.r2_key or '')
+    except Exception as exc:
+        messages.error(request, f'فشل التحميل: {exc}')
+        return redirect('web:dashboard')
+
+    if response is not None:
+        return response
+
+    messages.warning(
+        request,
+        'الملف غير متوفر محلياً؛ لا توجد نسخة على التخزين السحابي مرتبطة بهذا السجل.',
+    )
+    return redirect('web:dashboard')
+
 
 # =============================================================================
 # Dashboard / Employees Tab View
