@@ -313,7 +313,7 @@
                 :class="sidebarOpen ? 'w-64' : 'w-20'"
             >
                 <!-- Navigation -->
-                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}') }">
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                     {% load custom_tags %}
                     {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" %}
 
@@ -358,8 +358,26 @@
                         <span x-show="sidebarOpen" class="font-semibold text-base">سجل التدقيق</span>
                     </a>
                     {% endif %}
-                    {% if user|has_permission:'attendance.view' %}{% include "components/nav_item.html" with url="web:biometric_devices" icon="fingerprint" label="أجهزة البصمة" %}{% endif %}
-                    {% if user|has_permission:'attendance.view' %}{% include "components/nav_item.html" with url="web:attendance_records" icon="clipboard-list" label="سجلات الحضور" %}{% endif %}
+                    {% if user|has_permission:'attendance.view' %}
+                    <div>
+                        <button type="button" @click="attendanceOpen = !attendanceOpen"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if '/attendance/' in request.path %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                            <i data-lucide="fingerprint" class="w-5 h-5 flex-shrink-0"></i>
+                            <span x-show="sidebarOpen" class="font-semibold text-base flex-1 text-right">البصمة</span>
+                            <i data-lucide="chevron-down" x-show="sidebarOpen" class="w-4 h-4 transition-transform" :class="attendanceOpen ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="attendanceOpen && sidebarOpen" x-cloak class="mt-1 mr-6 space-y-1">
+                            <a href="{% url 'web:biometric_devices' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/devices' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                                أجهزة البصمة
+                            </a>
+                            <a href="{% url 'web:attendance_records' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/records' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                                سجلات الحضور
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
                     {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"
@@ -418,7 +436,7 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpenM: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}') }">
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1" x-data="{ employeesOpenM: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpenM: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                     {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" force_show_label=True %}
 
                     <!-- الموظفين مع قائمة فرعية -->
@@ -461,6 +479,26 @@
                         <i data-lucide="clipboard-list" class="w-5 h-5 flex-shrink-0"></i>
                         <span class="font-semibold text-base">سجل التدقيق</span>
                     </a>
+                    {% endif %}
+                    {% if user|has_permission:'attendance.view' %}
+                    <div>
+                        <button type="button" @click="attendanceOpenM = !attendanceOpenM"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if '/attendance/' in request.path %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                            <i data-lucide="fingerprint" class="w-5 h-5 flex-shrink-0"></i>
+                            <span class="font-semibold text-base flex-1 text-right">البصمة</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="attendanceOpenM ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="attendanceOpenM" x-cloak class="mt-1 mr-6 space-y-1">
+                            <a href="{% url 'web:biometric_devices' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/devices' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                                أجهزة البصمة
+                            </a>
+                            <a href="{% url 'web:attendance_records' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/records' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                                سجلات الحضور
+                            </a>
+                        </div>
+                    </div>
                     {% endif %}
                     {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" force_show_label=True %}{% endif %}
 
