@@ -212,6 +212,21 @@ urlpatterns = [
     path('reports/<str:report_type>/', web_views.report_detail, name='report_detail'),  # عرض تقرير محدد
 
     # ══════════════════════════════════════════════════════════════
+    # 12. أجهزة البصمة والحضور
+    # ══════════════════════════════════════════════════════════════
+    path('attendance/devices/', web_views.biometric_devices_dashboard, name='biometric_devices'),
+    path('attendance/devices/save/', web_views.biometric_device_save, name='biometric_device_save'),
+    path('attendance/devices/<int:device_id>/delete/', web_views.biometric_device_delete, name='biometric_device_delete'),
+    path('attendance/devices/<int:device_id>/test/', web_views.biometric_device_test, name='biometric_device_test'),
+    path('attendance/devices/<int:device_id>/sync/', web_views.biometric_device_sync, name='biometric_device_sync'),
+    path('attendance/devices/<int:device_id>/sync-users/', web_views.biometric_device_sync_users, name='biometric_device_sync_users'),
+    path('attendance/enrollments/save/', web_views.biometric_enrollment_save, name='biometric_enrollment_save'),
+    path('attendance/records/', web_views.attendance_records_list, name='attendance_records'),
+    path('attendance/records/pull/', web_views.attendance_records_pull, name='attendance_records_pull'),
+    path('attendance/records/reclassify/', web_views.attendance_records_reclassify, name='attendance_records_reclassify'),
+    path('attendance/records/export/', web_views.attendance_records_export, name='attendance_records_export'),
+
+    # ══════════════════════════════════════════════════════════════
     # 11. مسير الرواتب الشهري
     # ══════════════════════════════════════════════════════════════
     path('payroll/', payroll_views.list_payroll_runs, name='list_payroll_runs'),                            # قائمة المسيرات

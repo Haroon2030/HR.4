@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6" x-data="biometricPage()">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="fingerprint" class="w-7 h-7 text-primary-600"></i>
+                أجهزة البصمة
+            </h1>
+            <p class="text-slate-500 text-sm mt-1">ربط أجهزة ZKTeco عبر عنوان IP والمنفذ 4370 — سحب سجلات الحضور</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'web:attendance_records' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                سجلات الحضور
+            </a>
+            {% if user|has_permission:'attendance.manage' %}
+            <button type="button" @click="openDeviceForm()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-semibold">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                إضافة جهاز
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+        <p class="font-semibold text-slate-800 mb-2 flex items-center gap-2">
+            <i data-lucide="building-2" class="w-4 h-4 text-primary-600"></i>
+            عزل الفروع — اتصال حقيقي بالجهاز
+        </p>
+        <ul class="list-disc list-inside space-y-1 text-slate-600">
+            <li>كل جهاز <strong>لفرع واحد</strong> — السحب يخص ذلك الجهاز فقط</li>
+            <li>فلترة بالفرع تمنع خلط البيانات بين الفروع</li>
+            <li>موظف HR من نفس فرع الجهاز · المنفذ <strong>4370</strong></li>
+        </ul>
+        {% if devices_without_branch %}
+        <p class="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            {{ devices_without_branch }} جهاز بدون فرع — عيّنه من «تعديل» قبل المزامنة.
+        </p>
+        {% endif %}
+    </div>
+
+    <form method="get" class="flex flex-wrap items-end gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+        {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
+        {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
+        <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">عرض فرع</label>
+            <select name="branch" class="rounded-lg border-slate-300 text-sm min-w-[180px]" onchange="this.form.submit()">
+                <option value="">كل الفروع</option>
+                {% for b in branches %}
+                <option value="{{ b.pk }}" {% if branch_filter_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <a href="{% url 'web:biometric_devices' %}" class="text-sm text-slate-600 hover:text-primary-600 py-2">مسح فلتر الفرع</a>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">الأجهزة المسجّلة</h2>
+            <span class="text-xs text-slate-500">{{ devices|length }} جهاز</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="text-right px-4 py-2.5 font-medium">الجهاز</th>
+                        <th class="text-right px-4 py-2.5 font-medium">IP:Port</th>
+                        <th class="text-right px-4 py-2.5 font-medium">الفرع</th>
+                        <th class="text-right px-4 py-2.5 font-medium">الحالة</th>
+                        <th class="text-right px-4 py-2.5 font-medium">آخر مزامنة</th>
+                        <th class="text-right px-4 py-2.5 font-medium">السجلات</th>
+                        {% if user|has_permission:'attendance.manage' %}
+                        <th class="text-right px-4 py-2.5 font-medium">إجراءات</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for d in devices %}
+                    <tr class="hover:bg-slate-50/80">
+                        <td class="px-4 py-3">
+                            <span class="font-medium text-slate-900">{{ d.name }}</span>
+                            {% if not d.is_active %}<span class="mr-1 text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">معطّل</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-mono text-xs" dir="ltr">{{ d.address_label }}</td>
+                        <td class="px-4 py-3">{{ d.branch.name|default:"—" }}</td>
+                        <td class="px-4 py-3">
+                            {% if d.connection_status == 'online' %}
+                            <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>متصل</span>
+                            {% elif d.connection_status == 'error' %}
+                            <span class="inline-flex items-center gap-1 text-red-700" title="{{ d.last_error }}"><span class="w-2 h-2 rounded-full bg-red-500"></span>خطأ</span>
+                            {% else %}
+                            <span class="text-slate-500">غير معروف</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-slate-600">{{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td class="px-4 py-3">{{ d.punch_count }}</td>
+                        {% if user|has_permission:'attendance.manage' %}
+                        <td class="px-4 py-3">
+                            <div class="flex flex-wrap gap-1">
+                                <button type="button" @click="testDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200" :disabled="loadingId === {{ d.pk }}">اختبار</button>
+                                <button type="button" @click="syncUsers({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100" :disabled="loadingId === {{ d.pk }}">المستخدمون</button>
+                                <button type="button" @click="syncDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-primary-50 text-primary-700 hover:bg-primary-100" :disabled="loadingId === {{ d.pk }}">مزامنة</button>
+                                <button type="button" @click="openDeviceForm({
+                                    id: {{ d.pk }},
+                                    name: '{{ d.name|escapejs }}',
+                                    ip: '{{ d.ip_address }}',
+                                    port: {{ d.port }},
+                                    comm_key: {{ d.comm_key }},
+                                    branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
+                                    branch_name: '{% if d.branch %}{{ d.branch.name|escapejs }}{% else %}{{ d.name|escapejs }}{% endif %}',
+                                    notes: '{{ d.notes|escapejs }}',
+                                    is_active: {{ d.is_active|yesno:'true,false' }}
+                                })" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200">تعديل</button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">لا توجد أجهزة. أضف جهازاً بعنوان IP.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-4">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+            <div>
+                <h2 class="font-semibold text-slate-800">مستخدمو الجهاز (أسماء من البصمة)</h2>
+                <p class="text-xs text-slate-500 mt-0.5">يُحدَّث عند «مزامنة» أو زر «المستخدمون» — بحث وفلترة من الخادم</p>
+            </div>
+            {% if device_users_total %}
+            <span class="text-xs text-slate-500">
+                عرض {{ device_users_page.start_index }}–{{ device_users_page.end_index }} من {{ device_users_total }}
+                · {{ device_users_per_page }} في الصفحة
+            </span>
+            {% endif %}
+        </div>
+
+        <form method="get" class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+            {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
+            {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
+            {% if branch_filter_id %}<input type="hidden" name="branch" value="{{ branch_filter_id }}">{% endif %}
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-slate-600 mb-1">بحث</label>
+                <input type="search" name="users_q" value="{{ device_user_filters.search }}"
+                    placeholder="اسم، رقم مستخدم، بطاقة، موظف HR..."
+                    class="w-full rounded-lg border-slate-300 text-sm" autocomplete="off">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">الجهاز</label>
+                <select name="users_device" class="w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">الكل</option>
+                    {% for d in devices %}
+                    <option value="{{ d.pk }}" {% if device_user_filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">الربط بـ HR</label>
+                <select name="users_mapped" class="w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">الكل</option>
+                    <option value="1" {% if device_user_filters.mapped_only == True %}selected{% endif %}>مربوط فقط</option>
+                    <option value="0" {% if device_user_filters.mapped_only == False %}selected{% endif %}>غير مربوط فقط</option>
+                </select>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">بحث</button>
+                <a href="{% url 'web:biometric_devices' %}{% if link_device_id or link_user_id %}?{% if link_device_id %}link_device={{ link_device_id }}{% endif %}{% if link_user_id %}{% if link_device_id %}&{% endif %}link_user={{ link_user_id }}{% endif %}{% endif %}#device-users-table"
+                   class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-white">مسح</a>
+            </div>
+        </form>
+
+        <div id="device-users-table" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="text-center px-3 py-2 font-medium w-10">#</th>
+                        <th class="text-right px-3 py-2 font-medium">الجهاز</th>
+                        <th class="text-right px-3 py-2 font-medium">رقم المستخدم</th>
+                        <th class="text-right px-3 py-2 font-medium">الاسم على الجهاز</th>
+                        <th class="text-right px-3 py-2 font-medium">البطاقة</th>
+                        <th class="text-right px-3 py-2 font-medium">موظف HR</th>
+                        {% if user|has_permission:'attendance.manage' %}
+                        <th class="text-right px-3 py-2 font-medium"></th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for du in device_users_page %}
+                    <tr class="hover:bg-slate-50 {% if not du.is_hr_linked %}bg-amber-50/30{% endif %}">
+                        <td class="px-3 py-2 text-center text-slate-400">{{ device_users_page.start_index|add:forloop.counter0 }}</td>
+                        <td class="px-3 py-2">{{ du.device.name }}</td>
+                        <td class="px-3 py-2 font-mono" dir="ltr">{{ du.device_user_id }}</td>
+                        <td class="px-3 py-2 font-medium text-slate-900">{{ du.name|default:"—" }}</td>
+                        <td class="px-3 py-2 font-mono text-xs" dir="ltr">{{ du.card|default:"—" }}</td>
+                        <td class="px-3 py-2">
+                            {% if du.hr_employee_name %}
+                            <span class="text-emerald-700 font-medium">{{ du.hr_employee_name }}</span>
+                            {% if du.hr_employee_number %}
+                            <span class="block text-xs text-slate-500 font-mono" dir="ltr">{{ du.hr_employee_number }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-amber-600">غير مربوط</span>
+                            {% endif %}
+                        </td>
+                        {% if user|has_permission:'attendance.manage' %}
+                        <td class="px-3 py-2">
+                            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}link_device={{ du.device_id }}&link_user={{ du.device_user_id }}#enroll-form"
+                               class="text-xs text-primary-600 hover:underline whitespace-nowrap">ربط موظف</a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user|has_permission:'attendance.manage' %}7{% else %}6{% endif %}" class="px-4 py-10 text-center text-slate-500">
+                            {% if device_users_has_filters %}
+                            لا نتائج للبحث — غيّر الكلمات أو امسح الفلتر.
+                            {% else %}
+                            لا مستخدمين على الأجهزة بعد — نفّذ «مزامنة» أو «المستخدمون» من جدول الأجهزة.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if device_users_page.has_other_pages %}
+        <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap justify-center gap-1">
+            {% if device_users_page.has_previous %}
+            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.previous_page_number }}{% if link_device_id %}&link_device={{ link_device_id }}{% endif %}{% if link_user_id %}&link_user={{ link_user_id }}{% endif %}#device-users-table"
+               class="px-3 py-1 rounded border text-sm hover:bg-slate-50">السابق</a>
+            {% endif %}
+            <span class="px-3 py-1 text-sm text-slate-600">صفحة {{ device_users_page.number }} / {{ device_users_page.paginator.num_pages }}</span>
+            {% if device_users_page.has_next %}
+            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.next_page_number }}{% if link_device_id %}&link_device={{ link_device_id }}{% endif %}{% if link_user_id %}&link_user={{ link_user_id }}{% endif %}#device-users-table"
+               class="px-3 py-1 rounded border text-sm hover:bg-slate-50">التالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="max-w-xl">
+        {% if user|has_permission:'attendance.manage' %}
+        <div id="enroll-form" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <h2 class="font-semibold text-slate-800 mb-1">ربط موظف ↔ رقم على الجهاز</h2>
+            <p class="text-xs text-slate-500 mb-3">
+                ابحث واختر من <strong>{{ employees_count }}</strong> موظف نشط —
+                <a href="{% url 'web:list_employees' %}" class="text-primary-600 hover:underline">قائمة الموظفين</a>
+            </p>
+
+            {% if link_device_user %}
+            <div class="mb-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
+                ربط رقم <strong class="font-mono" dir="ltr">{{ link_device_user.device_user_id }}</strong>
+                {% if link_device_user.name %}({{ link_device_user.name }}){% endif %}
+                على جهاز «{{ link_device_user.device.name }}»
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'web:biometric_enrollment_save' %}" class="space-y-3"
+                  @submit="if (!$el.querySelector('[name=employee_id]').value) { $event.preventDefault(); alert('اختر موظفاً من القائمة أولاً'); }">
+                {% csrf_token %}
+                {% include "components/employee_search_picker.html" with label="الموظف من قائمة HR" %}
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">الجهاز</label>
+                    <select name="device_id" required class="w-full rounded-lg border-slate-300 text-sm">
+                        {% for d in devices %}
+                        <option value="{{ d.pk }}" {% if link_device_id == d.pk|stringformat:"s" %}selected{% endif %}
+                            {% if not d.branch_id %}disabled{% endif %}>
+                            {{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% else %} (حدّد الفرع من تعديل الجهاز أولاً){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">رقم المستخدم على الجهاز (User ID)</label>
+                    <input type="number" name="device_user_id" min="1" required
+                        class="w-full rounded-lg border-slate-300 text-sm font-mono" dir="ltr"
+                        placeholder="مثال: 1" value="{{ link_user_id|default:'' }}">
+                    <p class="text-xs text-slate-400 mt-1">نفس الرقم في جدول «مستخدمو الجهاز»</p>
+                </div>
+                <button type="submit" class="w-full py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">حفظ الربط</button>
+            </form>
+            {% if enrollments %}
+            <div class="mt-4 pt-4 border-t border-slate-100 max-h-48 overflow-y-auto">
+                <p class="text-xs text-slate-500 mb-2">آخر الربط</p>
+                <ul class="text-xs space-y-1">
+                    {% for en in enrollments %}
+                    <li class="text-slate-700">{{ en.employee.name }} ← {{ en.device_user_id }}{% if en.device_user_name %} ({{ en.device_user_name }}){% endif %} على {{ en.device.name }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div x-show="toast" x-cloak x-transition class="fixed bottom-6 left-6 z-50 max-w-md rounded-lg shadow-lg px-4 py-3 text-sm text-white" :class="toastOk ? 'bg-emerald-600' : 'bg-red-600'" x-text="toastMsg"></div>
+
+    <div x-show="deviceModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @keydown.escape.window="deviceModal = false">
+        <div @click.outside="deviceModal = false" class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4" x-text="form.device_id ? 'تعديل جهاز' : 'إضافة جهاز بصمة'"></h3>
+            <form method="post" action="{% url 'web:biometric_device_save' %}" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" :value="form.device_id || ''">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">اسم الجهاز</label>
+                    <input type="text" name="name" x-model="form.name" required class="w-full rounded-lg border-slate-300 text-sm">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">عنوان IP</label>
+                        <input type="text" name="ip_address" x-model="form.ip" required dir="ltr" class="w-full rounded-lg border-slate-300 text-sm font-mono" placeholder="192.168.1.201">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">المنفذ</label>
+                        <input type="number" name="port" x-model="form.port" class="w-full rounded-lg border-slate-300 text-sm font-mono" placeholder="4370">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Comm Key</label>
+                    <input type="number" name="comm_key" x-model="form.comm_key" min="0" class="w-full rounded-lg border-slate-300 text-sm">
+                </div>
+                <div class="rounded-lg border border-primary-100 bg-primary-50/40 p-3 space-y-3">
+                    <p class="text-xs font-semibold text-primary-900">الربط بالفرع (مطلوب للمزامنة وربط الموظفين)</p>
+                    {% if branches %}
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">فرع موجود</label>
+                        <select name="branch_id" x-model="form.branch_id" class="w-full rounded-lg border-slate-300 text-sm">
+                            <option value="">— أو أنشئ فرعاً جديداً بالأسفل —</option>
+                            {% for b in branches %}
+                            <option value="{{ b.pk }}">{{ b.name }} ({{ b.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-amber-800">لا توجد فروع بعد — أدخل اسم الفرع بالأسفل وسيُنشأ تلقائياً.</p>
+                    {% endif %}
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">
+                            {% if branches %}اسم فرع جديد{% else %}اسم الفرع{% endif %}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="branch_name" x-model="form.branch_name"
+                            placeholder="مثال: سكاي مول"
+                            class="w-full rounded-lg border-slate-300 text-sm">
+                    </div>
+                    <a href="{% url 'web:list_branches' %}" class="text-xs text-primary-600 hover:underline">إدارة الفروع</a>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ملاحظات</label>
+                    <textarea name="notes" x-model="form.notes" rows="2" class="w-full rounded-lg border-slate-300 text-sm"></textarea>
+                </div>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="is_active" :checked="form.is_active" class="rounded border-slate-300">
+                    <span>الجهاز نشط</span>
+                </label>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 py-2.5 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700">حفظ</button>
+                    <button type="button" @click="deviceModal = false" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function biometricPage() {
+    const csrf = '{{ csrf_token }}';
+    return {
+        deviceModal: false,
+        loadingId: null,
+        toast: false,
+        toastOk: true,
+        toastMsg: '',
+        form: { device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true },
+        openDeviceForm(data) {
+            if (data) {
+                this.form = {
+                    device_id: data.id,
+                    name: data.name,
+                    ip: data.ip,
+                    port: data.port,
+                    comm_key: data.comm_key,
+                    branch_id: data.branch_id ? String(data.branch_id) : '',
+                    branch_name: data.branch_name || '',
+                    notes: data.notes || '',
+                    is_active: data.is_active,
+                };
+            } else {
+                this.form = { device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true };
+            }
+            this.deviceModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        showToast(ok, msg) {
+            this.toastOk = ok;
+            this.toastMsg = msg;
+            this.toast = true;
+            setTimeout(() => { this.toast = false; }, 5000);
+        },
+        async _postJson(url) {
+            const r = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const text = await r.text();
+            try {
+                return { status: r.status, data: JSON.parse(text) };
+            } catch (e) {
+                return { status: r.status, data: { ok: false, error: 'استجابة غير متوقعة من الخادم' } };
+            }
+        },
+        async testDevice(id) {
+            this.loadingId = id;
+            try {
+                const { status, data } = await this._postJson(`/attendance/devices/${id}/test/`);
+                if (status === 403) {
+                    this.showToast(false, 'انتهت الجلسة — سجّل الدخول مرة أخرى');
+                    return;
+                }
+                this.showToast(data.ok, data.message || '');
+                if (data.ok) setTimeout(() => location.reload(), 1500);
+            } catch (e) {
+                this.showToast(false, 'خطأ في الاتصال بالخادم');
+            }
+            this.loadingId = null;
+        },
+        async syncUsers(id) {
+            this.loadingId = id;
+            try {
+                const { status, data } = await this._postJson(`/attendance/devices/${id}/sync-users/`);
+                if (status === 403) {
+                    this.showToast(false, 'انتهت الجلسة — سجّل الدخول مرة أخرى');
+                    return;
+                }
+                if (data.ok) {
+                    this.showToast(true, `تم سحب ${data.synced} مستخدم من الجهاز`);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    this.showToast(false, data.error || 'فشل سحب المستخدمين');
+                }
+            } catch (e) {
+                this.showToast(false, 'خطأ في الاتصال بالخادم');
+            }
+            this.loadingId = null;
+        },
+        async syncDevice(id) {
+            this.loadingId = id;
+            try {
+                const { status, data } = await this._postJson(`/attendance/devices/${id}/sync/`);
+                if (status === 403) {
+                    this.showToast(false, 'انتهت الجلسة — سجّل الدخول مرة أخرى');
+                    return;
+                }
+                if (data.ok) {
+                    let msg = data.message || `تم استيراد ${data.imported} سجل (تخطي ${data.skipped})`;
+                    if (data.users_synced) msg += ` — ${data.users_synced} مستخدم`;
+                    this.showToast(data.imported > 0 || data.users_synced > 0, msg);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    this.showToast(false, data.error || 'فشلت المزامنة');
+                }
+            } catch (e) {
+                this.showToast(false, 'خطأ في الاتصال بالخادم');
+            }
+            this.loadingId = null;
+        },
+    };
+}
+
+function employeePickerField() {
+    const PAGE_SIZE = 8;
+    return {
+        query: '',
+        showList: false,
+        selected: null,
+        activeIndex: 0,
+        currentPage: 1,
+        pageSize: PAGE_SIZE,
+        employees: [
+            {% for emp in employees %}
+            {
+                id: {{ emp.id }},
+                name: "{{ emp.name|escapejs }}",
+                number: "{{ emp.employee_number|default:''|escapejs }}",
+                id_number: "{{ emp.id_number|default:''|escapejs }}",
+                dept: "{{ emp.department.name|default:''|escapejs }}",
+                branch: "{{ emp.branch.name|default:''|escapejs }}"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        get filtered() {
+            const q = (this.query || '').trim().toLowerCase();
+            if (!q) return this.employees;
+            return this.employees.filter(e =>
+                (e.name || '').toLowerCase().includes(q) ||
+                (e.number || '').toLowerCase().includes(q) ||
+                (e.id_number || '').toLowerCase().includes(q)
+            );
+        },
+        get totalPages() {
+            return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
+        },
+        get pagedItems() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.filtered.slice(start, start + this.pageSize);
+        },
+        initPicker() {
+            this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+            this.$watch('selected', () => this.$nextTick(() => lucide.createIcons()));
+            this.$watch('showList', v => { if (v) this.$nextTick(() => lucide.createIcons()); });
+        },
+        moveActive(delta) {
+            const max = this.pagedItems.length;
+            if (max === 0) return;
+            const next = this.activeIndex + delta;
+            if (next < 0 && this.currentPage > 1) {
+                this.currentPage--;
+                this.$nextTick(() => { this.activeIndex = this.pagedItems.length - 1; });
+            } else if (next >= max && this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.$nextTick(() => { this.activeIndex = 0; });
+            } else if (next >= 0 && next < max) {
+                this.activeIndex = next;
+            }
+        },
+        pickActive() {
+            const list = this.pagedItems;
+            if (list.length) this.selectEmployee(list[this.activeIndex] || list[0]);
+        },
+        prevPage() { if (this.currentPage > 1) this.currentPage--; },
+        nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; },
+        selectEmployee(emp) {
+            this.selected = emp;
+            this.query = '';
+            this.showList = false;
+        },
+        clearSelection() {
+            this.selected = null;
+            this.$nextTick(() => this.$refs.searchInput?.focus());
+        },
+    };
+}
+</script>
+{% endblock %}

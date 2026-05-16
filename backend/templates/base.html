@@ -358,6 +358,8 @@
                         <span x-show="sidebarOpen" class="font-semibold text-base">سجل التدقيق</span>
                     </a>
                     {% endif %}
+                    {% if user|has_permission:'attendance.view' %}{% include "components/nav_item.html" with url="web:biometric_devices" icon="fingerprint" label="أجهزة البصمة" %}{% endif %}
+                    {% if user|has_permission:'attendance.view' %}{% include "components/nav_item.html" with url="web:attendance_records" icon="clipboard-list" label="سجلات الحضور" %}{% endif %}
                     {% if user|has_permission:'employees.view' %}{% include "components/nav_item.html" with url="web:list_payroll_runs" icon="calculator" label="مسير الرواتب" %}{% endif %}
 
                     <a href="{% url 'web:list_pending_actions' %}"

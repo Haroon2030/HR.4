@@ -88,4 +88,7 @@ Thumbs.db
 *.tmp
 temp/
 tmp/
+
+# Attendance export dumps (local pulls)
+backend/exports/
 قاعد.txt

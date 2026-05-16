@@ -29,6 +29,7 @@ DEFAULT_MODULE_META: Dict[str, dict] = {
     'reports':      {'name': 'التقارير',            'icon': 'bar-chart-3',   'order': 8},
     'payroll':      {'name': 'الرواتب',             'icon': 'banknote',      'order': 9},
     'leaves':       {'name': 'الإجازات',            'icon': 'calendar-days', 'order': 10},
+    'attendance':   {'name': 'الحضور والبصمة',      'icon': 'fingerprint',   'order': 11},
 }
 
 # تسميات العمليات
@@ -37,6 +38,7 @@ OPERATION_NAMES = {
     'add':    'إضافة',
     'edit':   'تعديل',
     'delete': 'حذف',
+    'manage': 'إدارة',
 }
 
 # الـ registry الفعلي: {module_code: {'name', 'icon', 'order', 'operations': set()}}

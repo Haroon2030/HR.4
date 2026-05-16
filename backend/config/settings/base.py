@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'apps.departments',              # الأقسام
     'apps.employees',                # الموظفين (ملفات، إجازات، عهد، سلف)
     'apps.payroll',                  # مسير الرواتب الشهري
+    'apps.attendance.apps.AttendanceConfig',  # أجهزة البصمة والحضور
 ]
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -328,6 +329,11 @@ BACKUP_BEFORE_MIGRATE_REQUIRED = env.bool('BACKUP_BEFORE_MIGRATE_REQUIRED', defa
 
 # تعطيل COOP header — يسبب تحذيرات على HTTP بدون HTTPS
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+# أجهزة البصمة (ZKTeco عبر IP — المنفذ الافتراضي 4370)
+BIOMETRIC_MOCK_MODE = env.bool('BIOMETRIC_MOCK_MODE', default=False)
+BIOMETRIC_ZK_TIMEOUT = env.int('BIOMETRIC_ZK_TIMEOUT', default=15)
+BIOMETRIC_ZK_OMIT_PING = env.bool('BIOMETRIC_ZK_OMIT_PING', default=True)
 
 # نوع المفتاح التلقائي للنماذج
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
