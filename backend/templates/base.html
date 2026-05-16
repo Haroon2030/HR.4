@@ -266,30 +266,83 @@
                     </div>
                 </div>
 
-                <!-- قائمة المستخدم: تغيير كلمة المرور + خروج -->
-                <div class="relative z-50" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
+                <!-- قائمة المستخدم: تغيير كلمة المرور + خروج (teleport + fixed لتفادي القص) -->
+                <div
+                    x-data="{
+                        open: false,
+                        panelStyle: '',
+                        toggle(ev) {
+                            this.open = !this.open;
+                            if (!this.open) return;
+                            this.$nextTick(() => {
+                                const btn = ev.currentTarget;
+                                const rect = btn.getBoundingClientRect();
+                                const vw = document.documentElement.clientWidth;
+                                const m = 12;
+                                const minW = 288;
+                                const inner = (vw - 2 * m) + 'px';
+                                const widthCss = 'min(max(' + minW + 'px, max-content),' + inner + ')';
+                                const topPx = Math.round(rect.bottom + 8);
+                                const applyLeft = () => {
+                                    const el = this.$refs.accountPanel;
+                                    const base =
+                                        'top:' + topPx + 'px;'
+                                        + 'width:' + widthCss + ';'
+                                        + 'box-sizing:border-box;';
+                                    if (!el || el.getBoundingClientRect().width < 8) {
+                                        let left0 = rect.right - minW;
+                                        left0 = Math.max(m, Math.min(left0, vw - minW - m));
+                                        this.panelStyle = base + 'left:' + Math.round(left0) + 'px;';
+                                        return;
+                                    }
+                                    const w = el.getBoundingClientRect().width;
+                                    let left = rect.right - w;
+                                    left = Math.max(m, Math.min(left, vw - w - m));
+                                    this.panelStyle = base + 'left:' + Math.round(left) + 'px;';
+                                };
+                                applyLeft();
+                                requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                        applyLeft();
+                                        if (window.lucide) lucide.createIcons();
+                                    });
+                                });
+                            });
+                        }
+                    }"
+                    @click.outside="open = false"
+                    class="relative z-50"
+                >
                     <button type="button"
-                            @click="userMenuOpen = !userMenuOpen; if(userMenuOpen){ setTimeout(() => lucide.createIcons(), 50); }"
+                            @click="toggle($event)"
                             class="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                             title="الحساب"
-                            aria-expanded="false"
-                            :aria-expanded="userMenuOpen">
+                            :aria-expanded="open ? 'true' : 'false'">
                         <i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
                     </button>
-                    <div x-show="userMenuOpen" x-cloak x-transition
-                         class="absolute top-full mt-2 end-0 min-w-[14rem] w-max max-w-[min(18rem,calc(100vw-1.5rem))] bg-white rounded-xl shadow-xl border border-slate-200 z-[100] py-1">
-                        <a href="{% url 'web:auth:password_change' %}"
-                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap">
-                            <i data-lucide="key" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
-                            <span>تغيير كلمة المرور</span>
-                        </a>
-                        <div class="border-t border-slate-100"></div>
-                        <a href="{% url 'web:auth:logout' %}"
-                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50 transition-colors whitespace-nowrap">
-                            <i data-lucide="log-out" class="w-4 h-4 flex-shrink-0"></i>
-                            <span>تسجيل الخروج</span>
-                        </a>
-                    </div>
+                    <template x-teleport="body">
+                        <div
+                            x-ref="accountPanel"
+                            x-show="open"
+                            x-cloak
+                            x-transition
+                            dir="rtl"
+                            class="fixed z-[200] rounded-xl border border-slate-200 bg-white py-1.5 shadow-2xl ring-1 ring-black/5"
+                            :style="panelStyle"
+                        >
+                            <a href="{% url 'web:auth:password_change' %}"
+                               class="flex items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50">
+                                <i data-lucide="key" class="h-4 w-4 shrink-0 text-slate-500"></i>
+                                <span class="shrink-0">تغيير كلمة المرور</span>
+                            </a>
+                            <div class="my-1 border-t border-slate-100"></div>
+                            <a href="{% url 'web:auth:logout' %}"
+                               class="flex items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50">
+                                <i data-lucide="log-out" class="h-4 w-4 shrink-0"></i>
+                                <span class="shrink-0">تسجيل الخروج</span>
+                            </a>
+                        </div>
+                    </template>
                 </div>
             </div>
         </header>
