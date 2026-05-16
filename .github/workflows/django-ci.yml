@@ -1,10 +1,20 @@
-name: Django CI
+# عند كل push إلى main: فحص Django → migrate → collectstatic → اختبارات → ثم webhook النشر (إن وُجد السرّ).
+# على السيرفر: docker/entrypoint.sh يُنفّذ migrate + collectstatic + sync صلاحيات تلقائياً عند إعادة تشغيل الحاوية.
+#
+# GitHub → Settings → Secrets → Actions:
+#   DEPLOY_WEBHOOK_URL   رابط Redeploy من Coolify/CapRover/…
+#   DEPLOY_WEBHOOK_AUTH  (اختياري) مثل: Bearer YOUR_TOKEN
+name: Django CI & Deploy
 
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -17,7 +27,6 @@ jobs:
       DJANGO_ENV: development
       DJANGO_SETTINGS_MODULE: config.settings
       PYTHONUNBUFFERED: '1'
-      # قاعدة SQLite في مجلد backend (Ubuntu CI — مسار مطلق لصيغة Django)
       DATABASE_URL: 'sqlite:////${{ github.workspace }}/backend/ci.sqlite3'
 
     steps:
@@ -39,7 +48,7 @@ jobs:
       - name: Validate OpenAPI schema
         run: python manage.py spectacular --validate
 
-      - name: Migrate (SQLite default in development)
+      - name: Migrate (SQLite CI)
         run: python manage.py migrate --noinput
 
       - name: Collect static (deploy smoke)
@@ -47,3 +56,28 @@ jobs:
 
       - name: Run tests
         run: python manage.py test --verbosity 2
+
+  deploy:
+    name: Trigger production deploy
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST deploy webhook
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_WEBHOOK_AUTH: ${{ secrets.DEPLOY_WEBHOOK_AUTH }}
+        run: |
+          set -e
+          if [ -z "${DEPLOY_WEBHOOK_URL:-}" ]; then
+            echo "DEPLOY_WEBHOOK_URL غير مُعرّف — تخطي النشر التلقائي (أضف السرّ في GitHub Actions)."
+            exit 0
+          fi
+          echo "==> CI نجح — استدعاء webhook النشر..."
+          if [ -n "${DEPLOY_WEBHOOK_AUTH:-}" ]; then
+            curl -fsS --connect-timeout 30 --max-time 300 -X POST "$DEPLOY_WEBHOOK_URL" \
+              -H "Authorization: ${DEPLOY_WEBHOOK_AUTH}"
+          else
+            curl -fsS --connect-timeout 30 --max-time 300 -X POST "$DEPLOY_WEBHOOK_URL"
+          fi
+          echo "==> تم إرسال طلب النشر."
