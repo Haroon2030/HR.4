@@ -57,9 +57,9 @@
         </div>
         {% if user.is_staff %}
         <div class="flex items-center gap-2 shrink-0">
-            <a href="{% url 'admin:core_databasebackuplog_changelist' %}" class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg">
-                <i data-lucide="cloud-download" class="w-4 h-4"></i>
-                تحميل من الإدارة
+            <a href="{% url 'admin:core_databasebackuplog_changelist' %}" class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg relative z-10">
+                <i data-lucide="download-cloud" class="w-4 h-4 shrink-0 pointer-events-none" aria-hidden="true"></i>
+                <span>تحميل من الإدارة</span>
             </a>
         </div>
         {% endif %}
