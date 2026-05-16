@@ -45,6 +45,18 @@ jobs:
       - name: Django system check
         run: python manage.py check
 
+      - name: Production deploy check (security)
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: 'ci-production-check-secret-key-with-enough-length-and-variety-xyz'
+          DEBUG: 'False'
+          ALLOWED_HOSTS: 'example.com,testserver'
+          CSRF_TRUSTED_ORIGINS: 'https://example.com'
+          USE_HTTPS: 'true'
+          DATABASE_URL: 'sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3'
+          USE_R2: 'False'
+        run: python manage.py check --deploy
+
       - name: Validate OpenAPI schema
         run: python manage.py spectacular --validate
 

@@ -89,42 +89,91 @@ else:
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # ══════════════════════════════════════════════════════════════════════════════
-# الأمان — السيرفر خلف Reverse Proxy (Traefik عبر Dokploy)
+# الأمان — السيرفر خلف Reverse Proxy (Traefik / Nginx / Dokploy)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# قراءة بروتوكول HTTPS من ترويسة X-Forwarded-Proto (يرسلها Traefik)
+
+def _validate_production_secret_key(key: str) -> None:
+    from django.core.exceptions import ImproperlyConfigured
+
+    if not key or key.startswith('django-insecure'):
+        raise ImproperlyConfigured(
+            'SECRET_KEY غير آمن. أنشئ مفتاحاً عشوائياً طويلاً في .env (50+ حرفاً). '
+            'مثال: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"'
+        )
+    if len(key) < 50:
+        raise ImproperlyConfigured('SECRET_KEY قصير جداً — يجب 50 حرفاً على الأقل في الإنتاج.')
+    if len(set(key)) < 5:
+        raise ImproperlyConfigured('SECRET_KEY ضعيف — استخدم أحرفاً متنوعة.')
+
+
+_validate_production_secret_key(SECRET_KEY)
+
+if DEBUG:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured('DEBUG يجب أن يكون False في الإنتاج (DJANGO_ENV=production).')
+
+# قراءة بروتوكول HTTPS من ترويسة X-Forwarded-Proto (يرسلها البروكسي)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
-# HTTPS — فعّل SECURE_SSL_REDIRECT=true في .env عند تفعيل TLS على البروكسي
-_USE_HTTPS = env.bool('USE_HTTPS', default=False)
+# HTTPS — فعّل USE_HTTPS=true في .env عند TLS على البروكسي (مُوصى به دائماً للإنتاج)
+_USE_HTTPS = env.bool('USE_HTTPS', default=True)
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=_USE_HTTPS)
 SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=_USE_HTTPS)
 CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=_USE_HTTPS)
+
+# استثناء فحص الصحة من إعادة التوجيه إلى HTTPS (للمُراقبة الداخلية)
+SECURE_REDIRECT_EXEMPT = [r'^health/$']
 
 if _USE_HTTPS or SECURE_SSL_REDIRECT:
     SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)
     SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
     SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', default=False)
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+    # إزالة middleware الذي يُلغي COOP — مهم فقط مع HTTPS
+    MIDDLEWARE = [m for m in MIDDLEWARE if m != 'config.middleware.DisableCOOPMiddleware']
 
-if not DEBUG:
-    from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured
 
-    if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['localhost', '127.0.0.1']:
-        raise ImproperlyConfigured(
-            'حدّد ALLOWED_HOSTS في .env بنطاق الإنتاج الفعلي قبل النشر.'
-        )
-    if _USE_HTTPS and not CSRF_TRUSTED_ORIGINS:
+if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['localhost', '127.0.0.1']:
+    raise ImproperlyConfigured(
+        'حدّد ALLOWED_HOSTS في .env بنطاق الإنتاج الفعلي (مثال: hr.example.com,72.61.107.230).'
+    )
+if _USE_HTTPS:
+    if not CSRF_TRUSTED_ORIGINS:
         raise ImproperlyConfigured(
             'حدّد CSRF_TRUSTED_ORIGINS بعناوين https:// عند USE_HTTPS=true.'
         )
+    for origin in CSRF_TRUSTED_ORIGINS:
+        if not origin.startswith('https://'):
+            raise ImproperlyConfigured(
+                f'CSRF_TRUSTED_ORIGINS يجب أن تبدأ بـ https:// في الإنتاج: {origin!r}'
+            )
 
-# حماية المتصفح من هجمات XSS وContent-Type sniffing
+# حماية المتصفح
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
-# منع تحميل الموقع داخل iframe من مواقع خارجية (حماية من Clickjacking)
-X_FRAME_OPTIONS = 'SAMEORIGIN'
+# منع تحميل الموقع داخل iframe من مواقع خارجية
+X_FRAME_OPTIONS = 'DENY'
+
+# جلسات أقصر في الإنتاج (يمكن تعديلها من .env)
+SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=28800)  # 8 ساعات
+
+# تقييد أقوى لمحاولات تسجيل الدخول عبر API
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    'DEFAULT_THROTTLE_RATES': {
+        **REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'],
+        'anon': env('DRF_ANON_THROTTLE', default='60/hour'),
+        'user': env('DRF_USER_THROTTLE', default='500/hour'),
+        'login': env('DRF_LOGIN_THROTTLE', default='10/hour'),
+        'login_user': env('DRF_LOGIN_USER_THROTTLE', default='30/hour'),
+    },
+}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CORS — مشاركة الموارد بين المواقع
