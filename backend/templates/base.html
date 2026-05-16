@@ -561,7 +561,7 @@
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
-        
+
         // Toast notification function
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -591,13 +591,6 @@
                 showToast(msg.dataset.message, msg.dataset.type);
             });
         }
-
-        // Close mobile menu when clicking nav item
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('nav a')) {
-                Alpine.store('mobileMenuOpen', false);
-            }
-        });
     </script>
     
     {% block extra_js %}{% endblock %}
