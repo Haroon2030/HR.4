@@ -91,6 +91,24 @@ class AuditChangeLine:
     old: str
     new: str
 
+    @property
+    def inline(self) -> str:
+        """سطر واحد مضغوط للعرض في الجدول."""
+        if self.old in ('—', '') and self.new not in ('—', ''):
+            return f'{self.label}: +{self.new}'
+        if self.new in ('—', '') and self.old not in ('—', ''):
+            return f'{self.label}: −{self.old}'
+        return f'{self.label}: {self.old}→{self.new}'
+
+
+def _is_meaningless_change(old_v: str, new_v: str, raw_old: Any = None, raw_new: Any = None) -> bool:
+    if raw_old is not None and raw_new is not None and raw_old == raw_new:
+        return True
+    if old_v == new_v:
+        return True
+    empty = frozenset({'—', '', '[مخفي]'})
+    return old_v in empty and new_v in empty
+
 
 def _model_label_ar(history_row, entity_label: str | None = None) -> str:
     if entity_label:
@@ -227,6 +245,9 @@ def summarize_history_changes(
         else:
             old_v = _format_value(field, change.old)
             new_v = _format_value(field, change.new)
+
+        if _is_meaningless_change(old_v, new_v, change.old, change.new):
+            continue
 
         lines.append(AuditChangeLine(label=label, old=old_v, new=new_v))
 

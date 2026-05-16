@@ -336,6 +336,13 @@ class AuditDiffTests(TestCase):
         Hist = Employee.history.model
         self.assertEqual(_model_label_ar(Hist()), 'موظف')
 
+    def test_meaningless_change_filtered(self):
+        from apps.core.services.audit_diff import _is_meaningless_change
+
+        self.assertTrue(_is_meaningless_change('—', '—'))
+        self.assertTrue(_is_meaningless_change('علي', 'علي'))
+        self.assertFalse(_is_meaningless_change('علي', 'علي احمد'))
+
 
 class AuditFeedTests(TestCase):
     def test_collect_returns_list(self):
