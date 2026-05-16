@@ -96,15 +96,23 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 def _validate_production_secret_key(key: str) -> None:
     from django.core.exceptions import ImproperlyConfigured
 
+    _gen_hint = (
+        'python -c "from django.core.management.utils import get_random_secret_key; '
+        'print(get_random_secret_key())"'
+    )
     if not key or key.startswith('django-insecure'):
         raise ImproperlyConfigured(
-            'SECRET_KEY غير آمن. أنشئ مفتاحاً عشوائياً طويلاً في .env (50+ حرفاً). '
-            'مثال: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"'
+            f'SECRET_KEY غير آمن في .env. أنشئ مفتاحاً عشوائياً (يُفضّل 50+ حرفاً): {_gen_hint}'
         )
-    if len(key) < 50:
-        raise ImproperlyConfigured('SECRET_KEY قصير جداً — يجب 50 حرفاً على الأقل في الإنتاج.')
-    if len(set(key)) < 5:
-        raise ImproperlyConfigured('SECRET_KEY ضعيف — استخدم أحرفاً متنوعة.')
+    # حد أدنى 32 حرفاً (متوافق مع Django) — يُفضّل 50+ في الإنتاج الجديد
+    if len(key) < 32:
+        raise ImproperlyConfigured(
+            f'SECRET_KEY قصير جداً ({len(key)} حرفاً) — 32 حرفاً كحد أدنى، و50+ مُوصى به. {_gen_hint}'
+        )
+    if len(key) < 50 and len(set(key)) < 5:
+        raise ImproperlyConfigured(
+            f'SECRET_KEY ضعيف (تنوع أحرف قليل). استخدم مفتاحاً أطول وأكثر عشوائية: {_gen_hint}'
+        )
 
 
 _validate_production_secret_key(SECRET_KEY)
