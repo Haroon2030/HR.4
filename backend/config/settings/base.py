@@ -99,6 +99,7 @@ MIDDLEWARE = [
     'django.middleware.gzip.GZipMiddleware',                  # ضغط الاستجابات (HTML/JSON)
     'corsheaders.middleware.CorsMiddleware',                  # معالجة CORS
     'django.contrib.sessions.middleware.SessionMiddleware',   # إدارة الجلسات
+    'django.middleware.locale.LocaleMiddleware',            # لغة الواجهة (عربي)
     'django.middleware.common.CommonMiddleware',              # معالجة مشتركة
     'django.middleware.csrf.CsrfViewMiddleware',              # حماية CSRF
     'django.contrib.auth.middleware.AuthenticationMiddleware', # ربط المستخدم بالطلب
@@ -207,21 +208,25 @@ DATABASES = {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# التحقق من كلمات المرور — 4 قواعد
+# التحقق من كلمات المرور
 # ══════════════════════════════════════════════════════════════════════════════
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},  # ليست مشابهة للاسم
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},             # 8 أحرف على الأقل
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},            # ليست شائعة
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},           # ليست أرقام فقط
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {
+        'NAME': 'apps.core.password_validation.ArabicMinimumLengthValidator',
+        'OPTIONS': {'min_length': 6},
+    },
 ]
 
 # ══════════════════════════════════════════════════════════════════════════════
 # التدويل — اللغة والمنطقة الزمنية
 # ══════════════════════════════════════════════════════════════════════════════
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ar'
+LANGUAGES = [
+    ('ar', 'العربية'),
+]
 TIME_ZONE = 'UTC'
 USE_I18N = True     # تفعيل الترجمة
 USE_TZ = True       # تفعيل المنطقة الزمنية

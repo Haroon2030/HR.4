@@ -7,6 +7,7 @@ Django Forms - التحقق من صحة المدخلات للعمليات الح
 ولا تُمرَّر إلى template (نستخدم form.cleaned_data أو form.save()).
 """
 from django import forms
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from decimal import Decimal
@@ -455,7 +456,46 @@ class ReviewNotesForm(forms.Form):
         return v
 
 
+class ArabicPasswordChangeForm(PasswordChangeForm):
+    """تغيير كلمة المرور — تسميات ورسائل عربية."""
+
+    error_messages = {
+        'password_mismatch': 'كلمتا المرور الجديدة غير متطابقتين.',
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = 'كلمة المرور الحالية'
+        self.fields['new_password1'].label = 'كلمة المرور الجديدة'
+        self.fields['new_password2'].label = 'تأكيد كلمة المرور الجديدة'
+        self.fields['old_password'].error_messages = {
+            'required': 'أدخل كلمة المرور الحالية.',
+        }
+        self.fields['new_password1'].error_messages = {
+            'required': 'أدخل كلمة المرور الجديدة.',
+        }
+        self.fields['new_password2'].error_messages = {
+            'required': 'أكد كلمة المرور الجديدة.',
+        }
+        self.fields['new_password2'].help_text = 'أعد إدخال كلمة المرور الجديدة للتأكيد.'
+
+    def clean_old_password(self):
+        try:
+            return super().clean_old_password()
+        except ValidationError:
+            raise ValidationError(
+                'كلمة المرور الحالية غير صحيحة.',
+                code='password_incorrect',
+            ) from None
+
+
 class LoginForm(forms.Form):
-    username = forms.CharField(error_messages={'required': 'اسم المستخدم مطلوب'})
-    password = forms.CharField(error_messages={'required': 'كلمة المرور مطلوبة'})
-    remember = forms.BooleanField(required=False)
+    username = forms.CharField(
+        label='اسم المستخدم',
+        error_messages={'required': 'اسم المستخدم مطلوب'},
+    )
+    password = forms.CharField(
+        label='كلمة المرور',
+        error_messages={'required': 'كلمة المرور مطلوبة'},
+    )
+    remember = forms.BooleanField(required=False, label='تذكرني')

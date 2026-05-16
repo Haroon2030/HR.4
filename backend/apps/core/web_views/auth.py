@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib import messages
 from django.core.cache import cache
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
+from apps.core.forms import ArabicPasswordChangeForm
 
 from apps.core.models import UserProfile
 
@@ -89,7 +89,7 @@ def logout_view(request):
 def password_change_view(request):
     """تغيير كلمة المرور للمستخدم الحالي (واجهة ويب)."""
     if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
+        form = ArabicPasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
@@ -99,7 +99,7 @@ def password_change_view(request):
             for err in errs:
                 messages.error(request, err)
     else:
-        form = PasswordChangeForm(request.user)
+        form = ArabicPasswordChangeForm(request.user)
     return render(request, 'auth/password_change.html', {'form': form})
 
 
