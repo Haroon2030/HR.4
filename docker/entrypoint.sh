@@ -106,6 +106,25 @@ PYEOF
 echo "==> Fixing swapped code/name records (idempotent)..."
 python manage.py fix_swapped_code_name || echo "!! fix_swapped_code_name failed (non-fatal)"
 
+# ─── وكيل البصمة (API ingest على السحابة — لا يسحب من LAN داخل الحاوية) ─────
+echo "==> Attendance agent API (production check)..."
+python manage.py shell <<'PY_AGENT'
+import os
+from django.conf import settings
+
+key = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
+prod = os.environ.get('DJANGO_ENV', '').lower() == 'production' or not settings.DEBUG
+if prod and not key:
+    print(
+        '!! WARNING: ATTENDANCE_AGENT_API_KEY غير مضبوط في .env — '
+        'فعّل المفتاح ثم شغّل وكيل الفرع (backend/scripts/biometric_bridge).'
+    )
+elif prod:
+    print('==> ATTENDANCE_AGENT_API_KEY مضبوط — جاهز لاستقبال الوكيل من الفرع.')
+else:
+    print('==> Attendance agent: فحص الإنتاج متخطى (بيئة تطوير).')
+PY_AGENT
+
 # ─── Cron: نسخ احتياطي يومي + تنبيهات وثائق (اختياري لكل منهما) ───────────────
 CRON_NEEDED=false
 if [ "${BACKUP_ENABLED:-true}" = "true" ]; then CRON_NEEDED=true; fi
