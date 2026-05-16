@@ -57,6 +57,53 @@ class EmployeeModelTests(TestCase):
         self.assertEqual(self.employee.leave_compensation, expected_compensation)
 
 
+class AccrualLedgerNotesTests(TestCase):
+    def test_monthly_leave_and_eosb_formulas(self):
+        from apps.employees.services.accrual_ledger_notes import (
+            MONTHLY_LEAVE_ACCRUAL_DAYS,
+            compute_monthly_ledger_amounts,
+        )
+
+        gross = Decimal('4000')
+        daily = (gross / Decimal('30')).quantize(Decimal('0.01'))
+        calc = compute_monthly_ledger_amounts(
+            gross_salary=gross,
+            daily_rate=daily,
+            hire_date=date(2026, 1, 1),
+            period_year=2026,
+            period_month=6,
+        )
+        self.assertEqual(MONTHLY_LEAVE_ACCRUAL_DAYS, Decimal('1.75'))
+        self.assertEqual(calc['leave_days'], Decimal('1.75'))
+        self.assertEqual(calc['leave_amount'], Decimal('233.33'))
+        self.assertEqual(calc['eosb'], Decimal('166.67'))  # 4000/24
+
+    def test_monthly_notes_contains_formulas(self):
+        from apps.employees.services.accrual_ledger_notes import build_monthly_payroll_notes
+
+        notes = build_monthly_payroll_notes(
+            period_year=2026,
+            period_month=6,
+            month_days=30,
+            gross_salary=Decimal('4000'),
+            daily_rate=Decimal('133.33'),
+            hire_date=date(2026, 1, 1),
+            prev_leave_days=Decimal('1.72'),
+            prev_leave_amount=Decimal('229.33'),
+            prev_eosb=Decimal('164.20'),
+            leave_days_change=Decimal('1.75'),
+            leave_amount_change=Decimal('233.33'),
+            eosb_amount_change=Decimal('166.67'),
+            cumulative_leave_days=Decimal('3.47'),
+            cumulative_leave_amount=Decimal('462.66'),
+            cumulative_eosb=Decimal('330.87'),
+            payroll_run_id=99,
+        )
+        self.assertIn('21 ÷ 12', notes)
+        self.assertIn('4000 ÷ 24', notes)
+        self.assertIn('مسير #99', notes)
+
+
 class EmployeeLoanTests(TestCase):
     def setUp(self):
         self.employee = Employee.objects.create(

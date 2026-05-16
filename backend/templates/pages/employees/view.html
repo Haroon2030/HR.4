@@ -2601,7 +2601,7 @@
                                 <tr class="hover:bg-slate-50 transition-colors">
                                     <td class="px-4 py-3 text-xs text-slate-800 font-mono">{{ a.date|date:"Y-m-d" }}</td>
                                     <td class="px-4 py-3 text-xs font-bold
-                                        {% if a.transaction_type == 'monthly_payroll' %}text-indigo-600
+                                        {% if a.transaction_type == 'monthly' %}text-indigo-600
                                         {% elif a.transaction_type == 'leave_taken' %}text-rose-600
                                         {% elif a.transaction_type == 'final_settlement' %}text-purple-600
                                         {% else %}text-emerald-600{% endif %}">
@@ -2637,8 +2637,7 @@
                                     </td>
 
                                     <td class="px-4 py-3 text-center" x-data="{ showNotes: false }">
-                                        {% if a.notes %}
-                                        <button @click="showNotes = true" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-800 transition-all duration-200 shadow-sm hover:shadow" title="عرض التفاصيل">
+                                        <button @click="showNotes = true" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-800 transition-all duration-200 shadow-sm hover:shadow" title="عرض التفاصيل الحسابية">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </button>
                                         <!-- Modal -->
@@ -2653,7 +2652,7 @@
                                              @click.self="showNotes = false"
                                              @keydown.escape.window="showNotes = false">
                                             <div class="fixed inset-0 bg-black/40 backdrop-blur-sm"></div>
-                                            <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-auto overflow-hidden border border-slate-200"
+                                            <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden border border-slate-200"
                                                  @click.stop>
                                                 <div class="bg-gradient-to-l from-indigo-600 to-indigo-700 px-6 py-4 flex items-center justify-between">
                                                     <h3 class="text-white font-bold text-sm flex items-center gap-2">
@@ -2664,7 +2663,7 @@
                                                         <i data-lucide="x" class="w-5 h-5"></i>
                                                     </button>
                                                 </div>
-                                                <div class="p-6 text-right leading-loose text-sm text-slate-700 space-y-2 font-mono" dir="rtl" style="white-space: pre-wrap;">{{ a.notes }}</div>
+                                                <div class="p-6 text-right leading-relaxed text-xs md:text-sm text-slate-700 font-mono max-h-[70vh] overflow-y-auto" dir="rtl" style="white-space: pre-wrap;">{{ a.calculation_notes_display }}</div>
                                                 <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-start">
                                                     <button @click="showNotes = false" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs rounded-lg font-bold transition-colors">
                                                         إغلاق
@@ -2672,9 +2671,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        {% else %}
-                                        <span class="text-slate-300">—</span>
-                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% empty %}

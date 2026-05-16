@@ -280,7 +280,12 @@ def lock_payroll_run(run: PayrollRun, user):
         sid = transaction.savepoint()
         try:
             from apps.employees.models import EmployeeLedger
-            
+            from apps.employees.services.accrual_ledger_notes import (
+                MONTHLY_LEAVE_ACCRUAL_DAYS,
+                build_monthly_payroll_notes,
+                compute_monthly_ledger_amounts,
+            )
+
             last_ledger = EmployeeLedger.objects.filter(
                 employee=line.employee,
                 date__lt=date(run.period_year, run.period_month, 1)
@@ -290,21 +295,38 @@ def lock_payroll_run(run: PayrollRun, user):
             prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
             prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
 
-            leave_days_change = Decimal('1.75')
-            safe_daily_rate = Decimal(line.daily_rate or 0) or (Decimal(line.gross_salary or 0) / Decimal('30'))
-            leave_amount_change = (leave_days_change * safe_daily_rate).quantize(Decimal('0.01'))
+            leave_days_change = MONTHLY_LEAVE_ACCRUAL_DAYS
+            calc = compute_monthly_ledger_amounts(
+                gross_salary=line.gross_salary,
+                daily_rate=line.daily_rate,
+                hire_date=line.employee.hire_date,
+                period_year=run.period_year,
+                period_month=run.period_month,
+            )
+            leave_amount_change = calc['leave_amount']
+            eosb_amount_change = calc['eosb']
+            cum_leave_days = prev_leave_days + leave_days_change
+            cum_leave_amt = prev_leave_amt + leave_amount_change
+            cum_eosb = prev_eosb + eosb_amount_change
 
-            hire_date = line.employee.hire_date
-            eosb_amount_change = Decimal('0')
-            if hire_date:
-                month_date = date(run.period_year, run.period_month, monthrange(run.period_year, run.period_month)[1])
-                service_days = (month_date - hire_date).days
-                service_years = service_days / 365.25
-                
-                if service_years <= 5:
-                    eosb_amount_change = (Decimal(line.gross_salary or 0) / Decimal('24')).quantize(Decimal('0.01'))
-                else:
-                    eosb_amount_change = (Decimal(line.gross_salary or 0) / Decimal('12')).quantize(Decimal('0.01'))
+            notes = build_monthly_payroll_notes(
+                period_year=run.period_year,
+                period_month=run.period_month,
+                month_days=line.month_days or monthrange(run.period_year, run.period_month)[1],
+                gross_salary=line.gross_salary,
+                daily_rate=line.daily_rate,
+                hire_date=line.employee.hire_date,
+                prev_leave_days=prev_leave_days,
+                prev_leave_amount=prev_leave_amt,
+                prev_eosb=prev_eosb,
+                leave_days_change=leave_days_change,
+                leave_amount_change=leave_amount_change,
+                eosb_amount_change=eosb_amount_change,
+                cumulative_leave_days=cum_leave_days,
+                cumulative_leave_amount=cum_leave_amt,
+                cumulative_eosb=cum_eosb,
+                payroll_run_id=run.id,
+            )
 
             EmployeeLedger.objects.create(
                 employee=line.employee,
@@ -313,11 +335,11 @@ def lock_payroll_run(run: PayrollRun, user):
                 leave_days_change=leave_days_change,
                 leave_amount_change=leave_amount_change,
                 eosb_amount_change=eosb_amount_change,
-                cumulative_leave_days=prev_leave_days + leave_days_change,
-                cumulative_leave_amount=prev_leave_amt + leave_amount_change,
-                cumulative_eosb_amount=prev_eosb + eosb_amount_change,
+                cumulative_leave_days=cum_leave_days,
+                cumulative_leave_amount=cum_leave_amt,
+                cumulative_eosb_amount=cum_eosb,
                 payroll_run=run,
-                notes=f'مخصص شهر {run.period_month}/{run.period_year}',
+                notes=notes,
                 created_by=user
             )
             transaction.savepoint_commit(sid)

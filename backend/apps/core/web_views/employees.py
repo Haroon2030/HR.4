@@ -233,12 +233,15 @@ def view_employee(request, employee_id):
                     eosb = (first5 + extra_amt).quantize(Decimal('0.01'))
                     eosb_detail = f'أول 5 سنوات: {half_salary} × 5 = {first5} | بعد 5 سنوات: {total_salary} × {extra_yrs} = {extra_amt} | الإجمالي = {eosb}'
 
-                notes = (
-                    f'تاريخ المباشرة: {employee.hire_date} | '
-                    f'مدة الخدمة: {service_days} يوم ({service_years} سنة)\n'
-                    f'الراتب الإجمالي: {total_salary} ر.س | أجر اليوم: {total_salary} ÷ 30 = {daily_wage} ر.س\n'
-                    f'الإجازات: {service_days} يوم × 21 ÷ 365.25 = {leave_days} يوم | القيمة: {leave_days} × {daily_wage} = {leave_amount} ر.س\n'
-                    f'نهاية الخدمة: {eosb_detail}'
+                from apps.employees.services.accrual_ledger_notes import build_initial_balance_notes
+                notes = build_initial_balance_notes(
+                    hire_date=employee.hire_date,
+                    as_of_date=today,
+                    total_salary=total_salary,
+                    leave_days=leave_days,
+                    leave_amount=leave_amount,
+                    eosb=eosb,
+                    eosb_detail=eosb_detail,
                 )
 
                 EmployeeLedger.objects.create(
@@ -255,7 +258,11 @@ def view_employee(request, employee_id):
                     created_by=request.user
                 )
 
-        accruals = list(employee.accruals_ledger.all().order_by('-date', '-created_at'))
+        accruals = list(
+            employee.accruals_ledger.select_related('payroll_run', 'employee')
+            .all()
+            .order_by('-date', '-created_at')
+        )
     except Exception:
         accruals = []
 

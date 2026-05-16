@@ -964,4 +964,10 @@ class EmployeeLedger(BaseModel):
     def __str__(self):
         return f"{self.employee.name} — {self.get_transaction_type_display()} ({self.date})"
 
+    @property
+    def calculation_notes_display(self) -> str:
+        """تفاصيل تقنية للعرض (يُعاد بناؤها للسجلات القديمة ذات ملاحظات قصيرة)."""
+        from apps.employees.services.accrual_ledger_notes import display_ledger_notes
+        return display_ledger_notes(self)
+
 
