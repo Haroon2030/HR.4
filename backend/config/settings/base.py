@@ -133,6 +133,7 @@ REST_FRAMEWORK = {
         'user': env('DRF_USER_THROTTLE', default='1000/hour'),
         'login': env('DRF_LOGIN_THROTTLE', default='20/hour'),
         'login_user': env('DRF_LOGIN_USER_THROTTLE', default='60/hour'),
+        'attendance_agent': env('DRF_ATTENDANCE_AGENT_THROTTLE', default='120/hour'),
     },
     # محركات الفلترة: فلاتر + بحث + ترتيب
     'DEFAULT_FILTER_BACKENDS': [
@@ -334,6 +335,9 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 BIOMETRIC_MOCK_MODE = env.bool('BIOMETRIC_MOCK_MODE', default=False)
 BIOMETRIC_ZK_TIMEOUT = env.int('BIOMETRIC_ZK_TIMEOUT', default=15)
 BIOMETRIC_ZK_OMIT_PING = env.bool('BIOMETRIC_ZK_OMIT_PING', default=True)
+
+# وكيل البصمة المحلي (وسيط بين جهاز ZK في الفرع والسيرفر السحابي)
+ATTENDANCE_AGENT_API_KEY = env('ATTENDANCE_AGENT_API_KEY', default='')
 
 # نوع المفتاح التلقائي للنماذج
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

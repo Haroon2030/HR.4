@@ -91,4 +91,7 @@ tmp/
 
 # Attendance export dumps (local pulls)
 backend/exports/
+
+# Biometric bridge agent secrets
+backend/scripts/biometric_bridge/config.env
 قاعد.txt

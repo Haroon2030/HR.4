@@ -30,7 +30,7 @@ router.register(r'users', UserViewSet, basename='user')              # المس�
 urlpatterns = [
     # روابط الـ ViewSets (CRUD تلقائي)
     path('', include(router.urls)),
-    
+    path('attendance/', include('apps.attendance.api_urls')),
     # بيانات المستخدم الحالي — GET /api/v1/me/
     path('me/', current_user, name='current-user'),
 ]

@@ -40,6 +40,10 @@ class AccessControlMiddleware:
         if request.path.startswith('/api/auth/') or request.path.startswith('/api/token/'):
             return None
 
+        # 2b. وكيل البصمة المحلي — مصادقة بمفتاح API داخل DRF (ليس JWT)
+        if request.path.startswith('/api/v1/attendance/agent/'):
+            return None
+
         # 3. التأكد من أن المستخدم مسجل الدخول أساساً (Authentication)
         if not request.user.is_authenticated:
             return JsonResponse(
