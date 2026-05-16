@@ -11,7 +11,7 @@ from apps.core.web_views._helpers import _user_accessible_branch_ids, general_ma
 def audit_history_dashboard(request):
     """جدول زمني مختصر لآخر التغييرات المسجّلة في simple_history."""
     source = (request.GET.get('source') or 'all').strip().lower()
-    if source not in ('all', 'employee', 'pending_action', 'payroll_run', 'user_profile'):
+    if source not in ('all', 'system', 'employee', 'pending_action', 'payroll_run', 'user_profile'):
         source = 'all'
     try:
         limit = int(request.GET.get('limit') or '60')

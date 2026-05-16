@@ -102,7 +102,20 @@ def edit_user(request, user_id):
         password = cd.get('password')
         if password:
             user.set_password(password)
-        
+            from apps.core.models import SystemAuditLog
+            from apps.core.services.system_audit import log_system_audit
+
+            log_system_audit(
+                request=request,
+                action=SystemAuditLog.Action.PASSWORD_CHANGE_ADMIN,
+                summary='تعيين كلمة مرور',
+                details=(
+                    f'قام «{request.user.get_username()}» بتعيين كلمة مرور جديدة للمستخدم «{user.get_username()}». '
+                    'تم تحديث hash كلمة المرور في جدول auth_user.'
+                ),
+                target_user=user,
+            )
+
         user.save()
         
         # تحديث البروفايل

@@ -93,6 +93,19 @@ def password_change_view(request):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
+            from apps.core.models import SystemAuditLog
+            from apps.core.services.system_audit import log_system_audit
+
+            log_system_audit(
+                request=request,
+                action=SystemAuditLog.Action.PASSWORD_CHANGE_SELF,
+                summary='تغيير كلمة المرور',
+                details=(
+                    f'المستخدم «{user.get_username()}» غيّر كلمة مرور حسابه عبر واجهة الويب. '
+                    'تم تحديث hash كلمة المرور في جدول auth_user (القيمة غير مخزنة بنص صريح).'
+                ),
+                target_user=user,
+            )
             messages.success(request, 'تم تغيير كلمة المرور بنجاح.')
             return redirect('web:dashboard')
         for errs in form.errors.values():

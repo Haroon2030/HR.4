@@ -318,6 +318,23 @@ class AuditFeedTests(TestCase):
         rows = collect_audit_events(branch_ids=None, source='all', limit=20)
         self.assertIsInstance(rows, list)
 
+    def test_password_change_appears_in_system_audit_feed(self):
+        from apps.core.models import SystemAuditLog
+        from apps.core.services.audit_feed import collect_audit_events
+        from apps.core.services.system_audit import log_system_audit
+
+        user = User.objects.create_user(username='pwd_audit', password='oldpass12')
+        log_system_audit(
+            request=None,
+            action=SystemAuditLog.Action.PASSWORD_CHANGE_SELF,
+            summary='تغيير كلمة المرور',
+            details='اختبار تسجيل تغيير كلمة المرور',
+            target_user=user,
+        )
+        rows = collect_audit_events(branch_ids=None, source='system', limit=10)
+        self.assertTrue(any(r.operation_ar == 'تغيير كلمة المرور' for r in rows))
+        self.assertTrue(any('اختبار' in r.details for r in rows))
+
 
 class AuditHistoryViewTests(TestCase):
     @classmethod

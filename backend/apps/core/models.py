@@ -641,6 +641,48 @@ class Notification(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# سجل عمليات النظام (أحداث لا يسجلها simple_history — مثل كلمة المرور)
+# ══════════════════════════════════════════════════════════════════════════════
+class SystemAuditLog(models.Model):
+    """عمليات تشغيلية/أمنية بصياغة عربية تقنية."""
+
+    class Action(models.TextChoices):
+        PASSWORD_CHANGE_SELF = 'password_change_self', 'تغيير كلمة المرور (ذاتي)'
+        PASSWORD_CHANGE_ADMIN = 'password_change_admin', 'تعيين كلمة مرور (مدير)'
+        USER_LOGIN = 'user_login', 'تسجيل دخول'
+
+    created_at = models.DateTimeField('الوقت', auto_now_add=True, db_index=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='system_audit_actions',
+        verbose_name='المنفّذ',
+    )
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='system_audit_targets',
+        verbose_name='المستخدم المستهدف',
+    )
+    action = models.CharField('رمز العملية', max_length=40, choices=Action.choices, db_index=True)
+    summary = models.CharField('العملية', max_length=255)
+    details = models.TextField('التفاصيل التقنية', blank=True)
+    ip_address = models.GenericIPAddressField('عنوان IP', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'سجل عملية نظام'
+        verbose_name_plural = 'سجل عمليات النظام'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.created_at:%Y-%m-%d %H:%M} — {self.summary}'
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # سجل النسخ الاحتياطي لقاعدة البيانات (لوحة الإدارة + الداشبورد)
 # ══════════════════════════════════════════════════════════════════════════════
 class DatabaseBackupLog(models.Model):
