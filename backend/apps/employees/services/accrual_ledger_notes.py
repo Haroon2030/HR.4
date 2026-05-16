@@ -131,6 +131,215 @@ def build_monthly_payroll_notes(
     )
 
 
+def _q(value: Decimal | float | int, places: int = 2) -> str:
+    return f'{Decimal(value):.{places}f}'
+
+
+def get_ledger_display_context(ledger) -> dict:
+    """هيكل منظم لعرض تفاصيل العملية في الواجهة."""
+    from apps.employees.models import EmployeeLedger
+
+    tx = ledger.transaction_type
+
+    if tx == EmployeeLedger.TransactionType.MONTHLY_PAYROLL:
+        ctx = _monthly_display_context(ledger)
+        if ctx:
+            return ctx
+
+    if tx == EmployeeLedger.TransactionType.INITIAL_BALANCE:
+        ctx = _initial_display_context(ledger)
+        if ctx:
+            return ctx
+
+    return {
+        'kind': 'plain',
+        'text': display_ledger_notes(ledger),
+    }
+
+
+def _monthly_display_context(ledger) -> dict | None:
+    from apps.employees.models import EmployeeLedger
+    from apps.payroll.models import PayrollLine
+
+    if not ledger.payroll_run_id:
+        return None
+
+    line = (
+        PayrollLine.objects.filter(
+            run_id=ledger.payroll_run_id,
+            employee_id=ledger.employee_id,
+        )
+        .only('gross_salary', 'daily_rate', 'month_days')
+        .first()
+    )
+    if not line:
+        return None
+
+    run = ledger.payroll_run
+    month_days = line.month_days or monthrange(run.period_year, run.period_month)[1]
+    prev = (
+        EmployeeLedger.objects.filter(
+            employee_id=ledger.employee_id,
+            date__lt=date(run.period_year, run.period_month, 1),
+        )
+        .order_by('-date', '-created_at')
+        .first()
+    )
+    prev_leave_days = prev.cumulative_leave_days if prev else Decimal('0')
+    prev_leave_amt = prev.cumulative_leave_amount if prev else Decimal('0')
+    prev_eosb = prev.cumulative_eosb_amount if prev else Decimal('0')
+
+    calc = compute_monthly_ledger_amounts(
+        gross_salary=line.gross_salary,
+        daily_rate=line.daily_rate,
+        hire_date=ledger.employee.hire_date,
+        period_year=run.period_year,
+        period_month=run.period_month,
+    )
+    eosb_rule = '≤5 سنوات خدمة' if calc['service_years'] <= 5 else '>5 سنوات خدمة'
+    eosb_divisor = '24' if calc['service_years'] <= 5 else '12'
+
+    return {
+        'kind': 'structured',
+        'operation': 'مخصص شهري — إقفال مسير رواتب',
+        'period': f'{run.period_month}/{run.period_year}',
+        'meta': [
+            {'label': 'مسير الرواتب', 'value': f'#{ledger.payroll_run_id}', 'mono': True},
+            {'label': 'تاريخ القيد', 'value': calc['month_end'].strftime('%Y-%m-%d'), 'mono': True},
+            {'label': 'أيام الشهر', 'value': str(month_days), 'mono': True},
+        ],
+        'sections': [
+            {
+                'id': 'leave',
+                'title': 'استحقاق الإجازة السنوية',
+                'hint': '21 يوم في السنة',
+                'theme': 'emerald',
+                'rows': [
+                    {'label': 'المعدل الشهري', 'formula': '21 ÷ 12', 'result': f'{_q(MONTHLY_LEAVE_ACCRUAL_DAYS)} يوم'},
+                    {'label': 'الراتب الإجمالي (لقطة المسير)', 'formula': None, 'result': f'{_q(calc["gross"])} ر.س'},
+                    {'label': 'أجر اليوم', 'formula': f'{_q(calc["gross"])} ÷ {month_days}', 'result': f'{_q(calc["daily_rate"])} ر.س'},
+                    {
+                        'label': 'قيمة مخصص هذا الشهر',
+                        'formula': f'{_q(ledger.leave_days_change, 4)} × {_q(calc["daily_rate"])}',
+                        'result': f'{_q(ledger.leave_amount_change)} ر.س',
+                        'highlight': True,
+                    },
+                ],
+                'balance': {
+                    'label': 'رصيد أيام الإجازة',
+                    'before': _q(prev_leave_days, 4),
+                    'change': f'+{_q(ledger.leave_days_change, 4)}',
+                    'after': _q(ledger.cumulative_leave_days, 4),
+                    'unit': 'يوم',
+                },
+                'balance_money': {
+                    'label': 'رصيد قيمة الإجازات',
+                    'before': _q(prev_leave_amt),
+                    'change': f'+{_q(ledger.leave_amount_change)}',
+                    'after': _q(ledger.cumulative_leave_amount),
+                    'unit': 'ر.س',
+                },
+            },
+            {
+                'id': 'eosb',
+                'title': 'مكافأة نهاية الخدمة',
+                'hint': 'استحقاق شهري',
+                'theme': 'amber',
+                'rows': [
+                    {
+                        'label': 'مدة الخدمة عند نهاية الشهر',
+                        'formula': None,
+                        'result': f'{calc["service_days"]} يوم ({calc["service_years"]} سنة)',
+                    },
+                    {
+                        'label': eosb_rule,
+                        'formula': f'{_q(calc["gross"])} ÷ {eosb_divisor}',
+                        'result': f'{_q(ledger.eosb_amount_change)} ر.س/شهر',
+                    },
+                    {
+                        'label': 'مخصص هذا الشهر',
+                        'formula': None,
+                        'result': f'{_q(ledger.eosb_amount_change)} ر.س',
+                        'highlight': True,
+                    },
+                ],
+                'balance': {
+                    'label': 'رصيد المكافأة التراكمي',
+                    'before': _q(prev_eosb),
+                    'change': f'+{_q(ledger.eosb_amount_change)}',
+                    'after': _q(ledger.cumulative_eosb_amount),
+                    'unit': 'ر.س',
+                },
+            },
+        ],
+    }
+
+
+def _initial_display_context(ledger) -> dict | None:
+    from apps.employees.models import EmployeeLedger
+
+    if ledger.transaction_type != EmployeeLedger.TransactionType.INITIAL_BALANCE:
+        return None
+
+    emp = ledger.employee
+    if not emp.hire_date:
+        return None
+
+    as_of = ledger.date
+    service_days = (as_of - emp.hire_date).days
+    service_years = round(service_days / 365.25, 4)
+    total_salary = Decimal(emp.total_salary or 0)
+    daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
+
+    return {
+        'kind': 'structured',
+        'operation': 'رصيد افتتاحي',
+        'period': f'حتى {as_of.strftime("%Y-%m-%d")}',
+        'meta': [
+            {'label': 'تاريخ المباشرة', 'value': emp.hire_date.strftime('%Y-%m-%d'), 'mono': True},
+            {'label': 'مدة الخدمة', 'value': f'{service_days} يوم ({service_years} سنة)', 'mono': True},
+        ],
+        'sections': [
+            {
+                'id': 'leave',
+                'title': 'رصيد الإجازات المستحق',
+                'hint': 'من تاريخ المباشرة',
+                'theme': 'emerald',
+                'rows': [
+                    {'label': 'الراتب الإجمالي', 'formula': None, 'result': f'{_q(total_salary)} ر.س'},
+                    {'label': 'أجر اليوم', 'formula': f'{_q(total_salary)} ÷ 30', 'result': f'{_q(daily_wage)} ر.س'},
+                    {
+                        'label': 'أيام مستحقة',
+                        'formula': f'{service_days} × 21 ÷ 365.25',
+                        'result': f'{_q(ledger.leave_days_change)} يوم',
+                        'highlight': True,
+                    },
+                    {
+                        'label': 'قيمة الإجازات',
+                        'formula': f'{_q(ledger.leave_days_change)} × {_q(daily_wage)}',
+                        'result': f'{_q(ledger.leave_amount_change)} ر.س',
+                        'highlight': True,
+                    },
+                ],
+            },
+            {
+                'id': 'eosb',
+                'title': 'مكافأة نهاية الخدمة',
+                'hint': 'تراكمي حتى تاريخ الرصيد',
+                'theme': 'amber',
+                'rows': [
+                    {
+                        'label': 'إجمالي الاستحقاق التراكمي',
+                        'formula': (ledger.notes or '').split('\n')[-1][:80] if ledger.notes else None,
+                        'result': f'{_q(ledger.eosb_amount_change)} ر.س',
+                        'highlight': True,
+                    },
+                ],
+            },
+        ],
+    }
+
+
 def display_ledger_notes(ledger) -> str:
     """نص العرض في الواجهة — يُثرى تلقائياً للسجلات القديمة ذات الملاحظات القصيرة."""
     raw = (ledger.notes or '').strip()

@@ -103,6 +103,37 @@ class AccrualLedgerNotesTests(TestCase):
         self.assertIn('4000 ÷ 24', notes)
         self.assertIn('مسير #99', notes)
 
+    def test_structured_display_context_monthly(self):
+        from apps.employees.models import EmployeeLedger
+        from apps.employees.services.accrual_ledger_notes import get_ledger_display_context
+        from apps.payroll.models import PayrollRun, PayrollLine
+        from apps.core.models import Branch, Company
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', code='B1', company=company)
+        emp = Employee.objects.create(name='موظف', basic_salary=Decimal('4000'), hire_date=date(2026, 1, 1))
+        run = PayrollRun.objects.create(branch=branch, period_year=2026, period_month=6, status='locked')
+        PayrollLine.objects.create(
+            run=run, employee=emp, gross_salary=Decimal('4000'),
+            daily_rate=Decimal('133.33'), month_days=30,
+        )
+        ledger = EmployeeLedger.objects.create(
+            employee=emp,
+            transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
+            date=date(2026, 6, 30),
+            leave_days_change=Decimal('1.75'),
+            leave_amount_change=Decimal('233.33'),
+            eosb_amount_change=Decimal('166.67'),
+            cumulative_leave_days=Decimal('3.47'),
+            cumulative_leave_amount=Decimal('462.66'),
+            cumulative_eosb_amount=Decimal('330.87'),
+            payroll_run=run,
+        )
+        ctx = get_ledger_display_context(ledger)
+        self.assertEqual(ctx['kind'], 'structured')
+        self.assertEqual(len(ctx['sections']), 2)
+        self.assertEqual(ctx['sections'][0]['id'], 'leave')
+
 
 class EmployeeLoanTests(TestCase):
     def setUp(self):

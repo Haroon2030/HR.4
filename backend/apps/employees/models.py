@@ -970,4 +970,10 @@ class EmployeeLedger(BaseModel):
         from apps.employees.services.accrual_ledger_notes import display_ledger_notes
         return display_ledger_notes(self)
 
+    @property
+    def calculation_display_context(self) -> dict:
+        """هيكل منظم لنافذة تفاصيل العملية الحسابية."""
+        from apps.employees.services.accrual_ledger_notes import get_ledger_display_context
+        return get_ledger_display_context(self)
+
 
