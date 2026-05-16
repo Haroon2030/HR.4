@@ -19,7 +19,8 @@ environ.Env.read_env(BASE_DIR / '.env')
 # ══════════════════════════════════════════════════════════════════════════════
 
 # المفتاح السري — يُقرأ من .env (إجباري)
-SECRET_KEY = env('SECRET_KEY')
+# إن احتوى $ ضعه بين علامتي اقتباس مفردة '...' حتى لا يقطعه Docker/Compose
+SECRET_KEY = env('SECRET_KEY').strip().strip('"').strip("'")
 
 # وضع التصحيح — يجب أن يكون False في الإنتاج دائماً
 DEBUG = env.bool('DEBUG', default=False)
@@ -107,7 +108,8 @@ def _validate_production_secret_key(key: str) -> None:
     # حد أدنى 32 حرفاً (متوافق مع Django) — يُفضّل 50+ في الإنتاج الجديد
     if len(key) < 32:
         raise ImproperlyConfigured(
-            f'SECRET_KEY قصير جداً ({len(key)} حرفاً) — 32 حرفاً كحد أدنى، و50+ مُوصى به. {_gen_hint}'
+            f'SECRET_KEY قصير جداً ({len(key)} حرفاً) — غالباً بسبب رمز $ في .env بدون علامات اقتباس. '
+            f'استخدم مفتاحاً بدون $ أو ضعه بين \'...\' . 32 حرفاً كحد أدنى. {_gen_hint}'
         )
     if len(key) < 50 and len(set(key)) < 5:
         raise ImproperlyConfigured(
