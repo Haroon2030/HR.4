@@ -8,7 +8,7 @@ from datetime import datetime
 
 from django.urls import NoReverseMatch, reverse
 
-from apps.core.services.audit_diff import summarize_history_changes
+from apps.core.services.audit_diff import AuditChangeLine, summarize_history_changes
 
 HISTORY_VERB_AR = {'+': 'إنشاء', '~': 'تعديل', '-': 'حذف'}
 
@@ -23,6 +23,7 @@ class AuditEvent:
     actor: str
     summary: str
     details: str
+    detail_lines: tuple[AuditChangeLine, ...]
     link: str
 
 
@@ -55,7 +56,7 @@ def _history_event(
     link: str,
 ) -> AuditEvent:
     verb = HISTORY_VERB_AR.get(h.history_type, h.history_type or '—')
-    operation_ar, details = summarize_history_changes(h)
+    operation_ar, details, detail_lines = summarize_history_changes(h, entity_label=source_label)
     return AuditEvent(
         when=h.history_date,
         source_key=source_key,
@@ -65,6 +66,7 @@ def _history_event(
         actor=_actor_name(h),
         summary=object_summary,
         details=details,
+        detail_lines=tuple(detail_lines),
         link=link,
     )
 
@@ -176,6 +178,9 @@ def _system_audit_events(*, branch_ids: set[int] | None, take: int) -> list[Audi
     for row in qs[:take]:
         target = row.target_user
         uname = target.get_username() if target else '—'
+        sys_lines: tuple[AuditChangeLine, ...] = ()
+        if row.details:
+            sys_lines = (AuditChangeLine(label='التفاصيل', old='—', new=row.details),)
         out.append(
             AuditEvent(
                 when=row.created_at,
@@ -186,6 +191,7 @@ def _system_audit_events(*, branch_ids: set[int] | None, take: int) -> list[Audi
                 actor=_actor_from_user(row.actor),
                 summary=f'المستخدم: {uname}' if target else row.summary,
                 details=row.details,
+                detail_lines=sys_lines,
                 link=_safe_reverse('web:edit_user', user_id=target.pk) if target else '',
             )
         )

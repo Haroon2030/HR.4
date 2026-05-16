@@ -71,7 +71,24 @@
                         </td>
                         <td class="px-3 py-2 text-slate-700 whitespace-nowrap">{{ ev.actor }}</td>
                         <td class="px-3 py-2 text-slate-800">{{ ev.summary }}</td>
-                        <td class="px-3 py-2 text-slate-600 text-[11px] md:text-xs leading-relaxed font-mono break-words">{{ ev.details }}</td>
+                        <td class="px-3 py-2 text-slate-600 text-[11px] md:text-xs leading-relaxed max-w-md">
+                            {% if ev.detail_lines %}
+                            <ul class="space-y-2">
+                                {% for line in ev.detail_lines %}
+                                <li class="border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                                    <span class="block font-bold text-slate-700 text-[11px] mb-0.5">{{ line.label }}</span>
+                                    <span class="font-mono text-[10px] break-all" dir="ltr">
+                                        <span class="text-rose-600/90">{{ line.old }}</span>
+                                        <span class="text-slate-400 mx-1">→</span>
+                                        <span class="text-emerald-700">{{ line.new }}</span>
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span class="font-mono break-words">{{ ev.details }}</span>
+                            {% endif %}
+                        </td>
                         <td class="px-3 py-2 text-left whitespace-nowrap">
                             {% if ev.link %}
                             <a href="{{ ev.link }}" class="text-primary-600 hover:text-primary-800 text-xs font-semibold">فتح</a>

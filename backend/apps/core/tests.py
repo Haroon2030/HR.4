@@ -311,6 +311,32 @@ class AtomicityTests(_BaseExecutorTests):
             execute_pending_action(action, self.approver)
 
 
+class AuditDiffTests(TestCase):
+    def test_work_schedule_summary_not_raw_json(self):
+        from apps.core.services.audit_diff import _summarize_work_schedule
+
+        raw = '{"version": 3, "boxes": [{"id": "b1", "year": 2026, "month": 5}, {"year": 2026, "month": 6}]}'
+        s = _summarize_work_schedule(raw)
+        self.assertIn('2 شهر', s)
+        self.assertIn('5/2026', s)
+        self.assertNotIn('"boxes"', s)
+
+    def test_file_field_shows_basename_only(self):
+        from apps.core.services.audit_diff import _format_value
+
+        old = 'employees/id/old.png'
+        new = 'HR/employees/id/2026/new_abc.png'
+        self.assertEqual(_format_value('id_document', old), 'old.png')
+        self.assertEqual(_format_value('id_document', new), 'new_abc.png')
+
+    def test_model_label_not_historical_prefix(self):
+        from apps.core.services.audit_diff import _model_label_ar
+        from apps.employees.models import Employee
+
+        Hist = Employee.history.model
+        self.assertEqual(_model_label_ar(Hist()), 'موظف')
+
+
 class AuditFeedTests(TestCase):
     def test_collect_returns_list(self):
         from apps.core.services.audit_feed import collect_audit_events
