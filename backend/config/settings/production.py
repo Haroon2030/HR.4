@@ -126,8 +126,46 @@ if DEBUG:
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
-# HTTPS — فعّل USE_HTTPS=true في .env عند TLS على البروكسي (مُوصى به دائماً للإنتاج)
-_USE_HTTPS = env.bool('USE_HTTPS', default=True)
+# HTTPS — إن كانت CSRF_TRUSTED_ORIGINS كلها http:// (مثل IP:8082 بدون شهادة) يُفعَّل وضع HTTP تلقائياً
+import os
+
+_csrf_list = list(CSRF_TRUSTED_ORIGINS or [])
+_http_csrf = [o for o in _csrf_list if o.startswith('http://')]
+_https_csrf = [o for o in _csrf_list if o.startswith('https://')]
+_other_csrf = [o for o in _csrf_list if o and not o.startswith(('http://', 'https://'))]
+
+if _other_csrf:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        f'CSRF_TRUSTED_ORIGINS يجب أن تبدأ بـ http:// أو https://: {_other_csrf!r}'
+    )
+if _http_csrf and _https_csrf:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        'لا تخلط بين http:// و https:// في CSRF_TRUSTED_ORIGINS — اختر وضعاً واحداً.'
+    )
+
+_use_https_raw = os.environ.get('USE_HTTPS', '').strip().lower()
+if _http_csrf and not _https_csrf:
+    # نشر على IP/منفذ بدون TLS — يتغلّب على USE_HTTPS=true الخاطئ في .env
+    if _use_https_raw in ('true', '1', 'yes'):
+        import sys
+
+        print(
+            '[production] USE_HTTPS=true لكن CSRF_TRUSTED_ORIGINS=http فقط → تفعيل وضع HTTP '
+            '(عطّل SSL redirect). يُفضّل USE_HTTPS=false في .env.',
+            file=sys.stderr,
+        )
+    _USE_HTTPS = False
+elif _use_https_raw in ('false', '0', 'no'):
+    _USE_HTTPS = False
+elif _use_https_raw in ('true', '1', 'yes'):
+    _USE_HTTPS = True
+else:
+    _USE_HTTPS = True
+
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=_USE_HTTPS)
 SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=_USE_HTTPS)
 CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=_USE_HTTPS)
@@ -140,8 +178,10 @@ if _USE_HTTPS or SECURE_SSL_REDIRECT:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
     SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', default=False)
     SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
-    # إزالة middleware الذي يُلغي COOP — مهم فقط مع HTTPS
     MIDDLEWARE = [m for m in MIDDLEWARE if m != 'config.middleware.DisableCOOPMiddleware']
+else:
+    # HTTP فقط — إبقاء DisableCOOPMiddleware لتجنب تحذيرات المتصفح على HTTP
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -149,15 +189,22 @@ if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['localhost', '127.0.0.1']:
     raise ImproperlyConfigured(
         'حدّد ALLOWED_HOSTS في .env بنطاق الإنتاج الفعلي (مثال: hr.example.com,72.61.107.230).'
     )
+if not CSRF_TRUSTED_ORIGINS:
+    raise ImproperlyConfigured(
+        'حدّد CSRF_TRUSTED_ORIGINS في .env (مثال: http://72.61.107.230:8082 أو https://your-domain.com).'
+    )
 if _USE_HTTPS:
-    if not CSRF_TRUSTED_ORIGINS:
-        raise ImproperlyConfigured(
-            'حدّد CSRF_TRUSTED_ORIGINS بعناوين https:// عند USE_HTTPS=true.'
-        )
     for origin in CSRF_TRUSTED_ORIGINS:
         if not origin.startswith('https://'):
             raise ImproperlyConfigured(
-                f'CSRF_TRUSTED_ORIGINS يجب أن تبدأ بـ https:// في الإنتاج: {origin!r}'
+                f'عند USE_HTTPS=true يجب أن تبدأ CSRF_TRUSTED_ORIGINS بـ https://: {origin!r} '
+                f'أو اضبط USE_HTTPS=false للنشر على HTTP.'
+            )
+else:
+    for origin in CSRF_TRUSTED_ORIGINS:
+        if not origin.startswith('http://'):
+            raise ImproperlyConfigured(
+                f'في وضع HTTP يجب أن تبدأ CSRF_TRUSTED_ORIGINS بـ http://: {origin!r}'
             )
 
 # حماية المتصفح
