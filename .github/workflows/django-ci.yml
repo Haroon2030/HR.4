@@ -1,9 +1,16 @@
-# عند كل push إلى main: فحص Django → migrate → collectstatic → اختبارات → ثم webhook النشر (إن وُجد السرّ).
-# على السيرفر: docker/entrypoint.sh يُنفّذ migrate + collectstatic + sync صلاحيات تلقائياً عند إعادة تشغيل الحاوية.
+# ═══════════════════════════════════════════════════════════════════════════════
+# عند كل push إلى main/master يُنفَّذ بالترتيب:
+#   1) check + check --deploy (إنتاج) + OpenAPI
+#   2) migrate + collectstatic + مزامنة صلاحيات (نفس entrypoint)
+#   3) كل الاختبارات
+#   4) استدعاء webhook إعادة بناء/نشر السيرفر (إلزامي على main)
+#
+# على السيرفر (docker/entrypoint.sh): migrate → sync صلاحيات → collectstatic → Gunicorn
 #
 # GitHub → Settings → Secrets → Actions:
-#   DEPLOY_WEBHOOK_URL   رابط Redeploy من Coolify/CapRover/…
-#   DEPLOY_WEBHOOK_AUTH  (اختياري) مثل: Bearer YOUR_TOKEN
+#   DEPLOY_WEBHOOK_URL   (إلزامي للنشر التلقائي) رابط Redeploy من Coolify/Dokploy/…
+#   DEPLOY_WEBHOOK_AUTH  (اختياري) Bearer TOKEN
+# ═══════════════════════════════════════════════════════════════════════════════
 name: Django CI & Deploy
 
 on:
@@ -11,23 +18,28 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+  DJANGO_SETTINGS_MODULE: config.settings
+  PYTHONUNBUFFERED: '1'
 
 defaults:
   run:
     working-directory: backend
 
 jobs:
-  test:
+  ci:
+    name: فحص · بناء · اختبارات
     runs-on: ubuntu-latest
     env:
       DJANGO_ENV: development
-      DJANGO_SETTINGS_MODULE: config.settings
-      PYTHONUNBUFFERED: '1'
-      DATABASE_URL: 'sqlite:////${{ github.workspace }}/backend/ci.sqlite3'
+      DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci.sqlite3
 
     steps:
       - uses: actions/checkout@v4
@@ -35,61 +47,97 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Django system check
+      # ── فحوصات Django ─────────────────────────────────────────────────────
+      - name: "[1/9] Django system check"
         run: python manage.py check
 
-      - name: Production deploy check (security)
+      - name: "[2/9] Production security check (check --deploy)"
         env:
           DJANGO_ENV: production
-          SECRET_KEY: 'ci-production-check-secret-key-with-enough-length-and-variety-xyz'
+          SECRET_KEY: ci-production-check-secret-key-with-enough-length-and-variety-xyz
           DEBUG: 'False'
-          ALLOWED_HOSTS: 'example.com,testserver'
-          CSRF_TRUSTED_ORIGINS: 'https://example.com'
+          ALLOWED_HOSTS: example.com,testserver
+          CSRF_TRUSTED_ORIGINS: https://example.com
           USE_HTTPS: 'true'
-          DATABASE_URL: 'sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3'
+          DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3
           USE_R2: 'False'
         run: python manage.py check --deploy
 
-      - name: Validate OpenAPI schema
+      - name: "[3/9] Validate OpenAPI schema"
         run: python manage.py spectacular --validate
 
-      - name: Migrate (SQLite CI)
+      # ── نفس خطوات entrypoint (محاكاة النشر) ───────────────────────────────
+      - name: "[4/9] Migrate database"
         run: python manage.py migrate --noinput
 
-      - name: Collect static (deploy smoke)
+      - name: "[5/9] Collect static files"
         run: python manage.py collectstatic --noinput
 
-      - name: Run tests
+      - name: "[6/9] Sync permission registry"
+        run: |
+          python manage.py shell -c "
+          import apps.core.web_views  # noqa: F401
+          from apps.core.permissions_registry import sync_to_db
+          m, p, n = sync_to_db(verbose=False)
+          print(f'[permissions] CI sync: {m} modules, {p} perms ({n} new)')
+          "
+
+      - name: "[7/9] Production migrate smoke"
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: ci-production-check-secret-key-with-enough-length-and-variety-xyz
+          DEBUG: 'False'
+          ALLOWED_HOSTS: example.com
+          CSRF_TRUSTED_ORIGINS: https://example.com
+          USE_HTTPS: 'true'
+          DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci-prod-migrate.sqlite3
+          USE_R2: 'False'
+        run: python manage.py migrate --noinput
+
+      # ── اختبارات ─────────────────────────────────────────────────────────
+      - name: "[8/9] Run test suite"
         run: python manage.py test --verbosity 2
 
+      - name: "[9/9] CI summary"
+        run: echo "✅ All CI steps passed — ready to deploy."
+
   deploy:
-    name: Trigger production deploy
-    needs: test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    name: نشر الإنتاج (webhook)
+    needs: ci
+    if: |
+      always() &&
+      needs.ci.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
-      - name: POST deploy webhook
+      - name: POST deploy webhook (rebuild + entrypoint migrate on server)
         env:
           DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
           DEPLOY_WEBHOOK_AUTH: ${{ secrets.DEPLOY_WEBHOOK_AUTH }}
         run: |
-          set -e
+          set -euo pipefail
           if [ -z "${DEPLOY_WEBHOOK_URL:-}" ]; then
-            echo "DEPLOY_WEBHOOK_URL غير مُعرّف — تخطي النشر التلقائي (أضف السرّ في GitHub Actions)."
-            exit 0
+            echo "::error::DEPLOY_WEBHOOK_URL غير مُعرّف في GitHub → Settings → Secrets → Actions"
+            echo "أضف رابط Redeploy من لوحة الاستضافة لتفعيل النشر التلقائي عند كل push."
+            exit 1
           fi
-          echo "==> CI نجح — استدعاء webhook النشر..."
+          echo "==> CI نجح — استدعاء webhook النشر (migrate/collectstatic تلقائياً في entrypoint)..."
           if [ -n "${DEPLOY_WEBHOOK_AUTH:-}" ]; then
-            curl -fsS --connect-timeout 30 --max-time 300 -X POST "$DEPLOY_WEBHOOK_URL" \
-              -H "Authorization: ${DEPLOY_WEBHOOK_AUTH}"
+            curl -fsS --connect-timeout 30 --max-time 600 -X POST "$DEPLOY_WEBHOOK_URL" \
+              -H "Authorization: ${DEPLOY_WEBHOOK_AUTH}" \
+              -H "Content-Type: application/json" \
+              -d '{"source":"github-actions","event":"'"${GITHUB_EVENT_NAME}"'","sha":"'"${GITHUB_SHA}"'"}'
           else
-            curl -fsS --connect-timeout 30 --max-time 300 -X POST "$DEPLOY_WEBHOOK_URL"
+            curl -fsS --connect-timeout 30 --max-time 600 -X POST "$DEPLOY_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d '{"source":"github-actions","event":"'"${GITHUB_EVENT_NAME}"'","sha":"'"${GITHUB_SHA}"'"}'
           fi
-          echo "==> تم إرسال طلب النشر."
+          echo "==> تم إرسال طلب النشر بنجاح."
