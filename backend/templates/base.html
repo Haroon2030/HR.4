@@ -217,10 +217,10 @@
         style="display: none;"
     ></div>
 
-    <!-- Main Layout -->
-    <div class="flex flex-col h-screen overflow-hidden">
+    <!-- Main Layout: لا نضع overflow-hidden هنا حتى لا تُقصّ قوائم الرأس (إشعارات / حساب) -->
+    <div class="flex flex-col h-screen min-h-0">
         <!-- Header -->
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 relative z-40 overflow-visible shrink-0">
             <div class="flex items-center gap-2 md:gap-4">
                 <!-- Desktop Toggle -->
                 <button @click="sidebarOpen = !sidebarOpen" class="hidden md:block p-2 hover:bg-slate-100 rounded-lg transition-colors">
@@ -267,7 +267,7 @@
                 </div>
 
                 <!-- قائمة المستخدم: تغيير كلمة المرور + خروج -->
-                <div class="relative" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
+                <div class="relative z-50" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
                     <button type="button"
                             @click="userMenuOpen = !userMenuOpen; if(userMenuOpen){ setTimeout(() => lucide.createIcons(), 50); }"
                             class="p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -277,15 +277,15 @@
                         <i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5 text-slate-600"></i>
                     </button>
                     <div x-show="userMenuOpen" x-cloak x-transition
-                         class="absolute top-full mt-2 end-0 w-52 bg-white rounded-xl shadow-xl border border-slate-200 z-50 py-1 overflow-hidden">
+                         class="absolute top-full mt-2 end-0 min-w-[14rem] w-max max-w-[min(18rem,calc(100vw-1.5rem))] bg-white rounded-xl shadow-xl border border-slate-200 z-[100] py-1">
                         <a href="{% url 'web:auth:password_change' %}"
-                           class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap">
                             <i data-lucide="key" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
                             <span>تغيير كلمة المرور</span>
                         </a>
                         <div class="border-t border-slate-100"></div>
                         <a href="{% url 'web:auth:logout' %}"
-                           class="flex items-center gap-2 px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50 transition-colors">
+                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50 transition-colors whitespace-nowrap">
                             <i data-lucide="log-out" class="w-4 h-4 flex-shrink-0"></i>
                             <span>تسجيل الخروج</span>
                         </a>
