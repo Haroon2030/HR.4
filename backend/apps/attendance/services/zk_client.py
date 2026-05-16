@@ -72,14 +72,21 @@ def _zk_connect_kwargs(device: BiometricDevice, *, timeout: int | None = None) -
     }
 
 
-def format_zk_error(exc: Exception) -> str:
+def format_zk_error(exc: Exception, *, comm_key: int | None = None) -> str:
     text = str(exc).strip()
     lower = text.lower()
     if 'unauthenticated' in lower or 'auth' in lower:
+        key_hint = (
+            f' القيمة الحالية في النظام: {int(comm_key)}.'
+            if comm_key is not None
+            else ''
+        )
         return (
-            'رفض الجهاز الاتصال (Comm Key غير صحيح). '
-            'من الجهاز: القائمة → Comm → PC Connection وتأكد أن كلمة الاتصال = '
-            'نفس قيمة Comm Key في النظام (غالباً 0).'
+            'رفض الجهاز الاتصال (Comm Key غير صحيح).'
+            f'{key_hint} '
+            'من الجهاز: القائمة → Comm → PC Connection → Comm Key — '
+            'يجب أن تطابق حقل Comm Key في «إعداد الأجهزة» (غالباً 0). '
+            'أو على PC الفرع: python manage.py probe_biometric_comm_key --device 1'
         )
     if 'timed out' in lower or 'timeout' in lower:
         return f'انتهت مهلة الاتصال ({text}). تأكد أن الكمبيوتر على نفس شبكة الجهاز.'
@@ -185,7 +192,7 @@ def fetch_device_snapshot(
         firmware = str(getattr(conn, 'get_firmware_version', lambda: '')() or '')
         return DeviceSnapshot(users=users, attendance=attendance, serial_number=serial, firmware=firmware), None
     except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError) as exc:
-        return None, format_zk_error(exc)
+        return None, format_zk_error(exc, comm_key=int(device.comm_key or 0))
     finally:
         if conn:
             try:
@@ -228,7 +235,10 @@ def probe_device(
             attendance_count=len(conn.get_attendance() or []),
         )
     except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError) as exc:
-        return DeviceProbeResult(ok=False, message=format_zk_error(exc))
+        return DeviceProbeResult(
+            ok=False,
+            message=format_zk_error(exc, comm_key=int(device.comm_key or 0)),
+        )
     finally:
         if conn:
             try:
@@ -273,7 +283,7 @@ def fetch_device_users(
             )
         return rows, None
     except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError) as exc:
-        return [], format_zk_error(exc)
+        return [], format_zk_error(exc, comm_key=int(device.comm_key or 0))
     finally:
         if conn:
             try:
@@ -379,7 +389,7 @@ def fetch_attendance(
             conn.clear_attendance()
         return rows, None
     except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError) as exc:
-        return [], str(exc)
+        return [], format_zk_error(exc, comm_key=int(device.comm_key or 0))
     finally:
         if conn:
             try:

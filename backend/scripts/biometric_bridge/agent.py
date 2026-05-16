@@ -63,12 +63,13 @@ def load_config(path: Path) -> Config:
     data: dict[str, str] = {}
     if not path.exists():
         raise FileNotFoundError(f'ملف الإعداد غير موجود: {path}')
-    for line in path.read_text(encoding='utf-8').splitlines():
+    # utf-8-sig: Notepad على Windows يضيف BOM فيُفسد قراءة SERVER_URL
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
         line = line.strip()
         if not line or line.startswith('#') or '=' not in line:
             continue
         key, val = line.split('=', 1)
-        data[key.strip()] = val.strip()
+        data[key.strip().lstrip('\ufeff')] = val.strip()
 
     def req(key: str) -> str:
         if key not in data or not data[key]:
@@ -167,7 +168,13 @@ def push_to_server(cfg: Config, punches: list[dict], users: list[dict]) -> dict:
     except Exception:
         body = {'message': resp.text[:500]}
     if resp.status_code >= 400:
-        raise RuntimeError(f'HTTP {resp.status_code}: {body.get("message", body)}')
+        hint = ''
+        if resp.status_code in (401, 403):
+            hint = (
+                ' — تحقق: AGENT_API_KEY في config.env = ATTENDANCE_AGENT_API_KEY في Dokploy '
+                '(نفس الحروف، بدون مسافات).'
+            )
+        raise RuntimeError(f'HTTP {resp.status_code}: {body.get("message", body)}{hint}')
     return body
 
 
