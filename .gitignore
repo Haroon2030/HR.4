@@ -33,6 +33,7 @@ backend/static/rest_framework/
 .env.*
 *.env
 !.env.example
+!**/config.example.env
 
 # IDE
 .vscode/
