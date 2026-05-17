@@ -304,6 +304,58 @@ def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool
     return ok == len(devices)
 
 
+def fetch_devices_from_server(settings: AgentSettings) -> list[DeviceTarget]:
+    """جلب قائمة الأجهزة المسجّلة في HR (بعد إضافتها من لوحة البصمة)."""
+    url = f'{settings.server_url}/api/v1/attendance/agent/devices/'
+    resp = requests.get(
+        url,
+        headers={'X-Attendance-Agent-Key': settings.api_key},
+        timeout=60,
+    )
+    try:
+        body = resp.json()
+    except Exception:
+        body = {}
+    if resp.status_code >= 400:
+        msg = body.get('message', body.get('detail', resp.text[:300]))
+        raise RuntimeError(f'فشل جلب الأجهزة HTTP {resp.status_code}: {msg}')
+    rows = body.get('data') or []
+    devices: list[DeviceTarget] = []
+    for row in rows:
+        devices.append(
+            DeviceTarget(
+                device_id=int(row['id']),
+                device_ip=str(row['ip_address']).strip(),
+                device_port=int(row.get('port') or 4370),
+                comm_key=int(row.get('comm_key') or 0),
+                label=(row.get('name') or '').strip(),
+            )
+        )
+    return devices
+
+
+def write_devices_list(path: Path, devices: list[DeviceTarget]) -> None:
+    lines = [
+        '# أُنشئ تلقائياً من السيرفر — device_id ip port comm_key اسم',
+        '# يجب أن يصل هذا PC لكل IP (Tailscale/VPN لكل فرع)',
+        '',
+    ]
+    for d in devices:
+        label = d.label.replace('\n', ' ')
+        lines.append(f'{d.device_id}  {d.device_ip}  {d.device_port}  {d.comm_key}  {label}'.rstrip())
+    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
+def sync_devices_list_file(config_path: Path, settings: AgentSettings) -> list[DeviceTarget]:
+    devices = fetch_devices_from_server(settings)
+    if not devices:
+        raise ValueError('لا أجهزة نشطة على السيرفر — أضفها من: البصمة → أجهزة البصمة')
+    list_path = config_path.parent / 'devices.list'
+    write_devices_list(list_path, devices)
+    LOG.info('تم حفظ %s جهاز في %s', len(devices), list_path)
+    return devices
+
+
 def probe_devices(settings: AgentSettings, devices: list[DeviceTarget]) -> int:
     """اختبار اتصال TCP + ZK لكل جهاز."""
     import socket
@@ -343,6 +395,11 @@ def main() -> int:
     parser.add_argument('--config', default=str(Path(__file__).parent / 'config.env'))
     parser.add_argument('--once', action='store_true', help='دورة واحدة ثم خروج')
     parser.add_argument('--probe', action='store_true', help='فحص اتصال كل الأجهزة فقط')
+    parser.add_argument(
+        '--sync-list',
+        action='store_true',
+        help='جلب الأجهزة من السيرفر وحفظ devices.list',
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -353,6 +410,13 @@ def main() -> int:
 
     config_path = Path(args.config)
     settings = load_settings(config_path)
+
+    if args.sync_list:
+        devices = sync_devices_list_file(config_path, settings)
+        for d in devices:
+            LOG.info('  • id=%s %s:%s comm_key=%s %s', d.device_id, d.device_ip, d.device_port, d.comm_key, d.label)
+        return 0
+
     devices = load_devices(config_path, settings)
 
     LOG.info('السيرفر: %s | أجهزة: %s', settings.server_url, len(devices))
