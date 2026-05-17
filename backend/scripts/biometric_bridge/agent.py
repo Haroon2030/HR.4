@@ -295,12 +295,33 @@ def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
     return True
 
 
+def filter_devices(
+    devices: list[DeviceTarget],
+    *,
+    device_id: int | None = None,
+) -> list[DeviceTarget]:
+    if device_id is None:
+        return devices
+    matched = [d for d in devices if d.device_id == device_id]
+    if not matched:
+        ids = ', '.join(str(d.device_id) for d in devices)
+        raise ValueError(f'جهاز id={device_id} غير موجود في devices.list (المتاح: {ids})')
+    return matched
+
+
 def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool:
     ok = 0
     for device in devices:
         if run_device_cycle(settings, device):
             ok += 1
     LOG.info('النتيجة: %s/%s جهاز نجح', ok, len(devices))
+    if ok == 0:
+        return False
+    if ok < len(devices):
+        LOG.warning(
+            'بعض الأجهزة فشلت — تحقق من VPN/Tailscale لكل فرع، '
+            'أو شغّل جهازاً واحداً: python agent.py --once --device 1'
+        )
     return ok == len(devices)
 
 
@@ -400,6 +421,12 @@ def main() -> int:
         action='store_true',
         help='جلب الأجهزة من السيرفر وحفظ devices.list',
     )
+    parser.add_argument(
+        '--device',
+        type=int,
+        metavar='ID',
+        help='مزامنة جهاز واحد فقط (مثال: 1 لسكاي مول، 2 للوحة)',
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -417,7 +444,7 @@ def main() -> int:
             LOG.info('  • id=%s %s:%s comm_key=%s %s', d.device_id, d.device_ip, d.device_port, d.comm_key, d.label)
         return 0
 
-    devices = load_devices(config_path, settings)
+    devices = filter_devices(load_devices(config_path, settings), device_id=args.device)
 
     LOG.info('السيرفر: %s | أجهزة: %s', settings.server_url, len(devices))
     for d in devices:
