@@ -97,4 +97,5 @@ backend/exports/
 backend/scripts/biometric_bridge/config.env
 backend/scripts/biometric_bridge/devices.list
 backend/scripts/biometric_bridge/python_path.txt
-قاعد.txt
+backend/scripts/biometric_bridge/*.bak.*
+backend/scripts/biometric_bridge/agent_scheduled.log
