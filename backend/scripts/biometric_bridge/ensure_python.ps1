@@ -7,12 +7,26 @@ function Refresh-SessionPath {
     $env:Path = @($machine, $user) -join ';'
 }
 
+function Test-PythonExecutable {
+    param([string]$Exe)
+    if (-not $Exe -or -not (Test-Path -LiteralPath $Exe)) { return $false }
+    if ($Exe -match '\\ZKBioTime\\') { return $false }
+    try {
+        $null = & $Exe -c "import re, site" 2>&1
+        return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
+    }
+}
+
 function Find-PythonExecutables {
     $found = [System.Collections.Generic.List[string]]::new()
     foreach ($cmd in @('python', 'py')) {
         $c = Get-Command $cmd -ErrorAction SilentlyContinue
         if ($c -and $c.Source -and ($found -notcontains $c.Source)) {
-            $found.Add($c.Source)
+            if ($c.Source -notmatch '\\ZKBioTime\\') {
+                $found.Add($c.Source)
+            }
         }
     }
     $roots = @(
@@ -25,10 +39,29 @@ function Find-PythonExecutables {
         if (-not (Test-Path $root)) { continue }
         Get-ChildItem -Path $root -Filter 'python.exe' -Recurse -ErrorAction SilentlyContinue |
             ForEach-Object {
+                if ($_.FullName -match '\\ZKBioTime\\') { return }
                 if ($found -notcontains $_.FullName) { $found.Add($_.FullName) }
             }
     }
     return $found
+}
+
+function Write-HrPythonPathFile {
+    param(
+        [string]$BridgeDir,
+        [hashtable]$PythonInfo
+    )
+    $out = Join-Path $BridgeDir 'python_path.txt'
+    $line = $PythonInfo.Executable
+    if ($PythonInfo.UsePyLauncher) {
+        $resolved = & py -3.12 -c "import sys; print(sys.executable)" 2>$null
+        if ($resolved) {
+            $line = $resolved.Trim()
+        } else {
+            $line = 'py -3.12'
+        }
+    }
+    $line | Set-Content -Path $out -Encoding ASCII -NoNewline
 }
 
 function Add-DirectoryToUserPath {
@@ -87,6 +120,12 @@ function Ensure-PythonForHrAgent {
     foreach ($exe in $existing) {
         if ($exe -eq 'py') { continue }
         if ($exe -like '*\py.exe') { continue }
+        if (-not (Test-PythonExecutable -Exe $exe)) {
+            if (-not $Quiet) {
+                Write-Host "Skip broken Python (ZKBioTime?): $exe" -ForegroundColor Yellow
+            }
+            continue
+        }
         Register-PythonOnPath -PythonExe $exe
         if (-not $Quiet) {
             $ver = & $exe --version 2>&1
@@ -97,9 +136,14 @@ function Ensure-PythonForHrAgent {
 
     $launcher = Get-Command py -ErrorAction SilentlyContinue
     if ($launcher) {
-        $ver = & py --version 2>&1
-        if (-not $Quiet) { Write-Host "Python OK (py launcher): $ver" -ForegroundColor Green }
-        return @{ Executable = 'py'; UsePyLauncher = $true }
+        $py312 = & py -3.12 -c "import re" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            if (-not $Quiet) {
+                $ver = & py -3.12 --version 2>&1
+                Write-Host "Python OK (py -3.12): $ver" -ForegroundColor Green
+            }
+            return @{ Executable = 'py'; UsePyLauncher = $true }
+        }
     }
 
     if ($SkipInstall) {
@@ -115,7 +159,16 @@ function Ensure-PythonForHrAgent {
         throw 'Installer finished but python.exe not found. Close CMD, open Admin CMD, try again.'
     }
 
-    $exe = $after[0]
+    $exe = $null
+    foreach ($candidate in $after) {
+        if (Test-PythonExecutable -Exe $candidate) {
+            $exe = $candidate
+            break
+        }
+    }
+    if (-not $exe) {
+        throw 'Python found but broken (often ZKBioTime on PATH). Install Python 3.12 from python.org'
+    }
     Register-PythonOnPath -PythonExe $exe
     if (-not $Quiet) {
         $ver = & $exe --version 2>&1
@@ -130,7 +183,7 @@ function Invoke-PythonModule {
         [string[]]$Arguments
     )
     if ($PythonInfo.UsePyLauncher) {
-        & py @Arguments
+        & py -3.12 @Arguments
     } else {
         & $PythonInfo.Executable @Arguments
     }

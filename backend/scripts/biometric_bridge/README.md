@@ -12,9 +12,18 @@ Pulls attendance from branch LAN devices and uploads to the cloud HR server via 
 
 ```cmd
 cd /d C:\biometric_bridge
-python agent.py --probe
-python agent.py --once
+run_agent.bat --probe
+run_agent.bat --once
 ```
+
+### ZKBioTime Python error (`SRE module mismatch`)
+
+If `python` points to `C:\ZKBioTime\Python311\`, it is **not** compatible with this agent.
+
+1. Run **fix_python.bat** (installs Python 3.12 via winget if needed)
+2. Or use full path:  
+   `%LocalAppData%\Programs\Python\Python312\python.exe agent.py --probe`
+3. Close CMD and open a new window after install
 
 ### Files
 

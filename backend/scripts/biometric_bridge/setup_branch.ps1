@@ -31,6 +31,7 @@ Write-Host '=== HR Biometric Branch Setup ===' -ForegroundColor Cyan
 
 Write-Host 'Checking Python...' -ForegroundColor Cyan
 $script:HrPython = Ensure-PythonForHrAgent -SkipInstall:$SkipPythonInstall
+Write-HrPythonPathFile -BridgeDir $Here -PythonInfo $script:HrPython
 
 if (-not $DeviceId) {
     $raw = Read-Host 'Device ID in HR (example: 2 for Al-Waha)'
