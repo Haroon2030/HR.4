@@ -74,13 +74,37 @@ if (Test-Path $listPath) {
     Write-Host "Backed up old devices.list to $bak" -ForegroundColor Yellow
 }
 
-Write-Host 'Installing pip packages (requests, pyzk)...' -ForegroundColor Cyan
-$pipCode = Invoke-PythonModule -PythonInfo $script:HrPython -Arguments @(
-    '-m', 'pip', 'install', '-r', (Join-Path $Here 'requirements.txt')
-)
-if ($pipCode -ne 0) {
-    Write-Host 'pip install failed - check internet' -ForegroundColor Red
-    exit $pipCode
+function Test-AgentPythonPackages {
+    $check = @(
+        'import requests',
+        'from zk import ZK',
+    ) -join '; '
+    $code = Invoke-PythonModule -PythonInfo $script:HrPython -Arguments @('-c', $check)
+    return ($code -eq 0)
+}
+
+if (Test-AgentPythonPackages) {
+    Write-Host 'Python packages OK (requests, pyzk).' -ForegroundColor Green
+} else {
+    Write-Host 'Installing pip packages (requests, pyzk)...' -ForegroundColor Cyan
+    $pipArgs = @(
+        '-m', 'pip', 'install', '--disable-pip-version-check',
+        'requests>=2.31.0', 'pyzk==0.9'
+    )
+    $pipCode = Invoke-PythonModule -PythonInfo $script:HrPython -Arguments $pipArgs
+    if ($pipCode -ne 0) {
+        $pipCode = Invoke-PythonModule -PythonInfo $script:HrPython -Arguments @(
+            '-m', 'pip', 'install', '--disable-pip-version-check',
+            '-r', (Join-Path $Here 'requirements.txt')
+        )
+    }
+    if (-not (Test-AgentPythonPackages)) {
+        Write-Host 'pip install failed - but try manually:' -ForegroundColor Yellow
+        Write-Host '  python -m pip install requests pyzk==0.9' -ForegroundColor Yellow
+        Write-Host 'Then: python agent.py --probe' -ForegroundColor Yellow
+        exit 1
+    }
+    Write-Host 'Python packages installed.' -ForegroundColor Green
 }
 
 if (-not $SkipProbe) {
