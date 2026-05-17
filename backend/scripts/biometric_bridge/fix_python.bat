@@ -3,7 +3,8 @@ title HR - Fix Python (skip ZKBioTime)
 cd /d "%~dp0"
 echo.
 echo HR Biometric Bridge - fix Python
-echo ZKBioTime python on PATH is NOT used (SRE module mismatch).
+echo Clears PYTHONPATH for agent runs (ZKBioTime causes SRE module mismatch).
+if defined PYTHONPATH echo Current PYTHONPATH=%PYTHONPATH%
 echo.
 
 if exist python_path.txt del /f /q python_path.txt

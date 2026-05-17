@@ -61,14 +61,17 @@ exit /b 1
 
 :TryEcho
 set "OUT=%~1"
+set "PYTHONHOME="
+set "PYTHONPATH="
+set "PYTHONNOUSERSITE=1"
 if /I "!OUT!"=="py -3.12" (
-    py -3.12 -c "import re" >nul 2>&1
+    py -3.12 -E -c "import re" >nul 2>&1
     if !errorlevel! neq 0 set "OUT=INVALID"
     exit /b 0
 )
-echo !OUT! | findstr /I "ZKBioTime" >nul
+echo !OUT! | findstr /I "ZKBioTime \\venv\\" >nul
 if !errorlevel! equ 0 set "OUT=INVALID" & exit /b 0
 if not exist "!OUT!" set "OUT=INVALID" & exit /b 0
-"!OUT!" -c "import re" >nul 2>&1
+"!OUT!" -E -c "import re" >nul 2>&1
 if !errorlevel! neq 0 set "OUT=INVALID"
 exit /b 0

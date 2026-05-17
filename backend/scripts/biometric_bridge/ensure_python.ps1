@@ -7,13 +7,42 @@ function Refresh-SessionPath {
     $env:Path = @($machine, $user) -join ';'
 }
 
+function Clear-HrPythonEnvVars {
+    $script:SavedPythonHome = $env:PYTHONHOME
+    $script:SavedPythonPath = $env:PYTHONPATH
+    $env:PYTHONHOME = $null
+    $env:PYTHONPATH = $null
+    $env:PYTHONNOUSERSITE = '1'
+}
+
+function Restore-HrPythonEnvVars {
+    $env:PYTHONHOME = $script:SavedPythonHome
+    $env:PYTHONPATH = $script:SavedPythonPath
+    Remove-Item Env:PYTHONNOUSERSITE -ErrorAction SilentlyContinue
+}
+
+function Invoke-HrPythonExe {
+    param(
+        [string]$Exe,
+        [string[]]$Arguments
+    )
+    Clear-HrPythonEnvVars
+    try {
+        & $Exe -E @Arguments
+        return $LASTEXITCODE
+    } finally {
+        Restore-HrPythonEnvVars
+    }
+}
+
 function Test-PythonExecutable {
     param([string]$Exe)
     if (-not $Exe -or -not (Test-Path -LiteralPath $Exe)) { return $false }
     if ($Exe -match '\\ZKBioTime\\') { return $false }
+    if ($Exe -match '\\venv\\') { return $false }
     try {
-        $null = & $Exe -c "import re, site" 2>&1
-        return ($LASTEXITCODE -eq 0)
+        $code = Invoke-HrPythonExe -Exe $Exe -Arguments @('-c', 'import re')
+        return ($code -eq 0)
     } catch {
         return $false
     }
@@ -40,6 +69,7 @@ function Find-PythonExecutables {
         Get-ChildItem -Path $root -Filter 'python.exe' -Recurse -ErrorAction SilentlyContinue |
             ForEach-Object {
                 if ($_.FullName -match '\\ZKBioTime\\') { return }
+                if ($_.FullName -match '\\venv\\') { return }
                 if ($found -notcontains $_.FullName) { $found.Add($_.FullName) }
             }
     }
@@ -54,7 +84,12 @@ function Write-HrPythonPathFile {
     $out = Join-Path $BridgeDir 'python_path.txt'
     $line = $PythonInfo.Executable
     if ($PythonInfo.UsePyLauncher) {
-        $resolved = & py -3.12 -c "import sys; print(sys.executable)" 2>$null
+        Clear-HrPythonEnvVars
+        try {
+            $resolved = & py -3.12 -E -c "import sys; print(sys.executable)" 2>$null
+        } finally {
+            Restore-HrPythonEnvVars
+        }
         if ($resolved) {
             $line = $resolved.Trim()
         } else {
@@ -116,13 +151,17 @@ function Ensure-PythonForHrAgent {
         [switch]$Quiet
     )
 
+    if ($env:PYTHONPATH -match 'ZKBioTime') {
+        Write-Host 'Note: PYTHONPATH contains ZKBioTime — agent runs with PYTHONPATH cleared (-E).' -ForegroundColor Yellow
+    }
+
     $existing = Find-PythonExecutables
     foreach ($exe in $existing) {
         if ($exe -eq 'py') { continue }
         if ($exe -like '*\py.exe') { continue }
         if (-not (Test-PythonExecutable -Exe $exe)) {
             if (-not $Quiet) {
-                Write-Host "Skip broken Python (ZKBioTime?): $exe" -ForegroundColor Yellow
+                Write-Host "Skip (ZKBioTime env or missing packages): $exe" -ForegroundColor Yellow
             }
             continue
         }
@@ -136,7 +175,12 @@ function Ensure-PythonForHrAgent {
 
     $launcher = Get-Command py -ErrorAction SilentlyContinue
     if ($launcher) {
-        $py312 = & py -3.12 -c "import re" 2>&1
+        Clear-HrPythonEnvVars
+        try {
+            $null = & py -3.12 -E -c "import re" 2>&1
+        } finally {
+            Restore-HrPythonEnvVars
+        }
         if ($LASTEXITCODE -eq 0) {
             if (-not $Quiet) {
                 $ver = & py -3.12 --version 2>&1
@@ -167,7 +211,7 @@ function Ensure-PythonForHrAgent {
         }
     }
     if (-not $exe) {
-        throw 'Python found but broken (often ZKBioTime on PATH). Install Python 3.12 from python.org'
+        throw 'Python found but fails with ZKBioTime PYTHONPATH. Run: fix_python.bat after copying latest scripts, or remove ZKBioTime from system PYTHONPATH.'
     }
     Register-PythonOnPath -PythonExe $exe
     if (-not $Quiet) {
@@ -183,9 +227,13 @@ function Invoke-PythonModule {
         [string[]]$Arguments
     )
     if ($PythonInfo.UsePyLauncher) {
-        & py -3.12 @Arguments
-    } else {
-        & $PythonInfo.Executable @Arguments
+        Clear-HrPythonEnvVars
+        try {
+            & py -3.12 -E @Arguments
+            return $LASTEXITCODE
+        } finally {
+            Restore-HrPythonEnvVars
+        }
     }
-    return $LASTEXITCODE
+    return Invoke-HrPythonExe -Exe $PythonInfo.Executable -Arguments $Arguments
 }

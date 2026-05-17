@@ -23,9 +23,10 @@ if not defined HRPY (
     exit /b 1
 )
 echo Using: !HRPY!
+call "%~dp0_hr_env.cmd"
 if /I "!HRPY!"=="py -3.12" (
-    py -3.12 agent.py %*
+    py -3.12 -E agent.py %*
 ) else (
-    "!HRPY!" agent.py %*
+    "!HRPY!" -E agent.py %*
 )
 exit /b %errorlevel%

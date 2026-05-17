@@ -6,9 +6,10 @@ if not defined HRPY (
     echo [%date% %time%] ERROR: Python not found. Run fix_python.bat >> agent_scheduled.log
     exit /b 1
 )
+call "%~dp0_hr_env.cmd"
 if /I "!HRPY!"=="py -3.12" (
-    py -3.12 agent.py --once >> agent_scheduled.log 2>&1
+    py -3.12 -E agent.py --once >> agent_scheduled.log 2>&1
 ) else (
-    "!HRPY!" agent.py --once >> agent_scheduled.log 2>&1
+    "!HRPY!" -E agent.py --once >> agent_scheduled.log 2>&1
 )
 exit /b %errorlevel%
