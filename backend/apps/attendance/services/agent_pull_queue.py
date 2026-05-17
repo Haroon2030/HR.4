@@ -52,6 +52,30 @@ def list_pending_pull_requests() -> list[dict[str, Any]]:
     return rows
 
 
+def queue_lan_device_sync(
+    device,
+    *,
+    requested_by_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> tuple[bool, str]:
+    """LAN devices: queue sync for branch agent. Returns (queued, message)."""
+    from apps.attendance.validators import cloud_pull_blocked_message
+
+    if not cloud_pull_blocked_message(device, force_mock=False):
+        return False, ''
+    queue_pull_request(
+        device.pk,
+        date_from=date_from,
+        date_to=date_to,
+        requested_by_id=requested_by_id,
+    )
+    return True, (
+        f'تم إرسال طلب مزامنة لجهاز «{device.name}». '
+        'يُنفَّذ خلال دقائق من PC الفرع (C:\\biometric_bridge).'
+    )
+
+
 def acknowledge_pull_request(device_id: int) -> None:
     cache.delete(_device_key(device_id))
     pending: list[int] = list(cache.get(_CACHE_LIST) or [])

@@ -17,7 +17,6 @@ from apps.attendance.selectors.punch_records import (
 )
 from apps.attendance.services.agent_pull_queue import queue_pull_request
 from apps.attendance.services.attendance_pull import pull_device_attendance
-from apps.attendance.validators import cloud_pull_blocked_message
 from apps.attendance.services.punch_inference import reclassify_punches_by_sequence
 from apps.attendance.selectors.biometric_devices import (
     filter_biometric_devices_for_user,
@@ -27,9 +26,6 @@ from apps.core.decorators import permission_required
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids
 from apps.employees.models import Employee
-
-FORCE_REAL_DEVICE = False
-
 
 def _parse_filters(request) -> dict:
     branch_id = request.GET.get('branch') or None
@@ -162,20 +158,14 @@ def attendance_records_pull(request):
     df = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
     dt = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else None
 
-    blocked = cloud_pull_blocked_message(device, force_mock=FORCE_REAL_DEVICE)
-    if blocked:
-        queue_pull_request(
-            device.pk,
-            date_from=df,
-            date_to=dt,
-            requested_by_id=request.user.pk,
-        )
-        messages.success(
-            request,
-            f'تم إرسال طلب سحب لجهاز «{device.name}». '
-            'سيُنفَّذ خلال دقائق من PC الفرع (وكيل C:\\biometric_bridge). '
-            'حدّث الصفحة بعد قليل.',
-        )
+    queued, queue_msg = queue_lan_device_sync(
+        device,
+        date_from=df,
+        date_to=dt,
+        requested_by_id=request.user.pk,
+    )
+    if queued:
+        messages.success(request, queue_msg + ' حدّث الصفحة بعد قليل.')
         return redirect('web:attendance_records')
 
     result = pull_device_attendance(
@@ -183,7 +173,7 @@ def attendance_records_pull(request):
         date_from=df,
         date_to=dt,
         import_db=True,
-        force_mock=FORCE_REAL_DEVICE,
+        force_mock=False,
     )
     if result.ok:
         msg = (

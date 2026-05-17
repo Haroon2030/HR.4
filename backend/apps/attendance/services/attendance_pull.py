@@ -3,7 +3,7 @@
 
 يُستخدم من:
   - python manage.py pull_biometric_attendance
-  - المزامنة عبر الويب (اختياري لاحقاً)
+  - الويب (أجهزة عامة) أو وكيل الفرع (192.168.x.x)
 """
 from __future__ import annotations
 

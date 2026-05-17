@@ -356,60 +356,6 @@ def get_device_user_name_map(device: BiometricDevice) -> dict[int, str]:
     }
 
 
-def fetch_attendance(
-    device: BiometricDevice,
-    *,
-    clear_after: bool = False,
-    force_mock: bool | None = None,
-) -> tuple[list[RawAttendanceRow], str | None]:
-    if is_mock_mode(force=force_mock):
-        now = timezone.now()
-        rows = [
-            RawAttendanceRow(1, now.replace(hour=8, minute=0, second=0, microsecond=0), 'in', 1, 0, 1001),
-            RawAttendanceRow(1, now.replace(hour=17, minute=0, second=0, microsecond=0), 'out', 1, 1, 1002),
-            RawAttendanceRow(2, now.replace(hour=8, minute=5, second=0, microsecond=0), 'in', 1, 0, 1003),
-            RawAttendanceRow(2, now.replace(hour=16, minute=55, second=0, microsecond=0), 'out', 1, 1, 1004),
-        ]
-        return rows, None
-
-    ZK, ZKNetworkError, ZKErrorResponse = _import_zk()
-    conn = None
-    try:
-        kw = _zk_connect_kwargs(device)
-        zk = ZK(kw['ip'], port=kw['port'], timeout=kw['timeout'], password=kw['password'],
-                force_udp=kw['force_udp'], ommit_ping=kw['ommit_ping'])
-        conn = zk.connect()
-        records = conn.get_attendance() or []
-        rows: list[RawAttendanceRow] = []
-        for rec in records:
-            ts = rec.timestamp
-            if timezone.is_naive(ts):
-                ts = timezone.make_aware(ts, timezone.get_current_timezone())
-            status = getattr(rec, 'status', None)
-            punch_type, _ = punch_type_for_status(status)
-            rows.append(
-                RawAttendanceRow(
-                    device_user_id=int(rec.user_id),
-                    punched_at=ts,
-                    punch_type=punch_type,
-                    verify_mode=getattr(rec, 'punch', None),
-                    status=status,
-                    uid=getattr(rec, 'uid', None),
-                )
-            )
-        if clear_after and rows:
-            conn.clear_attendance()
-        return rows, None
-    except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError) as exc:
-        return [], format_zk_error(exc, comm_key=int(device.comm_key or 0))
-    finally:
-        if conn:
-            try:
-                conn.disconnect()
-            except Exception:
-                pass
-
-
 def sync_device_attendance(
     device: BiometricDevice,
     *,
@@ -417,49 +363,41 @@ def sync_device_attendance(
     force_mock: bool | None = None,
     incremental: bool = True,
 ) -> dict:
-    from apps.attendance.models import EmployeeBiometricEnrollment
-    from apps.attendance.services.punch_sync import import_raw_attendance_rows
+    """Web/CLI sync — uses single TCP session via pull_device_attendance."""
+    from apps.attendance.services.attendance_pull import pull_device_attendance
 
-    users_outcome = sync_device_users(device, force_mock=force_mock)
-    name_map = users_outcome.get('names', {}) if users_outcome.get('ok') else get_device_user_name_map(device)
-
-    rows, error = fetch_attendance(device, clear_after=clear_after, force_mock=force_mock)
-    if error:
-        device.connection_status = device.ConnectionStatus.ERROR
-        device.last_error = error
-        device.last_ping_at = timezone.now()
-        device.save(update_fields=['connection_status', 'last_error', 'last_ping_at', 'updated_at'])
-        return {'ok': False, 'error': error, 'imported': 0, 'skipped': 0}
-
-    enroll_map = {
-        e.device_user_id: e.employee_id
-        for e in EmployeeBiometricEnrollment.objects.filter(device=device).only('device_user_id', 'employee_id')
-    }
-
-    outcome = import_raw_attendance_rows(
+    pull = pull_device_attendance(
         device,
-        rows,
-        name_map=name_map,
-        enroll_map=enroll_map,
+        import_db=True,
+        clear_device=clear_after,
         incremental=incremental,
+        force_mock=force_mock,
     )
-    imported = outcome['imported']
-    skipped = outcome['skipped']
-    total = len(rows)
+    if not pull.ok:
+        return {
+            'ok': False,
+            'error': pull.error,
+            'imported': 0,
+            'skipped': 0,
+            'device_id': device.pk,
+            'branch_id': device.branch_id,
+        }
+
     message = ''
-    if imported == 0 and skipped > 0:
+    if pull.imported == 0 and pull.skipped_duplicate > 0:
         message = 'لا سجلات جديدة — كل السجلات موجودة مسبقاً في النظام.'
-    elif imported == 0 and total == 0:
+    elif pull.imported == 0 and pull.punches_fetched == 0:
         message = 'الجهاز لا يحتوي سجلات حضور حالياً.'
+
     return {
         'ok': True,
-        'imported': imported,
-        'skipped': skipped,
-        'skipped_time_filter': outcome.get('skipped_time_filter', 0),
-        'punches_new': outcome.get('punches_new', 0),
-        'total_on_device': total,
-        'batch': outcome.get('batch', ''),
-        'users_synced': users_outcome.get('synced', 0),
+        'imported': pull.imported,
+        'skipped': pull.skipped_duplicate,
+        'skipped_time_filter': pull.skipped_time_filter,
+        'punches_new': pull.punches_new,
+        'total_on_device': pull.punches_fetched,
+        'batch': pull.batch,
+        'users_synced': pull.users_on_device,
         'message': message,
         'mock_mode': is_mock_mode(force=force_mock),
         'device_id': device.pk,

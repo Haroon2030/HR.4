@@ -125,15 +125,11 @@ if ($InstallTask) {
         $resolved = Get-Command python -ErrorAction SilentlyContinue
         if ($resolved) { $pyExe = $resolved.Source }
     }
-    if ($pyExe -and (Test-Path -LiteralPath $pyExe)) {
-        & (Join-Path $Here 'install_windows_agent_task.ps1') -PythonExecutable $pyExe
-    } else {
-        & (Join-Path $Here 'install_windows_agent_task.ps1')
-    }
+    & (Join-Path $Here 'install_task.bat')
 } else {
     Write-Host ''
     Write-Host 'For auto sync every 5 min (run as Admin):' -ForegroundColor Green
-    Write-Host '  .\setup_branch.ps1 ... -InstallTask'
+    Write-Host '  install_task.bat'
 }
 
 Write-Host ''

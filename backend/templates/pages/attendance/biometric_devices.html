@@ -28,11 +28,11 @@
     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 mb-4">
         <p class="font-semibold flex items-center gap-2 mb-1">
             <i data-lucide="wifi-off" class="w-4 h-4"></i>
-            عناوين 192.168.x.x — المزامنة من السيرفر لا تعمل
+            مزامنة LAN — استخدم زر طلب مزامنة في الجدول
         </p>
         <p class="text-amber-900">
-            أزرار «اختبار / مزامنة» من السحابة. استخدم الوكيل:
-            <code class="text-xs bg-white px-1 rounded font-mono" dir="ltr">python agent.py --once</code>
+            يُنفَّذ على PC الفرع خلال ~5 دقائق:
+            <code class="text-xs bg-white px-1 rounded font-mono" dir="ltr">C:\biometric_bridge</code>
         </p>
     </div>
 
@@ -113,7 +113,10 @@
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
                                 {% if d.ip_address|is_private_lan_ip %}
-                                <span class="px-2 py-1 text-xs rounded bg-amber-50 text-amber-800" title="استخدم الوكيل — السحابة لا تصل">سحابة ✗</span>
+                                <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-primary-600 text-white hover:bg-primary-700">طلب مزامنة</button>
+                                </form>
                                 {% else %}
                                 <button type="button" @click="testDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200" :disabled="loadingId === {{ d.pk }}">اختبار</button>
                                 <button type="button" @click="syncUsers({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100" :disabled="loadingId === {{ d.pk }}">المستخدمون</button>

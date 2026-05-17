@@ -19,18 +19,17 @@ from apps.attendance.selectors.biometric_devices import (
 from apps.attendance.selectors.device_users import DEVICE_USERS_PER_PAGE, get_device_user_queryset
 from apps.attendance.services.branch_setup import ensure_branch_for_device
 from apps.attendance.validators import validate_device_ipv4
+from apps.attendance.services.agent_pull_queue import queue_lan_device_sync
 from apps.attendance.services.zk_client import (
     probe_device,
     sync_device_attendance,
     sync_device_users,
 )
+from apps.attendance.validators import cloud_pull_blocked_message
 from apps.core.decorators import permission_required
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids, filter_employees_queryset_for_user
 from apps.employees.models import Employee
-
-# الاتصال الحقيقي بالجهاز دائماً من الواجهة (لا وضع تجريبي)
-FORCE_REAL_DEVICE = False
 
 
 def _parse_branch_filter(request) -> int | None:
@@ -247,7 +246,21 @@ def biometric_device_delete(request, device_id):
 @require_POST
 def biometric_device_test(request, device_id):
     device = get_device_for_user(request.user, device_id)
-    result = probe_device(device, force_mock=FORCE_REAL_DEVICE)
+    lan_msg = cloud_pull_blocked_message(device, force_mock=False)
+    if lan_msg:
+        result_payload = {
+            'ok': False,
+            'message': (
+                'اختبار الاتصال من السحابة غير متاح لعناوين LAN. '
+                'من PC الفرع: python agent.py --probe'
+            ),
+        }
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse(result_payload)
+        messages.warning(request, result_payload['message'])
+        return redirect('web:biometric_devices')
+
+    result = probe_device(device, force_mock=False)
 
     if result.ok:
         device.connection_status = BiometricDevice.ConnectionStatus.ONLINE
@@ -288,8 +301,14 @@ def biometric_device_sync(request, device_id):
     if not device.branch_id:
         messages.error(request, f'حدّد فرعاً لجهاز «{device.name}» قبل المزامنة.')
         return redirect('web:biometric_devices')
-    clear_after = request.POST.get('clear_device') == '1'
-    outcome = sync_device_attendance(device, clear_after=clear_after, force_mock=FORCE_REAL_DEVICE)
+    queued, queue_msg = queue_lan_device_sync(device, requested_by_id=request.user.pk)
+    if queued:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': True, 'queued': True, 'message': queue_msg})
+        messages.success(request, queue_msg)
+        return redirect('web:biometric_devices')
+
+    outcome = sync_device_attendance(device, clear_after=False, force_mock=False)
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(outcome)
@@ -314,7 +333,14 @@ def biometric_device_sync(request, device_id):
 @require_POST
 def biometric_device_sync_users(request, device_id):
     device = get_device_for_user(request.user, device_id)
-    outcome = sync_device_users(device, force_mock=FORCE_REAL_DEVICE)
+    queued, queue_msg = queue_lan_device_sync(device, requested_by_id=request.user.pk)
+    if queued:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': True, 'queued': True, 'message': queue_msg})
+        messages.success(request, queue_msg)
+        return redirect('web:biometric_devices')
+
+    outcome = sync_device_users(device, force_mock=False)
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(outcome)
