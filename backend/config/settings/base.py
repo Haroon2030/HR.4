@@ -44,15 +44,17 @@ environ.Env.read_env(BASE_DIR / '.env')
 # في التطوير: يُسمح بقيمة افتراضية. في الإنتاج: يُفرض من production.py
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-dev-only-NOT-FOR-PRODUCTION')
 
-# وضع التصحيح — يُقرأ من .env
-DEBUG = env('DEBUG')
+# وضع التصحيح — يُقرأ من .env (الافتراضي False؛ development.py يفرض True)
+DEBUG = env.bool('DEBUG', default=False)
 
-# ⚠️ حماية: منع استخدام المفتاح الافتراضي في وضع الإنتاج
-if not DEBUG and SECRET_KEY.startswith('django-insecure-dev-only'):
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        "SECRET_KEY غير مُعدّ في البيئة. حدّد SECRET_KEY في ملف .env قبل التشغيل في وضع الإنتاج."
-    )
+# ⚠️ حماية الإنتاج فقط — لا تُطبَّق أثناء تحميل development (CI بدون .env)
+import os as _os
+if _os.environ.get('DJANGO_ENV', '').lower() == 'production':
+    if not DEBUG and str(SECRET_KEY).startswith('django-insecure-dev-only'):
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            "SECRET_KEY غير مُعدّ في البيئة. حدّد SECRET_KEY في ملف .env قبل التشغيل في الإنتاج."
+        )
 
 # النطاقات المسموح بها — تُقرأ من .env
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])

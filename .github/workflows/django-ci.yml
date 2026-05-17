@@ -39,6 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DJANGO_ENV: development
+      DEBUG: 'True'
+      SECRET_KEY: ci-development-secret-key-not-used-in-production-xyz
       DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci.sqlite3
 
     steps:
