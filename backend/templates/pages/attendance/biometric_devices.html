@@ -9,7 +9,7 @@
                 <i data-lucide="fingerprint" class="w-7 h-7 text-primary-600"></i>
                 أجهزة البصمة
             </h1>
-            <p class="text-slate-500 text-sm mt-1">ربط أجهزة ZKTeco عبر عنوان IP والمنفذ 4370 — سحب سجلات الحضور</p>
+            <p class="text-slate-500 text-sm mt-1">إدارة أجهزة ZKTeco — IP · منفذ 4370 · ربط الفروع والموظفين</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{% url 'web:attendance_records' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">
@@ -25,54 +25,34 @@
         </div>
     </div>
 
-    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 mb-4">
-        <p class="font-semibold flex items-center gap-2 mb-1">
-            <i data-lucide="wifi-off" class="w-4 h-4"></i>
-            مزامنة LAN — استخدم زر طلب مزامنة في الجدول
-        </p>
-        <p class="text-amber-900">
-            يُنفَّذ على PC الفرع خلال ~5 دقائق:
-            <code class="text-xs bg-white px-1 rounded font-mono" dir="ltr">C:\biometric_bridge</code>
-        </p>
+    {% if devices_without_branch %}
+    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+        <span>{{ devices_without_branch }} جهاز بدون فرع — عيّنه من «تعديل» قبل المزامنة.</span>
     </div>
-
-    <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-        <p class="font-semibold text-slate-800 mb-2 flex items-center gap-2">
-            <i data-lucide="building-2" class="w-4 h-4 text-primary-600"></i>
-            عزل الفروع — اتصال حقيقي بالجهاز
-        </p>
-        <ul class="list-disc list-inside space-y-1 text-slate-600">
-            <li>كل جهاز <strong>لفرع واحد</strong> — السحب يخص ذلك الجهاز فقط</li>
-            <li>عنوان IP كامل مثل <strong dir="ltr">192.168.24.59</strong> وليس «40» أو رقماً جزئياً</li>
-            <li>فلترة بالفرع تمنع خلط البيانات بين الفروع</li>
-            <li>موظف HR من نفس فرع الجهاز · المنفذ <strong>4370</strong></li>
-        </ul>
-        {% if devices_without_branch %}
-        <p class="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {{ devices_without_branch }} جهاز بدون فرع — عيّنه من «تعديل» قبل المزامنة.
-        </p>
-        {% endif %}
-    </div>
-
-    <form method="get" class="flex flex-wrap items-end gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-        {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
-        {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
-        <div>
-            <label class="block text-xs font-medium text-slate-600 mb-1">عرض فرع</label>
-            <select name="branch" class="rounded-lg border-slate-300 text-sm min-w-[180px]" onchange="this.form.submit()">
-                <option value="">كل الفروع</option>
-                {% for b in branches %}
-                <option value="{{ b.pk }}" {% if branch_filter_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <a href="{% url 'web:biometric_devices' %}" class="text-sm text-slate-600 hover:text-primary-600 py-2">مسح فلتر الفرع</a>
-    </form>
+    {% endif %}
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-            <h2 class="font-semibold text-slate-800">الأجهزة المسجّلة</h2>
-            <span class="text-xs text-slate-500">{{ devices|length }} جهاز</span>
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <h2 class="font-semibold text-slate-800">الأجهزة المسجّلة</h2>
+                <span class="text-xs text-slate-500 tabular-nums">{{ devices|length }}</span>
+            </div>
+            <form method="get" class="flex flex-wrap items-center gap-2">
+                {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
+                {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
+                <label class="text-xs text-slate-500">فرع</label>
+                <select name="branch" class="rounded-lg border-slate-300 text-sm min-w-[160px]" onchange="this.form.submit()">
+                    <option value="">الكل</option>
+                    {% for b in branches %}
+                    <option value="{{ b.pk }}" {% if branch_filter_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if branch_filter_id %}
+                <a href="{% url 'web:biometric_devices' %}{% if link_device_id or link_user_id %}?{% if link_device_id %}link_device={{ link_device_id }}{% endif %}{% if link_user_id %}{% if link_device_id %}&{% endif %}link_user={{ link_user_id }}{% endif %}{% endif %}"
+                   class="text-xs text-slate-500 hover:text-primary-600">مسح</a>
+                {% endif %}
+            </form>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -115,7 +95,7 @@
                                 {% if d.ip_address|is_private_lan_ip %}
                                 <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-primary-600 text-white hover:bg-primary-700">طلب مزامنة</button>
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-primary-600 text-white hover:bg-primary-700" title="يُنفَّذ خلال ~5 دقائق عبر وكيل الفرع (LAN)">مزامنة</button>
                                 </form>
                                 {% else %}
                                 <button type="button" @click="testDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200" :disabled="loadingId === {{ d.pk }}">اختبار</button>
