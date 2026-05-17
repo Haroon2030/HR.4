@@ -15,7 +15,7 @@ from apps.attendance.selectors.punch_records import (
     get_punch_queryset,
     get_punch_stats,
 )
-from apps.attendance.services.agent_pull_queue import queue_pull_request
+from apps.attendance.services.agent_pull_queue import queue_lan_device_sync
 from apps.attendance.services.attendance_pull import pull_device_attendance
 from apps.attendance.services.punch_inference import reclassify_punches_by_sequence
 from apps.attendance.selectors.biometric_devices import (
