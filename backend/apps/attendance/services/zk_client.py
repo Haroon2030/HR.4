@@ -134,6 +134,12 @@ def fetch_device_snapshot(
     force_mock: bool | None = None,
 ) -> tuple[DeviceSnapshot | None, str | None]:
     """جلسة اتصال واحدة: مستخدمون + كل سجلات الحضور على الجهاز."""
+    from apps.attendance.validators import cloud_pull_blocked_message
+
+    blocked = cloud_pull_blocked_message(device, force_mock=force_mock)
+    if blocked:
+        return None, blocked
+
     if is_mock_mode(force=force_mock):
         return DeviceSnapshot(
             users=[
@@ -207,6 +213,12 @@ def probe_device(
     timeout: int | None = None,
     force_mock: bool | None = None,
 ) -> DeviceProbeResult:
+    from apps.attendance.validators import cloud_pull_blocked_message
+
+    blocked = cloud_pull_blocked_message(device, force_mock=force_mock)
+    if blocked:
+        return DeviceProbeResult(ok=False, message=blocked)
+
     if is_mock_mode(force=force_mock):
         return DeviceProbeResult(
             ok=True,

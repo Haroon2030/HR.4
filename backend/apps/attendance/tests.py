@@ -4,7 +4,7 @@ from django.utils import timezone
 from apps.attendance.models import AttendancePunch, BiometricDevice
 from apps.attendance.services.attendance_pull import pull_device_attendance
 from apps.attendance.services.zk_client import probe_device, sync_device_attendance
-from apps.attendance.validators import validate_device_ipv4
+from apps.attendance.validators import cloud_pull_blocked_message, validate_device_ipv4
 
 
 @override_settings(BIOMETRIC_MOCK_MODE=True)
@@ -79,3 +79,11 @@ class DeviceIpValidatorTests(TestCase):
     def test_rejects_partial_ip(self):
         with self.assertRaises(ValueError):
             validate_device_ipv4('40')
+
+    def test_cloud_pull_blocked_on_lan(self):
+        device = BiometricDevice.objects.create(
+            name='LAN', ip_address='192.168.1.10', port=4370,
+        )
+        msg = cloud_pull_blocked_message(device, force_mock=False)
+        self.assertIsNotNone(msg)
+        self.assertIn('agent.py', msg)

@@ -133,6 +133,14 @@ def has_permission(user, permission_code):
 
 
 @register.filter
+def is_private_lan_ip(value):
+    """True إن كان IP شبكة محلية — السحب من السيرفر السحابي غير ممكن."""
+    from apps.attendance.validators import is_private_lan_ip as _check
+
+    return _check(str(value))
+
+
+@register.filter
 def is_general_manager(user):
     """مدير عام / مدير موارد / سوبر يوزر — نفس منطق _is_general_manager في الويب."""
     if not user or not user.is_authenticated:

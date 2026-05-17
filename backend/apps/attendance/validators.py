@@ -26,3 +26,20 @@ def is_private_lan_ip(value: str) -> bool:
         return ipaddress.ip_address((value or '').strip()).is_private
     except ValueError:
         return False
+
+
+def cloud_pull_blocked_message(device, *, force_mock: bool | None = None) -> str | None:
+    """رسالة فورية إن كان السحب من السيرفر السحابي مستحيلاً (شبكة LAN)."""
+    if force_mock is True:
+        return None
+    from django.conf import settings
+
+    if force_mock is None and getattr(settings, 'BIOMETRIC_MOCK_MODE', False):
+        return None
+    if not is_private_lan_ip(str(device.ip_address)):
+        return None
+    return (
+        f'الجهاز «{device.name}» على شبكة محلية ({device.ip_address}) — '
+        'السيرفر السحابي لا يصل إليه (لن ينتظر دقائق). '
+        f'من PC الفرع: python agent.py --once --device {device.pk}'
+    )

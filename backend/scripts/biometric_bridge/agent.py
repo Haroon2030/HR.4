@@ -116,6 +116,24 @@ def _parse_device_line(line: str, line_no: int) -> DeviceTarget | None:
     )
 
 
+def _sort_devices(devices: list[DeviceTarget]) -> list[DeviceTarget]:
+    return sorted(devices, key=lambda d: d.device_id)
+
+
+def _tcp_reachable(device: DeviceTarget, *, timeout_sec: int = 5) -> bool:
+    import socket
+
+    sock = socket.socket()
+    sock.settimeout(timeout_sec)
+    try:
+        sock.connect((device.device_ip, device.device_port))
+        return True
+    except OSError:
+        return False
+    finally:
+        sock.close()
+
+
 def load_devices(config_path: Path, settings: AgentSettings) -> list[DeviceTarget]:
     data = _parse_env_file(config_path)
     base_dir = config_path.parent
@@ -130,7 +148,7 @@ def load_devices(config_path: Path, settings: AgentSettings) -> list[DeviceTarge
                 devices.append(row)
         if not devices:
             raise ValueError(f'لا أجهزة في {list_path}')
-        return devices
+        return _sort_devices(devices)
 
     # 2) سطر DEVICES في config.env: id|ip|port|key,id|ip|...
     devices_raw = data.get('DEVICES', '').strip()
@@ -153,7 +171,7 @@ def load_devices(config_path: Path, settings: AgentSettings) -> list[DeviceTarge
                 )
             )
         if devices:
-            return devices
+            return _sort_devices(devices)
 
     # 3) جهاز واحد (توافق قديم)
     def req(key: str) -> str:
@@ -272,6 +290,14 @@ def _device_title(device: DeviceTarget) -> str:
 
 def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
     LOG.info('── %s ──', _device_title(device))
+    if not _tcp_reachable(device, timeout_sec=min(5, settings.timeout_sec)):
+        LOG.error(
+            'تخطي: لا يوجد اتصال TCP بـ %s:%s (فعّل VPN هذا الفرع أو --device %s فقط)',
+            device.device_ip,
+            device.device_port,
+            device.device_id,
+        )
+        return False
     LOG.info('سحب من %s:%s (id=%s) ...', device.device_ip, device.device_port, device.device_id)
     punches, users, err = fetch_from_device(device, timeout_sec=settings.timeout_sec)
     if err:

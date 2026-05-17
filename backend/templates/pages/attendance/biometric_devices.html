@@ -112,9 +112,13 @@
                         {% if user|has_permission:'attendance.manage' %}
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
+                                {% if d.ip_address|is_private_lan_ip %}
+                                <span class="px-2 py-1 text-xs rounded bg-amber-50 text-amber-800" title="استخدم الوكيل — السحابة لا تصل">سحابة ✗</span>
+                                {% else %}
                                 <button type="button" @click="testDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200" :disabled="loadingId === {{ d.pk }}">اختبار</button>
                                 <button type="button" @click="syncUsers({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100" :disabled="loadingId === {{ d.pk }}">المستخدمون</button>
                                 <button type="button" @click="syncDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-primary-50 text-primary-700 hover:bg-primary-100" :disabled="loadingId === {{ d.pk }}">مزامنة</button>
+                                {% endif %}
                                 <button type="button" @click="openDeviceForm({
                                     id: {{ d.pk }},
                                     name: '{{ d.name|escapejs }}',
