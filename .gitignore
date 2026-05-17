@@ -95,4 +95,5 @@ backend/exports/
 
 # Biometric bridge agent secrets
 backend/scripts/biometric_bridge/config.env
+backend/scripts/biometric_bridge/devices.list
 قاعد.txt

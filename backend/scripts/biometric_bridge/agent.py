@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-وكيل وسيط: يسحب من جهاز ZKTeco على الشبكة المحلية ويرفع للسيرفر السحابي.
+وكيل وسيط: يسحب من أجهزة ZKTeco ويرفع للسيرفر السحابي.
 
-التثبيت (مرة واحدة على PC الفرع):
+جهاز واحد: config.env (DEVICE_ID + DEVICE_IP)
+عدة أجهزة من مكان واحد: devices.list (يتطلب وصول الشبكة لكل IP — VPN/Tailscale)
+
   pip install -r requirements.txt
-
-الإعداد:
-  انسخ config.example.env إلى config.env وعدّل القيم.
-
-التشغيل:
-  python agent.py
   python agent.py --once
+  python agent.py --probe
 """
 from __future__ import annotations
 
@@ -46,48 +43,133 @@ PUNCH_STATUS = {
 
 
 @dataclass
-class Config:
+class AgentSettings:
     server_url: str
     api_key: str
-    device_id: int
-    device_ip: str
-    device_port: int
-    comm_key: int
     agent_id: str
     poll_interval_sec: int
     timeout_sec: int
     incremental: bool
 
 
-def load_config(path: Path) -> Config:
+@dataclass
+class DeviceTarget:
+    device_id: int
+    device_ip: str
+    device_port: int
+    comm_key: int
+    label: str = ''
+
+
+def _parse_env_file(path: Path) -> dict[str, str]:
     data: dict[str, str] = {}
     if not path.exists():
-        raise FileNotFoundError(f'ملف الإعداد غير موجود: {path}')
-    # utf-8-sig: Notepad على Windows يضيف BOM فيُفسد قراءة SERVER_URL
+        return data
     for line in path.read_text(encoding='utf-8-sig').splitlines():
         line = line.strip()
         if not line or line.startswith('#') or '=' not in line:
             continue
         key, val = line.split('=', 1)
         data[key.strip().lstrip('\ufeff')] = val.strip()
+    return data
+
+
+def load_settings(path: Path) -> AgentSettings:
+    data = _parse_env_file(path)
+    if not path.exists():
+        raise FileNotFoundError(f'ملف الإعداد غير موجود: {path}')
 
     def req(key: str) -> str:
         if key not in data or not data[key]:
             raise ValueError(f'مطلوب في config.env: {key}')
         return data[key]
 
-    return Config(
+    return AgentSettings(
         server_url=req('SERVER_URL').rstrip('/'),
         api_key=req('AGENT_API_KEY'),
-        device_id=int(req('DEVICE_ID')),
-        device_ip=req('DEVICE_IP'),
-        device_port=int(data.get('DEVICE_PORT', '4370')),
-        comm_key=int(data.get('COMM_KEY', '0')),
-        agent_id=data.get('AGENT_ID', 'branch-agent-1'),
+        agent_id=data.get('AGENT_ID', 'central-agent'),
         poll_interval_sec=int(data.get('POLL_INTERVAL_SEC', '300')),
         timeout_sec=int(data.get('TIMEOUT_SEC', '20')),
         incremental=data.get('INCREMENTAL', 'true').lower() in ('1', 'true', 'yes'),
     )
+
+
+def _parse_device_line(line: str, line_no: int) -> DeviceTarget | None:
+    line = line.strip()
+    if not line or line.startswith('#'):
+        return None
+    # device_id ip [port] [comm_key] [label...]
+    parts = line.replace(';', ' ').split()
+    if len(parts) < 2:
+        raise ValueError(f'سطر {line_no} في devices.list غير صالح: {line}')
+    device_id = int(parts[0])
+    device_ip = parts[1]
+    port = int(parts[2]) if len(parts) > 2 else 4370
+    comm_key = int(parts[3]) if len(parts) > 3 else 0
+    label = ' '.join(parts[4:]) if len(parts) > 4 else ''
+    return DeviceTarget(
+        device_id=device_id,
+        device_ip=device_ip,
+        device_port=port,
+        comm_key=comm_key,
+        label=label,
+    )
+
+
+def load_devices(config_path: Path, settings: AgentSettings) -> list[DeviceTarget]:
+    data = _parse_env_file(config_path)
+    base_dir = config_path.parent
+
+    # 1) ملف devices.list (مفضل لعدة فروع)
+    list_path = base_dir / 'devices.list'
+    if list_path.exists():
+        devices: list[DeviceTarget] = []
+        for i, line in enumerate(list_path.read_text(encoding='utf-8-sig').splitlines(), 1):
+            row = _parse_device_line(line, i)
+            if row:
+                devices.append(row)
+        if not devices:
+            raise ValueError(f'لا أجهزة في {list_path}')
+        return devices
+
+    # 2) سطر DEVICES في config.env: id|ip|port|key,id|ip|...
+    devices_raw = data.get('DEVICES', '').strip()
+    if devices_raw:
+        devices = []
+        for chunk in devices_raw.split(','):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            parts = chunk.replace('|', ' ').replace(';', ' ').split()
+            if len(parts) < 2:
+                raise ValueError(f'صيغة DEVICES غير صالحة: {chunk}')
+            devices.append(
+                DeviceTarget(
+                    device_id=int(parts[0]),
+                    device_ip=parts[1],
+                    device_port=int(parts[2]) if len(parts) > 2 else 4370,
+                    comm_key=int(parts[3]) if len(parts) > 3 else 0,
+                    label=' '.join(parts[4:]) if len(parts) > 4 else '',
+                )
+            )
+        if devices:
+            return devices
+
+    # 3) جهاز واحد (توافق قديم)
+    def req(key: str) -> str:
+        if key not in data or not data[key]:
+            raise ValueError(f'مطلوب في config.env: {key} (أو أنشئ devices.list)')
+        return data[key]
+
+    return [
+        DeviceTarget(
+            device_id=int(req('DEVICE_ID')),
+            device_ip=req('DEVICE_IP'),
+            device_port=int(data.get('DEVICE_PORT', '4370')),
+            comm_key=int(data.get('COMM_KEY', '0')),
+            label=data.get('DEVICE_LABEL', ''),
+        )
+    ]
 
 
 def punch_type_for_status(status: int | None) -> str:
@@ -96,14 +178,14 @@ def punch_type_for_status(status: int | None) -> str:
     return PUNCH_STATUS.get(status, 'unknown')
 
 
-def fetch_from_device(cfg: Config) -> tuple[list[dict], list[dict], str | None]:
+def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[dict], list[dict], str | None]:
     conn = None
     try:
         zk = ZK(
-            cfg.device_ip,
-            port=cfg.device_port,
-            timeout=cfg.timeout_sec,
-            password=cfg.comm_key,
+            device.device_ip,
+            port=device.device_port,
+            timeout=timeout_sec,
+            password=device.comm_key,
             force_udp=False,
             ommit_ping=True,
         )
@@ -145,19 +227,25 @@ def fetch_from_device(cfg: Config) -> tuple[list[dict], list[dict], str | None]:
                 pass
 
 
-def push_to_server(cfg: Config, punches: list[dict], users: list[dict]) -> dict:
-    url = f'{cfg.server_url}/api/v1/attendance/agent/ingest/'
+def push_to_server(
+    settings: AgentSettings,
+    device: DeviceTarget,
+    punches: list[dict],
+    users: list[dict],
+) -> dict:
+    url = f'{settings.server_url}/api/v1/attendance/agent/ingest/'
+    agent_suffix = device.label or str(device.device_id)
     payload = {
-        'device_id': cfg.device_id,
-        'agent_id': cfg.agent_id,
-        'incremental': cfg.incremental,
+        'device_id': device.device_id,
+        'agent_id': f'{settings.agent_id}:{agent_suffix}',
+        'incremental': settings.incremental,
         'punches': punches,
         'users': users,
     }
     resp = requests.post(
         url,
         headers={
-            'X-Attendance-Agent-Key': cfg.api_key,
+            'X-Attendance-Agent-Key': settings.api_key,
             'Content-Type': 'application/json',
         },
         json=payload,
@@ -171,23 +259,28 @@ def push_to_server(cfg: Config, punches: list[dict], users: list[dict]) -> dict:
         hint = ''
         if resp.status_code in (401, 403):
             hint = (
-                ' — تحقق: AGENT_API_KEY في config.env = ATTENDANCE_AGENT_API_KEY في Dokploy '
-                '(نفس الحروف، بدون مسافات).'
+                ' — تحقق: AGENT_API_KEY = ATTENDANCE_AGENT_API_KEY على السيرفر.'
             )
         raise RuntimeError(f'HTTP {resp.status_code}: {body.get("message", body)}{hint}')
     return body
 
 
-def run_cycle(cfg: Config) -> bool:
-    LOG.info('سحب من الجهاز %s:%s ...', cfg.device_ip, cfg.device_port)
-    punches, users, err = fetch_from_device(cfg)
+def _device_title(device: DeviceTarget) -> str:
+    name = device.label or f'جهاز {device.device_id}'
+    return f'{name} ({device.device_ip}:{device.device_port})'
+
+
+def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
+    LOG.info('── %s ──', _device_title(device))
+    LOG.info('سحب من %s:%s (id=%s) ...', device.device_ip, device.device_port, device.device_id)
+    punches, users, err = fetch_from_device(device, timeout_sec=settings.timeout_sec)
     if err:
-        LOG.error('فشل السحب من الجهاز: %s', err)
+        LOG.error('فشل السحب: %s', err)
         return False
 
-    LOG.info('على الجهاز: %s سجل، %s مستخدم — رفع للسيرفر ...', len(punches), len(users))
+    LOG.info('على الجهاز: %s سجل، %s مستخدم — رفع ...', len(punches), len(users))
     try:
-        result = push_to_server(cfg, punches, users)
+        result = push_to_server(settings, device, punches, users)
     except Exception as exc:
         LOG.error('فشل الرفع: %s', exc)
         return False
@@ -202,10 +295,54 @@ def run_cycle(cfg: Config) -> bool:
     return True
 
 
+def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool:
+    ok = 0
+    for device in devices:
+        if run_device_cycle(settings, device):
+            ok += 1
+    LOG.info('النتيجة: %s/%s جهاز نجح', ok, len(devices))
+    return ok == len(devices)
+
+
+def probe_devices(settings: AgentSettings, devices: list[DeviceTarget]) -> int:
+    """اختبار اتصال TCP + ZK لكل جهاز."""
+    import socket
+
+    failed = 0
+    for device in devices:
+        title = _device_title(device)
+        LOG.info('فحص %s ...', title)
+        sock = socket.socket()
+        sock.settimeout(settings.timeout_sec)
+        try:
+            sock.connect((device.device_ip, device.device_port))
+            LOG.info('  TCP %s:%s OK', device.device_ip, device.device_port)
+        except OSError as exc:
+            LOG.error('  TCP فشل: %s', exc)
+            failed += 1
+            continue
+        finally:
+            sock.close()
+
+        punches, users, err = fetch_from_device(device, timeout_sec=settings.timeout_sec)
+        if err:
+            LOG.error('  ZK فشل: %s', err)
+            failed += 1
+        else:
+            LOG.info('  ZK OK — %s مستخدم، %s سجل', len(users), len(punches))
+
+    if failed:
+        LOG.error('أجهزة فاشلة: %s/%s', failed, len(devices))
+        return 1
+    LOG.info('كل الأجهزة (%s) متاحة من هذا PC', len(devices))
+    return 0
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description='وكيل بصمة HR — فرع → سيرفر')
+    parser = argparse.ArgumentParser(description='وكيل بصمة HR — جهاز أو عدة أجهزة → سيرفر')
     parser.add_argument('--config', default=str(Path(__file__).parent / 'config.env'))
     parser.add_argument('--once', action='store_true', help='دورة واحدة ثم خروج')
+    parser.add_argument('--probe', action='store_true', help='فحص اتصال كل الأجهزة فقط')
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -214,16 +351,24 @@ def main() -> int:
         datefmt='%H:%M:%S',
     )
 
-    cfg = load_config(Path(args.config))
-    LOG.info('السيرفر: %s | الجهاز: %s (id=%s)', cfg.server_url, cfg.device_ip, cfg.device_id)
+    config_path = Path(args.config)
+    settings = load_settings(config_path)
+    devices = load_devices(config_path, settings)
+
+    LOG.info('السيرفر: %s | أجهزة: %s', settings.server_url, len(devices))
+    for d in devices:
+        LOG.info('  • id=%s %s:%s comm_key=%s', d.device_id, d.device_ip, d.device_port, d.comm_key)
+
+    if args.probe:
+        return probe_devices(settings, devices)
 
     if args.once:
-        return 0 if run_cycle(cfg) else 1
+        return 0 if run_all_cycles(settings, devices) else 1
 
     while True:
-        run_cycle(cfg)
-        LOG.info('انتظار %s ثانية ...', cfg.poll_interval_sec)
-        time.sleep(cfg.poll_interval_sec)
+        run_all_cycles(settings, devices)
+        LOG.info('انتظار %s ثانية ...', settings.poll_interval_sec)
+        time.sleep(settings.poll_interval_sec)
 
 
 if __name__ == '__main__':

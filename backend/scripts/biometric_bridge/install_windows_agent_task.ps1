@@ -1,5 +1,6 @@
-# تسجيل مهمة Windows لتشغيل وكيل البصمة كل 5 دقائق (مرة واحدة على PC الفرع).
-# يتطلب: VPN إلى شبكة الجهاز + config.env + pip install -r requirements.txt
+# تسجيل مهمة Windows لتشغيل وكيل البصمة كل 5 دقائق (PC مركزي أو فرع).
+# يتطلب: config.env (+ devices.list لعدة فروع) + pip install -r requirements.txt
+# عدة شبكات: Tailscale/VPN يصل من هذا PC لكل IP في devices.list
 # الاستخدام (PowerShell كمسؤول):
 #   cd backend\scripts\biometric_bridge
 #   .\install_windows_agent_task.ps1
@@ -24,4 +25,4 @@ $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 
 Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Settings $Settings -Description 'HR: سحب بصمة ZKTeco ورفعها للسيرفر' -Force | Out-Null
 Write-Host "تم تسجيل المهمة '$TaskName' — كل 5 دقائق (python agent.py --once)." -ForegroundColor Green
-Write-Host 'تأكد من اتصال VPN (Vigor) قبل التشغيل. اختبار: python agent.py --once' -ForegroundColor Cyan
+Write-Host 'اختبار: python agent.py --probe ثم python agent.py --once' -ForegroundColor Cyan
