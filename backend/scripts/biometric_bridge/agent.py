@@ -335,20 +335,83 @@ def filter_devices(
     return matched
 
 
+def fetch_pull_request_ids(settings: AgentSettings) -> list[int]:
+    """طلبات سحب أرسلها المستخدم من موقع HR."""
+    url = f'{settings.server_url}/api/v1/attendance/agent/pull-requests/'
+    resp = requests.get(
+        url,
+        headers={'X-Attendance-Agent-Key': settings.api_key},
+        timeout=30,
+    )
+    try:
+        body = resp.json()
+    except Exception:
+        body = {}
+    if resp.status_code >= 400:
+        msg = body.get('message', body.get('detail', resp.text[:200]))
+        raise RuntimeError(f'pull-requests HTTP {resp.status_code}: {msg}')
+    ids: list[int] = []
+    for row in body.get('data') or []:
+        try:
+            ids.append(int(row['device_id']))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return ids
+
+
+def ack_pull_request(settings: AgentSettings, device_id: int) -> None:
+    url = f'{settings.server_url}/api/v1/attendance/agent/pull-requests/'
+    resp = requests.post(
+        url,
+        headers={
+            'X-Attendance-Agent-Key': settings.api_key,
+            'Content-Type': 'application/json',
+        },
+        json={'device_id': device_id},
+        timeout=30,
+    )
+    if resp.status_code >= 400:
+        LOG.warning('تعذّر إغلاق طلب السحب لجهاز %s: HTTP %s', device_id, resp.status_code)
+
+
 def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool:
+    devices_to_run = list(devices)
+    try:
+        pull_ids = fetch_pull_request_ids(settings)
+    except Exception as exc:
+        LOG.warning('تعذّر جلب طلبات السحب من الموقع: %s', exc)
+        pull_ids = []
+
+    if pull_ids:
+        LOG.info('طلب سحب من الموقع — أجهزة: %s', pull_ids)
+        targeted: list[DeviceTarget] = []
+        for did in pull_ids:
+            try:
+                targeted.extend(filter_devices(devices, device_id=did))
+            except ValueError:
+                LOG.warning(
+                    'طلب سحب لجهاز id=%s غير مضبوط في هذا الوكيل (devices.list / config.env)',
+                    did,
+                )
+        if targeted:
+            devices_to_run = targeted
+
     ok = 0
-    for device in devices:
+    for device in devices_to_run:
         if run_device_cycle(settings, device):
             ok += 1
-    LOG.info('النتيجة: %s/%s جهاز نجح', ok, len(devices))
+            if pull_ids and device.device_id in pull_ids:
+                ack_pull_request(settings, device.device_id)
+    total = len(devices_to_run)
+    LOG.info('النتيجة: %s/%s جهاز نجح', ok, total)
     if ok == 0:
         return False
-    if ok < len(devices):
+    if ok < total:
         LOG.warning(
             'بعض الأجهزة فشلت — تحقق من VPN/Tailscale لكل فرع، '
             'أو شغّل جهازاً واحداً: python agent.py --once --device 1'
         )
-    return ok == len(devices)
+    return ok == total
 
 
 def fetch_devices_from_server(settings: AgentSettings) -> list[DeviceTarget]:

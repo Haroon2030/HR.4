@@ -15,7 +15,9 @@ from apps.attendance.selectors.punch_records import (
     get_punch_queryset,
     get_punch_stats,
 )
+from apps.attendance.services.agent_pull_queue import queue_pull_request
 from apps.attendance.services.attendance_pull import pull_device_attendance
+from apps.attendance.validators import cloud_pull_blocked_message
 from apps.attendance.services.punch_inference import reclassify_punches_by_sequence
 from apps.attendance.selectors.biometric_devices import (
     filter_biometric_devices_for_user,
@@ -159,6 +161,22 @@ def attendance_records_pull(request):
     date_to = request.POST.get('date_to') or None
     df = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
     dt = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else None
+
+    blocked = cloud_pull_blocked_message(device, force_mock=FORCE_REAL_DEVICE)
+    if blocked:
+        queue_pull_request(
+            device.pk,
+            date_from=df,
+            date_to=dt,
+            requested_by_id=request.user.pk,
+        )
+        messages.success(
+            request,
+            f'تم إرسال طلب سحب لجهاز «{device.name}». '
+            'سيُنفَّذ خلال دقائق من PC الفرع (وكيل C:\\biometric_bridge). '
+            'حدّث الصفحة بعد قليل.',
+        )
+        return redirect('web:attendance_records')
 
     result = pull_device_attendance(
         device,

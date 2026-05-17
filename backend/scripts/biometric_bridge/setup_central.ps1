@@ -1,16 +1,16 @@
 # إعداد الوكيل المركزي (عدة فروع من PC واحد)
+# يثبّت Python تلقائياً إن لم يكن موجوداً
 # PowerShell: cd backend\scripts\biometric_bridge  ثم  .\setup_central.ps1
 
 $ErrorActionPreference = 'Stop'
 $Here = $PSScriptRoot
 Set-Location $Here
 
+. (Join-Path $Here 'ensure_python.ps1')
+
 Write-Host '=== إعداد وكيل البصمة المركزي ===' -ForegroundColor Cyan
 
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Host 'ثبّت Python 3.12+ وأضفه إلى PATH' -ForegroundColor Red
-    exit 1
-}
+$pyInfo = Ensure-PythonForHrAgent
 
 if (-not (Test-Path 'config.env')) {
     if (Test-Path 'config.example.env') {
@@ -30,36 +30,37 @@ if ($cfg -match 'AGENT_API_KEY=ضع_المفتاح' -or $cfg -notmatch 'AGENT_AP
 }
 
 Write-Host 'تثبيت الحزم...' -ForegroundColor Cyan
-python -m pip install -q -r requirements.txt
+Invoke-PythonModule -PythonInfo $pyInfo -Arguments @('-m', 'pip', 'install', '-q', '-r', 'requirements.txt')
 
 Write-Host 'جلب قائمة الأجهزة من السيرفر...' -ForegroundColor Cyan
-python agent.py --sync-list
+Invoke-PythonModule -PythonInfo $pyInfo -Arguments @((Join-Path $Here 'agent.py'), '--sync-list')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host ''
 Write-Host 'فحص الشبكة (يجب نجاح كل جهاز من هذا PC):' -ForegroundColor Cyan
-python agent.py --probe
+Invoke-PythonModule -PythonInfo $pyInfo -Arguments @((Join-Path $Here 'agent.py'), '--probe')
 $probeOk = ($LASTEXITCODE -eq 0)
 
 Write-Host ''
 if ($probeOk) {
     Write-Host 'تشغيل مزامنة واحدة...' -ForegroundColor Cyan
-    python agent.py --once
+    Invoke-PythonModule -PythonInfo $pyInfo -Arguments @((Join-Path $Here 'agent.py'), '--once')
     Write-Host ''
     Write-Host 'للتشغيل التلقائي كل 5 دقائق (كمسؤول):' -ForegroundColor Green
-    Write-Host '  .\install_windows_agent_task.ps1'
+    $pyExe = if ($pyInfo.UsePyLauncher) { (Get-Command python).Source } else { $pyInfo.Executable }
+    Write-Host "  .\install_windows_agent_task.ps1 -PythonExecutable `"$pyExe`""
 } else {
     Write-Host 'بعض الأجهزة غير متاحة من هذا PC.' -ForegroundColor Yellow
     Write-Host 'الحلول:' -ForegroundColor Yellow
-    Write-Host '  1) Tailscale على PC المكتب + جهاز داخل كل فرع (Subnet Router)'
-    Write-Host '  2) VPN منفصل لكل فرع قبل التشغيل'
-    Write-Host '  3) أو وكيل منفصل في كل فرع بدون Tailscale'
+    Write-Host '  1) Tailscale + Subnet Router في كل فرع'
+    Write-Host '  2) VPN لكل فرع'
+    Write-Host '  3) وكيل منفصل في كل فرع: install_branch.bat'
     Write-Host ''
     Write-Host 'بعد إصلاح الشبكة: python agent.py --probe'
 }
 
 Write-Host ''
 Write-Host 'أوامر مفيدة:' -ForegroundColor Cyan
-Write-Host '  python agent.py --sync-list   # بعد إضافة جهاز في HR'
+Write-Host '  python agent.py --sync-list'
 Write-Host '  python agent.py --probe'
 Write-Host '  python agent.py --once'

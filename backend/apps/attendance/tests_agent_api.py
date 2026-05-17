@@ -82,3 +82,27 @@ class AttendanceAgentAPITests(TestCase):
         r = client.get('/api/v1/attendance/agent/devices/')
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(len(r.json()['data']), 1)
+
+    def test_pull_requests_queue_and_ack(self):
+        from apps.attendance.services.agent_pull_queue import (
+            get_pull_request,
+            queue_pull_request,
+        )
+
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY='test-agent-key-secret')
+        queue_pull_request(self.device.pk, requested_by_id=1)
+
+        r = client.get('/api/v1/attendance/agent/pull-requests/')
+        self.assertEqual(r.status_code, 200)
+        data = r.json()['data']
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['device_id'], self.device.pk)
+
+        r2 = client.post(
+            '/api/v1/attendance/agent/pull-requests/',
+            {'device_id': self.device.pk},
+            format='json',
+        )
+        self.assertEqual(r2.status_code, 200)
+        self.assertIsNone(get_pull_request(self.device.pk))

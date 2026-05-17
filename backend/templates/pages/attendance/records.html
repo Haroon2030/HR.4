@@ -145,12 +145,12 @@
             </div>
         </form>
 
-        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 mb-2">
-            السحب من الموقع <strong>لا يعمل</strong> لأجهزة 192.168.x.x (كان يتوقف دقيقة ثم يفشل).
-            من PC الفرع: <code class="font-mono bg-white px-1 rounded" dir="ltr">python agent.py --once --device 1</code>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 mb-2 space-y-1">
+            <p>أجهزة <span dir="ltr">192.168.x.x</span>: اضغط <strong>سحب</strong> — يُرسل طلب للفرع. يُنفَّذ خلال دقائق إذا الوكيل يعمل على <code class="font-mono bg-white px-1 rounded" dir="ltr">C:\biometric_bridge</code>.</p>
+            <p>تثبيت أول مرة في الفرع: <code class="font-mono bg-white px-1 rounded" dir="ltr">install_branch.bat</code> كمسؤول.</p>
         </div>
         {% if user|has_permission:'attendance.manage' %}
-        <form method="post" action="{% url 'web:attendance_records_pull' %}" class="border-t border-slate-100 pt-4 flex flex-wrap gap-3 items-end opacity-60 pointer-events-none" title="معطّل — استخدم الوكيل">
+        <form method="post" action="{% url 'web:attendance_records_pull' %}" class="border-t border-slate-100 pt-4 flex flex-wrap gap-3 items-end">
             {% csrf_token %}
             <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">سحب من جهاز</label>
@@ -168,8 +168,8 @@
                 <label class="block text-xs font-medium text-slate-600 mb-1">إلى</label>
                 <input type="date" name="date_to" class="rounded-lg border-slate-300 text-sm">
             </div>
-            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold">
-                سحب كل السجلات من الجهاز
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">
+                سحب من الجهاز
             </button>
         </form>
         {% endif %}

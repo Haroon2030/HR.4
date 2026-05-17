@@ -10,6 +10,10 @@ from apps.attendance.api.serializers import AgentIngestSerializer
 from apps.attendance.authentication import AgentAPIKeyAuthentication
 from apps.attendance.models import BiometricDevice
 from apps.attendance.services.agent_ingest import ingest_agent_payload
+from apps.attendance.services.agent_pull_queue import (
+    acknowledge_pull_request,
+    list_pending_pull_requests,
+)
 
 
 class AgentRateThrottle(SimpleRateThrottle):
@@ -43,6 +47,27 @@ class AgentDeviceListView(APIView):
             for d in devices
         ]
         return Response({'success': True, 'data': data})
+
+
+class AgentPullRequestsView(APIView):
+    """طلبات سحب من لوحة HR — الوكيل في الفرع ينفّذها."""
+
+    authentication_classes = [AgentAPIKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AgentRateThrottle]
+
+    def get(self, request):
+        return Response({'success': True, 'data': list_pending_pull_requests()})
+
+    def post(self, request):
+        device_id = request.data.get('device_id')
+        if device_id is None:
+            return Response(
+                {'success': False, 'message': 'device_id مطلوب'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        acknowledge_pull_request(int(device_id))
+        return Response({'success': True, 'message': 'تم إغلاق طلب السحب'})
 
 
 class AgentIngestView(APIView):
