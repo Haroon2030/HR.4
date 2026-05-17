@@ -1,13 +1,13 @@
 @echo off
-title HR - تثبيت وكيل فرع
+title HR Branch Agent Setup
 cd /d "%~dp0"
 echo.
-echo  تثبيت وكيل البصمة للفرع
-echo  - يثبت Python تلقائيا اذا لم يكن موجودا (winget)
-echo  - يضيف Python الى PATH
-echo  - يسحب من جهاز البصمة ويرفع للسيرفر عبر API
+echo  HR Biometric Branch Setup
+echo  - Installs Python if missing (winget)
+echo  - Adds Python to PATH
+echo  - Pulls from device and uploads to server
 echo.
-echo  شغّل كمسؤول: Right-click - Run as administrator
+echo  Right-click - Run as administrator
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup_branch.ps1" %*
 echo.

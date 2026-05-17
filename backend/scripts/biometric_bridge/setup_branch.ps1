@@ -1,7 +1,6 @@
-# تثبيت وكيل فرع واحد — يثبّت Python تلقائياً ويضيفه إلى PATH إن لم يكن موجوداً
+# HR biometric branch agent setup (ASCII-only for Windows PowerShell 5.1)
 #
-#   .\setup_branch.ps1 -DeviceId 2 -DeviceIp 192.168.24.59 -BranchName alwaha -ApiKey "..." -InstallTask
-#   .\setup_branch.ps1 -SkipPythonInstall   # إذا Python مثبت مسبقاً
+#   .\setup_branch.ps1 -DeviceId 2 -DeviceIp 192.168.24.59 -BranchName alwaha -ApiKey "KEY" -InstallTask
 
 param(
     [int]$DeviceId = 0,
@@ -28,33 +27,33 @@ function Invoke-Agent {
     return Invoke-PythonModule -PythonInfo $script:HrPython -Arguments $allArgs
 }
 
-Write-Host '=== تثبيت وكيل بصمة — فرع واحد ===' -ForegroundColor Cyan
+Write-Host '=== HR Biometric Branch Setup ===' -ForegroundColor Cyan
 
-Write-Host 'التحقق من Python...' -ForegroundColor Cyan
+Write-Host 'Checking Python...' -ForegroundColor Cyan
 $script:HrPython = Ensure-PythonForHrAgent -SkipInstall:$SkipPythonInstall
 
 if (-not $DeviceId) {
-    $raw = Read-Host 'معرّف الجهاز في HR (مثال 2 للوحة)'
+    $raw = Read-Host 'Device ID in HR (example: 2 for Al-Waha)'
     if (-not [int]::TryParse($raw, [ref]$DeviceId) -or $DeviceId -lt 1) {
-        Write-Host 'معرّف غير صالح' -ForegroundColor Red
+        Write-Host 'Invalid device ID' -ForegroundColor Red
         exit 1
     }
 }
 if (-not $DeviceIp) {
-    $DeviceIp = Read-Host 'IP جهاز البصمة (مثال 192.168.24.59)'
+    $DeviceIp = Read-Host 'Device IP (example: 192.168.24.59)'
 }
 if (-not $BranchName) {
-    $BranchName = Read-Host 'اسم الفرع (لاتيني، مثال alwaha)'
+    $BranchName = Read-Host 'Branch name (latin, example: alwaha)'
 }
 if (-not $ApiKey) {
-    $ApiKey = Read-Host 'AGENT_API_KEY (نفس ATTENDANCE_AGENT_API_KEY في Dokploy)'
+    $ApiKey = Read-Host 'AGENT_API_KEY (same as ATTENDANCE_AGENT_API_KEY on server)'
 }
-$urlIn = Read-Host "رابط السيرفر [$ServerUrl]"
+$urlIn = Read-Host "Server URL [$ServerUrl]"
 if ($urlIn) { $ServerUrl = $urlIn.TrimEnd('/') }
 
 $configPath = Join-Path $Here 'config.env'
 @(
-    "# وكيل فرع — لا ترفع هذا الملف إلى Git",
+    '# Branch agent - do not commit to Git',
     "SERVER_URL=$ServerUrl",
     "AGENT_API_KEY=$ApiKey",
     "AGENT_ID=branch-$BranchName",
@@ -63,34 +62,34 @@ $configPath = Join-Path $Here 'config.env'
     "DEVICE_PORT=$DevicePort",
     "COMM_KEY=$CommKey",
     "DEVICE_LABEL=$BranchName",
-    "POLL_INTERVAL_SEC=300",
-    "TIMEOUT_SEC=20",
-    "INCREMENTAL=true"
+    'POLL_INTERVAL_SEC=300',
+    'TIMEOUT_SEC=20',
+    'INCREMENTAL=true'
 ) -join "`n" | Set-Content -Path $configPath -Encoding UTF8
 
 $listPath = Join-Path $Here 'devices.list'
 if (Test-Path $listPath) {
     $bak = "$listPath.bak.$(Get-Date -Format 'yyyyMMdd-HHmmss')"
     Move-Item $listPath $bak -Force
-    Write-Host "تم نسخ devices.list القديم إلى $bak" -ForegroundColor Yellow
+    Write-Host "Backed up old devices.list to $bak" -ForegroundColor Yellow
 }
 
-Write-Host 'تثبيت حزم Python (requests, pyzk)...' -ForegroundColor Cyan
+Write-Host 'Installing pip packages (requests, pyzk)...' -ForegroundColor Cyan
 $pipCode = Invoke-PythonModule -PythonInfo $script:HrPython -Arguments @(
     '-m', 'pip', 'install', '-r', (Join-Path $Here 'requirements.txt')
 )
 if ($pipCode -ne 0) {
-    Write-Host 'فشل pip install — تحقق من الإنترنت' -ForegroundColor Red
+    Write-Host 'pip install failed - check internet' -ForegroundColor Red
     exit $pipCode
 }
 
 if (-not $SkipProbe) {
-    Write-Host 'فحص الجهاز...' -ForegroundColor Cyan
+    Write-Host 'Probing device...' -ForegroundColor Cyan
     $probeCode = Invoke-Agent @('--probe')
     if ($probeCode -ne 0) {
-        Write-Host 'الفحص فشل — ping + Comm Key=0 + نفس شبكة LAN' -ForegroundColor Yellow
+        Write-Host 'Probe failed - check ping, Comm Key=0, same LAN' -ForegroundColor Yellow
     } else {
-        Write-Host 'مزامنة واحدة...' -ForegroundColor Cyan
+        Write-Host 'Running one sync...' -ForegroundColor Cyan
         Invoke-Agent @('--once') | Out-Null
     }
 }
@@ -109,10 +108,10 @@ if ($InstallTask) {
     }
 } else {
     Write-Host ''
-    Write-Host 'للتشغيل التلقائي كل 5 دقائق (كمسؤول):' -ForegroundColor Green
+    Write-Host 'For auto sync every 5 min (run as Admin):' -ForegroundColor Green
     Write-Host '  .\setup_branch.ps1 ... -InstallTask'
 }
 
 Write-Host ''
-Write-Host 'تم الإعداد.' -ForegroundColor Green
+Write-Host 'Done.' -ForegroundColor Green
 Write-Host "  python agent.py --once --device $DeviceId" -ForegroundColor Cyan

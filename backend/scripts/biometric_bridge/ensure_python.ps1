@@ -1,4 +1,4 @@
-# تثبيت Python وإضافته لـ PATH — يُستدعى من setup_branch.ps1 و setup_central.ps1
+# Install Python and add to PATH (ASCII-only for Windows PowerShell 5.1)
 # Usage: . .\ensure_python.ps1; $py = Ensure-PythonForHrAgent
 
 function Refresh-SessionPath {
@@ -51,27 +51,26 @@ function Register-PythonOnPath {
     param([string]$PythonExe)
     $pythonDir = Split-Path -Parent $PythonExe
     $scriptsDir = Join-Path $pythonDir 'Scripts'
-    $changed = Add-DirectoryToUserPath -Directory $pythonDir
+    $null = Add-DirectoryToUserPath -Directory $pythonDir
     if (Test-Path $scriptsDir) {
-        if (Add-DirectoryToUserPath -Directory $scriptsDir) { $changed = $true }
+        $null = Add-DirectoryToUserPath -Directory $scriptsDir
     }
     Refresh-SessionPath
-    return $changed
 }
 
 function Install-PythonViaWinget {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        Write-Host 'winget غير متوفر — ثبّت Python يدوياً من python.org مع خيار Add to PATH' -ForegroundColor Red
+        Write-Host 'winget not found. Install Python 3.12 from python.org (check Add to PATH).' -ForegroundColor Red
         return $false
     }
-    Write-Host 'تثبيت Python 3.12 (قد يستغرق دقائق)...' -ForegroundColor Cyan
+    Write-Host 'Installing Python 3.12 via winget (may take a few minutes)...' -ForegroundColor Cyan
     $wingetArgs = @(
         'install', '--id', 'Python.Python.3.12', '-e', '--source', 'winget',
         '--accept-package-agreements', '--accept-source-agreements'
     )
     & winget @wingetArgs
     if ($LASTEXITCODE -gt 1) {
-        Write-Host "winget أنهى بالرمز $LASTEXITCODE (قد يكون مثبتاً مسبقاً)" -ForegroundColor Yellow
+        Write-Host "winget exit code $LASTEXITCODE (may already be installed)" -ForegroundColor Yellow
     }
     Start-Sleep -Seconds 2
     Refresh-SessionPath
@@ -85,13 +84,13 @@ function Ensure-PythonForHrAgent {
     )
 
     $existing = Find-PythonExecutables
-  foreach ($exe in $existing) {
+    foreach ($exe in $existing) {
         if ($exe -eq 'py') { continue }
         if ($exe -like '*\py.exe') { continue }
-        Register-PythonOnPath -PythonExe $exe | Out-Null
+        Register-PythonOnPath -PythonExe $exe
         if (-not $Quiet) {
             $ver = & $exe --version 2>&1
-            Write-Host "Python موجود: $exe ($ver)" -ForegroundColor Green
+            Write-Host "Python OK: $exe ($ver)" -ForegroundColor Green
         }
         return @{ Executable = $exe; UsePyLauncher = $false }
     }
@@ -99,28 +98,28 @@ function Ensure-PythonForHrAgent {
     $launcher = Get-Command py -ErrorAction SilentlyContinue
     if ($launcher) {
         $ver = & py --version 2>&1
-        if (-not $Quiet) { Write-Host "Python (py launcher): $ver" -ForegroundColor Green }
+        if (-not $Quiet) { Write-Host "Python OK (py launcher): $ver" -ForegroundColor Green }
         return @{ Executable = 'py'; UsePyLauncher = $true }
     }
 
     if ($SkipInstall) {
-        throw 'Python غير مثبت. شغّل التثبيت بدون -SkipPythonInstall أو ثبّت من python.org'
+        throw 'Python not found. Run without -SkipPythonInstall or install from python.org'
     }
 
     if (-not (Install-PythonViaWinget)) {
-        throw 'تعذّر تثبيت Python تلقائياً'
+        throw 'Could not install Python automatically'
     }
 
     $after = Find-PythonExecutables | Where-Object { $_ -ne 'py' -and $_ -notlike '*\py.exe' }
     if (-not $after -or $after.Count -eq 0) {
-        throw 'تم تشغيل المثبت لكن python.exe غير ظاهر — أعد تشغيل CMD كمسؤول أو سجّل خروج وادخل ويندوز'
+        throw 'Installer finished but python.exe not found. Close CMD, open Admin CMD, try again.'
     }
 
     $exe = $after[0]
-    Register-PythonOnPath -PythonExe $exe | Out-Null
+    Register-PythonOnPath -PythonExe $exe
     if (-not $Quiet) {
         $ver = & $exe --version 2>&1
-        Write-Host "تم تثبيت Python وإضافته لـ PATH: $exe ($ver)" -ForegroundColor Green
+        Write-Host "Python installed and added to PATH: $exe ($ver)" -ForegroundColor Green
     }
     return @{ Executable = $exe; UsePyLauncher = $false }
 }
