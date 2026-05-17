@@ -104,10 +104,10 @@ jobs:
     name: نشر الإنتاج (webhook)
     needs: ci
     if: |
-      always() &&
       needs.ci.result == 'success' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      secrets.DEPLOY_WEBHOOK_URL != ''
     runs-on: ubuntu-latest
     steps:
       - name: POST deploy webhook (rebuild + entrypoint migrate on server)
@@ -116,11 +116,6 @@ jobs:
           DEPLOY_WEBHOOK_AUTH: ${{ secrets.DEPLOY_WEBHOOK_AUTH }}
         run: |
           set -euo pipefail
-          if [ -z "${DEPLOY_WEBHOOK_URL:-}" ]; then
-            echo "::error::DEPLOY_WEBHOOK_URL غير مُعرّف في GitHub → Settings → Secrets → Actions"
-            echo "أضف رابط Redeploy من لوحة الاستضافة لتفعيل النشر التلقائي عند كل push."
-            exit 1
-          fi
           echo "==> CI نجح — استدعاء webhook النشر (migrate/collectstatic تلقائياً في entrypoint)..."
           if [ -n "${DEPLOY_WEBHOOK_AUTH:-}" ]; then
             curl -fsS --connect-timeout 30 --max-time 600 -X POST "$DEPLOY_WEBHOOK_URL" \
@@ -133,3 +128,21 @@ jobs:
               -d '{"source":"github-actions","event":"'"${GITHUB_EVENT_NAME}"'","sha":"'"${GITHUB_SHA}"'"}'
           fi
           echo "==> تم إرسال طلب النشر بنجاح."
+
+  deploy-hint:
+    name: تلميح — فعّل النشر التلقائي
+    needs: ci
+    if: |
+      needs.ci.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      secrets.DEPLOY_WEBHOOK_URL == ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: DEPLOY_WEBHOOK_URL غير مُعرّف
+        run: |
+          echo "::warning::النشر التلقائي معطّل — أضف DEPLOY_WEBHOOK_URL في GitHub Secrets"
+          echo "1) Dokploy → تطبيق HR → Webhooks → انسخ رابط Deploy"
+          echo "2) GitHub → Haroon2030/HR.4 → Settings → Secrets → Actions"
+          echo "3) New secret: DEPLOY_WEBHOOK_URL = الرابط"
+          echo "4) (اختياري) DEPLOY_WEBHOOK_AUTH إن طلب Dokploy توكناً"
