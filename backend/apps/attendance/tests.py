@@ -4,6 +4,7 @@ from django.utils import timezone
 from apps.attendance.models import AttendancePunch, BiometricDevice
 from apps.attendance.services.attendance_pull import pull_device_attendance
 from apps.attendance.services.zk_client import probe_device, sync_device_attendance
+from apps.attendance.validators import validate_device_ipv4
 
 
 @override_settings(BIOMETRIC_MOCK_MODE=True)
@@ -69,3 +70,12 @@ class BiometricMockTests(TestCase):
         second = import_enriched_punches(device, [punch], dry_run=False, incremental=False)
         self.assertEqual(second['imported'], 0)
         self.assertEqual(AttendancePunch.objects.filter(device=device).count(), 1)
+
+
+class DeviceIpValidatorTests(TestCase):
+    def test_valid_ipv4(self):
+        self.assertEqual(validate_device_ipv4('192.168.24.59'), '192.168.24.59')
+
+    def test_rejects_partial_ip(self):
+        with self.assertRaises(ValueError):
+            validate_device_ipv4('40')

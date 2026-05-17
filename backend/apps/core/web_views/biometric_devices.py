@@ -18,6 +18,7 @@ from apps.attendance.selectors.biometric_devices import (
 )
 from apps.attendance.selectors.device_users import DEVICE_USERS_PER_PAGE, get_device_user_queryset
 from apps.attendance.services.branch_setup import ensure_branch_for_device
+from apps.attendance.validators import validate_device_ipv4
 from apps.attendance.services.zk_client import (
     probe_device,
     sync_device_attendance,
@@ -176,8 +177,18 @@ def biometric_device_save(request):
     notes = (request.POST.get('notes') or '').strip()
     is_active = request.POST.get('is_active') == 'on'
 
-    if not name or not ip_address:
-        messages.error(request, 'الاسم وعنوان IP مطلوبان.')
+    if not name:
+        messages.error(request, 'اسم الجهاز مطلوب.')
+        return redirect('web:biometric_devices')
+
+    try:
+        ip_address = validate_device_ipv4(ip_address)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect('web:biometric_devices')
+
+    if port < 1 or port > 65535:
+        messages.error(request, 'المنفذ يجب أن يكون بين 1 و 65535.')
         return redirect('web:biometric_devices')
 
     if not branch_id_raw and not branch_name:

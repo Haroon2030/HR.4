@@ -145,6 +145,10 @@
             </div>
         </form>
 
+        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 mb-2">
+            زر «سحب من الجهاز» يعمل من <strong>السيرفر السحابي</strong> ولا يصل لشبكات 192.168.x.x.
+            للسحب استخدم الوكيل: <code class="font-mono bg-white px-1 rounded" dir="ltr">python agent.py --once</code>
+        </div>
         {% if user|has_permission:'attendance.manage' %}
         <form method="post" action="{% url 'web:attendance_records_pull' %}" class="border-t border-slate-100 pt-4 flex flex-wrap gap-3 items-end">
             {% csrf_token %}
