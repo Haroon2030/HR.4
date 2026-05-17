@@ -30,7 +30,7 @@ if ($PythonExecutable -and (Test-Path -LiteralPath $PythonExecutable)) {
         Refresh-SessionPath
         $resolved = Get-Command python -ErrorAction SilentlyContinue
         if (-not $resolved) {
-            Write-Host 'ERROR: python.exe not found. Reopen CMD after setup.' -ForegroundColor Red
+            Write-Host 'ERROR: python.exe not found.' -ForegroundColor Red
             exit 1
         }
         $Python = $resolved.Source
@@ -51,42 +51,31 @@ if (-not (Test-Path $AgentScript)) {
     exit 1
 }
 
-Write-Host "Python: $Python" -ForegroundColor Cyan
-Write-Host "Agent:  $AgentScript" -ForegroundColor Cyan
+Write-Host "Python:  $Python" -ForegroundColor Cyan
+Write-Host "Agent:   $AgentScript" -ForegroundColor Cyan
 Write-Host "WorkDir: $Here" -ForegroundColor Cyan
 
-# Remove old task if exists
-Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 schtasks /Delete /TN $TaskName /F 2>$null | Out-Null
 
-$registered = $false
-try {
-    $Action = New-ScheduledTaskAction -Execute $Python -Argument "`"$AgentScript`" --once" -WorkingDirectory $Here
-    $startAt = (Get-Date).AddMinutes(1)
-    $Trigger = New-ScheduledTaskTrigger -Once -At $startAt -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
-    $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2)
-    Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Settings $Settings -Description 'HR ZKTeco sync' -Force | Out-Null
-    $registered = $true
-    Write-Host "OK: Task '$TaskName' registered (every 5 minutes)." -ForegroundColor Green
-} catch {
-    Write-Host "Register-ScheduledTask failed: $($_.Exception.Message)" -ForegroundColor Yellow
-    Write-Host 'Trying schtasks fallback...' -ForegroundColor Yellow
+# schtasks is reliable on Windows 10 (Register-ScheduledTask duration often fails)
+$tr = "`"$Python`" `"$AgentScript`" --once"
+$runUser = $env:USERNAME
+
+Write-Host "Creating task (every 5 min) as user: $runUser" -ForegroundColor Cyan
+$result = schtasks /Create /TN $TaskName /TR $tr /SC MINUTE /MO 5 /RU $runUser /RL HIGHEST /F 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Retry without HIGHEST..." -ForegroundColor Yellow
+    $result = schtasks /Create /TN $TaskName /TR $tr /SC MINUTE /MO 5 /RU $runUser /F 2>&1
 }
 
-if (-not $registered) {
-    $tr = "`"$Python`" `"$AgentScript`" --once"
-    $result = schtasks /Create /TN $TaskName /TR $tr /SC MINUTE /MO 5 /RU SYSTEM /F 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $result = schtasks /Create /TN $TaskName /TR $tr /SC MINUTE /MO 5 /F 2>&1
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: schtasks failed: $result" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "OK: Task '$TaskName' registered via schtasks (every 5 minutes)." -ForegroundColor Green
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: schtasks failed:" -ForegroundColor Red
+    Write-Host $result
+    exit 1
 }
 
+Write-Host "OK: Task '$TaskName' runs every 5 minutes." -ForegroundColor Green
 Write-Host ''
-Write-Host 'Verify: schtasks /Query /TN HR-BiometricBridge' -ForegroundColor Cyan
-Write-Host 'Run now:  schtasks /Run /TN HR-BiometricBridge' -ForegroundColor Cyan
-Write-Host 'Test:     cd /d C:\biometric_bridge && python agent.py --once' -ForegroundColor Cyan
+schtasks /Query /TN $TaskName /FO LIST | Select-String -Pattern 'TaskName|Status|Next Run|Last Run'
+Write-Host ''
+Write-Host 'Run now: schtasks /Run /TN HR-BiometricBridge' -ForegroundColor Cyan
