@@ -60,12 +60,19 @@
     }
     .zk-modal-actions {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
         gap: 0.35rem;
         width: 300px;
         margin: 0 auto;
     }
-    .zk-modal-actions button { width: 100%; box-sizing: border-box; }
+    .zk-modal-actions button {
+        width: 100px;
+        max-width: 100px;
+        box-sizing: border-box;
+        flex: 0 0 100px;
+    }
 </style>
 <div
     x-show="deviceModal"
