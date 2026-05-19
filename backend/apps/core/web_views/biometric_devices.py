@@ -262,8 +262,9 @@ def biometric_device_save(request):
 @require_POST
 def biometric_device_delete(request, device_id):
     device = get_device_for_user(request.user, device_id)
+    name = device.name
     device.delete()
-    messages.success(request, 'تم حذف الجهاز.')
+    messages.success(request, f'تم حذف الجهاز «{name}».')
     return redirect('web:biometric_devices')
 
 

@@ -115,6 +115,11 @@
                                     notes: '{{ d.notes|escapejs }}',
                                     is_active: {{ d.is_active|yesno:'true,false' }}
                                 })" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200">تعديل</button>
+                                <form method="post" action="{% url 'web:biometric_device_delete' d.pk %}" class="inline"
+                                    onsubmit="return confirm('حذف جهاز «{{ d.name|escapejs }}» (رقم {{ d.pk }})؟{% if d.punch_count %} يوجد {{ d.punch_count }} سجل بصمة مرتبط — يبقى في النظام لكن الجهاز يُخفى.{% endif %}');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100" title="حذف الجهاز">حذف</button>
+                                </form>
                             </div>
                         </td>
                         {% endif %}
