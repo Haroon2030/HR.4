@@ -58,6 +58,7 @@
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600">
                     <tr>
+                        <th class="text-right px-4 py-2.5 font-medium w-14">رقم</th>
                         <th class="text-right px-4 py-2.5 font-medium">الجهاز</th>
                         <th class="text-right px-4 py-2.5 font-medium">IP:Port</th>
                         <th class="text-right px-4 py-2.5 font-medium">الفرع</th>
@@ -72,6 +73,7 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for d in devices %}
                     <tr class="hover:bg-slate-50/80">
+                        <td class="px-4 py-3 font-mono text-xs text-slate-500" dir="ltr">{{ d.pk }}</td>
                         <td class="px-4 py-3">
                             <span class="font-medium text-slate-900">{{ d.name }}</span>
                             {% if not d.is_active %}<span class="mr-1 text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">معطّل</span>{% endif %}
@@ -118,7 +120,7 @@
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">لا توجد أجهزة. أضف جهازاً بعنوان IP.</td></tr>
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">لا توجد أجهزة. أضف جهازاً بعنوان IP.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -312,10 +314,11 @@ function biometricPage() {
         toast: false,
         toastOk: true,
         toastMsg: '',
-        form: { device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true },
+        form: { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true },
         openDeviceForm(data) {
             if (data) {
                 this.form = {
+                    original_device_id: data.id,
                     device_id: data.id,
                     name: data.name,
                     ip: data.ip,
@@ -327,7 +330,7 @@ function biometricPage() {
                     is_active: data.is_active,
                 };
             } else {
-                this.form = { device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true };
+                this.form = { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true };
             }
             this.deviceModal = true;
             this.$nextTick(() => lucide.createIcons());

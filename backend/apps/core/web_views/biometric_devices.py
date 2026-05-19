@@ -18,6 +18,11 @@ from apps.attendance.selectors.biometric_devices import (
 )
 from apps.attendance.selectors.device_users import DEVICE_USERS_PER_PAGE, get_device_user_queryset
 from apps.attendance.services.branch_setup import ensure_branch_for_device
+from apps.attendance.services.device_primary_key import (
+    create_biometric_device_with_id,
+    parse_requested_device_id,
+    reassign_biometric_device_id,
+)
 from apps.attendance.validators import validate_device_ipv4
 from apps.attendance.services.agent_pull_queue import queue_lan_device_sync
 from apps.attendance.services.zk_client import (
@@ -166,7 +171,8 @@ def biometric_devices_dashboard(request):
 @permission_required('attendance.manage')
 @require_POST
 def biometric_device_save(request):
-    device_id = request.POST.get('device_id')
+    original_device_id_raw = (request.POST.get('original_device_id') or '').strip()
+    requested_device_id_raw = (request.POST.get('device_id') or '').strip()
     name = (request.POST.get('name') or '').strip()
     ip_address = (request.POST.get('ip_address') or '').strip()
     port = int(request.POST.get('port') or 4370)
@@ -194,8 +200,15 @@ def biometric_device_save(request):
         messages.error(request, 'اختر فرعاً من القائمة أو أدخل اسم فرع جديد للربط.')
         return redirect('web:biometric_devices')
 
-    if device_id:
-        device = get_device_for_user(request.user, int(device_id))
+    try:
+        requested_device_id = parse_requested_device_id(requested_device_id_raw)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect('web:biometric_devices')
+
+    is_update = bool(original_device_id_raw and original_device_id_raw.isdigit())
+    if is_update:
+        device = get_device_for_user(request.user, int(original_device_id_raw))
     else:
         device = BiometricDevice()
 
@@ -223,11 +236,23 @@ def biometric_device_save(request):
     device.branch_id = branch.id
     device.notes = notes
     device.is_active = is_active
-    device.save()
+
+    try:
+        if is_update:
+            if requested_device_id is not None and requested_device_id != device.pk:
+                device = reassign_biometric_device_id(device, requested_device_id)
+            device.save()
+        elif requested_device_id is not None:
+            create_biometric_device_with_id(device, requested_device_id)
+        else:
+            device.save()
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect('web:biometric_devices')
 
     messages.success(
         request,
-        f'تم حفظ الجهاز «{device.name}» وربطه بفرع «{branch.name}» — يمكنك الآن ربط الموظفين بالأسفل.',
+        f'تم حفظ الجهاز «{device.name}» (رقم {device.pk}) وربطه بفرع «{branch.name}» — يمكنك الآن ربط الموظفين بالأسفل.',
     )
     from django.urls import reverse
     return redirect(reverse('web:biometric_devices') + '#enroll-form')
