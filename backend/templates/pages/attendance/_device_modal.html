@@ -1,41 +1,72 @@
-{# نافذة جهاز بصمة — مضغوطة تقنية، حقول بحدود، تمرير بالماوس #}
+{# نافذة جهاز بصمة — عرض ثابت 200px في المنتصف #}
 <style>
+    .zk-modal-panel {
+        width: 200px;
+        max-width: 200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
     .zk-modal-field {
         display: block;
-        width: 100%;
+        width: 200px;
+        max-width: 200px;
+        box-sizing: border-box;
         border: 1px solid #94a3b8;
         border-radius: 0.375rem;
         background: #fff;
-        padding: 0.3rem 0.5rem;
-        font-size: 0.8125rem;
-        line-height: 1.25rem;
+        padding: 0.3rem 0.45rem;
+        font-size: 0.75rem;
+        line-height: 1.2rem;
         color: #0f172a;
-        transition: border-color 0.15s, box-shadow 0.15s;
     }
     .zk-modal-field:focus {
         outline: none;
         border-color: #2563eb;
         box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
-    .zk-modal-field[readonly] { background: #f8fafc; color: #64748b; }
+    .zk-modal-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.15rem;
+    }
     .zk-modal-scroll {
         overflow-y: auto;
         overflow-x: hidden;
         overscroll-behavior: contain;
-        max-height: min(58vh, 26rem);
+        max-height: min(62vh, 28rem);
         -webkit-overflow-scrolling: touch;
     }
-    .zk-grid-2col { display: grid; grid-template-columns: 4.25rem 1fr; gap: 0.2rem 0.35rem; align-items: center; }
-    .zk-grid-lan { display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.2rem 0.35rem; align-items: center; }
-    .zk-grid-foot { display: grid; grid-template-columns: 2.75rem 1fr auto; gap: 0.2rem 0.35rem; align-items: center; }
-    .zk-modal-fieldset { border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.35rem 0.5rem; margin: 0; }
-    .zk-modal-fieldset legend { font-size: 9px; font-weight: 700; padding: 0 2px; }
+    .zk-modal-row { margin-bottom: 0.45rem; }
+    .zk-modal-fieldset {
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+        padding: 0.35rem 0.4rem;
+        margin: 0 0 0.45rem;
+        width: 200px;
+        box-sizing: border-box;
+    }
+    .zk-modal-fieldset legend {
+        font-size: 9px;
+        font-weight: 700;
+        color: #64748b;
+        padding: 0 2px;
+    }
+    .zk-modal-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        width: 200px;
+        margin: 0 auto;
+    }
+    .zk-modal-actions button { width: 100%; box-sizing: border-box; }
 </style>
 <div
     x-show="deviceModal"
     x-cloak
     x-transition.opacity.duration.150ms
-    class="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-3 bg-slate-900/55 overflow-y-auto overscroll-contain"
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/55 overflow-y-auto overscroll-contain"
     @keydown.escape.window="deviceModal = false"
     role="dialog"
     aria-modal="true"
@@ -43,92 +74,97 @@
 >
     <div
         @click.outside="deviceModal = false"
-        class="bg-white w-full max-w-[22rem] rounded-lg shadow-xl border border-slate-300 flex flex-col my-2 sm:my-auto shrink-0 max-h-[calc(100vh-1rem)]"
+        class="zk-modal-panel bg-white rounded-lg shadow-xl border border-slate-300 flex flex-col shrink-0 max-h-[calc(100vh-1.5rem)]"
     >
-        <div class="flex items-center justify-between gap-1.5 px-2.5 py-1.5 border-b border-slate-200 bg-slate-50 shrink-0">
-            <div class="flex items-center gap-1.5 min-w-0">
-                <span class="shrink-0 w-6 h-6 rounded bg-slate-800 text-white flex items-center justify-center">
-                    <i data-lucide="cpu" class="w-3 h-3"></i>
-                </span>
-                <div class="min-w-0 leading-tight">
-                    <h3 id="device-modal-title" class="text-xs font-bold text-slate-900"
-                        x-text="form.device_id ? 'تعديل جهاز' : 'إضافة جهاز'"></h3>
-                    <p class="text-[9px] text-slate-500 font-mono" dir="ltr">ZKTeco · :4370</p>
-                </div>
-            </div>
+        <div class="flex items-center justify-between gap-1 px-2 py-1.5 border-b border-slate-200 bg-slate-50 shrink-0">
             <button type="button" @click="deviceModal = false"
-                class="shrink-0 p-1 rounded text-slate-400 hover:bg-slate-200" aria-label="إغلاق">
+                class="shrink-0 p-0.5 rounded text-slate-400 hover:bg-slate-200" aria-label="إغلاق">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
+            <div class="text-left leading-tight min-w-0">
+                <h3 id="device-modal-title" class="text-[11px] font-bold text-slate-900"
+                    x-text="form.device_id ? 'تعديل جهاز' : 'إضافة جهاز'"></h3>
+                <p class="text-[8px] text-slate-500 font-mono" dir="ltr">ZKTeco:4370</p>
+            </div>
         </div>
 
-        <form method="post" action="{% url 'web:biometric_device_save' %}" class="flex flex-col min-h-0 flex-1 overflow-hidden">
+        <form method="post" action="{% url 'web:biometric_device_save' %}" class="flex flex-col min-h-0 overflow-hidden">
             {% csrf_token %}
             <input type="hidden" name="original_device_id" :value="form.original_device_id || ''">
 
-            <div class="zk-modal-scroll px-2.5 py-2 space-y-2 text-slate-800">
-                <div class="zk-grid-2col">
-                    <label class="text-[10px] font-semibold text-slate-600 font-mono" dir="ltr"
-                        title="يطابق devices.list عند وكيل الفرع">ID</label>
+            <div class="zk-modal-scroll py-2">
+                <div class="zk-modal-row">
+                    <label class="zk-modal-label font-mono" dir="ltr" title="devices.list">ID</label>
                     <input type="number" name="device_id" x-model="form.device_id" min="1" step="1"
                         class="zk-modal-field font-mono" dir="ltr" placeholder="1">
-
-                    <label class="text-[10px] font-semibold text-slate-600">الاسم</label>
+                </div>
+                <div class="zk-modal-row">
+                    <label class="zk-modal-label">الاسم</label>
                     <input type="text" name="name" x-model="form.name" required
                         class="zk-modal-field" placeholder="الواحة">
                 </div>
 
-                <fieldset class="zk-modal-fieldset space-y-1">
-                    <legend class="text-slate-500 uppercase tracking-wide">LAN</legend>
-                    <div class="zk-grid-lan">
-                        <label class="text-[10px] text-slate-500 font-mono" dir="ltr">IP</label>
+                <fieldset class="zk-modal-fieldset">
+                    <legend>LAN</legend>
+                    <div class="zk-modal-row">
+                        <label class="zk-modal-label font-mono" dir="ltr">IP</label>
                         <input type="text" name="ip_address" x-model="form.ip" required dir="ltr"
                             pattern="^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"
                             class="zk-modal-field font-mono" placeholder="192.168.24.59">
-                        <label class="text-[10px] text-slate-500 font-mono" dir="ltr">PORT</label>
+                    </div>
+                    <div class="zk-modal-row">
+                        <label class="zk-modal-label font-mono" dir="ltr">PORT</label>
                         <input type="number" name="port" x-model="form.port"
-                            class="zk-modal-field font-mono w-20" placeholder="4370">
-                        <label class="text-[10px] text-slate-500 font-mono" dir="ltr">KEY</label>
+                            class="zk-modal-field font-mono" placeholder="4370">
+                    </div>
+                    <div class="zk-modal-row" style="margin-bottom:0">
+                        <label class="zk-modal-label font-mono" dir="ltr">KEY</label>
                         <input type="number" name="comm_key" x-model="form.comm_key" min="0"
-                            class="zk-modal-field font-mono w-20" placeholder="0">
+                            class="zk-modal-field font-mono" placeholder="0">
                     </div>
                 </fieldset>
 
-                <fieldset class="zk-modal-fieldset space-y-1 bg-indigo-50" style="border-color:#c7d2fe;">
-                    <legend class="text-indigo-700">فرع <span class="text-red-600">*</span></legend>
+                <fieldset class="zk-modal-fieldset" style="border-color:#c7d2fe;background:#f5f3ff;">
+                    <legend class="text-indigo-700">فرع *</legend>
                     {% if branches %}
-                    <select name="branch_id" x-model="form.branch_id" class="zk-modal-field text-xs py-1">
-                        <option value="">— فرع مسجّل —</option>
-                        {% for b in branches %}
-                        <option value="{{ b.pk }}">{{ b.name }} · {{ b.code }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="text-[9px] text-center text-indigo-400 leading-none">أو</p>
+                    <div class="zk-modal-row">
+                        <select name="branch_id" x-model="form.branch_id" class="zk-modal-field">
+                            <option value="">فرع مسجّل</option>
+                            {% for b in branches %}
+                            <option value="{{ b.pk }}">{{ b.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="text-[8px] text-center text-indigo-400 mb-1">أو</p>
                     {% endif %}
-                    <input type="text" name="branch_name" x-model="form.branch_name"
-                        class="zk-modal-field" placeholder="{% if branches %}فرع جديد{% else %}اسم الفرع{% endif %}">
+                    <div class="zk-modal-row" style="margin-bottom:0">
+                        <input type="text" name="branch_name" x-model="form.branch_name"
+                            class="zk-modal-field" placeholder="فرع جديد">
+                    </div>
                 </fieldset>
 
-                <div class="zk-grid-foot">
-                    <label class="text-[10px] text-slate-500">ملاحظة</label>
+                <div class="zk-modal-row">
+                    <label class="zk-modal-label">ملاحظة</label>
                     <input type="text" name="notes" x-model="form.notes" class="zk-modal-field" placeholder="—">
-                    <label class="inline-flex items-center gap-1 cursor-pointer justify-self-end">
-                        <input type="checkbox" name="is_active" x-model="form.is_active" class="sr-only peer">
-                        <span class="relative w-8 h-4 rounded-full bg-slate-300 peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full after:shadow peer-checked:after:-translate-x-3.5 transition-all"></span>
-                        <span class="text-[10px] font-medium" x-text="form.is_active ? 'ON' : 'OFF'"></span>
-                    </label>
                 </div>
+                <label class="inline-flex items-center gap-1.5 cursor-pointer" style="width:200px">
+                    <input type="checkbox" name="is_active" x-model="form.is_active" class="sr-only peer">
+                    <span class="relative w-8 h-4 rounded-full bg-slate-300 peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full after:shadow peer-checked:after:-translate-x-3.5 transition-all"></span>
+                    <span class="text-[10px] font-medium" x-text="form.is_active ? 'نشط' : 'معطّل'"></span>
+                </label>
             </div>
 
-            <div class="shrink-0 flex gap-1.5 px-2.5 py-2 border-t border-slate-200 bg-slate-50">
-                <button type="button" @click="deviceModal = false"
-                    class="px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-xs text-slate-600 hover:bg-slate-100">
-                    إلغاء
-                </button>
-                <button type="submit"
-                    class="flex-1 py-1.5 rounded-md bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 border border-primary-700">
-                    <span x-text="form.device_id ? 'حفظ' : 'تسجيل'"></span>
-                </button>
+            <div class="shrink-0 py-2 border-t border-slate-200 bg-slate-50">
+                <div class="zk-modal-actions">
+                    <button type="submit"
+                        class="py-1.5 rounded-md bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 border border-primary-700">
+                        <span x-text="form.device_id ? 'حفظ' : 'تسجيل'"></span>
+                    </button>
+                    <button type="button" @click="deviceModal = false"
+                        class="py-1.5 rounded-md border border-slate-300 bg-white text-xs text-slate-600 hover:bg-slate-100">
+                        إلغاء
+                    </button>
+                </div>
             </div>
         </form>
     </div>
