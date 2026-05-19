@@ -58,7 +58,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--details', action='store_true',
+            '--details', '--detail', action='store_true',
+            dest='details',
             help='عرض تفاصيل إضافية (آخر السجلات، أجهزة)',
         )
         parser.add_argument(

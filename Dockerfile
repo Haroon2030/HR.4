@@ -43,7 +43,8 @@ COPY data_dump.json* /app/
 
 # Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY docker/check-hr.sh /usr/local/bin/check-hr
+RUN chmod +x /entrypoint.sh /usr/local/bin/check-hr
 
 # Create runtime dirs (including backups)
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/backups
