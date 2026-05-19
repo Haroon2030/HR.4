@@ -48,6 +48,10 @@ RUN chmod +x /entrypoint.sh
 # Create runtime dirs (including backups)
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/backups
 
+# تجميع الملفات الثابتة عند البناء — يُسرّع إعادة تشغيل الحاوية (لا يغيّر DJANGO_ENV للتشغيل)
+RUN DJANGO_ENV=development SECRET_KEY=build-collectstatic-dummy-key-not-for-production-use \
+    python manage.py collectstatic --noinput
+
 EXPOSE 8082
 
 # Migrations run in entrypoint.sh on every container start (before CMD / Gunicorn).

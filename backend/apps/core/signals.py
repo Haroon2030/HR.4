@@ -28,6 +28,17 @@ def save_user_profile(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=PendingAction)
+def invalidate_sidebar_on_pending_action(sender, instance, **kwargs):
+    """إبطال عدادات الشريط الجانبي عند تغيير طلب معلّق."""
+    from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+
+    invalidate_sidebar_counts(
+        instance.requested_by_id,
+        instance.assigned_officer_id,
+    )
+
+
+@receiver(post_save, sender=PendingAction)
 def notify_branch_on_pending_action_created(sender, instance, created, **kwargs):
     """عند إنشاء طلب جديد → أبلغ مدير الفرع."""
     if not created:
@@ -45,6 +56,16 @@ def _register_employment_request_signal():
     from apps.employees.models import EmploymentRequest
 
     @receiver(post_save, sender=EmploymentRequest, weak=False,
+              dispatch_uid='invalidate_sidebar_on_employment_request')
+    def _invalidate_sidebar(sender, instance, **kwargs):
+        from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+
+        invalidate_sidebar_counts(
+            instance.requested_by_id,
+            instance.assigned_officer_id,
+        )
+
+    @receiver(post_save, sender=EmploymentRequest, weak=False,
               dispatch_uid='notify_branch_on_employment_request_created')
     def _notify(sender, instance, created, **kwargs):
         if not created:
@@ -54,6 +75,20 @@ def _register_employment_request_signal():
             notify_branch_on_create(instance)
         except Exception as e:
             logger.warning("notify_employment_request signal failed: %s", e)
+
+
+def _register_notification_signal():
+    from apps.core.models import Notification
+
+    @receiver(post_save, sender=Notification, weak=False,
+              dispatch_uid='invalidate_sidebar_on_notification')
+    def _invalidate_notif(sender, instance, **kwargs):
+        from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+
+        invalidate_sidebar_counts(instance.recipient_id)
+
+
+_register_notification_signal()
 
 
 _register_employment_request_signal()

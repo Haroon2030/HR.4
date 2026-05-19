@@ -36,8 +36,12 @@ except Exception as exc:
     print(f"[permissions] deploy sync failed (non-fatal): {exc}")
 PY_SYNC
 
-echo "==> Collecting static files..."
-python manage.py collectstatic --noinput
+if [ "${COLLECTSTATIC_ON_START:-false}" = "true" ]; then
+    echo "==> Collecting static files (COLLECTSTATIC_ON_START=true)..."
+    python manage.py collectstatic --noinput
+else
+    echo "==> Skipping collectstatic (مجمّع عند بناء الصورة — اضبط COLLECTSTATIC_ON_START=true عند الحاجة)."
+fi
 
 # ─── Auto-load initial data on first deploy (idempotent via marker file) ──────
 # DOUBLE-SAFE: never flushes if the DB already contains user data, even if the

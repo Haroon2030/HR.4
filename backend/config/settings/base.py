@@ -194,8 +194,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',               # request في كل قالب
                 'django.contrib.auth.context_processors.auth',              # user في كل قالب
                 'django.contrib.messages.context_processors.messages',      # messages في كل قالب
-                'apps.core.context_processors.pending_actions_count',       # عدّاد الطلبات المعلّقة (sidebar)
-                'apps.core.context_processors.approval_inbox',              # صندوق الوارد + الإشعارات
+                'apps.core.context_processors.sidebar_context',             # عدّادات sidebar (مخزّنة مؤقتاً)
             ],
         },
     },
@@ -255,6 +254,12 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+
+# مدة تخزين الملفات الثابتة في المتصفح (ثانية) — مع أسماء ملفات مضغوطة من WhiteNoise
+WHITENOISE_MAX_AGE = env.int('WHITENOISE_MAX_AGE', default=31536000)
+
+# مدة تخزين عدادات الشريط الجانبي (ثانية) — يقلّل استعلامات COUNT على كل صفحة
+SIDEBAR_COUNTS_CACHE_TTL = env.int('SIDEBAR_COUNTS_CACHE_TTL', default=45)
 
 # الملفات المرفوعة (media)
 MEDIA_URL = '/media/'

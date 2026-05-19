@@ -107,11 +107,13 @@ def dashboard_view(request):
         'branches_count': Branch.objects.filter(is_deleted=False).count() if request.user.is_superuser else len(accessible_branch_ids),
     }
 
-    last_database_backup = (
-        DatabaseBackupLog.objects.order_by('-created_at').first()
-        if (request.user.is_superuser or _is_general_manager(request.user))
-        else None
-    )
+    last_database_backup = None
+    if request.user.is_superuser or _is_general_manager(request.user):
+        last_database_backup = (
+            DatabaseBackupLog.objects.only('id', 'created_at', 'status', 'file_size')
+            .order_by('-created_at')
+            .first()
+        )
 
     context = {
         'stats': stats,
@@ -135,7 +137,7 @@ def dashboard_view(request):
     }
 
     # طلبات التوظيف المعلقة الخاصة بفروع المستخدم (لمدير الفرع / السوبر)
-    if request.user.is_superuser or request.user.managed_branches.filter(is_deleted=False).exists():
+    if request.user.is_superuser or accessible_branch_ids:
         context['is_branch_manager'] = True
         qs = EmploymentRequest.objects.select_related(
             'branch', 'department', 'cost_center', 'requested_by'
