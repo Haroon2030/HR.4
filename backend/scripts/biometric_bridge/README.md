@@ -44,6 +44,16 @@ For devices on `192.168.x.x`, use **Request sync** in HR — the branch agent ex
 
 Cloud server cannot connect to private LAN IPs directly.
 
+## Server-side health check (production)
+
+On the Docker server:
+
+```bash
+python manage.py check_attendance_production --verbose
+```
+
+Verifies DB connection, tables, agent API key, punch rows in `attendance_attendancepunch`, and employee enrollments.
+
 ## Central PC (optional)
 
 Multiple branches via VPN/Tailscale: `setup_central.ps1` + `devices.list.example`.
