@@ -3,7 +3,7 @@
 
 الاستخدام على السيرفر (داخل حاوية Docker):
   python manage.py check_attendance_production
-  python manage.py check_attendance_production --verbose
+  python manage.py check_attendance_production --details
 """
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--verbose', '-v', action='store_true',
+            '--details', action='store_true',
             help='عرض تفاصيل إضافية (آخر السجلات، أجهزة)',
         )
         parser.add_argument(
@@ -72,13 +72,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         report = self._run_checks(
-            verbose=options['verbose'],
+            verbose=options['details'],
             deploy=options['deploy'],
         )
         if options['json']:
             self.stdout.write(json.dumps(self._to_dict(report), ensure_ascii=False, indent=2))
         else:
-            self._print_report(report, verbose=options['verbose'])
+            self._print_report(report, verbose=options['details'])
         if report.failures:
             self.stderr.write(self.style.ERROR('\n❌ يوجد أخطاء حرجة — راجع التفاصيل أعلاه.'))
             raise SystemExit(1)

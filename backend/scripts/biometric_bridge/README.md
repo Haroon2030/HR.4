@@ -49,7 +49,7 @@ Cloud server cannot connect to private LAN IPs directly.
 On the Docker server:
 
 ```bash
-python manage.py check_attendance_production --verbose
+python manage.py check_attendance_production --details
 ```
 
 Verifies DB connection, tables, agent API key, punch rows in `attendance_attendancepunch`, and employee enrollments.
