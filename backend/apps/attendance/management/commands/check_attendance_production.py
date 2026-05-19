@@ -31,10 +31,21 @@ class Report:
     checks: list[CheckResult] = field(default_factory=list)
     warnings: int = 0
     failures: int = 0
+    deploy_mode: bool = False
 
-    def add(self, check: CheckResult) -> None:
+    def add(self, check: CheckResult, *, critical: bool = True) -> None:
+        """في وضع --deploy: الفحوصات غير الحرجة تُحوَّل لتحذيرات ولا توقف النشر."""
+        if self.deploy_mode and critical is False and not check.ok:
+            title = check.title
+            if title.startswith('❌ '):
+                title = '⚠ ' + title[2:]
+            elif not title.startswith('⚠'):
+                title = f'⚠ {title}'
+            check = CheckResult(True, title, check.detail, check.hint)
         self.checks.append(check)
         if check.ok:
+            if '⚠' in check.title:
+                self.warnings += 1
             return
         if 'تحذير' in check.title or check.title.startswith('⚠'):
             self.warnings += 1
@@ -54,9 +65,16 @@ class Command(BaseCommand):
             '--json', action='store_true',
             help='إخراج JSON فقط (للمراقبة الآلية)',
         )
+        parser.add_argument(
+            '--deploy', action='store_true',
+            help='وضع النشر: يفشل فقط عند DB/جداول/مفتاح الوكيل — لا يوقف النشر لجدول بصمات فارغ',
+        )
 
     def handle(self, *args, **options):
-        report = self._run_checks(verbose=options['verbose'])
+        report = self._run_checks(
+            verbose=options['verbose'],
+            deploy=options['deploy'],
+        )
         if options['json']:
             self.stdout.write(json.dumps(self._to_dict(report), ensure_ascii=False, indent=2))
         else:
@@ -69,14 +87,14 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.SUCCESS('\n✅ فحص البصمة: كل شيء يبدو سليماً.'))
 
-    def _run_checks(self, *, verbose: bool) -> Report:
-        report = Report()
-        report.add(self._check_database())
-        report.add(self._check_attendance_tables())
-        report.add(self._check_agent_api_key())
-        report.add(self._check_devices())
-        report.add(self._check_punches_saved())
-        report.add(self._check_relationships())
+    def _run_checks(self, *, verbose: bool, deploy: bool) -> Report:
+        report = Report(deploy_mode=deploy)
+        report.add(self._check_database(), critical=True)
+        report.add(self._check_attendance_tables(), critical=True)
+        report.add(self._check_agent_api_key(), critical=True)
+        report.add(self._check_devices(), critical=not deploy)
+        report.add(self._check_punches_saved(), critical=not deploy)
+        report.add(self._check_relationships(), critical=not deploy)
         if verbose:
             self._verbose_extra = True
         else:
@@ -285,7 +303,10 @@ class Command(BaseCommand):
         return CheckResult(True, '✅ الربط والعلاقات', '; '.join(detail_parts))
 
     def _print_report(self, report: Report, *, verbose: bool) -> None:
-        self.stdout.write(self.style.MIGRATE_HEADING('\n═══ فحص البصمة / الإنتاج ═══\n'))
+        title = '═══ فحص البصمة / الإنتاج ═══'
+        if report.deploy_mode:
+            title += ' (وضع النشر — حرج فقط)'
+        self.stdout.write(self.style.MIGRATE_HEADING(f'\n{title}\n'))
         django_env = os.environ.get('DJANGO_ENV', '?')
         env = 'إنتاج' if not settings.DEBUG else 'تطوير'
         self.stdout.write(f'البيئة: {env} | DJANGO_ENV={django_env} | DEBUG={settings.DEBUG}\n')
@@ -361,6 +382,7 @@ class Command(BaseCommand):
                 'ok': report.failures == 0,
                 'failures': report.failures,
                 'warnings': report.warnings,
+                'deploy_mode': report.deploy_mode,
             },
             'checks': [
                 {

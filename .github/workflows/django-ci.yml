@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # عند كل push إلى main/master يُنفَّذ بالترتيب:
 #   1) check + check --deploy (إنتاج) + OpenAPI
-#   2) migrate + collectstatic + مزامنة صلاحيات (نفس entrypoint)
+#   2) migrate + collectstatic + مزامنة صلاحيات + فحص البصمة/DB (--deploy)
 #   3) كل الاختبارات
 #   4) استدعاء webhook إعادة بناء/نشر السيرفر (إلزامي على main)
 #
@@ -57,10 +57,10 @@ jobs:
         run: pip install -r requirements.txt
 
       # ── فحوصات Django ─────────────────────────────────────────────────────
-      - name: "[1/8] Django system check"
+      - name: "[1/9] Django system check"
         run: python manage.py check
 
-      - name: "[2/8] Production security check (check --deploy)"
+      - name: "[2/9] Production security check (check --deploy)"
         env:
           DJANGO_ENV: production
           SECRET_KEY: ci-production-check-secret-key-with-enough-length-and-variety-xyz
@@ -72,17 +72,17 @@ jobs:
           USE_R2: 'False'
         run: python manage.py check --deploy
 
-      - name: "[3/8] Validate OpenAPI schema"
+      - name: "[3/9] Validate OpenAPI schema"
         run: python manage.py spectacular --validate
 
       # ── نفس خطوات entrypoint (محاكاة النشر) ───────────────────────────────
-      - name: "[4/8] Migrate database"
+      - name: "[4/9] Migrate database"
         run: python manage.py migrate --noinput
 
-      - name: "[5/8] Collect static files"
+      - name: "[5/9] Collect static files"
         run: python manage.py collectstatic --noinput
 
-      - name: "[6/8] Sync permission registry"
+      - name: "[6/9] Sync permission registry"
         run: |
           python manage.py shell -c "
           import apps.core.web_views  # noqa: F401
@@ -91,13 +91,26 @@ jobs:
           print(f'[permissions] CI sync: {m} modules, {p} perms ({n} new)')
           "
 
-      # إعدادات الإنتاج تُختبر في [2/9] check --deploy (بدون migrate مكرر على SQLite)
+      - name: "[7/9] Attendance DB check (deploy mode)"
+        env:
+          DJANGO_ENV: production
+          SECRET_KEY: ci-production-check-secret-key-with-enough-length-and-variety-xyz
+          DEBUG: 'False'
+          ALLOWED_HOSTS: example.com,testserver
+          CSRF_TRUSTED_ORIGINS: https://example.com
+          USE_HTTPS: 'true'
+          DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3
+          USE_R2: 'False'
+          ATTENDANCE_AGENT_API_KEY: ci-attendance-agent-key-for-deploy-check-only
+        run: python manage.py check_attendance_production --deploy
+
+      # إعدادات الإنتاج تُختبر في [2/9] check --deploy
 
       # ── اختبارات ─────────────────────────────────────────────────────────
-      - name: "[7/8] Run test suite"
+      - name: "[8/9] Run test suite"
         run: python manage.py test --verbosity 2
 
-      - name: "[8/8] CI summary"
+      - name: "[9/9] CI summary"
         run: echo "✅ All CI steps passed — ready to deploy."
 
   deploy:

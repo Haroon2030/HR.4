@@ -39,6 +39,13 @@ PY_SYNC
 echo "==> Collecting static files (إنتاج — يضمن وجود ملفات مثل css/login.css)..."
 python manage.py collectstatic --noinput
 
+# ─── فحص قاعدة البيانات والبصمة (بعد migrate + collectstatic) ───────────────
+echo "==> Attendance / database deploy check..."
+if ! python manage.py check_attendance_production --deploy; then
+    echo "!! check_attendance_production --deploy failed — aborting container start."
+    exit 1
+fi
+
 # ─── Auto-load initial data on first deploy (idempotent via marker file) ──────
 # DOUBLE-SAFE: never flushes if the DB already contains user data, even if the
 # marker file is missing (e.g. container recreated without a persistent volume).
