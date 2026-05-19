@@ -313,7 +313,9 @@ if USE_R2:
             'BACKEND': 'apps.core.storages.HRMediaStorage',   # تخزين الملفات المرفوعة
         },
         'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',  # الملفات الثابتة
+            # مضغوط بدون manifest — يتوافق مع collectstatic عند بناء Docker (development)
+            # Manifest كان يسبب 500 عند إضافة ملفات static جديدة (مثل css/login.css)
+            'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
         },
     }
 
