@@ -110,6 +110,7 @@ class Command(BaseCommand):
                 'اتصال قاعدة البيانات',
                 f'{engine} | قاعدة: {name} | host: {host} | جداول public: {public_tables}\n  {url_hint}',
             ))
+            report.add(self._database_source_issue(host))
         except Exception as exc:
             report.add(Issue(
                 'fail',
@@ -132,6 +133,34 @@ class Command(BaseCommand):
             return f'URL: {user}@{host}{port_s}/{dbname}'
         except Exception:
             return 'DATABASE_URL: (مضبوط)'
+
+    def _database_source_issue(self, host: str) -> Issue:
+        """تحذير عند استخدام Postgres داخلي في Dokploy بدل Neon الموحّد."""
+        h = (host or '').lower()
+        if 'neon.tech' in h:
+            return Issue(
+                'ok',
+                'مصدر البيانات',
+                'Neon — قاعدة موحدة (نفس DATABASE_URL للمحلي والإنتاج)',
+            )
+        if 'sqlite' in h or h in ('', '?', 'localhost', '127.0.0.1'):
+            return Issue(
+                'ok',
+                'مصدر البيانات',
+                f'تطوير محلي ({host})',
+            )
+        if 'hr-hrpostgres' in h or h.endswith('.internal') or h.endswith('.local'):
+            return Issue(
+                'warn',
+                'ازدواجية محتملة',
+                f'التطبيق يتصل بـ Postgres داخلي ({host}) وليس Neon',
+                'في Dokploy: عيّن DATABASE_URL لرابط Neon فقط — راجع docs/قاعدة-بيانات-موحدة.md',
+            )
+        return Issue(
+            'ok',
+            'مصدر البيانات',
+            f'PostgreSQL على {host}',
+        )
 
     def _collect_table_counts(self, report: AuditReport) -> None:
         from apps.attendance.models import (

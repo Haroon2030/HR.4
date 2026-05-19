@@ -21,7 +21,7 @@
 
 - **Backend:** Django 5.2، Django REST Framework، SimpleJWT (مع token blacklist)، django-filter، simple-history، WhiteNoise، storages (R2).
 - **Frontend (القوالب):** Tailwind (offline)، Alpine.js، Lucide.
-- **قاعدة البيانات:** SQLite محلياً (افتراضي)، PostgreSQL في الإنتاج (`DATABASE_URL`).
+- **قاعدة البيانات:** `DATABASE_URL` واحد (Neon PostgreSQL) للمحلي والإنتاج؛ راجع `docs/قاعدة-بيانات-موحدة.md`.
 
 ## هيكل المشروع (مختصر)
 
