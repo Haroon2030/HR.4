@@ -2,8 +2,30 @@ from django.test import TestCase
 from decimal import Decimal
 from datetime import date, timedelta
 from django.utils import timezone
+from apps.employees.forms import EmployeeForm
 from apps.employees.models import Employee, EmployeeLoan, LoanInstallment
 from apps.setup.models import Sponsorship
+
+class EmployeeFormTests(TestCase):
+    def test_empty_basic_salary_in_post_defaults_to_zero(self):
+        employee = Employee.objects.create(name='هارون', hire_date=date(2026, 5, 14))
+        form = EmployeeForm(
+            data={
+                'name': 'هارون',
+                'basic_salary': '',
+                'housing_allowance': '',
+                'transport_allowance': '',
+                'other_allowance': '',
+                'cash_amount': '',
+                'insurance_deduction_rate': '',
+                'available_leave_balance': '',
+            },
+            instance=employee,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.basic_salary, Decimal('0'))
+
 
 class EmployeeModelTests(TestCase):
     def setUp(self):

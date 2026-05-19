@@ -4,10 +4,34 @@ Forms لـ apps.employees - استبدال request.POST.get(...) المباشر.
 EmployeeForm: ModelForm كامل لإنشاء/تعديل ملف موظف (32 حقل)
 EmploymentRequestForm: نموذج طلب توظيف (الأخصائي يُرسله للمدير)
 """
+from decimal import Decimal
+
 from django import forms
 from django.core.exceptions import ValidationError
 
 from apps.employees.models import Employee, EmploymentRequest, EmployeeStatement
+
+
+# حقول رقمية لا تقبل NULL في DB؛ إرسال "" من المتصفح يُنتج None بدون تطبيع.
+_SALARY_DECIMAL_FIELDS = (
+    'basic_salary',
+    'housing_allowance',
+    'transport_allowance',
+    'other_allowance',
+    'cash_amount',
+    'insurance_deduction_rate',
+    'available_leave_balance',
+)
+
+
+def _normalize_non_null_decimal(value, instance, field_name):
+    if value is not None and value != '':
+        return value
+    if instance and instance.pk:
+        existing = getattr(instance, field_name, None)
+        if existing is not None:
+            return existing
+    return Decimal('0')
 
 
 # 🏷️ خريطة عرض الحقول المرجعية (FK) في القوائم المنسدلة — الرقم/الكود ثم الاسم
@@ -132,6 +156,17 @@ class EmployeeForm(forms.ModelForm):
         if not status:
             return self.instance.status if self.instance and self.instance.pk else Employee.Status.ACTIVE
         return status
+
+    def clean(self):
+        cleaned = super().clean()
+        instance = self.instance
+        for field_name in _SALARY_DECIMAL_FIELDS:
+            if field_name not in self.fields:
+                continue
+            cleaned[field_name] = _normalize_non_null_decimal(
+                cleaned.get(field_name), instance, field_name,
+            )
+        return cleaned
 
 
 class EmploymentRequestForm(forms.ModelForm):
@@ -273,6 +308,17 @@ class EmploymentRequestEditForm(forms.ModelForm):
 
     def clean_email(self):
         return self.cleaned_data.get('email') or ''
+
+    def clean(self):
+        cleaned = super().clean()
+        instance = self.instance
+        for field_name in _SALARY_DECIMAL_FIELDS:
+            if field_name not in self.fields:
+                continue
+            cleaned[field_name] = _normalize_non_null_decimal(
+                cleaned.get(field_name), instance, field_name,
+            )
+        return cleaned
 
 
 class EmployeeStatementForm(forms.ModelForm):
