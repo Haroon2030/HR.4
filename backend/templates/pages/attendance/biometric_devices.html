@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load custom_tags %}
 
 {% block content %}
@@ -300,74 +300,7 @@
 
     <div x-show="toast" x-cloak x-transition class="fixed bottom-6 left-6 z-50 max-w-md rounded-lg shadow-lg px-4 py-3 text-sm text-white" :class="toastOk ? 'bg-emerald-600' : 'bg-red-600'" x-text="toastMsg"></div>
 
-    <div x-show="deviceModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @keydown.escape.window="deviceModal = false">
-        <div @click.outside="deviceModal = false" class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h3 class="text-lg font-bold text-slate-900 mb-4" x-text="form.device_id ? 'تعديل جهاز' : 'إضافة جهاز بصمة'"></h3>
-            <form method="post" action="{% url 'web:biometric_device_save' %}" class="space-y-3">
-                {% csrf_token %}
-                <input type="hidden" name="device_id" :value="form.device_id || ''">
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">اسم الجهاز</label>
-                    <input type="text" name="name" x-model="form.name" required class="w-full rounded-lg border-slate-300 text-sm">
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-slate-600 mb-1">عنوان IP</label>
-                        <input type="text" name="ip_address" x-model="form.ip" required dir="ltr"
-                            pattern="^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"
-                            title="مثال: 192.168.24.59"
-                            class="w-full rounded-lg border-slate-300 text-sm font-mono" placeholder="192.168.24.59">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">المنفذ</label>
-                        <input type="number" name="port" x-model="form.port" class="w-full rounded-lg border-slate-300 text-sm font-mono" placeholder="4370">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Comm Key</label>
-                    <input type="number" name="comm_key" x-model="form.comm_key" min="0" class="w-full rounded-lg border-slate-300 text-sm">
-                </div>
-                <div class="rounded-lg border border-primary-100 bg-primary-50/40 p-3 space-y-3">
-                    <p class="text-xs font-semibold text-primary-900">الربط بالفرع (مطلوب للمزامنة وربط الموظفين)</p>
-                    {% if branches %}
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">فرع موجود</label>
-                        <select name="branch_id" x-model="form.branch_id" class="w-full rounded-lg border-slate-300 text-sm">
-                            <option value="">— أو أنشئ فرعاً جديداً بالأسفل —</option>
-                            {% for b in branches %}
-                            <option value="{{ b.pk }}">{{ b.name }} ({{ b.code }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    {% else %}
-                    <p class="text-xs text-amber-800">لا توجد فروع بعد — أدخل اسم الفرع بالأسفل وسيُنشأ تلقائياً.</p>
-                    {% endif %}
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">
-                            {% if branches %}اسم فرع جديد{% else %}اسم الفرع{% endif %}
-                            <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="branch_name" x-model="form.branch_name"
-                            placeholder="مثال: سكاي مول"
-                            class="w-full rounded-lg border-slate-300 text-sm">
-                    </div>
-                    <a href="{% url 'web:list_branches' %}" class="text-xs text-primary-600 hover:underline">إدارة الفروع</a>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">ملاحظات</label>
-                    <textarea name="notes" x-model="form.notes" rows="2" class="w-full rounded-lg border-slate-300 text-sm"></textarea>
-                </div>
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="checkbox" name="is_active" :checked="form.is_active" class="rounded border-slate-300">
-                    <span>الجهاز نشط</span>
-                </label>
-                <div class="flex gap-2 pt-2">
-                    <button type="submit" class="flex-1 py-2.5 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700">حفظ</button>
-                    <button type="button" @click="deviceModal = false" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm">إلغاء</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    {% include "pages/attendance/_device_modal.html" %}
 </div>
 
 <script>

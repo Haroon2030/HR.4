@@ -1,0 +1,87 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# HR Pro — إنتاج (72.61.107.230:8082 — HTTP بدون شهادة)
+# انسخ إلى Dokploy → Environment (استبدل YOUR_* فقط)
+# قاعدة واحدة: Neon pooler — لا تستخدم hr-hrpostgres
+# ═══════════════════════════════════════════════════════════════════════════════
+
+DJANGO_ENV=production
+DJANGO_SETTINGS_MODULE=config.settings
+DEBUG=False
+PORT=8082
+
+SECRET_KEY=change-me-long-random-secret
+
+# ─── قاعدة البيانات (Neon — pooler) ─────────────────────────────────────────
+# من console.neon.tech → Connect → Django → Connection pooling ON
+# إن فشل الاتصال: احذف &channel_binding=require من الرابط
+DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@ep-small-brook-api71buq-pooler.c-7.us-east-1.aws.neon.tech/hr?sslmode=require
+DB_SSLMODE=require
+CONN_MAX_AGE=600
+MIGRATE_MAX_RETRIES=5
+MIGRATE_RETRY_SECS=5
+
+# ─── النطاق والوصول ───────────────────────────────────────────────────────────
+ALLOWED_HOSTS=72.61.107.230,localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://72.61.107.230:8082,http://72.61.107.230
+
+# ─── أمان HTTP (بدون SSL على IP) ─────────────────────────────────────────────
+USE_HTTPS=false
+SECURE_SSL_REDIRECT=false
+SESSION_COOKIE_SECURE=false
+CSRF_COOKIE_SECURE=false
+SESSION_COOKIE_AGE=28800
+
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+CORS_ALLOW_ALL_ORIGINS=False
+CORS_ALLOWED_ORIGINS=http://72.61.107.230:8082,http://72.61.107.230
+
+# ─── مدير النظام ─────────────────────────────────────────────────────────────
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_PASSWORD=change-me-strong-password
+DJANGO_SUPERUSER_EMAIL=admin@alrsheed.net
+
+# ─── Cloudflare R2 ───────────────────────────────────────────────────────────
+USE_R2=True
+R2_ACCESS_KEY_ID=your-r2-access-key
+R2_SECRET_ACCESS_KEY=your-r2-secret-key
+R2_BUCKET_NAME=erphr
+R2_ENDPOINT_URL=https://your-account-id.r2.cloudflarestorage.com
+R2_REGION=auto
+R2_PUBLIC_DOMAIN=
+R2_SIGNED_URLS=true
+R2_SIGNED_URL_EXPIRE=3600
+
+# ─── البريد (Hostinger) ─────────────────────────────────────────────────────
+EMAIL_HOST=smtp.hostinger.com
+EMAIL_PORT=465
+EMAIL_USE_SSL=True
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER=your-mailbox@alrsheed.net
+EMAIL_HOST_PASSWORD=your-email-password
+DEFAULT_FROM_EMAIL=HR Pro <your-mailbox@alrsheed.net>
+EMAIL_TIMEOUT=30
+
+# ─── أجهزة البصمة ZKTeco ─────────────────────────────────────────────────────
+BIOMETRIC_MOCK_MODE=false
+BIOMETRIC_ZK_TIMEOUT=20
+BIOMETRIC_ZK_OMIT_PING=true
+
+# ─── وكيل البصمة (وسيط PC الفرع → السيرفر) ───────────────────────────────────
+ATTENDANCE_AGENT_API_KEY=your-agent-api-key
+DRF_ATTENDANCE_AGENT_THROTTLE=120/hour
+
+# ─── نسخ احتياطي ─────────────────────────────────────────────────────────────
+BACKUP_STORAGE_DIR=/app/backups
+BACKUP_ENABLED=true
+BACKUP_BEFORE_MIGRATE=true
+BACKUP_NOTIFY_ON_SUCCESS=true
+BACKUP_NOTIFY_ON_FAILURE=true
+BACKUP_NOTIFY_EMAIL=admin@alrsheed.net
+BACKUP_SCHEDULE=0 3 * * *
+
+# ─── تنبيهات انتهاء الوثائق ──────────────────────────────────────────────────
+DOCUMENT_EXPIRY_CRON=true
+DOCUMENT_EXPIRY_CRON_DAYS=30
+DOCUMENT_EXPIRY_CRON_SCHEDULE=30 6 * * *
+DOCUMENT_EXPIRY_CRON_SEND_EMAIL=true
+DOCUMENT_EXPIRY_EMAIL_RECIPIENTS=admin@alrsheed.net

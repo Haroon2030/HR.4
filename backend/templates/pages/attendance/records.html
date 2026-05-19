@@ -88,6 +88,28 @@
         </div>
     </div>
 
+    {% if filter_device or filter_branch %}
+    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span class="font-semibold text-slate-600">الفلتر النشط:</span>
+        {% if filter_branch %}
+        <span>فرع القائمة: <strong>{{ filter_branch.name }}</strong></span>
+        {% endif %}
+        {% if filter_device %}
+        <span class="font-mono text-xs bg-white px-2 py-0.5 rounded border border-slate-200" dir="ltr">{{ filter_device.ip_address }}:{{ filter_device.port }}</span>
+        <span>جهاز «<strong>{{ filter_device.name }}</strong>»</span>
+        {% if filter_device.branch %}
+        <span class="text-slate-500">(مسجّل على فرع: {{ filter_device.branch.name }})</span>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+    {% if branch_device_mismatch %}
+    <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <strong>تعارض فلتر:</strong> الجهاز «{{ filter_device.name }}» ({{ filter_device.ip_address }}) مربوط بفرع «{{ filter_device.branch.name }}» وليس «{{ filter_branch.name }}».
+        امسح فلتر الفرع أو اختر الفرع الصحيح — البيانات ليست «معكوسة» بل الفرع والجهاز غير متطابقين.
+    </div>
+    {% endif %}
+
     <!-- فلاتر + سحب -->
     <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
         <form method="get" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3 items-end">
@@ -110,7 +132,10 @@
                 <select name="device" class="w-full rounded-lg border-slate-300 text-sm">
                     <option value="">الكل</option>
                     {% for d in devices %}
-                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% endif %}</option>
+                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}
+                        dir="ltr">
+                        {{ d.ip_address }}:{{ d.port }} — {{ d.name }}{% if d.branch %} · فرع {{ d.branch.name }}{% else %} · بدون فرع{% endif %}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -155,7 +180,7 @@
                 <label class="block text-xs font-medium text-slate-600 mb-1">سحب من جهاز</label>
                 <select name="device_id" required class="rounded-lg border-slate-300 text-sm min-w-[160px]">
                     {% for d in devices %}
-                    <option value="{{ d.pk }}">{{ d.name }}{% if d.branch %} ({{ d.branch.name }}){% endif %} — {{ d.ip_address }}</option>
+                    <option value="{{ d.pk }}" dir="ltr">{{ d.ip_address }}:{{ d.port }} — {{ d.name }}{% if d.branch %} · فرع {{ d.branch.name }}{% endif %}</option>
                     {% endfor %}
                 </select>
             </div>

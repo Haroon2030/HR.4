@@ -113,10 +113,17 @@ def attendance_records_list(request):
     branch_ids = _user_accessible_branch_ids(request.user)
     if branch_ids is not None:
         branches_qs = branches_qs.filter(pk__in=branch_ids)
-    devices = get_biometric_devices_queryset(
-        request.user,
-        branch_id=filters['branch_id'],
-    )
+    # كل الأجهزة في القائمة (مع IP) — لا نخفيها حسب الفرع حتى لا يُختار فرع خاطئ ويُظن أن البيانات «معكوسة»
+    devices = get_biometric_devices_queryset(request.user)
+    filter_device = None
+    if filters['device_id']:
+        filter_device = devices.filter(pk=filters['device_id']).first()
+    filter_branch = None
+    if filters['branch_id']:
+        filter_branch = branches_qs.filter(pk=filters['branch_id']).first()
+    branch_device_mismatch = False
+    if filter_device and filter_branch and filter_device.branch_id != filter_branch.pk:
+        branch_device_mismatch = True
     employees = Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:300]
 
     mapped_filter = 'all'
@@ -129,6 +136,9 @@ def attendance_records_list(request):
         'page_obj': page_obj,
         'stats': stats,
         'devices': devices,
+        'filter_device': filter_device,
+        'filter_branch': filter_branch,
+        'branch_device_mismatch': branch_device_mismatch,
         'branches': branches_qs,
         'employees': employees,
         'filters': filters,
