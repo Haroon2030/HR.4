@@ -23,6 +23,7 @@ from apps.attendance.services.device_primary_key import (
     parse_requested_device_id,
     reassign_biometric_device_id,
 )
+from apps.attendance.services.device_purge import purge_biometric_device
 from apps.attendance.validators import validate_device_ipv4
 from apps.attendance.services.agent_pull_queue import queue_lan_device_sync
 from apps.attendance.services.zk_client import (
@@ -263,8 +264,14 @@ def biometric_device_save(request):
 def biometric_device_delete(request, device_id):
     device = get_device_for_user(request.user, device_id)
     name = device.name
-    device.delete()
-    messages.success(request, f'تم حذف الجهاز «{name}».')
+    pk = device.pk
+    counts = purge_biometric_device(device)
+    messages.success(
+        request,
+        f'تم حذف الجهاز «{name}» (رقم {pk}) نهائياً من قاعدة البيانات — '
+        f'{counts["punches"]} بصمة، {counts["device_users"]} مستخدم جهاز، '
+        f'{counts["enrollments"]} ربط موظف. يمكنك إعادة استخدام الرقم {pk}.',
+    )
     return redirect('web:biometric_devices')
 
 

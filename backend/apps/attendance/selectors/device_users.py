@@ -26,7 +26,7 @@ def get_device_user_queryset(
 ) -> QuerySet:
     enrollment = _active_enrollment_subquery()
     qs = (
-        BiometricDeviceUser.objects.filter(is_deleted=False)
+        BiometricDeviceUser.objects.filter(is_deleted=False, device__is_deleted=False)
         .select_related('device', 'device__branch')
         .annotate(
             hr_employee_name=Subquery(
