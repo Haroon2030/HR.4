@@ -37,6 +37,14 @@ class DailyAttendanceRow:
     def duration_display(self) -> str:
         return _format_duration(self.work_duration)
 
+    @property
+    def check_in_display(self) -> str:
+        return _format_time(self.check_in)
+
+    @property
+    def check_out_display(self) -> str:
+        return _format_time(self.check_out)
+
 
 def _format_duration(delta: timedelta | None) -> str:
     if not delta or delta.total_seconds() <= 0:

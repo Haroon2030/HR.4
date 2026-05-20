@@ -154,8 +154,8 @@
                         <td class="p-2">{{ row.branch_name }}</td>
                         <td class="p-2">{{ row.department_name }}</td>
                         <td class="p-2 text-slate-600">{{ row.device_name }}</td>
-                        <td class="p-2 font-mono text-emerald-700">{% if row.check_in %}{{ row.check_in|localtime|date:"H:i" }}{% else %}—{% endif %}</td>
-                        <td class="p-2 font-mono text-indigo-700">{% if row.check_out %}{{ row.check_out|localtime|date:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="p-2 font-mono text-emerald-700">{{ row.check_in_display }}</td>
+                        <td class="p-2 font-mono text-indigo-700">{{ row.check_out_display }}</td>
                         <td class="p-2 text-center">{{ row.punch_count }}</td>
                         <td class="p-2 font-mono">{{ row.duration_display }}</td>
                         <td class="p-2">
