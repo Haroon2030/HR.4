@@ -1,0 +1,152 @@
+<style>
+    .hr-report { max-width: 80rem; margin-inline: auto; }
+    .hr-report-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    .hr-report-card-hd {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fff;
+    }
+    .hr-report-card-hd h2 {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: #111;
+    }
+    .hr-report-card-hd .meta {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+    }
+    .hr-report-stat {
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #fff;
+    }
+    .hr-report-stat .lbl {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        margin: 0;
+    }
+    .hr-report-stat .val {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111;
+        margin: 0.15rem 0 0;
+        line-height: 1.2;
+    }
+    .hr-report-field {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background: #fff;
+    }
+    .hr-report-field:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+    .hr-report-lbl {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #444;
+    }
+    .hr-report-filter-grid {
+        display: grid;
+        gap: 0.75rem 1rem;
+        padding: 1rem;
+    }
+    @media (min-width: 768px) {
+        .hr-report-filter-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .hr-report-filter-grid .span-2 { grid-column: span 2; }
+        .hr-report-filter-grid .span-4 { grid-column: span 4; }
+        .hr-report-filter-actions { grid-column: span 4; display: flex; gap: 0.5rem; justify-content: flex-end; }
+    }
+    .hr-report-tbl { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .hr-report-tbl thead th {
+        padding: 0.6rem 0.75rem;
+        text-align: right;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #6b7280;
+        background: #fafafa;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+    .hr-report-tbl tbody td {
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #111;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    .hr-report-tbl tbody tr:hover { background: #fafafa; }
+    .hr-report-tbl tbody tr.row-warn { background: #fffbeb; }
+    .hr-report-tbl .mono {
+        font-family: ui-monospace, monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .hr-report-badge {
+        display: inline-flex;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+    }
+    .hr-report-badge-ok { background: #ecfdf5; color: #047857; }
+    .hr-report-badge-warn { background: #fffbeb; color: #b45309; }
+    .hr-report-badge-muted { background: #f3f4f6; color: #4b5563; }
+    .hr-report-badge-in { background: #ecfdf5; color: #047857; }
+    .hr-report-badge-out { background: #eff6ff; color: #2563eb; }
+    .hr-report-link { color: #2563eb; font-weight: 700; text-decoration: none; }
+    .hr-report-link:hover { text-decoration: underline; }
+    .hr-report-sub { display: block; font-size: 0.65rem; color: #6b7280; font-family: ui-monospace, monospace; }
+    .hr-report-pager {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    .hr-report-pager a,
+    .hr-report-pager span {
+        padding: 0.35rem 0.85rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        color: #111;
+        text-decoration: none;
+    }
+    .hr-report-pager a:hover { background: #f5f5f5; }
+    .hr-report-empty {
+        padding: 2.5rem 1rem;
+        text-align: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #6b7280;
+    }
+</style>

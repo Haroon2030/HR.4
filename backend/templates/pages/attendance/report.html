@@ -4,211 +4,261 @@
 {% block title %}تقرير البصمة{% endblock %}
 
 {% block content %}
-{% include "pages/attendance/_biometric_page_styles.html" %}
-<div class="max-w-7xl mx-auto space-y-3" dir="rtl" x-data="{}">
-    <nav class="text-xs text-slate-500 flex items-center gap-1 flex-wrap">
-        <a href="{% url 'web:biometric_devices' %}" class="hover:text-primary-600">أجهزة البصمة</a>
-        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-        <span class="text-slate-700 font-semibold">تقرير البصمة</span>
-    </nav>
+{% include "pages/attendance/_report_styles.html" %}
 
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+<div class="hr-report space-y-4" dir="rtl">
+
+    {# ── ترويسة الصفحة ── #}
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
+            <nav class="flex items-center gap-1 text-xs font-semibold text-slate-500 mb-2">
+                <a href="{% url 'web:biometric_devices' %}" class="hover:text-primary-600">أجهزة البصمة</a>
+                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                <span class="text-slate-800">تقرير البصمة</span>
+            </nav>
             <h1 class="text-xl font-bold text-slate-900">تقرير البصمة</h1>
-            <p class="text-xs text-slate-500 mt-0.5">يومي مجمّع + تفصيلي · {{ filters.date_from|default:"—" }} → {{ filters.date_to|default:"—" }}</p>
+            <p class="text-sm font-semibold text-slate-500 mt-1">
+                الفترة: {{ filters.date_from|default:"—" }} ← {{ filters.date_to|default:"—" }}
+            </p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 shrink-0">
             <a href="{% url 'web:attendance_report_export' %}?{{ querystring }}"
-               class="zk-bio-btn zk-bio-btn-primary text-xs" style="background:#059669;border-color:#047857">
-                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Excel
+               class="hr-btn hr-btn-primary text-sm inline-flex items-center gap-2"
+               style="background:#059669;border:none;">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                تصدير Excel
             </a>
-            <a href="{% url 'web:attendance_records' %}?{{ querystring }}" class="zk-bio-btn zk-bio-btn-ghost text-xs">السجلات</a>
+            <a href="{% url 'web:attendance_records' %}?{{ querystring }}"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50">
+                <i data-lucide="list" class="w-4 h-4"></i>
+                السجلات
+            </a>
         </div>
     </div>
 
-    <div class="zk-stat-grid-compact">
-        <div class="zk-bio-stat-box"><p class="zk-lbl">بصمات</p><p class="zk-val text-primary-700">{{ summary.total_punches }}</p></div>
-        <div class="zk-bio-stat-box"><p class="zk-lbl">أيام</p><p class="zk-val">{{ summary.total_days }}</p></div>
-        <div class="zk-bio-stat-box"><p class="zk-lbl">مكتمل</p><p class="zk-val text-emerald-700">{{ summary.complete }}</p></div>
-        <div class="zk-bio-stat-box"><p class="zk-lbl">بصمة واحدة</p><p class="zk-val text-amber-700">{{ summary.single_punch }}</p></div>
-        <div class="zk-bio-stat-box"><p class="zk-lbl">غير مكتمل</p><p class="zk-val text-orange-700">{{ summary.incomplete }}</p></div>
-        <div class="zk-bio-stat-box"><p class="zk-lbl">غير مربوط</p><p class="zk-val text-rose-700">{{ summary.unmapped }}</p></div>
+    {# ── ملخص سريع ── #}
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="hr-report-stat">
+            <p class="lbl">إجمالي البصمات</p>
+            <p class="val text-primary-700">{{ summary.total_punches }}</p>
+        </div>
+        <div class="hr-report-stat">
+            <p class="lbl">أيام عمل</p>
+            <p class="val">{{ summary.total_days }}</p>
+        </div>
+        <div class="hr-report-stat">
+            <p class="lbl">مكتمل</p>
+            <p class="val text-emerald-700">{{ summary.complete }}</p>
+        </div>
+        <div class="hr-report-stat">
+            <p class="lbl">بصمة واحدة</p>
+            <p class="val text-amber-700">{{ summary.single_punch }}</p>
+        </div>
+        <div class="hr-report-stat">
+            <p class="lbl">غير مكتمل</p>
+            <p class="val text-orange-700">{{ summary.incomplete }}</p>
+        </div>
+        <div class="hr-report-stat">
+            <p class="lbl">غير مربوط</p>
+            <p class="val text-rose-700">{{ summary.unmapped }}</p>
+        </div>
     </div>
 
-    <div class="zk-bio-card">
-        <div class="zk-bio-card-hd">
-            <span class="zk-bio-sec-tag">01</span>
-            <h2 class="text-sm font-bold text-slate-800">فلتر التقرير</h2>
+    {# ── فلتر ── #}
+    <div class="hr-report-card">
+        <div class="hr-report-card-hd">
+            <h2>فلتر التقرير</h2>
+            <span class="meta">اختر الفترة والمعايير ثم اضغط عرض</span>
         </div>
-        <form method="get" class="zk-report-filter">
-            <div class="zk-rf-span-2">
-                <label class="zk-bio-lbl">من</label>
-                <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="zk-bio-field">
+        <form method="get" class="hr-report-filter-grid">
+            <div>
+                <label class="hr-report-lbl">من تاريخ</label>
+                <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="hr-report-field">
             </div>
-            <div class="zk-rf-span-2">
-                <label class="zk-bio-lbl">إلى</label>
-                <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="zk-bio-field">
+            <div>
+                <label class="hr-report-lbl">إلى تاريخ</label>
+                <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="hr-report-field">
             </div>
-            <div class="zk-rf-span-2">
-                <label class="zk-bio-lbl">الفرع</label>
-                <select name="branch" class="zk-bio-field">
-                    <option value="">الكل</option>
+            <div>
+                <label class="hr-report-lbl">الفرع</label>
+                <select name="branch" class="hr-report-field">
+                    <option value="">كل الفروع</option>
                     {% for b in branches %}
                     <option value="{{ b.pk }}" {% if filters.branch_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="zk-rf-span-2">
-                <label class="zk-bio-lbl">الجهاز</label>
-                <select name="device" class="zk-bio-field">
-                    <option value="">الكل</option>
+            <div>
+                <label class="hr-report-lbl">جهاز البصمة</label>
+                <select name="device" class="hr-report-field">
+                    <option value="">كل الأجهزة</option>
                     {% for d in devices %}
                     <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="zk-rf-span-2">
-                <label class="zk-bio-lbl">ربط HR</label>
-                <select name="mapped" class="zk-bio-field">
+            <div>
+                <label class="hr-report-lbl">ربط موظف HR</label>
+                <select name="mapped" class="hr-report-field">
                     <option value="" {% if mapped_filter == 'all' %}selected{% endif %}>الكل</option>
-                    <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط</option>
+                    <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط فقط</option>
                     <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
                 </select>
             </div>
-            <div class="zk-rf-span-2 zk-rf-actions">
-                <button type="submit" class="zk-bio-btn zk-bio-btn-primary w-full">عرض</button>
-                <a href="{% url 'web:attendance_report' %}" class="zk-bio-btn zk-bio-btn-ghost w-full">مسح</a>
+            <div>
+                <label class="hr-report-lbl">بحث سريع</label>
+                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم جهاز" class="hr-report-field" autocomplete="off">
             </div>
-
-            <div class="zk-rf-span-5" style="grid-column:1/-1">
-                <div x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
-                    {% include "components/employee_search_picker.html" with label="موظف HR (مربوط بالنظام)" input_name="employee" %}
-                </div>
+            <div class="hr-report-filter-actions">
+                <button type="submit" class="hr-btn hr-btn-primary px-5 py-2 text-sm">عرض</button>
+                <a href="{% url 'web:attendance_report' %}" class="inline-flex items-center px-5 py-2 text-sm font-bold text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50">مسح</a>
             </div>
-            <div class="zk-rf-span-3">
-                <label class="zk-bio-lbl">بحث سريع</label>
-                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم جهاز" class="zk-bio-field" autocomplete="off">
+            <div class="span-4" x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
+                {% include "components/employee_search_picker.html" with label="موظف HR" input_name="employee" %}
             </div>
         </form>
+    </div>
 
-        <div class="zk-bio-card-hd border-t border-slate-200">
-            <span class="zk-bio-sec-tag">02</span>
-            <h2 class="text-sm font-bold text-slate-800">الحضور اليومي</h2>
-            <span class="zk-bio-stat">{{ total_daily_rows }} يوم · {{ summary.total_punches }} بصمة</span>
+    {# ── الحضور اليومي ── #}
+    <div class="hr-report-card">
+        <div class="hr-report-card-hd">
+            <h2>الحضور اليومي (مجمّع)</h2>
+            <span class="meta">{{ total_daily_rows }} يوم · {{ summary.total_punches }} بصمة</span>
         </div>
         {% if daily_page.object_list %}
         <div class="overflow-x-auto">
-            <table class="zk-bio-tbl">
+            <table class="hr-report-tbl">
                 <thead>
                     <tr>
                         <th class="text-center w-10">#</th>
-                        <th class="text-right">التاريخ</th>
-                        <th class="text-right">موظف HR</th>
-                        <th class="text-right">الفرع</th>
-                        <th class="text-right">الجهاز</th>
-                        <th class="text-right">دخول</th>
-                        <th class="text-right">خروج</th>
+                        <th>التاريخ</th>
+                        <th>موظف HR</th>
+                        <th>الفرع</th>
+                        <th>الجهاز</th>
+                        <th>دخول</th>
+                        <th>خروج</th>
                         <th class="text-center">بصمات</th>
-                        <th class="text-right">المدة</th>
-                        <th class="text-right">الحالة</th>
+                        <th>المدة</th>
+                        <th>الحالة</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in daily_page.object_list %}
-                    <tr class="{% if not row.is_mapped %}zk-row-warn{% endif %}">
-                        <td class="text-center text-slate-400 zk-mono">{{ daily_page.start_index|add:forloop.counter0 }}</td>
-                        <td class="zk-mono font-semibold">{{ row.work_date }}</td>
+                    <tr class="{% if not row.is_mapped %}row-warn{% endif %}">
+                        <td class="text-center mono text-slate-500">{{ daily_page.start_index|add:forloop.counter0 }}</td>
+                        <td class="mono">{{ row.work_date }}</td>
                         <td>
                             {% if row.is_mapped and row.employee_id %}
-                            <a href="{% url 'web:view_employee' row.employee_id %}" class="zk-emp-link">{{ row.employee_name }}</a>
-                            {% if row.employee_number != '—' %}<span class="zk-emp-sub" dir="ltr">#{{ row.employee_number }}</span>{% endif %}
+                            <a href="{% url 'web:view_employee' row.employee_id %}" class="hr-report-link">{{ row.employee_name }}</a>
+                            {% if row.employee_number != '—' %}<span class="hr-report-sub" dir="ltr">#{{ row.employee_number }}</span>{% endif %}
                             {% elif row.device_user_id %}
-                            <a href="{% url 'web:biometric_devices' %}?link_device={{ row.device_id }}&link_user={{ row.device_user_id }}" class="text-amber-800 font-semibold hover:underline" title="ربط بموظف HR">{{ row.device_user_name }}</a>
-                            <span class="zk-emp-sub" dir="ltr">User {{ row.device_user_id }} · ربط</span>
+                            <a href="{% url 'web:biometric_devices' %}?link_device={{ row.device_id }}&link_user={{ row.device_user_id }}" class="hr-report-link text-amber-800">ربط: {{ row.device_user_name }}</a>
+                            <span class="hr-report-sub" dir="ltr">User {{ row.device_user_id }}</span>
                             {% else %}
-                            <span class="text-amber-800">{{ row.device_user_name }}</span>
+                            <span class="text-amber-800 font-bold">{{ row.device_user_name }}</span>
                             {% endif %}
                         </td>
                         <td>{{ row.branch_name }}</td>
-                        <td class="text-xs">{{ row.device_name }}</td>
-                        <td class="zk-mono text-emerald-700">{{ row.check_in_display }}</td>
-                        <td class="zk-mono text-indigo-700">{{ row.check_out_display }}</td>
-                        <td class="text-center zk-mono">{{ row.punch_count }}</td>
-                        <td class="zk-mono">{{ row.duration_display }}</td>
-                        <td>{% if row.status_label == 'مكتمل' %}<span class="zk-pill zk-pill-in">{{ row.status_label }}</span>{% elif row.status_label == 'بصمة واحدة' %}<span class="zk-pill zk-pill-warn">{{ row.status_label }}</span>{% elif row.status_label == 'غير مربوط بـ HR' %}<span class="zk-pill zk-pill-warn">غير مربوط</span>{% else %}<span class="zk-pill zk-pill-muted">{{ row.status_label }}</span>{% endif %}</td>
+                        <td class="text-xs font-semibold text-slate-600">{{ row.device_name }}</td>
+                        <td class="mono text-emerald-700">{{ row.check_in_display }}</td>
+                        <td class="mono text-indigo-700">{{ row.check_out_display }}</td>
+                        <td class="text-center mono">{{ row.punch_count }}</td>
+                        <td class="mono">{{ row.duration_display }}</td>
+                        <td>
+                            {% if row.status_label == 'مكتمل' %}
+                            <span class="hr-report-badge hr-report-badge-ok">{{ row.status_label }}</span>
+                            {% elif row.status_label == 'بصمة واحدة' or row.status_label == 'غير مربوط بـ HR' %}
+                            <span class="hr-report-badge hr-report-badge-warn">{{ row.status_label }}</span>
+                            {% else %}
+                            <span class="hr-report-badge hr-report-badge-muted">{{ row.status_label }}</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% if daily_page.has_other_pages %}
-        <div class="px-3 py-2 border-t border-slate-100 flex flex-wrap gap-2 justify-center text-sm">
+        <div class="hr-report-pager">
             {% if daily_page.has_previous %}
-            <a href="?{{ querystring }}&page={{ daily_page.previous_page_number }}" class="px-3 py-1 border rounded-lg hover:bg-slate-50">السابق</a>
+            <a href="?{{ querystring }}&page={{ daily_page.previous_page_number }}">السابق</a>
             {% endif %}
+            <span>صفحة {{ daily_page.number }} من {{ daily_page.paginator.num_pages }}</span>
             {% if daily_page.has_next %}
-            <a href="?{{ querystring }}&page={{ daily_page.next_page_number }}" class="px-3 py-1 border rounded-lg hover:bg-slate-50">التالي</a>
+            <a href="?{{ querystring }}&page={{ daily_page.next_page_number }}">التالي</a>
             {% endif %}
         </div>
         {% endif %}
         {% else %}
-        <p class="p-8 text-center text-sm text-slate-500">لا توجد أيام في الفترة المحددة.</p>
+        <p class="hr-report-empty">لا توجد بيانات يومية في الفترة المحددة.</p>
         {% endif %}
+    </div>
 
-        <div class="zk-bio-card-hd border-t border-slate-200">
-            <span class="zk-bio-sec-tag">03</span>
-            <h2 class="text-sm font-bold text-slate-800">تفصيلي</h2>
-            <span class="zk-bio-stat">{{ punches_page.start_index }}–{{ punches_page.end_index }} / {{ punches_page.paginator.count }}</span>
+    {# ── البصمات التفصيلية ── #}
+    <div class="hr-report-card">
+        <div class="hr-report-card-hd">
+            <h2>البصمات التفصيلية</h2>
+            <span class="meta">{{ punches_page.start_index }}–{{ punches_page.end_index }} من {{ punches_page.paginator.count }}</span>
         </div>
         {% if punches_page.object_list %}
         <div class="overflow-x-auto">
-            <table class="zk-bio-tbl">
+            <table class="hr-report-tbl">
                 <thead>
                     <tr>
                         <th class="text-center w-10">#</th>
-                        <th class="text-right">التاريخ</th>
-                        <th class="text-right">الوقت</th>
-                        <th class="text-right">User</th>
-                        <th class="text-right">موظف HR</th>
-                        <th class="text-right">الحركة</th>
-                        <th class="text-right">الجهاز</th>
+                        <th>التاريخ</th>
+                        <th>الوقت</th>
+                        <th dir="ltr">User ID</th>
+                        <th>موظف HR</th>
+                        <th>الحركة</th>
+                        <th>الجهاز</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in punches_page.object_list %}
-                    <tr class="{% if not p.employee_id %}zk-row-warn{% endif %}">
-                        <td class="text-center zk-mono text-slate-400">{{ punches_page.start_index|add:forloop.counter0 }}</td>
-                        <td class="zk-mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
-                        <td class="zk-mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
-                        <td class="zk-mono" dir="ltr">{{ p.device_user_id }}</td>
+                    <tr class="{% if not p.employee_id %}row-warn{% endif %}">
+                        <td class="text-center mono text-slate-500">{{ punches_page.start_index|add:forloop.counter0 }}</td>
+                        <td class="mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
+                        <td class="mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
+                        <td class="mono" dir="ltr">{{ p.device_user_id }}</td>
                         <td>
                             {% if p.employee_id %}
-                            <a href="{% url 'web:view_employee' p.employee_id %}" class="zk-emp-link">{{ p.employee.name }}</a>
+                            <a href="{% url 'web:view_employee' p.employee_id %}" class="hr-report-link">{{ p.employee.name }}</a>
                             {% else %}
-                            <a href="{% url 'web:biometric_devices' %}?link_device={{ p.device_id }}&link_user={{ p.device_user_id }}" class="zk-pill zk-pill-warn">ربط HR</a>
+                            <a href="{% url 'web:biometric_devices' %}?link_device={{ p.device_id }}&link_user={{ p.device_user_id }}" class="hr-report-badge hr-report-badge-warn">ربط HR</a>
                             {% endif %}
                         </td>
-                        <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">{{ p.get_punch_type_display }}</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">{{ p.get_punch_type_display }}</span>{% else %}<span class="zk-pill zk-pill-muted">{{ p.get_punch_type_display }}</span>{% endif %}</td>
-                        <td class="text-xs">{{ p.device.name }}</td>
+                        <td>
+                            {% if p.punch_type == 'in' %}
+                            <span class="hr-report-badge hr-report-badge-in">{{ p.get_punch_type_display }}</span>
+                            {% elif p.punch_type == 'out' %}
+                            <span class="hr-report-badge hr-report-badge-out">{{ p.get_punch_type_display }}</span>
+                            {% else %}
+                            <span class="hr-report-badge hr-report-badge-muted">{{ p.get_punch_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-xs font-semibold text-slate-600">{{ p.device.name }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% if punches_page.has_other_pages %}
-        <div class="px-3 py-2 border-t border-slate-200 flex justify-center gap-2">
+        <div class="hr-report-pager">
             {% if punches_page.has_previous %}
-            <a href="?{{ querystring }}&punches_page={{ punches_page.previous_page_number }}" class="zk-bio-btn zk-bio-btn-ghost">سابق</a>
+            <a href="?{{ querystring }}&punches_page={{ punches_page.previous_page_number }}">السابق</a>
             {% endif %}
+            <span>صفحة {{ punches_page.number }} من {{ punches_page.paginator.num_pages }}</span>
             {% if punches_page.has_next %}
-            <a href="?{{ querystring }}&punches_page={{ punches_page.next_page_number }}" class="zk-bio-btn zk-bio-btn-ghost">تالي</a>
+            <a href="?{{ querystring }}&punches_page={{ punches_page.next_page_number }}">التالي</a>
             {% endif %}
         </div>
         {% endif %}
         {% else %}
-        <p class="p-6 text-center text-sm text-slate-500">لا توجد بصمات في الفترة.</p>
+        <p class="hr-report-empty">لا توجد بصمات تفصيلية في الفترة المحددة.</p>
         {% endif %}
     </div>
+
 </div>
 
 <script>
