@@ -50,20 +50,20 @@
         .text-slate-300 { color: #cbd5e1; }
         .text-slate-400 { color: #94a3b8; }
         .text-slate-500 { color: #64748b; }
-        .text-slate-600 { color: #6b7280; }
-        .text-slate-700 { color: #6b7280; }
-        .text-slate-800 { color: #555e6d; }
-        .text-slate-900 { color: #4b5563; }
+        .text-slate-600 { color: #444444; }
+        .text-slate-700 { color: #444444; }
+        .text-slate-800 { color: #444444; }
+        .text-slate-900 { color: #444444; }
         .border-slate-100 { border-color: #f1f5f9; }
         .border-slate-200 { border-color: #e2e8f0; }
         .border-slate-300 { border-color: #cbd5e1; }
         .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #f1f5f9; }
         .hover\:bg-slate-100:hover { background-color: #f1f5f9; }
         .hover\:bg-slate-200:hover { background-color: #e2e8f0; }
-        .hover\:text-slate-600:hover { color: #4b5563; }
-        .hover\:text-slate-700:hover { color: #334155; }
-        .hover\:text-slate-800:hover { color: #4b5563; }
-        .hover\:text-slate-900:hover { color: #4b5563; }
+        .hover\:text-slate-600:hover { color: #444444; }
+        .hover\:text-slate-700:hover { color: #444444; }
+        .hover\:text-slate-800:hover { color: #444444; }
+        .hover\:text-slate-900:hover { color: #444444; }
         .hover\:border-slate-300:hover { border-color: #cbd5e1; }
 
         /* Emerald */
@@ -189,7 +189,7 @@
         
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-track { background: #ffffff; }
         ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; border: 2px solid #f1f5f9; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
@@ -520,7 +520,7 @@
             <!-- المحتوى + التذييل (لا يغطي الشريط الجانبي) -->
             <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <main class="hr-main flex-1 overflow-y-scroll p-3 md:p-6" style="direction:ltr;">
-                    <div class="hr-page-enter" style="direction:rtl;">
+                    <div style="direction:rtl;">
                     {% block content %}{% endblock %}
                     </div>
                 </main>

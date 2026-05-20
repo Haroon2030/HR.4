@@ -1,128 +1,128 @@
 /**
- * HR UI — Soft UI · نص أسود فاتح في كل الموقع والشريط
+ * HR UI — أبيض نظيف + خط أسود فاتح (#444)
  */
 :root {
-    --hr-accent: #3b82f6;
-    --hr-accent-dark: #2563eb;
-    --hr-accent-soft: #eff6ff;
-    --hr-surface: #ffffff;
-    --hr-sidebar-bg: #f8f9fc;
-    --hr-bg: #f8f9fa;
-    --hr-bg-alt: #f3f4f6;
+    --hr-white: #ffffff;
     --hr-border: #e5e7eb;
-    --hr-sidebar-border: #c8d0dc;
-    /* أسود فاتح — موحّد بدون استثناء */
-    --hr-text: #555e6d;
-    --hr-text-strong: #4b5563;
-    --hr-text-secondary: #6b7280;
-    --hr-muted: #9ca3af;
+    --hr-hover: #f5f5f5;
+    --hr-text: #444444;
+    --hr-text-muted: #6b7280;
+    --hr-accent: #3b82f6;
+    --hr-accent-soft: #eff6ff;
     --hr-radius: 0.75rem;
-    --hr-radius-lg: 0.75rem;
-    --hr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-    --hr-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-/* ── خلفية التطبيق (رمادي فاتح جداً — مثل الصورة) ── */
+/* خلفية بيضاء — كل الصفحة */
+body.hr-app,
+.hr-main,
+.hr-header,
+.hr-sidebar,
+.hr-footer,
+.hr-user-block {
+    background-color: var(--hr-white) !important;
+}
+
 body.hr-app {
-    background-color: var(--hr-bg) !important;
     color: var(--hr-text);
 }
 
 .hr-main {
-    background-color: var(--hr-bg) !important;
     background-image: none;
 }
 
-.hr-page-enter {
-    animation: hr-page-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+/* مناطق رمادية قديمة داخل المحتوى → أبيض */
+.hr-main .bg-slate-50,
+.hr-main .bg-slate-100 {
+    background-color: var(--hr-white) !important;
 }
 
-@keyframes hr-page-in {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ── الرأس — أبيض صافٍ ── */
 .hr-header {
-    background: var(--hr-surface) !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     border-bottom: 1px solid var(--hr-border) !important;
     box-shadow: none;
 }
 
-.hr-page-title {
-    display: inline-flex;
-    align-items: center;
-    max-width: 100%;
-    padding: 0;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--hr-text);
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    line-height: 1.3;
-}
-
-@media (min-width: 768px) {
-    .hr-page-title {
-        font-size: 1.125rem;
-    }
-}
-
-/* ── الشريط الجانبي — خلفية فاتحة + نص رمادي موحّد ── */
 .hr-sidebar {
-    background: var(--hr-sidebar-bg) !important;
-    border-left: 1px solid var(--hr-sidebar-border) !important;
+    border-left: 1px solid var(--hr-border) !important;
     box-shadow: none !important;
     color: var(--hr-text);
 }
 
-.hr-sidebar nav {
-    padding: 0.75rem;
+.hr-footer {
+    border-top: 1px solid var(--hr-border) !important;
 }
 
-/* كل روابط وأزرار ونصوص وأيقونات الشريط — بدون استثناء */
+.hr-user-block {
+    border-top: 1px solid var(--hr-border) !important;
+}
+
+/* ── نص موحّد في كل الموقع ── */
+.hr-app,
+.hr-app p,
+.hr-app li,
+.hr-app label,
+.hr-app td,
+.hr-app th,
+.hr-app input,
+.hr-app select,
+.hr-app textarea,
+.hr-app h1,
+.hr-app h2,
+.hr-app h3,
+.hr-app h4,
+.hr-app h5,
+.hr-app h6 {
+    color: var(--hr-text);
+}
+
+.hr-app .text-slate-900,
+.hr-app .text-slate-800,
+.hr-app .text-slate-700,
+.hr-app .text-slate-600,
+.hr-app .font-bold,
+.hr-app .font-semibold {
+    color: var(--hr-text) !important;
+}
+
+.hr-app .text-slate-500,
+.hr-app .text-slate-400 {
+    color: var(--hr-text-muted) !important;
+}
+
+.hr-header,
+.hr-header span,
+.hr-header i:not([class*="text-red"]) {
+    color: var(--hr-text) !important;
+}
+
+.hr-page-title {
+    font-weight: 700;
+    color: var(--hr-text) !important;
+}
+
+/* ── الشريط الجانبي ── */
 .hr-sidebar nav a,
-.hr-sidebar nav button[type="button"],
+.hr-sidebar nav button,
 .hr-sidebar nav a span,
 .hr-sidebar nav button span,
 .hr-sidebar nav a i,
 .hr-sidebar nav button i,
-.hr-sidebar > div:first-child span,
-.hr-sidebar > div:first-child i {
+.hr-sidebar .hr-user-block,
+.hr-sidebar .hr-user-block * {
     color: var(--hr-text) !important;
 }
 
 .hr-sidebar nav a svg,
-.hr-sidebar nav button svg,
-.hr-sidebar nav a i svg,
-.hr-sidebar nav button i svg {
-    color: var(--hr-text) !important;
+.hr-sidebar nav button svg {
     stroke: var(--hr-text) !important;
+    color: var(--hr-text) !important;
 }
 
 .hr-sidebar nav a:hover,
-.hr-sidebar nav button[type="button"]:hover {
-    background: var(--hr-bg-alt) !important;
-    color: var(--hr-text-strong) !important;
+.hr-sidebar nav button:hover {
+    background: var(--hr-hover) !important;
 }
 
-.hr-sidebar nav a:hover span,
-.hr-sidebar nav a:hover i,
-.hr-sidebar nav button:hover span,
-.hr-sidebar nav button:hover i {
-    color: var(--hr-text-strong) !important;
-}
-
-/* نشط: خلفية زرقاء فاتحة — النص والأيقونة رمادي فقط */
+/* العنصر النشط — مثل نظام المدفوعات */
 .hr-sidebar nav a.bg-primary-50,
 .hr-sidebar nav button.bg-primary-50 {
     background: var(--hr-accent-soft) !important;
@@ -133,280 +133,59 @@ body.hr-app {
 .hr-sidebar nav a.bg-primary-50 span,
 .hr-sidebar nav button.bg-primary-50 span,
 .hr-sidebar nav a.bg-primary-50 i,
-.hr-sidebar nav button.bg-primary-50 i,
-.hr-sidebar nav a.text-primary-700,
-.hr-sidebar nav button.text-primary-700,
-.hr-sidebar nav a.text-slate-800.bg-primary-50,
-.hr-sidebar .text-primary-700 {
-    color: var(--hr-text-strong) !important;
+.hr-sidebar nav button.bg-primary-50 i {
+    color: var(--hr-accent) !important;
+    stroke: var(--hr-accent) !important;
 }
 
-.hr-sidebar nav a.text-slate-600,
-.hr-sidebar nav button.text-slate-600 {
-    color: var(--hr-text) !important;
-}
-
-/* قسم المستخدم أسفل الشريط */
-.hr-sidebar .hr-user-block,
-.hr-sidebar .hr-user-block p,
-.hr-sidebar .hr-user-block span,
-.hr-sidebar .hr-user-block i {
-    color: var(--hr-text) !important;
-}
-
-.hr-sidebar .hr-user-block .text-slate-800,
-.hr-sidebar .hr-user-block .text-slate-600,
-.hr-sidebar .hr-user-block .text-slate-900 {
-    color: var(--hr-text) !important;
-}
-
-/* ═══ أسود فاتح — كل الموقع (نصوص، عناوين، جداول، نماذج) ═══ */
-.hr-app,
-.hr-app .hr-main,
-.hr-app main {
-    color: var(--hr-text);
-}
-
-.hr-app :where(h1, h2, h3, h4, h5, h6) {
-    color: var(--hr-text-strong);
-}
-
-.hr-app :where(p, li, dt, dd, label, td, th, figcaption, blockquote) {
-    color: var(--hr-text);
-}
-
-.hr-app :where(input, select, textarea, optgroup) {
-    color: var(--hr-text-strong);
-}
-
-.hr-app :where(input::placeholder, textarea::placeholder) {
-    color: var(--hr-muted);
-}
-
-.hr-app .text-slate-900,
-.hr-app .text-slate-800,
-.hr-app .font-bold.text-slate-900,
-.hr-app .font-semibold.text-slate-900,
-.hr-app .font-bold.text-slate-800,
-.hr-app .font-semibold.text-slate-800 {
-    color: var(--hr-text-strong) !important;
-}
-
-.hr-app .text-slate-700,
-.hr-app .text-slate-600 {
-    color: var(--hr-text) !important;
-}
-
-.hr-app .text-slate-500,
-.hr-app .text-slate-400 {
-    color: var(--hr-text-secondary) !important;
-}
-
-.hr-app .text-slate-300 {
-    color: var(--hr-muted) !important;
-}
-
-/* نصوص بدون كلاس لون — وراثة آمنة */
-.hr-app :where(.font-medium, .font-semibold, .font-bold):not(
-    [class*="text-white"],
-    [class*="text-red"],
-    [class*="text-rose"],
-    [class*="text-emerald"],
-    [class*="text-green"],
-    [class*="text-amber"],
-    [class*="text-orange"],
-    [class*="text-yellow"],
-    [class*="text-sky"],
-    [class*="text-cyan"],
-    [class*="text-teal"],
-    [class*="text-indigo"],
-    [class*="text-purple"],
-    [class*="text-primary"],
-    [class*="bg-"]
-) {
-    color: inherit;
-}
-
-/* أيقونات Lucide الافتراضية */
-.hr-app .hr-main i[data-lucide]:not([class*="text-white"]):not([class*="text-red"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-orange"]):not([class*="text-rose"]):not([class*="text-sky"]):not([class*="text-primary"]) {
-    color: var(--hr-text-secondary);
-    stroke: var(--hr-text-secondary);
-}
-
-/* الرأس */
-.hr-header,
-.hr-header .text-slate-800,
-.hr-header .text-slate-600,
-.hr-header i {
-    color: var(--hr-text) !important;
-}
-
-.hr-header .hr-page-title {
-    color: var(--hr-text-strong) !important;
-}
-
-/* روابط وأزرار ملوّنة — لا تُغيَّر */
-.hr-app a[class*="text-primary"],
-.hr-app a[class*="text-sky"],
-.hr-app a[class*="text-emerald"],
-.hr-app a[class*="text-indigo"],
-.hr-app a.hover\:text-primary-600:hover,
-.hr-app .text-primary-600,
-.hr-app .text-primary-700 {
-    /* يبقى لون Tailwind المخصص */
-}
-
-.hr-app [class*="text-white"],
-.hr-app [class*="bg-red-"] [class*="text-"],
-.hr-app [class*="bg-emerald-"] [class*="text-emerald"],
-.hr-app [class*="bg-amber-"] [class*="text-amber"],
-.hr-app [class*="bg-rose-"] [class*="text-rose"],
-.hr-app [class*="bg-orange-"] [class*="text-orange"],
-.hr-app [class*="bg-sky-"] [class*="text-sky"] {
-    /* شارات الحالة — بدون تعديل */
-}
-
-/* صفحات البصمة — إزالة الأسود الغامق المضمّن */
-.hr-app .zk-bio-stat-box .zk-val,
-.hr-app [class*="zk-"] input,
-.hr-app [class*="zk-"] select {
-    color: var(--hr-text-strong);
-}
-
-/* ── بطاقات المحتوى ── */
+/* ── بطاقات بسيطة ── */
 .hr-main .bg-white.rounded-xl,
-.hr-main .bg-white.rounded-2xl {
-    border-color: var(--hr-border) !important;
-    box-shadow: var(--hr-shadow-sm);
-}
-
-.hr-main a.bg-white.rounded-xl:hover,
-.hr-main a.bg-white.rounded-2xl:hover,
-.hr-main .group.bg-white.rounded-xl:hover {
-    box-shadow: var(--hr-shadow);
-    border-color: #d1d5db !important;
-}
-
-.hr-card {
-    background: var(--hr-surface);
-    border: 1px solid var(--hr-border);
-    border-radius: var(--hr-radius-lg);
-    box-shadow: var(--hr-shadow-sm);
-}
-
+.hr-main .bg-white.rounded-2xl,
+.hr-card,
 .hr-hero {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--hr-radius-lg);
-    border: 1px solid var(--hr-border);
-    background: var(--hr-surface);
-    box-shadow: var(--hr-shadow-sm);
-}
-
-.hr-hero::before {
-    display: none;
-}
-
-.hr-kpi {
-    border-radius: var(--hr-radius-lg);
-    border-color: var(--hr-border) !important;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    background: var(--hr-white) !important;
+    border: 1px solid var(--hr-border) !important;
+    box-shadow: none !important;
 }
 
 .hr-kpi:hover {
-    transform: none;
-    box-shadow: var(--hr-shadow);
-}
-
-.hr-footer {
-    background: var(--hr-surface) !important;
-    backdrop-filter: none;
-    border-top-color: var(--hr-border) !important;
-}
-
-/* قسم المستخدم أسفل الشريط */
-.hr-user-block {
-    background: var(--hr-sidebar-bg) !important;
-    border-top: 1px solid var(--hr-sidebar-border) !important;
-}
-
-.hr-user-block .border-slate-200 {
+    box-shadow: none !important;
     border-color: var(--hr-border) !important;
-}
-
-.hr-user-block .bg-white {
-    background: var(--hr-surface) !important;
-    border-color: var(--hr-border) !important;
-}
-
-.hr-user-block .bg-primary-100 {
-    background: var(--hr-accent-soft) !important;
-}
-
-.hr-user-block .text-primary-600,
-.hr-user-block .text-indigo-700 {
-    color: var(--hr-text) !important;
-}
-
-/* ── أزرار ── */
-.hr-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    border-radius: var(--hr-radius);
-    transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-
-.hr-btn-primary {
-    color: #fff;
-    background: var(--hr-accent);
-    box-shadow: var(--hr-shadow-sm);
-}
-
-.hr-btn-primary:hover {
-    background: var(--hr-accent-dark);
-}
-
-/* ── جداول ── */
-.hr-main table {
-    border-collapse: separate;
-    border-spacing: 0;
 }
 
 .hr-main thead th {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--hr-text-secondary);
-    background: var(--hr-bg);
+    color: var(--hr-text-muted);
+    background: var(--hr-white);
 }
 
 .hr-main tbody tr:hover {
-    background: var(--hr-bg-alt);
+    background: var(--hr-hover);
 }
 
-.hr-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.65rem;
-    font-weight: 800;
-    border-radius: 9999px;
-    background: var(--hr-accent-soft);
-    color: var(--hr-accent-dark);
-    border: 1px solid #dbeafe;
+/* روابط وأزرار ملوّنة */
+.hr-app a[class*="text-primary"],
+.hr-app a[class*="text-sky"],
+.hr-app a[class*="text-emerald"],
+.hr-app .text-primary-600,
+.hr-app .text-primary-700,
+.hr-app [class*="text-white"],
+.hr-app [class*="text-red"],
+.hr-app [class*="text-emerald"],
+.hr-app [class*="text-amber"],
+.hr-app [class*="text-rose"],
+.hr-app [class*="text-orange"],
+.hr-app [class*="text-sky"] {
+    /* ألوان الحالة والروابط — كما هي */
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .hr-page-enter,
-    .hr-sidebar nav a,
-    .hr-sidebar nav button,
-    .hr-kpi,
-    .hr-btn {
-        animation: none !important;
-        transition: none !important;
-    }
+.hr-app .zk-bio-field,
+.hr-app .zk-bio-stat-box .zk-val,
+.hr-app [class*="zk-"] input,
+.hr-app [class*="zk-"] select {
+    color: var(--hr-text);
+}
+
+.hr-app input::placeholder,
+.hr-app textarea::placeholder {
+    color: var(--hr-text-muted);
 }
