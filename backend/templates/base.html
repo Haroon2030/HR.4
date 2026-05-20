@@ -391,7 +391,7 @@
 
                     <a href="{% url 'web:list_pending_actions' %}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}bg-primary-50 text-slate-800{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                        <span class="relative flex-shrink-0">
+                        <span class="hr-nav-icon relative">
                             <i data-lucide="list-checks" class="w-5 h-5"></i>
                             {% if pending_actions_count %}
                             <span x-show="!sidebarOpen" class="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{{ pending_actions_count }}</span>

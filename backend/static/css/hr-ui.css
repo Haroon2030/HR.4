@@ -10,6 +10,8 @@
     --hr-accent: #2563eb;
     --hr-accent-soft: #eff6ff;
     --hr-radius: 0.75rem;
+    --hr-icon-box-bg: #f5f5f5;
+    --hr-icon-box-border: rgba(17, 17, 17, 0.14);
 }
 
 /* خلفية بيضاء */
@@ -123,6 +125,36 @@ body.hr-app {
     font-weight: 700 !important;
 }
 
+/* مربع خفيف حول أيقونات القائمة الرئيسية */
+.hr-sidebar .hr-nav-icon,
+.hr-sidebar nav > a > i[data-lucide].w-5,
+.hr-sidebar nav > button > i[data-lucide].w-5.flex-shrink-0,
+.hr-sidebar nav > a > span.hr-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--hr-icon-box-border);
+    background: var(--hr-icon-box-bg);
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+}
+
+.hr-sidebar nav > div a > i[data-lucide].w-4 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border: 1px solid var(--hr-icon-box-border);
+    background: var(--hr-icon-box-bg);
+    border-radius: 0.375rem;
+    box-sizing: border-box;
+}
+
+.hr-sidebar .hr-nav-icon i,
 .hr-sidebar nav a i,
 .hr-sidebar nav button i,
 .hr-sidebar nav a svg,
@@ -132,6 +164,18 @@ body.hr-app {
     stroke-width: 2px;
 }
 
+/* الشريط مطوي — توسيط المربعات */
+.hr-sidebar.w-20 nav > a,
+.hr-sidebar.w-20 nav > button {
+    justify-content: center !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+}
+
+.hr-sidebar.w-20 nav > div > button {
+    justify-content: center !important;
+}
+
 .hr-sidebar nav a:hover,
 .hr-sidebar nav button:hover {
     background: var(--hr-hover) !important;
@@ -139,16 +183,32 @@ body.hr-app {
 
 .hr-sidebar nav a.bg-primary-50,
 .hr-sidebar nav button.bg-primary-50 {
-    background: var(--hr-accent-soft) !important;
+    background: transparent !important;
+}
+
+.hr-sidebar nav a.bg-primary-50 .hr-nav-icon,
+.hr-sidebar nav a.bg-primary-50 > span.hr-nav-icon,
+.hr-sidebar nav a.bg-primary-50 > i[data-lucide].w-5,
+.hr-sidebar nav button.bg-primary-50 > i[data-lucide].w-5.flex-shrink-0 {
+    border-color: rgba(37, 99, 235, 0.35);
+    background: var(--hr-accent-soft);
 }
 
 .hr-sidebar nav a.bg-primary-50 span,
 .hr-sidebar nav button.bg-primary-50 span,
+.hr-sidebar nav a.bg-primary-50 .hr-nav-icon i,
+.hr-sidebar nav a.bg-primary-50 > i[data-lucide].w-5,
+.hr-sidebar nav button.bg-primary-50 > i[data-lucide].w-5.flex-shrink-0,
 .hr-sidebar nav a.bg-primary-50 i,
 .hr-sidebar nav button.bg-primary-50 i {
     color: var(--hr-accent) !important;
     stroke: var(--hr-accent) !important;
     font-weight: 700 !important;
+}
+
+.hr-sidebar nav div a.bg-primary-50 > i[data-lucide].w-4 {
+    border-color: rgba(37, 99, 235, 0.35);
+    background: var(--hr-accent-soft);
 }
 
 .hr-sidebar .hr-user-block p {
