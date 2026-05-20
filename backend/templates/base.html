@@ -399,18 +399,7 @@
                     </a>
                 </nav>
                 
-                <!-- User Info -->
-                <div class="border-t border-slate-200 p-4 mb-8">
-                    <div class="flex items-center gap-3" x-show="sidebarOpen">
-                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-slate-800 truncate">{{ user.get_full_name|default:user.username }}</p>
-                            <p class="text-sm font-medium text-slate-600">{{ user.profile.role.name|default:"مستخدم" }}</p>
-                        </div>
-                    </div>
-                </div>
+                {% include "components/sidebar_user.html" with allow_collapse=True %}
             </aside>
 
             <!-- Mobile Sidebar -->
@@ -520,18 +509,7 @@
                     </a>
                 </nav>
                 
-                <!-- User Info -->
-                <div class="border-t border-slate-200 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-slate-800 truncate">{{ user.get_full_name|default:user.username }}</p>
-                            <p class="text-sm font-medium text-slate-600">{{ user.profile.role.name|default:"مستخدم" }}</p>
-                        </div>
-                    </div>
-                </div>
+                {% include "components/sidebar_user.html" with allow_collapse=False %}
             </aside>
             
             <!-- Main Content -->
