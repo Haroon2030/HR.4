@@ -1,10 +1,12 @@
-{# نافذة جهاز بصمة — النافذة 400px والخانات 300px في المنتصف #}
+{# نافذة جهاز بصمة — RTL: نافذة 400px، خانات 300px، أزرار 100px #}
 <style>
     .zk-modal-panel {
         width: 400px;
         max-width: 400px;
         margin-left: auto;
         margin-right: auto;
+        direction: rtl;
+        text-align: right;
     }
     .zk-modal-body {
         display: flex;
@@ -35,6 +37,19 @@
         font-weight: 600;
         color: #475569;
         margin-bottom: 0.15rem;
+        text-align: right;
+    }
+    .zk-modal-field.zk-field-rtl {
+        direction: rtl;
+        text-align: right;
+    }
+    .zk-modal-field.zk-field-ltr {
+        direction: ltr;
+        text-align: left;
+    }
+    select.zk-modal-field {
+        direction: rtl;
+        text-align: right;
     }
     .zk-modal-scroll {
         overflow-y: auto;
@@ -56,7 +71,18 @@
         font-size: 9px;
         font-weight: 700;
         color: #64748b;
-        padding: 0 2px;
+        padding: 0 4px;
+        text-align: right;
+        margin-right: auto;
+        margin-left: 0;
+    }
+    .zk-modal-toggle {
+        width: 300px;
+        display: inline-flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.4rem;
     }
     .zk-modal-actions {
         display: flex;
@@ -89,15 +115,15 @@
         class="zk-modal-panel bg-white rounded-lg shadow-xl border border-slate-300 flex flex-col shrink-0 max-h-[calc(100vh-1.5rem)]"
     >
         <div class="flex items-center justify-between gap-1 px-2 py-1.5 border-b border-slate-200 bg-slate-50 shrink-0">
+            <div class="leading-tight min-w-0">
+                <h3 id="device-modal-title" class="text-[11px] font-bold text-slate-900"
+                    x-text="form.device_id ? 'تعديل جهاز' : 'إضافة جهاز'"></h3>
+                <p class="text-[8px] text-slate-500 font-mono" dir="ltr" style="text-align:left">ZKTeco:4370</p>
+            </div>
             <button type="button" @click="deviceModal = false"
                 class="shrink-0 p-0.5 rounded text-slate-400 hover:bg-slate-200" aria-label="إغلاق">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
-            <div class="text-left leading-tight min-w-0">
-                <h3 id="device-modal-title" class="text-[11px] font-bold text-slate-900"
-                    x-text="form.device_id ? 'تعديل جهاز' : 'إضافة جهاز'"></h3>
-                <p class="text-[8px] text-slate-500 font-mono" dir="ltr">ZKTeco:4370</p>
-            </div>
         </div>
 
         <form method="post" action="{% url 'web:biometric_device_save' %}" class="flex flex-col min-h-0 overflow-hidden">
@@ -106,33 +132,33 @@
 
             <div class="zk-modal-scroll py-2 zk-modal-body">
                 <div class="zk-modal-row">
-                    <label class="zk-modal-label font-mono" dir="ltr" title="devices.list">ID</label>
+                    <label class="zk-modal-label" title="devices.list">رقم الجهاز (ID)</label>
                     <input type="number" name="device_id" x-model="form.device_id" min="1" step="1"
-                        class="zk-modal-field font-mono" dir="ltr" placeholder="1">
+                        class="zk-modal-field zk-field-ltr font-mono" placeholder="1">
                 </div>
                 <div class="zk-modal-row">
                     <label class="zk-modal-label">الاسم</label>
                     <input type="text" name="name" x-model="form.name" required
-                        class="zk-modal-field" placeholder="الواحة">
+                        class="zk-modal-field zk-field-rtl" placeholder="الواحة">
                 </div>
 
                 <fieldset class="zk-modal-fieldset">
-                    <legend>LAN</legend>
+                    <legend>اتصال الشبكة</legend>
                     <div class="zk-modal-row">
-                        <label class="zk-modal-label font-mono" dir="ltr">IP</label>
-                        <input type="text" name="ip_address" x-model="form.ip" required dir="ltr"
+                        <label class="zk-modal-label font-mono">عنوان IP</label>
+                        <input type="text" name="ip_address" x-model="form.ip" required
                             pattern="^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"
-                            class="zk-modal-field font-mono" placeholder="192.168.24.59">
+                            class="zk-modal-field zk-field-ltr font-mono" placeholder="192.168.24.59">
                     </div>
                     <div class="zk-modal-row">
-                        <label class="zk-modal-label font-mono" dir="ltr">PORT</label>
+                        <label class="zk-modal-label">المنفذ</label>
                         <input type="number" name="port" x-model="form.port"
-                            class="zk-modal-field font-mono" placeholder="4370">
+                            class="zk-modal-field zk-field-ltr font-mono" placeholder="4370">
                     </div>
                     <div class="zk-modal-row" style="margin-bottom:0">
-                        <label class="zk-modal-label font-mono" dir="ltr">KEY</label>
+                        <label class="zk-modal-label font-mono">Comm Key</label>
                         <input type="number" name="comm_key" x-model="form.comm_key" min="0"
-                            class="zk-modal-field font-mono" placeholder="0">
+                            class="zk-modal-field zk-field-ltr font-mono" placeholder="0">
                     </div>
                 </fieldset>
 
@@ -140,7 +166,7 @@
                     <legend class="text-indigo-700">فرع *</legend>
                     {% if branches %}
                     <div class="zk-modal-row">
-                        <select name="branch_id" x-model="form.branch_id" class="zk-modal-field">
+                        <select name="branch_id" x-model="form.branch_id" class="zk-modal-field zk-field-rtl">
                             <option value="">فرع مسجّل</option>
                             {% for b in branches %}
                             <option value="{{ b.pk }}">{{ b.name }}</option>
@@ -151,18 +177,18 @@
                     {% endif %}
                     <div class="zk-modal-row" style="margin-bottom:0">
                         <input type="text" name="branch_name" x-model="form.branch_name"
-                            class="zk-modal-field" placeholder="فرع جديد">
+                            class="zk-modal-field zk-field-rtl" placeholder="فرع جديد">
                     </div>
                 </fieldset>
 
                 <div class="zk-modal-row">
                     <label class="zk-modal-label">ملاحظة</label>
-                    <input type="text" name="notes" x-model="form.notes" class="zk-modal-field" placeholder="—">
+                    <input type="text" name="notes" x-model="form.notes" class="zk-modal-field zk-field-rtl" placeholder="—">
                 </div>
-                <label class="inline-flex items-center gap-1.5 cursor-pointer" style="width:300px">
-                    <input type="checkbox" name="is_active" x-model="form.is_active" class="sr-only peer">
-                    <span class="relative w-8 h-4 rounded-full bg-slate-300 peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full after:shadow peer-checked:after:-translate-x-3.5 transition-all"></span>
+                <label class="zk-modal-toggle cursor-pointer">
                     <span class="text-[10px] font-medium" x-text="form.is_active ? 'نشط' : 'معطّل'"></span>
+                    <input type="checkbox" name="is_active" x-model="form.is_active" class="sr-only peer">
+                    <span class="relative w-8 h-4 rounded-full bg-slate-300 peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full after:shadow peer-checked:after:translate-x-3.5 transition-all"></span>
                 </label>
             </div>
 
