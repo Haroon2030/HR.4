@@ -21,15 +21,12 @@ from apps.attendance.selectors.biometric_devices import (
 from apps.core.decorators import permission_required
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids
-from apps.core.web_views.attendance_records import _filters_to_querystring, _parse_filters
+from apps.core.web_views.attendance_records import (
+    _apply_default_date_filters,
+    _filters_to_querystring,
+    _parse_filters,
+)
 from apps.employees.models import Employee
-
-
-def _default_date_range(filters: dict) -> dict:
-    if not filters.get('date_from') and not filters.get('date_to'):
-        today = timezone.localdate()
-        filters = {**filters, 'date_from': today.replace(day=1).isoformat(), 'date_to': today.isoformat()}
-    return filters
 
 
 def _punches_for_report(request, filters: dict):
@@ -56,7 +53,7 @@ def _punches_for_report(request, filters: dict):
 
 @permission_required('attendance.view')
 def attendance_report(request):
-    filters = _default_date_range(_parse_filters(request))
+    filters = _apply_default_date_filters(_parse_filters(request))
     qs = _punches_for_report(request, filters)
     all_rows = build_daily_attendance_rows(qs)
     summary = summarize_daily_rows(all_rows)
@@ -101,7 +98,7 @@ def attendance_report_export(request):
         messages.error(request, 'مكتبة openpyxl غير مثبتة.')
         return redirect('web:attendance_report')
 
-    filters = _default_date_range(_parse_filters(request))
+    filters = _apply_default_date_filters(_parse_filters(request))
     qs = _punches_for_report(request, filters)
     rows = build_daily_attendance_rows(qs)
     table = daily_rows_to_table(rows)

@@ -4,7 +4,8 @@
 {% block title %}سجلات الحضور — البصمة{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-4">
+{% include "pages/attendance/_biometric_page_styles.html" %}
+<div class="max-w-7xl mx-auto space-y-4" dir="rtl">
     <nav class="text-xs text-slate-500 flex items-center gap-1 flex-wrap">
         <a href="{% url 'web:biometric_devices' %}" class="hover:text-primary-600">أجهزة البصمة</a>
         <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
@@ -66,29 +67,27 @@
     {% endif %}
 
     <!-- إحصائيات -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div class="bg-white border border-slate-200 rounded-xl p-3">
-            <p class="text-xs text-slate-500">إجمالي السجلات</p>
-            <p class="text-xl font-bold text-slate-900">{{ stats.total|default:0 }}</p>
+    <div class="zk-bio-stat-grid">
+        <div class="zk-bio-stat-box">
+            <p class="zk-lbl">إجمالي السجلات</p>
+            <p class="zk-val">{{ stats.total|default:0 }}</p>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-3">
-            <p class="text-xs text-slate-500">دخول{% if stats.inferred %} <span class="text-sky-600">(بعد التصنيف)</span>{% endif %}</p>
-            <p class="text-xl font-bold text-emerald-700">{{ stats.check_in|default:0 }}</p>
+        <div class="zk-bio-stat-box">
+            <p class="zk-lbl">دخول</p>
+            <p class="zk-val text-emerald-700">{{ stats.check_in|default:0 }}</p>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-3">
-            <p class="text-xs text-slate-500">خروج{% if stats.inferred %} <span class="text-sky-600">(بعد التصنيف)</span>{% endif %}</p>
-            <p class="text-xl font-bold text-indigo-700">{{ stats.check_out|default:0 }}</p>
+        <div class="zk-bio-stat-box">
+            <p class="zk-lbl">خروج</p>
+            <p class="zk-val text-indigo-700">{{ stats.check_out|default:0 }}</p>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-3">
-            <p class="text-xs text-slate-500">غير مربوط HR</p>
-            <p class="text-xl font-bold text-amber-700">{{ stats.unmapped|default:0 }}</p>
+        <div class="zk-bio-stat-box">
+            <p class="zk-lbl">غير مربوط HR</p>
+            <p class="zk-val text-amber-700">{{ stats.unmapped|default:0 }}</p>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-3 col-span-2 md:col-span-1">
-            <p class="text-xs text-slate-500">النطاق الزمني</p>
-            <p class="text-xs font-semibold text-slate-800 mt-1">
-                {% if stats.first_punch %}{{ stats.first_punch|date:"Y-m-d" }}{% else %}—{% endif %}
-                →
-                {% if stats.last_punch %}{{ stats.last_punch|date:"Y-m-d" }}{% else %}—{% endif %}
+        <div class="zk-bio-stat-box">
+            <p class="zk-lbl">الفترة المعروضة</p>
+            <p class="zk-val text-sm">
+                {{ filters.date_from|default:"—" }} <span class="text-slate-400">→</span> {{ filters.date_to|default:"—" }}
             </p>
         </div>
     </div>
@@ -115,17 +114,23 @@
     </div>
     {% endif %}
 
-    <!-- فلاتر + سحب -->
-    <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3 items-end">
+    <div class="zk-bio-card">
+        <div class="zk-bio-card-hd">
+            <div class="flex items-center gap-2">
+                <span class="zk-bio-sec-tag">01</span>
+                <h2 class="text-sm font-bold text-slate-800">فلاتر السجلات</h2>
+                <span class="zk-bio-stat">{{ page_obj.paginator.count }} سجل</span>
+            </div>
+        </div>
+        <form method="get" class="zk-bio-filter" style="grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));">
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">بحث</label>
+                <label class="zk-bio-lbl">بحث</label>
                 <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم..."
-                    class="w-full rounded-lg border-slate-300 text-sm">
+                    class="zk-bio-field" autocomplete="off">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">الفرع</label>
-                <select name="branch" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">الفرع</label>
+                <select name="branch" class="zk-bio-field">
                     <option value="">الكل</option>
                     {% for b in branches %}
                     <option value="{{ b.pk }}" {% if filters.branch_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
@@ -133,8 +138,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">الجهاز</label>
-                <select name="device" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">الجهاز</label>
+                <select name="device" class="zk-bio-field">
                     <option value="">الكل</option>
                     {% for d in devices %}
                     <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}
@@ -145,16 +150,16 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">من تاريخ</label>
-                <input type="date" name="from" value="{{ filters.date_from }}" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">من تاريخ</label>
+                <input type="date" name="from" value="{{ filters.date_from }}" class="zk-bio-field">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">إلى تاريخ</label>
-                <input type="date" name="to" value="{{ filters.date_to }}" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">إلى تاريخ</label>
+                <input type="date" name="to" value="{{ filters.date_to }}" class="zk-bio-field">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">نوع الحركة</label>
-                <select name="punch_type" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">نوع الحركة</label>
+                <select name="punch_type" class="zk-bio-field">
                     <option value="">الكل</option>
                     {% for val, label in punch_types %}
                     <option value="{{ val }}" {% if filters.punch_type == val %}selected{% endif %}>{{ label }}</option>
@@ -162,111 +167,97 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">الربط بـ HR</label>
-                <select name="mapped" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">الربط بـ HR</label>
+                <select name="mapped" class="zk-bio-field">
                     <option value="">الكل</option>
                     <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط فقط</option>
                     <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
                 </select>
             </div>
-            <div class="md:col-span-4 lg:col-span-6 flex flex-wrap gap-2">
-                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold">تطبيق الفلتر</button>
-                <a href="{% url 'web:attendance_records' %}" class="px-4 py-2 border border-slate-200 rounded-lg text-sm">مسح</a>
+            <div class="flex flex-wrap gap-2 items-end">
+                <button type="submit" class="zk-bio-btn zk-bio-btn-primary">تطبيق الفلتر</button>
+                <a href="{% url 'web:attendance_records' %}" class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
             </div>
         </form>
 
-        <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 mb-2">
-            أجهزة LAN: زر <strong>سحب</strong> يرسل طلباً للوكيل في الفرع — يُنفَّذ خلال ~5 دقائق.
-        </p>
         {% if user|has_permission:'attendance.manage' %}
-        <form method="post" action="{% url 'web:attendance_records_pull' %}" class="border-t border-slate-100 pt-4 flex flex-wrap gap-3 items-end">
+        <div class="zk-bio-card-hd border-t border-slate-200">
+            <div class="flex items-center gap-2">
+                <span class="zk-bio-sec-tag">02</span>
+                <h2 class="text-sm font-bold text-slate-800">سحب من الجهاز</h2>
+            </div>
+        </div>
+        <p class="px-3 py-2 text-xs text-slate-600 border-b border-slate-200 bg-slate-50">
+            أجهزة LAN: يُرسل طلباً للوكيل في الفرع — يُنفَّذ خلال ~5 دقائق.
+        </p>
+        <form method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-bio-filter" style="grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));">
             {% csrf_token %}
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">سحب من جهاز</label>
-                <select name="device_id" required class="rounded-lg border-slate-300 text-sm min-w-[160px]">
+                <label class="zk-bio-lbl">سحب من جهاز</label>
+                <select name="device_id" required class="zk-bio-field">
                     {% for d in devices %}
                     <option value="{{ d.pk }}" dir="ltr">{{ d.ip_address }}:{{ d.port }} — {{ d.name }}{% if d.branch %} · فرع {{ d.branch.name }}{% endif %}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">من</label>
-                <input type="date" name="date_from" class="rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">من</label>
+                <input type="date" name="date_from" class="zk-bio-field">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">إلى</label>
-                <input type="date" name="date_to" class="rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">إلى</label>
+                <input type="date" name="date_to" class="zk-bio-field">
             </div>
-            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">
-                سحب من الجهاز
-            </button>
+            <div class="flex items-end">
+                <button type="submit" class="zk-bio-btn zk-bio-btn-primary" style="background:#4f46e5;border-color:#4338ca">سحب</button>
+            </div>
         </form>
         {% endif %}
-    </div>
 
-    <!-- جدول -->
-    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center text-sm text-slate-600">
-            <span>عرض {{ page_obj.start_index }}–{{ page_obj.end_index }} من {{ page_obj.paginator.count }}</span>
-            <span class="flex items-center gap-2">
-                <span class="text-slate-500">الترتيب: الأحدث أولاً</span>
-                <span class="text-slate-300">|</span>
-                <span>{{ per_page }} سجل / صفحة</span>
-            </span>
+        <div class="zk-bio-card-hd border-t border-slate-200">
+            <div class="flex items-center gap-2">
+                <span class="zk-bio-sec-tag">03</span>
+                <h2 class="text-sm font-bold text-slate-800">السجلات التفصيلية</h2>
+            </div>
+            <span class="zk-bio-stat">{{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ page_obj.paginator.count }}</span>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-800 text-white text-xs">
+            <table class="zk-bio-tbl">
+                <thead>
                     <tr>
-                        <th class="px-2 py-2.5 font-medium text-center w-10">#</th>
-                        <th class="px-2 py-2.5 font-medium text-right">
-                            التاريخ
-                            <span class="text-slate-400 font-normal" title="الأحدث في أعلى الجدول">↓</span>
-                        </th>
-                        <th class="px-2 py-2.5 font-medium text-right">الوقت</th>
-                        <th class="px-2 py-2.5 font-medium text-right">معرف ZK</th>
-                        <th class="px-2 py-2.5 font-medium text-right">رقم المستخدم</th>
-                        <th class="px-2 py-2.5 font-medium text-right">الاسم على الجهاز</th>
-                        <th class="px-2 py-2.5 font-medium text-right">موظف HR</th>
-                        <th class="px-2 py-2.5 font-medium text-right">الرقم الوظيفي</th>
-                        <th class="px-2 py-2.5 font-medium text-right">نوع الحركة</th>
-                        <th class="px-2 py-2.5 font-medium text-center" title="status خام">St</th>
-                        <th class="px-2 py-2.5 font-medium text-right">التحقق</th>
-                        <th class="px-2 py-2.5 font-medium text-center" title="punch خام">Vm</th>
-                        <th class="px-2 py-2.5 font-medium text-right">الجهاز</th>
-                        <th class="px-2 py-2.5 font-medium text-right" dir="ltr">IP</th>
+                        <th class="text-center w-10">#</th>
+                        <th class="text-right">التاريخ ↓</th>
+                        <th class="text-right">الوقت</th>
+                        <th class="text-right">ZK</th>
+                        <th class="text-right">User</th>
+                        <th class="text-right">اسم جهاز</th>
+                        <th class="text-right">موظف HR</th>
+                        <th class="text-right">وظيفي</th>
+                        <th class="text-right">الحركة</th>
+                        <th class="text-center" title="status">St</th>
+                        <th class="text-right">تحقق</th>
+                        <th class="text-center" title="verify">Vm</th>
+                        <th class="text-right">الجهاز</th>
+                        <th class="text-right" dir="ltr">IP</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody>
                     {% for p in page_obj %}
-                    <tr class="hover:bg-slate-50 {% if not p.employee_id %}bg-amber-50/40{% endif %}">
-                        <td class="px-2 py-2 text-center text-slate-400">{{ page_obj.start_index|add:forloop.counter0 }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap font-mono text-xs">{{ p.local_punched_at|date:"Y-m-d" }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap font-mono text-xs">{{ p.local_punched_at|date:"H:i:s" }}</td>
-                        <td class="px-2 py-2 font-mono text-xs text-slate-500">{{ p.device_record_uid|default:"—" }}</td>
-                        <td class="px-2 py-2 font-mono text-xs" dir="ltr">{{ p.device_user_id }}</td>
-                        <td class="px-2 py-2">{{ p.device_user_name|default:"—" }}</td>
-                        <td class="px-2 py-2">
-                            {% if p.employee %}
-                            <span class="text-emerald-800 font-medium">{{ p.employee.name }}</span>
-                            {% else %}
-                            <span class="text-amber-700">غير مربوط</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-2 font-mono text-xs">{{ p.employee.employee_number|default:"—" }}</td>
-                        <td class="px-2 py-2">
-                            <span class="inline-flex px-1.5 py-0.5 rounded text-xs font-medium
-                                {% if p.punch_type == 'in' %}bg-emerald-100 text-emerald-800
-                                {% elif p.punch_type == 'out' %}bg-indigo-100 text-indigo-800
-                                {% else %}bg-slate-100 text-slate-700{% endif %}">
-                                {{ p.get_punch_type_display }}
-                            </span>
-                        </td>
-                        <td class="px-2 py-2 text-center font-mono text-xs text-slate-400">{{ p.raw_status|default:"—" }}</td>
-                        <td class="px-2 py-2 text-xs">{{ p.verify_mode_label|default:"—" }}</td>
-                        <td class="px-2 py-2 text-center font-mono text-xs text-slate-400">{{ p.verify_mode|default:"—" }}</td>
-                        <td class="px-2 py-2 text-xs">{{ p.device.name }}</td>
-                        <td class="px-2 py-2 font-mono text-xs" dir="ltr">{{ p.device.ip_address }}</td>
+                    <tr class="{% if not p.employee_id %}zk-row-warn{% endif %}">
+                        <td class="text-center text-slate-400 zk-mono">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                        <td class="zk-mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
+                        <td class="zk-mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
+                        <td class="zk-mono text-slate-500">{{ p.device_record_uid|default:"—" }}</td>
+                        <td class="zk-mono" dir="ltr">{{ p.device_user_id }}</td>
+                        <td>{{ p.device_user_name|default:"—" }}</td>
+                        <td>{% if p.employee %}<span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>{% else %}<span class="zk-pill zk-pill-warn">غير مربوط</span>{% endif %}</td>
+                        <td class="zk-mono">{{ p.employee.employee_number|default:"—" }}</td>
+                        <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">{{ p.get_punch_type_display }}</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">{{ p.get_punch_type_display }}</span>{% else %}<span class="zk-pill zk-pill-muted">{{ p.get_punch_type_display }}</span>{% endif %}</td>
+                        <td class="text-center zk-mono text-slate-500">{{ p.raw_status|default:"—" }}</td>
+                        <td class="text-xs">{{ p.verify_mode_label|default:"—" }}</td>
+                        <td class="text-center zk-mono text-slate-500">{{ p.verify_mode|default:"—" }}</td>
+                        <td>{{ p.device.name }}</td>
+                        <td class="zk-mono" dir="ltr">{{ p.device.ip_address }}</td>
                     </tr>
                     {% empty %}
                     <tr><td colspan="14" class="px-4 py-12 text-center text-slate-500">لا توجد سجلات — غيّر الفلتر أو نفّذ «سحب من الجهاز».</td></tr>

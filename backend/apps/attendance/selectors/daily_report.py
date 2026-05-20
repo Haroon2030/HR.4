@@ -92,44 +92,55 @@ def _status_label(
     return 'غير مكتمل'
 
 
+def _day_group_key(punch: AttendancePunch, day: date) -> tuple:
+    """موظف مربوط: صف واحد/يوم — غير مربوط: حسب الجهاز ورقم المستخدم."""
+    if punch.employee_id:
+        return ('emp', day, punch.employee_id)
+    return ('dev', day, punch.device_id, punch.device_user_id)
+
+
 def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
-    """يجمع سجلات البصمة إلى صفوف (موظف/مستخدم جهاز × يوم)."""
+    """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
     groups: dict[tuple, list[AttendancePunch]] = defaultdict(list)
     for punch in qs.iterator(chunk_size=3000):
         day = timezone.localtime(punch.punched_at).date()
-        emp_key = punch.employee_id if punch.employee_id else 0
-        key = (day, emp_key, punch.device_id, punch.device_user_id)
-        groups[key].append(punch)
+        groups[_day_group_key(punch, day)].append(punch)
 
     rows: list[DailyAttendanceRow] = []
-    for (_, _, device_id, device_user_id), punches in groups.items():
+    for punches in groups.values():
         punches.sort(key=lambda p: p.punched_at)
         first = punches[0]
         work_date = timezone.localtime(first.punched_at).date()
         employee = first.employee
-        device = first.device
+        device_names = sorted({p.device.name for p in punches if p.device})
+        device_user_ids = sorted({p.device_user_id for p in punches})
         check_in, check_out = _pick_in_out_times(punches)
         duration = None
         if check_in and check_out and check_out > check_in:
             duration = check_out - check_in
         is_mapped = employee is not None
+        branch_name = '—'
+        if employee and employee.branch:
+            branch_name = employee.branch.name
+        elif first.device and first.device.branch:
+            branch_name = first.device.branch.name
         rows.append(
             DailyAttendanceRow(
                 work_date=work_date,
                 employee_id=employee.pk if employee else None,
                 employee_name=employee.name if employee else '—',
                 employee_number=employee.employee_number if employee and employee.employee_number else '—',
-                branch_name=(
-                    (employee.branch.name if employee and employee.branch else None)
-                    or (device.branch.name if device and device.branch else None)
-                    or '—'
-                ),
+                branch_name=branch_name,
                 department_name=(
                     employee.department.name if employee and employee.department else '—'
                 ),
-                device_name=device.name if device else '—',
-                device_user_id=device_user_id,
-                device_user_name=first.device_user_name or '—',
+                device_name=', '.join(device_names) if device_names else '—',
+                device_user_id=device_user_ids[0] if len(device_user_ids) == 1 else 0,
+                device_user_name=(
+                    first.device_user_name or '—'
+                    if len(device_user_ids) == 1
+                    else f'متعدد ({len(device_user_ids)})'
+                ),
                 check_in=check_in,
                 check_out=check_out,
                 punch_count=len(punches),

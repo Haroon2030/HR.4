@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.attendance.models import AttendancePunch, BiometricDevice
@@ -26,6 +27,17 @@ from apps.core.decorators import permission_required
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids
 from apps.employees.models import Employee
+
+def _apply_default_date_filters(filters: dict) -> dict:
+    if not filters.get('date_from') and not filters.get('date_to'):
+        today = timezone.localdate()
+        filters = {
+            **filters,
+            'date_from': today.replace(day=1).isoformat(),
+            'date_to': today.isoformat(),
+        }
+    return filters
+
 
 def _parse_filters(request) -> dict:
     branch_id = request.GET.get('branch') or None
@@ -85,7 +97,7 @@ def _filters_to_querystring(filters: dict, *, extra: dict | None = None) -> str:
 
 @permission_required('attendance.view')
 def attendance_records_list(request):
-    filters = _parse_filters(request)
+    filters = _apply_default_date_filters(_parse_filters(request))
     date_from = None
     date_to = None
     if filters['date_from']:
@@ -219,7 +231,7 @@ def attendance_records_reclassify(request):
 @permission_required('attendance.view')
 @require_GET
 def attendance_records_export(request):
-    filters = _parse_filters(request)
+    filters = _apply_default_date_filters(_parse_filters(request))
     date_from = datetime.strptime(filters['date_from'], '%Y-%m-%d').date() if filters.get('date_from') else None
     date_to = datetime.strptime(filters['date_to'], '%Y-%m-%d').date() if filters.get('date_to') else None
 
