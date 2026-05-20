@@ -87,6 +87,42 @@
         background: #f8fafc;
     }
     .zk-pull-progress-wrap.zk-pull-active { display: block; }
+    /* فلاتر تقرير البصمة — مضغوطة */
+    .zk-report-filter {
+        display: grid;
+        gap: 0.45rem;
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+    @media (min-width: 900px) {
+        .zk-report-filter {
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            align-items: end;
+        }
+        .zk-rf-span-2 { grid-column: span 2; }
+        .zk-rf-span-3 { grid-column: span 3; }
+        .zk-rf-span-4 { grid-column: span 4; }
+        .zk-rf-span-5 { grid-column: span 5; }
+        .zk-rf-actions { grid-column: span 2; display: flex; gap: 0.35rem; justify-content: flex-end; }
+    }
+    .zk-report-filter .employee-search-picker input[type="text"] {
+        font-size: 0.8125rem;
+        padding: 0.35rem 2rem 0.35rem 0.5rem;
+    }
+    .zk-stat-grid-compact {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+    @media (min-width: 1024px) {
+        .zk-stat-grid-compact { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    }
+    .zk-stat-grid-compact .zk-bio-stat-box { padding: 0.4rem 0.55rem; }
+    .zk-stat-grid-compact .zk-val { font-size: 1rem; }
+    .zk-emp-link { font-weight: 700; color: #1d4ed8; text-decoration: none; }
+    .zk-emp-link:hover { text-decoration: underline; }
+    .zk-emp-sub { display: block; font-size: 10px; color: #64748b; font-family: ui-monospace, monospace; }
     .zk-pull-track {
         height: 8px;
         border-radius: 9999px;

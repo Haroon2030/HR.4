@@ -81,6 +81,13 @@ def attendance_report(request):
     elif filters['mapped_only'] is False:
         mapped_filter = 'no'
 
+    filter_employee = None
+    if filters['employee_id']:
+        filter_employee = Employee.objects.filter(
+            pk=filters['employee_id'],
+            is_deleted=False,
+        ).first()
+
     return render(request, 'pages/attendance/report.html', {
         'daily_page': daily_page,
         'punches_page': punches_page,
@@ -89,7 +96,8 @@ def attendance_report(request):
         'total_daily_rows': len(all_rows),
         'devices': get_biometric_devices_queryset(request.user),
         'branches': branches_qs,
-        'employees': Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:300],
+        'employees': Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:500],
+        'filter_employee': filter_employee,
         'filters': filters,
         'mapped_filter': mapped_filter,
         'querystring': _filters_to_querystring(filters),

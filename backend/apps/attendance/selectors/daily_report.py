@@ -20,6 +20,7 @@ class DailyAttendanceRow:
     branch_name: str
     department_name: str
     device_name: str
+    device_id: int
     device_user_id: int
     device_user_name: str
     check_in: datetime | None
@@ -135,6 +136,7 @@ def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
                     employee.department.name if employee and employee.department else '—'
                 ),
                 device_name=', '.join(device_names) if device_names else '—',
+                device_id=first.device_id,
                 device_user_id=device_user_ids[0] if len(device_user_ids) == 1 else 0,
                 device_user_name=(
                     first.device_user_name or '—'

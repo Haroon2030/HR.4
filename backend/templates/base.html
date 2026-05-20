@@ -171,77 +171,6 @@
         .hover\:bg-indigo-700:hover { background-color: #4338ca; }
         .hover\:text-indigo-700:hover { color: #4338ca; }
 
-        /* شريط جانبي — بطاقة المستخدم */
-        .sidebar-user {
-            flex-shrink: 0;
-            border-top: 1px solid #e2e8f0;
-            padding: 0.75rem;
-            background: linear-gradient(to left, #f8fafc, #fff);
-        }
-        .sidebar-user-card {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            min-height: 3rem;
-            padding: 0.5rem 0.6rem;
-            border-radius: 0.625rem;
-            border: 1px solid #e2e8f0;
-            background: #fff;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-        .sidebar-user-avatar {
-            flex-shrink: 0;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 9999px;
-            background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
-            border: 1px solid #bfdbfe;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .sidebar-user-meta {
-            flex: 1;
-            min-width: 0;
-            text-align: right;
-            line-height: 1.25;
-        }
-        .sidebar-user-name {
-            display: block;
-            font-size: 0.8125rem;
-            font-weight: 700;
-            color: #0f172a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-family: ui-monospace, 'Segoe UI', Tahoma, sans-serif;
-            letter-spacing: 0.01em;
-        }
-        .sidebar-user-role {
-            display: inline-block;
-            max-width: 100%;
-            margin-top: 0.2rem;
-            padding: 0.1rem 0.45rem;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1.3;
-            color: #4338ca;
-            background: #eef2ff;
-            border: 1px solid #c7d2fe;
-            border-radius: 0.25rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            vertical-align: top;
-        }
-        .sidebar-user--collapsed {
-            display: flex;
-            justify-content: center;
-            padding: 0.35rem 0;
-        }
-        .sidebar-user--collapsed .sidebar-user-avatar {
-            cursor: default;
-        }
     </style>
     
     <!-- HTMX -->
@@ -584,22 +513,23 @@
                 {% include "components/sidebar_user.html" with allow_collapse=False %}
             </aside>
             
-            <!-- Main Content -->
-            <main class="flex-1 overflow-y-scroll p-3 pb-12 md:p-6 md:pb-10" style="direction:ltr;">
-                <div style="direction:rtl;">
-                {% block content %}{% endblock %}
-                </div>
-            </main>
+            <!-- المحتوى + التذييل (لا يغطي الشريط الجانبي) -->
+            <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+                <main class="flex-1 overflow-y-scroll p-3 md:p-6" style="direction:ltr;">
+                    <div style="direction:rtl;">
+                    {% block content %}{% endblock %}
+                    </div>
+                </main>
+                <footer class="shrink-0 border-t border-slate-100 bg-white py-1.5 text-center">
+                    <p class="text-xs text-slate-400 px-2">
+                        <span class="hidden sm:inline">تطوير وتصميم </span>
+                        <span class="font-semibold text-slate-500">هارون الأهدل</span>
+                        <span class="hidden sm:inline">&mdash;</span>
+                        <a href="tel:0531847156" class="hover:text-primary-600 transition-colors">0531847156</a>
+                    </p>
+                </footer>
+            </div>
         </div>
-    </div>
-    <!-- Footer -->
-    <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 py-1.5 text-center z-30">
-        <p class="text-xs text-slate-400 px-2">
-            <span class="hidden sm:inline">تطوير وتصميم </span>
-            <span class="font-semibold text-slate-500">هارون الأهدل</span> 
-            <span class="hidden sm:inline">&mdash;</span>
-            <a href="tel:0531847156" class="hover:text-primary-600 transition-colors">0531847156</a>
-        </p>
     </div>
     
     <!-- Toast Notifications -->
