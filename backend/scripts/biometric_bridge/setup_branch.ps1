@@ -76,10 +76,8 @@ if (Test-Path $listPath) {
 }
 
 function Test-AgentPythonPackages {
-    $check = @(
-        'import requests',
-        'from zk import ZK',
-    ) -join '; '
+    # Single-line string: PowerShell 5.1 treats "from" as reserved inside @() arrays.
+    $check = 'import requests; from zk import ZK'
     $code = Invoke-PythonModule -PythonInfo $script:HrPython -Arguments @('-c', $check)
     return ($code -eq 0)
 }

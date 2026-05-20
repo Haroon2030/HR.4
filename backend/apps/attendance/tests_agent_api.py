@@ -106,3 +106,34 @@ class AttendanceAgentAPITests(TestCase):
         )
         self.assertEqual(r2.status_code, 200)
         self.assertIsNone(get_pull_request(self.device.pk))
+
+    def test_ingest_invalid_payload_returns_400(self):
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY='test-agent-key-secret')
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            {'device_id': self.device.pk},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_pull_requests_ack_requires_device_id(self):
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY='test-agent-key-secret')
+        response = client.post(
+            '/api/v1/attendance/agent/pull-requests/',
+            {},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()['success'])
+
+    def test_ingest_unknown_device_returns_404(self):
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY='test-agent-key-secret')
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            {'device_id': 999999, 'punches': []},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 404)
