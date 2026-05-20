@@ -225,6 +225,8 @@ urlpatterns = [
     path('attendance/records/pull/', web_views.attendance_records_pull, name='attendance_records_pull'),
     path('attendance/records/reclassify/', web_views.attendance_records_reclassify, name='attendance_records_reclassify'),
     path('attendance/records/export/', web_views.attendance_records_export, name='attendance_records_export'),
+    path('attendance/report/', web_views.attendance_report, name='attendance_report'),
+    path('attendance/report/export/', web_views.attendance_report_export, name='attendance_report_export'),
 
     # ══════════════════════════════════════════════════════════════
     # 11. مسير الرواتب الشهري

@@ -19,6 +19,7 @@ REPORT_GROUPS = [
     {'key': 'compliance',   'title': 'الالتزام والوثائق', 'icon': 'shield-check',  'color': 'rose',     'description': 'الوثائق والكروت الصحية والإنذارات'},
     {'key': 'leaves',       'title': 'الإجازات والغياب',  'icon': 'calendar-days', 'color': 'cyan',     'description': 'تقارير الإجازات والغياب'},
     {'key': 'demographics', 'title': 'تقارير ديموغرافية', 'icon': 'pie-chart',     'color': 'amber',    'description': 'توزيع حسب الجنس والجنسية والمهنة'},
+    {'key': 'attendance',   'title': 'الحضور والبصمة',     'icon': 'fingerprint',   'color': 'violet',   'description': 'تقارير الحضور من أجهزة البصمة'},
 ]
 
 REPORTS = [
@@ -42,6 +43,7 @@ REPORTS = [
     {'group': 'demographics','key': 'gender',              'title': 'حسب الجنس',                   'icon': 'users',         'color': 'amber',    'description': 'توزيع الموظفين حسب الجنس'},
     {'group': 'demographics','key': 'nationality',         'title': 'حسب الجنسية',                 'icon': 'flag',          'color': 'amber',    'description': 'توزيع حسب الجنسية'},
     {'group': 'demographics','key': 'professions',         'title': 'حسب المهنة',                  'icon': 'briefcase',     'color': 'amber',    'description': 'توزيع حسب المهنة'},
+    {'group': 'attendance',  'key': 'biometric_daily',     'title': 'تقرير البصمة اليومي',         'icon': 'fingerprint',   'color': 'violet',   'description': 'دخول وخروج ومدة العمل لكل موظف/يوم'},
 ]
 
 def _grouped_reports():
@@ -202,6 +204,27 @@ def _build_leave_balance(req):
     rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(e.accrued_leave_days), str(e.available_leave_balance), str(e.remaining_leave_days)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
+def _build_biometric_daily(req):
+    from apps.attendance.selectors.daily_report import build_daily_attendance_rows, daily_rows_to_table
+    from apps.attendance.selectors.punch_records import get_punch_queryset
+    from django.utils import timezone
+    from datetime import datetime
+
+    today = timezone.localdate()
+    date_from_s = req.GET.get('from') or today.replace(day=1).isoformat()
+    date_to_s = req.GET.get('to') or today.isoformat()
+    date_from = datetime.strptime(date_from_s, '%Y-%m-%d').date()
+    date_to = datetime.strptime(date_to_s, '%Y-%m-%d').date()
+    branch_id = req.GET.get('branch')
+    branch_id = int(branch_id) if branch_id and branch_id.isdigit() else None
+
+    qs = get_punch_queryset(branch_id=branch_id, date_from=date_from, date_to=date_to)
+    rows = build_daily_attendance_rows(qs)
+    data = daily_rows_to_table(rows)
+    data['note'] = f'من {date_from} إلى {date_to} — للفلترة الكاملة: قائمة البصمة → تقرير البصمة'
+    return data
+
+
 def _build_absences(req):
     from apps.employees.models import EmployeeAbsence
     cols = ['الموظف', 'الفرع', 'تاريخ الغياب', 'عدد الأيام', 'مبلغ الخصم', 'محتسب في مسير']
@@ -238,6 +261,7 @@ BUILDERS = {
     'passport_expiry': _build_passport_expiry, 'health_cards': _build_health_cards, 'warnings': _build_warnings,
     'leaves': _build_leaves, 'leave_balance': _build_leave_balance, 'absences': _build_absences,
     'gender': _build_gender, 'nationality': _build_nationality, 'professions': _build_professions,
+    'biometric_daily': _build_biometric_daily,
 }
 
 @login_required

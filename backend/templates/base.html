@@ -371,6 +371,10 @@
                                 <i data-lucide="cpu" class="w-4 h-4"></i>
                                 أجهزة البصمة
                             </a>
+                            <a href="{% url 'web:attendance_report' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/report' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                                تقرير البصمة
+                            </a>
                             <a href="{% url 'web:attendance_records' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/records' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
                                 <i data-lucide="clipboard-list" class="w-4 h-4"></i>
                                 سجلات الحضور
@@ -492,6 +496,10 @@
                             <a href="{% url 'web:biometric_devices' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/devices' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
                                 <i data-lucide="cpu" class="w-4 h-4"></i>
                                 أجهزة البصمة
+                            </a>
+                            <a href="{% url 'web:attendance_report' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/report' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                                تقرير البصمة
                             </a>
                             <a href="{% url 'web:attendance_records' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {% if '/attendance/records' in request.path %}bg-primary-50 text-primary-700 font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
                                 <i data-lucide="clipboard-list" class="w-4 h-4"></i>

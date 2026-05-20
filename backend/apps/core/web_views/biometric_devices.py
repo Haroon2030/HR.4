@@ -96,21 +96,24 @@ def biometric_devices_dashboard(request):
     enrollments_qs = (
         EmployeeBiometricEnrollment.objects.filter(is_deleted=False)
         .select_related('employee', 'device', 'device__branch')
-        .order_by('device__branch__name', 'device__name', 'device_user_id')[:100]
+        .order_by('device__branch__name', 'device__name', 'device_user_id')
     )
     if branch_filter_id:
         enrollments_qs = enrollments_qs.filter(device__branch_id=branch_filter_id)
-    enrollments = list(enrollments_qs)
+    enrollments = list(enrollments_qs[:100])
 
+    enrollment_by_device_user_qs = (
+        EmployeeBiometricEnrollment.objects.filter(is_deleted=False)
+        .select_related('employee', 'device')
+    )
+    if branch_filter_id:
+        enrollment_by_device_user_qs = enrollment_by_device_user_qs.filter(
+            device__branch_id=branch_filter_id,
+        )
     enrollment_by_device_user = {
         (e.device_id, e.device_user_id): e
-        for e in EmployeeBiometricEnrollment.objects.filter(is_deleted=False).select_related('employee', 'device')
+        for e in enrollment_by_device_user_qs
     }
-    if branch_filter_id:
-        enrollment_by_device_user = {
-            k: v for k, v in enrollment_by_device_user.items()
-            if v.device.branch_id == branch_filter_id
-        }
 
     device_user_filters = _parse_device_user_filters(request)
     device_users_qs = get_device_user_queryset(

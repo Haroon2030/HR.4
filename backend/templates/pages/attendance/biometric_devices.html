@@ -13,6 +13,10 @@
             <p class="text-slate-500 text-sm mt-1">إدارة أجهزة ZKTeco — IP · منفذ 4370 · ربط الفروع والموظفين</p>
         </div>
         <div class="flex flex-wrap gap-2">
+            <a href="{% url 'web:attendance_report' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-primary-200 bg-primary-50 rounded-lg text-sm font-semibold text-primary-800 hover:bg-primary-100">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                تقرير البصمة
+            </a>
             <a href="{% url 'web:attendance_records' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 <i data-lucide="clipboard-list" class="w-4 h-4"></i>
                 سجلات الحضور

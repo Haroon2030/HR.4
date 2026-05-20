@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block title %}تقرير البصمة — الحضور اليومي{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4">
+    <nav class="text-xs text-slate-500 flex items-center gap-1 flex-wrap">
+        <a href="{% url 'web:biometric_devices' %}" class="hover:text-primary-600">أجهزة البصمة</a>
+        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+        <span class="text-slate-700 font-semibold">تقرير البصمة</span>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">تقرير البصمة — الحضور اليومي</h1>
+            <p class="text-sm text-slate-500 mt-1">تجميع البصمات لكل موظف/يوم: دخول، خروج، مدة العمل، والحالة</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'web:attendance_report_export' %}?{{ querystring }}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                تصدير Excel
+            </a>
+            <a href="{% url 'web:attendance_records' %}" class="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                السجلات التفصيلية
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+            <p class="text-xs text-slate-500">أيام مسجّلة</p>
+            <p class="text-xl font-bold text-slate-900">{{ summary.total_days }}</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+            <p class="text-xs text-slate-500">مكتمل (دخول+خروج)</p>
+            <p class="text-xl font-bold text-emerald-700">{{ summary.complete }}</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+            <p class="text-xs text-slate-500">بصمة واحدة</p>
+            <p class="text-xl font-bold text-amber-700">{{ summary.single_punch }}</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+            <p class="text-xs text-slate-500">غير مكتمل</p>
+            <p class="text-xl font-bold text-orange-700">{{ summary.incomplete }}</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+            <p class="text-xs text-slate-500">غير مربوط HR</p>
+            <p class="text-xl font-bold text-rose-700">{{ summary.unmapped }}</p>
+        </div>
+    </div>
+
+    <form method="get" class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+        <p class="text-sm font-semibold text-slate-700">فلاتر التقرير</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">من تاريخ</label>
+                <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="w-full rounded-lg border-slate-200 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">إلى تاريخ</label>
+                <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="w-full rounded-lg border-slate-200 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">الفرع</label>
+                <select name="branch" class="w-full rounded-lg border-slate-200 text-sm">
+                    <option value="">الكل</option>
+                    {% for b in branches %}
+                    <option value="{{ b.pk }}" {% if filters.branch_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">الجهاز</label>
+                <select name="device" class="w-full rounded-lg border-slate-200 text-sm">
+                    <option value="">الكل</option>
+                    {% for d in devices %}
+                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }} ({{ d.ip_address }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">الموظف</label>
+                <select name="employee" class="w-full rounded-lg border-slate-200 text-sm">
+                    <option value="">الكل</option>
+                    {% for e in employees %}
+                    <option value="{{ e.pk }}" {% if filters.employee_id == e.pk %}selected{% endif %}>{{ e.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">ربط HR</label>
+                <select name="mapped" class="w-full rounded-lg border-slate-200 text-sm">
+                    <option value="" {% if mapped_filter == 'all' %}selected{% endif %}>الكل</option>
+                    <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط فقط</option>
+                    <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
+                </select>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs text-slate-500 mb-1">بحث (اسم / رقم)</label>
+                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم موظف أو رقم مستخدم الجهاز" class="w-full rounded-lg border-slate-200 text-sm">
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 pt-1">
+            <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">عرض التقرير</button>
+            <a href="{% url 'web:attendance_report' %}" class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50">مسح</a>
+        </div>
+    </form>
+
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+            <p class="text-sm text-slate-600">
+                <span class="font-semibold text-slate-800">{{ total_rows }}</span> يوم/موظف
+                {% if page_obj.paginator.num_pages > 1 %}
+                — صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}
+                {% endif %}
+            </p>
+        </div>
+        {% if page_obj.object_list %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                        <th class="p-2.5 text-right font-semibold">#</th>
+                        <th class="p-2.5 text-right font-semibold">التاريخ</th>
+                        <th class="p-2.5 text-right font-semibold">الموظف</th>
+                        <th class="p-2.5 text-right font-semibold">الرقم الوظيفي</th>
+                        <th class="p-2.5 text-right font-semibold">الفرع</th>
+                        <th class="p-2.5 text-right font-semibold">القسم</th>
+                        <th class="p-2.5 text-right font-semibold">الجهاز</th>
+                        <th class="p-2.5 text-right font-semibold">دخول</th>
+                        <th class="p-2.5 text-right font-semibold">خروج</th>
+                        <th class="p-2.5 text-center font-semibold">بصمات</th>
+                        <th class="p-2.5 text-right font-semibold">المدة</th>
+                        <th class="p-2.5 text-right font-semibold">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in page_obj.object_list %}
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="p-2 text-slate-400 text-xs">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                        <td class="p-2 whitespace-nowrap font-medium">{{ row.work_date }}</td>
+                        <td class="p-2">
+                            {% if row.is_mapped %}
+                            {{ row.employee_name }}
+                            {% else %}
+                            <span class="text-amber-800">{{ row.device_user_name }}</span>
+                            <span class="text-xs text-slate-400">(#{{ row.device_user_id }})</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-2 text-slate-600">{{ row.employee_number }}</td>
+                        <td class="p-2">{{ row.branch_name }}</td>
+                        <td class="p-2">{{ row.department_name }}</td>
+                        <td class="p-2 text-slate-600">{{ row.device_name }}</td>
+                        <td class="p-2 font-mono text-emerald-700">{% if row.check_in %}{{ row.check_in|localtime|date:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="p-2 font-mono text-indigo-700">{% if row.check_out %}{{ row.check_out|localtime|date:"H:i" }}{% else %}—{% endif %}</td>
+                        <td class="p-2 text-center">{{ row.punch_count }}</td>
+                        <td class="p-2 font-mono">{{ row.duration_display }}</td>
+                        <td class="p-2">
+                            <span class="text-xs px-2 py-0.5 rounded-full
+                                {% if row.status_label == 'مكتمل' %}bg-emerald-100 text-emerald-800
+                                {% elif row.status_label == 'بصمة واحدة' %}bg-amber-100 text-amber-800
+                                {% elif row.status_label == 'غير مربوط بـ HR' %}bg-rose-100 text-rose-800
+                                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                {{ row.status_label }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap gap-2 justify-center">
+            {% if page_obj.has_previous %}
+            <a href="?{{ querystring }}&page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-slate-50">السابق</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?{{ querystring }}&page={{ page_obj.next_page_number }}" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-slate-50">التالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-12 text-center text-slate-500 text-sm">
+            <i data-lucide="calendar-x" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+            لا توجد بيانات للفترة المحددة — غيّر التواريخ أو تأكد من المزامنة.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -17,6 +17,11 @@
             <p class="text-sm text-slate-500 mt-1">عرض تقني كامل — ZKTeco (معرف السجل، نوع الحركة، طريقة التحقق)</p>
         </div>
         <div class="flex flex-wrap gap-2">
+            <a href="{% url 'web:attendance_report' %}{% if querystring %}?{{ querystring }}{% endif %}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 border border-primary-200 bg-primary-50 text-primary-800 rounded-lg text-sm font-semibold hover:bg-primary-100">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                تقرير البصمة
+            </a>
             <a href="{% url 'web:attendance_records_export' %}?{{ querystring }}"
                class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
