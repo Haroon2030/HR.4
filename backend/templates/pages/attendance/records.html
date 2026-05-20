@@ -91,104 +91,16 @@
                 {{ filters.date_from|default:"—" }} <span class="text-slate-400">→</span> {{ filters.date_to|default:"—" }}
                 {% else %}
                 <span class="text-slate-600 font-semibold">كل السجلات</span>
-                <span class="block text-[10px] font-normal text-slate-500 mt-0.5">بدون تقييد تاريخ — اختر من/إلى ثم «تطبيق الفلتر» للتضييق</span>
                 {% endif %}
             </p>
         </div>
     </div>
 
-    {% if filter_device or filter_branch %}
-    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span class="font-semibold text-slate-600">الفلتر النشط:</span>
-        {% if filter_branch %}
-        <span>فرع القائمة: <strong>{{ filter_branch.name }}</strong></span>
-        {% endif %}
-        {% if filter_device %}
-        <span class="font-mono text-xs bg-white px-2 py-0.5 rounded border border-slate-200" dir="ltr">{{ filter_device.ip_address }}:{{ filter_device.port }}</span>
-        <span>جهاز «<strong>{{ filter_device.name }}</strong>»</span>
-        {% if filter_device.branch %}
-        <span class="text-slate-500">(مسجّل على فرع: {{ filter_device.branch.name }})</span>
-        {% endif %}
-        {% endif %}
-    </div>
-    {% endif %}
-    {% if branch_device_mismatch %}
-    <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        <strong>تعارض فلتر:</strong> الجهاز «{{ filter_device.name }}» ({{ filter_device.ip_address }}) مربوط بفرع «{{ filter_device.branch.name }}» وليس «{{ filter_branch.name }}».
-        امسح فلتر الفرع أو اختر الفرع الصحيح — البيانات ليست «معكوسة» بل الفرع والجهاز غير متطابقين.
-    </div>
-    {% endif %}
-
     <div class="zk-bio-card">
+        {% if user|has_permission:'attendance.manage' %}
         <div class="zk-bio-card-hd">
             <div class="flex items-center gap-2">
                 <span class="zk-bio-sec-tag">01</span>
-                <h2 class="text-sm font-bold text-slate-800">فلاتر السجلات</h2>
-                <span class="zk-bio-stat">{{ page_obj.paginator.count }} سجل</span>
-            </div>
-        </div>
-        <form method="get" class="zk-bio-filter" style="grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));">
-            <div>
-                <label class="zk-bio-lbl">بحث</label>
-                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم..."
-                    class="zk-bio-field" autocomplete="off">
-            </div>
-            <div>
-                <label class="zk-bio-lbl">الفرع</label>
-                <select name="branch" class="zk-bio-field">
-                    <option value="">الكل</option>
-                    {% for b in branches %}
-                    <option value="{{ b.pk }}" {% if filters.branch_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="zk-bio-lbl">الجهاز</label>
-                <select name="device" class="zk-bio-field">
-                    <option value="">الكل</option>
-                    {% for d in devices %}
-                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}
-                        dir="ltr">
-                        {{ d.ip_address }}:{{ d.port }} — {{ d.name }}{% if d.branch %} · فرع {{ d.branch.name }}{% else %} · بدون فرع{% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="zk-bio-lbl">من تاريخ</label>
-                <input type="date" name="from" value="{{ filters.date_from }}" class="zk-bio-field">
-            </div>
-            <div>
-                <label class="zk-bio-lbl">إلى تاريخ</label>
-                <input type="date" name="to" value="{{ filters.date_to }}" class="zk-bio-field">
-            </div>
-            <div>
-                <label class="zk-bio-lbl">نوع الحركة</label>
-                <select name="punch_type" class="zk-bio-field">
-                    <option value="">الكل</option>
-                    {% for val, label in punch_types %}
-                    <option value="{{ val }}" {% if filters.punch_type == val %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="zk-bio-lbl">الربط بـ HR</label>
-                <select name="mapped" class="zk-bio-field">
-                    <option value="">الكل</option>
-                    <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط فقط</option>
-                    <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
-                </select>
-            </div>
-            <div class="flex flex-wrap gap-2 items-end">
-                <button type="submit" class="zk-bio-btn zk-bio-btn-primary">تطبيق الفلتر</button>
-                <a href="{% url 'web:attendance_records' %}" class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
-            </div>
-        </form>
-
-        {% if user|has_permission:'attendance.manage' %}
-        <div class="zk-bio-card-hd border-t border-slate-200">
-            <div class="flex items-center gap-2">
-                <span class="zk-bio-sec-tag">02</span>
                 <h2 class="text-sm font-bold text-slate-800">سحب من الجهاز</h2>
             </div>
         </div>
@@ -225,9 +137,9 @@
         </div>
         {% endif %}
 
-        <div class="zk-bio-card-hd border-t border-slate-200">
+        <div class="zk-bio-card-hd {% if user|has_permission:'attendance.manage' %}border-t border-slate-200{% endif %}">
             <div class="flex items-center gap-2">
-                <span class="zk-bio-sec-tag">03</span>
+                <span class="zk-bio-sec-tag">{% if user|has_permission:'attendance.manage' %}02{% else %}01{% endif %}</span>
                 <h2 class="text-sm font-bold text-slate-800">السجلات التفصيلية</h2>
             </div>
             <span class="zk-bio-stat">{{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ page_obj.paginator.count }}</span>
@@ -271,7 +183,7 @@
                         <td class="zk-mono" dir="ltr">{{ p.device.ip_address }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="14" class="px-4 py-12 text-center text-slate-500">لا توجد سجلات — غيّر الفلتر أو نفّذ «سحب من الجهاز».</td></tr>
+                    <tr><td colspan="14" class="px-4 py-12 text-center text-slate-500">لا توجد سجلات — نفّذ «سحب من الجهاز» لاستيراد البيانات.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -280,11 +192,11 @@
         {% if page_obj.has_other_pages %}
         <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap justify-center gap-1">
             {% if page_obj.has_previous %}
-            <a href="?{{ querystring }}&page={{ page_obj.previous_page_number }}" class="px-3 py-1 rounded border text-sm hover:bg-slate-50">السابق</a>
+            <a href="{% if querystring %}?{{ querystring }}&{% else %}?{% endif %}page={{ page_obj.previous_page_number }}" class="px-3 py-1 rounded border text-sm hover:bg-slate-50">السابق</a>
             {% endif %}
             <span class="px-3 py-1 text-sm text-slate-600">صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
             {% if page_obj.has_next %}
-            <a href="?{{ querystring }}&page={{ page_obj.next_page_number }}" class="px-3 py-1 rounded border text-sm hover:bg-slate-50">التالي</a>
+            <a href="{% if querystring %}?{{ querystring }}&{% else %}?{% endif %}page={{ page_obj.next_page_number }}" class="px-3 py-1 rounded border text-sm hover:bg-slate-50">التالي</a>
             {% endif %}
         </div>
         {% endif %}

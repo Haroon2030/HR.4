@@ -23,9 +23,6 @@ from apps.attendance.selectors.biometric_devices import (
     get_biometric_devices_queryset,
 )
 from apps.core.decorators import permission_required
-from apps.core.models import Branch
-from apps.core.web_views._helpers import _user_accessible_branch_ids
-from apps.employees.models import Employee
 
 def _apply_default_date_filters(filters: dict) -> dict:
     """يُستخدم في تقرير البصمة فقط — فرض من/إلى افتراضيين عند غيابهما في الاستعلام."""
@@ -121,42 +118,14 @@ def attendance_records_list(request):
     paginator = Paginator(qs, per_page=int(request.GET.get('per_page') or 100))
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    branches_qs = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
-    branch_ids = _user_accessible_branch_ids(request.user)
-    if branch_ids is not None:
-        branches_qs = branches_qs.filter(pk__in=branch_ids)
-    # كل الأجهزة في القائمة (مع IP) — لا نخفيها حسب الفرع حتى لا يُختار فرع خاطئ ويُظن أن البيانات «معكوسة»
     devices = get_biometric_devices_queryset(request.user)
-    filter_device = None
-    if filters['device_id']:
-        filter_device = devices.filter(pk=filters['device_id']).first()
-    filter_branch = None
-    if filters['branch_id']:
-        filter_branch = branches_qs.filter(pk=filters['branch_id']).first()
-    branch_device_mismatch = False
-    if filter_device and filter_branch and filter_device.branch_id != filter_branch.pk:
-        branch_device_mismatch = True
-    employees = Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:300]
-
-    mapped_filter = 'all'
-    if filters['mapped_only'] is True:
-        mapped_filter = 'yes'
-    elif filters['mapped_only'] is False:
-        mapped_filter = 'no'
 
     return render(request, 'pages/attendance/records.html', {
         'page_obj': page_obj,
         'stats': stats,
         'devices': devices,
-        'filter_device': filter_device,
-        'filter_branch': filter_branch,
-        'branch_device_mismatch': branch_device_mismatch,
-        'branches': branches_qs,
-        'employees': employees,
         'filters': filters,
-        'mapped_filter': mapped_filter,
         'querystring': _filters_to_querystring(filters),
-        'punch_types': AttendancePunch.PunchType.choices,
         'per_page': paginator.per_page,
     })
 
