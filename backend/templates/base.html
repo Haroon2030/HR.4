@@ -20,11 +20,11 @@
         .bg-primary-50 { background-color: #eff6ff; }
         .bg-primary-100 { background-color: #dbeafe; }
         .bg-primary-500 { background-color: #3b82f6; }
-        .bg-primary-600 { background-color: #2563eb; }
-        .bg-primary-700 { background-color: #1d4ed8; }
+        .bg-primary-600 { background-color: #3b82f6; }
+        .bg-primary-700 { background-color: #2563eb; }
         .text-primary-500 { color: #3b82f6; }
-        .text-primary-600 { color: #2563eb; }
-        .text-primary-700 { color: #1d4ed8; }
+        .text-primary-600 { color: #3b82f6; }
+        .text-primary-700 { color: #2563eb; }
         .text-primary-800 { color: #1e40af; }
         .border-primary-200 { border-color: #bfdbfe; }
         .border-primary-500 { border-color: #3b82f6; }
@@ -204,7 +204,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="hr-app bg-slate-50 min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }">
+<body class="hr-app min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }">
     <!-- Mobile Overlay -->
     <div 
         x-show="mobileMenuOpen" 
@@ -222,7 +222,7 @@
     <!-- Main Layout: لا نضع overflow-hidden هنا حتى لا تُقصّ قوائم الرأس (إشعارات / حساب) -->
     <div class="flex flex-col h-screen min-h-0">
         <!-- Header -->
-        <header class="hr-header h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 relative z-40 overflow-visible shrink-0">
+        <header class="hr-header h-16 flex items-center justify-between px-4 md:px-6 relative z-40 overflow-visible shrink-0">
             <div class="flex items-center gap-2 md:gap-4">
                 <!-- Desktop Toggle -->
                 <button @click="sidebarOpen = !sidebarOpen" class="hidden md:block p-2 hover:bg-slate-100 rounded-lg transition-colors">
@@ -311,7 +311,7 @@
         <div class="flex flex-1 overflow-hidden">
             <!-- Desktop Sidebar -->
             <aside 
-                class="hr-sidebar hidden md:flex bg-white border-l border-slate-200 transition-all duration-300 flex-col"
+                class="hr-sidebar hidden md:flex transition-all duration-300 flex-col"
                 :class="sidebarOpen ? 'w-64' : 'w-20'"
             >
                 <!-- Navigation -->
@@ -414,7 +414,7 @@
                 x-transition:leave="transition-transform ease-in duration-200"
                 x-transition:leave-start="translate-x-0"
                 x-transition:leave-end="translate-x-full"
-                class="hr-sidebar md:hidden fixed top-0 right-0 bottom-0 w-64 bg-white border-l border-slate-200 flex flex-col z-40"
+                class="hr-sidebar md:hidden fixed top-0 right-0 bottom-0 w-64 flex flex-col z-40"
                 style="display: none;"
             >
                 <!-- Mobile Header -->
@@ -521,7 +521,7 @@
                     {% block content %}{% endblock %}
                     </div>
                 </main>
-                <footer class="hr-footer shrink-0 border-t border-slate-100 bg-white py-1.5 text-center">
+                <footer class="hr-footer shrink-0 border-t py-1.5 text-center">
                     <p class="text-xs text-slate-400 px-2">
                         <span class="hidden sm:inline">تطوير وتصميم </span>
                         <span class="font-semibold text-slate-500">هارون الأهدل</span>
