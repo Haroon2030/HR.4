@@ -113,8 +113,6 @@
                                     port: {{ d.port }},
                                     comm_key: {{ d.comm_key }},
                                     branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
-                                    branch_name: '{% if d.branch %}{{ d.branch.name|escapejs }}{% else %}{{ d.name|escapejs }}{% endif %}',
-                                    notes: '{{ d.notes|escapejs }}',
                                     is_active: {{ d.is_active|yesno:'true,false' }}
                                 })" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200">تعديل</button>
                                 <form method="post" action="{% url 'web:biometric_device_delete' d.pk %}" class="inline"
@@ -326,7 +324,7 @@ function biometricPage() {
         toast: false,
         toastOk: true,
         toastMsg: '',
-        form: { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true },
+        form: { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true },
         openDeviceForm(data) {
             if (data) {
                 this.form = {
@@ -337,12 +335,10 @@ function biometricPage() {
                     port: data.port,
                     comm_key: data.comm_key,
                     branch_id: data.branch_id ? String(data.branch_id) : '',
-                    branch_name: data.branch_name || '',
-                    notes: data.notes || '',
                     is_active: data.is_active,
                 };
             } else {
-                this.form = { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', branch_name: '', notes: '', is_active: true };
+                this.form = { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true };
             }
             this.deviceModal = true;
             this.$nextTick(() => lucide.createIcons());

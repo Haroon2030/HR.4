@@ -165,26 +165,19 @@
                 <fieldset class="zk-modal-fieldset" style="border-color:#c7d2fe;background:#f5f3ff;">
                     <legend class="text-indigo-700">فرع *</legend>
                     {% if branches %}
-                    <div class="zk-modal-row">
-                        <select name="branch_id" x-model="form.branch_id" class="zk-modal-field zk-field-rtl">
-                            <option value="">فرع مسجّل</option>
+                    <div class="zk-modal-row" style="margin-bottom:0">
+                        <label class="zk-modal-label">الفرع</label>
+                        <select name="branch_id" x-model="form.branch_id" required class="zk-modal-field zk-field-rtl">
+                            <option value="">— اختر الفرع —</option>
                             {% for b in branches %}
                             <option value="{{ b.pk }}">{{ b.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <p class="text-[8px] text-center text-indigo-400 mb-1">أو</p>
+                    {% else %}
+                    <p class="text-[10px] text-amber-800">لا توجد فروع — أنشئ فرعاً من إدارة الفروع أولاً.</p>
                     {% endif %}
-                    <div class="zk-modal-row" style="margin-bottom:0">
-                        <input type="text" name="branch_name" x-model="form.branch_name"
-                            class="zk-modal-field zk-field-rtl" placeholder="فرع جديد">
-                    </div>
                 </fieldset>
-
-                <div class="zk-modal-row">
-                    <label class="zk-modal-label">ملاحظة</label>
-                    <input type="text" name="notes" x-model="form.notes" class="zk-modal-field zk-field-rtl" placeholder="—">
-                </div>
                 <label class="zk-modal-toggle cursor-pointer">
                     <span class="text-[10px] font-medium" x-text="form.is_active ? 'نشط' : 'معطّل'"></span>
                     <input type="checkbox" name="is_active" x-model="form.is_active" class="sr-only peer">

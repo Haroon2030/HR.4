@@ -185,8 +185,6 @@ def biometric_device_save(request):
     port = int(request.POST.get('port') or 4370)
     comm_key = int(request.POST.get('comm_key') or 0)
     branch_id_raw = (request.POST.get('branch_id') or '').strip()
-    branch_name = (request.POST.get('branch_name') or '').strip()
-    notes = (request.POST.get('notes') or '').strip()
     is_active = request.POST.get('is_active') == 'on'
 
     if not name:
@@ -203,8 +201,8 @@ def biometric_device_save(request):
         messages.error(request, 'المنفذ يجب أن يكون بين 1 و 65535.')
         return redirect('web:biometric_devices')
 
-    if not branch_id_raw and not branch_name:
-        messages.error(request, 'اختر فرعاً من القائمة أو أدخل اسم فرع جديد للربط.')
+    if not branch_id_raw:
+        messages.error(request, 'اختر الفرع من القائمة.')
         return redirect('web:biometric_devices')
 
     try:
@@ -226,8 +224,8 @@ def biometric_device_save(request):
             return redirect('web:biometric_devices')
         branch = ensure_branch_for_device(
             branch_id=branch_id,
-            branch_name=branch_name or None,
-            device_name=name if not branch_id else None,
+            branch_name=None,
+            device_name=None,
         )
     except Branch.DoesNotExist:
         messages.error(request, 'الفرع المحدد غير موجود.')
@@ -241,7 +239,6 @@ def biometric_device_save(request):
     device.port = port
     device.comm_key = comm_key
     device.branch_id = branch.id
-    device.notes = notes
     device.is_active = is_active
 
     try:
