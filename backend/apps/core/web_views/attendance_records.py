@@ -3,10 +3,9 @@ from datetime import datetime, time
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -161,20 +160,30 @@ def attendance_records_list(request):
     })
 
 
+def _attendance_pull_wants_json(request) -> bool:
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
 @permission_required('attendance.manage')
 @require_POST
 def attendance_records_pull(request):
+    wants_json = _attendance_pull_wants_json(request)
+
+    def _json_err(msg: str, status: int = 400):
+        if wants_json:
+            return JsonResponse({'ok': False, 'error': msg}, status=status)
+        messages.error(request, msg)
+        return redirect('web:attendance_records')
+
     device_id = request.POST.get('device_id')
     if not device_id:
-        messages.error(request, 'اختر جهازاً للسحب.')
-        return redirect('web:attendance_records')
+        return _json_err('اختر جهازاً للسحب.')
 
     from apps.attendance.selectors.biometric_devices import get_device_for_user
 
     device = get_device_for_user(request.user, int(device_id))
     if not device.branch_id:
-        messages.error(request, f'حدّد فرعاً لجهاز «{device.name}» قبل السحب.')
-        return redirect('web:attendance_records')
+        return _json_err(f'حدّد فرعاً لجهاز «{device.name}» قبل السحب.')
     date_from = request.POST.get('date_from') or None
     date_to = request.POST.get('date_to') or None
     df = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
@@ -187,7 +196,14 @@ def attendance_records_pull(request):
         requested_by_id=request.user.pk,
     )
     if queued:
-        messages.success(request, queue_msg + ' حدّث الصفحة بعد قليل.')
+        full_msg = queue_msg + ' حدّث الصفحة بعد قليل.'
+        if wants_json:
+            return JsonResponse({
+                'ok': True,
+                'queued': True,
+                'message': full_msg,
+            })
+        messages.success(request, full_msg)
         return redirect('web:attendance_records')
 
     result = pull_device_attendance(
@@ -205,8 +221,21 @@ def attendance_records_pull(request):
         )
         if result.skipped_time_filter:
             msg += f' — قديم {result.skipped_time_filter}'
+        if wants_json:
+            return JsonResponse({
+                'ok': True,
+                'queued': False,
+                'message': msg,
+                'punches_fetched': result.punches_fetched,
+                'punches_new': result.punches_new,
+                'imported': result.imported,
+                'skipped_duplicate': result.skipped_duplicate,
+                'skipped_time_filter': result.skipped_time_filter,
+            })
         messages.success(request, msg)
     else:
+        if wants_json:
+            return JsonResponse({'ok': False, 'error': result.error or 'فشل السحب'})
         messages.error(request, result.error)
     return redirect('web:attendance_records')
 
