@@ -2,7 +2,8 @@
 {% load custom_tags %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-6" x-data="biometricPage()">
+{% include "pages/attendance/_biometric_page_styles.html" %}
+<div class="max-w-7xl mx-auto space-y-4" x-data="biometricPage()" dir="rtl">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -32,17 +33,18 @@
     </div>
     {% endif %}
 
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+    <div class="zk-bio-card">
+        <div class="zk-bio-card-hd">
             <div class="flex items-center gap-3">
-                <h2 class="font-semibold text-slate-800">الأجهزة المسجّلة</h2>
-                <span class="text-xs text-slate-500 tabular-nums">{{ devices|length }}</span>
+                <span class="zk-bio-sec-tag">01</span>
+                <h2 class="text-sm font-bold text-slate-800">الأجهزة المسجّلة</h2>
+                <span class="zk-bio-stat">{{ devices|length }} جهاز</span>
             </div>
             <form method="get" class="flex flex-wrap items-center gap-2">
                 {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
                 {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
                 <label class="text-xs text-slate-500">فرع</label>
-                <select name="branch" class="rounded-lg border-slate-300 text-sm min-w-[160px]" onchange="this.form.submit()">
+                <select name="branch" class="zk-bio-field min-w-[140px]" style="width:auto;min-width:8rem" onchange="this.form.submit()">
                     <option value="">الكل</option>
                     {% for b in branches %}
                     <option value="{{ b.pk }}" {% if branch_filter_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
@@ -55,18 +57,18 @@
             </form>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
+            <table class="zk-bio-tbl">
+                <thead>
                     <tr>
-                        <th class="text-right px-4 py-2.5 font-medium w-14">رقم</th>
-                        <th class="text-right px-4 py-2.5 font-medium">الجهاز</th>
-                        <th class="text-right px-4 py-2.5 font-medium">IP:Port</th>
-                        <th class="text-right px-4 py-2.5 font-medium">الفرع</th>
-                        <th class="text-right px-4 py-2.5 font-medium">الحالة</th>
-                        <th class="text-right px-4 py-2.5 font-medium">آخر مزامنة</th>
-                        <th class="text-right px-4 py-2.5 font-medium">السجلات</th>
+                        <th class="text-right px-3 py-2 w-12">ID</th>
+                        <th class="text-right px-3 py-2">الجهاز</th>
+                        <th class="text-right px-3 py-2">IP:Port</th>
+                        <th class="text-right px-3 py-2">الفرع</th>
+                        <th class="text-right px-3 py-2">الحالة</th>
+                        <th class="text-right px-3 py-2">آخر مزامنة</th>
+                        <th class="text-right px-3 py-2">بصمات</th>
                         {% if user|has_permission:'attendance.manage' %}
-                        <th class="text-right px-4 py-2.5 font-medium">إجراءات</th>
+                        <th class="text-right px-3 py-2">إجراء</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -93,7 +95,7 @@
                         <td class="px-4 py-3">{{ d.punch_count }}</td>
                         {% if user|has_permission:'attendance.manage' %}
                         <td class="px-4 py-3">
-                            <div class="flex flex-wrap gap-1">
+                            <div class="zk-bio-actions">
                                 {% if d.ip_address|is_private_lan_ip %}
                                 <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="inline">
                                     {% csrf_token %}
@@ -132,33 +134,35 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-4">
-        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+    <div class="zk-bio-card mb-4">
+        <div class="zk-bio-card-hd">
             <div>
-                <h2 class="font-semibold text-slate-800">مستخدمو الجهاز (أسماء من البصمة)</h2>
-                <p class="text-xs text-slate-500 mt-0.5">يُحدَّث عند «مزامنة» أو زر «المستخدمون» — بحث وفلترة من الخادم</p>
+                <span class="zk-bio-sec-tag">02</span>
+                <h2 class="text-sm font-bold text-slate-800">مستخدمو الأجهزة</h2>
+                <p class="text-[10px] text-slate-500 mt-0.5">أسماء من البصمة — يُحدَّث عند المزامنة</p>
             </div>
-            {% if device_users_total %}
-            <span class="text-xs text-slate-500">
-                عرض {{ device_users_page.start_index }}–{{ device_users_page.end_index }} من {{ device_users_total }}
-                · {{ device_users_per_page }} في الصفحة
-            </span>
-            {% endif %}
+            <div class="flex flex-wrap items-center gap-1.5">
+                {% if device_users_total %}
+                <span class="zk-bio-stat">إجمالي {{ device_users_stats.total }}</span>
+                <span class="zk-bio-stat zk-bio-stat-warn">غير مربوط {{ device_users_stats.unmapped }}</span>
+                <span class="zk-bio-stat">{{ device_users_page.start_index }}–{{ device_users_page.end_index }} / {{ device_users_total }}</span>
+                {% endif %}
+            </div>
         </div>
 
-        <form method="get" class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+        <form method="get" class="zk-bio-filter">
             {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
             {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
             {% if branch_filter_id %}<input type="hidden" name="branch" value="{{ branch_filter_id }}">{% endif %}
-            <div class="lg:col-span-2">
-                <label class="block text-xs font-medium text-slate-600 mb-1">بحث</label>
+            <div>
+                <label class="zk-bio-lbl">بحث</label>
                 <input type="search" name="users_q" value="{{ device_user_filters.search }}"
-                    placeholder="اسم، رقم مستخدم، بطاقة، موظف HR..."
-                    class="w-full rounded-lg border-slate-300 text-sm" autocomplete="off">
+                    placeholder="اسم، رقم، بطاقة، موظف HR..."
+                    class="zk-bio-field" autocomplete="off">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">الجهاز</label>
-                <select name="users_device" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">الجهاز</label>
+                <select name="users_device" class="zk-bio-field">
                     <option value="">الكل</option>
                     {% for d in devices %}
                     <option value="{{ d.pk }}" {% if device_user_filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% endif %}</option>
@@ -166,23 +170,23 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">الربط بـ HR</label>
-                <select name="users_mapped" class="w-full rounded-lg border-slate-300 text-sm">
+                <label class="zk-bio-lbl">الربط بـ HR</label>
+                <select name="users_mapped" class="zk-bio-field">
                     <option value="">الكل</option>
                     <option value="1" {% if device_user_filters.mapped_only == True %}selected{% endif %}>مربوط فقط</option>
                     <option value="0" {% if device_user_filters.mapped_only == False %}selected{% endif %}>غير مربوط فقط</option>
                 </select>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">بحث</button>
+            <div class="flex flex-wrap gap-2 justify-end">
+                <button type="submit" class="zk-bio-btn zk-bio-btn-primary">بحث</button>
                 <a href="{% url 'web:biometric_devices' %}{% if link_device_id or link_user_id %}?{% if link_device_id %}link_device={{ link_device_id }}{% endif %}{% if link_user_id %}{% if link_device_id %}&{% endif %}link_user={{ link_user_id }}{% endif %}{% endif %}#device-users-table"
-                   class="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-white">مسح</a>
+                   class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
             </div>
         </form>
 
         <div id="device-users-table" class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
+            <table class="zk-bio-tbl">
+                <thead>
                     <tr>
                         <th class="text-center px-3 py-2 font-medium w-10">#</th>
                         <th class="text-right px-3 py-2 font-medium">الجهاز</th>
@@ -252,8 +256,11 @@
 
     <div class="max-w-xl">
         {% if user|has_permission:'attendance.manage' %}
-        <div id="enroll-form" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <h2 class="font-semibold text-slate-800 mb-1">ربط موظف ↔ رقم على الجهاز</h2>
+        <div id="enroll-form" class="zk-bio-card p-3">
+            <div class="mb-2">
+                <span class="zk-bio-sec-tag">03</span>
+                <h2 class="text-sm font-bold text-slate-800">ربط موظف ↔ جهاز</h2>
+            </div>
             <p class="text-xs text-slate-500 mb-3">
                 ابحث واختر من <strong>{{ employees_count }}</strong> موظف نشط —
                 <a href="{% url 'web:list_employees' %}" class="text-primary-600 hover:underline">قائمة الموظفين</a>
@@ -272,8 +279,8 @@
                 {% csrf_token %}
                 {% include "components/employee_search_picker.html" with label="الموظف من قائمة HR" %}
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">الجهاز</label>
-                    <select name="device_id" required class="w-full rounded-lg border-slate-300 text-sm">
+                    <label class="zk-bio-lbl">الجهاز</label>
+                    <select name="device_id" required class="zk-bio-field">
                         {% for d in devices %}
                         <option value="{{ d.pk }}" {% if link_device_id == d.pk|stringformat:"s" %}selected{% endif %}
                             {% if not d.branch_id %}disabled{% endif %}>
@@ -283,9 +290,9 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">رقم المستخدم على الجهاز (User ID)</label>
+                    <label class="zk-bio-lbl">رقم المستخدم (User ID)</label>
                     <input type="number" name="device_user_id" min="1" required
-                        class="w-full rounded-lg border-slate-300 text-sm font-mono" dir="ltr"
+                        class="zk-bio-field font-mono" dir="ltr"
                         placeholder="مثال: 1" value="{{ link_user_id|default:'' }}">
                     <p class="text-xs text-slate-400 mt-1">نفس الرقم في جدول «مستخدمو الجهاز»</p>
                 </div>

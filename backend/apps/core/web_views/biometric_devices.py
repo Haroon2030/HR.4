@@ -1,5 +1,6 @@
 """واجهة إدارة أجهزة البصمة."""
 from django.contrib import messages
+from django.db.models import Count, Q
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -120,6 +121,10 @@ def biometric_devices_dashboard(request):
     )
     device_users_paginator = Paginator(device_users_qs, per_page=DEVICE_USERS_PER_PAGE)
     device_users_page = device_users_paginator.get_page(request.GET.get('users_page'))
+    device_users_stats = device_users_qs.aggregate(
+        total=Count('pk'),
+        unmapped=Count('pk', filter=Q(is_hr_linked=False)),
+    )
     device_users_has_filters = any([
         device_user_filters['branch_id'],
         device_user_filters['device_id'],
@@ -155,6 +160,7 @@ def biometric_devices_dashboard(request):
         'enrollments': enrollments,
         'device_users_page': device_users_page,
         'device_users_total': device_users_paginator.count,
+        'device_users_stats': device_users_stats,
         'device_user_filters': device_user_filters,
         'device_users_has_filters': device_users_has_filters,
         'users_querystring': _device_users_querystring(device_user_filters),
