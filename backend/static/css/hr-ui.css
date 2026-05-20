@@ -1,19 +1,18 @@
 /**
- * HR UI — أبيض نظيف + خط أسود فاتح واضح (#333)
+ * HR UI — أبيض + نص أسود Bold واضح
  */
 :root {
     --hr-white: #ffffff;
     --hr-border: #e5e7eb;
     --hr-hover: #f5f5f5;
-    --hr-text: #333333;
-    --hr-text-heading: #2a2a2a;
-    --hr-text-muted: #555555;
-    --hr-accent: #3b82f6;
+    --hr-text: #111111;
+    --hr-text-muted: #444444;
+    --hr-accent: #2563eb;
     --hr-accent-soft: #eff6ff;
     --hr-radius: 0.75rem;
 }
 
-/* خلفية بيضاء — كل الصفحة */
+/* خلفية بيضاء */
 body.hr-app,
 .hr-main,
 .hr-header,
@@ -25,15 +24,10 @@ body.hr-app,
 
 body.hr-app {
     color: var(--hr-text);
-    font-weight: 500;
-    -webkit-font-smoothing: antialiased;
+    font-weight: 600;
+    -webkit-font-smoothing: subpixel-antialiased;
 }
 
-.hr-main {
-    background-image: none;
-}
-
-/* مناطق رمادية قديمة داخل المحتوى → أبيض */
 .hr-main .bg-slate-50,
 .hr-main .bg-slate-100 {
     background-color: var(--hr-white) !important;
@@ -41,12 +35,10 @@ body.hr-app {
 
 .hr-header {
     border-bottom: 1px solid var(--hr-border) !important;
-    box-shadow: none;
 }
 
 .hr-sidebar {
     border-left: 1px solid var(--hr-border) !important;
-    box-shadow: none !important;
     color: var(--hr-text);
 }
 
@@ -58,8 +50,7 @@ body.hr-app {
     border-top: 1px solid var(--hr-border) !important;
 }
 
-/* ── نص موحّد في كل الموقع ── */
-.hr-app,
+/* ── نص أسود Bold — كل الموقع ── */
 .hr-app p,
 .hr-app li,
 .hr-app label,
@@ -68,62 +59,77 @@ body.hr-app {
 .hr-app input,
 .hr-app select,
 .hr-app textarea,
+.hr-app span:not([class*="text-white"]):not([class*="text-red"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-orange"]):not([class*="text-sky"]):not([class*="text-primary"]):not([class*="text-indigo"]):not([class*="text-purple"]):not([class*="text-cyan"]):not([class*="text-teal"]) {
+    color: var(--hr-text);
+    font-weight: 600;
+}
+
 .hr-app h1,
 .hr-app h2,
 .hr-app h3,
 .hr-app h4,
 .hr-app h5,
 .hr-app h6 {
-    color: var(--hr-text-heading);
-    font-weight: 700;
+    color: var(--hr-text) !important;
+    font-weight: 700 !important;
 }
 
 .hr-app .text-slate-900,
 .hr-app .text-slate-800,
 .hr-app .text-slate-700,
-.hr-app .text-slate-600,
-.hr-app .font-bold {
-    color: var(--hr-text-heading) !important;
-    font-weight: 700 !important;
-}
-
-.hr-app .font-semibold {
+.hr-app .text-slate-600 {
     color: var(--hr-text) !important;
     font-weight: 600 !important;
 }
 
-.hr-app .text-slate-500,
-.hr-app .text-slate-400 {
-    color: var(--hr-text-muted) !important;
+.hr-app .font-bold,
+.hr-app .font-semibold {
+    color: var(--hr-text) !important;
+    font-weight: 700 !important;
 }
 
-.hr-header,
+.hr-app .text-slate-500 {
+    color: var(--hr-text-muted) !important;
+    font-weight: 600 !important;
+}
+
+.hr-app .text-slate-400 {
+    color: var(--hr-text-muted) !important;
+    font-weight: 500 !important;
+}
+
 .hr-header span,
-.hr-header i:not([class*="text-red"]) {
+.hr-header .font-bold {
     color: var(--hr-text) !important;
+    font-weight: 700 !important;
+}
+
+.hr-header i[data-lucide] {
+    color: var(--hr-text) !important;
+    stroke: var(--hr-text) !important;
 }
 
 .hr-page-title {
-    font-weight: 700;
     color: var(--hr-text) !important;
+    font-weight: 700 !important;
 }
 
-/* ── الشريط الجانبي ── */
+/* ── الشريط — Bold أسود ── */
 .hr-sidebar nav a,
 .hr-sidebar nav button,
 .hr-sidebar nav a span,
-.hr-sidebar nav button span,
-.hr-sidebar nav a i,
-.hr-sidebar nav button i,
-.hr-sidebar .hr-user-block,
-.hr-sidebar .hr-user-block * {
+.hr-sidebar nav button span {
     color: var(--hr-text) !important;
+    font-weight: 700 !important;
 }
 
+.hr-sidebar nav a i,
+.hr-sidebar nav button i,
 .hr-sidebar nav a svg,
 .hr-sidebar nav button svg {
-    stroke: var(--hr-text) !important;
     color: var(--hr-text) !important;
+    stroke: var(--hr-text) !important;
+    stroke-width: 2px;
 }
 
 .hr-sidebar nav a:hover,
@@ -131,23 +137,30 @@ body.hr-app {
     background: var(--hr-hover) !important;
 }
 
-/* العنصر النشط — مثل نظام المدفوعات */
 .hr-sidebar nav a.bg-primary-50,
 .hr-sidebar nav button.bg-primary-50 {
     background: var(--hr-accent-soft) !important;
 }
 
-.hr-sidebar nav a.bg-primary-50,
-.hr-sidebar nav button.bg-primary-50,
 .hr-sidebar nav a.bg-primary-50 span,
 .hr-sidebar nav button.bg-primary-50 span,
 .hr-sidebar nav a.bg-primary-50 i,
 .hr-sidebar nav button.bg-primary-50 i {
     color: var(--hr-accent) !important;
     stroke: var(--hr-accent) !important;
+    font-weight: 700 !important;
 }
 
-/* ── بطاقات بسيطة ── */
+.hr-sidebar .hr-user-block p {
+    color: var(--hr-text) !important;
+    font-weight: 700 !important;
+}
+
+.hr-sidebar .hr-user-block .text-slate-600 {
+    font-weight: 600 !important;
+}
+
+/* ── بطاقات ── */
 .hr-main .bg-white.rounded-xl,
 .hr-main .bg-white.rounded-2xl,
 .hr-card,
@@ -157,34 +170,18 @@ body.hr-app {
     box-shadow: none !important;
 }
 
-.hr-kpi:hover {
-    box-shadow: none !important;
-    border-color: var(--hr-border) !important;
+.hr-main thead th {
+    color: var(--hr-text) !important;
+    font-weight: 700 !important;
+    background: var(--hr-white);
 }
 
-.hr-main thead th {
-    color: var(--hr-text-muted);
-    background: var(--hr-white);
+.hr-main tbody td {
+    font-weight: 600;
 }
 
 .hr-main tbody tr:hover {
     background: var(--hr-hover);
-}
-
-/* روابط وأزرار ملوّنة */
-.hr-app a[class*="text-primary"],
-.hr-app a[class*="text-sky"],
-.hr-app a[class*="text-emerald"],
-.hr-app .text-primary-600,
-.hr-app .text-primary-700,
-.hr-app [class*="text-white"],
-.hr-app [class*="text-red"],
-.hr-app [class*="text-emerald"],
-.hr-app [class*="text-amber"],
-.hr-app [class*="text-rose"],
-.hr-app [class*="text-orange"],
-.hr-app [class*="text-sky"] {
-    /* ألوان الحالة والروابط — كما هي */
 }
 
 .hr-app .zk-bio-field,
@@ -192,9 +189,18 @@ body.hr-app {
 .hr-app [class*="zk-"] input,
 .hr-app [class*="zk-"] select {
     color: var(--hr-text);
+    font-weight: 600;
 }
 
 .hr-app input::placeholder,
 .hr-app textarea::placeholder {
     color: var(--hr-text-muted);
+    font-weight: 500;
+}
+
+/* أيقونات المحتوى */
+.hr-main i[data-lucide]:not([class*="text-white"]):not([class*="text-red"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-orange"]):not([class*="text-rose"]):not([class*="text-sky"]):not([class*="text-primary"]) {
+    color: var(--hr-text);
+    stroke: var(--hr-text);
+    stroke-width: 2px;
 }
