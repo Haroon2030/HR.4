@@ -1,18 +1,19 @@
 /**
- * HR UI — ألوان Soft UI (مطابقة لوحة التحكم المرجعية)
- * خلفية: #F8F9FA · شريط/بطاقات: #FFFFFF · نشط: #EFF6FF / #3B82F6
+ * HR UI — Soft UI · نص أسود فاتح في كل الموقع والشريط
  */
 :root {
     --hr-accent: #3b82f6;
     --hr-accent-dark: #2563eb;
     --hr-accent-soft: #eff6ff;
     --hr-surface: #ffffff;
+    --hr-sidebar-bg: #f8f9fc;
     --hr-bg: #f8f9fa;
     --hr-bg-alt: #f3f4f6;
     --hr-border: #e5e7eb;
-    /* أسود فاتح — رمادي فحمي بدل الأسود الغامق */
-    --hr-text: #4b5563;
-    --hr-text-strong: #374151;
+    --hr-sidebar-border: #c8d0dc;
+    /* أسود فاتح — موحّد بدون استثناء */
+    --hr-text: #555e6d;
+    --hr-text-strong: #4b5563;
     --hr-text-secondary: #6b7280;
     --hr-muted: #9ca3af;
     --hr-radius: 0.75rem;
@@ -76,76 +77,200 @@ body.hr-app {
     }
 }
 
-/* ── الشريط الجانبي — أبيض + حد رفيع ── */
+/* ── الشريط الجانبي — خلفية فاتحة + نص رمادي موحّد ── */
 .hr-sidebar {
-    background: var(--hr-surface) !important;
-    border-left: 1px solid var(--hr-border) !important;
+    background: var(--hr-sidebar-bg) !important;
+    border-left: 1px solid var(--hr-sidebar-border) !important;
     box-shadow: none !important;
+    color: var(--hr-text);
 }
 
 .hr-sidebar nav {
     padding: 0.75rem;
 }
 
+/* كل روابط وأزرار ونصوص وأيقونات الشريط — بدون استثناء */
 .hr-sidebar nav a,
-.hr-sidebar nav button[type="button"] {
-    border-radius: var(--hr-radius);
-    color: var(--hr-text-secondary);
-    transition: background 0.15s ease, color 0.15s ease;
+.hr-sidebar nav button[type="button"],
+.hr-sidebar nav a span,
+.hr-sidebar nav button span,
+.hr-sidebar nav a i,
+.hr-sidebar nav button i,
+.hr-sidebar > div:first-child span,
+.hr-sidebar > div:first-child i {
+    color: var(--hr-text) !important;
+}
+
+.hr-sidebar nav a svg,
+.hr-sidebar nav button svg,
+.hr-sidebar nav a i svg,
+.hr-sidebar nav button i svg {
+    color: var(--hr-text) !important;
+    stroke: var(--hr-text) !important;
 }
 
 .hr-sidebar nav a:hover,
 .hr-sidebar nav button[type="button"]:hover {
     background: var(--hr-bg-alt) !important;
-    color: var(--hr-text-strong);
-    transform: none;
-}
-
-/* تخفيف نصوص Tailwind الغامقة داخل التطبيق */
-.hr-app .text-slate-900 {
     color: var(--hr-text-strong) !important;
 }
 
-.hr-app .text-slate-800 {
-    color: var(--hr-text) !important;
-}
-
-.hr-app .text-slate-700 {
-    color: var(--hr-text-secondary) !important;
-}
-
-.hr-app .font-bold.text-slate-900,
-.hr-app .font-semibold.text-slate-900 {
+.hr-sidebar nav a:hover span,
+.hr-sidebar nav a:hover i,
+.hr-sidebar nav button:hover span,
+.hr-sidebar nav button:hover i {
     color: var(--hr-text-strong) !important;
 }
 
-.hr-sidebar nav .font-semibold {
-    color: var(--hr-text) !important;
-    font-weight: 600;
-}
-
-.hr-user-block .font-bold.text-slate-900 {
-    color: var(--hr-text-strong) !important;
-}
-
-/* عنصر القائمة النشط — خلفية زرقاء فاتحة كاملة (مثل الصورة) */
+/* نشط: خلفية زرقاء فاتحة — النص والأيقونة رمادي فقط */
 .hr-sidebar nav a.bg-primary-50,
 .hr-sidebar nav button.bg-primary-50 {
     background: var(--hr-accent-soft) !important;
-    color: var(--hr-accent-dark) !important;
-    border-inline-end: none;
 }
 
+.hr-sidebar nav a.bg-primary-50,
+.hr-sidebar nav button.bg-primary-50,
+.hr-sidebar nav a.bg-primary-50 span,
+.hr-sidebar nav button.bg-primary-50 span,
 .hr-sidebar nav a.bg-primary-50 i,
 .hr-sidebar nav button.bg-primary-50 i,
-.hr-sidebar nav a.bg-primary-50 .text-primary-700,
-.hr-sidebar nav button.bg-primary-50 .text-primary-700 {
-    color: var(--hr-accent) !important;
+.hr-sidebar nav a.text-primary-700,
+.hr-sidebar nav button.text-primary-700,
+.hr-sidebar nav a.text-slate-800.bg-primary-50,
+.hr-sidebar .text-primary-700 {
+    color: var(--hr-text-strong) !important;
 }
 
 .hr-sidebar nav a.text-slate-600,
 .hr-sidebar nav button.text-slate-600 {
+    color: var(--hr-text) !important;
+}
+
+/* قسم المستخدم أسفل الشريط */
+.hr-sidebar .hr-user-block,
+.hr-sidebar .hr-user-block p,
+.hr-sidebar .hr-user-block span,
+.hr-sidebar .hr-user-block i {
+    color: var(--hr-text) !important;
+}
+
+.hr-sidebar .hr-user-block .text-slate-800,
+.hr-sidebar .hr-user-block .text-slate-600,
+.hr-sidebar .hr-user-block .text-slate-900 {
+    color: var(--hr-text) !important;
+}
+
+/* ═══ أسود فاتح — كل الموقع (نصوص، عناوين، جداول، نماذج) ═══ */
+.hr-app,
+.hr-app .hr-main,
+.hr-app main {
+    color: var(--hr-text);
+}
+
+.hr-app :where(h1, h2, h3, h4, h5, h6) {
+    color: var(--hr-text-strong);
+}
+
+.hr-app :where(p, li, dt, dd, label, td, th, figcaption, blockquote) {
+    color: var(--hr-text);
+}
+
+.hr-app :where(input, select, textarea, optgroup) {
+    color: var(--hr-text-strong);
+}
+
+.hr-app :where(input::placeholder, textarea::placeholder) {
+    color: var(--hr-muted);
+}
+
+.hr-app .text-slate-900,
+.hr-app .text-slate-800,
+.hr-app .font-bold.text-slate-900,
+.hr-app .font-semibold.text-slate-900,
+.hr-app .font-bold.text-slate-800,
+.hr-app .font-semibold.text-slate-800 {
+    color: var(--hr-text-strong) !important;
+}
+
+.hr-app .text-slate-700,
+.hr-app .text-slate-600 {
+    color: var(--hr-text) !important;
+}
+
+.hr-app .text-slate-500,
+.hr-app .text-slate-400 {
     color: var(--hr-text-secondary) !important;
+}
+
+.hr-app .text-slate-300 {
+    color: var(--hr-muted) !important;
+}
+
+/* نصوص بدون كلاس لون — وراثة آمنة */
+.hr-app :where(.font-medium, .font-semibold, .font-bold):not(
+    [class*="text-white"],
+    [class*="text-red"],
+    [class*="text-rose"],
+    [class*="text-emerald"],
+    [class*="text-green"],
+    [class*="text-amber"],
+    [class*="text-orange"],
+    [class*="text-yellow"],
+    [class*="text-sky"],
+    [class*="text-cyan"],
+    [class*="text-teal"],
+    [class*="text-indigo"],
+    [class*="text-purple"],
+    [class*="text-primary"],
+    [class*="bg-"]
+) {
+    color: inherit;
+}
+
+/* أيقونات Lucide الافتراضية */
+.hr-app .hr-main i[data-lucide]:not([class*="text-white"]):not([class*="text-red"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-orange"]):not([class*="text-rose"]):not([class*="text-sky"]):not([class*="text-primary"]) {
+    color: var(--hr-text-secondary);
+    stroke: var(--hr-text-secondary);
+}
+
+/* الرأس */
+.hr-header,
+.hr-header .text-slate-800,
+.hr-header .text-slate-600,
+.hr-header i {
+    color: var(--hr-text) !important;
+}
+
+.hr-header .hr-page-title {
+    color: var(--hr-text-strong) !important;
+}
+
+/* روابط وأزرار ملوّنة — لا تُغيَّر */
+.hr-app a[class*="text-primary"],
+.hr-app a[class*="text-sky"],
+.hr-app a[class*="text-emerald"],
+.hr-app a[class*="text-indigo"],
+.hr-app a.hover\:text-primary-600:hover,
+.hr-app .text-primary-600,
+.hr-app .text-primary-700 {
+    /* يبقى لون Tailwind المخصص */
+}
+
+.hr-app [class*="text-white"],
+.hr-app [class*="bg-red-"] [class*="text-"],
+.hr-app [class*="bg-emerald-"] [class*="text-emerald"],
+.hr-app [class*="bg-amber-"] [class*="text-amber"],
+.hr-app [class*="bg-rose-"] [class*="text-rose"],
+.hr-app [class*="bg-orange-"] [class*="text-orange"],
+.hr-app [class*="bg-sky-"] [class*="text-sky"] {
+    /* شارات الحالة — بدون تعديل */
+}
+
+/* صفحات البصمة — إزالة الأسود الغامق المضمّن */
+.hr-app .zk-bio-stat-box .zk-val,
+.hr-app [class*="zk-"] input,
+.hr-app [class*="zk-"] select {
+    color: var(--hr-text-strong);
 }
 
 /* ── بطاقات المحتوى ── */
@@ -199,10 +324,10 @@ body.hr-app {
     border-top-color: var(--hr-border) !important;
 }
 
-/* قسم المستخدم أسفل الشريط — أبيض مع فاصل */
+/* قسم المستخدم أسفل الشريط */
 .hr-user-block {
-    background: var(--hr-surface) !important;
-    border-top: 1px solid var(--hr-border) !important;
+    background: var(--hr-sidebar-bg) !important;
+    border-top: 1px solid var(--hr-sidebar-border) !important;
 }
 
 .hr-user-block .border-slate-200 {
@@ -218,12 +343,9 @@ body.hr-app {
     background: var(--hr-accent-soft) !important;
 }
 
-.hr-user-block .text-primary-600 {
-    color: var(--hr-accent) !important;
-}
-
+.hr-user-block .text-primary-600,
 .hr-user-block .text-indigo-700 {
-    color: var(--hr-accent-dark) !important;
+    color: var(--hr-text) !important;
 }
 
 /* ── أزرار ── */

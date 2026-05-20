@@ -1,7 +1,7 @@
 {% with current_url=request.resolver_match.url_name %}
 <a 
     href="{% url url %}" 
-    class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if current_url == url or request.resolver_match.url_name == related_url %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}"
+    class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if current_url == url or request.resolver_match.url_name == related_url %}bg-primary-50 text-slate-800{% else %}text-slate-600 hover:bg-slate-100{% endif %}"
 >
     <i data-lucide="{{ icon }}" class="w-5 h-5 flex-shrink-0"></i>
     {% if force_show_label %}
