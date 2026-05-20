@@ -8,12 +8,14 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from apps.attendance.models import AttendancePunch
 from apps.attendance.selectors.daily_report import (
     build_daily_attendance_rows,
     daily_rows_to_table,
     summarize_daily_rows,
 )
-from apps.attendance.selectors.punch_records import get_punch_queryset
+from apps.attendance.selectors.punch_export import punches_to_table_rows
+from apps.attendance.selectors.punch_records import PUNCH_LIST_ORDERING, get_punch_queryset, get_punch_stats
 from apps.attendance.selectors.biometric_devices import (
     filter_biometric_devices_for_user,
     get_biometric_devices_queryset,
@@ -55,12 +57,18 @@ def _punches_for_report(request, filters: dict):
 def attendance_report(request):
     filters = _apply_default_date_filters(_parse_filters(request))
     qs = _punches_for_report(request, filters)
+    punch_stats = get_punch_stats(qs)
     all_rows = build_daily_attendance_rows(qs)
-    summary = summarize_daily_rows(all_rows)
+    summary = summarize_daily_rows(all_rows, punch_total=punch_stats['total'])
 
-    per_page = int(request.GET.get('per_page') or 50)
-    paginator = Paginator(all_rows, per_page=per_page)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    daily_per_page = int(request.GET.get('per_page') or 50)
+    daily_paginator = Paginator(all_rows, per_page=daily_per_page)
+    daily_page = daily_paginator.get_page(request.GET.get('page'))
+
+    punches_qs = qs.order_by(*PUNCH_LIST_ORDERING)
+    punches_per_page = int(request.GET.get('punches_per_page') or 100)
+    punches_paginator = Paginator(punches_qs, per_page=punches_per_page)
+    punches_page = punches_paginator.get_page(request.GET.get('punches_page'))
 
     branches_qs = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
     branch_ids = _user_accessible_branch_ids(request.user)
@@ -74,16 +82,20 @@ def attendance_report(request):
         mapped_filter = 'no'
 
     return render(request, 'pages/attendance/report.html', {
-        'page_obj': page_obj,
+        'daily_page': daily_page,
+        'punches_page': punches_page,
         'summary': summary,
-        'total_rows': len(all_rows),
+        'punch_stats': punch_stats,
+        'total_daily_rows': len(all_rows),
         'devices': get_biometric_devices_queryset(request.user),
         'branches': branches_qs,
         'employees': Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:300],
         'filters': filters,
         'mapped_filter': mapped_filter,
         'querystring': _filters_to_querystring(filters),
-        'per_page': per_page,
+        'daily_per_page': daily_per_page,
+        'punches_per_page': punches_per_page,
+        'punch_types': AttendancePunch.PunchType.choices,
     })
 
 
@@ -100,27 +112,30 @@ def attendance_report_export(request):
 
     filters = _apply_default_date_filters(_parse_filters(request))
     qs = _punches_for_report(request, filters)
-    rows = build_daily_attendance_rows(qs)
-    table = daily_rows_to_table(rows)
+    daily_table = daily_rows_to_table(build_daily_attendance_rows(qs))
+    punch_table = punches_to_table_rows(qs.order_by(*PUNCH_LIST_ORDERING))
 
     wb = Workbook()
-    ws = wb.active
-    ws.title = 'تقرير البصمة'
-    ws.sheet_view.rightToLeft = True
-
     header_fill = PatternFill('solid', fgColor='1E40AF')
-    for col, h in enumerate(table['columns'], 1):
-        c = ws.cell(row=1, column=col, value=h)
-        c.fill = header_fill
-        c.font = Font(bold=True, color='FFFFFF')
-        c.alignment = Alignment(horizontal='center')
 
-    for row_idx, row in enumerate(table['rows'], 2):
-        for col_idx, val in enumerate(row, 1):
-            ws.cell(row=row_idx, column=col_idx, value=val)
+    def _write_sheet(ws, table: dict, title: str) -> None:
+        ws.title = title
+        ws.sheet_view.rightToLeft = True
+        for col, h in enumerate(table['columns'], 1):
+            c = ws.cell(row=1, column=col, value=h)
+            c.fill = header_fill
+            c.font = Font(bold=True, color='FFFFFF')
+            c.alignment = Alignment(horizontal='center')
+        for row_idx, row in enumerate(table['rows'], 2):
+            for col_idx, val in enumerate(row, 1):
+                ws.cell(row=row_idx, column=col_idx, value=val)
+        for col in range(1, len(table['columns']) + 1):
+            ws.column_dimensions[get_column_letter(col)].width = 14
 
-    for col in range(1, len(table['columns']) + 1):
-        ws.column_dimensions[get_column_letter(col)].width = 14
+    ws_daily = wb.active
+    _write_sheet(ws_daily, daily_table, 'يومي')
+    ws_detail = wb.create_sheet('تفصيلي')
+    _write_sheet(ws_detail, punch_table, 'تفصيلي')
 
     stamp = timezone.localtime().strftime('%Y%m%d_%H%M%S')
     filename = f'attendance_report_{stamp}.xlsx'

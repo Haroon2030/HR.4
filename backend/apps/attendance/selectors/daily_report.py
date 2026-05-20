@@ -159,13 +159,14 @@ def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
     return rows
 
 
-def summarize_daily_rows(rows: list[DailyAttendanceRow]) -> dict:
+def summarize_daily_rows(rows: list[DailyAttendanceRow], *, punch_total: int = 0) -> dict:
     complete = sum(1 for r in rows if r.status_label == 'مكتمل')
     single = sum(1 for r in rows if r.status_label == 'بصمة واحدة')
     incomplete = sum(1 for r in rows if r.status_label == 'غير مكتمل')
     unmapped = sum(1 for r in rows if not r.is_mapped)
     return {
         'total_days': len(rows),
+        'total_punches': punch_total,
         'complete': complete,
         'single_punch': single,
         'incomplete': incomplete,

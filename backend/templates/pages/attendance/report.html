@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load custom_tags %}
 
-{% block title %}تقرير البصمة — الحضور اليومي{% endblock %}
+{% block title %}تقرير البصمة{% endblock %}
 
 {% block content %}
 {% include "pages/attendance/_biometric_page_styles.html" %}
@@ -14,23 +14,24 @@
 
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">تقرير البصمة — الحضور اليومي</h1>
-            <p class="text-sm text-slate-500 mt-1">تجميع البصمات لكل موظف/يوم: دخول، خروج، مدة العمل، والحالة</p>
+            <h1 class="text-2xl font-bold text-slate-900">تقرير البصمة</h1>
+            <p class="text-sm text-slate-500 mt-1">تقريران بنفس الفلتر: <strong>يومي مجمّع</strong> + <strong>سجلات تفصيلية</strong> لكل بصمة</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{% url 'web:attendance_report_export' %}?{{ querystring }}"
-               class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                تصدير Excel
+               class="zk-bio-btn zk-bio-btn-primary" style="padding:0.5rem 0.85rem;background:#059669;border-color:#047857">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 inline"></i> Excel (ورقتان)
             </a>
-            <a href="{% url 'web:attendance_records' %}" class="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50">
-                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-                السجلات التفصيلية
-            </a>
+            <a href="{% url 'web:attendance_records' %}?{{ querystring }}"
+               class="zk-bio-btn zk-bio-btn-ghost" style="padding:0.5rem 0.85rem">صفحة السجلات الكاملة</a>
         </div>
     </div>
 
     <div class="zk-bio-stat-grid">
+        <div class="zk-bio-stat-box">
+            <p class="zk-lbl">إجمالي البصمات</p>
+            <p class="zk-val text-primary-700">{{ summary.total_punches }}</p>
+        </div>
         <div class="zk-bio-stat-box">
             <p class="zk-lbl">أيام مسجّلة</p>
             <p class="zk-val">{{ summary.total_days }}</p>
@@ -115,9 +116,9 @@
         <div class="zk-bio-card-hd border-t border-slate-200">
             <span class="zk-bio-sec-tag">02</span>
             <h2 class="text-sm font-bold text-slate-800">الحضور اليومي</h2>
-            <span class="zk-bio-stat">{{ total_rows }} صف</span>
+            <span class="zk-bio-stat">{{ total_daily_rows }} يوم · {{ summary.total_punches }} بصمة</span>
         </div>
-        {% if page_obj.object_list %}
+        {% if daily_page.object_list %}
         <div class="overflow-x-auto">
             <table class="zk-bio-tbl">
                 <thead>
@@ -137,9 +138,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in page_obj.object_list %}
+                    {% for row in daily_page.object_list %}
                     <tr class="{% if not row.is_mapped %}zk-row-warn{% endif %}">
-                        <td class="text-center text-slate-400 zk-mono">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                        <td class="text-center text-slate-400 zk-mono">{{ daily_page.start_index|add:forloop.counter0 }}</td>
                         <td class="zk-mono font-semibold">{{ row.work_date }}</td>
                         <td>{% if row.is_mapped %}{{ row.employee_name }}{% else %}<span class="text-amber-800">{{ row.device_user_name }}</span>{% endif %}</td>
                         <td class="zk-mono">{{ row.employee_number }}</td>
@@ -156,22 +157,78 @@
                 </tbody>
             </table>
         </div>
-        {% if page_obj.has_other_pages %}
+        {% if daily_page.has_other_pages %}
         <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap gap-2 justify-center">
-            {% if page_obj.has_previous %}
-            <a href="?{{ querystring }}&page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-slate-50">السابق</a>
+            {% if daily_page.has_previous %}
+            <a href="?{{ querystring }}&page={{ daily_page.previous_page_number }}" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-slate-50">السابق</a>
             {% endif %}
-            {% if page_obj.has_next %}
-            <a href="?{{ querystring }}&page={{ page_obj.next_page_number }}" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-slate-50">التالي</a>
+            {% if daily_page.has_next %}
+            <a href="?{{ querystring }}&page={{ daily_page.next_page_number }}" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-slate-50">التالي</a>
             {% endif %}
         </div>
         {% endif %}
         {% else %}
         <div class="p-12 text-center text-slate-500 text-sm">
             <i data-lucide="calendar-x" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
-            لا توجد بيانات للفترة المحددة — غيّر التواريخ أو تأكد من المزامنة.
+            لا توجد أيام في الفترة المحددة.
         </div>
         {% endif %}
+
+        <div class="zk-bio-card-hd border-t border-slate-200">
+            <span class="zk-bio-sec-tag">03</span>
+            <h2 class="text-sm font-bold text-slate-800">السجلات التفصيلية</h2>
+            <span class="zk-bio-stat">{{ punches_page.start_index }}–{{ punches_page.end_index }} / {{ punches_page.paginator.count }}</span>
+        </div>
+        {% if punches_page.object_list %}
+        <div class="overflow-x-auto">
+            <table class="zk-bio-tbl">
+                <thead>
+                    <tr>
+                        <th class="text-center w-10">#</th>
+                        <th class="text-right">التاريخ</th>
+                        <th class="text-right">الوقت</th>
+                        <th class="text-right">ZK</th>
+                        <th class="text-right">User</th>
+                        <th class="text-right">موظف HR</th>
+                        <th class="text-right">الحركة</th>
+                        <th class="text-right">تحقق</th>
+                        <th class="text-right">الجهاز</th>
+                        <th class="text-right" dir="ltr">IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in punches_page.object_list %}
+                    <tr class="{% if not p.employee_id %}zk-row-warn{% endif %}">
+                        <td class="text-center zk-mono text-slate-400">{{ punches_page.start_index|add:forloop.counter0 }}</td>
+                        <td class="zk-mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
+                        <td class="zk-mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
+                        <td class="zk-mono text-slate-500">{{ p.device_record_uid|default:"—" }}</td>
+                        <td class="zk-mono" dir="ltr">{{ p.device_user_id }}</td>
+                        <td>{% if p.employee %}<span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>{% else %}<span class="zk-pill zk-pill-warn">غير مربوط</span>{% endif %}</td>
+                        <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">{{ p.get_punch_type_display }}</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">{{ p.get_punch_type_display }}</span>{% else %}<span class="zk-pill zk-pill-muted">{{ p.get_punch_type_display }}</span>{% endif %}</td>
+                        <td class="text-xs">{{ p.verify_mode_label|default:"—" }}</td>
+                        <td>{{ p.device.name }}</td>
+                        <td class="zk-mono" dir="ltr">{{ p.device.ip_address }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if punches_page.has_other_pages %}
+        <div class="px-3 py-2 border-t border-slate-200 flex justify-center gap-2">
+            {% if punches_page.has_previous %}
+            <a href="?{{ querystring }}&punches_page={{ punches_page.previous_page_number }}" class="zk-bio-btn zk-bio-btn-ghost">سابق</a>
+            {% endif %}
+            {% if punches_page.has_next %}
+            <a href="?{{ querystring }}&punches_page={{ punches_page.next_page_number }}" class="zk-bio-btn zk-bio-btn-ghost">تالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="p-8 text-center text-sm text-slate-500">لا توجد بصمات في الفترة المحددة.</p>
+        {% endif %}
     </div>
+
+    <p class="text-xs text-slate-500 text-center">02 يومي · 03 تفصيلي — نفس الفلتر</p>
 </div>
 {% endblock %}
