@@ -262,7 +262,7 @@ def biometric_device_save(request):
         f'تم حفظ الجهاز «{device.name}» (رقم {device.pk}) وربطه بفرع «{branch.name}» — يمكنك الآن ربط الموظفين بالأسفل.',
     )
     from django.urls import reverse
-    return redirect(reverse('web:biometric_devices') + '#enroll-form')
+    return redirect('web:biometric_devices')
 
 
 @permission_required('attendance.manage')
@@ -476,4 +476,4 @@ def biometric_enrollment_save(request):
         f'تم ربط «{employee.name}» برقم {device_user_id} على الجهاز.',
     )
     from django.urls import reverse
-    return redirect(reverse('web:biometric_devices') + '#enroll-form')
+    return redirect('web:biometric_devices')

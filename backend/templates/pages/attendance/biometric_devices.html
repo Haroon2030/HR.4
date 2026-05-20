@@ -3,7 +3,10 @@
 
 {% block content %}
 {% include "pages/attendance/_biometric_page_styles.html" %}
-<div class="max-w-7xl mx-auto space-y-4" x-data="biometricPage()" dir="rtl">
+<div class="max-w-7xl mx-auto space-y-4" x-data="biometricPage()" dir="rtl"
+    {% if link_device_id and link_user_id and link_device_user %}
+    x-init="$nextTick(() => openEnrollForm({{ link_device_id }}, {{ link_user_id }}, '{{ link_device_user.device.name|escapejs }}', '{{ link_device_user.name|escapejs }}'))"
+    {% endif %}>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -45,8 +48,6 @@
                 <span class="zk-bio-stat">{{ devices|length }} جهاز</span>
             </div>
             <form method="get" class="flex flex-wrap items-center gap-2">
-                {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
-                {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
                 <label class="text-xs text-slate-500">فرع</label>
                 <select name="branch" class="zk-bio-field min-w-[140px]" style="width:auto;min-width:8rem" onchange="this.form.submit()">
                     <option value="">الكل</option>
@@ -55,7 +56,7 @@
                     {% endfor %}
                 </select>
                 {% if branch_filter_id %}
-                <a href="{% url 'web:biometric_devices' %}{% if link_device_id or link_user_id %}?{% if link_device_id %}link_device={{ link_device_id }}{% endif %}{% if link_user_id %}{% if link_device_id %}&{% endif %}link_user={{ link_user_id }}{% endif %}{% endif %}"
+                <a href="{% url 'web:biometric_devices' %}"
                    class="text-xs text-slate-500 hover:text-primary-600">مسح</a>
                 {% endif %}
             </form>
@@ -153,8 +154,6 @@
         </div>
 
         <form method="get" class="zk-bio-filter">
-            {% if link_device_id %}<input type="hidden" name="link_device" value="{{ link_device_id }}">{% endif %}
-            {% if link_user_id %}<input type="hidden" name="link_user" value="{{ link_user_id }}">{% endif %}
             {% if branch_filter_id %}<input type="hidden" name="branch" value="{{ branch_filter_id }}">{% endif %}
             <div>
                 <label class="zk-bio-lbl">بحث</label>
@@ -181,7 +180,7 @@
             </div>
             <div class="flex flex-wrap gap-2 justify-end">
                 <button type="submit" class="zk-bio-btn zk-bio-btn-primary">بحث</button>
-                <a href="{% url 'web:biometric_devices' %}{% if link_device_id or link_user_id %}?{% if link_device_id %}link_device={{ link_device_id }}{% endif %}{% if link_user_id %}{% if link_device_id %}&{% endif %}link_user={{ link_user_id }}{% endif %}{% endif %}#device-users-table"
+                <a href="{% url 'web:biometric_devices' %}#device-users-table"
                    class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
             </div>
         </form>
@@ -221,8 +220,9 @@
                         </td>
                         {% if user|has_permission:'attendance.manage' %}
                         <td class="px-3 py-2">
-                            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}link_device={{ du.device_id }}&link_user={{ du.device_user_id }}#enroll-form"
-                               class="text-xs text-primary-600 hover:underline whitespace-nowrap">ربط موظف</a>
+                            <button type="button"
+                                @click="openEnrollForm({{ du.device_id }}, {{ du.device_user_id }}, '{{ du.device.name|escapejs }}', '{{ du.name|default:""|escapejs }}')"
+                                class="text-xs text-primary-600 hover:underline whitespace-nowrap">ربط موظف</button>
                         </td>
                         {% endif %}
                     </tr>
@@ -244,71 +244,13 @@
         {% if device_users_page.has_other_pages %}
         <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap justify-center gap-1">
             {% if device_users_page.has_previous %}
-            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.previous_page_number }}{% if link_device_id %}&link_device={{ link_device_id }}{% endif %}{% if link_user_id %}&link_user={{ link_user_id }}{% endif %}#device-users-table"
+            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.previous_page_number }}#device-users-table"
                class="px-3 py-1 rounded border text-sm hover:bg-slate-50">السابق</a>
             {% endif %}
             <span class="px-3 py-1 text-sm text-slate-600">صفحة {{ device_users_page.number }} / {{ device_users_page.paginator.num_pages }}</span>
             {% if device_users_page.has_next %}
-            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.next_page_number }}{% if link_device_id %}&link_device={{ link_device_id }}{% endif %}{% if link_user_id %}&link_user={{ link_user_id }}{% endif %}#device-users-table"
+            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.next_page_number }}#device-users-table"
                class="px-3 py-1 rounded border text-sm hover:bg-slate-50">التالي</a>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="max-w-xl">
-        {% if user|has_permission:'attendance.manage' %}
-        <div id="enroll-form" class="zk-bio-card p-3">
-            <div class="mb-2">
-                <span class="zk-bio-sec-tag">03</span>
-                <h2 class="text-sm font-bold text-slate-800">ربط موظف ↔ جهاز</h2>
-            </div>
-            <p class="text-xs text-slate-500 mb-3">
-                ابحث واختر من <strong>{{ employees_count }}</strong> موظف نشط —
-                <a href="{% url 'web:list_employees' %}" class="text-primary-600 hover:underline">قائمة الموظفين</a>
-            </p>
-
-            {% if link_device_user %}
-            <div class="mb-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
-                ربط رقم <strong class="font-mono" dir="ltr">{{ link_device_user.device_user_id }}</strong>
-                {% if link_device_user.name %}({{ link_device_user.name }}){% endif %}
-                على جهاز «{{ link_device_user.device.name }}»
-            </div>
-            {% endif %}
-
-            <form method="post" action="{% url 'web:biometric_enrollment_save' %}" class="space-y-3"
-                  @submit="if (!$el.querySelector('[name=employee_id]').value) { $event.preventDefault(); alert('اختر موظفاً من القائمة أولاً'); }">
-                {% csrf_token %}
-                {% include "components/employee_search_picker.html" with label="الموظف من قائمة HR" %}
-                <div>
-                    <label class="zk-bio-lbl">الجهاز</label>
-                    <select name="device_id" required class="zk-bio-field">
-                        {% for d in devices %}
-                        <option value="{{ d.pk }}" {% if link_device_id == d.pk|stringformat:"s" %}selected{% endif %}
-                            {% if not d.branch_id %}disabled{% endif %}>
-                            {{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% else %} (حدّد الفرع من تعديل الجهاز أولاً){% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label class="zk-bio-lbl">رقم المستخدم (User ID)</label>
-                    <input type="number" name="device_user_id" min="1" required
-                        class="zk-bio-field font-mono" dir="ltr"
-                        placeholder="مثال: 1" value="{{ link_user_id|default:'' }}">
-                    <p class="text-xs text-slate-400 mt-1">نفس الرقم في جدول «مستخدمو الجهاز»</p>
-                </div>
-                <button type="submit" class="w-full py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">حفظ الربط</button>
-            </form>
-            {% if enrollments %}
-            <div class="mt-4 pt-4 border-t border-slate-100 max-h-48 overflow-y-auto">
-                <p class="text-xs text-slate-500 mb-2">آخر الربط</p>
-                <ul class="text-xs space-y-1">
-                    {% for en in enrollments %}
-                    <li class="text-slate-700">{{ en.employee.name }} ← {{ en.device_user_id }}{% if en.device_user_name %} ({{ en.device_user_name }}){% endif %} على {{ en.device.name }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
             {% endif %}
         </div>
         {% endif %}
@@ -317,6 +259,9 @@
     <div x-show="toast" x-cloak x-transition class="fixed bottom-6 left-6 z-50 max-w-md rounded-lg shadow-lg px-4 py-3 text-sm text-white" :class="toastOk ? 'bg-emerald-600' : 'bg-red-600'" x-text="toastMsg"></div>
 
     {% include "pages/attendance/_device_modal.html" %}
+    {% if user|has_permission:'attendance.manage' %}
+    {% include "pages/attendance/_enrollment_modal.html" %}
+    {% endif %}
 </div>
 
 <script>
@@ -324,6 +269,9 @@ function biometricPage() {
     const csrf = '{{ csrf_token }}';
     return {
         deviceModal: false,
+        enrollModal: false,
+        enrollFormKey: 0,
+        enrollForm: { device_id: '', device_user_id: '', device_name: '', user_name: '' },
         loadingId: null,
         toast: false,
         toastOk: true,
@@ -345,6 +293,17 @@ function biometricPage() {
                 this.form = { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true };
             }
             this.deviceModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        openEnrollForm(deviceId, userId, deviceName, userName) {
+            this.enrollForm = {
+                device_id: String(deviceId),
+                device_user_id: String(userId),
+                device_name: deviceName || '',
+                user_name: userName || '',
+            };
+            this.enrollFormKey += 1;
+            this.enrollModal = true;
             this.$nextTick(() => lucide.createIcons());
         },
         showToast(ok, msg) {

@@ -1,0 +1,97 @@
+{# نافذة ربط موظف ↔ جهاز — نفس أبعاد نافذة الجهاز #}
+<div
+    x-show="enrollModal"
+    x-cloak
+    x-transition.opacity.duration.150ms
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/55 overflow-y-auto overscroll-contain zk-enroll-modal"
+    @keydown.escape.window="enrollModal = false"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="enroll-modal-title"
+>
+    <div
+        @click.outside="enrollModal = false"
+        class="zk-modal-panel bg-white rounded-lg shadow-xl border border-slate-300 flex flex-col shrink-0 max-h-[calc(100vh-1.5rem)]"
+    >
+        <div class="flex items-center justify-between gap-1 px-2 py-1.5 border-b border-slate-200 bg-slate-50 shrink-0">
+            <div class="leading-tight min-w-0">
+                <h3 id="enroll-modal-title" class="text-[11px] font-bold text-slate-900">ربط موظف ↔ جهاز</h3>
+                <p class="text-[8px] text-slate-500">ابحث واختر من {{ employees_count }} موظف نشط</p>
+            </div>
+            <button type="button" @click="enrollModal = false"
+                class="shrink-0 p-0.5 rounded text-slate-400 hover:bg-slate-200" aria-label="إغلاق">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'web:biometric_enrollment_save' %}" class="flex flex-col min-h-0 overflow-hidden"
+              @submit="if (!$el.querySelector('[name=employee_id]').value) { $event.preventDefault(); alert('اختر موظفاً من القائمة أولاً'); }">
+            {% csrf_token %}
+
+            <div class="zk-modal-scroll py-2 zk-modal-body">
+                <div x-show="enrollForm.device_user_id" class="zk-modal-row mb-2 rounded border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-[10px] text-indigo-900 text-right">
+                    ربط رقم <strong class="font-mono" dir="ltr" x-text="enrollForm.device_user_id"></strong>
+                    <span x-show="enrollForm.user_name" x-text="'(' + enrollForm.user_name + ')'"></span>
+                    على «<span x-text="enrollForm.device_name"></span>»
+                </div>
+
+                <div class="zk-modal-row" :key="'ep-' + enrollFormKey">
+                    {% include "components/employee_search_picker.html" with label="الموظف من قائمة HR" %}
+                </div>
+
+                <div class="zk-modal-row">
+                    <label class="zk-modal-label">الجهاز</label>
+                    <select name="device_id" required class="zk-modal-field zk-field-rtl" x-model="enrollForm.device_id">
+                        {% for d in devices %}
+                        <option value="{{ d.pk }}" {% if not d.branch_id %}disabled{% endif %}>
+                            {{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% else %} (حدّد الفرع أولاً){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="zk-modal-row" style="margin-bottom:0">
+                    <label class="zk-modal-label">رقم المستخدم (User ID)</label>
+                    <input type="number" name="device_user_id" min="1" required
+                        class="zk-modal-field zk-field-ltr font-mono" dir="ltr"
+                        placeholder="1" x-model="enrollForm.device_user_id">
+                    <p class="text-[9px] text-slate-400 mt-0.5 text-right w-[300px]">نفس الرقم في «مستخدمو الجهاز»</p>
+                </div>
+
+                {% if enrollments %}
+                <div class="zk-modal-row mt-2 pt-2 border-t border-slate-100 max-h-24 overflow-y-auto" style="margin-bottom:0">
+                    <p class="text-[9px] text-slate-500 mb-1">آخر الربط</p>
+                    <ul class="text-[9px] space-y-0.5 text-slate-600">
+                        {% for en in enrollments|slice:":5" %}
+                        <li>{{ en.employee.name }} ← {{ en.device_user_id }}{% if en.device_user_name %} ({{ en.device_user_name }}){% endif %} — {{ en.device.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="shrink-0 py-2 border-t border-slate-200 bg-slate-50">
+                <div class="zk-modal-actions">
+                    <button type="submit"
+                        class="py-1.5 rounded-md bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 border border-primary-700">
+                        حفظ الربط
+                    </button>
+                    <button type="button" @click="enrollModal = false"
+                        class="py-1.5 rounded-md border border-slate-300 bg-white text-xs text-slate-600 hover:bg-slate-100">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .zk-enroll-modal .employee-search-picker { width: 300px; }
+    .zk-enroll-modal .employee-search-picker label { font-size: 10px; }
+    .zk-enroll-modal .employee-search-picker input[type="text"] {
+        width: 300px; max-width: 300px; box-sizing: border-box;
+        font-size: 0.75rem; padding: 0.35rem 2rem 0.35rem 0.45rem;
+    }
+    .zk-enroll-modal .employee-search-picker .absolute.z-30 { z-index: 60; }
+</style>
