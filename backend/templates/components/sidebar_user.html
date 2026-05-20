@@ -1,31 +1,31 @@
-{# قسم المستخدم في الشريط الجانبي — RTL: أيقونة يمين، النص يسارها #}
-<div class="border-t border-slate-200 p-3 shrink-0" dir="rtl">
+{# بطاقة المستخدم — أسفل الشريط: اسم الدخول + شارة الدور #}
+{% with display_name=user.get_full_name|default:user.username role_name=user.profile.role.name|default:"مستخدم" %}
+<div class="sidebar-user" dir="rtl">
     {% if allow_collapse %}
-    <div x-show="sidebarOpen" x-cloak
-         class="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-2.5">
-        <div class="w-10 h-10 shrink-0 rounded-full bg-primary-100 ring-2 ring-primary-200/50 flex items-center justify-center">
-            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
+    <div x-show="sidebarOpen" x-cloak class="sidebar-user-card" role="group" aria-label="الحساب الحالي">
+        <div class="sidebar-user-avatar" aria-hidden="true">
+            <i data-lucide="user-circle" class="w-6 h-6 text-primary-600"></i>
         </div>
-        <div class="flex-1 min-w-0 text-right leading-snug">
-            <p class="text-sm font-bold text-slate-800 truncate">{{ user.profile.role.name|default:"مستخدم" }}</p>
-            <p class="text-xs text-slate-500 truncate mt-0.5" dir="ltr">{{ user.get_full_name|default:user.username }}</p>
+        <div class="sidebar-user-meta">
+            <span class="sidebar-user-name" dir="ltr" title="{{ display_name }}">{{ display_name }}</span>
+            <span class="sidebar-user-role" title="{{ role_name }}">{{ role_name }}</span>
         </div>
     </div>
-    <div x-show="!sidebarOpen" x-cloak class="flex justify-center py-1">
-        <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center"
-             title="{{ user.profile.role.name|default:'مستخدم' }} — {{ user.get_full_name|default:user.username }}">
-            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
+    <div x-show="!sidebarOpen" x-cloak class="sidebar-user--collapsed">
+        <div class="sidebar-user-avatar" title="{{ display_name }} — {{ role_name }}">
+            <i data-lucide="user-circle" class="w-6 h-6 text-primary-600"></i>
         </div>
     </div>
     {% else %}
-    <div class="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-2.5">
-        <div class="w-10 h-10 shrink-0 rounded-full bg-primary-100 ring-2 ring-primary-200/50 flex items-center justify-center">
-            <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
+    <div class="sidebar-user-card" role="group" aria-label="الحساب الحالي">
+        <div class="sidebar-user-avatar" aria-hidden="true">
+            <i data-lucide="user-circle" class="w-6 h-6 text-primary-600"></i>
         </div>
-        <div class="flex-1 min-w-0 text-right leading-snug">
-            <p class="text-sm font-bold text-slate-800 truncate">{{ user.profile.role.name|default:"مستخدم" }}</p>
-            <p class="text-xs text-slate-500 truncate mt-0.5" dir="ltr">{{ user.get_full_name|default:user.username }}</p>
+        <div class="sidebar-user-meta">
+            <span class="sidebar-user-name" dir="ltr" title="{{ display_name }}">{{ display_name }}</span>
+            <span class="sidebar-user-role" title="{{ role_name }}">{{ role_name }}</span>
         </div>
     </div>
     {% endif %}
 </div>
+{% endwith %}
