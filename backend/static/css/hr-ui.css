@@ -1,12 +1,13 @@
 /**
- * HR UI — أبيض نظيف + خط أسود فاتح (#444)
+ * HR UI — أبيض نظيف + خط أسود فاتح واضح (#333)
  */
 :root {
     --hr-white: #ffffff;
     --hr-border: #e5e7eb;
     --hr-hover: #f5f5f5;
-    --hr-text: #444444;
-    --hr-text-muted: #6b7280;
+    --hr-text: #333333;
+    --hr-text-heading: #2a2a2a;
+    --hr-text-muted: #555555;
     --hr-accent: #3b82f6;
     --hr-accent-soft: #eff6ff;
     --hr-radius: 0.75rem;
@@ -24,6 +25,8 @@ body.hr-app,
 
 body.hr-app {
     color: var(--hr-text);
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
 }
 
 .hr-main {
@@ -71,16 +74,22 @@ body.hr-app {
 .hr-app h4,
 .hr-app h5,
 .hr-app h6 {
-    color: var(--hr-text);
+    color: var(--hr-text-heading);
+    font-weight: 700;
 }
 
 .hr-app .text-slate-900,
 .hr-app .text-slate-800,
 .hr-app .text-slate-700,
 .hr-app .text-slate-600,
-.hr-app .font-bold,
+.hr-app .font-bold {
+    color: var(--hr-text-heading) !important;
+    font-weight: 700 !important;
+}
+
 .hr-app .font-semibold {
     color: var(--hr-text) !important;
+    font-weight: 600 !important;
 }
 
 .hr-app .text-slate-500,
