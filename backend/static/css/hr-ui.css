@@ -1,0 +1,241 @@
+/**
+ * HR UI — طبقة تصميم عصرية مبسّطة (RTL)
+ * تُحمَّل من base.html وتُطبَّق على الشريط والمحتوى والبطاقات.
+ */
+:root {
+    --hr-accent: #2563eb;
+    --hr-accent-soft: #eff6ff;
+    --hr-surface: #ffffff;
+    --hr-bg: #f4f6fb;
+    --hr-border: #e2e8f0;
+    --hr-muted: #64748b;
+    --hr-radius: 0.625rem;
+    --hr-radius-lg: 1rem;
+    --hr-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --hr-shadow: 0 8px 30px -8px rgba(15, 23, 42, 0.1);
+    --hr-nav-active-bg: linear-gradient(270deg, rgba(37, 99, 235, 0.14) 0%, rgba(37, 99, 235, 0.03) 100%);
+}
+
+/* ── خلفية التطبيق ── */
+body.hr-app {
+    background: var(--hr-bg);
+}
+
+.hr-main {
+    background-color: var(--hr-bg);
+    background-image:
+        radial-gradient(ellipse 70% 45% at 100% 0%, rgba(59, 130, 246, 0.07), transparent 55%),
+        radial-gradient(ellipse 50% 35% at 0% 100%, rgba(99, 102, 241, 0.05), transparent 50%);
+}
+
+.hr-page-enter {
+    animation: hr-page-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hr-page-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── الرأس ── */
+.hr-header {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom-color: rgba(226, 232, 240, 0.85) !important;
+    box-shadow: var(--hr-shadow-sm);
+}
+
+.hr-page-title {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #334155;
+    background: rgba(241, 245, 249, 0.9);
+    border: 1px solid var(--hr-border);
+    border-radius: 9999px;
+    line-height: 1.3;
+}
+
+@media (min-width: 768px) {
+    .hr-page-title {
+        font-size: 1.05rem;
+    }
+}
+
+/* ── الشريط الجانبي ── */
+.hr-sidebar {
+    background: rgba(255, 255, 255, 0.97) !important;
+    border-left-color: var(--hr-border) !important;
+    box-shadow: -6px 0 28px -12px rgba(15, 23, 42, 0.08);
+}
+
+.hr-sidebar nav a,
+.hr-sidebar nav button[type="button"] {
+    border-radius: var(--hr-radius);
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.hr-sidebar nav a:hover,
+.hr-sidebar nav button[type="button"]:hover {
+    transform: translateX(-2px);
+}
+
+html[dir="rtl"] .hr-sidebar nav a:hover,
+html[dir="rtl"] .hr-sidebar nav button[type="button"]:hover {
+    transform: translateX(2px);
+}
+
+.hr-sidebar nav a.bg-primary-50,
+.hr-sidebar nav button.bg-primary-50 {
+    background: var(--hr-nav-active-bg) !important;
+    border-inline-end: 3px solid var(--hr-accent);
+}
+
+/* ── بطاقات المحتوى (تلقائي داخل main) ── */
+.hr-main .bg-white.rounded-xl,
+.hr-main .bg-white.rounded-2xl {
+    box-shadow: var(--hr-shadow-sm);
+    transition: box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.hr-main a.bg-white.rounded-xl:hover,
+.hr-main a.bg-white.rounded-2xl:hover,
+.hr-main .group.bg-white.rounded-xl:hover {
+    box-shadow: var(--hr-shadow);
+}
+
+/* ── مكوّنات اختيارية ── */
+.hr-card {
+    background: var(--hr-surface);
+    border: 1px solid var(--hr-border);
+    border-radius: var(--hr-radius-lg);
+    box-shadow: var(--hr-shadow-sm);
+}
+
+.hr-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--hr-radius-lg);
+    border: 1px solid var(--hr-border);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%);
+    box-shadow: var(--hr-shadow);
+}
+
+.hr-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.1), transparent 42%),
+        radial-gradient(circle at 0% 100%, rgba(99, 102, 241, 0.06), transparent 40%);
+    pointer-events: none;
+}
+
+.hr-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.hr-kpi {
+    border-radius: var(--hr-radius-lg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.hr-kpi:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--hr-shadow);
+}
+
+.hr-footer {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.hr-user-block {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* ── أزرار عصرية ── */
+.hr-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: var(--hr-radius);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.hr-btn:active {
+    transform: scale(0.98);
+}
+
+.hr-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 4px 14px -4px rgba(37, 99, 235, 0.55);
+}
+
+.hr-btn-primary:hover {
+    box-shadow: 0 6px 20px -4px rgba(37, 99, 235, 0.65);
+}
+
+/* ── جداول أنظف ── */
+.hr-main table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.hr-main thead th {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--hr-muted);
+    background: #f8fafc;
+}
+
+.hr-main tbody tr {
+    transition: background 0.12s ease;
+}
+
+.hr-main tbody tr:hover {
+    background: rgba(241, 245, 249, 0.65);
+}
+
+/* ── تلميحات ── */
+.hr-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: 9999px;
+    background: var(--hr-accent-soft);
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hr-page-enter,
+    .hr-sidebar nav a,
+    .hr-sidebar nav button,
+    .hr-kpi,
+    .hr-btn {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
+}

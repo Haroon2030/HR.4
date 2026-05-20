@@ -8,19 +8,21 @@
 <div class="space-y-6">
 
     <!-- ═══ Welcome Header ═══ -->
-    <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-8">
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="hr-hero p-6 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-                <p class="text-slate-500 text-sm">مرحباً بك،</p>
-                <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{{ request.user.get_full_name|default:request.user.username }} 👋</h2>
+                <span class="hr-badge">لوحة التحكم</span>
+                <p class="text-slate-500 text-sm mt-3">مرحباً بك،</p>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{{ request.user.get_full_name|default:request.user.username }}</h2>
                 <p class="text-slate-600 text-sm mt-2">
                     {% if request.user.profile.role %}<span class="font-semibold text-slate-800">{{ request.user.profile.role.name }}</span> • {% endif %}
                     {% now "l، j F Y" %}
                 </p>
             </div>
+            <div class="hidden md:flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 text-primary-600 shrink-0">
+                <i data-lucide="sparkles" class="h-7 w-7"></i>
+            </div>
         </div>
-        <div class="absolute -left-10 -bottom-10 w-48 h-48 rounded-full bg-primary-50"></div>
-        <div class="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-indigo-50/60"></div>
     </div>
 
     {% if show_overview %}
@@ -68,7 +70,7 @@
 
     <!-- ═══ KPI Stats Cards ═══ -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 md:gap-4">
-        <a href="{% url 'web:list_employees' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-primary-300 transition">
+        <a href="{% url 'web:list_employees' %}" class="hr-kpi group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-primary-300 transition">
             <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center mb-2 group-hover:bg-primary-100 transition">
                 <i data-lucide="users" class="w-5 h-5"></i>
             </div>
@@ -76,7 +78,7 @@
             <p class="text-2xl font-bold text-slate-800 mt-1">{{ stats.employees_total|default:0 }}</p>
         </a>
 
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
                 <i data-lucide="user-check" class="w-5 h-5"></i>
             </div>
@@ -84,7 +86,7 @@
             <p class="text-2xl font-bold text-emerald-700 mt-1">{{ stats.employees_active|default:0 }}</p>
         </div>
 
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
                 <i data-lucide="palmtree" class="w-5 h-5"></i>
             </div>
@@ -92,7 +94,7 @@
             <p class="text-2xl font-bold text-amber-700 mt-1">{{ stats.employees_leave|default:0 }}</p>
         </div>
 
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-2">
                 <i data-lucide="user-x" class="w-5 h-5"></i>
             </div>
@@ -100,7 +102,7 @@
             <p class="text-2xl font-bold text-rose-700 mt-1">{{ stats.employees_suspended|default:0 }}</p>
         </div>
 
-        <a href="{% url 'web:list_employment_requests' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-300 transition">
+        <a href="{% url 'web:list_employment_requests' %}" class="hr-kpi group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-indigo-300 transition">
             <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:bg-indigo-100 transition">
                 <i data-lucide="file-plus" class="w-5 h-5"></i>
             </div>
@@ -108,7 +110,7 @@
             <p class="text-2xl font-bold text-indigo-700 mt-1">{{ stats.employment_requests_open|default:0 }}</p>
         </a>
 
-        <a href="{% url 'web:list_pending_actions' %}" class="group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md hover:border-purple-300 transition">
+        <a href="{% url 'web:list_pending_actions' %}" class="hr-kpi group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-purple-300 transition">
             <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-2 group-hover:bg-purple-100 transition">
                 <i data-lucide="clipboard-list" class="w-5 h-5"></i>
             </div>
@@ -116,7 +118,7 @@
             <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.pending_actions_open|default:0 }}</p>
         </a>
 
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center mb-2">
                 <i data-lucide="user-minus" class="w-5 h-5"></i>
             </div>
@@ -124,7 +126,7 @@
             <p class="text-2xl font-bold text-slate-700 mt-1">{{ stats.employees_terminated|default:0 }}</p>
         </div>
 
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
                 <i data-lucide="calculator" class="w-5 h-5"></i>
             </div>
