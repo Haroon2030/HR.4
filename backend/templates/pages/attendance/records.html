@@ -87,7 +87,12 @@
         <div class="zk-bio-stat-box">
             <p class="zk-lbl">الفترة المعروضة</p>
             <p class="zk-val text-sm">
+                {% if filters.date_from or filters.date_to %}
                 {{ filters.date_from|default:"—" }} <span class="text-slate-400">→</span> {{ filters.date_to|default:"—" }}
+                {% else %}
+                <span class="text-slate-600 font-semibold">كل السجلات</span>
+                <span class="block text-[10px] font-normal text-slate-500 mt-0.5">بدون تقييد تاريخ — اختر من/إلى ثم «تطبيق الفلتر» للتضييق</span>
+                {% endif %}
             </p>
         </div>
     </div>

@@ -28,6 +28,7 @@ from apps.core.web_views._helpers import _user_accessible_branch_ids
 from apps.employees.models import Employee
 
 def _apply_default_date_filters(filters: dict) -> dict:
+    """يُستخدم في تقرير البصمة فقط — فرض من/إلى افتراضيين عند غيابهما في الاستعلام."""
     if not filters.get('date_from') and not filters.get('date_to'):
         today = timezone.localdate()
         filters = {
@@ -96,7 +97,7 @@ def _filters_to_querystring(filters: dict, *, extra: dict | None = None) -> str:
 
 @permission_required('attendance.view')
 def attendance_records_list(request):
-    filters = _apply_default_date_filters(_parse_filters(request))
+    filters = _parse_filters(request)
     date_from = None
     date_to = None
     if filters['date_from']:
@@ -260,7 +261,7 @@ def attendance_records_reclassify(request):
 @permission_required('attendance.view')
 @require_GET
 def attendance_records_export(request):
-    filters = _apply_default_date_filters(_parse_filters(request))
+    filters = _parse_filters(request)
     date_from = datetime.strptime(filters['date_from'], '%Y-%m-%d').date() if filters.get('date_from') else None
     date_to = datetime.strptime(filters['date_to'], '%Y-%m-%d').date() if filters.get('date_to') else None
 
