@@ -1,10 +1,38 @@
 import json as _json
 import re
+from decimal import Decimal, InvalidOperation
+
 from django import template
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 register = template.Library()
+
+
+@register.filter
+def format_sar(value, style='neutral'):
+    """
+    تنسيق مبلغ: 1,234.56 ر.س
+    style: neutral | deduct | earn | net | gross
+    """
+    if value is None or value == '':
+        return mark_safe('<span class="pay-money pay-money--empty">—</span>')
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return mark_safe('<span class="pay-money pay-money--empty">—</span>')
+
+    style = str(style or 'neutral').strip().lower()
+    if style not in ('neutral', 'deduct', 'earn', 'net', 'gross'):
+        style = 'neutral'
+
+    formatted = f'{float(amount):,.2f}'
+    return mark_safe(
+        f'<span class="pay-money pay-money--{style}" dir="ltr">'
+        f'<span class="pay-money__val">{formatted}</span>'
+        f'<span class="pay-money__cur">ر.س</span>'
+        f'</span>'
+    )
 
 
 @register.filter

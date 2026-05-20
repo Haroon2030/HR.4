@@ -1,0 +1,132 @@
+<style>
+    .payroll-lines-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    .payroll-lines-hd {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .payroll-lines-hd h3 {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: #111;
+    }
+    .payroll-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8125rem;
+    }
+    .payroll-tbl thead th {
+        padding: 0.55rem 0.65rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+    .payroll-tbl thead th.th-deduct {
+        background: #fff5f5;
+        color: #b91c1c;
+    }
+    .payroll-tbl thead th.th-earn {
+        background: #f0fdf4;
+        color: #047857;
+    }
+    .payroll-tbl thead th.th-net {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+    .payroll-tbl tbody td {
+        padding: 0.5rem 0.65rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    .payroll-tbl tbody tr:hover {
+        background: #fafafa;
+    }
+    .payroll-tbl tbody td.td-deduct {
+        background: #fffbfb;
+    }
+    .payroll-tbl tbody td.td-earn {
+        background: #fafff9;
+    }
+    .payroll-tbl tbody td.td-net {
+        background: #f8fbff;
+    }
+    .payroll-tbl tfoot td {
+        padding: 0.65rem;
+        font-weight: 700;
+        border-top: 2px solid #e5e7eb;
+        background: #fafafa;
+    }
+    .payroll-tbl .col-num {
+        text-align: left;
+        white-space: nowrap;
+    }
+    .pay-money {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.2rem;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+        font-family: ui-monospace, "Segoe UI", Tahoma, sans-serif;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .pay-money__val {
+        letter-spacing: 0.02em;
+    }
+    .pay-money__cur {
+        font-size: 0.65rem;
+        font-weight: 600;
+        opacity: 0.85;
+    }
+    .pay-money--neutral {
+        color: #111;
+    }
+    .pay-money--neutral .pay-money__cur {
+        color: #6b7280;
+    }
+    .pay-money--gross {
+        color: #374151;
+    }
+    .pay-money--gross .pay-money__cur {
+        color: #6b7280;
+    }
+    .pay-money--deduct {
+        color: #dc2626;
+    }
+    .pay-money--deduct .pay-money__cur {
+        color: #ef4444;
+    }
+    .pay-money--earn {
+        color: #059669;
+    }
+    .pay-money--earn .pay-money__cur {
+        color: #10b981;
+    }
+    .pay-money--net {
+        color: #1d4ed8;
+        font-size: 0.875rem;
+    }
+    .pay-money--net .pay-money__cur {
+        color: #3b82f6;
+    }
+    .pay-money--empty {
+        color: #9ca3af;
+        font-weight: 600;
+    }
+    .pay-days {
+        display: block;
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: #9ca3af;
+        margin-top: 0.1rem;
+    }
+</style>
