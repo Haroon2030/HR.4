@@ -155,7 +155,6 @@
                         <th class="text-right">User</th>
                         <th class="text-right">اسم جهاز</th>
                         <th class="text-right">موظف HR</th>
-                        <th class="text-right">وظيفي</th>
                         <th class="text-right">الحركة</th>
                         <th class="text-center" title="status">St</th>
                         <th class="text-right">تحقق</th>
@@ -174,7 +173,6 @@
                         <td class="zk-mono" dir="ltr">{{ p.device_user_id }}</td>
                         <td>{{ p.device_user_name|default:"—" }}</td>
                         <td>{% if p.employee %}<span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>{% else %}<span class="zk-pill zk-pill-warn">غير مربوط</span>{% endif %}</td>
-                        <td class="zk-mono">{{ p.employee.employee_number|default:"—" }}</td>
                         <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">{{ p.get_punch_type_display }}</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">{{ p.get_punch_type_display }}</span>{% else %}<span class="zk-pill zk-pill-muted">{{ p.get_punch_type_display }}</span>{% endif %}</td>
                         <td class="text-center zk-mono text-slate-500">{{ p.raw_status|default:"—" }}</td>
                         <td class="text-xs">{{ p.verify_mode_label|default:"—" }}</td>
@@ -183,7 +181,7 @@
                         <td class="zk-mono" dir="ltr">{{ p.device.ip_address }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="14" class="px-4 py-12 text-center text-slate-500">لا توجد سجلات — نفّذ «سحب من الجهاز» لاستيراد البيانات.</td></tr>
+                    <tr><td colspan="13" class="px-4 py-12 text-center text-slate-500">لا توجد سجلات — نفّذ «سحب من الجهاز» لاستيراد البيانات.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
