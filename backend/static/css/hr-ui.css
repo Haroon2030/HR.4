@@ -10,7 +10,9 @@
     --hr-bg: #f8f9fa;
     --hr-bg-alt: #f3f4f6;
     --hr-border: #e5e7eb;
-    --hr-text: #111827;
+    /* أسود فاتح — رمادي فحمي بدل الأسود الغامق */
+    --hr-text: #4b5563;
+    --hr-text-strong: #374151;
     --hr-text-secondary: #6b7280;
     --hr-muted: #9ca3af;
     --hr-radius: 0.75rem;
@@ -95,8 +97,35 @@ body.hr-app {
 .hr-sidebar nav a:hover,
 .hr-sidebar nav button[type="button"]:hover {
     background: var(--hr-bg-alt) !important;
-    color: var(--hr-text);
+    color: var(--hr-text-strong);
     transform: none;
+}
+
+/* تخفيف نصوص Tailwind الغامقة داخل التطبيق */
+.hr-app .text-slate-900 {
+    color: var(--hr-text-strong) !important;
+}
+
+.hr-app .text-slate-800 {
+    color: var(--hr-text) !important;
+}
+
+.hr-app .text-slate-700 {
+    color: var(--hr-text-secondary) !important;
+}
+
+.hr-app .font-bold.text-slate-900,
+.hr-app .font-semibold.text-slate-900 {
+    color: var(--hr-text-strong) !important;
+}
+
+.hr-sidebar nav .font-semibold {
+    color: var(--hr-text) !important;
+    font-weight: 600;
+}
+
+.hr-user-block .font-bold.text-slate-900 {
+    color: var(--hr-text-strong) !important;
 }
 
 /* عنصر القائمة النشط — خلفية زرقاء فاتحة كاملة (مثل الصورة) */
