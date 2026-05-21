@@ -6,80 +6,70 @@
 {% block content %}
 {% include "pages/attendance/_report_styles.html" %}
 
-<div class="hr-report space-y-4" dir="rtl">
+<div class="hr-report space-y-3" dir="rtl"
+     x-data="{
+        tab: {% if request.GET.punches_page %}'detail'{% else %}'daily'{% endif %},
+        adv: {% if filters.device_id or mapped_filter != 'all' or filter_employee %}true{% else %}false{% endif %},
+        hasAdv: {% if filters.device_id or mapped_filter != 'all' or filter_employee %}true{% else %}false{% endif %}
+     }">
 
-    {# ── ترويسة الصفحة ── #}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="hr-report-top">
         <div>
-            <nav class="flex items-center gap-1 text-xs font-semibold text-slate-500 mb-2">
-                <a href="{% url 'web:biometric_devices' %}" class="hover:text-primary-600">أجهزة البصمة</a>
-                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                <span class="text-slate-800">تقرير البصمة</span>
+            <nav class="hr-report-crumb">
+                <a href="{% url 'web:biometric_devices' %}">أجهزة البصمة</a>
+                <i data-lucide="chevron-left" class="w-3 h-3"></i>
+                <span>تقرير</span>
             </nav>
-            <h1 class="text-xl font-bold text-slate-900">تقرير البصمة</h1>
-            <p class="text-sm font-semibold text-slate-500 mt-1">
-                الفترة: {{ filters.date_from|default:"—" }} ← {{ filters.date_to|default:"—" }}
-            </p>
+            <h1>تقرير البصمة</h1>
         </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
+        <div class="hr-report-actions">
             <a href="{% url 'web:attendance_report_export' %}?{{ querystring }}"
-               class="hr-btn hr-btn-primary text-sm inline-flex items-center gap-2"
-               style="background:#059669;border:none;">
+               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-white rounded-lg"
+               style="background:#059669;">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                تصدير Excel
+                Excel
             </a>
             <a href="{% url 'web:attendance_records' %}?{{ querystring }}"
-               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50">
+               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50">
                 <i data-lucide="list" class="w-4 h-4"></i>
                 السجلات
             </a>
         </div>
     </div>
 
-    {# ── ملخص سريع ── #}
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div class="hr-report-stat">
+    <div class="hr-report-kpis">
+        <div class="hr-report-kpi">
             <p class="lbl">إجمالي البصمات</p>
             <p class="val text-primary-700">{{ summary.total_punches }}</p>
         </div>
-        <div class="hr-report-stat">
+        <div class="hr-report-kpi">
             <p class="lbl">أيام عمل</p>
             <p class="val">{{ summary.total_days }}</p>
         </div>
-        <div class="hr-report-stat">
+        <div class="hr-report-kpi">
             <p class="lbl">مكتمل</p>
             <p class="val text-emerald-700">{{ summary.complete }}</p>
         </div>
-        <div class="hr-report-stat">
-            <p class="lbl">بصمة واحدة</p>
-            <p class="val text-amber-700">{{ summary.single_punch }}</p>
-        </div>
-        <div class="hr-report-stat">
-            <p class="lbl">غير مكتمل</p>
-            <p class="val text-orange-700">{{ summary.incomplete }}</p>
-        </div>
-        <div class="hr-report-stat">
-            <p class="lbl">غير مربوط</p>
-            <p class="val text-rose-700">{{ summary.unmapped }}</p>
+        <div class="hr-report-kpi">
+            <p class="lbl">يحتاج متابعة</p>
+            {% with issues=summary.single_punch|add:summary.incomplete|add:summary.unmapped %}
+            <p class="val text-amber-700">{{ issues }}</p>
+            <p class="sub">غير مربوط {{ summary.unmapped }} · بصمة واحدة {{ summary.single_punch }}</p>
+            {% endwith %}
         </div>
     </div>
 
-    {# ── فلتر ── #}
-    <div class="hr-report-card">
-        <div class="hr-report-card-hd">
-            <h2>فلتر التقرير</h2>
-            <span class="meta">اختر الفترة والمعايير ثم اضغط عرض</span>
-        </div>
-        <form method="get" class="hr-report-filter-grid">
-            <div>
-                <label class="hr-report-lbl">من تاريخ</label>
+    <form method="get" class="hr-report-filter">
+        <div class="hr-report-filter-row">
+            <div class="fld">
+                <label class="hr-report-lbl">من</label>
                 <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="hr-report-field">
             </div>
-            <div>
-                <label class="hr-report-lbl">إلى تاريخ</label>
+            <div class="fld">
+                <label class="hr-report-lbl">إلى</label>
                 <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="hr-report-field">
             </div>
-            <div>
+            <div class="fld">
                 <label class="hr-report-lbl">الفرع</label>
                 <select name="branch" class="hr-report-field">
                     <option value="">كل الفروع</option>
@@ -88,6 +78,24 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="fld fld--search">
+                <label class="hr-report-lbl">بحث</label>
+                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم موظف، رقم، أو جهاز…" class="hr-report-field" autocomplete="off">
+            </div>
+            <div class="fld--actions">
+                <button type="button" class="hr-report-filter-toggle"
+                        :class="{ 'is-active': adv }"
+                        @click="adv = !adv">
+                    <span class="dot" x-show="hasAdv" x-cloak></span>
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                    فلاتر
+                </button>
+                <button type="submit" class="hr-btn hr-btn-primary px-4 py-2 text-sm font-bold">عرض</button>
+                <a href="{% url 'web:attendance_report' %}" class="px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-900">مسح</a>
+            </div>
+        </div>
+
+        <div class="hr-report-filter-adv" x-show="adv" x-cloak>
             <div>
                 <label class="hr-report-lbl">جهاز البصمة</label>
                 <select name="device" class="hr-report-field">
@@ -98,33 +106,36 @@
                 </select>
             </div>
             <div>
-                <label class="hr-report-lbl">ربط موظف HR</label>
+                <label class="hr-report-lbl">ربط HR</label>
                 <select name="mapped" class="hr-report-field">
                     <option value="" {% if mapped_filter == 'all' %}selected{% endif %}>الكل</option>
-                    <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط فقط</option>
+                    <option value="1" {% if mapped_filter == 'yes' %}selected{% endif %}>مربوط</option>
                     <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
                 </select>
             </div>
-            <div>
-                <label class="hr-report-lbl">بحث سريع</label>
-                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم جهاز" class="hr-report-field" autocomplete="off">
+            <div class="span-2" x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
+                {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" %}
             </div>
-            <div class="hr-report-filter-actions">
-                <button type="submit" class="hr-btn hr-btn-primary px-5 py-2 text-sm">عرض</button>
-                <a href="{% url 'web:attendance_report' %}" class="inline-flex items-center px-5 py-2 text-sm font-bold text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50">مسح</a>
-            </div>
-            <div class="span-4" x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
-                {% include "components/employee_search_picker.html" with label="موظف HR" input_name="employee" %}
-            </div>
-        </form>
+        </div>
+    </form>
+
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="hr-report-tabs" role="tablist">
+            <button type="button" class="hr-report-tab" :class="{ 'is-active': tab === 'daily' }" @click="tab = 'daily'">
+                حضور يومي
+                <span class="cnt">{{ total_daily_rows }}</span>
+            </button>
+            <button type="button" class="hr-report-tab" :class="{ 'is-active': tab === 'detail' }" @click="tab = 'detail'">
+                بصمات تفصيلية
+                <span class="cnt">{{ punches_page.paginator.count }}</span>
+            </button>
+        </div>
+        <p class="text-xs font-semibold text-slate-500 m-0">
+            {{ filters.date_from|default:"—" }} — {{ filters.date_to|default:"—" }}
+        </p>
     </div>
 
-    {# ── الحضور اليومي ── #}
-    <div class="hr-report-card">
-        <div class="hr-report-card-hd">
-            <h2>الحضور اليومي (مجمّع)</h2>
-            <span class="meta">{{ total_daily_rows }} يوم · {{ summary.total_punches }} بصمة</span>
-        </div>
+    <div class="hr-report-card" x-show="tab === 'daily'"{% if request.GET.punches_page %} style="display:none"{% endif %}>
         {% if daily_page.object_list %}
         <div class="overflow-x-auto">
             <table class="hr-report-tbl">
@@ -132,9 +143,7 @@
                     <tr>
                         <th class="text-center w-10">#</th>
                         <th>التاريخ</th>
-                        <th>موظف HR</th>
-                        <th>الفرع</th>
-                        <th>الجهاز</th>
+                        <th>الموظف</th>
                         <th>دخول</th>
                         <th>خروج</th>
                         <th class="text-center">بصمات</th>
@@ -153,13 +162,10 @@
                             {% if row.employee_number != '—' %}<span class="hr-report-sub" dir="ltr">#{{ row.employee_number }}</span>{% endif %}
                             {% elif row.device_user_id %}
                             <a href="{% url 'web:biometric_devices' %}?link_device={{ row.device_id }}&link_user={{ row.device_user_id }}" class="hr-report-link text-amber-800">ربط: {{ row.device_user_name }}</a>
-                            <span class="hr-report-sub" dir="ltr">User {{ row.device_user_id }}</span>
                             {% else %}
                             <span class="text-amber-800 font-bold">{{ row.device_user_name }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ row.branch_name }}</td>
-                        <td class="text-xs font-semibold text-slate-600">{{ row.device_name }}</td>
                         <td class="mono text-emerald-700">{{ row.check_in_display }}</td>
                         <td class="mono text-indigo-700">{{ row.check_out_display }}</td>
                         <td class="text-center mono">{{ row.punch_count }}</td>
@@ -183,23 +189,18 @@
             {% if daily_page.has_previous %}
             <a href="?{{ querystring }}&page={{ daily_page.previous_page_number }}">السابق</a>
             {% endif %}
-            <span>صفحة {{ daily_page.number }} من {{ daily_page.paginator.num_pages }}</span>
+            <span>صفحة {{ daily_page.number }} / {{ daily_page.paginator.num_pages }}</span>
             {% if daily_page.has_next %}
             <a href="?{{ querystring }}&page={{ daily_page.next_page_number }}">التالي</a>
             {% endif %}
         </div>
         {% endif %}
         {% else %}
-        <p class="hr-report-empty">لا توجد بيانات يومية في الفترة المحددة.</p>
+        <p class="hr-report-empty">لا توجد بيانات في الفترة المحددة — غيّر التاريخ أو الفلاتر ثم اضغط عرض.</p>
         {% endif %}
     </div>
 
-    {# ── البصمات التفصيلية ── #}
-    <div class="hr-report-card">
-        <div class="hr-report-card-hd">
-            <h2>البصمات التفصيلية</h2>
-            <span class="meta">{{ punches_page.start_index }}–{{ punches_page.end_index }} من {{ punches_page.paginator.count }}</span>
-        </div>
+    <div class="hr-report-card" x-show="tab === 'detail'"{% if not request.GET.punches_page %} style="display:none"{% endif %}>
         {% if punches_page.object_list %}
         <div class="overflow-x-auto">
             <table class="hr-report-tbl">
@@ -208,8 +209,7 @@
                         <th class="text-center w-10">#</th>
                         <th>التاريخ</th>
                         <th>الوقت</th>
-                        <th dir="ltr">User ID</th>
-                        <th>موظف HR</th>
+                        <th>الموظف</th>
                         <th>الحركة</th>
                         <th>الجهاز</th>
                     </tr>
@@ -220,12 +220,12 @@
                         <td class="text-center mono text-slate-500">{{ punches_page.start_index|add:forloop.counter0 }}</td>
                         <td class="mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
                         <td class="mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
-                        <td class="mono" dir="ltr">{{ p.device_user_id }}</td>
                         <td>
                             {% if p.employee_id %}
                             <a href="{% url 'web:view_employee' p.employee_id %}" class="hr-report-link">{{ p.employee.name }}</a>
                             {% else %}
                             <a href="{% url 'web:biometric_devices' %}?link_device={{ p.device_id }}&link_user={{ p.device_user_id }}" class="hr-report-badge hr-report-badge-warn">ربط HR</a>
+                            <span class="hr-report-sub" dir="ltr">User {{ p.device_user_id }}</span>
                             {% endif %}
                         </td>
                         <td>
@@ -248,7 +248,7 @@
             {% if punches_page.has_previous %}
             <a href="?{{ querystring }}&punches_page={{ punches_page.previous_page_number }}">السابق</a>
             {% endif %}
-            <span>صفحة {{ punches_page.number }} من {{ punches_page.paginator.num_pages }}</span>
+            <span>صفحة {{ punches_page.number }} / {{ punches_page.paginator.num_pages }}</span>
             {% if punches_page.has_next %}
             <a href="?{{ querystring }}&punches_page={{ punches_page.next_page_number }}">التالي</a>
             {% endif %}
