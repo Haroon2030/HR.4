@@ -171,6 +171,8 @@ def reactivate_employee(request, employee_id):
 @employee_branch_access_required
 def adjust_employee_salary(request, employee_id):
     """تقديم طلب تعديل راتب (ينتظر موافقة مدير الفرع)."""
+    from decimal import Decimal, InvalidOperation
+
     from apps.employees.models import Employee
     from apps.core.models import PendingAction
     from apps.core.forms import SalaryAdjustForm
@@ -182,7 +184,16 @@ def adjust_employee_salary(request, employee_id):
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
-    form = SalaryAdjustForm(request.POST)
+    post = request.POST.copy()
+    if not (post.get('new_basic_salary') or '').strip():
+        try:
+            raise_amt = Decimal(post.get('raise_amount', '0'))
+            new_basic = (employee.basic_salary or Decimal('0')) + raise_amt
+            post['new_basic_salary'] = str(new_basic.quantize(Decimal('0.01')))
+        except (InvalidOperation, TypeError, ValueError):
+            pass
+
+    form = SalaryAdjustForm(post)
     if not form.is_valid():
         for err in form.errors.values():
             messages.error(request, err[0])
