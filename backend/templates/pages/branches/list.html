@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: (window.location.hash ? window.location.hash.substring(1) : 'branches') }" x-init="$watch('activeTab', val => { history.replaceState(null, '', '#' + val); })">
+<div class="max-w-7xl mx-auto space-y-4"
+     x-data="{
+        activeTab: (() => {
+            const h = (window.location.hash || '').replace('#', '');
+            const tabs = ['branches','cost_centers','departments','nationalities','professions','sponsorships','insurances','insurance_classes','buildings','banks'];
+            return tabs.includes(h) ? h : 'branches';
+        })()
+     }"
+     x-init="$watch('activeTab', val => { history.replaceState(null, '', '#' + val); lucide.createIcons(); })">
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
@@ -10,75 +18,11 @@
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div class="border-b border-slate-200">
-            <nav class="flex -mb-px overflow-x-auto">
-                <button @click="activeTab = 'branches'; lucide.createIcons()" 
-                    :class="activeTab === 'branches' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="building-2" class="w-4 h-4"></i>
-                    الفروع
-                </button>
-                <button @click="activeTab = 'cost_centers'; lucide.createIcons()" 
-                    :class="activeTab === 'cost_centers' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="target" class="w-4 h-4"></i>
-                    مراكز التكلفة
-                </button>
-                <button @click="activeTab = 'departments'; lucide.createIcons()" 
-                    :class="activeTab === 'departments' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="folder" class="w-4 h-4"></i>
-                    الأقسام
-                </button>
-                <button @click="activeTab = 'nationalities'; lucide.createIcons()" 
-                    :class="activeTab === 'nationalities' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="flag" class="w-4 h-4"></i>
-                    الجنسيات
-                </button>
-                <button @click="activeTab = 'professions'; lucide.createIcons()" 
-                    :class="activeTab === 'professions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                    المهن
-                </button>
-                <button @click="activeTab = 'sponsorships'; lucide.createIcons()" 
-                    :class="activeTab === 'sponsorships' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                    الكفالات
-                </button>
-                <button @click="activeTab = 'insurances'; lucide.createIcons()" 
-                    :class="activeTab === 'insurances' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="shield" class="w-4 h-4"></i>
-                    التأمينات
-                </button>
-                <button @click="activeTab = 'insurance_classes'; lucide.createIcons()" 
-                    :class="activeTab === 'insurance_classes' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" 
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="layers" class="w-4 h-4"></i>
-                    فئات التأمين
-                </button>
-                <button @click="activeTab = 'buildings'; lucide.createIcons()"
-                    :class="activeTab === 'buildings' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="home" class="w-4 h-4"></i>
-                    السكن
-                </button>
-                <button @click="activeTab = 'banks'; lucide.createIcons()"
-                    :class="activeTab === 'banks' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                    class="px-4 py-3 border-b-2 font-medium text-xs transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <i data-lucide="landmark" class="w-4 h-4"></i>
-                    البنوك
-                </button>
-            </nav>
-        </div>
+    <div class="hr-tabs bg-white rounded-xl shadow-sm border border-slate-200">
+        {% include "components/org_structure_tabs.html" %}
 
         <!-- Tab 1: الفروع -->
-        <div x-show="activeTab === 'branches'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'branches'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_branch' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -163,7 +107,7 @@
         </div>
 
         <!-- Tab 2: مراكز التكلفة -->
-        <div x-show="activeTab === 'cost_centers'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'cost_centers'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_cost_center_global' %}"
@@ -251,7 +195,7 @@
         </div>
 
         <!-- Tab 3: الأقسام -->
-        <div x-show="activeTab === 'departments'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'departments'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_department_global' %}"
@@ -339,7 +283,7 @@
         </div>
 
         <!-- Tab 4: الجنسيات -->
-        <div x-show="activeTab === 'nationalities'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'nationalities'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_nationality' %}?tab=nationalities" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -408,7 +352,7 @@
         </div>
 
         <!-- Tab 5: المهن -->
-        <div x-show="activeTab === 'professions'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'professions'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_profession' %}?tab=professions" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -477,7 +421,7 @@
         </div>
 
         <!-- Tab 6: الكفالات -->
-        <div x-show="activeTab === 'sponsorships'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'sponsorships'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_sponsorship' %}?tab=sponsorships" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -546,7 +490,7 @@
         </div>
 
         <!-- Tab 7: التأمينات -->
-        <div x-show="activeTab === 'insurances'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'insurances'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_insurance' %}?tab=insurances" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -615,7 +559,7 @@
         </div>
 
         <!-- Tab 8: فئات التأمين -->
-        <div x-show="activeTab === 'insurance_classes'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'insurance_classes'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_insurance_class' %}?tab=insurance_classes" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -684,7 +628,7 @@
         </div>
 
         <!-- Tab 9: السكن -->
-        <div x-show="activeTab === 'buildings'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'buildings'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_building' %}?tab=buildings" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -751,7 +695,7 @@
         </div>
 
         <!-- Tab 10: البنوك -->
-        <div x-show="activeTab === 'banks'" x-cloak>
+        <div class="hr-tabs__panel" x-show="activeTab === 'banks'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_bank' %}?tab=banks" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
