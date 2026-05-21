@@ -1,13 +1,13 @@
 {% with current_url=request.resolver_match.url_name %}
-<a 
-    href="{% url url %}" 
-    class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if current_url == url or request.resolver_match.url_name == related_url %}bg-primary-50 text-slate-800{% else %}text-slate-600 hover:bg-slate-100{% endif %}"
+<a
+    href="{% url url %}"
+    class="hr-nav-link {% if path_prefix and path_prefix in request.path %}is-active{% elif current_url == url or current_url == related_url %}is-active{% endif %}"
 >
-    <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="{{ icon }}" class="w-5 h-5"></i></span>
+    <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="{{ icon }}" class="w-4 h-4"></i></span>
     {% if force_show_label %}
-    <span class="font-semibold text-base">{{ label }}</span>
+    <span class="hr-nav-text">{{ label }}</span>
     {% else %}
-    <span x-show="sidebarOpen" class="font-semibold text-base">{{ label }}</span>
+    <span x-show="sidebarOpen" class="hr-nav-text">{{ label }}</span>
     {% endif %}
 </a>
 {% endwith %}

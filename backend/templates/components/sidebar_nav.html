@@ -1,0 +1,108 @@
+{% load custom_tags %}
+{# always_show: عرض عناوين الأقسام دائماً (الجوال) #}
+
+{% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" force_show_label=always_show %}
+
+{% include "components/nav_section.html" with label="الموارد البشرية" always_show=always_show %}
+
+{% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
+<div class="hr-nav-dropdown">
+    <button type="button" @click="employeesOpen = !employeesOpen"
+        class="hr-nav-link hr-nav-link--btn {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'document_expiry_dashboard' %}is-active{% endif %}">
+        <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="users" class="w-4 h-4"></i></span>
+        {% if always_show %}
+        <span class="hr-nav-text flex-1 text-right">الموظفين</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 opacity-60 transition-transform" :class="employeesOpen ? 'rotate-180' : ''"></i>
+        {% else %}
+        <span x-show="sidebarOpen" class="hr-nav-text flex-1 text-right">الموظفين</span>
+        <i data-lucide="chevron-down" x-show="sidebarOpen" class="w-3.5 h-3.5 opacity-60 transition-transform" :class="employeesOpen ? 'rotate-180' : ''"></i>
+        {% endif %}
+    </button>
+    <div class="hr-nav-sub" {% if always_show %}x-show="employeesOpen"{% else %}x-show="employeesOpen && sidebarOpen"{% endif %} x-cloak>
+        <a href="{% url 'web:list_employees' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'list_employees' %}is-active{% endif %}">
+            <i data-lucide="list" class="w-3.5 h-3.5"></i> قائمة الموظفين
+        </a>
+        {% if user|has_permission:'employees.add' %}
+        <a href="{% url 'web:add_employee' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'add_employee' %}is-active{% endif %}">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> إضافة موظف
+        </a>
+        {% endif %}
+        {% if user|has_permission:'employees.view' %}
+        <a href="{% url 'web:document_expiry_dashboard' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'document_expiry_dashboard' %}is-active{% endif %}">
+            <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i> وثائق تنتهي قريباً
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if user|has_permission:'employees.view' %}
+{% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="calculator" label="مسير الرواتب" force_show_label=always_show %}
+{% endif %}
+
+<a href="{% url 'web:list_pending_actions' %}"
+   class="hr-nav-link {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}is-active{% endif %}">
+    <span class="hr-nav-icon relative">
+        <i data-lucide="list-checks" class="w-4 h-4"></i>
+        {% if pending_actions_count and not always_show %}
+        <span x-show="!sidebarOpen" class="hr-nav-badge hr-nav-badge--dot">{{ pending_actions_count }}</span>
+        {% endif %}
+    </span>
+    {% if always_show %}
+    <span class="hr-nav-text flex items-center gap-1.5">
+        طلبات العمليات
+        {% if pending_actions_count %}<span class="hr-nav-badge">{{ pending_actions_count }}</span>{% endif %}
+    </span>
+    {% else %}
+    <span x-show="sidebarOpen" class="hr-nav-text flex items-center gap-1.5">
+        طلبات العمليات
+        {% if pending_actions_count %}<span class="hr-nav-badge">{{ pending_actions_count }}</span>{% endif %}
+    </span>
+    {% endif %}
+</a>
+
+{% if user|has_permission:'attendance.view' %}
+{% include "components/nav_section.html" with label="الحضور والدوام" always_show=always_show %}
+<div class="hr-nav-dropdown">
+    <button type="button" @click="attendanceOpen = !attendanceOpen"
+        class="hr-nav-link hr-nav-link--btn {% if '/attendance/' in request.path %}is-active{% endif %}">
+        <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="fingerprint" class="w-4 h-4"></i></span>
+        {% if always_show %}
+        <span class="hr-nav-text flex-1 text-right">البصمة</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 opacity-60 transition-transform" :class="attendanceOpen ? 'rotate-180' : ''"></i>
+        {% else %}
+        <span x-show="sidebarOpen" class="hr-nav-text flex-1 text-right">البصمة</span>
+        <i data-lucide="chevron-down" x-show="sidebarOpen" class="w-3.5 h-3.5 opacity-60 transition-transform" :class="attendanceOpen ? 'rotate-180' : ''"></i>
+        {% endif %}
+    </button>
+    <div class="hr-nav-sub" {% if always_show %}x-show="attendanceOpen"{% else %}x-show="attendanceOpen && sidebarOpen"{% endif %} x-cloak>
+        <a href="{% url 'web:biometric_devices' %}" class="hr-nav-sublink {% if '/attendance/devices' in request.path %}is-active{% endif %}">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> أجهزة البصمة
+        </a>
+        <a href="{% url 'web:attendance_report' %}" class="hr-nav-sublink {% if '/attendance/report' in request.path %}is-active{% endif %}">
+            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> تقرير البصمة
+        </a>
+        <a href="{% url 'web:attendance_records' %}" class="hr-nav-sublink {% if '/attendance/records' in request.path %}is-active{% endif %}">
+            <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i> سجلات الحضور
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% if user|has_permission:'reports.view' or user|has_permission:'hr_forms.view' %}
+{% include "components/nav_section.html" with label="التقارير والنماذج" always_show=always_show %}
+{% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" force_show_label=always_show %}{% endif %}
+{% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" force_show_label=always_show %}{% endif %}
+{% endif %}
+
+{% if user|has_permission:'branches.view' or user|has_permission:'users.view' or user|is_general_manager %}
+{% include "components/nav_section.html" with label="إدارة النظام" always_show=always_show %}
+{% if user|has_permission:'branches.view' %}{% include "components/nav_item.html" with url="web:list_branches" related_url="web:add_branch" icon="settings" label="تهيئة النظام" force_show_label=always_show %}{% endif %}
+{% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" force_show_label=always_show %}{% endif %}
+{% if user|is_general_manager %}
+<a href="{% url 'web:audit_history' %}" class="hr-nav-link {% if request.resolver_match.url_name == 'audit_history' %}is-active{% endif %}">
+    <span class="hr-nav-icon"><i data-lucide="clipboard-list" class="w-4 h-4"></i></span>
+    {% if always_show %}<span class="hr-nav-text">سجل التدقيق</span>{% else %}<span x-show="sidebarOpen" class="hr-nav-text">سجل التدقيق</span>{% endif %}
+</a>
+{% endif %}
+{% endif %}
