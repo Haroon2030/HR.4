@@ -50,11 +50,8 @@
                         <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">{{ r.days_until }} يوماً</span>
                     </td>
                     <td class="px-3 py-2 text-left">
-                        <div class="hr-tbl-actions">
-                            <a href="{% url 'web:edit_employee' r.employee_id %}" class="hr-act hr-act--edit" title="تعديل الموظف">
-                                <i data-lucide="edit-2" class="w-4 h-4"></i>
-                            </a>
-                        </div>
+                        {% url 'web:edit_employee' r.employee_id as act_edit %}
+                        {% include "components/table_actions.html" with edit_url=act_edit edit_title="تعديل الموظف" %}
                     </td>
                 </tr>
                 {% endfor %}

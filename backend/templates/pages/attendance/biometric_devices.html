@@ -119,12 +119,13 @@
                                     comm_key: {{ d.comm_key }},
                                     branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
                                     is_active: {{ d.is_active|yesno:'true,false' }}
-                                })" class="hr-act hr-act--edit" title="تعديل"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                <form method="post" action="{% url 'web:biometric_device_delete' d.pk %}" class="inline"
-                                    onsubmit="return confirm('حذف نهائي لجهاز «{{ d.name|escapejs }}» (رقم {{ d.pk }}) من قاعدة البيانات؟{% if d.punch_count %} سيُحذف {{ d.punch_count }} سجل بصمة وكل الربط — لا يمكن التراجع.{% else %} لا يمكن التراجع.{% endif %}');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="hr-act hr-act--delete" title="حذف الجهاز"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </form>
+                                })" title="تعديل" aria-label="تعديل" class="hr-act hr-act--edit"><i data-lucide="pencil" class="hr-act__icon"></i></button>
+                                {% url 'web:biometric_device_delete' d.pk as act_del %}
+                                {% if d.punch_count %}
+                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ سيُحذف "|add:d.punch_count|add:" سجل بصمة وكل الربط — لا يمكن التراجع." title="حذف الجهاز" %}
+                                {% else %}
+                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ لا يمكن التراجع." title="حذف الجهاز" %}
+                                {% endif %}
                             </div>
                         </td>
                         {% endif %}

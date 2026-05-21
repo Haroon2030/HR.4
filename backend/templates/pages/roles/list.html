@@ -54,43 +54,27 @@
             {% endif %}
         </td>
         <td class="px-6 py-4 text-left">
-            <div class="hr-tbl-actions">
-                <a href="{% url 'web:view_role' role.id %}" class="hr-act hr-act--view" title="عرض التفاصيل">
-                    <i data-lucide="eye" class="w-4 h-4"></i>
-                </a>
-                {% if not role.is_system_role or role.role_type == 'admin' %}
-                <a href="{% url 'web:edit_role' role.id %}" class="hr-act hr-act--edit" title="تعديل وإدارة الصلاحيات">
-                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                </a>
-                {% else %}
-                <a href="{% url 'web:edit_role' role.id %}" class="hr-act hr-act--edit" title="إدارة الصلاحيات">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i>
-                </a>
-                {% endif %}
+            {% url 'web:view_role' role.id as act_view %}
+            {% url 'web:edit_role' role.id as act_edit %}
+            {% if not role.is_system_role or role.role_type == 'admin' %}
                 {% if role.is_system_role %}
-                <button type="button" disabled
-                        class="hr-act hr-act--delete" disabled
-                        title="لا يمكن حذف دور نظامي">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
+                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" edit_url=act_edit edit_title="تعديل وإدارة الصلاحيات" delete_disabled_title="لا يمكن حذف دور نظامي" %}
                 {% elif role.users.count > 0 %}
-                <button type="button" disabled
-                        class="hr-act hr-act--delete" disabled
-                        title="لا يمكن الحذف: يوجد {{ role.users.count }} مستخدم مرتبط بهذا الدور">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
+                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" edit_url=act_edit edit_title="تعديل وإدارة الصلاحيات" delete_disabled_title="لا يمكن الحذف: يوجد مستخدمون مرتبطون بهذا الدور" %}
                 {% else %}
-                <form method="post" action="{% url 'web:delete_role' role.id %}" class="inline"
-                      onsubmit="return confirm('هل أنت متأكد من حذف الدور \'{{ role.name|escapejs }}\'؟\n\nلا يمكن التراجع عن هذا الإجراء.');">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="hr-act hr-act--delete"
-                            title="حذف الدور">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </form>
+                    {% url 'web:delete_role' role.id as act_del %}
+                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" edit_url=act_edit edit_title="تعديل وإدارة الصلاحيات" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الدور '"|add:role.name|add:"'؟ لا يمكن التراجع عن هذا الإجراء." delete_title="حذف الدور" %}
                 {% endif %}
-            </div>
+            {% else %}
+                {% if role.is_system_role %}
+                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_edit perm_title="إدارة الصلاحيات" delete_disabled_title="لا يمكن حذف دور نظامي" %}
+                {% elif role.users.count > 0 %}
+                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_edit perm_title="إدارة الصلاحيات" delete_disabled_title="لا يمكن الحذف: يوجد مستخدمون مرتبطون بهذا الدور" %}
+                {% else %}
+                    {% url 'web:delete_role' role.id as act_del %}
+                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_edit perm_title="إدارة الصلاحيات" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الدور '"|add:role.name|add:"'؟ لا يمكن التراجع عن هذا الإجراء." delete_title="حذف الدور" %}
+                {% endif %}
+            {% endif %}
         </td>
     </tr>
     {% empty %}

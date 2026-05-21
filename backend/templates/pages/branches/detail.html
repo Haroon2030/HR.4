@@ -19,7 +19,7 @@
             </div>
         </div>
         <a href="{% url 'web:edit_branch' branch.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-            <i data-lucide="edit-2" class="w-4 h-4"></i>
+            <i data-lucide="pencil" class="w-4 h-4"></i>
             تعديل الفرع
         </a>
     </div>
@@ -244,9 +244,8 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                <div class="hr-tbl-actions">
-                                    <a href="{% url 'web:edit_cost_center' cost_center.id %}" class="hr-act hr-act--edit" title="تعديل"><i data-lucide="edit-2" class="w-4 h-4"></i></a>
-                                </div>
+                                {% url 'web:edit_cost_center' cost_center.id as act_edit %}
+                                {% include "components/table_actions.html" with edit_url=act_edit edit_title="تعديل" %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -307,9 +306,8 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                <div class="hr-tbl-actions">
-                                    <a href="{% url 'web:edit_department' department.id %}" class="hr-act hr-act--edit" title="تعديل"><i data-lucide="edit-2" class="w-4 h-4"></i></a>
-                                </div>
+                                {% url 'web:edit_department' department.id as act_edit %}
+                                {% include "components/table_actions.html" with edit_url=act_edit edit_title="تعديل" %}
                             </td>
                         </tr>
                         {% endfor %}

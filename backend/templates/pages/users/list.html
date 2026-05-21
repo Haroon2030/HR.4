@@ -91,27 +91,19 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="hr-tbl-actions">
-                                        <a href="{% url 'web:view_user' user.id %}" class="hr-act hr-act--view" title="عرض التفاصيل">
-                                            <i data-lucide="eye" class="w-4 h-4"></i>
-                                        </a>
-                                        <a href="{% url 'web:manage_user_permissions' user.id %}" class="hr-act hr-act--edit" title="إدارة الصلاحيات">
-                                            <i data-lucide="shield-check" class="w-4 h-4"></i>
-                                        </a>
-                                        <a href="{% url 'web:edit_user' user.id %}" class="hr-act hr-act--edit" title="تعديل">
-                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                        </a>
-                                        {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' %}
-                                            {% if user.id != request.user.id and not user.profile.is_protected %}
-                                            <form method="POST" action="{% url 'web:delete_user' user.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف المستخدم \'{{ user.username|escapejs }}\' ؟');">
-                                                {% csrf_token %}
-                                                <button type="submit" class="hr-act hr-act--delete" title="حذف">
-                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                                </button>
-                                            </form>
-                                            {% endif %}
+                                    {% url 'web:view_user' user.id as act_view %}
+                                    {% url 'web:manage_user_permissions' user.id as act_perm %}
+                                    {% url 'web:edit_user' user.id as act_edit %}
+                                    {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' %}
+                                        {% if user.id != request.user.id and not user.profile.is_protected %}
+                                            {% url 'web:delete_user' user.id as act_del %}
+                                            {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_perm perm_title="إدارة الصلاحيات" edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف المستخدم '"|add:user.username|add:"' ؟" %}
+                                        {% else %}
+                                            {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_perm perm_title="إدارة الصلاحيات" edit_url=act_edit edit_title="تعديل" %}
                                         {% endif %}
-                                    </div>
+                                    {% else %}
+                                        {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_perm perm_title="إدارة الصلاحيات" edit_url=act_edit edit_title="تعديل" %}
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -191,20 +183,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="hr-tbl-actions">
-                                        <a href="{% url 'web:view_role' role.id %}" class="hr-act hr-act--view" title="عرض التفاصيل">
-                                            <i data-lucide="eye" class="w-4 h-4"></i>
-                                        </a>
-                                        {% if not role.is_system_role or role.role_type == 'admin' %}
-                                        <a href="{% url 'web:edit_role' role.id %}" class="hr-act hr-act--edit" title="تعديل وإدارة الصلاحيات">
-                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                        </a>
-                                        {% else %}
-                                        <a href="{% url 'web:edit_role' role.id %}" class="hr-act hr-act--edit" title="إدارة الصلاحيات">
-                                            <i data-lucide="shield-check" class="w-4 h-4"></i>
-                                        </a>
-                                        {% endif %}
-                                    </div>
+                                    {% url 'web:view_role' role.id as act_view %}
+                                    {% url 'web:edit_role' role.id as act_edit %}
+                                    {% if not role.is_system_role or role.role_type == 'admin' %}
+                                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" edit_url=act_edit edit_title="تعديل وإدارة الصلاحيات" %}
+                                    {% else %}
+                                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" perm_url=act_edit perm_title="إدارة الصلاحيات" %}
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}

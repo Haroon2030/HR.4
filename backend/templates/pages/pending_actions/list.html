@@ -124,11 +124,7 @@
                         <td class="px-3 py-2 text-xs text-slate-500">{{ a.requested_by.get_full_name|default:a.requested_by.username|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ a.updated_at|date:"Y-m-d H:i" }}</td>
                         <td class="px-3 py-2 text-left">
-                            <div class="hr-tbl-actions">
-                                <a href="{{ a.detail_url }}" class="hr-act hr-act--open" title="فتح الطلب">
-                                    <i data-lucide="eye" class="w-4 h-4"></i>
-                                </a>
-                            </div>
+                            {% include "components/table_actions.html" with view_url=a.detail_url view_title="فتح الطلب" %}
                         </td>
                     </tr>
                     {% empty %}

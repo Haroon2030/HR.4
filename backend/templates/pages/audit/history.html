@@ -97,9 +97,7 @@
                         </td>
                         <td class="px-2 py-1 text-left whitespace-nowrap">
                             {% if ev.link %}
-                            <div class="hr-tbl-actions">
-                                <a href="{{ ev.link }}" class="hr-act hr-act--open" title="فتح"><i data-lucide="external-link" class="w-4 h-4"></i></a>
-                            </div>
+                            {% include "components/table_actions.html" with view_url=ev.link view_title="فتح" %}
                             {% else %}
                             <span class="text-slate-300">—</span>
                             {% endif %}

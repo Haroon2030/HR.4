@@ -60,11 +60,8 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">
-                            <div class="hr-tbl-actions">
-                                <a href="{% url 'web:edit_department' dept.id %}" class="hr-act hr-act--edit" title="تعديل القسم">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                </a>
-                            </div>
+                            {% url 'web:edit_department' dept.id as act_edit %}
+                            {% include "components/table_actions.html" with edit_url=act_edit edit_title="تعديل القسم" %}
                         </td>
                     </tr>
                     {% endfor %}

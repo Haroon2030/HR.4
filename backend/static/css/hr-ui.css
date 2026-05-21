@@ -418,36 +418,50 @@ body.hr-app {
     cursor: not-allowed;
 }
 
-.hr-act i,
+.hr-act__icon,
+.hr-act i[data-lucide],
 .hr-act svg {
-    stroke-width: 2px;
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    stroke-width: 2.25px;
     color: inherit !important;
     stroke: currentColor !important;
 }
 
-.hr-act--view {
+/* عرض / فتح — نفس الرمز (عين) */
+.hr-act--view,
+.hr-act--open {
     color: var(--hr-accent) !important;
     border-color: rgba(37, 99, 235, 0.35);
     background: var(--hr-accent-soft) !important;
 }
 
 .hr-act--view i,
-.hr-act--view svg {
+.hr-act--view svg,
+.hr-act--open i,
+.hr-act--open svg {
     color: var(--hr-accent) !important;
     stroke: var(--hr-accent) !important;
-    stroke-width: 2.25px;
 }
 
-.hr-act--view:hover:not(:disabled) {
+.hr-act--view:hover:not(:disabled),
+.hr-act--open:hover:not(:disabled) {
     color: #1d4ed8 !important;
     border-color: rgba(29, 78, 216, 0.45);
     background: #dbeafe !important;
 }
 
-.hr-act--view:hover:not(:disabled) i,
-.hr-act--view:hover:not(:disabled) svg {
-    color: #1d4ed8 !important;
-    stroke: #1d4ed8 !important;
+.hr-act--edit {
+    color: #047857 !important;
+    border-color: rgba(5, 150, 105, 0.3);
+    background: #f0fdf4 !important;
+}
+
+.hr-act--edit i,
+.hr-act--edit svg {
+    color: #047857 !important;
+    stroke: #047857 !important;
 }
 
 .hr-act--edit:hover:not(:disabled) {
@@ -456,13 +470,36 @@ body.hr-app {
     background: #ecfdf5 !important;
 }
 
+.hr-act--delete {
+    color: #b91c1c !important;
+    border-color: rgba(220, 38, 38, 0.3);
+    background: #fff5f5 !important;
+}
+
 .hr-act--delete:hover:not(:disabled) {
     color: #dc2626 !important;
     border-color: rgba(220, 38, 38, 0.35);
     background: #fff5f5 !important;
 }
 
-.hr-act--open:hover:not(:disabled),
+.hr-act--perm {
+    color: #7c3aed !important;
+    border-color: rgba(124, 58, 237, 0.3);
+    background: #f5f3ff !important;
+}
+
+.hr-act--perm:hover:not(:disabled) {
+    color: #6d28d9 !important;
+    border-color: rgba(109, 40, 217, 0.4);
+    background: #ede9fe !important;
+}
+
+.hr-act--file {
+    color: var(--hr-accent) !important;
+    border-color: rgba(37, 99, 235, 0.3);
+    background: var(--hr-accent-soft) !important;
+}
+
 .hr-act--file:hover:not(:disabled) {
     color: var(--hr-accent) !important;
     border-color: rgba(37, 99, 235, 0.35);

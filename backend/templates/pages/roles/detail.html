@@ -23,7 +23,7 @@
         </div>
         {% if not role.is_system_role or role.role_type == 'admin' %}
         <a href="{% url 'web:edit_role' role.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-            <i data-lucide="edit-2" class="w-4 h-4"></i>
+            <i data-lucide="pencil" class="w-4 h-4"></i>
             تعديل الدور
         </a>
         {% endif %}

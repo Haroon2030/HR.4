@@ -1,19 +1,8 @@
-<!-- Table Row Actions -->
-<div class="flex items-center justify-center gap-1">
-    {% if edit_url %}
-    <a href="{{ edit_url }}" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors" title="تعديل">
-        <i data-lucide="edit-2" class="w-4 h-4"></i>
-    </a>
-    {% endif %}
-    
-    {% if delete_url %}
-    <button onclick="if(confirm('هل أنت متأكد من الحذف؟')) window.location='{{ delete_url }}'" 
-            class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="حذف">
-        <i data-lucide="trash-2" class="w-4 h-4"></i>
-    </button>
-    {% endif %}
-    
-    {% if extra_actions %}
-    {{ extra_actions }}
-    {% endif %}
+{# view_url, view_title | edit_url, edit_query, edit_title | perm_url, perm_title | delete_url, delete_confirm | delete_disabled_title | file_url, file_title #}
+<div class="hr-tbl-actions">
+    {% if view_url %}{% include "components/table_act_view.html" with url=view_url title=view_title %}{% endif %}
+    {% if perm_url %}{% include "components/table_act_perm.html" with url=perm_url title=perm_title %}{% endif %}
+    {% if edit_url %}{% include "components/table_act_edit.html" with url=edit_url query=edit_query title=edit_title %}{% endif %}
+    {% if delete_url %}{% include "components/table_act_delete.html" with url=delete_url confirm=delete_confirm title=delete_title %}{% elif delete_disabled_title %}{% include "components/table_act_delete_disabled.html" with title=delete_disabled_title %}{% endif %}
+    {% if file_url %}{% include "components/table_act_file.html" with url=file_url title=file_title %}{% endif %}
 </div>

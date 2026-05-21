@@ -1,4 +1,6 @@
 <form method="POST" action="{{ url }}" class="inline" onsubmit="return confirm('{{ confirm|escapejs }}');">
     {% csrf_token %}
-    <button type="submit" class="hr-act hr-act--delete" title="{{ title|default:'حذف' }}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    <button type="submit" class="hr-act hr-act--delete" title="{{ title|default:'حذف' }}" aria-label="{{ title|default:'حذف' }}">
+        <i data-lucide="trash-2" class="hr-act__icon"></i>
+    </button>
 </form>

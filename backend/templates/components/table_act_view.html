@@ -1,3 +1,3 @@
-<a href="{{ url }}" class="hr-act hr-act--view" title="{{ title|default:'عرض' }}" aria-label="{{ title|default:'عرض' }}">
-    <i data-lucide="{{ icon|default:'eye' }}" class="w-[1.125rem] h-[1.125rem]"></i>
+<a href="{{ url }}" class="hr-act hr-act--view" title="{{ title|default:'عرض' }}" aria-label="{{ title|default:'عرض' }}"{% if external %} target="_blank" rel="noopener"{% endif %}>
+    <i data-lucide="{{ icon|default:'eye' }}" class="hr-act__icon"></i>
 </a>
