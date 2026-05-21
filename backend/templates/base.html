@@ -314,10 +314,10 @@
         <div class="flex flex-1 overflow-hidden">
             <!-- Desktop Sidebar -->
             <aside 
-                class="hr-sidebar hidden md:flex transition-all duration-300 flex-col"
+                class="hr-sidebar hidden md:flex transition-all duration-300 flex-col min-h-0"
                 :class="sidebarOpen ? 'w-56' : 'w-20'"
             >
-                <nav class="hr-nav flex-1 overflow-y-auto" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
+                <nav class="hr-nav hr-scroll-hide flex-1 min-h-0" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                     {% include "components/sidebar_nav.html" with always_show=False %}
                 </nav>
                 
@@ -350,7 +350,7 @@
                     </button>
                 </div>
 
-                <nav class="hr-nav flex-1 overflow-y-auto" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
+                <nav class="hr-nav hr-scroll-hide flex-1 min-h-0" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                     {% include "components/sidebar_nav.html" with always_show=True %}
                 </nav>
                 
@@ -359,7 +359,7 @@
             
             <!-- المحتوى + التذييل (لا يغطي الشريط الجانبي) -->
             <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
-                <main class="hr-main flex-1 overflow-y-scroll p-3 md:p-6" style="direction:ltr;">
+                <main class="hr-main hr-scroll-hide flex-1 min-h-0 p-3 md:p-6" style="direction:ltr;">
                     <div style="direction:rtl;">
                     {% block content %}{% endblock %}
                     </div>

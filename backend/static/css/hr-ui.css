@@ -116,12 +116,45 @@ body.hr-app {
     font-weight: 700 !important;
 }
 
+/* إخفاء شريط التمرير مع الإبقاء على التمرير (عجلة الماوس / اللمس) */
+.hr-scroll-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hr-scroll-hide::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 /* ── الشريط الجانبي — مدمج ومنظم ── */
 .hr-nav {
     padding: 0.5rem 0.5rem 0.75rem;
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hr-nav::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.hr-main {
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hr-main::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 .hr-nav-section {
