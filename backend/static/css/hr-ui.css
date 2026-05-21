@@ -425,10 +425,29 @@ body.hr-app {
     stroke: currentColor !important;
 }
 
-.hr-act--view:hover:not(:disabled) {
+.hr-act--view {
     color: var(--hr-accent) !important;
     border-color: rgba(37, 99, 235, 0.35);
     background: var(--hr-accent-soft) !important;
+}
+
+.hr-act--view i,
+.hr-act--view svg {
+    color: var(--hr-accent) !important;
+    stroke: var(--hr-accent) !important;
+    stroke-width: 2.25px;
+}
+
+.hr-act--view:hover:not(:disabled) {
+    color: #1d4ed8 !important;
+    border-color: rgba(29, 78, 216, 0.45);
+    background: #dbeafe !important;
+}
+
+.hr-act--view:hover:not(:disabled) i,
+.hr-act--view:hover:not(:disabled) svg {
+    color: #1d4ed8 !important;
+    stroke: #1d4ed8 !important;
 }
 
 .hr-act--edit:hover:not(:disabled) {
