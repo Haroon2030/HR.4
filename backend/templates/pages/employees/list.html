@@ -61,17 +61,17 @@
             {% endif %}
         </td>
         <td class="px-3 py-2 text-left">
-            <div class="flex items-center justify-end gap-2">
-                <a href="{% url 'web:view_employee' emp.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض البيانات">
+            <div class="hr-tbl-actions">
+                <a href="{% url 'web:view_employee' emp.id %}" class="hr-act hr-act--view" title="عرض البيانات">
                     <i data-lucide="eye" class="w-4 h-4"></i>
                 </a>
-                <a href="{% url 'web:edit_employee' emp.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل / إكمال البيانات">
+                <a href="{% url 'web:edit_employee' emp.id %}" class="hr-act hr-act--edit" title="تعديل / إكمال البيانات">
                     <i data-lucide="edit-2" class="w-4 h-4"></i>
                 </a>
                 {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' %}
                 <form method="POST" action="{% url 'web:delete_employee' emp.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الموظف ؟');">
                     {% csrf_token %}
-                    <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                    <button type="submit" class="hr-act hr-act--delete" title="حذف">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </form>

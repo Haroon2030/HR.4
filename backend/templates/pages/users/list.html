@@ -91,21 +91,21 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:view_user' user.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:view_user' user.id %}" class="hr-act hr-act--view" title="عرض التفاصيل">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
-                                        <a href="{% url 'web:manage_user_permissions' user.id %}" class="p-1.5 text-slate-400 hover:text-primary-600 transition-colors" title="إدارة الصلاحيات">
+                                        <a href="{% url 'web:manage_user_permissions' user.id %}" class="hr-act hr-act--edit" title="إدارة الصلاحيات">
                                             <i data-lucide="shield-check" class="w-4 h-4"></i>
                                         </a>
-                                        <a href="{% url 'web:edit_user' user.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                        <a href="{% url 'web:edit_user' user.id %}" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' %}
                                             {% if user.id != request.user.id and not user.profile.is_protected %}
                                             <form method="POST" action="{% url 'web:delete_user' user.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف المستخدم \'{{ user.username|escapejs }}\' ؟');">
                                                 {% csrf_token %}
-                                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                                <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                                 </button>
                                             </form>
@@ -191,16 +191,16 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:view_role' role.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:view_role' role.id %}" class="hr-act hr-act--view" title="عرض التفاصيل">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
                                         {% if not role.is_system_role or role.role_type == 'admin' %}
-                                        <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل وإدارة الصلاحيات">
+                                        <a href="{% url 'web:edit_role' role.id %}" class="hr-act hr-act--edit" title="تعديل وإدارة الصلاحيات">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         {% else %}
-                                        <a href="{% url 'web:edit_role' role.id %}" class="p-1.5 text-slate-400 hover:text-primary-600 transition-colors" title="إدارة الصلاحيات">
+                                        <a href="{% url 'web:edit_role' role.id %}" class="hr-act hr-act--edit" title="إدارة الصلاحيات">
                                             <i data-lucide="shield-check" class="w-4 h-4"></i>
                                         </a>
                                         {% endif %}

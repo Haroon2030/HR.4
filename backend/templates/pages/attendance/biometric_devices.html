@@ -100,7 +100,7 @@
                         <td class="px-4 py-3">{{ d.punch_count }}</td>
                         {% if user|has_permission:'attendance.manage' %}
                         <td class="px-4 py-3">
-                            <div class="zk-bio-actions">
+                            <div class="hr-tbl-actions zk-bio-actions">
                                 {% if d.ip_address|is_private_lan_ip %}
                                 <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="inline">
                                     {% csrf_token %}
@@ -119,11 +119,11 @@
                                     comm_key: {{ d.comm_key }},
                                     branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
                                     is_active: {{ d.is_active|yesno:'true,false' }}
-                                })" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200">تعديل</button>
+                                })" class="hr-act hr-act--edit" title="تعديل"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
                                 <form method="post" action="{% url 'web:biometric_device_delete' d.pk %}" class="inline"
                                     onsubmit="return confirm('حذف نهائي لجهاز «{{ d.name|escapejs }}» (رقم {{ d.pk }}) من قاعدة البيانات؟{% if d.punch_count %} سيُحذف {{ d.punch_count }} سجل بصمة وكل الربط — لا يمكن التراجع.{% else %} لا يمكن التراجع.{% endif %}');">
                                     {% csrf_token %}
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-red-50 text-red-700 hover:bg-red-100" title="حذف الجهاز">حذف</button>
+                                    <button type="submit" class="hr-act hr-act--delete" title="حذف الجهاز"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </form>
                             </div>
                         </td>

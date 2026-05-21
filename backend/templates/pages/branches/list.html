@@ -76,16 +76,16 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:view_branch' branch.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض التفاصيل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:view_branch' branch.id %}" class="hr-act hr-act--view" title="عرض التفاصيل">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
-                                        <a href="{% url 'web:edit_branch' branch.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                        <a href="{% url 'web:edit_branch' branch.id %}" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_branch' branch.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الفرع \'{{ branch.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -162,18 +162,18 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="hr-tbl-actions">
                                         {% if cc.branch %}
-                                        <a href="{% url 'web:view_branch' cc.branch.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض الفرع">
+                                        <a href="{% url 'web:view_branch' cc.branch.id %}" class="hr-act hr-act--view" title="عرض الفرع">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
                                         {% endif %}
-                                        <a href="{% url 'web:edit_cost_center' cc.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                        <a href="{% url 'web:edit_cost_center' cc.id %}" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_cost_center' cc.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف مركز التكلفة \'{{ cc.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -250,18 +250,18 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="hr-tbl-actions">
                                         {% if dept.branch %}
-                                        <a href="{% url 'web:view_branch' dept.branch.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors" title="عرض الفرع">
+                                        <a href="{% url 'web:view_branch' dept.branch.id %}" class="hr-act hr-act--view" title="عرض الفرع">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
                                         {% endif %}
-                                        <a href="{% url 'web:edit_department' dept.id %}" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                        <a href="{% url 'web:edit_department' dept.id %}" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_department' dept.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف القسم \'{{ dept.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -324,13 +324,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_nationality' nat.id %}?tab=nationalities" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_nationality' nat.id %}?tab=nationalities" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_nationality' nat.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الجنسية \'{{ nat.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -393,13 +393,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_profession' prof.id %}?tab=professions" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_profession' prof.id %}?tab=professions" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_profession' prof.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف المهنة \'{{ prof.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -462,13 +462,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_sponsorship' sponsor.id %}?tab=sponsorships" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_sponsorship' sponsor.id %}?tab=sponsorships" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_sponsorship' sponsor.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف الكفالة \'{{ sponsor.company_name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -531,13 +531,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_insurance' ins.id %}?tab=insurances" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_insurance' ins.id %}?tab=insurances" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_insurance' ins.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف التأمين \'{{ ins.insurance_type|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -600,13 +600,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_insurance_class' ic.id %}?tab=insurance_classes" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_insurance_class' ic.id %}?tab=insurance_classes" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_insurance_class' ic.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف فئة التأمين \'{{ ic.class_type|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -667,13 +667,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_building' b.id %}?tab=buildings" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_building' b.id %}?tab=buildings" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_building' b.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف العمارة \'{{ b.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>
@@ -734,13 +734,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2 text-left">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{% url 'web:edit_bank' bk.id %}?tab=banks" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors" title="تعديل">
+                                    <div class="hr-tbl-actions">
+                                        <a href="{% url 'web:edit_bank' bk.id %}?tab=banks" class="hr-act hr-act--edit" title="تعديل">
                                             <i data-lucide="edit-2" class="w-4 h-4"></i>
                                         </a>
                                         <form method="POST" action="{% url 'web:delete_bank' bk.id %}" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف البنك \'{{ bk.name|escapejs }}\' ؟');">
                                             {% csrf_token %}
-                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="حذف">
+                                            <button type="submit" class="hr-act hr-act--delete" title="حذف">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </form>

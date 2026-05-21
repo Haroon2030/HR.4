@@ -60,8 +60,11 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">
-                            <a href="{% url 'web:edit_department' dept.id %}"
-                               class="text-primary-600 hover:text-primary-700 text-sm font-medium">تعديل</a>
+                            <div class="hr-tbl-actions">
+                                <a href="{% url 'web:edit_department' dept.id %}" class="hr-act hr-act--edit" title="تعديل القسم">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

@@ -97,7 +97,9 @@
                         </td>
                         <td class="px-2 py-1 text-left whitespace-nowrap">
                             {% if ev.link %}
-                            <a href="{{ ev.link }}" class="text-primary-600 hover:text-primary-800 text-[10px] font-semibold">فتح</a>
+                            <div class="hr-tbl-actions">
+                                <a href="{{ ev.link }}" class="hr-act hr-act--open" title="فتح"><i data-lucide="external-link" class="w-4 h-4"></i></a>
+                            </div>
                             {% else %}
                             <span class="text-slate-300">—</span>
                             {% endif %}

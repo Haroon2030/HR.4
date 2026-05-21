@@ -383,6 +383,85 @@ body.hr-app {
     border-top: 3px solid var(--hr-accent-soft);
 }
 
+/* ── إجراءات الجداول (أيقونات فقط) ── */
+.hr-tbl-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.hr-act {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid var(--hr-icon-box-border);
+    border-radius: 0.375rem;
+    background: var(--hr-icon-box-bg);
+    color: var(--hr-text-muted) !important;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    box-sizing: border-box;
+}
+
+.hr-act:hover:not(:disabled) {
+    background: var(--hr-hover) !important;
+}
+
+.hr-act:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.hr-act i,
+.hr-act svg {
+    stroke-width: 2px;
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+.hr-act--view:hover:not(:disabled) {
+    color: var(--hr-accent) !important;
+    border-color: rgba(37, 99, 235, 0.35);
+    background: var(--hr-accent-soft) !important;
+}
+
+.hr-act--edit:hover:not(:disabled) {
+    color: #059669 !important;
+    border-color: rgba(5, 150, 105, 0.35);
+    background: #ecfdf5 !important;
+}
+
+.hr-act--delete:hover:not(:disabled) {
+    color: #dc2626 !important;
+    border-color: rgba(220, 38, 38, 0.35);
+    background: #fff5f5 !important;
+}
+
+.hr-act--open:hover:not(:disabled),
+.hr-act--file:hover:not(:disabled) {
+    color: var(--hr-accent) !important;
+    border-color: rgba(37, 99, 235, 0.35);
+    background: var(--hr-accent-soft) !important;
+}
+
+.hr-act--approve:hover:not(:disabled) {
+    color: #059669 !important;
+    border-color: rgba(5, 150, 105, 0.35);
+    background: #ecfdf5 !important;
+}
+
+.hr-act--reject:hover:not(:disabled) {
+    color: #dc2626 !important;
+    border-color: rgba(220, 38, 38, 0.35);
+    background: #fff5f5 !important;
+}
+
 /* ── بطاقات ── */
 .hr-main .bg-white.rounded-xl,
 .hr-main .bg-white.rounded-2xl,
