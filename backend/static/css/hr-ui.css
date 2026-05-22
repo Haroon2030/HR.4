@@ -27,20 +27,20 @@
     --hr-glass-line: rgba(226, 232, 240, 0.85);
 }
 
-/* خلفية بيضاء */
-body.hr-app,
-.hr-main,
-.hr-header,
-.hr-sidebar,
-.hr-footer,
-.hr-user-block {
-    background-color: var(--hr-white) !important;
-}
-
+/* خلفية أساسية خفيفة (ليست رمادية) لإبراز الزجاج */
 body.hr-app {
     color: var(--hr-text);
     font-weight: 600;
     -webkit-font-smoothing: subpixel-antialiased;
+    background:
+        linear-gradient(155deg, #f8fafc 0%, #ffffff 42%, #f1f5f9 100%) !important;
+    background-color: #f8fafc !important;
+}
+
+.hr-header,
+.hr-footer,
+.hr-user-block {
+    background-color: var(--hr-white) !important;
 }
 
 .hr-main .bg-slate-50,
@@ -49,7 +49,40 @@ body.hr-app {
 }
 
 .hr-header {
-    border-bottom: 1px solid var(--hr-border) !important;
+    border-bottom: 1px solid var(--hr-glass-line) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   هيكل التطبيق — رأس + محتوى + تذييل بزجاج أبيض
+   ══════════════════════════════════════════════════════════════ */
+body.hr-app .hr-header {
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow: inset 0 -1px 0 var(--hr-glass-border);
+}
+
+body.hr-app .hr-main {
+    background: var(--hr-glass-bg) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    background-image: none !important;
+}
+
+body.hr-app .hr-footer {
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border-top: 1px solid var(--hr-glass-line) !important;
+    box-shadow: inset 0 1px 0 var(--hr-glass-border);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    body.hr-app .hr-header,
+    body.hr-app .hr-main,
+    body.hr-app .hr-footer {
+        background: #ffffff !important;
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -78,12 +111,6 @@ body.hr-app .hr-sidebar {
 body.hr-app .hr-sidebar::before,
 body.hr-app .hr-sidebar::after {
     display: none;
-}
-
-/* خلفية خفيفة للمحتوى لتظهر شفافية الزجاج */
-body.hr-app .hr-main {
-    background-color: #f4f6f9 !important;
-    background-image: none !important;
 }
 
 .hr-nav {
@@ -418,7 +445,7 @@ body.hr-app .hr-main {
 }
 
 .hr-footer {
-    border-top: 1px solid var(--hr-border) !important;
+    border-top: none !important;
 }
 
 .hr-user-block {
