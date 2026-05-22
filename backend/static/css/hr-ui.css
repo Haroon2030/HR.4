@@ -183,6 +183,8 @@ body.hr-app {
     transition: background 0.12s ease;
     border: none;
     background: transparent;
+    position: relative;
+    box-shadow: none;
 }
 
 .hr-nav-link--btn {
@@ -195,8 +197,32 @@ body.hr-app {
     background: var(--hr-hover) !important;
 }
 
-.hr-nav-link.is-active {
-    background: var(--hr-accent-soft) !important;
+.hr-nav-link.is-active,
+.hr-nav-link--btn.is-active {
+    background: linear-gradient(
+        270deg,
+        rgba(37, 99, 235, 0.14) 0%,
+        rgba(239, 246, 255, 0.85) 32%,
+        #f8fafc 100%
+    ) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* قوس أزرق عند نهاية الخلية (يسار الشاشة في RTL) */
+.hr-nav-link.is-active::before,
+.hr-nav-link--btn.is-active::before {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 72%;
+    min-height: 1.35rem;
+    border-radius: 999px 0 0 999px;
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%);
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+    pointer-events: none;
 }
 
 .hr-nav-text {
@@ -261,6 +287,8 @@ body.hr-app {
     color: var(--hr-text-muted) !important;
     text-decoration: none;
     transition: background 0.12s ease;
+    position: relative;
+    box-shadow: none;
 }
 
 .hr-nav-sublink:hover {
@@ -270,7 +298,28 @@ body.hr-app {
 
 .hr-nav-sublink.is-active {
     color: var(--hr-accent) !important;
-    background: var(--hr-accent-soft) !important;
+    background: linear-gradient(
+        270deg,
+        rgba(37, 99, 235, 0.1) 0%,
+        rgba(239, 246, 255, 0.7) 40%,
+        transparent 100%
+    ) !important;
+    box-shadow: none !important;
+}
+
+.hr-nav-sublink.is-active::before {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 65%;
+    min-height: 1rem;
+    border-radius: 999px 0 0 999px;
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    box-shadow: 0 0 6px rgba(37, 99, 235, 0.35);
+    pointer-events: none;
 }
 
 .hr-nav-sublink.is-active i {
@@ -305,6 +354,13 @@ body.hr-app {
 .hr-sidebar.w-20 .hr-nav-link--btn {
     justify-content: center !important;
     padding-inline: 0.375rem !important;
+}
+
+.hr-sidebar.w-20 .hr-nav-link.is-active::before,
+.hr-sidebar.w-20 .hr-nav-link--btn.is-active::before {
+    width: 2px;
+    height: 55%;
+    min-height: 1rem;
 }
 
 .hr-sidebar.w-20 .hr-nav-section {
