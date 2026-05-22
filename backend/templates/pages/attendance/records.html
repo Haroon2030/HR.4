@@ -181,6 +181,17 @@
                     </div>
                 </div>
             </form>
+            {% if user|has_permission:'attendance.manage' %}
+            <form id="zk-rec-reclassify-form" method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-reclassify-form">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" id="zk-rec-reclassify-device" value="{{ filters.device_id|default:'' }}">
+                <button type="submit" class="zk-rec-reclassify-btn"
+                        onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم لكل موظف؟');">
+                    <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
+                    ترتيب دخول/خروج
+                </button>
+            </form>
+            {% endif %}
             </div>
         </div>
     </aside>
@@ -359,6 +370,14 @@
 })();
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    var reclassifyForm = document.getElementById('zk-rec-reclassify-form');
+    if (reclassifyForm) {
+        reclassifyForm.addEventListener('submit', function () {
+            var deviceSel = document.querySelector('.zk-rec-filter-form select[name="device"]');
+            var deviceHid = document.getElementById('zk-rec-reclassify-device');
+            if (deviceSel && deviceHid) deviceHid.value = deviceSel.value || '';
+        });
+    }
 });
 </script>
 {% endblock %}
