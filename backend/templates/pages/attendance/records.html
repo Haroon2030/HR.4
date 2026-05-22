@@ -136,45 +136,58 @@
             </div>
         </div>
     </aside>
+
+    <aside class="zk-rec-filter-wrap">
+        <div class="zk-rec-panel zk-rec-panel--filter">
+            <div class="zk-rec-panel-hd">
+                <div class="title-wrap">
+                    <span class="zk-rec-code">LOG</span>
+                    <h2>فلتر السجلات</h2>
+                </div>
+                <span class="zk-bio-stat zk-mono">{{ page_obj.start_index }}–{{ page_obj.end_index }}/{{ page_obj.paginator.count }}</span>
+            </div>
+            <form method="get" class="zk-rec-filter-form">
+                <div class="zk-rec-filter-grid">
+                    <div class="fld">
+                        <label class="zk-bio-lbl">من</label>
+                        <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="zk-bio-field">
+                    </div>
+                    <div class="fld">
+                        <label class="zk-bio-lbl">إلى</label>
+                        <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="zk-bio-field">
+                    </div>
+                    <div class="fld fld--full">
+                        <label class="zk-bio-lbl">جهاز</label>
+                        <select name="device" class="zk-bio-field">
+                            <option value="">الكل</option>
+                            {% for d in devices %}
+                            <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="fld fld--full">
+                        <label class="zk-bio-lbl">بحث</label>
+                        <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم" class="zk-bio-field" autocomplete="off">
+                    </div>
+                    {% if filters.punch_type %}<input type="hidden" name="punch_type" value="{{ filters.punch_type }}">{% endif %}
+                    <div class="fld fld--actions fld--full">
+                        <button type="submit" class="zk-bio-btn zk-bio-btn-primary zk-rec-filter-submit">عرض</button>
+                        <a href="{% url 'web:attendance_records' %}" class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </aside>
     </div>
 
     <section class="zk-rec-box zk-rec-box--table">
         <div class="zk-bio-card-hd">
             <div class="flex items-center gap-2">
-                <span class="zk-rec-code">LOG</span>
-                <h2 class="text-sm font-bold text-slate-800 m-0">السجلات</h2>
+                <span class="zk-rec-code">TBL</span>
+                <h2 class="text-sm font-bold text-slate-800 m-0">جدول البصمات</h2>
             </div>
-            <span class="zk-bio-stat">{{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ page_obj.paginator.count }}</span>
+            <span class="zk-bio-stat zk-mono">{{ page_obj.paginator.count }} سجل</span>
         </div>
-
-        <form method="get" class="zk-rec-filter">
-            <div class="fld">
-                <label class="zk-bio-lbl">من</label>
-                <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="zk-bio-field">
-            </div>
-            <div class="fld">
-                <label class="zk-bio-lbl">إلى</label>
-                <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="zk-bio-field">
-            </div>
-            <div class="fld">
-                <label class="zk-bio-lbl">جهاز</label>
-                <select name="device" class="zk-bio-field">
-                    <option value="">الكل</option>
-                    {% for d in devices %}
-                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="fld fld--q">
-                <label class="zk-bio-lbl">بحث</label>
-                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم مستخدم" class="zk-bio-field" autocomplete="off">
-            </div>
-            {% if filters.punch_type %}<input type="hidden" name="punch_type" value="{{ filters.punch_type }}">{% endif %}
-            <div class="zk-rec-filter-actions">
-                <button type="submit" class="zk-bio-btn zk-bio-btn-primary">عرض</button>
-                <a href="{% url 'web:attendance_records' %}" class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
-            </div>
-        </form>
 
         <div class="overflow-x-auto">
             <table class="zk-bio-tbl">

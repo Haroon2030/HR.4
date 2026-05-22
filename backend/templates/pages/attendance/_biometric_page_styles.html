@@ -171,7 +171,8 @@
         gap: 0.6rem;
     }
     .zk-rec-sync-wrap,
-    .zk-rec-stats-wrap {
+    .zk-rec-stats-wrap,
+    .zk-rec-filter-wrap {
         flex: 0 0 auto;
         max-width: 100%;
     }
@@ -179,6 +180,31 @@
         width: 12.5rem;
         min-height: 100%;
     }
+    .zk-rec-panel--filter {
+        width: 14.5rem;
+        max-width: 14.5rem;
+        min-height: 100%;
+    }
+    .zk-rec-filter-form {
+        padding: 0.5rem 0.55rem 0.55rem;
+    }
+    .zk-rec-filter-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.4rem;
+        align-items: end;
+    }
+    .zk-rec-filter-grid .fld--full { grid-column: 1 / -1; }
+    .zk-rec-filter-grid .fld--actions {
+        display: flex;
+        gap: 0.3rem;
+        justify-content: stretch;
+    }
+    .zk-rec-filter-grid .fld--actions .zk-bio-btn {
+        flex: 1;
+        justify-content: center;
+    }
+    .zk-rec-filter-submit { min-width: 0; }
     .zk-rec-stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -350,14 +376,6 @@
         display: block; font-size: 0.95rem; font-weight: 800; color: #0f172a;
         font-variant-numeric: tabular-nums; margin-top: 0.1rem;
     }
-
-    .zk-rec-filter {
-        display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem;
-        padding: 0.5rem 0.65rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
-    }
-    .zk-rec-filter .fld { flex: 1 1 7rem; min-width: 6.5rem; }
-    .zk-rec-filter .fld--q { flex: 2 1 10rem; }
-    .zk-rec-filter-actions { display: flex; gap: 0.3rem; flex: 0 0 auto; }
 
     .zk-rec-legend {
         font-size: 0.58rem; font-weight: 600; color: #94a3b8;
