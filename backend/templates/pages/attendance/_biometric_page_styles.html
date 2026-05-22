@@ -147,4 +147,101 @@
         direction: ltr;
         font-variant-numeric: tabular-nums;
     }
+
+    /* سجلات الحضور — تخطيط تقني */
+    .zk-rec { max-width: 80rem; margin-inline: auto; }
+    .zk-rec-top {
+        display: flex; flex-wrap: wrap; align-items: center;
+        justify-content: space-between; gap: 0.65rem;
+    }
+    .zk-rec-top h1 { margin: 0; font-size: 1.125rem; font-weight: 700; color: #0f172a; }
+    .zk-rec-crumb {
+        display: flex; align-items: center; gap: 0.25rem;
+        font-size: 0.7rem; font-weight: 600; color: #64748b; margin-bottom: 0.15rem;
+    }
+    .zk-rec-crumb a { color: inherit; text-decoration: none; }
+    .zk-rec-crumb a:hover { color: #2563eb; }
+    .zk-rec-period { font-size: 0.7rem; font-weight: 600; color: #94a3b8; font-family: ui-monospace, monospace; }
+    .zk-rec-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    .zk-rec-kpis {
+        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem;
+    }
+    @media (min-width: 640px) { .zk-rec-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    .zk-rec-kpi {
+        padding: 0.45rem 0.65rem; background: #fff;
+        border: 1px solid #e2e8f0; border-radius: 0.5rem;
+    }
+    .zk-rec-kpi .k { margin: 0; font-size: 0.6rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .zk-rec-kpi .v { margin: 0.1rem 0 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+
+    .zk-rec-ops {
+        display: grid; gap: 0.5rem;
+    }
+    @media (min-width: 900px) {
+        .zk-rec-ops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .zk-rec-ops--single { grid-template-columns: 1fr; }
+    }
+    .zk-rec-box {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; overflow: hidden;
+    }
+    .zk-rec-box--diag { border-color: #fcd34d; background: linear-gradient(135deg, #fffbeb 0%, #fff 40%); }
+    .zk-rec-box-hd {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+        padding: 0.45rem 0.65rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    .zk-rec-box--diag .zk-rec-box-hd { background: #fffbeb; border-bottom-color: #fde68a; }
+    .zk-rec-box-hd .title-wrap { display: flex; align-items: center; gap: 0.4rem; }
+    .zk-rec-box-hd h2 { margin: 0; font-size: 0.75rem; font-weight: 800; color: #0f172a; }
+    .zk-rec-code {
+        font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em;
+        padding: 0.1rem 0.35rem; border-radius: 0.2rem;
+        background: #e2e8f0; color: #475569; font-family: ui-monospace, monospace;
+    }
+    .zk-rec-box--diag .zk-rec-code { background: #fde68a; color: #92400e; }
+    .zk-rec-hint {
+        font-size: 0.6rem; font-weight: 600; color: #94a3b8; font-family: ui-monospace, monospace;
+    }
+
+    .zk-rec-form-row {
+        display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.45rem;
+        padding: 0.55rem 0.65rem;
+    }
+    .zk-rec-form-row .fld { flex: 1 1 7rem; min-width: 6.5rem; }
+    .zk-rec-form-row .fld--wide { flex: 2 1 11rem; min-width: 9rem; }
+
+    .zk-rec-diag-grid {
+        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem;
+        padding: 0.5rem 0.65rem 0;
+    }
+    .zk-rec-metric {
+        padding: 0.35rem 0.45rem; border: 1px solid #fde68a; border-radius: 0.35rem;
+        background: #fff; text-align: center;
+    }
+    .zk-rec-metric .k {
+        display: block; font-size: 0.58rem; font-weight: 700; color: #92400e;
+        font-family: ui-monospace, monospace; text-transform: uppercase;
+    }
+    .zk-rec-metric .v {
+        display: block; font-size: 0.95rem; font-weight: 800; color: #0f172a;
+        font-variant-numeric: tabular-nums; margin-top: 0.1rem;
+    }
+
+    .zk-rec-filter {
+        display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem;
+        padding: 0.5rem 0.65rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    .zk-rec-filter .fld { flex: 1 1 7rem; min-width: 6.5rem; }
+    .zk-rec-filter .fld--q { flex: 2 1 10rem; }
+    .zk-rec-filter-actions { display: flex; gap: 0.3rem; flex: 0 0 auto; }
+
+    .zk-rec-legend {
+        font-size: 0.58rem; font-weight: 600; color: #94a3b8;
+        font-family: ui-monospace, monospace; padding: 0.35rem 0.65rem;
+        border-top: 1px solid #f1f5f9; background: #fafafa;
+    }
+    .zk-rec-legend kbd {
+        font-size: 0.58rem; padding: 0.05rem 0.25rem; border-radius: 0.15rem;
+        background: #e2e8f0; color: #475569; font-family: inherit;
+    }
 </style>
