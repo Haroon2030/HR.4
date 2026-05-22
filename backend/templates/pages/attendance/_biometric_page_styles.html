@@ -170,22 +170,44 @@
         align-items: stretch;
         gap: 0.6rem;
     }
+    @media (min-width: 768px) {
+        .zk-rec-toolbar-row { flex-wrap: nowrap; }
+    }
     .zk-rec-sync-wrap,
     .zk-rec-stats-wrap,
     .zk-rec-filter-wrap {
-        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        max-width: 100%;
+    }
+    .zk-rec-toolbar-row .zk-rec-panel {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        height: 100%;
+        min-height: 100%;
+    }
+    .zk-rec-panel-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+    .zk-rec-panel--sync {
+        width: 28rem;
         max-width: 100%;
     }
     .zk-rec-panel--stats {
         width: 12.5rem;
-        min-height: 100%;
     }
     .zk-rec-panel--filter {
         width: 14.5rem;
         max-width: 14.5rem;
-        min-height: 100%;
     }
     .zk-rec-filter-form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
         padding: 0.5rem 0.55rem 0.55rem;
     }
     .zk-rec-filter-grid {
@@ -199,6 +221,7 @@
         display: flex;
         gap: 0.3rem;
         justify-content: stretch;
+        margin-top: auto;
     }
     .zk-rec-filter-grid .fld--actions .zk-bio-btn {
         flex: 1;
@@ -208,10 +231,17 @@
     .zk-rec-stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
         gap: 0.35rem;
         padding: 0.5rem 0.55rem 0.55rem;
+        flex: 1 1 auto;
+        align-content: stretch;
     }
     .zk-rec-kpi {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 100%;
         padding: 0.35rem 0.45rem;
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -261,7 +291,6 @@
     }
     .zk-rec-panel {
         width: 100%;
-        max-width: 28rem;
         background: #fff;
         border: 1px solid #cbd5e1;
         border-radius: 0.5rem;
@@ -278,7 +307,14 @@
         margin: 0; font-size: 0.75rem; font-weight: 800; color: #0f172a;
     }
     .zk-rec-panel-hd .title-wrap { display: flex; align-items: center; gap: 0.35rem; }
-    .zk-rec-sync-form { padding: 0.55rem 0.65rem 0; }
+    .zk-rec-sync-form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        padding: 0.55rem 0.65rem 0;
+    }
+    .zk-rec-sync-wrap .zk-pull-progress-wrap { flex-shrink: 0; }
+    .zk-rec-sync-wrap .zk-rec-skew-bar { margin-top: auto; flex-shrink: 0; }
     .zk-rec-sync-grid {
         display: grid;
         gap: 0.4rem 0.45rem;

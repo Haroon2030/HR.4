@@ -41,7 +41,7 @@
     <div class="zk-rec-toolbar-row">
     {% if user|has_permission:'attendance.manage' %}
     <section class="zk-rec-sync-wrap">
-        <div class="zk-rec-panel">
+        <div class="zk-rec-panel zk-rec-panel--sync">
             <div class="zk-rec-panel-hd">
                 <div class="title-wrap">
                     <span class="zk-rec-code">SYNC</span>
@@ -49,6 +49,7 @@
                 </div>
                 <span class="zk-rec-hint">LAN</span>
             </div>
+            <div class="zk-rec-panel-body">
             <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-sync-form">
                 {% csrf_token %}
                 <div class="zk-rec-sync-grid">
@@ -101,6 +102,7 @@
                 </form>
             </div>
             {% endif %}
+            </div>
         </div>
     </section>
     {% endif %}
@@ -113,6 +115,7 @@
                     <h2>ملخص السجلات</h2>
                 </div>
             </div>
+            <div class="zk-rec-panel-body">
             <div class="zk-rec-stats-grid">
                 <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}"
                    class="zk-rec-kpi zk-rec-kpi--link{% if not filters.punch_type %} is-active{% endif %}">
@@ -134,6 +137,7 @@
                     <p class="v text-amber-700">{{ stats.unmapped|default:0 }}</p>
                 </div>
             </div>
+            </div>
         </div>
     </aside>
 
@@ -146,6 +150,7 @@
                 </div>
                 <span class="zk-bio-stat zk-mono">{{ page_obj.start_index }}–{{ page_obj.end_index }}/{{ page_obj.paginator.count }}</span>
             </div>
+            <div class="zk-rec-panel-body">
             <form method="get" class="zk-rec-filter-form">
                 <div class="zk-rec-filter-grid">
                     <div class="fld">
@@ -176,6 +181,7 @@
                     </div>
                 </div>
             </form>
+            </div>
         </div>
     </aside>
     </div>
