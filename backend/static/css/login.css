@@ -239,40 +239,31 @@ body.login-body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes login-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-}
-
 @keyframes login-msg-in {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 .login-brand {
-    animation: login-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: login-fade-up 0.35s ease both;
 }
 
 .login-logo {
-    animation: login-float 4s ease-in-out infinite;
+    /* بدون حركة مستمرة — أخف على المعالج */
 }
 
 .login-card {
-    animation: login-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
-    transition: box-shadow 0.25s ease, transform 0.25s ease;
+    animation: login-fade-up 0.4s ease 0.05s both;
+    transition: box-shadow 0.2s ease;
 }
 
 .login-card:hover {
-    box-shadow: 0 28px 56px -14px rgba(15, 23, 42, 0.18);
-}
-
-.login-submit {
-    transition: background 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+    box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.14);
 }
 
 .login-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 22px -6px rgba(37, 99, 235, 0.4);
+    transform: none;
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.35);
 }
 
 .pub-msg {

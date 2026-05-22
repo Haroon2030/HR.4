@@ -52,7 +52,7 @@ body.hr-app {
     border-top: 1px solid var(--hr-border) !important;
 }
 
-/* ── نص أسود Bold — كل الموقع ── */
+/* ── نص — وراثة من body بدل محدّد span الثقيل ── */
 .hr-app p,
 .hr-app li,
 .hr-app label,
@@ -60,10 +60,9 @@ body.hr-app {
 .hr-app th,
 .hr-app input,
 .hr-app select,
-.hr-app textarea,
-.hr-app span:not([class*="text-white"]):not([class*="text-red"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-orange"]):not([class*="text-sky"]):not([class*="text-primary"]):not([class*="text-indigo"]):not([class*="text-purple"]):not([class*="text-cyan"]):not([class*="text-teal"]) {
-    color: var(--hr-text);
-    font-weight: 600;
+.hr-app textarea {
+    color: inherit;
+    font-weight: inherit;
 }
 
 .hr-app h1,
@@ -592,8 +591,8 @@ body.hr-app {
     font-weight: 500;
 }
 
-/* أيقونات المحتوى */
-.hr-main i[data-lucide]:not([class*="text-white"]):not([class*="text-red"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-orange"]):not([class*="text-rose"]):not([class*="text-sky"]):not([class*="text-primary"]) {
+/* أيقونات المحتوى — فقط بدون لون صريح في الكلاس */
+.hr-main i[data-lucide]:not([class*="text-"]):not([class*="text-white"]) {
     color: var(--hr-text);
     stroke: var(--hr-text);
     stroke-width: 2px;

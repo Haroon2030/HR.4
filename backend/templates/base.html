@@ -174,14 +174,10 @@
 
     </style>
     
-    <!-- HTMX -->
-    <script src="/static/js/htmx.min.js"></script>
-    
-    <!-- Alpine.js -->
+    <!-- HTMX + Alpine + Lucide — تأجيل التحميل لعدم حجب العرض -->
+    <script defer src="/static/js/htmx.min.js"></script>
     <script defer src="/static/js/alpine.min.js"></script>
-    
-    <!-- Lucide Icons -->
-    <script src="/static/js/lucide.min.js"></script>
+    <script defer src="/static/js/lucide.min.js"></script>
     
     <style>
         * { font-family: 'Cairo', sans-serif; }
@@ -361,7 +357,7 @@
             <!-- المحتوى + التذييل (لا يغطي الشريط الجانبي) -->
             <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <main class="hr-main hr-scroll-hide flex-1 min-h-0 p-3 md:p-6" style="direction:ltr;">
-                    <div class="hr-page-content" style="direction:rtl;">
+                    <div style="direction:rtl;">
                     {% block content %}{% endblock %}
                     </div>
                 </main>
@@ -390,8 +386,22 @@
     {% endif %}
     
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+        function hrInitLucide() {
+            if (!window.lucide) return;
+            lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+        }
+
+        var hrLucideTimer;
+        function hrScheduleLucide() {
+            clearTimeout(hrLucideTimer);
+            hrLucideTimer = setTimeout(function () {
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(hrInitLucide, { timeout: 600 });
+                } else {
+                    hrInitLucide();
+                }
+            }, 40);
+        }
 
         // Toast notification function
         function showToast(message, type = 'success') {
@@ -407,30 +417,34 @@
             }, 4000);
         }
 
-        (function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            hrScheduleLucide();
+
             var header = document.querySelector('.hr-header');
             var main = document.querySelector('.hr-main');
-            if (!header || !main) return;
-            function onScroll() {
-                header.classList.toggle('is-scrolled', main.scrollTop > 6);
+            if (header && main) {
+                var scrollTick = false;
+                main.addEventListener('scroll', function () {
+                    if (scrollTick) return;
+                    scrollTick = true;
+                    requestAnimationFrame(function () {
+                        header.classList.toggle('is-scrolled', main.scrollTop > 8);
+                        scrollTick = false;
+                    });
+                }, { passive: true });
             }
-            main.addEventListener('scroll', onScroll, { passive: true });
-            onScroll();
-        })();
-        
-        // HTMX event handlers
-        document.body.addEventListener('htmx:afterSwap', function(e) {
-            lucide.createIcons();
-        });
-        
-        // Show Django messages as toasts
-        const messagesContainer = document.getElementById('django-messages');
-        if (messagesContainer) {
-            const messages = messagesContainer.querySelectorAll('[data-message]');
-            messages.forEach(msg => {
-                showToast(msg.dataset.message, msg.dataset.type);
+
+            document.body.addEventListener('htmx:afterSwap', function () {
+                hrScheduleLucide();
             });
-        }
+
+            var messagesContainer = document.getElementById('django-messages');
+            if (messagesContainer) {
+                messagesContainer.querySelectorAll('[data-message]').forEach(function (msg) {
+                    showToast(msg.dataset.message, msg.dataset.type);
+                });
+            }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}

@@ -13,7 +13,7 @@ from django.db.models import Q
 logger = logging.getLogger(__name__)
 
 CACHE_KEY_PREFIX = 'hr:sidebar_counts:'
-DEFAULT_TTL = 45
+DEFAULT_TTL = 90
 
 
 def _cache_ttl() -> int:
