@@ -317,8 +317,6 @@
                 <nav class="hr-nav hr-scroll-hide flex-1 min-h-0" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                     {% include "components/sidebar_nav.html" with always_show=False %}
                 </nav>
-                
-                {% include "components/sidebar_user.html" with allow_collapse=True %}
             </aside>
 
             <!-- Mobile Sidebar -->
@@ -350,8 +348,6 @@
                 <nav class="hr-nav hr-scroll-hide flex-1 min-h-0" x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                     {% include "components/sidebar_nav.html" with always_show=True %}
                 </nav>
-                
-                {% include "components/sidebar_user.html" with allow_collapse=False %}
             </aside>
             
             <!-- المحتوى + التذييل (لا يغطي الشريط الجانبي) -->
