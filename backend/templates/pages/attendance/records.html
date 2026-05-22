@@ -39,18 +39,21 @@
     </div>
 
     <div class="zk-rec-kpis">
-        <div class="zk-rec-kpi">
+        <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}"
+           class="zk-rec-kpi zk-rec-kpi--link{% if not filters.punch_type %} is-active{% endif %}">
             <p class="k">total</p>
             <p class="v">{{ stats.total|default:0 }}</p>
-        </div>
-        <div class="zk-rec-kpi">
-            <p class="k">in</p>
+        </a>
+        <a href="{% url 'web:attendance_records' %}?{{ qs_punch_in }}"
+           class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'in' %} is-active{% endif %}">
+            <p class="k">in · دخول</p>
             <p class="v text-emerald-700">{{ stats.check_in|default:0 }}</p>
-        </div>
-        <div class="zk-rec-kpi">
-            <p class="k">out</p>
+        </a>
+        <a href="{% url 'web:attendance_records' %}?{{ qs_punch_out }}"
+           class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'out' %} is-active{% endif %}">
+            <p class="k">out · خروج</p>
             <p class="v text-indigo-700">{{ stats.check_out|default:0 }}</p>
-        </div>
+        </a>
         <div class="zk-rec-kpi">
             <p class="k">unmapped</p>
             <p class="v text-amber-700">{{ stats.unmapped|default:0 }}</p>
@@ -58,7 +61,7 @@
     </div>
 
     {% if user|has_permission:'attendance.manage' %}
-    <div class="zk-rec-ops{% if not stats.status_health.skewed %} zk-rec-ops--single{% endif %}">
+    <div class="zk-rec-ops{% if stats.status_health.skewed %} zk-rec-ops--triple{% endif %}">
         <section class="zk-rec-box">
             <div class="zk-rec-box-hd">
                 <div class="title-wrap">
@@ -95,6 +98,33 @@
             </div>
         </section>
 
+        <section class="zk-rec-box">
+            <div class="zk-rec-box-hd">
+                <div class="title-wrap">
+                    <span class="zk-rec-code">IO</span>
+                    <h2>ترتيب دخول / خروج</h2>
+                </div>
+                <span class="zk-rec-hint">sequence</span>
+            </div>
+            <form method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-form-row">
+                {% csrf_token %}
+                <div class="fld fld--wide">
+                    <label class="zk-bio-lbl">device</label>
+                    <select name="device_id" class="zk-bio-field">
+                        <option value="">ALL</option>
+                        {% for d in devices %}
+                        <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="zk-bio-btn zk-bio-btn-primary zk-rec-btn-io shrink-0"
+                        onclick="return confirm('ترتيب البصمات: أول بصمة في اليوم = دخول، الثانية = خروج، وهكذا؟');">
+                    <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
+                    ترتيب دخول/خروج
+                </button>
+            </form>
+        </section>
+
         {% if stats.status_health.skewed %}
         <section class="zk-rec-box zk-rec-box--diag">
             <div class="zk-rec-box-hd">
@@ -118,22 +148,6 @@
                     <span class="v">{{ stats.status_health.status_1 }}</span>
                 </div>
             </div>
-            <form method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-form-row">
-                {% csrf_token %}
-                <div class="fld fld--wide">
-                    <label class="zk-bio-lbl">device</label>
-                    <select name="device_id" class="zk-bio-field">
-                        <option value="">ALL</option>
-                        {% for d in devices %}
-                        <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="zk-bio-btn zk-bio-btn-primary shrink-0"
-                        onclick="return confirm('reclassify IN/OUT by daily sequence?');">
-                    reclassify
-                </button>
-            </form>
         </section>
         {% endif %}
     </div>
@@ -169,6 +183,15 @@
             <div class="fld fld--q">
                 <label class="zk-bio-lbl">q</label>
                 <input type="text" name="q" value="{{ filters.search }}" placeholder="user / name" class="zk-bio-field" autocomplete="off">
+            </div>
+            <div class="fld" style="flex:0 0 auto;">
+                <label class="zk-bio-lbl">type</label>
+                <div class="zk-rec-type-switch">
+                    <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}" class="{% if not filters.punch_type %}is-active{% endif %}">ALL</a>
+                    <a href="{% url 'web:attendance_records' %}?{{ qs_punch_in }}" class="zk-rec-type-in{% if filters.punch_type == 'in' %} is-active{% endif %}">IN</a>
+                    <a href="{% url 'web:attendance_records' %}?{{ qs_punch_out }}" class="zk-rec-type-out{% if filters.punch_type == 'out' %} is-active{% endif %}">OUT</a>
+                </div>
+                {% if filters.punch_type %}<input type="hidden" name="punch_type" value="{{ filters.punch_type }}">{% endif %}
             </div>
             <div class="zk-rec-filter-actions">
                 <button type="submit" class="zk-bio-btn zk-bio-btn-primary">filter</button>

@@ -126,6 +126,9 @@ def attendance_records_list(request):
         'devices': devices,
         'filters': filters,
         'querystring': _filters_to_querystring(filters),
+        'qs_punch_all': _filters_to_querystring({**filters, 'punch_type': None}),
+        'qs_punch_in': _filters_to_querystring({**filters, 'punch_type': 'in'}),
+        'qs_punch_out': _filters_to_querystring({**filters, 'punch_type': 'out'}),
         'per_page': paginator.per_page,
     })
 
