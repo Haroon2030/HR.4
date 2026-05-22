@@ -1539,7 +1539,7 @@
     </div>
 
     <!-- Tabs -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="hr-glass-panel bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="flex flex-wrap border-b border-slate-200 bg-slate-50">
             <button @click="activeTab='main'"     :class="activeTab==='main'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">بيانات الموظف</button>
             <button @click="activeTab='salary'"   :class="activeTab==='salary'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الراتب</button>
@@ -1560,7 +1560,7 @@
         <div class="p-6">
 
             <!-- Main -->
-            <div x-show="activeTab==='main'" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div x-show="activeTab==='main'" class="hr-field-grid">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الاسم</div><div class="text-sm text-slate-800">{{ employee.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الموظف</div><div class="text-sm text-slate-800">{{ employee.employee_number|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الهوية</div><div class="text-sm text-slate-800">{{ employee.id_number|default:"—" }}</div></div>
@@ -1585,12 +1585,12 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.health_card_expiry|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء العقد (مخطط)</div><div class="text-sm text-slate-800">{{ employee.contract_expiry_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الحالة</div><div class="text-sm text-slate-800">{{ employee.get_status_display|default:"—" }}</div></div>
-                <div class="md:col-span-3"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
+                <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
 
             <!-- Salary -->
             <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="hr-field-grid">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الراتب الأساسي</div><div class="text-sm text-slate-800">{{ employee.basic_salary|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل السكن</div><div class="text-sm text-slate-800">{{ employee.housing_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل النقل</div><div class="text-sm text-slate-800">{{ employee.transport_allowance|default:"—" }}</div></div>

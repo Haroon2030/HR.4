@@ -770,28 +770,188 @@ body.hr-app .hr-sidebar::after {
     stroke: #0e7490 !important;
 }
 
-/* ── بطاقات ── */
+/* ── بطاقات + حاويات زجاجية ── */
+.hr-glass-panel,
 .hr-main .bg-white.rounded-xl,
 .hr-main .bg-white.rounded-2xl,
+.hr-main .hr-glass-card,
 .hr-card,
 .hr-hero {
-    background: var(--hr-white) !important;
-    border: 1px solid var(--hr-border) !important;
-    box-shadow: none !important;
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border: 1px solid var(--hr-glass-line) !important;
+    box-shadow:
+        0 2px 14px rgba(15, 23, 42, 0.05),
+        inset 0 1px 0 var(--hr-glass-border) !important;
 }
 
-.hr-main thead th {
-    color: var(--hr-text) !important;
+.hr-glass-panel > .border-b,
+.hr-main .bg-white.rounded-xl > .border-b {
+    border-color: var(--hr-glass-line) !important;
+}
+
+.hr-glass-panel > .bg-slate-50,
+.hr-main .bg-white.rounded-xl > .bg-slate-50 {
+    background: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── شبكة حقول مضغوطة (عرض الموظف وغيره) ── */
+.hr-field-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--hr-glass-line);
+    border: 1px solid var(--hr-glass-line);
+    border-radius: 0.65rem;
+    overflow: hidden;
+}
+
+@media (min-width: 640px) {
+    .hr-field-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .hr-field-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.hr-field-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.12rem;
+    min-height: 2.35rem;
+    padding: 0.42rem 0.6rem;
+    background: var(--hr-glass-bg-strong);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+}
+
+.hr-field-item--full {
+    grid-column: 1 / -1;
+}
+
+.hr-field-lbl {
+    display: block;
+    font-size: 0.625rem;
     font-weight: 700 !important;
-    background: var(--hr-white);
+    color: #64748b !important;
+    line-height: 1.2;
 }
 
-.hr-main tbody td {
+.hr-field-val {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+/* توافق مع البنية القديمة داخل hr-field-grid */
+.hr-field-grid > div:not(.hr-field-item) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.12rem;
+    min-height: 2.35rem;
+    padding: 0.42rem 0.6rem;
+    background: var(--hr-glass-bg-strong);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+}
+
+.hr-field-grid > div:not(.hr-field-item) > div:first-child {
+    font-size: 0.625rem !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    margin-bottom: 0 !important;
+}
+
+.hr-field-grid > div:not(.hr-field-item) > div:last-child {
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+}
+
+.hr-field-grid > .md\:col-span-3,
+.hr-field-grid > .hr-field-item--full {
+    grid-column: 1 / -1;
+}
+
+/* ── جداول زجاجية — كل الموقع ── */
+.hr-main table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--hr-glass-line);
+    border-radius: 0.65rem;
+    overflow: hidden;
+    background: var(--hr-glass-bg-strong);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+}
+
+.hr-main .overflow-x-auto > table,
+.hr-main .overflow-hidden > .overflow-x-auto > table,
+.hr-main div.border.rounded-lg.overflow-hidden > .overflow-x-auto > table {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.hr-main .overflow-x-auto,
+.hr-main div.border.rounded-lg.overflow-hidden {
+    border: 1px solid var(--hr-glass-line) !important;
+    border-radius: 0.65rem !important;
+    background: var(--hr-glass-bg-strong);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+}
+
+.hr-main table thead th {
+    color: #334155 !important;
+    font-weight: 700 !important;
+    font-size: 0.7rem !important;
+    background: rgba(255, 255, 255, 0.55) !important;
+    border-bottom: 1px solid var(--hr-glass-line) !important;
+    padding: 0.5rem 0.65rem !important;
+}
+
+.hr-main table tbody td {
     font-weight: 600;
+    padding: 0.45rem 0.65rem !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.65);
+    background: transparent;
 }
 
-.hr-main tbody tr:hover {
-    background: var(--hr-hover);
+.hr-main table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.hr-main table tbody tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.38);
+}
+
+.hr-main table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.hr-main table.divide-y tbody tr td,
+.hr-main table.divide-y thead th {
+    border-color: var(--hr-glass-line);
+}
+
+.hr-tabs__panel {
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
 }
 
 .hr-app .zk-bio-field,
