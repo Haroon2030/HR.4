@@ -40,8 +40,30 @@ body.hr-app {
 }
 
 .hr-sidebar {
+    position: relative;
     border-left: 1px solid var(--hr-border) !important;
     color: var(--hr-text);
+    overflow: hidden;
+}
+
+/* خط أزرق خفيف على طول الشريط (جهة المحتوى في RTL) */
+.hr-sidebar::before {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(37, 99, 235, 0.1) 6%,
+        rgba(37, 99, 235, 0.22) 50%,
+        rgba(37, 99, 235, 0.1) 94%,
+        transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1;
 }
 
 .hr-footer {
@@ -129,6 +151,8 @@ body.hr-app {
 
 /* ── الشريط الجانبي — مدمج ومنظم ── */
 .hr-nav {
+    position: relative;
+    z-index: 2;
     padding: 0.5rem 0.5rem 0.75rem;
     display: flex;
     flex-direction: column;
@@ -194,35 +218,59 @@ body.hr-app {
 
 .hr-nav-link:hover,
 .hr-nav-link--btn:hover {
-    background: var(--hr-hover) !important;
+    background: linear-gradient(
+        270deg,
+        rgba(37, 99, 235, 0.06) 0%,
+        rgba(248, 250, 252, 0.95) 35%,
+        transparent 100%
+    ) !important;
+}
+
+.hr-nav-link:hover::after,
+.hr-nav-link--btn:hover::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 2px;
+    border-radius: 999px 0 0 999px;
+    background: rgba(37, 99, 235, 0.28);
+    pointer-events: none;
 }
 
 .hr-nav-link.is-active,
 .hr-nav-link--btn.is-active {
     background: linear-gradient(
         270deg,
-        rgba(37, 99, 235, 0.14) 0%,
-        rgba(239, 246, 255, 0.85) 32%,
+        rgba(37, 99, 235, 0.16) 0%,
+        rgba(239, 246, 255, 0.9) 30%,
         #f8fafc 100%
     ) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
-/* قوس أزرق عند نهاية الخلية (يسار الشاشة في RTL) */
+.hr-nav-link.is-active:hover::after,
+.hr-nav-link--btn.is-active:hover::after {
+    display: none;
+}
+
+/* قوس أزرق — طول كامل للخلية عند نهايتها (يسار الشاشة في RTL) */
 .hr-nav-link.is-active::before,
 .hr-nav-link--btn.is-active::before {
     content: '';
     position: absolute;
     inset-inline-end: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 72%;
-    min-height: 1.35rem;
+    top: 0.12rem;
+    bottom: 0.12rem;
+    width: 4px;
+    height: auto;
+    transform: none;
     border-radius: 999px 0 0 999px;
     background: linear-gradient(180deg, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%);
-    box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.45);
     pointer-events: none;
+    z-index: 2;
 }
 
 .hr-nav-text {
@@ -292,33 +340,53 @@ body.hr-app {
 }
 
 .hr-nav-sublink:hover {
-    background: var(--hr-hover) !important;
+    background: linear-gradient(
+        270deg,
+        rgba(37, 99, 235, 0.05) 0%,
+        transparent 100%
+    ) !important;
     color: var(--hr-text) !important;
+}
+
+.hr-nav-sublink:hover::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 2px;
+    border-radius: 999px 0 0 999px;
+    background: rgba(37, 99, 235, 0.22);
+    pointer-events: none;
 }
 
 .hr-nav-sublink.is-active {
     color: var(--hr-accent) !important;
     background: linear-gradient(
         270deg,
-        rgba(37, 99, 235, 0.1) 0%,
-        rgba(239, 246, 255, 0.7) 40%,
+        rgba(37, 99, 235, 0.12) 0%,
+        rgba(239, 246, 255, 0.75) 38%,
         transparent 100%
     ) !important;
     box-shadow: none !important;
+}
+
+.hr-nav-sublink.is-active:hover::after {
+    display: none;
 }
 
 .hr-nav-sublink.is-active::before {
     content: '';
     position: absolute;
     inset-inline-end: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2px;
-    height: 65%;
-    min-height: 1rem;
+    top: 0.1rem;
+    bottom: 0.1rem;
+    width: 3px;
+    height: auto;
+    transform: none;
     border-radius: 999px 0 0 999px;
     background: linear-gradient(180deg, #3b82f6, #2563eb);
-    box-shadow: 0 0 6px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 7px rgba(37, 99, 235, 0.4);
     pointer-events: none;
 }
 
@@ -358,9 +426,9 @@ body.hr-app {
 
 .hr-sidebar.w-20 .hr-nav-link.is-active::before,
 .hr-sidebar.w-20 .hr-nav-link--btn.is-active::before {
-    width: 2px;
-    height: 55%;
-    min-height: 1rem;
+    width: 3px;
+    top: 0.15rem;
+    bottom: 0.15rem;
 }
 
 .hr-sidebar.w-20 .hr-nav-section {
