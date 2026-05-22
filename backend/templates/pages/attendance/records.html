@@ -38,6 +38,7 @@
         </div>
     </div>
 
+    <div class="zk-rec-toolbar-row">
     {% if user|has_permission:'attendance.manage' %}
     <section class="zk-rec-sync-wrap">
         <div class="zk-rec-panel">
@@ -104,26 +105,37 @@
     </section>
     {% endif %}
 
-    <div class="zk-rec-kpis">
-        <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}"
-           class="zk-rec-kpi zk-rec-kpi--link{% if not filters.punch_type %} is-active{% endif %}">
-            <p class="k">الكل</p>
-            <p class="v">{{ stats.total|default:0 }}</p>
-        </a>
-        <a href="{% url 'web:attendance_records' %}?{{ qs_punch_in }}"
-           class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'in' %} is-active{% endif %}">
-            <p class="k">دخول</p>
-            <p class="v text-emerald-700">{{ stats.check_in|default:0 }}</p>
-        </a>
-        <a href="{% url 'web:attendance_records' %}?{{ qs_punch_out }}"
-           class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'out' %} is-active{% endif %}">
-            <p class="k">خروج</p>
-            <p class="v text-indigo-700">{{ stats.check_out|default:0 }}</p>
-        </a>
-        <div class="zk-rec-kpi">
-            <p class="k">غير مربوط</p>
-            <p class="v text-amber-700">{{ stats.unmapped|default:0 }}</p>
+    <aside class="zk-rec-stats-wrap">
+        <div class="zk-rec-panel zk-rec-panel--stats">
+            <div class="zk-rec-panel-hd">
+                <div class="title-wrap">
+                    <span class="zk-rec-code">STAT</span>
+                    <h2>ملخص السجلات</h2>
+                </div>
+            </div>
+            <div class="zk-rec-stats-grid">
+                <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}"
+                   class="zk-rec-kpi zk-rec-kpi--link{% if not filters.punch_type %} is-active{% endif %}">
+                    <p class="k">الكل</p>
+                    <p class="v">{{ stats.total|default:0 }}</p>
+                </a>
+                <a href="{% url 'web:attendance_records' %}?{{ qs_punch_in }}"
+                   class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'in' %} is-active{% endif %}">
+                    <p class="k">دخول</p>
+                    <p class="v text-emerald-700">{{ stats.check_in|default:0 }}</p>
+                </a>
+                <a href="{% url 'web:attendance_records' %}?{{ qs_punch_out }}"
+                   class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'out' %} is-active{% endif %}">
+                    <p class="k">خروج</p>
+                    <p class="v text-indigo-700">{{ stats.check_out|default:0 }}</p>
+                </a>
+                <div class="zk-rec-kpi">
+                    <p class="k">غير مربوط</p>
+                    <p class="v text-amber-700">{{ stats.unmapped|default:0 }}</p>
+                </div>
+            </div>
         </div>
+    </aside>
     </div>
 
     <section class="zk-rec-box zk-rec-box--table">
