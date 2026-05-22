@@ -70,25 +70,30 @@
                 </div>
                 <span class="zk-rec-hint">LAN ~5m</span>
             </div>
-            <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-form-row">
+            <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-sync-form">
                 {% csrf_token %}
-                <div class="fld fld--wide">
-                    <label class="zk-bio-lbl">device</label>
-                    <select name="device_id" required class="zk-bio-field">
-                        {% for d in devices %}
-                        <option value="{{ d.pk }}" dir="ltr">{{ d.ip_address }}:{{ d.port }} — {{ d.name }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="zk-rec-sync-grid">
+                    <div class="fld fld--device">
+                        <label class="zk-bio-lbl">الجهاز</label>
+                        <select name="device_id" required class="zk-bio-field">
+                            {% for d in devices %}
+                            <option value="{{ d.pk }}" dir="ltr">{{ d.name }} — {{ d.ip_address }}:{{ d.port }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="fld">
+                        <label class="zk-bio-lbl">من</label>
+                        <input type="date" name="date_from" class="zk-bio-field">
+                    </div>
+                    <div class="fld">
+                        <label class="zk-bio-lbl">إلى</label>
+                        <input type="date" name="date_to" class="zk-bio-field">
+                    </div>
                 </div>
-                <div class="fld">
-                    <label class="zk-bio-lbl">from</label>
-                    <input type="date" name="date_from" class="zk-bio-field">
-                </div>
-                <div class="fld">
-                    <label class="zk-bio-lbl">to</label>
-                    <input type="date" name="date_to" class="zk-bio-field">
-                </div>
-                <button type="submit" id="attendance-pull-submit" class="zk-bio-btn zk-bio-btn-primary shrink-0">pull</button>
+                <button type="submit" id="attendance-pull-submit" class="zk-rec-btn-pull">
+                    <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                    سحب من الجهاز
+                </button>
             </form>
             <div id="attendance-pull-progress" class="zk-pull-progress-wrap" aria-live="polite">
                 <div class="zk-pull-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="attendance-pull-track">
@@ -153,7 +158,7 @@
     </div>
     {% endif %}
 
-    <section class="zk-rec-box">
+    <section class="zk-rec-box zk-rec-box--table">
         <div class="zk-bio-card-hd">
             <div class="flex items-center gap-2">
                 <span class="zk-rec-code">LOG</span>

@@ -181,8 +181,14 @@
     @media (min-width: 900px) {
         .zk-rec-ops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .zk-rec-ops--single { grid-template-columns: 1fr; }
-        .zk-rec-ops--triple { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .zk-rec-ops--triple {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .zk-rec-ops--triple > .zk-rec-box:first-child {
+            grid-column: 1 / -1;
+        }
     }
+    .zk-rec-ops > .zk-rec-box { min-width: 0; }
     .zk-rec-kpi--link {
         text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s;
     }
@@ -204,9 +210,32 @@
         background: #0f766e; border-color: #0d9488; color: #fff;
     }
     .zk-rec-btn-io:hover { background: #0d9488; }
-    .zk-rec-box {
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; overflow: hidden;
+    .zk-rec-sync-form {
+        display: flex; flex-direction: column; gap: 0.55rem;
+        padding: 0.55rem 0.65rem 0.65rem;
     }
+    .zk-rec-sync-grid {
+        display: grid; gap: 0.45rem;
+        grid-template-columns: 1fr;
+    }
+    @media (min-width: 520px) {
+        .zk-rec-sync-grid { grid-template-columns: 1fr 1fr 1fr; }
+        .zk-rec-sync-grid .fld--device { grid-column: 1 / -1; }
+    }
+    .zk-rec-btn-pull {
+        display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+        width: 100%; box-sizing: border-box;
+        padding: 0.55rem 1rem;
+        font-size: 0.8125rem; font-weight: 800; color: #fff;
+        background: #2563eb; border: 1px solid #1d4ed8; border-radius: 0.375rem;
+        cursor: pointer;
+    }
+    .zk-rec-btn-pull:hover { background: #1d4ed8; }
+    .zk-rec-btn-pull:disabled { opacity: 0.6; cursor: not-allowed; }
+    .zk-rec-box {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; overflow: visible;
+    }
+    .zk-rec-box.zk-rec-box--table { overflow: hidden; }
     .zk-rec-box--diag { border-color: #fcd34d; background: linear-gradient(135deg, #fffbeb 0%, #fff 40%); }
     .zk-rec-box-hd {
         display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
