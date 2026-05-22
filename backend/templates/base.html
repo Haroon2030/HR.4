@@ -204,6 +204,7 @@
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
     <link href="/static/css/hr-ui.css" rel="stylesheet">
+    <link href="/static/css/hr-motion.css" rel="stylesheet">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -360,7 +361,7 @@
             <!-- المحتوى + التذييل (لا يغطي الشريط الجانبي) -->
             <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <main class="hr-main hr-scroll-hide flex-1 min-h-0 p-3 md:p-6" style="direction:ltr;">
-                    <div style="direction:rtl;">
+                    <div class="hr-page-content" style="direction:rtl;">
                     {% block content %}{% endblock %}
                     </div>
                 </main>
@@ -395,18 +396,27 @@
         // Toast notification function
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                warning: 'bg-yellow-500',
-                info: 'bg-blue-500'
-            };
+            const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
             const toast = document.createElement('div');
-            toast.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg fade-in flex items-center gap-2`;
-            toast.innerHTML = `<span>${message}</span>`;
+            toast.className = 'hr-toast hr-toast--' + kind + ' text-white px-6 py-3 flex items-center gap-2 text-sm font-semibold';
+            toast.innerHTML = '<span>' + message + '</span>';
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+            setTimeout(function () {
+                toast.classList.add('is-leaving');
+                setTimeout(function () { toast.remove(); }, 220);
+            }, 4000);
         }
+
+        (function () {
+            var header = document.querySelector('.hr-header');
+            var main = document.querySelector('.hr-main');
+            if (!header || !main) return;
+            function onScroll() {
+                header.classList.toggle('is-scrolled', main.scrollTop > 6);
+            }
+            main.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
         
         // HTMX event handlers
         document.body.addEventListener('htmx:afterSwap', function(e) {

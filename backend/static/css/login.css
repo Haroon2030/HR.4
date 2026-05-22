@@ -232,3 +232,60 @@ body.login-body {
 .pub-msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 .pub-msg.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 .pub-msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+/* ── حركة عصرية — تسجيل الدخول ── */
+@keyframes login-fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes login-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@keyframes login-msg-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.login-brand {
+    animation: login-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-logo {
+    animation: login-float 4s ease-in-out infinite;
+}
+
+.login-card {
+    animation: login-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.login-card:hover {
+    box-shadow: 0 28px 56px -14px rgba(15, 23, 42, 0.18);
+}
+
+.login-submit {
+    transition: background 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.login-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 22px -6px rgba(37, 99, 235, 0.4);
+}
+
+.pub-msg {
+    animation: login-msg-in 0.35s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-brand,
+    .login-card,
+    .pub-msg {
+        animation: none;
+    }
+    .login-logo {
+        animation: none;
+    }
+}
