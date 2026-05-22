@@ -402,9 +402,11 @@
         // Toast notification function
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
-            const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
             const toast = document.createElement('div');
-            toast.className = 'hr-toast hr-toast--' + kind + ' text-white px-6 py-3 flex items-center gap-2 text-sm font-semibold';
+            var tag = (type || '').split(/\s+/)[0];
+            if (tag === 'debug') { tag = 'info'; }
+            if (!['success', 'error', 'warning', 'info'].includes(tag)) { tag = 'info'; }
+            toast.className = 'hr-toast hr-toast--' + tag + ' flex items-center gap-2';
             toast.innerHTML = '<span>' + message + '</span>';
             container.appendChild(toast);
             setTimeout(function () {
