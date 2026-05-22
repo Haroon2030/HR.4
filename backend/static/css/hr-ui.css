@@ -20,6 +20,11 @@
         rgba(99, 102, 241, 0.35) 82%,
         transparent 100%
     );
+    --hr-glass-blur: blur(14px) saturate(1.15);
+    --hr-glass-bg: rgba(255, 255, 255, 0.68);
+    --hr-glass-bg-strong: rgba(255, 255, 255, 0.88);
+    --hr-glass-border: rgba(255, 255, 255, 0.95);
+    --hr-glass-line: rgba(226, 232, 240, 0.85);
 }
 
 /* خلفية بيضاء */
@@ -48,56 +53,37 @@ body.hr-app {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   الشريط الجانبي — تصميم 2027 (زجاجي + توهج + كبسولات)
+   الشريط الجانبي — زجاج أبيض (frosted glass)
    ══════════════════════════════════════════════════════════════ */
 body.hr-app .hr-sidebar {
     position: relative;
     isolation: isolate;
-    border-left: 1px solid rgba(148, 163, 184, 0.35) !important;
-    background:
-        radial-gradient(ellipse 120% 80% at 100% 0%, rgba(59, 130, 246, 0.14), transparent 55%),
-        radial-gradient(ellipse 90% 60% at 0% 100%, rgba(99, 102, 241, 0.08), transparent 50%),
-        linear-gradient(175deg, #fcfdff 0%, #f3f6fc 42%, #eef2f9 100%) !important;
+    background: var(--hr-glass-bg) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border-left: 1px solid var(--hr-glass-line) !important;
     color: var(--hr-text);
     overflow: hidden;
-    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.85);
-}
-
-/* شريط ضوء متحرك على الحافة (جهة المحتوى في RTL) */
-body.hr-app .hr-sidebar::before {
-    content: '';
-    position: absolute;
-    inset-inline-end: 0;
-    top: 8%;
-    bottom: 8%;
-    width: 3px;
-    border-radius: 999px;
-    background: var(--hr-sidebar-edge);
     box-shadow:
-        0 0 18px rgba(37, 99, 235, 0.35),
-        0 0 4px rgba(59, 130, 246, 0.5);
-    pointer-events: none;
-    z-index: 3;
-    opacity: 0.85;
+        inset 1px 0 0 var(--hr-glass-border),
+        -1px 0 0 rgba(241, 245, 249, 0.9);
 }
 
-/* وهج زخرفي علوي */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    body.hr-app .hr-sidebar {
+        background: #ffffff !important;
+    }
+}
+
+body.hr-app .hr-sidebar::before,
 body.hr-app .hr-sidebar::after {
-    content: '';
-    position: absolute;
-    top: -3rem;
-    inset-inline-start: -2rem;
-    width: 9rem;
-    height: 9rem;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(96, 165, 250, 0.22) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
+    display: none;
 }
 
-@keyframes hr-nav-pulse {
-    0%, 100% { opacity: 0.75; filter: brightness(1); }
-    50% { opacity: 1; filter: brightness(1.15); }
+/* خلفية خفيفة للمحتوى لتظهر شفافية الزجاج */
+body.hr-app .hr-main {
+    background-color: #f4f6f9 !important;
+    background-image: none !important;
 }
 
 .hr-nav {
@@ -153,12 +139,13 @@ body.hr-app .hr-sidebar::after {
     font-weight: 800 !important;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #475569 !important;
-    background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #64748b !important;
+    background: var(--hr-glass-bg-strong);
+    border: 1px solid var(--hr-glass-border);
     border-radius: 999px;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .hr-nav-link,
@@ -192,20 +179,24 @@ body.hr-app .hr-sidebar::after {
 
 .hr-nav-link:hover,
 .hr-nav-link--btn:hover {
-    background: rgba(255, 255, 255, 0.55) !important;
-    border-color: rgba(148, 163, 184, 0.28) !important;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06) !important;
+    background: var(--hr-glass-bg-strong) !important;
+    border-color: var(--hr-glass-line) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow:
+        0 2px 8px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 var(--hr-glass-border) !important;
 }
 
 .hr-nav-link.is-active,
 .hr-nav-link--btn.is-active {
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(239, 246, 255, 0.88) 100%) !important;
-    border-color: rgba(59, 130, 246, 0.35) !important;
+    background: var(--hr-glass-bg-strong) !important;
+    border-color: var(--hr-glass-line) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
     box-shadow:
-        0 4px 22px rgba(37, 99, 235, 0.14),
-        0 1px 0 rgba(255, 255, 255, 0.95) inset,
-        0 0 0 1px rgba(59, 130, 246, 0.08) !important;
+        0 4px 14px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 #ffffff !important;
 }
 
 /* مؤشر كبسولة مضيئة — نهاية الخلية */
@@ -216,15 +207,13 @@ body.hr-app .hr-sidebar::after {
     inset-inline-end: -0.05rem;
     top: 0.2rem;
     bottom: 0.2rem;
-    width: 5px;
+    width: 4px;
     border-radius: 999px 0 0 999px;
-    background: linear-gradient(180deg, #93c5fd 0%, #2563eb 45%, #4f46e5 100%);
-    box-shadow:
-        0 0 14px rgba(37, 99, 235, 0.55),
-        0 0 4px rgba(59, 130, 246, 0.8);
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    box-shadow: none;
     pointer-events: none;
     z-index: 2;
-    animation: hr-nav-pulse 3s ease-in-out infinite;
+    animation: none;
 }
 
 .hr-nav-text {
@@ -244,21 +233,36 @@ body.hr-app .hr-sidebar::after {
     flex-shrink: 0;
     width: 2rem;
     height: 2rem;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--hr-glass-line);
+    background: var(--hr-glass-bg-strong);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
     border-radius: 0.65rem;
     box-sizing: border-box;
+    box-shadow: inset 0 1px 0 var(--hr-glass-border);
     transition:
         transform 0.2s ease,
         border-color 0.2s ease,
-        box-shadow 0.2s ease,
         background 0.2s ease;
 }
 
 .hr-nav-link:hover .hr-nav-icon,
 .hr-nav-link--btn:hover .hr-nav-icon {
-    border-color: rgba(59, 130, 246, 0.35);
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+    border-color: var(--hr-glass-line);
+}
+
+.hr-nav-link.is-active .hr-nav-icon {
+    border-color: rgba(148, 163, 184, 0.5);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: inset 0 1px 0 #ffffff;
+    transform: scale(1.02);
+}
+
+.hr-nav-link.is-active .hr-nav-icon i,
+.hr-nav-link.is-active .hr-nav-text,
+.hr-nav-link--btn.is-active .hr-nav-text {
+    color: #1d4ed8 !important;
+    stroke: #1d4ed8 !important;
 }
 
 .hr-nav-icon i,
@@ -269,37 +273,30 @@ body.hr-app .hr-sidebar::after {
     stroke-width: 2px;
 }
 
-.hr-nav-link.is-active .hr-nav-icon {
-    border-color: rgba(37, 99, 235, 0.45);
-    background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
-    box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.8) inset,
-        0 4px 12px rgba(37, 99, 235, 0.2);
-    transform: scale(1.04);
-}
-
-.hr-nav-link.is-active .hr-nav-icon i,
-.hr-nav-link.is-active .hr-nav-text,
-.hr-nav-link--btn.is-active .hr-nav-text {
-    color: #1d4ed8 !important;
-    stroke: #1d4ed8 !important;
-}
-
 .hr-nav-sub {
     margin-inline-start: 0.85rem;
     margin-inline-end: 0.15rem;
     margin-bottom: 0.2rem;
     padding: 0.35rem 0.45rem 0.4rem;
     padding-inline-start: 0.65rem;
-    border-inline-start: 2px solid transparent;
-    border-image: linear-gradient(180deg, rgba(59, 130, 246, 0.5), rgba(148, 163, 184, 0.15)) 1;
-    border-radius: 0 0 0.65rem 0.65rem;
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid var(--hr-glass-line);
+    border-inline-start-width: 2px;
+    border-radius: 0.65rem;
+    background: var(--hr-glass-bg);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow: inset 0 1px 0 var(--hr-glass-border);
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+}
+
+.hr-nav-sublink.is-active {
+    color: #1d4ed8 !important;
+    background: var(--hr-glass-bg-strong) !important;
+    border-color: var(--hr-glass-line) !important;
+    font-weight: 700 !important;
+    box-shadow: inset 0 1px 0 #ffffff;
 }
 
 .hr-nav-sublink {
@@ -324,29 +321,22 @@ body.hr-app .hr-sidebar::after {
     border-radius: 50%;
     background: #cbd5e1;
     flex-shrink: 0;
-    transition: background 0.18s ease, box-shadow 0.18s ease;
+    transition: background 0.18s ease;
 }
 
 .hr-nav-sublink:hover {
-    background: rgba(255, 255, 255, 0.65) !important;
+    background: var(--hr-glass-bg-strong) !important;
     color: #1e293b !important;
-    border-color: rgba(148, 163, 184, 0.25) !important;
+    border-color: var(--hr-glass-line) !important;
 }
 
 .hr-nav-sublink:hover::before {
-    background: #60a5fa;
-}
-
-.hr-nav-sublink.is-active {
-    color: #1d4ed8 !important;
-    background: rgba(239, 246, 255, 0.9) !important;
-    border-color: rgba(59, 130, 246, 0.25) !important;
-    font-weight: 700 !important;
+    background: #94a3b8;
 }
 
 .hr-nav-sublink.is-active::before {
-    background: linear-gradient(135deg, #3b82f6, #6366f1);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.65);
+    background: #2563eb;
+    box-shadow: none;
 }
 
 .hr-nav-sublink.is-active i {
@@ -400,8 +390,9 @@ body.hr-app .hr-sidebar::after {
 
 .hr-sidebar.w-20 .hr-nav-link.is-active .hr-nav-icon,
 .hr-sidebar.w-20 .hr-nav-link--btn.is-active .hr-nav-icon {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 6px 16px rgba(37, 99, 235, 0.25);
+    transform: scale(1.05);
+    box-shadow: none;
+    border-color: rgba(37, 99, 235, 0.4);
 }
 
 .hr-sidebar.w-20 .hr-nav-section {
@@ -412,10 +403,11 @@ body.hr-app .hr-sidebar::after {
 .hr-sidebar-top {
     position: relative;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.75) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.3) !important;
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border-bottom: 1px solid var(--hr-glass-line) !important;
+    box-shadow: inset 0 -1px 0 var(--hr-glass-border);
 }
 
 @media (prefers-reduced-motion: reduce) {
