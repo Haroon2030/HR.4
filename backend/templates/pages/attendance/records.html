@@ -39,68 +39,68 @@
     </div>
 
     {% if user|has_permission:'attendance.manage' %}
-    <section class="zk-rec-box zk-rec-box--sync">
-        <div class="zk-rec-box-hd">
-            <div class="title-wrap">
-                <span class="zk-rec-code">SYNC</span>
-                <h2>سحب من جهاز البصمة</h2>
+    <section class="zk-rec-sync-wrap">
+        <div class="zk-rec-panel">
+            <div class="zk-rec-panel-hd">
+                <div class="title-wrap">
+                    <span class="zk-rec-code">SYNC</span>
+                    <h2>سحب من جهاز البصمة</h2>
+                </div>
+                <span class="zk-rec-hint">LAN</span>
             </div>
-            <span class="zk-rec-hint">LAN · ~5 د</span>
-        </div>
-        <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-sync-form">
-            {% csrf_token %}
-            <div class="zk-rec-sync-grid">
-                <div class="fld fld--device">
-                    <label class="zk-bio-lbl">الجهاز</label>
-                    <select name="device_id" required class="zk-bio-field">
+            <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-sync-form">
+                {% csrf_token %}
+                <div class="zk-rec-sync-grid">
+                    <div class="fld fld--device">
+                        <label class="zk-bio-lbl">الجهاز</label>
+                        <select name="device_id" required class="zk-bio-field">
+                            {% for d in devices %}
+                            <option value="{{ d.pk }}" dir="ltr">{{ d.name }} · {{ d.ip_address }}:{{ d.port }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="fld">
+                        <label class="zk-bio-lbl">من</label>
+                        <input type="date" name="date_from" class="zk-bio-field">
+                    </div>
+                    <div class="fld">
+                        <label class="zk-bio-lbl">إلى</label>
+                        <input type="date" name="date_to" class="zk-bio-field">
+                    </div>
+                    <div class="fld fld--action">
+                        <label class="zk-bio-lbl">&nbsp;</label>
+                        <button type="submit" id="attendance-pull-submit" class="zk-rec-btn-pull">
+                            <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                            سحب
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div id="attendance-pull-progress" class="zk-pull-progress-wrap" aria-live="polite">
+                <div class="zk-pull-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="attendance-pull-track">
+                    <div id="attendance-pull-fill" class="zk-pull-fill"></div>
+                </div>
+                <p id="attendance-pull-status" class="zk-pull-status">0%</p>
+            </div>
+            {% if stats.status_health.skewed %}
+            <div class="zk-rec-skew-bar">
+                <span class="zk-rec-skew-msg zk-mono">St≠ · 0={{ stats.status_health.status_0 }} · 1={{ stats.status_health.status_1 }}</span>
+                <form method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-skew-actions">
+                    {% csrf_token %}
+                    <select name="device_id" class="zk-bio-field zk-rec-skew-device" aria-label="جهاز">
+                        <option value="">الكل</option>
                         {% for d in devices %}
-                        <option value="{{ d.pk }}" dir="ltr">{{ d.name }} — {{ d.ip_address }}:{{ d.port }}</option>
+                        <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <div class="fld">
-                    <label class="zk-bio-lbl">من</label>
-                    <input type="date" name="date_from" class="zk-bio-field">
-                </div>
-                <div class="fld">
-                    <label class="zk-bio-lbl">إلى</label>
-                    <input type="date" name="date_to" class="zk-bio-field">
-                </div>
+                    <button type="submit" class="zk-rec-skew-btn" title="ترتيب دخول/خروج"
+                            onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم؟');">
+                        <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
+                    </button>
+                </form>
             </div>
-            <button type="submit" id="attendance-pull-submit" class="zk-rec-btn-pull">
-                <i data-lucide="download-cloud" class="w-4 h-4"></i>
-                سحب من الجهاز
-            </button>
-        </form>
-        <div id="attendance-pull-progress" class="zk-pull-progress-wrap" aria-live="polite">
-            <div class="zk-pull-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="attendance-pull-track">
-                <div id="attendance-pull-fill" class="zk-pull-fill"></div>
-            </div>
-            <p id="attendance-pull-status" class="zk-pull-status">0%</p>
+            {% endif %}
         </div>
-        {% if stats.status_health.skewed %}
-        <div class="zk-rec-skew-bar">
-            <p class="zk-rec-skew-msg">
-                <span class="zk-mono">St</span> غير متوازن —
-                <span class="zk-mono">0={{ stats.status_health.status_0 }}</span>
-                <span class="zk-mono">1={{ stats.status_health.status_1 }}</span>
-            </p>
-            <form method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-skew-actions">
-                {% csrf_token %}
-                <select name="device_id" class="zk-bio-field zk-rec-skew-device" title="الجهاز">
-                    <option value="">كل الأجهزة</option>
-                    {% for d in devices %}
-                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="zk-rec-skew-btn"
-                        onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم؟');">
-                    <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
-                    ترتيب
-                </button>
-            </form>
-        </div>
-        {% endif %}
     </section>
     {% endif %}
 
