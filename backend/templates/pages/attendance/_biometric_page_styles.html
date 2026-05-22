@@ -180,6 +180,10 @@
         flex-direction: column;
         max-width: 100%;
     }
+    .zk-rec-filter-wrap {
+        flex: 0 0 auto;
+        width: 20rem;
+    }
     .zk-rec-toolbar-row .zk-rec-panel {
         display: flex;
         flex-direction: column;
@@ -201,8 +205,9 @@
         width: 12.5rem;
     }
     .zk-rec-panel--filter {
-        width: 14.5rem;
-        max-width: 14.5rem;
+        width: 100%;
+        max-width: 100%;
+        flex-shrink: 0;
     }
     .zk-rec-filter-form {
         display: flex;
@@ -212,9 +217,15 @@
     }
     .zk-rec-filter-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.35rem 0.4rem;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 0.35rem 0.45rem;
         align-items: end;
+    }
+    .zk-rec-filter-grid .fld { min-width: 0; }
+    .zk-rec-panel--filter .zk-rec-panel-hd .zk-bio-stat {
+        flex-shrink: 0;
+        font-size: 9px;
+        white-space: nowrap;
     }
     .zk-rec-filter-grid .fld--full { grid-column: 1 / -1; }
     .zk-rec-filter-grid .fld--actions {
