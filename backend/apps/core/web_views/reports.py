@@ -303,10 +303,9 @@ def report_detail(request, report_type):
     if not meta:
         raise Http404("تقرير غير معروف")
     group = next((g for g in REPORT_GROUPS if g['key'] == meta.get('group')), None)
-    siblings = [r for r in REPORTS if r.get('group') == meta.get('group') and r['key'] != report_type]
     builder = BUILDERS.get(report_type)
     data = builder(request) if builder else {'columns': [], 'rows': []}
     return render(request, 'pages/reports/detail.html', {
-        'report_meta': meta, 'group_meta': group, 'siblings': siblings,
+        'report_meta': meta, 'group_meta': group,
         'reports': REPORTS, 'data': data, 'report_type': report_type,
     })

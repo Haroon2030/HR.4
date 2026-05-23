@@ -70,27 +70,11 @@
     </div>
     {% endif %}
 
-    {# Siblings #}
-    {% if siblings %}
-    <div class="mt-5">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">تقارير أخرى: {{ group_meta.title }}</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {% for r in siblings %}
-            <a href="{% url 'web:report_detail' report_type=r.key %}"
-               class="bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:bg-{{ r.color }}-50 rounded-lg px-3 py-2 text-xs text-slate-700 font-semibold flex items-center gap-2 transition-colors">
-                <i data-lucide="{{ r.icon }}" class="w-3.5 h-3.5"></i>
-                <span class="truncate">{{ r.title }}</span>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
 </div>
 
 <style>
 @media print {
-    nav, button, .mt-5, .sidebar, header, .navbar { display: none !important; }
+    nav, button, .sidebar, header, .navbar { display: none !important; }
     .max-w-7xl { max-width: 100% !important; }
     table { font-size: 11px !important; }
     th, td { padding: 4px 6px !important; }

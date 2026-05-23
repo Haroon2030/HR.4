@@ -50,25 +50,6 @@
         </a>
     </div>
 
-    {# Sibling reports in the same group #}
-    {% if siblings %}
-    <div class="mt-8">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-            {% if group_meta %}<i data-lucide="{{ group_meta.icon }}" class="w-4 h-4"></i>{% else %}<i data-lucide="layout-grid" class="w-4 h-4"></i>{% endif %}
-            تقارير أخرى ضمن: {{ group_meta.title|default:"نفس المجموعة" }}
-        </h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {% for r in siblings %}
-            <a href="{% url 'web:report_detail' report_type=r.key %}"
-               class="bg-white border border-slate-200 hover:border-{{ r.color }}-400 hover:bg-{{ r.color }}-50 rounded-lg px-3 py-2 text-xs text-slate-700 hover:text-{{ r.color }}-700 font-semibold flex items-center gap-2 transition-colors">
-                <i data-lucide="{{ r.icon }}" class="w-3.5 h-3.5"></i>
-                <span class="truncate">{{ r.title }}</span>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
 </div>
 
 <script>
