@@ -8,7 +8,7 @@
 <div class="space-y-4" x-data="{ activeTab: 'main', quickModal: null, quickOpen: false }">
 
     <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-3 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+    <div class="hr-employee-header flex flex-wrap items-center justify-between gap-3 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div>
             <div class="flex items-center gap-2 flex-wrap">
                 <h1 class="text-2xl font-bold text-slate-900">{{ employee.name }}</h1>
@@ -39,7 +39,7 @@
 
             {% if employee.status != 'terminated' %}
             <!-- زر إضافة سريعة -->
-            <div class="relative" @click.outside="quickOpen = false">
+            <div class="hr-dropdown" @click.outside="quickOpen = false">
                 <button type="button" @click="quickOpen = !quickOpen"
                     class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2">
                     <i data-lucide="zap" class="w-4 h-4"></i>
@@ -47,7 +47,7 @@
                     <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="quickOpen ? 'rotate-180' : ''"></i>
                 </button>
                 <div x-show="quickOpen" x-cloak x-transition
-                    class="absolute end-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                    class="hr-dropdown-menu end-0 top-full mt-2 w-56 py-1">
                     <button type="button" @click="quickModal='leave'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="calendar-plus" class="w-4 h-4 text-blue-600"></i> تقديم إجازة
                     </button>
@@ -1539,7 +1539,7 @@
     </div>
 
     <!-- Tabs -->
-    <div class="hr-glass-panel bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="hr-glass-panel hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="flex flex-wrap border-b border-slate-200 bg-slate-50">
             <button @click="activeTab='main'"     :class="activeTab==='main'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">بيانات الموظف</button>
             <button @click="activeTab='salary'"   :class="activeTab==='salary'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الراتب</button>

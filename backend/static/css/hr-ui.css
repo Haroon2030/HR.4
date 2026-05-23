@@ -821,6 +821,39 @@ body.hr-app .hr-sidebar::after {
     background: rgba(255, 255, 255, 0.45) !important;
 }
 
+/* ── طبقات الصفحة: القوائم المنسدلة فوق البطاقات الزجاجية ── */
+body.hr-app .hr-employee-header,
+body.hr-app .hr-page-toolbar {
+    position: relative;
+    z-index: 30;
+}
+
+body.hr-app .hr-page-tabs,
+body.hr-app .hr-glass-panel.hr-page-tabs {
+    position: relative;
+    z-index: 10;
+}
+
+body.hr-app .hr-dropdown {
+    position: relative;
+    z-index: 40;
+}
+
+body.hr-app .hr-dropdown-menu {
+    position: absolute;
+    z-index: 200;
+    max-height: min(70vh, 26rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border: 1px solid var(--hr-table-glass-border) !important;
+    border-radius: 0.65rem;
+    box-shadow: var(--hr-table-glass-shadow);
+}
+
 /* ── شبكة حقول مضغوطة (عرض الموظف وغيره) ── */
 .hr-field-grid {
     display: grid;
