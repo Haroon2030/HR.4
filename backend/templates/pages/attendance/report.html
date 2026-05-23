@@ -60,17 +60,22 @@
     </div>
 
     <form method="get" class="hr-report-filter">
-        <div class="hr-report-filter-row">
-            <div class="fld">
-                <label class="hr-report-lbl">من</label>
-                <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="hr-report-field">
+        <div class="hr-filter-grid hr-filter-grid--main">
+            <div class="hr-filter-slot hr-filter-slot--period">
+                <span class="hr-filter-slot__title">الفترة</span>
+                <div class="hr-filter-slot__row">
+                    <div class="hr-filter-cell">
+                        <label class="hr-report-lbl">من</label>
+                        <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="hr-report-field">
+                    </div>
+                    <div class="hr-filter-cell">
+                        <label class="hr-report-lbl">إلى</label>
+                        <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="hr-report-field">
+                    </div>
+                </div>
             </div>
-            <div class="fld">
-                <label class="hr-report-lbl">إلى</label>
-                <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="hr-report-field">
-            </div>
-            <div class="fld">
-                <label class="hr-report-lbl">الفرع</label>
+            <div class="hr-filter-slot">
+                <span class="hr-filter-slot__title">الفرع</span>
                 <select name="branch" class="hr-report-field">
                     <option value="">كل الفروع</option>
                     {% for b in branches %}
@@ -78,25 +83,28 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="fld fld--search">
-                <label class="hr-report-lbl">بحث</label>
+            <div class="hr-filter-slot">
+                <span class="hr-filter-slot__title">بحث</span>
                 <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم موظف، رقم، أو جهاز…" class="hr-report-field" autocomplete="off">
             </div>
-            <div class="fld--actions">
-                <button type="button" class="hr-report-filter-toggle"
-                        :class="{ 'is-active': adv }"
-                        @click="adv = !adv">
-                    <span class="dot" x-show="hasAdv" x-cloak></span>
-                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-                    فلاتر
-                </button>
-                <button type="submit" class="hr-btn hr-btn-primary px-4 py-2 text-sm font-bold">عرض</button>
-                <a href="{% url 'web:attendance_report' %}" class="px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-900">مسح</a>
+            <div class="hr-filter-slot hr-filter-slot--actions">
+                <span class="hr-filter-slot__title hr-filter-slot__title--muted">إجراءات</span>
+                <div class="hr-filter-actions">
+                    <button type="button" class="hr-report-filter-toggle"
+                            :class="{ 'is-active': adv }"
+                            @click="adv = !adv">
+                        <span class="dot" x-show="hasAdv" x-cloak></span>
+                        <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                        فلاتر
+                    </button>
+                    <button type="submit" class="hr-filter-btn hr-filter-btn--primary">عرض</button>
+                    <a href="{% url 'web:attendance_report' %}" class="hr-filter-btn hr-filter-btn--ghost">مسح</a>
+                </div>
             </div>
         </div>
 
-        <div class="hr-report-filter-adv" x-show="adv" x-cloak>
-            <div>
+        <div class="hr-filter-grid hr-filter-grid--adv" x-show="adv" x-cloak>
+            <div class="hr-filter-slot">
                 <label class="hr-report-lbl">جهاز البصمة</label>
                 <select name="device" class="hr-report-field">
                     <option value="">كل الأجهزة</option>
@@ -105,7 +113,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div>
+            <div class="hr-filter-slot">
                 <label class="hr-report-lbl">ربط HR</label>
                 <select name="mapped" class="hr-report-field">
                     <option value="" {% if mapped_filter == 'all' %}selected{% endif %}>الكل</option>
@@ -113,7 +121,7 @@
                     <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
                 </select>
             </div>
-            <div class="span-2" x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
+            <div class="hr-filter-slot hr-filter-slot--employee" x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
                 {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" %}
             </div>
         </div>

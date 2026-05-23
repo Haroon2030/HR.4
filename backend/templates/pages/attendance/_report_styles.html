@@ -64,63 +64,139 @@
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 0.625rem;
-        padding: 0.65rem 0.75rem;
-    }
-    .hr-report-filter-row {
+        padding: 0.75rem;
         display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        gap: 0.5rem 0.65rem;
+        flex-direction: column;
+        gap: 0.65rem;
     }
-    .hr-report-filter-row .fld {
-        flex: 1 1 9rem;
-        min-width: 8rem;
+
+    .hr-filter-grid {
+        display: grid;
+        gap: 0.5rem;
+        align-items: stretch;
     }
-    .hr-report-filter-row .fld--search { flex: 2 1 12rem; min-width: 10rem; }
-    .hr-report-filter-row .fld--actions {
-        flex: 0 0 auto;
+    .hr-filter-grid--main {
+        grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+        .hr-filter-grid--main {
+            grid-template-columns: minmax(12rem, 1.1fr) minmax(9rem, 0.9fr) minmax(10rem, 1.2fr) auto;
+        }
+    }
+    @media (min-width: 1024px) {
+        .hr-filter-grid--main {
+            grid-template-columns: minmax(14rem, 1fr) minmax(10rem, 0.85fr) minmax(12rem, 1.15fr) minmax(11rem, auto);
+        }
+    }
+    .hr-filter-grid--adv {
+        grid-template-columns: 1fr;
+        padding-top: 0.65rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    @media (min-width: 768px) {
+        .hr-filter-grid--adv {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    .hr-filter-slot {
         display: flex;
+        flex-direction: column;
         gap: 0.35rem;
-        align-items: center;
-        margin-inline-start: auto;
+        min-width: 0;
+        padding: 0.55rem 0.65rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
     }
+    .hr-filter-slot--period { padding-bottom: 0.5rem; }
+    .hr-filter-slot--actions {
+        background: #fff;
+        border-color: #cbd5e1;
+    }
+    .hr-filter-slot--employee { min-height: 4.25rem; }
+    .hr-filter-slot__title {
+        font-size: 0.625rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        line-height: 1;
+    }
+    .hr-filter-slot__title--muted { margin-bottom: 0.1rem; }
+    .hr-filter-slot__row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem;
+    }
+    .hr-filter-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
     .hr-report-lbl {
         display: block;
-        margin-bottom: 0.2rem;
+        margin: 0;
         font-size: 0.65rem;
         font-weight: 700;
         color: #475569;
+        line-height: 1.2;
     }
     .hr-report-field {
         display: block;
         width: 100%;
         box-sizing: border-box;
-        padding: 0.4rem 0.55rem;
+        padding: 0.45rem 0.55rem;
         font-size: 0.8125rem;
         font-weight: 600;
         color: #0f172a;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #cbd5e1;
         border-radius: 0.375rem;
         background: #fff;
+        min-height: 2.125rem;
     }
     .hr-report-field:focus {
         outline: none;
         border-color: #2563eb;
         box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
     }
-    .hr-report-filter-adv {
-        margin-top: 0.65rem;
-        padding-top: 0.65rem;
-        border-top: 1px dashed #e2e8f0;
-        display: grid;
-        gap: 0.65rem;
+
+    .hr-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: center;
+        margin-top: auto;
     }
-    @media (min-width: 768px) {
-        .hr-report-filter-adv {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-        .hr-report-filter-adv .span-2 { grid-column: span 2; }
+    .hr-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        border-radius: 0.375rem;
+        border: 1px solid transparent;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+        min-height: 2.125rem;
+        box-sizing: border-box;
     }
+    .hr-filter-btn--primary {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+    .hr-filter-btn--primary:hover { background: #1d4ed8; }
+    .hr-filter-btn--ghost {
+        background: #fff;
+        color: #475569;
+        border-color: #cbd5e1;
+    }
+    .hr-filter-btn--ghost:hover { background: #f8fafc; }
     .hr-report-filter-toggle {
         display: inline-flex;
         align-items: center;
@@ -272,9 +348,25 @@
         font-weight: 600;
         color: #64748b;
     }
-    .hr-report-filter .employee-search-picker label span.text-slate-400 { display: none; }
-    .hr-report-filter .employee-search-picker input[type="text"] {
-        padding: 0.4rem 0.55rem 0.4rem 2rem;
+    .hr-report-filter .hr-filter-slot--employee .employee-search-picker {
+        margin: 0;
+    }
+    .hr-report-filter .hr-filter-slot--employee .employee-search-picker > label {
+        margin-bottom: 0.2rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #475569;
+    }
+    .hr-report-filter .hr-filter-slot--employee .employee-search-picker label span.text-slate-400,
+    .hr-report-filter .hr-filter-slot--employee .employee-search-picker label i { display: none; }
+    .hr-report-filter .hr-filter-slot--employee .employee-search-picker input[type="text"] {
+        padding: 0.45rem 0.55rem 0.45rem 2rem;
         font-size: 0.8125rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+        min-height: 2.125rem;
+    }
+    .hr-report-filter .hr-filter-slot--employee .employee-search-picker template + div > div {
+        margin-bottom: 0;
     }
 </style>
