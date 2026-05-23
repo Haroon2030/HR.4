@@ -28,8 +28,8 @@
     transition: background var(--hr-dur) ease;
 }
 
-.hr-main table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.95) !important;
+.hr-main table tbody tr:hover td {
+    background: var(--hr-table-glass-row-hover, rgba(226, 232, 240, 0.55)) !important;
 }
 
 .hr-act {

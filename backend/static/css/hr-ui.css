@@ -27,6 +27,16 @@
     --hr-glass-line: rgba(241, 245, 249, 0.95);
     --hr-page-bg: #ffffff;
     --hr-page-bg-soft: #fafbfc;
+    --hr-table-glass-bg: rgba(248, 250, 252, 0.82);
+    --hr-table-glass-head: rgba(241, 245, 249, 0.92);
+    --hr-table-glass-row: rgba(255, 255, 255, 0.55);
+    --hr-table-glass-row-alt: rgba(241, 245, 249, 0.72);
+    --hr-table-glass-row-hover: rgba(226, 232, 240, 0.55);
+    --hr-table-glass-border: rgba(203, 213, 225, 0.75);
+    --hr-table-glass-shadow:
+        0 4px 18px rgba(15, 23, 42, 0.06),
+        0 1px 4px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 /* خلفية زجاجية بيضاء للتطبيق */
@@ -898,69 +908,100 @@ body.hr-app .hr-sidebar::after {
     grid-column: 1 / -1;
 }
 
-/* ── جداول زجاجية — كل الموقع ── */
-.hr-main table {
+/* ── جداول زجاجية رمادية — كل الموقع ── */
+body.hr-app .hr-main table,
+body.hr-app .hr-glass-modal table,
+body.hr-app .salary-adjust-archive table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    border: 1px solid var(--hr-glass-line);
+    border: 1px solid var(--hr-table-glass-border);
     border-radius: 0.65rem;
     overflow: hidden;
-    background: var(--hr-glass-bg-strong);
+    background: var(--hr-table-glass-bg);
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: var(--hr-table-glass-shadow);
 }
 
-.hr-main .overflow-x-auto > table,
-.hr-main .overflow-hidden > .overflow-x-auto > table,
-.hr-main div.border.rounded-lg.overflow-hidden > .overflow-x-auto > table {
+body.hr-app .hr-main .overflow-x-auto > table,
+body.hr-app .hr-main .overflow-hidden > .overflow-x-auto > table,
+body.hr-app .hr-main div.border.rounded-lg.overflow-hidden > .overflow-x-auto > table {
     border: none;
     border-radius: 0;
     box-shadow: none;
 }
 
-.hr-main .overflow-x-auto,
-.hr-main div.border.rounded-lg.overflow-hidden {
-    border: 1px solid var(--hr-glass-line) !important;
+body.hr-app .hr-main .overflow-x-auto,
+body.hr-app .hr-main div.border.rounded-lg.overflow-hidden,
+body.hr-app .hr-main .overflow-hidden.rounded-xl,
+body.hr-app .hr-main .overflow-hidden.rounded-lg {
+    border: 1px solid var(--hr-table-glass-border) !important;
     border-radius: 0.65rem !important;
-    background: var(--hr-glass-bg-strong);
+    background: var(--hr-table-glass-bg);
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: var(--hr-table-glass-shadow);
 }
 
-.hr-main table thead th {
+body.hr-app .hr-main table thead th,
+body.hr-app .hr-glass-modal table thead th,
+body.hr-app .salary-adjust-archive table thead th {
     color: #334155 !important;
     font-weight: 700 !important;
     font-size: 0.7rem !important;
-    background: rgba(255, 255, 255, 0.82) !important;
-    border-bottom: 1px solid var(--hr-glass-line) !important;
+    background: var(--hr-table-glass-head) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--hr-table-glass-border) !important;
     padding: 0.5rem 0.65rem !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-.hr-main table tbody td {
+body.hr-app .hr-main table tbody td,
+body.hr-app .hr-glass-modal table tbody td,
+body.hr-app .salary-adjust-archive table tbody td {
     font-weight: 600;
     padding: 0.45rem 0.65rem !important;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.65);
-    background: transparent;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.55);
+    background: var(--hr-table-glass-row);
+    transition: background 0.12s ease, box-shadow 0.12s ease;
 }
 
-.hr-main table tbody tr:last-child td {
+body.hr-app .hr-main table tbody tr:last-child td,
+body.hr-app .hr-glass-modal table tbody tr:last-child td,
+body.hr-app .salary-adjust-archive table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.hr-main table tbody tr:nth-child(even) td {
-    background: rgba(255, 255, 255, 0.62);
+body.hr-app .hr-main table tbody tr:nth-child(odd) td,
+body.hr-app .hr-glass-modal table tbody tr:nth-child(odd) td,
+body.hr-app .salary-adjust-archive table tbody tr:nth-child(odd) td {
+    background: var(--hr-table-glass-row);
 }
 
-.hr-main table tbody tr:hover td {
-    background: rgba(255, 255, 255, 0.95) !important;
+body.hr-app .hr-main table tbody tr:nth-child(even) td,
+body.hr-app .hr-glass-modal table tbody tr:nth-child(even) td,
+body.hr-app .salary-adjust-archive table tbody tr:nth-child(even) td {
+    background: var(--hr-table-glass-row-alt);
 }
 
-.hr-main table.divide-y tbody tr td,
-.hr-main table.divide-y thead th {
-    border-color: var(--hr-glass-line);
+body.hr-app .hr-main table tbody tr:hover td,
+body.hr-app .hr-glass-modal table tbody tr:hover td,
+body.hr-app .salary-adjust-archive table tbody tr:hover td {
+    background: var(--hr-table-glass-row-hover) !important;
+    box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.35);
+}
+
+body.hr-app .hr-main table.divide-y tbody tr td,
+body.hr-app .hr-main table.divide-y thead th {
+    border-color: var(--hr-table-glass-border);
+}
+
+/* جداول داخل بطاقات بيضاء — إبراز الظل الرمادي */
+body.hr-app .hr-main .bg-white table,
+body.hr-app .hr-main .bg-white.rounded-xl table {
+    box-shadow: var(--hr-table-glass-shadow);
 }
 
 .hr-tabs__panel {
