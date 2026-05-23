@@ -1,12 +1,25 @@
-/* صفحة تسجيل الدخول — أنماط خفيفة (~3KB) بدلاً من tailwind.min.css (~3MB) */
+/* صفحة تسجيل الدخول — زجاج خفيف (~4KB) بدون Tailwind */
 *, *::before, *::after { box-sizing: border-box; }
+
+:root {
+    --login-glass-blur: blur(16px) saturate(1.2);
+    --login-glass-bg: rgba(255, 255, 255, 0.55);
+    --login-glass-bg-strong: rgba(255, 255, 255, 0.78);
+    --login-glass-border: rgba(255, 255, 255, 0.92);
+    --login-glass-line: rgba(226, 232, 240, 0.88);
+    --login-primary: #3b82f6;
+    --login-primary-dark: #1d4ed8;
+}
 
 body.login-body {
     margin: 0;
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     color: #1e293b;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 45%, #eff6ff 100%);
+    background:
+        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(191, 219, 254, 0.55), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 95% 100%, rgba(147, 197, 253, 0.45), transparent 50%),
+        linear-gradient(145deg, #e8eef5 0%, #f1f5f9 40%, #eff6ff 100%);
 }
 
 .login-shell {
@@ -15,34 +28,35 @@ body.login-body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: 1.25rem;
     overflow: hidden;
 }
 
+/* دوائر ضوئية زجاجية */
 .login-shell::before,
 .login-shell::after {
     content: '';
     position: absolute;
     border-radius: 50%;
-    filter: blur(48px);
-    opacity: 0.35;
+    filter: blur(56px);
+    opacity: 0.5;
     pointer-events: none;
 }
 
 .login-shell::before {
-    width: 20rem;
-    height: 20rem;
-    top: -5rem;
-    right: -5rem;
-    background: #bfdbfe;
+    width: 22rem;
+    height: 22rem;
+    top: -6rem;
+    right: -4rem;
+    background: rgba(96, 165, 250, 0.45);
 }
 
 .login-shell::after {
     width: 20rem;
     height: 20rem;
     bottom: -5rem;
-    left: -5rem;
-    background: #93c5fd;
+    left: -4rem;
+    background: rgba(129, 140, 248, 0.35);
 }
 
 .login-wrap {
@@ -54,109 +68,139 @@ body.login-body {
 
 .login-brand {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
 }
 
 .login-logo {
-    width: 6rem;
-    height: 6rem;
+    width: 5.5rem;
+    height: 5.5rem;
     margin: 0 auto 1rem;
-    border-radius: 1rem;
+    border-radius: 1.15rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.35);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.92) 0%, rgba(29, 78, 216, 0.92) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    backdrop-filter: var(--login-glass-blur);
+    -webkit-backdrop-filter: var(--login-glass-blur);
+    box-shadow:
+        0 20px 32px -8px rgba(37, 99, 235, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .login-brand h1 {
-    margin: 0 0 0.5rem;
-    font-size: 2rem;
+    margin: 0 0 0.35rem;
+    font-size: 1.75rem;
     font-weight: 800;
     color: #0f172a;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .login-brand p {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: #475569;
+    color: #64748b;
 }
 
-.login-card {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(14px) saturate(1.15);
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    border-radius: 1rem;
-    padding: 2rem;
+/* ── بطاقة النموذج الزجاجية ── */
+.login-card,
+.login-glass-panel {
+    position: relative;
+    background: var(--login-glass-bg);
+    backdrop-filter: var(--login-glass-blur);
+    -webkit-backdrop-filter: var(--login-glass-blur);
+    border: 1px solid var(--login-glass-border);
+    border-radius: 1.15rem;
+    padding: 0;
+    overflow: hidden;
     box-shadow:
-        0 25px 50px -12px rgba(15, 23, 42, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        0 28px 56px -16px rgba(15, 23, 42, 0.18),
+        inset 0 1px 0 var(--login-glass-border);
+}
+
+.login-card__head {
+    padding: 1.5rem 1.75rem 0;
+    text-align: center;
+}
+
+.login-card__body {
+    padding: 1.25rem 1.75rem 1.75rem;
 }
 
 .login-card h2 {
-    margin: 0 0 0.5rem;
-    text-align: center;
-    font-size: 1.5rem;
+    margin: 0 0 0.35rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: #0f172a;
 }
 
 .login-card .login-sub {
-    margin: 0 0 1.5rem;
-    text-align: center;
-    font-size: 1rem;
+    margin: 0;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: #475569;
+    color: #64748b;
 }
 
 .login-alert {
-    background: #fef2f2;
-    border: 2px solid #fecaca;
-    color: #b91c1c;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
+    margin: 0 1.75rem 0;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.55rem;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.875rem;
+    background: rgba(254, 242, 242, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(254, 202, 202, 0.85);
+    color: #b91c1c;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.login-card__body .login-alert {
+    margin: 0 0 1rem;
 }
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.1rem;
 }
 
 .login-field label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    color: #1e293b;
+    color: #334155;
 }
 
 .login-field input {
     width: 100%;
-    padding: 0.875rem 1rem;
-    font-size: 1rem;
-    font-weight: 500;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.62);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    padding: 0.8rem 0.95rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0f172a;
+    border: 1px solid var(--login-glass-line);
+    border-radius: 0.55rem;
+    background: var(--login-glass-bg-strong);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
     transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
+.login-field input::placeholder {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
 .login-field input:focus {
     outline: none;
-    border-color: #3b82f6;
-    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(59, 130, 246, 0.55);
+    background: rgba(255, 255, 255, 0.92);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        0 0 0 3px rgba(59, 130, 246, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        0 0 0 3px rgba(59, 130, 246, 0.14);
 }
 
 .login-password-wrap {
@@ -164,51 +208,64 @@ body.login-body {
 }
 
 .login-password-wrap input {
-    padding-left: 2.75rem;
+    padding-left: 2.65rem;
 }
 
 .login-toggle-pw {
     position: absolute;
-    left: 0.75rem;
+    left: 0.65rem;
     top: 50%;
     transform: translateY(-50%);
-    border: none;
-    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    background: rgba(255, 255, 255, 0.45);
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0;
     color: #64748b;
     line-height: 0;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 
 .login-toggle-pw:hover {
-    color: #2563eb;
+    color: var(--login-primary);
+    background: rgba(255, 255, 255, 0.85);
+    border-color: var(--login-glass-line);
 }
 
 .login-toggle-pw svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.1rem;
+    height: 1.1rem;
 }
 
 .login-submit {
     width: 100%;
-    padding: 1rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 0.5rem;
-    font-size: 1.125rem;
+    margin-top: 0.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 0.55rem;
+    font-size: 1rem;
     font-weight: 800;
     color: #fff;
     cursor: pointer;
     background: rgba(59, 130, 246, 0.82);
-    backdrop-filter: blur(14px) saturate(1.15);
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    backdrop-filter: var(--login-glass-blur);
+    -webkit-backdrop-filter: var(--login-glass-blur);
     box-shadow:
-        0 10px 22px rgba(37, 99, 235, 0.25),
+        0 10px 22px rgba(37, 99, 235, 0.28),
         inset 0 1px 0 rgba(255, 255, 255, 0.85);
-    transition: background 0.15s, transform 0.1s;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
 .login-submit:hover {
     background: rgba(37, 99, 235, 0.92);
+    box-shadow:
+        0 12px 26px rgba(37, 99, 235, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .login-submit:active {
@@ -217,13 +274,19 @@ body.login-body {
 
 .login-footer {
     text-align: center;
-    margin-top: 2rem;
-    font-size: 0.95rem;
+    margin-top: 1.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: #475569;
+    color: #64748b;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* رسائل Django العامة */
+/* رسائل Django */
 .pub-messages {
     position: fixed;
     top: 1rem;
@@ -241,34 +304,33 @@ body.login-body {
     border-radius: 0.65rem;
     font-size: 0.875rem;
     font-weight: 700;
-    backdrop-filter: blur(14px) saturate(1.12);
-    -webkit-backdrop-filter: blur(14px) saturate(1.12);
+    backdrop-filter: var(--login-glass-blur);
+    -webkit-backdrop-filter: var(--login-glass-blur);
     box-shadow:
         0 10px 24px rgba(15, 23, 42, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .pub-msg.error {
-    background: rgba(254, 242, 242, 0.92);
+    background: rgba(254, 242, 242, 0.88);
     color: #b91c1c;
     border: 1px solid rgba(220, 38, 38, 0.35);
 }
 
 .pub-msg.success {
-    background: rgba(236, 253, 245, 0.92);
+    background: rgba(236, 253, 245, 0.88);
     color: #047857;
     border: 1px solid rgba(5, 150, 105, 0.35);
 }
 
 .pub-msg.info {
-    background: rgba(239, 246, 255, 0.92);
+    background: rgba(239, 246, 255, 0.88);
     color: #1d4ed8;
     border: 1px solid rgba(37, 99, 235, 0.35);
 }
 
-/* ── حركة عصرية — تسجيل الدخول ── */
 @keyframes login-fade-up {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -281,22 +343,16 @@ body.login-body {
     animation: login-fade-up 0.35s ease both;
 }
 
-.login-logo {
-    /* بدون حركة مستمرة — أخف على المعالج */
-}
-
-.login-card {
+.login-card,
+.login-glass-panel {
     animation: login-fade-up 0.4s ease 0.05s both;
-    transition: box-shadow 0.2s ease;
 }
 
-.login-card:hover {
-    box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.14);
-}
-
-.login-submit:hover {
-    transform: none;
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.35);
+.login-card:hover,
+.login-glass-panel:hover {
+    box-shadow:
+        0 32px 60px -14px rgba(15, 23, 42, 0.2),
+        inset 0 1px 0 var(--login-glass-border);
 }
 
 .pub-msg {
@@ -306,10 +362,16 @@ body.login-body {
 @media (prefers-reduced-motion: reduce) {
     .login-brand,
     .login-card,
+    .login-glass-panel,
     .pub-msg {
         animation: none;
     }
-    .login-logo {
-        animation: none;
+}
+
+@media (max-width: 380px) {
+    .login-card__head,
+    .login-card__body {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
     }
 }

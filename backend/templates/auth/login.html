@@ -7,57 +7,61 @@
     <div class="login-wrap">
         <div class="login-brand">
             <div class="login-logo" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <h1>نظام الموارد البشرية</h1>
             <p>نظام إدارة شؤون الموظفين</p>
         </div>
 
-        <div class="login-card">
-            <h2>تسجيل الدخول</h2>
-            <p class="login-sub">أدخل بياناتك للوصول إلى حسابك</p>
-
-            {% if form.errors %}
-            <div class="login-alert" role="alert">
-                <p>اسم المستخدم أو كلمة المرور غير صحيحة</p>
+        <div class="login-card login-glass-panel" role="region" aria-label="نموذج تسجيل الدخول">
+            <div class="login-card__head">
+                <h2>تسجيل الدخول</h2>
+                <p class="login-sub">أدخل بياناتك للوصول إلى حسابك</p>
             </div>
-            {% endif %}
 
-            <form method="post" class="login-form" id="login-form">
-                {% csrf_token %}
-
-                <div class="login-field">
-                    <label for="username">رقم المستخدم أو اسم المستخدم</label>
-                    <input
-                        type="text"
-                        name="username"
-                        id="username"
-                        required
-                        autocomplete="username"
-                        placeholder="أدخل رقم المستخدم أو اسم المستخدم"
-                    >
+            <div class="login-card__body">
+                {% if form.errors %}
+                <div class="login-alert" role="alert">
+                    <p>اسم المستخدم أو كلمة المرور غير صحيحة</p>
                 </div>
+                {% endif %}
 
-                <div class="login-field">
-                    <label for="password">كلمة المرور</label>
-                    <div class="login-password-wrap">
+                <form method="post" class="login-form" id="login-form">
+                    {% csrf_token %}
+
+                    <div class="login-field">
+                        <label for="username">رقم المستخدم أو اسم المستخدم</label>
                         <input
-                            type="password"
-                            name="password"
-                            id="password"
+                            type="text"
+                            name="username"
+                            id="username"
                             required
-                            autocomplete="current-password"
-                            placeholder="أدخل كلمة المرور"
+                            autocomplete="username"
+                            placeholder="أدخل رقم المستخدم أو اسم المستخدم"
                         >
-                        <button type="button" class="login-toggle-pw" id="toggle-password" aria-label="إظهار كلمة المرور" title="إظهار/إخفاء">
-                            <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                            <svg id="icon-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
-                        </button>
                     </div>
-                </div>
 
-                <button type="submit" class="login-submit">تسجيل الدخول</button>
-            </form>
+                    <div class="login-field">
+                        <label for="password">كلمة المرور</label>
+                        <div class="login-password-wrap">
+                            <input
+                                type="password"
+                                name="password"
+                                id="password"
+                                required
+                                autocomplete="current-password"
+                                placeholder="أدخل كلمة المرور"
+                            >
+                            <button type="button" class="login-toggle-pw" id="toggle-password" aria-label="إظهار كلمة المرور" title="إظهار/إخفاء">
+                                <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg id="icon-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="login-submit">تسجيل الدخول</button>
+                </form>
+            </div>
         </div>
 
         <p class="login-footer">© 2026 نظام الموارد البشرية. جميع الحقوق محفوظة</p>
