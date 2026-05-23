@@ -107,16 +107,6 @@ def dashboard_view(request):
         'branches_count': Branch.objects.filter(is_deleted=False).count() if request.user.is_superuser else len(accessible_branch_ids),
     }
 
-    last_database_backup = None
-    if request.user.is_superuser or _is_general_manager(request.user):
-        last_database_backup = (
-            DatabaseBackupLog.objects.only(
-                'id', 'created_at', 'status', 'filename', 'trigger', 'size_bytes',
-            )
-            .order_by('-created_at')
-            .first()
-        )
-
     context = {
         'stats': stats,
         'branch_distribution': branch_distribution,
@@ -126,7 +116,6 @@ def dashboard_view(request):
         'nationality_distribution': nationality_distribution,
         'max_nationality': max_nationality,
         'show_overview': bool(request.user.is_superuser or _is_general_manager(request.user)),
-        'last_database_backup': last_database_backup,
         'is_branch_manager': False,
         'pending_requests': [],
         'is_hr_officer': False,
