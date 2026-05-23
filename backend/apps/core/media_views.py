@@ -4,6 +4,7 @@ Authenticated media file serving (local filesystem or Cloudflare R2).
 import logging
 import mimetypes
 from pathlib import Path
+from urllib.parse import unquote
 
 from botocore.exceptions import ClientError
 from django.conf import settings
@@ -11,7 +12,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.views.decorators.http import require_http_methods
 
+from apps.core.media_resolve import find_r2_object_key
+from apps.core.storages import HRMediaStorage
+
 logger = logging.getLogger(__name__)
+
+_NOT_FOUND = frozenset({"404", "NoSuchKey", "NotFound"})
 
 
 def _media_root() -> Path:
@@ -19,7 +25,7 @@ def _media_root() -> Path:
 
 
 def _normalize_media_path(path: str) -> str:
-    normalized = path.replace("\\", "/").lstrip("/")
+    normalized = unquote(path).replace("\\", "/").lstrip("/")
     if not normalized or ".." in normalized.split("/"):
         raise ValueError("invalid path")
     return normalized
@@ -66,24 +72,28 @@ def _serve_local_media(request, path: str):
 
 
 def _serve_r2_media(request, path: str):
-    from apps.core.storages import HRMediaStorage
-
     storage = HRMediaStorage()
+    key = find_r2_object_key(storage, path)
+    if not key:
+        logger.warning("R2 media not found for path=%s", path)
+        raise Http404()
+
     try:
-        file_obj = storage.open(path, "rb")
+        file_obj = storage.open(key, "rb")
     except ClientError as exc:
         code = exc.response.get("Error", {}).get("Code", "")
-        if code in {"404", "NoSuchKey", "NotFound"}:
+        if code in _NOT_FOUND:
+            logger.warning("R2 media open failed path=%s key=%s", path, key)
             raise Http404() from exc
-        logger.exception("R2 media read failed for %s", path)
+        logger.exception("R2 media read failed path=%s key=%s", path, key)
         raise Http404() from exc
     except FileNotFoundError as exc:
         raise Http404() from exc
-    except Exception as exc:
-        logger.exception("Unexpected media read error for %s", path)
-        raise Http404() from exc
+    except Exception:
+        logger.exception("Unexpected media read error path=%s key=%s", path, key)
+        raise Http404()
 
-    content_type, _ = mimetypes.guess_type(path)
+    content_type, _ = mimetypes.guess_type(key)
     response = FileResponse(
         file_obj,
         content_type=content_type or "application/octet-stream",

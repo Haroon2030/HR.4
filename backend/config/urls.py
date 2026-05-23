@@ -69,7 +69,6 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 # ملفات media — للمستخدمين المسجّلين فقط (محلي أو بروكسي R2)
+_media_route = path('media/<path:path>', serve_protected_media, name='protected_media')
 if not getattr(settings, 'USE_R2', False) or getattr(settings, 'R2_PROXY_MEDIA', True):
-    urlpatterns += [
-        path('media/<path:path>', serve_protected_media, name='protected_media'),
-    ]
+    urlpatterns.insert(0, _media_route)

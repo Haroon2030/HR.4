@@ -583,3 +583,22 @@ class DepartmentFormTests(TestCase):
     def test_valid(self):
         f = DepartmentForm(data={'code': 'D2', 'name': 'جديد'}, branch=self.branch)
         self.assertTrue(f.is_valid(), f.errors)
+
+
+class MediaResolveTests(TestCase):
+    def test_iter_r2_key_candidates_legacy_and_hr_layout(self):
+        from apps.core.media_resolve import iter_r2_key_candidates
+
+        path = 'employees/statements/photo.jpg'
+        keys = list(iter_r2_key_candidates(path))
+        self.assertIn(path, keys)
+        self.assertIn('HR/employees/statements/photo.jpg', keys)
+        self.assertTrue(any(k.startswith('HR/employees/statements/') and k.endswith('/photo.jpg') for k in keys))
+
+    def test_normalize_media_path_decodes_spaces(self):
+        from apps.core.media_views import _normalize_media_path
+
+        self.assertEqual(
+            _normalize_media_path('employees/statements/a%20b.jpg'),
+            'employees/statements/a b.jpg',
+        )
