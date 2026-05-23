@@ -780,6 +780,9 @@ body.hr-app .hr-sidebar::after {
 .hr-glass-panel,
 .hr-main .bg-white.rounded-xl,
 .hr-main .bg-white.rounded-2xl,
+.hr-main .bg-white.rounded-lg.shadow-sm,
+.hr-main form.bg-white,
+.hr-glass-form,
 .hr-main .hr-glass-card,
 .hr-card,
 .hr-hero {
@@ -1300,4 +1303,164 @@ body.hr-app .border-blue-200.bg-blue-50 {
 
 .hr-glass-modal__fallback {
     padding: 1.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   نماذج ونوافذ زجاجية — كل التطبيق
+   ══════════════════════════════════════════════════════════════ */
+
+/* خلفية النوافذ المنبثقة */
+body.hr-app .hr-glass-modal-overlay,
+body.hr-app .fixed.inset-0.flex.items-center.justify-center[class*="bg-black"],
+body.hr-app .fixed.inset-0.flex.items-center.justify-center[class*="bg-slate-900"] {
+    background: rgba(15, 23, 42, 0.38) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+body.hr-app .fixed.inset-0 > .fixed.inset-0[class*="bg-black"],
+body.hr-app .fixed.inset-0 > .fixed.inset-0[class*="backdrop-blur"] {
+    background: rgba(15, 23, 42, 0.38) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* لوحة النافذة — تلقائياً أو بكلاس hr-glass-modal */
+body.hr-app .fixed.inset-0.flex > .bg-white.rounded-xl.shadow-2xl,
+body.hr-app .fixed.inset-0.flex > .bg-white.rounded-xl.shadow-xl,
+body.hr-app .fixed.inset-0 .relative.bg-white.rounded-2xl.shadow-2xl,
+body.hr-app .fixed.inset-0 .relative.bg-white.rounded-xl.shadow-2xl,
+body.hr-app .zk-modal-panel {
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border: 1px solid var(--hr-glass-line) !important;
+    box-shadow:
+        0 24px 48px rgba(15, 23, 42, 0.14),
+        inset 0 1px 0 var(--hr-glass-border) !important;
+}
+
+/* رأس/ذيل النافذة */
+body.hr-app .hr-glass-modal > div.border-b,
+body.hr-app .fixed.inset-0 .hr-glass-modal > .border-b,
+body.hr-app .fixed.inset-0 .bg-white.rounded-xl > div.border-b:first-child,
+body.hr-app .zk-modal-panel > div.border-b {
+    border-color: var(--hr-glass-line) !important;
+    background: rgba(255, 255, 255, 0.45) !important;
+}
+
+body.hr-app .zk-modal-panel > .bg-slate-50,
+body.hr-app .hr-glass-modal > .bg-slate-50 {
+    background: rgba(255, 255, 255, 0.45) !important;
+}
+
+body.hr-app .hr-glass-modal > div.border-t,
+body.hr-app .fixed.inset-0 .bg-white > div.bg-slate-50.border-t,
+body.hr-app .fixed.inset-0 .hr-glass-modal > .border-t {
+    border-color: var(--hr-glass-line) !important;
+    background: rgba(248, 250, 252, 0.65) !important;
+}
+
+body.hr-app .hr-glass-modal > .bg-gradient-to-l,
+body.hr-app .fixed.inset-0 .hr-glass-modal > .bg-gradient-to-l {
+    background: linear-gradient(to left, rgba(79, 70, 229, 0.88), rgba(67, 56, 202, 0.88)) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* حقول الإدخال الزجاجية */
+body.hr-app .hr-main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]),
+body.hr-app .hr-main select,
+body.hr-app .hr-main textarea,
+body.hr-app .hr-glass-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]),
+body.hr-app .hr-glass-modal select,
+body.hr-app .hr-glass-modal textarea,
+body.hr-app .hr-glass-input,
+body.hr-app .zk-modal-field {
+    background: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hr-glass-line) !important;
+    color: #0f172a;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+body.hr-app .hr-main input:focus,
+body.hr-app .hr-main select:focus,
+body.hr-app .hr-main textarea:focus,
+body.hr-app .hr-glass-modal input:focus,
+body.hr-app .hr-glass-modal select:focus,
+body.hr-app .hr-glass-modal textarea:focus,
+body.hr-app .hr-glass-input:focus,
+body.hr-app .zk-modal-field:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.88) !important;
+    border-color: rgba(59, 130, 246, 0.55) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+body.hr-app .zk-modal-fieldset {
+    border-color: var(--hr-glass-line) !important;
+    background: rgba(255, 255, 255, 0.38) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* تنبيهات داخل النماذج */
+body.hr-app .hr-main form .bg-amber-50,
+body.hr-app .hr-glass-modal .bg-amber-50 {
+    background: rgba(255, 251, 235, 0.78) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.hr-app .hr-main form .bg-red-50,
+body.hr-app .hr-glass-modal .bg-red-50 {
+    background: rgba(254, 242, 242, 0.78) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.hr-app .hr-main form .bg-blue-50,
+body.hr-app .hr-glass-modal .bg-blue-50,
+body.hr-app .hr-main form .bg-indigo-50,
+body.hr-app .hr-glass-modal .bg-indigo-50 {
+    background: rgba(239, 246, 255, 0.78) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.hr-app .hr-main form .bg-emerald-50,
+body.hr-app .hr-glass-modal .bg-emerald-50 {
+    background: rgba(236, 253, 245, 0.78) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.hr-app .hr-main form .bg-slate-50,
+body.hr-app .hr-glass-modal .bg-slate-50:not(.border-t) {
+    background: rgba(248, 250, 252, 0.55) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* شريط إجراءات النموذج الثابت */
+body.hr-app form > div.sticky.bottom-0.bg-slate-50,
+body.hr-app form > div.border-t.border-slate-200 {
+    background: rgba(248, 250, 252, 0.72) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border-color: var(--hr-glass-line) !important;
+}
+
+/* قوائم منسدلة في الهيدر */
+body.hr-app .hr-header .bg-white.rounded-xl.shadow-xl {
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border-color: var(--hr-glass-line) !important;
 }

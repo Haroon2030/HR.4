@@ -135,8 +135,8 @@
     {% endif %}
 
     <!-- Modal: إعادة تفعيل موظف مُصفّى -->
-    <div x-show="quickModal==='reactivate'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='reactivate'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="user-check" class="w-5 h-5 text-emerald-600"></i>
@@ -191,8 +191,8 @@
     </div>
 
     <!-- Modal: تسجيل إفادة / مخالفة -->
-    <div x-show="quickModal==='statement'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='statement'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-3xl max-h-[92vh] overflow-y-auto">
             <form method="post" action="{% url 'web:add_employee_statement' employee.id %}" enctype="multipart/form-data" class="px-4 py-3 grid grid-cols-1 md:grid-cols-6 gap-2.5"
                   x-data="{
                     sendEmail: false,
@@ -294,8 +294,8 @@
     </div>
 
     <!-- Modal: جدول الدوام (إضافة + إرسال) -->
-    <div x-show="quickModal==='schedule'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto"
+    <div x-show="quickModal==='schedule'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-5xl max-h-[92vh] overflow-y-auto"
              x-data="Object.assign(scheduleBoxes(false), { sendEmail: false, empEmail: '{{ employee.email|default:''|escapejs }}', hrEmail: '' })"
              x-effect="if (quickModal === 'schedule' && boxes.length === 0) { addBox(); }">
             <form method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="p-4 space-y-3">
@@ -406,7 +406,7 @@
     </div>
 
     <!-- Modal: تقديم إجازة -->
-    <div x-show="quickModal==='leave'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null"
+    <div x-show="quickModal==='leave'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null"
          x-data="{
             ltype: 'annual',
             dfrom: '',
@@ -422,7 +422,7 @@
             get exceeds(){ return this.ltype === 'annual' && this.days > this.balance; },
             get canSubmit(){ return this.hasSponsor && this.days > 0 && !this.exceeds; }
          }">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="calendar-plus" class="w-5 h-5 text-blue-600"></i>
@@ -512,8 +512,8 @@
     </div>
 
     <!-- Modal: تصفية موظف -->
-    <div x-show="quickModal==='terminate'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='terminate'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="user-x" class="w-5 h-5 text-red-600"></i>
@@ -583,7 +583,7 @@
     </div>
 
     <!-- Modal: انتهاء عقد — مكافأة نهاية الخدمة (EOSB) -->
-    <div x-show="quickModal==='contract_end'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null"
+    <div x-show="quickModal==='contract_end'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null"
          x-data="{
             hireDate: '{{ employee.hire_date|date:"Y-m-d" }}',
             endDate: '',
@@ -635,7 +635,7 @@
             get leaveComp() { return this.hasSponsor ? +(this.dailyWage * this.remainingLeave).toFixed(2) : 0; },
             get grandTotal() { return +(this.eosb + this.leaveComp).toFixed(2); }
          }">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div class="hr-glass-modal w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="file-x-2" class="w-5 h-5 text-red-600"></i>
@@ -763,7 +763,7 @@
     </div>
 
     <!-- Modal: تصفية نهاية خدمة أو استقالة -->
-    <div x-show="quickModal==='end_of_service'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null"
+    <div x-show="quickModal==='end_of_service'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null"
          x-data="{
             hireDate: '{{ employee.hire_date|date:"Y-m-d" }}',
             endDate: '',
@@ -815,7 +815,7 @@
             get leaveComp() { return this.hasSponsor ? +(this.dailyWage * this.remainingLeave).toFixed(2) : 0; },
             get grandTotal() { return +(this.eosb + this.leaveComp).toFixed(2); }
          }">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div class="hr-glass-modal w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="file-x-2" class="w-5 h-5 text-red-600"></i>
@@ -943,7 +943,7 @@
     </div>
 
     <!-- Modal: تعديل راتب -->
-    <div x-show="quickModal==='salary'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null"
+    <div x-show="quickModal==='salary'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null"
          x-data="{
             basic: {{ employee.basic_salary|default:0 }},
             housing: {{ employee.housing_allowance|default:0 }},
@@ -957,7 +957,7 @@
             get diff(){ return this.newTotal - this.currentTotal; },
             get pct(){ return this.currentTotal ? ((this.diff/this.currentTotal)*100).toFixed(1) : 0; }
          }">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
+        <div class="hr-glass-modal w-full max-w-xl max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="dollar-sign" class="w-5 h-5 text-emerald-600"></i>
@@ -1060,8 +1060,8 @@
     </div>
 
     <!-- Modal: نقل موظف -->
-    <div x-show="quickModal==='transfer'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='transfer'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="move" class="w-5 h-5 text-indigo-600"></i>
@@ -1145,8 +1145,8 @@
     </div>
 
     <!-- Modal: استلام عهدة -->
-    <div x-show="quickModal==='custody_receive'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='custody_receive'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="package-check" class="w-5 h-5 text-emerald-600"></i>
@@ -1206,8 +1206,8 @@
     </div>
 
     <!-- Modal: تصفية عهدة -->
-    <div x-show="quickModal==='custody_clear'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='custody_clear'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="package-x" class="w-5 h-5 text-rose-600"></i>
@@ -1256,8 +1256,8 @@
     </div>
 
     <!-- Modal: عرض وظيفي -->
-    <div x-show="quickModal==='job_offer'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='job_offer'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="file-badge" class="w-5 h-5 text-primary-600"></i>
@@ -1305,8 +1305,8 @@
     </div>
 
     <!-- Modal: رحلة عمل -->
-    <div x-show="quickModal==='business_trip'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='business_trip'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="plane-takeoff" class="w-5 h-5 text-sky-600"></i>
@@ -1368,8 +1368,8 @@
     </div>
 
     <!-- Modal: تقديم سلفة -->
-    <div x-show="quickModal==='loan'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+    <div x-show="quickModal==='loan'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="hand-coins" class="w-5 h-5 text-amber-600"></i>
@@ -1436,8 +1436,8 @@
     </div>
 
     <!-- Modal: تسجيل غياب -->
-    <div x-show="quickModal==='absence'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="quickModal=null">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
+    <div x-show="quickModal==='absence'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto"
              x-data="{
                 totalSalary: {{ employee.total_salary|default:0 }},
                 absenceDate: '{% now "Y-m-d" %}',
@@ -2581,11 +2581,10 @@
                                              x-transition:leave="transition ease-in duration-150"
                                              x-transition:leave-start="opacity-100"
                                              x-transition:leave-end="opacity-0"
-                                             class="fixed inset-0 z-[999] flex items-center justify-center p-4"
+                                             class="hr-glass-modal-overlay fixed inset-0 z-[999] flex items-center justify-center p-4"
                                              @click.self="showNotes = false"
                                              @keydown.escape.window="showNotes = false">
-                                            <div class="fixed inset-0 bg-black/40 backdrop-blur-sm"></div>
-                                            <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden border border-slate-200"
+                                            <div class="hr-glass-modal relative max-w-3xl w-full mx-auto overflow-hidden"
                                                  @click.stop>
                                                 <div class="bg-gradient-to-l from-indigo-600 to-indigo-700 px-6 py-4 flex items-center justify-between">
                                                     <h3 class="text-white font-bold text-sm flex items-center gap-2">
