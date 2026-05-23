@@ -68,8 +68,8 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-# ملفات media المحلية — للمستخدمين المسجّلين فقط (R2 يُخدم عبر CDN منفصل)
-if not getattr(settings, 'USE_R2', False):
+# ملفات media — للمستخدمين المسجّلين فقط (محلي أو بروكسي R2)
+if not getattr(settings, 'USE_R2', False) or getattr(settings, 'R2_PROXY_MEDIA', True):
     urlpatterns += [
         path('media/<path:path>', serve_protected_media, name='protected_media'),
     ]

@@ -307,6 +307,9 @@ if USE_R2:
     # إذا فارغ، يُستخدم رابط الـ bucket مباشرة
     AWS_S3_CUSTOM_DOMAIN = env('R2_PUBLIC_DOMAIN', default='')
 
+    # تمرير المرفقات عبر Django (/media/...) للمستخدمين المسجّلين — bucket خاص
+    R2_PROXY_MEDIA = env.bool('R2_PROXY_MEDIA', default=True)
+
     # محركات التخزين
     STORAGES = {
         'default': {
@@ -320,7 +323,9 @@ if USE_R2:
     }
 
     # رابط الوصول للملفات المرفوعة
-    if AWS_S3_CUSTOM_DOMAIN:
+    if R2_PROXY_MEDIA:
+        MEDIA_URL = '/media/'
+    elif AWS_S3_CUSTOM_DOMAIN:
         MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
     else:
         MEDIA_URL = f'{AWS_S3_ENDPOINT_URL.rstrip("/")}/{AWS_STORAGE_BUCKET_NAME}/'

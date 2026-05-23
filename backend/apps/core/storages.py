@@ -53,7 +53,6 @@ def _r2_client_config() -> Config:
 class HRMediaStorage(S3Boto3Storage):
     file_overwrite = False
     default_acl = None
-    querystring_auth = False
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("bucket_name", getattr(settings, "AWS_STORAGE_BUCKET_NAME", None))
@@ -64,7 +63,30 @@ class HRMediaStorage(S3Boto3Storage):
         kwargs.setdefault("addressing_style", getattr(settings, "AWS_S3_ADDRESSING_STYLE", "path"))
         kwargs.setdefault("signature_version", "s3v4")
         kwargs.setdefault("client_config", _r2_client_config())
+        kwargs.setdefault(
+            "querystring_auth",
+            getattr(settings, "AWS_QUERYSTRING_AUTH", True),
+        )
+        kwargs.setdefault(
+            "querystring_expire",
+            getattr(settings, "AWS_QUERYSTRING_EXPIRE", 3600),
+        )
         super().__init__(*args, **kwargs)
+
+    def url(self, name, parameters=None, expire=None, http_method=None):
+        """روابط المرفقات عبر Django (مصادقة) بدل R2 المباشر على bucket خاص."""
+        if getattr(settings, "USE_R2", False) and getattr(settings, "R2_PROXY_MEDIA", True):
+            from urllib.parse import quote
+
+            base = settings.MEDIA_URL.rstrip("/")
+            safe_name = quote(name.lstrip("/"), safe="/")
+            return f"{base}/{safe_name}"
+        return super().url(
+            name,
+            parameters=parameters,
+            expire=expire,
+            http_method=http_method,
+        )
 
     def _save(self, name, content):
         return super()._save(name, content)
