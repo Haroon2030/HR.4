@@ -235,78 +235,8 @@
                 {% if not is_create %}
                 {# ── أرشيف تعديلات الراتب ── #}
                 <div class="mt-6">
-                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i data-lucide="history" class="w-4 h-4 text-indigo-600"></i>
-                        أرشيف تعديلات الراتب
-                    </h3>
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                        <table class="w-full text-sm">
-                            <thead class="bg-slate-100 text-slate-600">
-                                <tr>
-                                    <th class="px-3 py-2 text-right font-semibold">التاريخ</th>
-                                    <th class="px-3 py-2 text-right font-semibold">العنوان / التفاصيل</th>
-                                    <th class="px-3 py-2 text-right font-semibold">المنفّذ</th>
-                                    <th class="px-3 py-2 text-right font-semibold">الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                {% with shown_count=0 %}
-                                {% for st in employee.statements_log.all %}
-                                    {% if st.statement_type == 'salary_adjust' %}
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-3 py-2 align-top whitespace-nowrap">
-                                            <div class="text-slate-800 text-xs font-mono">{{ st.statement_date|date:"Y-m-d" }}</div>
-                                            <div class="text-slate-400 text-[11px] font-mono">{{ st.created_at|date:"H:i" }}</div>
-                                        </td>
-                                        <td class="px-3 py-2 align-top">
-                                            <div class="text-slate-800 font-medium text-xs">{{ st.title }}</div>
-                                            {% if st.content %}
-                                            <div class="text-slate-500 text-[11px] mt-0.5 whitespace-pre-line">{{ st.content }}</div>
-                                            {% endif %}
-                                            {% if st.document %}
-                                            <a href="{{ st.document.url }}" target="_blank" class="inline-flex items-center gap-1 text-primary-600 hover:underline text-[11px] mt-1">
-                                                <i data-lucide="paperclip" class="w-3 h-3"></i> عرض المرفق
-                                            </a>
-                                            {% endif %}
-                                        </td>
-                                        <td class="px-3 py-2 align-top text-slate-600 text-xs">
-                                            <i data-lucide="user" class="w-3 h-3 inline-block"></i>
-                                            {{ st.created_by.get_full_name|default:st.created_by.username|default:"—" }}
-                                        </td>
-                                        <td class="px-3 py-2 align-top">
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-700">
-                                                <i data-lucide="check" class="w-3 h-3"></i> مُعدَّل
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    {% endif %}
-                                {% endfor %}
-                                {% endwith %}
-                                {# Empty state row — visible only when there are no salary_adjust rows above #}
-                                <tr class="empty-salary-row" style="display:none">
-                                    <td colspan="4" class="px-3 py-6 text-center text-slate-400 text-xs">
-                                        لا توجد تعديلات راتب مسجّلة بعد
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="text-[11px] text-slate-400 text-center mt-2">
-                        <i data-lucide="info" class="w-3 h-3 inline-block"></i>
-                        تظهر هنا فقط عمليات تعديل الراتب. للأرشيف الكامل افتح تبويب "أرشيف الحركة".
-                    </p>
+                    {% include "components/salary_adjust_archive.html" with records=employee.statements_log.all filter_salary=True show_type_col=False section_id="edit" footer_note='تظهر هنا فقط عمليات تعديل الراتب. للأرشيف الكامل افتح تبويب "أرشيف الحركة".' empty_text="لا توجد تعديلات راتب مسجّلة بعد" %}
                 </div>
-                <script>
-                    (function() {
-                        var tables = document.querySelectorAll('tr.empty-salary-row');
-                        tables.forEach(function(emptyRow) {
-                            var tb = emptyRow.parentElement;
-                            if (!tb) return;
-                            var realRows = tb.querySelectorAll('tr:not(.empty-salary-row)');
-                            emptyRow.style.display = realRows.length === 0 ? 'table-row' : 'none';
-                        });
-                    })();
-                </script>
                 {% endif %}
             </div>
 

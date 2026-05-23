@@ -1201,3 +1201,68 @@ body.hr-app .border-blue-200.bg-blue-50 {
     stroke: var(--hr-text);
     stroke-width: 2px;
 }
+
+/* ── نافذة منبثقة زجاجية ── */
+.hr-glass-modal-overlay {
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.hr-glass-modal {
+    background: var(--hr-glass-bg-strong);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border: 1px solid var(--hr-glass-line);
+    box-shadow:
+        0 24px 48px rgba(15, 23, 42, 0.14),
+        inset 0 1px 0 var(--hr-glass-border);
+    border-radius: 1rem;
+}
+
+.hr-glass-modal__head {
+    border-bottom: 1px solid var(--hr-glass-line);
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.hr-glass-modal__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--hr-glass-line);
+    background: rgba(255, 255, 255, 0.7);
+    color: #64748b;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.hr-glass-modal__close:hover {
+    background: rgba(255, 255, 255, 0.95);
+    color: #0f172a;
+}
+
+.hr-glass-modal__chip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--hr-glass-line);
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.hr-glass-modal__content {
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--hr-glass-line);
+    background: rgba(255, 255, 255, 0.5);
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.hr-glass-modal__foot {
+    border-top: 1px solid var(--hr-glass-line);
+    background: rgba(248, 250, 252, 0.65);
+}
