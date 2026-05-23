@@ -29,7 +29,7 @@
 }
 
 .hr-main table tbody tr:hover {
-    background: #f1f5f9 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
 }
 
 .hr-act {

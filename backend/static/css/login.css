@@ -2,11 +2,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-    --login-glass-blur: blur(16px) saturate(1.2);
-    --login-glass-bg: rgba(255, 255, 255, 0.55);
-    --login-glass-bg-strong: rgba(255, 255, 255, 0.78);
-    --login-glass-border: rgba(255, 255, 255, 0.92);
-    --login-glass-line: rgba(226, 232, 240, 0.88);
+    --login-glass-blur: blur(18px) saturate(1.08);
+    --login-glass-bg: rgba(255, 255, 255, 0.82);
+    --login-glass-bg-strong: rgba(255, 255, 255, 0.94);
+    --login-glass-border: rgba(255, 255, 255, 1);
+    --login-glass-line: rgba(241, 245, 249, 0.95);
     --login-primary: #3b82f6;
     --login-primary-dark: #1d4ed8;
 }
@@ -16,10 +16,11 @@ body.login-body {
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     color: #1e293b;
+    background-color: #ffffff;
     background:
-        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(191, 219, 254, 0.55), transparent 55%),
-        radial-gradient(ellipse 70% 50% at 95% 100%, rgba(147, 197, 253, 0.45), transparent 50%),
-        linear-gradient(145deg, #e8eef5 0%, #f1f5f9 40%, #eff6ff 100%);
+        radial-gradient(ellipse 85% 55% at 50% -5%, rgba(248, 250, 252, 0.95), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 100%, rgba(255, 255, 255, 0.9), transparent 50%),
+        linear-gradient(180deg, #ffffff 0%, #fafbfc 50%, #ffffff 100%);
 }
 
 .login-shell {
@@ -48,7 +49,7 @@ body.login-body {
     height: 22rem;
     top: -6rem;
     right: -4rem;
-    background: rgba(96, 165, 250, 0.45);
+    background: rgba(248, 250, 252, 0.85);
 }
 
 .login-shell::after {
@@ -56,7 +57,7 @@ body.login-body {
     height: 20rem;
     bottom: -5rem;
     left: -4rem;
-    background: rgba(129, 140, 248, 0.35);
+    background: rgba(255, 255, 255, 0.75);
 }
 
 .login-wrap {

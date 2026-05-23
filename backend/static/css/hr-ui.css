@@ -20,21 +20,26 @@
         rgba(99, 102, 241, 0.35) 82%,
         transparent 100%
     );
-    --hr-glass-blur: blur(14px) saturate(1.15);
-    --hr-glass-bg: rgba(255, 255, 255, 0.68);
-    --hr-glass-bg-strong: rgba(255, 255, 255, 0.88);
-    --hr-glass-border: rgba(255, 255, 255, 0.95);
-    --hr-glass-line: rgba(226, 232, 240, 0.85);
+    --hr-glass-blur: blur(18px) saturate(1.08);
+    --hr-glass-bg: rgba(255, 255, 255, 0.78);
+    --hr-glass-bg-strong: rgba(255, 255, 255, 0.94);
+    --hr-glass-border: rgba(255, 255, 255, 1);
+    --hr-glass-line: rgba(241, 245, 249, 0.95);
+    --hr-page-bg: #ffffff;
+    --hr-page-bg-soft: #fafbfc;
 }
 
-/* خلفية أساسية خفيفة (ليست رمادية) لإبراز الزجاج */
+/* خلفية زجاجية بيضاء للتطبيق */
 body.hr-app {
     color: var(--hr-text);
     font-weight: 600;
     -webkit-font-smoothing: subpixel-antialiased;
+    background-color: var(--hr-page-bg) !important;
     background:
-        linear-gradient(155deg, #f8fafc 0%, #ffffff 42%, #f1f5f9 100%) !important;
-    background-color: #f8fafc !important;
+        radial-gradient(ellipse 90% 55% at 50% -8%, rgba(248, 250, 252, 0.9), transparent 58%),
+        radial-gradient(ellipse 50% 35% at 0% 100%, rgba(255, 255, 255, 0.95), transparent 50%),
+        radial-gradient(ellipse 45% 30% at 100% 85%, rgba(248, 250, 252, 0.85), transparent 48%),
+        linear-gradient(180deg, #ffffff 0%, var(--hr-page-bg-soft) 48%, #ffffff 100%) !important;
 }
 
 .hr-header,
@@ -63,10 +68,11 @@ body.hr-app .hr-header {
 }
 
 body.hr-app .hr-main {
-    background: var(--hr-glass-bg) !important;
+    background: var(--hr-glass-bg-strong) !important;
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
     background-image: none !important;
+    box-shadow: inset 1px 0 0 var(--hr-glass-border);
 }
 
 body.hr-app .hr-footer {
@@ -91,7 +97,7 @@ body.hr-app .hr-footer {
 body.hr-app .hr-sidebar {
     position: relative;
     isolation: isolate;
-    background: var(--hr-glass-bg) !important;
+    background: var(--hr-glass-bg-strong) !important;
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
     border-left: 1px solid var(--hr-glass-line) !important;
@@ -928,7 +934,7 @@ body.hr-app .hr-sidebar::after {
     color: #334155 !important;
     font-weight: 700 !important;
     font-size: 0.7rem !important;
-    background: rgba(255, 255, 255, 0.55) !important;
+    background: rgba(255, 255, 255, 0.82) !important;
     border-bottom: 1px solid var(--hr-glass-line) !important;
     padding: 0.5rem 0.65rem !important;
 }
@@ -945,11 +951,11 @@ body.hr-app .hr-sidebar::after {
 }
 
 .hr-main table tbody tr:nth-child(even) td {
-    background: rgba(255, 255, 255, 0.38);
+    background: rgba(255, 255, 255, 0.62);
 }
 
 .hr-main table tbody tr:hover td {
-    background: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
 }
 
 .hr-main table.divide-y tbody tr td,
