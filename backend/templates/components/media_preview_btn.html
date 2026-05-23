@@ -1,0 +1,15 @@
+{# url, title, label, icon, btn_class, icon_class, as_icon_only #}
+{% if url %}
+<button type="button"
+        class="{% if as_icon_only %}hr-act hr-act--view{% else %}{{ btn_class|default:'inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-[11px] font-semibold' }}{% endif %}"
+        data-hr-media-open
+        data-hr-media-url="{{ url }}"
+        data-hr-media-title="{{ title|default:'معاينة المرفق' }}"
+        title="{{ title|default:'معاينة' }}"
+        aria-label="{{ title|default:'معاينة المرفق' }}">
+    <i data-lucide="{{ icon|default:'eye' }}" class="{% if as_icon_only %}hr-act__icon{% else %}{{ icon_class|default:'w-3 h-3' }}{% endif %}"></i>
+    {% if not as_icon_only and label != '' %}<span>{{ label|default:'عرض' }}</span>{% endif %}
+</button>
+{% else %}
+<span class="text-slate-300 text-xs">—</span>
+{% endif %}

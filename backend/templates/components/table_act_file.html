@@ -1,3 +1,11 @@
-<a href="{{ url }}" class="hr-act hr-act--file" title="{{ title|default:'عرض الملف' }}" aria-label="{{ title|default:'عرض الملف' }}" target="_blank" rel="noopener">
-    <i data-lucide="file-text" class="hr-act__icon"></i>
-</a>
+{% if url %}
+<button type="button"
+        class="hr-act hr-act--view"
+        data-hr-media-open
+        data-hr-media-url="{{ url }}"
+        data-hr-media-title="{{ title|default:'عرض الملف' }}"
+        title="{{ title|default:'عرض الملف' }}"
+        aria-label="{{ title|default:'عرض الملف' }}">
+    <i data-lucide="eye" class="hr-act__icon"></i>
+</button>
+{% endif %}

@@ -2,17 +2,22 @@
 <div class="salary-adjust-archive"
      x-data="{
         open: false,
-        item: { title: '', content: '', date: '', time: '', executor: '', document: '' },
+        item: { title: '', content: '', date: '', time: '', executor: '', document: '', isImage: false },
+        isImageUrl(url) {
+            return /\.(jpe?g|png|gif|webp|bmp|svg)(\?|$)/i.test((url || '').split('?')[0]);
+        },
         showDetail(btn) {
             const row = btn.closest('[data-salary-row]');
             if (!row) return;
             const contentEl = row.querySelector('.salary-row-content');
+            const doc = row.dataset.document || '';
             this.item = {
                 title: row.dataset.title || '',
                 date: row.dataset.date || '',
                 time: row.dataset.time || '',
                 executor: row.dataset.executor || '',
-                document: row.dataset.document || '',
+                document: doc,
+                isImage: this.isImageUrl(doc),
                 content: contentEl ? contentEl.textContent.trim() : '',
             };
             this.open = true;
@@ -161,12 +166,29 @@
                 <template x-if="!item.content">
                     <p class="text-xs text-slate-400 text-center py-2">لا توجد تفاصيل إضافية</p>
                 </template>
-                <template x-if="item.document">
-                    <a :href="item.document" target="_blank" rel="noopener"
-                       class="inline-flex items-center gap-1.5 text-primary-600 hover:underline text-xs font-semibold">
+                <template x-if="item.document && item.isImage">
+                    <div class="space-y-2">
+                        <button type="button"
+                                class="block w-full rounded-lg overflow-hidden border border-white/40 bg-white/30 p-1 cursor-zoom-in"
+                                @click="window.hrOpenGlassMedia && hrOpenGlassMedia(item.document, item.title)"
+                                :title="'معاينة: ' + (item.title || 'المرفق')">
+                            <img :src="item.document" :alt="item.title || 'مرفق'" class="hr-glass-modal__img max-h-48 w-full object-contain mx-auto" />
+                        </button>
+                        <button type="button"
+                                class="inline-flex items-center gap-1.5 text-primary-600 hover:text-primary-700 text-xs font-semibold"
+                                @click="window.hrOpenGlassMedia && hrOpenGlassMedia(item.document, item.title)">
+                            <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                            تكبير في شاشة زجاجية
+                        </button>
+                    </div>
+                </template>
+                <template x-if="item.document && !item.isImage">
+                    <button type="button"
+                            class="inline-flex items-center gap-1.5 text-primary-600 hover:text-primary-700 text-xs font-semibold"
+                            @click="window.hrOpenGlassMedia && hrOpenGlassMedia(item.document, item.title)">
                         <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
                         عرض المرفق
-                    </a>
+                    </button>
                 </template>
             </div>
             <div class="hr-glass-modal__foot px-5 py-3 flex justify-start">

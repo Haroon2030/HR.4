@@ -1,0 +1,144 @@
+{# عارض زجاجي عام — صور و PDF عبر /media/ #}
+<div id="hr-glass-media-modal"
+     class="hr-glass-modal-overlay fixed inset-0 z-[1000] hidden items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="hr-glass-media-title"
+     aria-hidden="true">
+    <div class="hr-glass-modal hr-glass-modal--media relative w-full mx-auto overflow-hidden flex flex-col max-h-[92vh]"
+         onclick="event.stopPropagation()">
+        <div class="hr-glass-modal__head px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+            <h3 id="hr-glass-media-title" class="text-sm font-bold text-slate-800 flex items-center gap-2 min-w-0 m-0">
+                <i data-lucide="image" class="w-4 h-4 text-indigo-600 shrink-0" id="hr-glass-media-head-icon"></i>
+                <span class="truncate" id="hr-glass-media-title-text">معاينة المرفق</span>
+            </h3>
+            <button type="button" class="hr-glass-modal__close" aria-label="إغلاق" id="hr-glass-media-close">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div class="hr-glass-modal__body hr-glass-modal__body--media px-4 py-3 flex-1 min-h-0 flex items-center justify-center">
+            <img id="hr-glass-media-img" alt="" class="hr-glass-modal__img hidden" />
+            <iframe id="hr-glass-media-frame" title="معاينة الملف" class="hr-glass-modal__frame hidden"></iframe>
+            <div id="hr-glass-media-fallback" class="hr-glass-modal__fallback hidden text-center">
+                <i data-lucide="file-question" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+                <p class="text-xs text-slate-500 mb-3">لا يمكن معاينة هذا النوع داخل الصفحة</p>
+                <a id="hr-glass-media-download" href="#" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary-600 text-white hover:bg-primary-700">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    فتح الملف
+                </a>
+            </div>
+            <p id="hr-glass-media-loading" class="text-xs text-slate-500 hidden">جاري التحميل…</p>
+        </div>
+        <div class="hr-glass-modal__foot px-4 py-2.5 flex items-center justify-between gap-2 shrink-0">
+            <a id="hr-glass-media-open-tab" href="#" target="_blank" rel="noopener"
+               class="text-xs font-semibold text-primary-600 hover:underline inline-flex items-center gap-1">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                فتح في تبويب جديد
+            </a>
+            <button type="button" id="hr-glass-media-close-btn"
+                    class="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 bg-white/80 text-slate-700 hover:bg-white">
+                إغلاق
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var modal = document.getElementById('hr-glass-media-modal');
+    if (!modal || window.hrOpenGlassMedia) return;
+
+    var img = document.getElementById('hr-glass-media-img');
+    var frame = document.getElementById('hr-glass-media-frame');
+    var fallback = document.getElementById('hr-glass-media-fallback');
+    var loading = document.getElementById('hr-glass-media-loading');
+    var titleEl = document.getElementById('hr-glass-media-title-text');
+    var downloadLink = document.getElementById('hr-glass-media-download');
+    var openTab = document.getElementById('hr-glass-media-open-tab');
+
+    function mediaKind(url) {
+        var path = (url || '').split('?')[0].toLowerCase();
+        if (/\.(jpe?g|png|gif|webp|bmp|svg)$/.test(path)) return 'image';
+        if (/\.pdf$/.test(path)) return 'pdf';
+        return 'other';
+    }
+
+    function hidePanels() {
+        img.classList.add('hidden');
+        frame.classList.add('hidden');
+        fallback.classList.add('hidden');
+        loading.classList.add('hidden');
+        img.removeAttribute('src');
+        frame.removeAttribute('src');
+    }
+
+    function closeModal() {
+        hidePanels();
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    function openModal(url, title) {
+        if (!url) return;
+        hidePanels();
+        loading.classList.remove('hidden');
+        titleEl.textContent = title || 'معاينة المرفق';
+        downloadLink.href = url;
+        openTab.href = url;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+
+        var kind = mediaKind(url);
+        if (kind === 'image') {
+            img.onload = function () {
+                loading.classList.add('hidden');
+                img.classList.remove('hidden');
+            };
+            img.onerror = function () {
+                loading.classList.add('hidden');
+                fallback.classList.remove('hidden');
+            };
+            img.alt = title || 'مرفق';
+            img.src = url;
+        } else if (kind === 'pdf') {
+            loading.classList.add('hidden');
+            frame.src = url;
+            frame.classList.remove('hidden');
+        } else {
+            loading.classList.add('hidden');
+            fallback.classList.remove('hidden');
+        }
+
+        if (window.lucide) {
+            lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+        }
+    }
+
+    window.hrOpenGlassMedia = openModal;
+    window.hrCloseGlassMedia = closeModal;
+
+    document.getElementById('hr-glass-media-close').addEventListener('click', closeModal);
+    document.getElementById('hr-glass-media-close-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+    });
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-hr-media-open]');
+        if (!trigger) return;
+        e.preventDefault();
+        var url = trigger.getAttribute('data-hr-media-url') || trigger.getAttribute('href');
+        var title = trigger.getAttribute('data-hr-media-title') || trigger.getAttribute('title') || 'معاينة المرفق';
+        if (url) openModal(url, title);
+    });
+})();
+</script>
