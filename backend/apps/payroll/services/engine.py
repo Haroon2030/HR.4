@@ -55,8 +55,23 @@ def _q(v):
 # 1. بناء المسير
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _employees_for_payroll_run(branch, salary_mode):
+    """موظفون نشطون/في إجازة حسب نوع الراتب (كفالة أم لا)."""
+    from apps.employees.models import Employee
+
+    qs = Employee.objects.filter(
+        branch=branch,
+        status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
+    )
+    if salary_mode == PayrollRun.SalaryMode.CASH:
+        return qs.filter(sponsorship__isnull=True)
+    if salary_mode == PayrollRun.SalaryMode.TRANSFER:
+        return qs.filter(sponsorship__isnull=False)
+    raise ValueError('نوع الراتب غير صالح.')
+
+
 @transaction.atomic
-def build_payroll_run(branch, year: int, month: int, user=None):
+def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=None):
     """
     يبني أو يُعيد بناء مسير DRAFT لفرع وشهر محددين.
 
@@ -66,12 +81,26 @@ def build_payroll_run(branch, year: int, month: int, user=None):
     المخرجات: PayrollRun محدّث مع totals محسوبة.
     الأخطاء: ValueError إذا كان المسير مغلقاً (LOCKED).
     """
+    if salary_mode is None:
+        salary_mode = PayrollRun.SalaryMode.TRANSFER
+    if salary_mode not in PayrollRun.SalaryMode.values:
+        raise ValueError('نوع الراتب غير صالح.')
 
     # ── جلب أو إنشاء المسير ──
     run, _ = PayrollRun.objects.get_or_create(
-        branch=branch, period_year=year, period_month=month,
-        defaults={'created_by': user, 'status': PayrollRun.Status.DRAFT}
+        branch=branch,
+        period_year=year,
+        period_month=month,
+        salary_mode=salary_mode,
+        defaults={
+            'created_by': user,
+            'status': PayrollRun.Status.DRAFT,
+            'company': branch.company,
+        },
     )
+    if run.company_id != branch.company_id:
+        run.company = branch.company
+        run.save(update_fields=['company'])
 
     # لا يمكن إعادة بناء مسير مُرحَّل
     if run.status == PayrollRun.Status.LOCKED:
@@ -88,11 +117,8 @@ def build_payroll_run(branch, year: int, month: int, user=None):
     period_start = date(year, month, 1)                     # أول يوم
     period_end = date(year, month, month_days)               # آخر يوم
 
-    # ── جلب الموظفين النشطين + في إجازة (الإجازة المدفوعة = يستحق راتب) ──
-    employees = Employee.objects.filter(
-        branch=branch,
-        status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
-    ).order_by('name').distinct()
+    # ── جلب الموظفين حسب نوع الراتب ──
+    employees = _employees_for_payroll_run(branch, salary_mode).order_by('name').distinct()
 
     seen_ids = set()  # لمنع تكرار الموظف (حماية إضافية)
 

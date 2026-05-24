@@ -21,6 +21,7 @@ def get_device_user_queryset(
     *,
     device_id: int | None = None,
     branch_id: int | None = None,
+    branch_ids: list[int] | None = None,
     search: str | None = None,
     mapped_only: bool | None = None,
 ) -> QuerySet:
@@ -44,7 +45,9 @@ def get_device_user_queryset(
 
     if device_id:
         qs = qs.filter(device_id=device_id)
-    if branch_id:
+    if branch_ids:
+        qs = qs.filter(device__branch_id__in=branch_ids)
+    elif branch_id:
         qs = qs.filter(device__branch_id=branch_id)
 
     if mapped_only is True:

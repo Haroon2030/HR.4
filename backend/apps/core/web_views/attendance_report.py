@@ -41,7 +41,7 @@ def _punches_for_report(request, filters: dict):
 
     qs = get_punch_queryset(
         device_id=filters['device_id'],
-        branch_id=filters['branch_id'],
+        branch_ids=filters['branch_ids'],
         employee_id=filters['employee_id'],
         device_user_id=filters['device_user_id'],
         date_from=date_from,

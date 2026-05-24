@@ -19,6 +19,7 @@ def get_biometric_devices_queryset(
     user,
     *,
     branch_id: int | None = None,
+    branch_ids: list[int] | None = None,
     active_only: bool = False,
 ) -> QuerySet:
     qs = (
@@ -29,7 +30,9 @@ def get_biometric_devices_queryset(
         )
         .order_by('branch__name', 'name')
     )
-    if branch_id:
+    if branch_ids:
+        qs = qs.filter(branch_id__in=branch_ids)
+    elif branch_id:
         qs = qs.filter(branch_id=branch_id)
     if active_only:
         qs = qs.filter(is_active=True)

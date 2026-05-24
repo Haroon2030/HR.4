@@ -15,6 +15,7 @@ from django.urls import reverse
 
 from apps.core.decorators import permission_required
 from apps.core.models import Branch
+from apps.core.filter_utils import apply_branch_filter, parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids
 from apps.setup.models import Sponsorship
 
@@ -60,17 +61,16 @@ def _report_keys():
 
 
 def _report_filters(request):
-    """فلاتر موحّدة: فرع، كفالة، فترة زمنية."""
+    """فلاتر موحّدة: فروع (متعدد)، كفالات (متعدد)، فترة زمنية."""
     today = date.today()
     first = today.replace(day=1)
-    branch = (request.GET.get('branch') or '').strip()
-    sponsorship = (request.GET.get('sponsorship') or '').strip()
+    accessible = _user_accessible_branch_ids(request.user)
+    branch_ids = parse_multi_filter_ids(request, 'branch', accessible_ids=accessible)
+    sponsorship_ids = parse_multi_filter_ids(request, 'sponsorship')
     report = (request.GET.get('report') or '').strip()
     return {
-        'branch': branch,
-        'branch_id': int(branch) if branch.isdigit() else None,
-        'sponsorship': sponsorship,
-        'sponsorship_id': int(sponsorship) if sponsorship.isdigit() else None,
+        'branch_ids': branch_ids,
+        'sponsorship_ids': sponsorship_ids,
         'date_from': request.GET.get('from') or first.isoformat(),
         'date_to': request.GET.get('to') or today.isoformat(),
         'report': report,
@@ -110,13 +110,12 @@ def _active():
 
 
 def _filtered_employees(request):
-    """موظفون نشطون مع فلتر الفرع والكفالة."""
+    """موظفون نشطون مع فلتر الفروع والكفالات."""
     filters = _report_filters(request)
     qs = _active()
-    if filters['branch_id']:
-        qs = qs.filter(branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     return qs, filters
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -129,10 +128,9 @@ def _build_headcount_summary(req):
     cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الحالة', 'تاريخ المباشرة']
     labels = dict(Employee.Status.choices)
     qs = _emp_qs().select_related('branch', 'department').order_by('branch__name', 'name')
-    if filters['branch_id']:
-        qs = qs.filter(branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', labels.get(e.status, e.status), str(e.hire_date or '—')] for e in qs]
     return {'columns': cols, 'rows': rows}
 
@@ -191,10 +189,9 @@ def _build_new_hires(req):
     df, dt = _parse_filter_dates(filters)
     cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'تاريخ المباشرة', 'الجنسية']
     qs = _emp_qs().filter(hire_date__gte=df, hire_date__lte=dt).exclude(status=Employee.Status.TERMINATED)
-    if filters['branch_id']:
-        qs = qs.filter(branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch', 'department', 'nationality').order_by('-hire_date')
     rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.hire_date or '—'), e.nationality.name if e.nationality else '—'] for e in qs]
     return {'columns': cols, 'rows': rows, 'note': f'تعيينات من {df} إلى {dt}'}
@@ -205,10 +202,9 @@ def _build_terminations(req):
     df, dt = _parse_filter_dates(filters)
     cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'تاريخ الانتهاء', 'السبب', 'إجمالي الراتب الأخير']
     qs = _emp_qs().filter(status=Employee.Status.TERMINATED, end_date__gte=df, end_date__lte=dt)
-    if filters['branch_id']:
-        qs = qs.filter(branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch').order_by('-end_date')
     rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—', str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows, 'note': f'تصفيات من {df} إلى {dt}'}
@@ -257,10 +253,9 @@ def _build_warnings(req):
         statement_date__gte=df,
         statement_date__lte=dt,
     ).select_related('employee', 'employee__branch')
-    if filters['branch_id']:
-        qs = qs.filter(employee__branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'], field='employee__branch_id')
+    if filters['sponsorship_ids']:
+        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.order_by('-statement_date')[:500]
     labels = dict(EmployeeStatement.StatementType.choices)
     rows = [[s.employee.name, s.employee.branch.name if s.employee.branch else '—', labels.get(s.statement_type, s.statement_type), s.title, str(s.statement_date), str(s.deduction_amount)] for s in qs]
@@ -277,10 +272,9 @@ def _build_leaves(req):
         date_from__lte=dt,
         date_to__gte=df,
     ).select_related('employee', 'employee__branch')
-    if filters['branch_id']:
-        qs = qs.filter(employee__branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'], field='employee__branch_id')
+    if filters['sponsorship_ids']:
+        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.order_by('-date_from')[:500]
     rows = [[l.employee.name, l.employee.branch.name if l.employee.branch else '—', labels.get(l.leave_type, l.leave_type), str(l.date_from), str(l.date_to), str(l.days)] for l in qs]
     return {'columns': cols, 'rows': rows}
@@ -300,11 +294,13 @@ def _build_biometric_daily(req):
     today = timezone.localdate()
     filters = _report_filters(req)
     date_from, date_to = _parse_filter_dates(filters)
-    branch_id = filters['branch_id']
-
-    qs = get_punch_queryset(branch_id=branch_id, date_from=date_from, date_to=date_to)
-    if filters['sponsorship_id']:
-        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = get_punch_queryset(
+        branch_ids=filters['branch_ids'],
+        date_from=date_from,
+        date_to=date_to,
+    )
+    if filters['sponsorship_ids']:
+        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     rows = build_daily_attendance_rows(qs)
     data = daily_rows_to_table(rows)
     data['note'] = f'من {date_from} إلى {date_to} — للفلترة الكاملة: قائمة البصمة → تقرير البصمة'
@@ -321,10 +317,9 @@ def _build_absences(req):
         absence_date__gte=df,
         absence_date__lte=dt,
     ).select_related('employee', 'employee__branch', 'applied_to_payroll')
-    if filters['branch_id']:
-        qs = qs.filter(employee__branch_id=filters['branch_id'])
-    if filters['sponsorship_id']:
-        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = apply_branch_filter(qs, filters['branch_ids'], field='employee__branch_id')
+    if filters['sponsorship_ids']:
+        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.order_by('-absence_date')[:500]
     rows = [[a.employee.name, a.employee.branch.name if a.employee.branch else '—', str(a.absence_date), str(a.days), str(a.deduction_amount), str(a.applied_to_payroll or '—')] for a in qs]
     return {'columns': cols, 'rows': rows}

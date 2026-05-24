@@ -1,0 +1,14 @@
+{# name, items, selected_ids (list|None), field_class, select_id, aria_label #}
+<select name="{{ name }}"
+        id="{{ select_id|default:name }}"
+        class="hr-filter-ms {{ field_class|default:'' }}"
+        multiple
+        data-all-label="{{ all_label|default:'الكل' }}"
+        {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}>
+    {% for item in items %}
+    <option value="{{ item.pk }}"
+        {% if selected_ids and item.pk in selected_ids %}selected{% endif %}>
+        {% if item.name %}{% if item.code and item.code != item.name %}{{ item.code }} — {% endif %}{{ item.name }}{% elif item.company_name %}{{ item.company_name }}{% if item.code %} ({{ item.code }}){% endif %}{% else %}{{ item }}{% endif %}
+    </option>
+    {% endfor %}
+</select>

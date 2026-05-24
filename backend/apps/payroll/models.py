@@ -45,10 +45,22 @@ class PayrollRun(BaseModel):
         LOCKED = 'locked', 'مُغلق ومُرحَّل'     # مقفل — لا يمكن تعديله
         CANCELLED = 'cancelled', 'مُلغى'       # ملغى (غير مستخدم حالياً)
 
+    class SalaryMode(models.TextChoices):
+        CASH = 'cash', 'نقدي'           # موظفون بدون كفالة
+        TRANSFER = 'transfer', 'تحويل'  # موظفون على كفالة
+
     # ── العلاقات ──
+    company = models.ForeignKey(
+        'core.Company', on_delete=models.PROTECT, related_name='payroll_runs',
+        verbose_name="الشركة", null=True, blank=True,
+    )
     branch = models.ForeignKey(
         Branch, on_delete=models.PROTECT, related_name='payroll_runs',
         verbose_name="الفرع"
+    )
+    salary_mode = models.CharField(
+        "نوع الراتب", max_length=20, choices=SalaryMode.choices,
+        default=SalaryMode.TRANSFER, db_index=True,
     )
 
     # ── فترة المسير ──
@@ -86,7 +98,9 @@ class PayrollRun(BaseModel):
         verbose_name = "مسير رواتب"
         verbose_name_plural = "مسيرات الرواتب"
         ordering = ['-period_year', '-period_month', 'branch__name']
-        unique_together = [('branch', 'period_year', 'period_month')]  # مسير واحد فقط لكل فرع/شهر
+        unique_together = [
+            ('branch', 'period_year', 'period_month', 'salary_mode'),
+        ]
 
     def __str__(self):
         return f"{self.branch.name} — {self.period_year}/{self.period_month:02d}"

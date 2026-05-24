@@ -16,6 +16,7 @@ def get_punch_queryset(
     *,
     device_id: int | None = None,
     branch_id: int | None = None,
+    branch_ids: list[int] | None = None,
     employee_id: int | None = None,
     device_user_id: int | None = None,
     date_from: date | None = None,
@@ -31,7 +32,9 @@ def get_punch_queryset(
     )
     if device_id:
         qs = qs.filter(device_id=device_id)
-    if branch_id:
+    if branch_ids:
+        qs = qs.filter(device__branch_id__in=branch_ids)
+    elif branch_id:
         qs = qs.filter(device__branch_id=branch_id)
     if employee_id:
         qs = qs.filter(employee_id=employee_id)

@@ -18,14 +18,7 @@
             <tbody>
                 <tr>
                     <td>
-                        <select name="branch" class="hr-reports-filter-field" aria-label="الفرع">
-                            <option value="">كل الفروع</option>
-                            {% for b in branches %}
-                            <option value="{{ b.pk }}" {% if filter.branch == b.pk|stringformat:"s" %}selected{% endif %}>
-                                {% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filter.branch_ids field_class="hr-reports-filter-field" aria_label="الفرع" %}
                     </td>
                     <td>
                         <select name="report" id="reportSelect" class="hr-reports-filter-field" required aria-label="التقرير">
@@ -43,14 +36,7 @@
                         </select>
                     </td>
                     <td>
-                        <select name="sponsorship" class="hr-reports-filter-field" aria-label="شركة الكفالة">
-                            <option value="">كل الكفالات</option>
-                            {% for s in sponsorships %}
-                            <option value="{{ s.pk }}" {% if filter.sponsorship == s.pk|stringformat:"s" %}selected{% endif %}>
-                                {{ s.company_name }}{% if s.code %} ({{ s.code }}){% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        {% include "components/filter_multiselect.html" with name="sponsorship" items=sponsorships selected_ids=filter.sponsorship_ids field_class="hr-reports-filter-field" aria_label="شركة الكفالة" %}
                     </td>
                     <td>
                         <input type="date" name="from" value="{{ filter.date_from }}" class="hr-reports-filter-field" aria-label="من تاريخ">

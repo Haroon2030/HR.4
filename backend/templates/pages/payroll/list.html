@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">مسير الرواتب الشهري</h1>
-            <p class="text-slate-500 text-sm">إنشاء وعرض مسيرات الرواتب لكل فرع وكل شهر.</p>
+            <p class="text-slate-500 text-sm">إنشاء مسير منفصل لكل فرع وشهر — نقدي (بدون كفالة) أو تحويل (على كفالة).</p>
         </div>
     </div>
 
@@ -16,14 +16,38 @@
         <h3 class="text-sm font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
             <i data-lucide="plus-circle" class="w-4 h-4 inline-block ml-1"></i> إنشاء/إعادة بناء مسير
         </h3>
-        <form method="POST" action="{% url 'web:create_payroll_run' %}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <form method="POST" action="{% url 'web:create_payroll_run' %}" id="payrollCreateForm"
+              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {% csrf_token %}
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">الفرع</label>
-                <select name="branch_id" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    <option value="">— اختر الفرع —</option>
-                    {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+                <label class="block text-xs font-semibold text-slate-600 mb-1">الشركة</label>
+                <select name="company_id" id="payrollCompany" required
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    <option value="">— اختر الشركة —</option>
+                    {% for c in companies %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
                 </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">الفرع</label>
+                <select name="branch_id" id="payrollBranch" required
+                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    <option value="">— اختر الفرع —</option>
+                    {% for b in branches %}
+                    <option value="{{ b.id }}" data-company="{{ b.company_id }}">{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">نوع الراتب</label>
+                <select name="salary_mode" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    <option value="">— اختر النوع —</option>
+                    {% for v, lbl in SALARY_MODE_CHOICES %}
+                    <option value="{{ v }}">{{ lbl }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1 leading-snug">نقدي: بدون كفالة · تحويل: على كفالة</p>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">السنة</label>
@@ -50,20 +74,17 @@
     <div class="bg-white rounded-xl shadow-sm border border-slate-200">
         <div class="p-4 border-b border-slate-100">
             <form method="GET" class="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-                <select name="branch" class="px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">كل الفروع</option>
-                    {% for b in branches %}<option value="{{ b.id }}" {% if filter_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
-                </select>
-                <select name="year" class="px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">كل السنوات</option>
+                {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filter_branch_ids field_class="px-3 py-2 border border-slate-300 rounded-md w-full" %}
+                <select name="year" class="hr-filter-select px-3 py-2 border border-slate-300 rounded-md">
+                    <option value="">الكل</option>
                     {% for y in years_range %}<option value="{{ y }}" {% if filter_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>{% endfor %}
                 </select>
-                <select name="month" class="px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">كل الأشهر</option>
+                <select name="month" class="hr-filter-select px-3 py-2 border border-slate-300 rounded-md">
+                    <option value="">الكل</option>
                     {% for m in months_range %}<option value="{{ m }}" {% if filter_month == m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>{% endfor %}
                 </select>
-                <select name="status" class="px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">كل الحالات</option>
+                <select name="status" class="hr-filter-select px-3 py-2 border border-slate-300 rounded-md">
+                    <option value="">الكل</option>
                     {% for v, lbl in STATUS_CHOICES %}<option value="{{ v }}" {% if filter_status == v %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
                 </select>
                 <button type="submit"
@@ -76,6 +97,7 @@
                 <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
                     <tr>
                         <th class="px-4 py-3 text-right">الفرع</th>
+                        <th class="px-4 py-3 text-right">نوع الراتب</th>
                         <th class="px-4 py-3 text-right">الفترة</th>
                         <th class="px-4 py-3 text-right">الحالة</th>
                         <th class="px-4 py-3 text-center">عدد الموظفين</th>
@@ -89,6 +111,11 @@
                     {% for run in runs %}
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3 font-medium">{{ run.branch.name }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 text-xs rounded {% if run.salary_mode == 'cash' %}bg-amber-100 text-amber-800{% else %}bg-sky-100 text-sky-800{% endif %}">
+                                {{ run.get_salary_mode_display }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3">{{ run.period_label }}</td>
                         <td class="px-4 py-3">
                             {% if run.status == 'draft' %}<span
@@ -109,7 +136,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-slate-400">لا توجد مسيرات.</td>
+                        <td colspan="9" class="px-4 py-8 text-center text-slate-400">لا توجد مسيرات.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -138,5 +165,47 @@
         {% endif %}
     </div>
 </div>
-<script>document.addEventListener('DOMContentLoaded', function () { if (window.lucide) lucide.createIcons(); });</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.lucide) lucide.createIcons();
+
+    const companySel = document.getElementById('payrollCompany');
+    const branchSel = document.getElementById('payrollBranch');
+    if (!companySel || !branchSel) return;
+
+    const allBranchOptions = Array.from(branchSel.options).map(function (opt) {
+        return { value: opt.value, label: opt.textContent, company: opt.getAttribute('data-company') || '' };
+    });
+
+    function filterBranches() {
+        const companyId = companySel.value;
+        const current = branchSel.value;
+        branchSel.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '— اختر الفرع —';
+        branchSel.appendChild(placeholder);
+
+        allBranchOptions.forEach(function (item) {
+            if (!item.value) return;
+            if (companyId && item.company !== companyId) return;
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.textContent = item.label;
+            opt.setAttribute('data-company', item.company);
+            if (item.value === current) opt.selected = true;
+            branchSel.appendChild(opt);
+        });
+        if (current && !Array.from(branchSel.options).some(function (o) { return o.value === current; })) {
+            branchSel.value = '';
+        }
+    }
+
+    companySel.addEventListener('change', filterBranches);
+    if (companySel.options.length === 2) {
+        companySel.selectedIndex = 1;
+        filterBranches();
+    }
+});
+</script>
 {% endblock %}

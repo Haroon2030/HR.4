@@ -23,6 +23,9 @@ from apps.attendance.selectors.biometric_devices import (
     get_biometric_devices_queryset,
 )
 from apps.core.decorators import permission_required
+from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
+from apps.core.models import Branch
+from apps.core.web_views._helpers import _user_accessible_branch_ids
 
 def _apply_default_date_filters(filters: dict) -> dict:
     """يُستخدم في تقرير البصمة فقط — فرض من/إلى افتراضيين عند غيابهما في الاستعلام."""
@@ -37,7 +40,8 @@ def _apply_default_date_filters(filters: dict) -> dict:
 
 
 def _parse_filters(request) -> dict:
-    branch_id = request.GET.get('branch') or None
+    accessible = _user_accessible_branch_ids(request.user)
+    branch_ids = parse_multi_filter_ids(request, 'branch', accessible_ids=accessible)
     device_id = request.GET.get('device') or None
     employee_id = request.GET.get('employee') or None
     device_user_id = request.GET.get('device_user') or None
@@ -51,7 +55,7 @@ def _parse_filters(request) -> dict:
     elif mapped == '0':
         mapped_only = False
     return {
-        'branch_id': int(branch_id) if branch_id and branch_id.isdigit() else None,
+        'branch_ids': branch_ids,
         'device_id': int(device_id) if device_id and device_id.isdigit() else None,
         'employee_id': int(employee_id) if employee_id and employee_id.isdigit() else None,
         'device_user_id': int(device_user_id) if device_user_id and device_user_id.isdigit() else None,
@@ -66,30 +70,31 @@ def _parse_filters(request) -> dict:
 def _filters_to_querystring(filters: dict, *, extra: dict | None = None) -> str:
     from urllib.parse import urlencode
 
-    params = {}
-    if filters.get('branch_id'):
-        params['branch'] = filters['branch_id']
+    params: list[tuple[str, object]] = []
+    append_multi_param(params, 'branch', filters.get('branch_ids'))
     if filters.get('device_id'):
-        params['device'] = filters['device_id']
+        params.append(('device', filters['device_id']))
     if filters.get('employee_id'):
-        params['employee'] = filters['employee_id']
+        params.append(('employee', filters['employee_id']))
     if filters.get('device_user_id'):
-        params['device_user'] = filters['device_user_id']
+        params.append(('device_user', filters['device_user_id']))
     if filters.get('date_from'):
-        params['from'] = filters['date_from']
+        params.append(('from', filters['date_from']))
     if filters.get('date_to'):
-        params['to'] = filters['date_to']
+        params.append(('to', filters['date_to']))
     if filters.get('punch_type'):
-        params['punch_type'] = filters['punch_type']
+        params.append(('punch_type', filters['punch_type']))
     if filters.get('mapped_only') is True:
-        params['mapped'] = '1'
+        params.append(('mapped', '1'))
     elif filters.get('mapped_only') is False:
-        params['mapped'] = '0'
+        params.append(('mapped', '0'))
     if filters.get('search'):
-        params['q'] = filters['search']
+        params.append(('q', filters['search']))
     if extra:
-        params.update(extra)
-    return urlencode(params)
+        for k, v in extra.items():
+            if v is not None and v != '':
+                params.append((k, v))
+    return urlencode(params, doseq=True)
 
 
 @permission_required('attendance.view')
@@ -104,7 +109,7 @@ def attendance_records_list(request):
 
     qs = get_punch_queryset(
         device_id=filters['device_id'],
-        branch_id=filters['branch_id'],
+        branch_ids=filters['branch_ids'],
         employee_id=filters['employee_id'],
         device_user_id=filters['device_user_id'],
         date_from=date_from,
@@ -119,8 +124,13 @@ def attendance_records_list(request):
     page_obj = paginator.get_page(request.GET.get('page'))
 
     devices = get_biometric_devices_queryset(request.user)
+    branches_qs = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
+    accessible = _user_accessible_branch_ids(request.user)
+    if accessible is not None:
+        branches_qs = branches_qs.filter(pk__in=accessible)
 
     return render(request, 'pages/attendance/records.html', {
+        'branches': branches_qs,
         'page_obj': page_obj,
         'stats': stats,
         'devices': devices,
@@ -239,7 +249,7 @@ def attendance_records_export(request):
 
     qs = get_punch_queryset(
         device_id=filters['device_id'],
-        branch_id=filters['branch_id'],
+        branch_ids=filters['branch_ids'],
         employee_id=filters['employee_id'],
         device_user_id=filters['device_user_id'],
         date_from=date_from,

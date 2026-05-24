@@ -162,8 +162,12 @@
                         <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="zk-bio-field">
                     </div>
                     <div class="fld fld--full">
+                        <label class="zk-bio-lbl">الفرع</label>
+                        {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filters.branch_ids field_class="zk-bio-field" aria_label="الفرع" %}
+                    </div>
+                    <div class="fld fld--full">
                         <label class="zk-bio-lbl">جهاز</label>
-                        <select name="device" class="zk-bio-field">
+                        <select name="device" class="hr-filter-select zk-bio-field">
                             <option value="">الكل</option>
                             {% for d in devices %}
                             <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>

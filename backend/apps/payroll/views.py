@@ -29,7 +29,8 @@ from django.http import HttpResponse, Http404
 from django.db.models import Sum, Count
 
 from apps.core.decorators import permission_required
-from apps.core.models import Branch
+from apps.core.filter_utils import parse_multi_filter_ids
+from apps.core.models import Branch, Company
 from apps.payroll.models import PayrollRun, PayrollLine
 from apps.payroll.services.engine import (
     build_payroll_run, lock_payroll_run, unlock_payroll_run,
@@ -77,7 +78,9 @@ def _user_branches(user):
 @permission_required('employees.view')
 def list_payroll_runs(request):
     """عرض قائمة مسيرات الرواتب مع إمكانية الفلترة والترقيم."""
-    qs = PayrollRun.objects.select_related('branch', 'created_by', 'locked_by')
+    qs = PayrollRun.objects.select_related(
+        'branch', 'company', 'created_by', 'locked_by',
+    )
     user_branches = _user_branches(request.user)
 
     # تقييد بالفروع المتاحة للمستخدم
@@ -87,14 +90,15 @@ def list_payroll_runs(request):
     # ── تطبيق الفلاتر من معاملات URL ──
     year = request.GET.get('year')
     month = request.GET.get('month')
-    branch_id = request.GET.get('branch')
     status = request.GET.get('status')
+    accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
+    branch_ids = parse_multi_filter_ids(request, 'branch', accessible_ids=accessible)
     if year:
         qs = qs.filter(period_year=year)
     if month:
         qs = qs.filter(period_month=month)
-    if branch_id:
-        qs = qs.filter(branch_id=branch_id)
+    if branch_ids:
+        qs = qs.filter(branch_id__in=branch_ids)
     if status:
         qs = qs.filter(status=status)
 
@@ -104,17 +108,21 @@ def list_payroll_runs(request):
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     today = date.today()
+    companies = Company.objects.filter(is_deleted=False).order_by('name')
     return render(request, 'pages/payroll/list.html', {
         'runs': page_obj.object_list,        # المسيرات في الصفحة الحالية
         'page_obj': page_obj,                # كائن الصفحة (للترقيم)
         'paginator': paginator,              # كائن الترقيم
         'branches': user_branches,           # الفروع (للقائمة المنسدلة)
+        'companies': companies,
+        'SALARY_MODE_CHOICES': PayrollRun.SalaryMode.choices,
         'current_year': today.year,
         'current_month': today.month,
         'years_range': range(today.year - 2, today.year + 1),
         'months_range': range(1, 13),
         'filter_year': year, 'filter_month': month,
-        'filter_branch': branch_id, 'filter_status': status,
+        'filter_branch_ids': branch_ids or [],
+        'filter_status': status,
         'STATUS_CHOICES': PayrollRun.Status.choices,
     })
 
@@ -145,6 +153,11 @@ def create_payroll_run(request):
         messages.error(request, 'يرجى تحديد الفرع والسنة والشهر.')
         return redirect('web:list_payroll_runs')
 
+    salary_mode = (request.POST.get('salary_mode') or '').strip()
+    if salary_mode not in PayrollRun.SalaryMode.values:
+        messages.error(request, 'يرجى اختيار نوع الراتب (نقدي أو تحويل).')
+        return redirect('web:list_payroll_runs')
+
     # التحقق من صلاحية الوصول للفرع
     branch = get_object_or_404(Branch, id=branch_id)
     user_branches = _user_branches(request.user)
@@ -152,14 +165,28 @@ def create_payroll_run(request):
         messages.error(request, 'لا تملك صلاحية على هذا الفرع.')
         return redirect('web:list_payroll_runs')
 
+    try:
+        company_id = int(request.POST.get('company_id') or 0)
+    except ValueError:
+        company_id = 0
+    if company_id and branch.company_id != company_id:
+        messages.error(request, 'الفرع المحدد لا يتبع الشركة المختارة.')
+        return redirect('web:list_payroll_runs')
+
     # بناء المسير عبر محرك الرواتب
     try:
-        run = build_payroll_run(branch, year, month, request.user)
+        run = build_payroll_run(
+            branch, year, month, request.user, salary_mode=salary_mode,
+        )
     except ValueError as e:
         messages.error(request, str(e))
         return redirect('web:list_payroll_runs')
 
-    messages.success(request, f'تم بناء المسير لـ {branch.name} — {run.period_label} ({run.employees_count} موظف).')
+    mode_label = dict(PayrollRun.SalaryMode.choices).get(salary_mode, salary_mode)
+    messages.success(
+        request,
+        f'تم بناء مسير {mode_label} لـ {branch.name} — {run.period_label} ({run.employees_count} موظف).',
+    )
     return redirect('web:view_payroll_run', run_id=run.id)
 
 
@@ -203,7 +230,10 @@ def rebuild_payroll_run(request, run_id):
     if not request.user.is_superuser and run.branch not in user_branches:
         raise Http404()
     try:
-        build_payroll_run(run.branch, run.period_year, run.period_month, request.user)
+        build_payroll_run(
+            run.branch, run.period_year, run.period_month, request.user,
+            salary_mode=run.salary_mode,
+        )
         messages.success(request, 'تم إعادة بناء المسير.')
     except ValueError as e:
         messages.error(request, str(e))

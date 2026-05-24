@@ -35,13 +35,14 @@ from apps.attendance.services.zk_client import (
 from apps.attendance.validators import cloud_pull_blocked_message
 from apps.core.decorators import permission_required
 from apps.core.models import Branch
+from apps.core.filter_utils import parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids, filter_employees_queryset_for_user
 from apps.employees.models import Employee
 
 
-def _parse_branch_filter(request) -> int | None:
-    branch_id = request.GET.get('branch')
-    return int(branch_id) if branch_id and branch_id.isdigit() else None
+def _parse_branch_filter(request) -> list[int] | None:
+    accessible = _user_accessible_branch_ids(request.user)
+    return parse_multi_filter_ids(request, 'branch', accessible_ids=accessible)
 
 
 def _accessible_branches(user):
@@ -61,7 +62,7 @@ def _parse_device_user_filters(request) -> dict:
     elif mapped == '0':
         mapped_only = False
     return {
-        'branch_id': _parse_branch_filter(request),
+        'branch_ids': _parse_branch_filter(request),
         'device_id': int(device_id) if device_id and device_id.isdigit() else None,
         'search': (request.GET.get('users_q') or '').strip(),
         'mapped_only': mapped_only,
@@ -71,26 +72,29 @@ def _parse_device_user_filters(request) -> dict:
 def _device_users_querystring(filters: dict, *, extra: dict | None = None) -> str:
     from urllib.parse import urlencode
 
-    params = {}
-    if filters.get('branch_id'):
-        params['branch'] = filters['branch_id']
+    from apps.core.filter_utils import append_multi_param
+
+    pairs: list[tuple[str, object]] = []
+    append_multi_param(pairs, 'branch', filters.get('branch_ids'))
     if filters.get('device_id'):
-        params['users_device'] = filters['device_id']
+        pairs.append(('users_device', filters['device_id']))
     if filters.get('search'):
-        params['users_q'] = filters['search']
+        pairs.append(('users_q', filters['search']))
     if filters.get('mapped_only') is True:
-        params['users_mapped'] = '1'
+        pairs.append(('users_mapped', '1'))
     elif filters.get('mapped_only') is False:
-        params['users_mapped'] = '0'
+        pairs.append(('users_mapped', '0'))
     if extra:
-        params.update(extra)
-    return urlencode(params)
+        for k, v in extra.items():
+            if v is not None and v != '':
+                pairs.append((k, v))
+    return urlencode(pairs, doseq=True)
 
 
 @permission_required('attendance.view')
 def biometric_devices_dashboard(request):
-    branch_filter_id = _parse_branch_filter(request)
-    devices = get_biometric_devices_queryset(request.user, branch_id=branch_filter_id)
+    branch_filter_ids = _parse_branch_filter(request)
+    devices = get_biometric_devices_queryset(request.user, branch_ids=branch_filter_ids)
     branches = _accessible_branches(request.user)
 
     enrollments_qs = (
@@ -98,17 +102,17 @@ def biometric_devices_dashboard(request):
         .select_related('employee', 'device', 'device__branch')
         .order_by('device__branch__name', 'device__name', 'device_user_id')
     )
-    if branch_filter_id:
-        enrollments_qs = enrollments_qs.filter(device__branch_id=branch_filter_id)
+    if branch_filter_ids:
+        enrollments_qs = enrollments_qs.filter(device__branch_id__in=branch_filter_ids)
     enrollments = list(enrollments_qs[:100])
 
     enrollment_by_device_user_qs = (
         EmployeeBiometricEnrollment.objects.filter(is_deleted=False)
         .select_related('employee', 'device')
     )
-    if branch_filter_id:
+    if branch_filter_ids:
         enrollment_by_device_user_qs = enrollment_by_device_user_qs.filter(
-            device__branch_id=branch_filter_id,
+            device__branch_id__in=branch_filter_ids,
         )
     enrollment_by_device_user = {
         (e.device_id, e.device_user_id): e
@@ -118,7 +122,7 @@ def biometric_devices_dashboard(request):
     device_user_filters = _parse_device_user_filters(request)
     device_users_qs = get_device_user_queryset(
         device_id=device_user_filters['device_id'],
-        branch_id=device_user_filters['branch_id'],
+        branch_ids=device_user_filters['branch_ids'],
         search=device_user_filters['search'] or None,
         mapped_only=device_user_filters['mapped_only'],
     )
@@ -129,7 +133,7 @@ def biometric_devices_dashboard(request):
         unmapped=Count('pk', filter=Q(is_hr_linked=False)),
     )
     device_users_has_filters = any([
-        device_user_filters['branch_id'],
+        device_user_filters['branch_ids'],
         device_user_filters['device_id'],
         device_user_filters['search'],
         device_user_filters['mapped_only'] is not None,
@@ -158,7 +162,7 @@ def biometric_devices_dashboard(request):
 
     return render(request, 'pages/attendance/biometric_devices.html', {
         'devices': devices,
-        'branch_filter_id': branch_filter_id,
+        'branch_filter_ids': branch_filter_ids or [],
         'devices_without_branch': devices_without_branch,
         'enrollments': enrollments,
         'device_users_page': device_users_page,

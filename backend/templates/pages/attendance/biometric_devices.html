@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load custom_tags %}
 
 {% block content %}
@@ -49,13 +49,11 @@
             </div>
             <form method="get" class="flex flex-wrap items-center gap-2">
                 <label class="text-xs text-slate-500">فرع</label>
-                <select name="branch" class="zk-bio-field min-w-[140px]" style="width:auto;min-width:8rem" onchange="this.form.submit()">
-                    <option value="">الكل</option>
-                    {% for b in branches %}
-                    <option value="{{ b.pk }}" {% if branch_filter_id == b.pk %}selected{% endif %}>{{ b.name }}</option>
-                    {% endfor %}
-                </select>
-                {% if branch_filter_id %}
+                <div class="min-w-[10rem]" style="min-width:10rem">
+                    {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=branch_filter_ids field_class="zk-bio-field" %}
+                </div>
+                <button type="submit" class="text-xs font-semibold text-primary-700 hover:text-primary-900 px-2 py-1">تصفية</button>
+                {% if branch_filter_ids %}
                 <a href="{% url 'web:biometric_devices' %}"
                    class="text-xs text-slate-500 hover:text-primary-600">مسح</a>
                 {% endif %}
@@ -155,7 +153,7 @@
         </div>
 
         <form method="get" class="zk-bio-filter">
-            {% if branch_filter_id %}<input type="hidden" name="branch" value="{{ branch_filter_id }}">{% endif %}
+            {% for bid in branch_filter_ids %}<input type="hidden" name="branch" value="{{ bid }}">{% endfor %}
             <div>
                 <label class="zk-bio-lbl">بحث</label>
                 <input type="search" name="users_q" value="{{ device_user_filters.search }}"
@@ -164,7 +162,7 @@
             </div>
             <div>
                 <label class="zk-bio-lbl">الجهاز</label>
-                <select name="users_device" class="zk-bio-field">
+                <select name="users_device" class="hr-filter-select zk-bio-field">
                     <option value="">الكل</option>
                     {% for d in devices %}
                     <option value="{{ d.pk }}" {% if device_user_filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% endif %}</option>
@@ -173,7 +171,7 @@
             </div>
             <div>
                 <label class="zk-bio-lbl">الربط بـ HR</label>
-                <select name="users_mapped" class="zk-bio-field">
+                <select name="users_mapped" class="hr-filter-select zk-bio-field">
                     <option value="">الكل</option>
                     <option value="1" {% if device_user_filters.mapped_only == True %}selected{% endif %}>مربوط فقط</option>
                     <option value="0" {% if device_user_filters.mapped_only == False %}selected{% endif %}>غير مربوط فقط</option>

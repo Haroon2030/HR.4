@@ -1544,3 +1544,82 @@ body.hr-app .hr-header .bg-white.rounded-xl.shadow-xl {
     -webkit-backdrop-filter: var(--hr-glass-blur);
     border-color: var(--hr-glass-line) !important;
 }
+
+/* فلتر متعدد — فرع / كفالة */
+.hr-filter-ms-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+}
+
+.hr-ms {
+    position: relative;
+    width: 100%;
+    min-width: 8rem;
+}
+
+.hr-ms__btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 2.375rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.875rem;
+    text-align: right;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    color: #0f172a;
+    cursor: pointer;
+}
+
+.hr-ms__btn::after {
+    content: '';
+    border: 4px solid transparent;
+    border-top-color: #64748b;
+    margin-inline-start: 0.5rem;
+}
+
+.hr-ms__btn:hover {
+    border-color: #94a3b8;
+}
+
+.hr-ms__panel {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 2px);
+    right: 0;
+    left: 0;
+    max-height: 14rem;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    padding: 0.35rem 0;
+}
+
+.hr-ms__row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    color: #334155;
+}
+
+.hr-ms__row:hover {
+    background: #f1f5f9;
+}
+
+.hr-ms__row--all {
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 0.15rem;
+    padding-bottom: 0.45rem;
+}
