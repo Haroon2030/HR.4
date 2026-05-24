@@ -2,15 +2,21 @@
 التقارير — بيانات تفصيلية بصفوف وأعمدة
 كل تقرير يُرجع: columns (أعمدة) + rows (صفوف) + title
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from django.shortcuts import render
+from urllib.parse import urlencode
+
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
 from django.db.models import Count, Sum, Q, F
 from django.db.models.functions import Coalesce
+from django.http import Http404
+from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from apps.core.decorators import permission_required
+from apps.core.models import Branch
+from apps.core.web_views._helpers import _user_accessible_branch_ids
+from apps.setup.models import Sponsorship
 
 REPORT_GROUPS = [
     {'key': 'workforce',    'title': 'القوى العاملة',    'icon': 'users-round',   'color': 'primary',  'description': 'توزيع الموظفين على الفروع والأقسام'},
@@ -49,6 +55,52 @@ REPORTS = [
 def _grouped_reports():
     return [{**g, 'items': [r for r in REPORTS if r['group'] == g['key']]} for g in REPORT_GROUPS]
 
+
+def _report_keys():
+    return {r['key'] for r in REPORTS}
+
+
+def _report_filters(request):
+    """فلاتر موحّدة: فرع، كفالة، فترة زمنية."""
+    today = date.today()
+    first = today.replace(day=1)
+    branch = (request.GET.get('branch') or '').strip()
+    sponsorship = (request.GET.get('sponsorship') or '').strip()
+    report = (request.GET.get('report') or '').strip()
+    return {
+        'branch': branch,
+        'branch_id': int(branch) if branch.isdigit() else None,
+        'sponsorship': sponsorship,
+        'sponsorship_id': int(sponsorship) if sponsorship.isdigit() else None,
+        'date_from': request.GET.get('from') or first.isoformat(),
+        'date_to': request.GET.get('to') or today.isoformat(),
+        'report': report,
+    }
+
+
+def _parse_filter_dates(filters):
+    df = datetime.strptime(filters['date_from'], '%Y-%m-%d').date()
+    dt = datetime.strptime(filters['date_to'], '%Y-%m-%d').date()
+    if df > dt:
+        df, dt = dt, df
+    return df, dt
+
+
+def _report_filter_context(request):
+    filters = _report_filters(request)
+    branches_qs = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
+    branch_ids = _user_accessible_branch_ids(request.user)
+    if branch_ids is not None:
+        branches_qs = branches_qs.filter(pk__in=branch_ids)
+    sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
+    return {
+        'filter': filters,
+        'branches': branches_qs,
+        'sponsorships': sponsorships,
+        'report_groups': _grouped_reports(),
+    }
+
+
 def _emp_qs():
     from apps.employees.models import Employee
     return Employee.objects.filter(is_deleted=False)
@@ -57,45 +109,61 @@ def _active():
     from apps.employees.models import Employee
     return _emp_qs().filter(status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE])
 
+
+def _filtered_employees(request):
+    """موظفون نشطون مع فلتر الفرع والكفالة."""
+    filters = _report_filters(request)
+    qs = _active()
+    if filters['branch_id']:
+        qs = qs.filter(branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    return qs, filters
+
 # ══════════════════════════════════════════════════════════════════════════════
 # دوال البناء — كل واحدة تُرجع columns + rows
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _build_headcount_summary(req):
     from apps.employees.models import Employee
+    filters = _report_filters(req)
     cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الحالة', 'تاريخ المباشرة']
     labels = dict(Employee.Status.choices)
     qs = _emp_qs().select_related('branch', 'department').order_by('branch__name', 'name')
+    if filters['branch_id']:
+        qs = qs.filter(branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
     rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', labels.get(e.status, e.status), str(e.hire_date or '—')] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_branches(req):
     cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي']
-    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
     rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_departments_overview(req):
     cols = ['الاسم', 'الفرع', 'القسم', 'مركز التكلفة', 'المسمى الوظيفي']
-    qs = _active().select_related('branch', 'department', 'cost_center', 'profession').order_by('branch__name', 'department__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'department', 'cost_center', 'profession').order_by('branch__name', 'department__name', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', e.department.name if e.department else '—', e.cost_center.name if e.cost_center else '—', e.profession.name if e.profession else '—'] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_cost_centers_overview(req):
     cols = ['الاسم', 'مركز التكلفة', 'الفرع', 'القسم', 'الإجمالي']
-    qs = _active().select_related('branch', 'department', 'cost_center').order_by('cost_center__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'department', 'cost_center').order_by('cost_center__name', 'name')
     rows = [[e.name, e.cost_center.name if e.cost_center else '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_salary_expenses(req):
     cols = ['الاسم', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي']
-    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_allowances_breakdown(req):
     cols = ['الاسم', 'الفرع', 'سكن', 'نقل', 'إضافي', 'كاش', 'إجمالي البدلات']
-    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
     rows = []
     for e in qs:
         t = e.housing_allowance + e.transport_allowance + e.other_allowance + e.cash_amount
@@ -114,29 +182,42 @@ def _build_deductions_breakdown(req):
 
 def _build_insurance_costs(req):
     cols = ['الاسم', 'الفرع', 'شركة التأمين', 'فئة التأمين', 'نسبة الخصم %']
-    qs = _active().select_related('branch', 'insurance', 'insurance_class').order_by('insurance__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'insurance', 'insurance_class').order_by('insurance__name', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', e.insurance.name if e.insurance else '—', e.insurance_class.name if e.insurance_class else '—', str(e.insurance_deduction_rate)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_new_hires(req):
     from apps.employees.models import Employee
-    start = date.today() - timedelta(days=180)
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
     cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'تاريخ المباشرة', 'الجنسية']
-    qs = _emp_qs().filter(hire_date__gte=start).exclude(status=Employee.Status.TERMINATED).select_related('branch', 'department', 'nationality').order_by('-hire_date')
+    qs = _emp_qs().filter(hire_date__gte=df, hire_date__lte=dt).exclude(status=Employee.Status.TERMINATED)
+    if filters['branch_id']:
+        qs = qs.filter(branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    qs = qs.select_related('branch', 'department', 'nationality').order_by('-hire_date')
     rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.hire_date or '—'), e.nationality.name if e.nationality else '—'] for e in qs]
-    return {'columns': cols, 'rows': rows, 'note': 'آخر 6 أشهر'}
+    return {'columns': cols, 'rows': rows, 'note': f'تعيينات من {df} إلى {dt}'}
 
 def _build_terminations(req):
     from apps.employees.models import Employee
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
     cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'تاريخ الانتهاء', 'السبب', 'إجمالي الراتب الأخير']
-    qs = _emp_qs().filter(status=Employee.Status.TERMINATED).select_related('branch').order_by('-end_date')
+    qs = _emp_qs().filter(status=Employee.Status.TERMINATED, end_date__gte=df, end_date__lte=dt)
+    if filters['branch_id']:
+        qs = qs.filter(branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    qs = qs.select_related('branch').order_by('-end_date')
     rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—', str(e.total_salary)] for e in qs]
-    return {'columns': cols, 'rows': rows, 'note': 'قائمة بكل الموظفين المنتهية عقودهم والمُصفَّين'}
+    return {'columns': cols, 'rows': rows, 'note': f'تصفيات من {df} إلى {dt}'}
 
 def _build_tenure_analysis(req):
     today = date.today()
     cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'مدة الخدمة (سنة)', 'مدة الخدمة (يوم)']
-    qs = _active().exclude(hire_date__isnull=True).select_related('branch').order_by('hire_date')
+    qs = _filtered_employees(req)[0].exclude(hire_date__isnull=True).select_related('branch').order_by('hire_date')
     rows = []
     for e in qs:
         days = (today - e.hire_date).days
@@ -148,7 +229,7 @@ def _build_passport_expiry(req):
     today = date.today()
     soon = today + timedelta(days=90)
     cols = ['الاسم', 'الفرع', 'تاريخ انتهاء الجواز', 'الحالة']
-    qs = _active().exclude(passport_expiry_date__isnull=True).select_related('branch').order_by('passport_expiry_date')
+    qs = _filtered_employees(req)[0].exclude(passport_expiry_date__isnull=True).select_related('branch').order_by('passport_expiry_date')
     rows = []
     for e in qs:
         if e.passport_expiry_date < today:
@@ -164,7 +245,7 @@ def _build_health_cards(req):
     today = date.today()
     soon = today + timedelta(days=90)
     cols = ['الاسم', 'الفرع', 'حالة الكرت', 'تاريخ الانتهاء', 'الوضع']
-    qs = _active().select_related('branch').order_by('branch__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
     labels = {'available': 'متوفر', 'not_available': 'غير متوفر'}
     rows = []
     for e in qs:
@@ -183,24 +264,47 @@ def _build_health_cards(req):
 
 def _build_warnings(req):
     from apps.employees.models import EmployeeStatement
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
     cols = ['الموظف', 'الفرع', 'النوع', 'العنوان', 'التاريخ', 'مبلغ الخصم']
     types = [EmployeeStatement.StatementType.WARNING, EmployeeStatement.StatementType.FINAL_WARNING, EmployeeStatement.StatementType.PENALTY]
-    qs = EmployeeStatement.objects.filter(statement_type__in=types, is_deleted=False).select_related('employee', 'employee__branch').order_by('-statement_date')[:200]
+    qs = EmployeeStatement.objects.filter(
+        statement_type__in=types,
+        is_deleted=False,
+        statement_date__gte=df,
+        statement_date__lte=dt,
+    ).select_related('employee', 'employee__branch')
+    if filters['branch_id']:
+        qs = qs.filter(employee__branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = qs.order_by('-statement_date')[:500]
     labels = dict(EmployeeStatement.StatementType.choices)
     rows = [[s.employee.name, s.employee.branch.name if s.employee.branch else '—', labels.get(s.statement_type, s.statement_type), s.title, str(s.statement_date), str(s.deduction_amount)] for s in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_leaves(req):
     from apps.employees.models import EmployeeLeave
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
     cols = ['الموظف', 'الفرع', 'نوع الإجازة', 'من', 'إلى', 'عدد الأيام']
     labels = dict(EmployeeLeave.LeaveType.choices)
-    qs = EmployeeLeave.objects.filter(is_deleted=False).select_related('employee', 'employee__branch').order_by('-date_from')[:300]
+    qs = EmployeeLeave.objects.filter(
+        is_deleted=False,
+        date_from__lte=dt,
+        date_to__gte=df,
+    ).select_related('employee', 'employee__branch')
+    if filters['branch_id']:
+        qs = qs.filter(employee__branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = qs.order_by('-date_from')[:500]
     rows = [[l.employee.name, l.employee.branch.name if l.employee.branch else '—', labels.get(l.leave_type, l.leave_type), str(l.date_from), str(l.date_to), str(l.days)] for l in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_leave_balance(req):
     cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'المستحق', 'المستخدم', 'المتبقي']
-    qs = _active().exclude(hire_date__isnull=True).exclude(sponsorship__isnull=True).select_related('branch').order_by('branch__name', 'name')
+    qs = _filtered_employees(req)[0].exclude(hire_date__isnull=True).exclude(sponsorship__isnull=True).select_related('branch').order_by('branch__name', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(e.accrued_leave_days), str(e.available_leave_balance), str(e.remaining_leave_days)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
@@ -211,14 +315,13 @@ def _build_biometric_daily(req):
     from datetime import datetime
 
     today = timezone.localdate()
-    date_from_s = req.GET.get('from') or today.replace(day=1).isoformat()
-    date_to_s = req.GET.get('to') or today.isoformat()
-    date_from = datetime.strptime(date_from_s, '%Y-%m-%d').date()
-    date_to = datetime.strptime(date_to_s, '%Y-%m-%d').date()
-    branch_id = req.GET.get('branch')
-    branch_id = int(branch_id) if branch_id and branch_id.isdigit() else None
+    filters = _report_filters(req)
+    date_from, date_to = _parse_filter_dates(filters)
+    branch_id = filters['branch_id']
 
     qs = get_punch_queryset(branch_id=branch_id, date_from=date_from, date_to=date_to)
+    if filters['sponsorship_id']:
+        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
     rows = build_daily_attendance_rows(qs)
     data = daily_rows_to_table(rows)
     data['note'] = f'من {date_from} إلى {date_to} — للفلترة الكاملة: قائمة البصمة → تقرير البصمة'
@@ -227,8 +330,19 @@ def _build_biometric_daily(req):
 
 def _build_absences(req):
     from apps.employees.models import EmployeeAbsence
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
     cols = ['الموظف', 'الفرع', 'تاريخ الغياب', 'عدد الأيام', 'مبلغ الخصم', 'محتسب في مسير']
-    qs = EmployeeAbsence.objects.filter(is_deleted=False).select_related('employee', 'employee__branch', 'applied_to_payroll').order_by('-absence_date')[:300]
+    qs = EmployeeAbsence.objects.filter(
+        is_deleted=False,
+        absence_date__gte=df,
+        absence_date__lte=dt,
+    ).select_related('employee', 'employee__branch', 'applied_to_payroll')
+    if filters['branch_id']:
+        qs = qs.filter(employee__branch_id=filters['branch_id'])
+    if filters['sponsorship_id']:
+        qs = qs.filter(employee__sponsorship_id=filters['sponsorship_id'])
+    qs = qs.order_by('-absence_date')[:500]
     rows = [[a.employee.name, a.employee.branch.name if a.employee.branch else '—', str(a.absence_date), str(a.days), str(a.deduction_amount), str(a.applied_to_payroll or '—')] for a in qs]
     return {'columns': cols, 'rows': rows}
 
@@ -236,19 +350,19 @@ def _build_gender(req):
     from apps.employees.models import Employee
     cols = ['الاسم', 'الفرع', 'الجنس', 'الجنسية', 'المهنة']
     labels = dict(Employee.Gender.choices)
-    qs = _active().select_related('branch', 'nationality', 'profession').order_by('gender', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'nationality', 'profession').order_by('gender', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', labels.get(e.gender, e.gender or 'غير محدد'), e.nationality.name if e.nationality else '—', e.profession.name if e.profession else '—'] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_nationality(req):
     cols = ['الاسم', 'الفرع', 'الجنسية', 'رقم الهوية', 'رقم الجوال']
-    qs = _active().select_related('branch', 'nationality').order_by('nationality__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'nationality').order_by('nationality__name', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', e.nationality.name if e.nationality else '—', e.id_number or '—', e.phone or '—'] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_professions(req):
     cols = ['الاسم', 'الفرع', 'المهنة', 'الجنسية', 'الراتب الإجمالي']
-    qs = _active().select_related('branch', 'profession', 'nationality').order_by('profession__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'profession', 'nationality').order_by('profession__name', 'name')
     rows = [[e.name, e.branch.name if e.branch else '—', e.profession.name if e.profession else '—', e.nationality.name if e.nationality else '—', str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
@@ -264,10 +378,38 @@ BUILDERS = {
     'biometric_daily': _build_biometric_daily,
 }
 
+def _filter_querystring(request, exclude=()):
+    params = []
+    f = _report_filters(request)
+    for key, val in (
+        ('branch', f['branch']),
+        ('sponsorship', f['sponsorship']),
+        ('from', f['date_from']),
+        ('to', f['date_to']),
+    ):
+        if key in exclude or not val:
+            continue
+        params.append((key, val))
+    return urlencode(params)
+
+
 @login_required
 @permission_required('reports.view')
 def reports_index(request):
-    return render(request, 'pages/reports/index.html', {'report_groups': _grouped_reports(), 'reports': REPORTS})
+    new_report = (request.GET.get('report') or '').strip()
+    if new_report and new_report in _report_keys():
+        qs = _filter_querystring(request, exclude=('report',))
+        url = reverse('web:report_detail', kwargs={'report_type': new_report})
+        if qs:
+            url = f'{url}?{qs}'
+        return redirect(url)
+
+    ctx = _report_filter_context(request)
+    return render(request, 'pages/reports/index.html', {
+        **ctx,
+        'reports': REPORTS,
+        'clear_url': reverse('web:reports_index'),
+    })
 
 @login_required
 @permission_required('reports.view')
@@ -302,10 +444,27 @@ def report_detail(request, report_type):
     meta = next((r for r in REPORTS if r['key'] == report_type), None)
     if not meta:
         raise Http404("تقرير غير معروف")
+
+    new_report = (request.GET.get('report') or '').strip()
+    if new_report and new_report != report_type and new_report in _report_keys():
+        qs = _filter_querystring(request, exclude=('report',))
+        url = reverse('web:report_detail', kwargs={'report_type': new_report})
+        if qs:
+            url = f'{url}?{qs}'
+        return redirect(url)
+
     group = next((g for g in REPORT_GROUPS if g['key'] == meta.get('group')), None)
     builder = BUILDERS.get(report_type)
     data = builder(request) if builder else {'columns': [], 'rows': []}
+    ctx = _report_filter_context(request)
     return render(request, 'pages/reports/detail.html', {
-        'report_meta': meta, 'group_meta': group,
-        'reports': REPORTS, 'data': data, 'report_type': report_type,
+        'report_meta': meta,
+        'group_meta': group,
+        'reports': REPORTS,
+        'data': data,
+        'report_type': report_type,
+        'selected_report': report_type,
+        'form_action': reverse('web:report_detail', kwargs={'report_type': report_type}),
+        'clear_url': reverse('web:report_detail', kwargs={'report_type': report_type}),
+        **ctx,
     })

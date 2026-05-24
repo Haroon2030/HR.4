@@ -1,0 +1,71 @@
+{# filter, branches, sponsorships, reports, selected_report (optional), form_action (optional) #}
+<form method="get"
+      class="hr-reports-filter-form"
+      {% if form_action %}action="{{ form_action }}"{% endif %}
+      id="reportsFilterForm">
+    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table class="hr-reports-filter-tbl w-full text-sm">
+            <thead>
+                <tr>
+                    <th>الفرع</th>
+                    <th>التقرير</th>
+                    <th>شركة الكفالة</th>
+                    <th>من تاريخ</th>
+                    <th>إلى تاريخ</th>
+                    <th class="w-28 text-center">إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <select name="branch" class="hr-reports-filter-field" aria-label="الفرع">
+                            <option value="">كل الفروع</option>
+                            {% for b in branches %}
+                            <option value="{{ b.pk }}" {% if filter.branch == b.pk|stringformat:"s" %}selected{% endif %}>
+                                {% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="report" id="reportSelect" class="hr-reports-filter-field" required aria-label="التقرير">
+                            <option value="">— اختر التقرير —</option>
+                            {% for g in report_groups %}
+                            <optgroup label="{{ g.title }}">
+                                {% for r in g.items %}
+                                <option value="{{ r.key }}"
+                                    {% if selected_report == r.key or filter.report == r.key %}selected{% endif %}>
+                                    {{ r.title }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="sponsorship" class="hr-reports-filter-field" aria-label="شركة الكفالة">
+                            <option value="">كل الكفالات</option>
+                            {% for s in sponsorships %}
+                            <option value="{{ s.pk }}" {% if filter.sponsorship == s.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ s.company_name }}{% if s.code %} ({{ s.code }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="date" name="from" value="{{ filter.date_from }}" class="hr-reports-filter-field" aria-label="من تاريخ">
+                    </td>
+                    <td>
+                        <input type="date" name="to" value="{{ filter.date_to }}" class="hr-reports-filter-field" aria-label="إلى تاريخ">
+                    </td>
+                    <td class="text-center align-middle">
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-1.5 px-1">
+                            <button type="submit" class="hr-filter-btn hr-filter-btn--primary w-full sm:w-auto">عرض</button>
+                            <a href="{% if clear_url %}{{ clear_url }}{% else %}{% url 'web:reports_index' %}{% endif %}" class="hr-filter-btn hr-filter-btn--ghost w-full sm:w-auto text-center">مسح</a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</form>

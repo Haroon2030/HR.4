@@ -2,182 +2,21 @@
 {% block title %}التقارير{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto" x-data="reportsFilter()" @keydown.escape.window="open=false">
+{% include "pages/reports/_filter_styles.html" %}
 
-    {# Header #}
-    <div class="mb-5 flex items-end justify-between gap-3 flex-wrap">
-        <div>
-            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <i data-lucide="bar-chart-3" class="w-5 h-5 text-primary-600"></i>
-                التقارير
-            </h1>
-            <p class="text-xs text-slate-500 mt-0.5">ابحث وحدد تقريراً أو أكثر لفتحها</p>
-        </div>
-        <div class="text-xs text-slate-400">
-            <span x-text="filtered.length"></span> من {{ reports|length }} تقرير
-        </div>
+<div class="max-w-7xl mx-auto space-y-4">
+
+    <div class="mb-1">
+        <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-1">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 text-primary-600"></i>
+            التقارير
+        </h1>
+        <p class="text-xs text-slate-500">حدّد الفرع والتقرير وشركة الكفالة والفترة ثم اضغط عرض</p>
     </div>
 
-    {# Selection bar #}
-    <div x-show="selected.length > 0" x-transition
-        class="mb-3 bg-primary-600 text-white rounded-xl shadow-md px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-2 text-sm font-semibold">
-            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-            <span x-text="selected.length"></span> تقرير محدد
-        </div>
-        <div class="flex items-center gap-2">
-            <button type="button" @click="selected=[]"
-                class="text-xs bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-md font-semibold transition flex items-center gap-1">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                إلغاء
-            </button>
-            <button type="button" @click="openSelected()"
-                class="text-xs bg-white text-primary-700 hover:bg-primary-50 px-3 py-1.5 rounded-md font-bold transition flex items-center gap-1 shadow-sm">
-                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                فتح المحدد
-            </button>
-        </div>
-    </div>
-
-    {# Search box + popup panel #}
-    <div class="relative" @click.away="open=false">
-        <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-        <input type="text" x-model="search" @input="apply()" @focus="open=true" @click="open=true"
-            placeholder="ابحث عن تقرير..."
-            class="w-full bg-white border border-slate-200 rounded-xl pr-11 pl-20 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-400 transition">
-        <div class="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <button type="button" x-show="search" @click="search=''; apply()"
-                class="text-slate-400 hover:text-slate-600 p-1">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-            <button type="button" @click="open = !open"
-                class="text-slate-400 hover:text-slate-600 p-1">
-                <i data-lucide="chevron-down" class="w-4 h-4" :class="open && 'rotate-180'"></i>
-            </button>
-        </div>
-
-        {# Popup panel #}
-        <div x-show="open" x-transition.opacity x-cloak
-            class="absolute z-30 left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-
-            {# Sticky toolbar #}
-            <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/80 sticky top-0">
-                <div class="text-[11px] text-slate-500 font-semibold">
-                    <span x-text="filtered.length"></span> نتيجة
-                    <template x-if="selected.length > 0">
-                        <span class="text-primary-600">· <span x-text="selected.length"></span> محدد</span>
-                    </template>
-                </div>
-                <div class="flex items-center gap-1">
-                    <button type="button" @click="selectAll()"
-                        class="text-[11px] text-primary-600 hover:bg-primary-50 px-2 py-1 rounded font-semibold flex items-center gap-1">
-                        <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
-                        تحديد الكل
-                    </button>
-                    <button type="button" x-show="selected.length > 0" @click="selected=[]"
-                        class="text-[11px] text-slate-500 hover:bg-slate-100 px-2 py-1 rounded font-semibold flex items-center gap-1">
-                        <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-                        مسح
-                    </button>
-                </div>
-            </div>
-
-            {# Items list #}
-            <div class="max-h-96 overflow-y-auto py-1">
-                <template x-for="r in filtered" :key="r.key">
-                    <div @click="toggle(r.key)"
-                        class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50 transition">
-                        {# Checkbox #}
-                        <div :class="selected.includes(r.key) ? 'bg-primary-600 border-primary-600' : 'bg-white border-slate-300'"
-                            class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition">
-                            <i x-show="selected.includes(r.key)" data-lucide="check" class="w-2.5 h-2.5 text-white"></i>
-                        </div>
-                        {# Icon #}
-                        <div :class="`w-7 h-7 rounded-md bg-${r.color}-50 text-${r.color}-600 flex items-center justify-center flex-shrink-0`">
-                            <i :data-lucide="r.icon" class="w-3.5 h-3.5"></i>
-                        </div>
-                        {# Title + group #}
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-semibold text-slate-800 truncate" x-text="r.title"></div>
-                            <div class="text-[10px] text-slate-400 truncate" x-text="r.group_title"></div>
-                        </div>
-                        {# Open link #}
-                        <a :href="r.url" @click.stop
-                            class="text-slate-400 hover:text-primary-600 p-1 flex-shrink-0"
-                            title="فتح">
-                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        </a>
-                    </div>
-                </template>
-
-                {# Empty state inside panel #}
-                <div x-show="filtered.length === 0" class="py-10 text-center">
-                    <i data-lucide="search-x" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
-                    <p class="text-xs text-slate-500">لا توجد تقارير مطابقة</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% include "pages/reports/_filter_table.html" %}
 
 </div>
 
-<script>
-function reportsFilter() {
-    const groupTitles = {
-        {% for g in report_groups %}'{{ g.key }}': '{{ g.title|escapejs }}',{% endfor %}
-    };
-    return {
-        open: false,
-        search: '',
-        selected: [],
-        all: [
-            {% for r in reports %}{
-                key: '{{ r.key }}',
-                title: '{{ r.title|escapejs }}',
-                description: '{{ r.description|escapejs }}',
-                icon: '{{ r.icon }}',
-                color: '{{ r.color }}',
-                group: '{{ r.group }}',
-                group_title: groupTitles['{{ r.group }}'] || '',
-                url: '{% url "web:report_detail" report_type=r.key %}',
-            },{% endfor %}
-        ],
-        filtered: [],
-        init() {
-            this.filtered = this.all;
-            this.$nextTick(() => lucide.createIcons());
-            this.$watch('open',     () => this.$nextTick(() => lucide.createIcons()));
-            this.$watch('filtered', () => this.$nextTick(() => lucide.createIcons()));
-            this.$watch('selected', () => this.$nextTick(() => lucide.createIcons()));
-        },
-        apply() {
-            const q = this.search.trim().toLowerCase();
-            this.filtered = q
-                ? this.all.filter(r => r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || (r.group_title || '').toLowerCase().includes(q))
-                : this.all;
-        },
-        toggle(key) {
-            const i = this.selected.indexOf(key);
-            if (i >= 0) this.selected.splice(i, 1);
-            else this.selected.push(key);
-        },
-        selectAll() {
-            const keys = this.filtered.map(r => r.key);
-            this.selected = [...new Set([...this.selected, ...keys])];
-        },
-        openSelected() {
-            if (this.selected.length === 0) return;
-            if (this.selected.length === 1) {
-                const map = Object.fromEntries(this.all.map(r => [r.key, r.url]));
-                const k = this.selected[0];
-                if (map[k]) window.open(map[k], '_blank');
-            } else {
-                const multiUrl = '{% url "web:multi_report_detail" %}?reports=' + this.selected.join(',');
-                window.open(multiUrl, '_blank');
-            }
-        }
-    };
-}
-document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
-</script>
+<script>document.addEventListener('DOMContentLoaded', () => lucide.createIcons());</script>
 {% endblock %}
