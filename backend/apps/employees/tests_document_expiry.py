@@ -30,7 +30,7 @@ class CollectExpiringDocumentsTests(TestCase):
         cls.branch = Branch.objects.create(name='فرع 1', code='WD-1', company=cls.company)
         cls.sp = Sponsorship.objects.create(code='SP-WD', company_name='كفالة')
 
-    def test_collects_passport_and_health_in_window(self):
+    def test_collects_health_card_and_contract_in_window(self):
         ref = date(2026, 5, 1)
         emp = Employee.objects.create(
             name='موظف وثائق',
@@ -39,15 +39,13 @@ class CollectExpiringDocumentsTests(TestCase):
             hire_date=date(2024, 1, 1),
             basic_salary=Decimal('4000'),
             sponsorship=self.sp,
-            passport_expiry_date=ref + timedelta(days=10),
             health_card_expiry=ref + timedelta(days=5),
-            residency_expiry_date=ref + timedelta(days=7),
+            contract_expiry_date=ref + timedelta(days=7),
         )
         rows = collect_expiring_documents(reference_date=ref, horizon_days=30)
         codes = {(r.employee_id, r.document_code, r.expiry_date) for r in rows}
-        self.assertIn((emp.id, 'passport', emp.passport_expiry_date), codes)
         self.assertIn((emp.id, 'health_card', emp.health_card_expiry), codes)
-        self.assertIn((emp.id, 'residency', emp.residency_expiry_date), codes)
+        self.assertIn((emp.id, 'contract', emp.contract_expiry_date), codes)
 
     def test_excludes_terminated_and_out_of_window(self):
         ref = date(2026, 5, 1)
@@ -58,7 +56,7 @@ class CollectExpiringDocumentsTests(TestCase):
             hire_date=date(2020, 1, 1),
             basic_salary=Decimal('3000'),
             sponsorship=self.sp,
-            passport_expiry_date=ref + timedelta(days=5),
+            health_card_expiry=ref + timedelta(days=5),
         )
         Employee.objects.create(
             name='بعيد',
@@ -67,16 +65,16 @@ class CollectExpiringDocumentsTests(TestCase):
             hire_date=date(2024, 1, 1),
             basic_salary=Decimal('3000'),
             sponsorship=self.sp,
-            passport_expiry_date=ref + timedelta(days=60),
+            health_card_expiry=ref + timedelta(days=60),
         )
         rows = collect_expiring_documents(reference_date=ref, horizon_days=30)
         self.assertEqual(len(rows), 0)
 
     def test_dedupe_prefix_stable(self):
         p = document_expiry_dedupe_prefix(
-            employee_id=7, document_code='passport', expiry_date=date(2026, 6, 1)
+            employee_id=7, document_code='health_card', expiry_date=date(2026, 6, 1)
         )
-        self.assertTrue(p.startswith('[doc_expiry:passport:7:'))
+        self.assertTrue(p.startswith('[doc_expiry:health_card:7:'))
 
 
 class NotifyDocumentExpiryCommandTests(TestCase):
@@ -105,7 +103,7 @@ class NotifyDocumentExpiryCommandTests(TestCase):
             hire_date=date(2024, 1, 1),
             basic_salary=Decimal('5000'),
             sponsorship=self.sp,
-            passport_expiry_date=ref + timedelta(days=3),
+            health_card_expiry=ref + timedelta(days=3),
         )
         out = StringIO()
         call_command('notify_document_expiry', '--days=30', '--dry-run', stdout=out)
@@ -121,11 +119,11 @@ class NotifyDocumentExpiryCommandTests(TestCase):
             hire_date=date(2024, 1, 1),
             basic_salary=Decimal('5000'),
             sponsorship=self.sp,
-            passport_expiry_date=ref + timedelta(days=2),
+            health_card_expiry=ref + timedelta(days=2),
         )
         call_command('notify_document_expiry', '--days=30', '--cooldown-hours=0')
         self.assertTrue(
-            Notification.objects.filter(recipient=self.hr, title__contains='جواز').exists()
+            Notification.objects.filter(recipient=self.hr, title__contains='الكرت').exists()
         )
 
 
@@ -137,7 +135,7 @@ class DocumentExpiryMailTests(TestCase):
     )
     def test_summary_email_one_message(self):
         rows = [
-            ExpiringDocumentRow(1, 'أحمد', 'passport', 'جواز السفر', date(2026, 6, 1), 10),
+            ExpiringDocumentRow(1, 'أحمد', 'health_card', 'الكرت الصحي', date(2026, 6, 1), 10),
         ]
         sent = send_document_expiry_summary_email(rows=rows)
         self.assertEqual(sent, 1)
@@ -165,7 +163,7 @@ class DocumentExpiryDashboardTests(TestCase):
             hire_date=date(2024, 1, 1),
             basic_salary=Decimal('3000'),
             sponsorship=self.sp,
-            passport_expiry_date=ref + timedelta(days=4),
+            health_card_expiry=ref + timedelta(days=4),
         )
         c = Client()
         self.assertTrue(c.login(username='super_doc_dash', password='secret123'))

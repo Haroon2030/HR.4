@@ -40,7 +40,6 @@ REPORTS = [
     {'group': 'turnover',  'key': 'new_hires',             'title': 'التعيينات الجديدة',           'icon': 'user-plus',     'color': 'indigo',   'description': 'الموظفون المعينون حديثاً'},
     {'group': 'turnover',  'key': 'terminations',          'title': 'انتهاء العقود',               'icon': 'user-minus',    'color': 'indigo',   'description': 'الموظفون المنتهية عقودهم والمصفون'},
     {'group': 'turnover',  'key': 'tenure_analysis',       'title': 'تحليل فترة الخدمة',           'icon': 'hourglass',     'color': 'indigo',   'description': 'مدة خدمة كل موظف'},
-    {'group': 'compliance','key': 'passport_expiry',       'title': 'انتهاء الجوازات',             'icon': 'book-open',     'color': 'rose',     'description': 'الجوازات المنتهية أو القاربة'},
     {'group': 'compliance','key': 'health_cards',          'title': 'الكروت الصحية',               'icon': 'heart-pulse',   'color': 'rose',     'description': 'حالة الكروت الصحية'},
     {'group': 'compliance','key': 'warnings',              'title': 'الإنذارات والمخالفات',        'icon': 'alert-triangle','color': 'rose',     'description': 'الإنذارات والمخالفات'},
     {'group': 'leaves',    'key': 'leaves',                'title': 'سجل الإجازات',                'icon': 'plane',         'color': 'cyan',     'description': 'كل الإجازات المسجلة'},
@@ -225,22 +224,6 @@ def _build_tenure_analysis(req):
         rows.append([e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(years), str(days)])
     return {'columns': cols, 'rows': rows}
 
-def _build_passport_expiry(req):
-    today = date.today()
-    soon = today + timedelta(days=90)
-    cols = ['الاسم', 'الفرع', 'تاريخ انتهاء الجواز', 'الحالة']
-    qs = _filtered_employees(req)[0].exclude(passport_expiry_date__isnull=True).select_related('branch').order_by('passport_expiry_date')
-    rows = []
-    for e in qs:
-        if e.passport_expiry_date < today:
-            status = '❌ منتهي'
-        elif e.passport_expiry_date <= soon:
-            status = '⚠️ ينتهي قريباً'
-        else:
-            status = '✅ ساري'
-        rows.append([e.name, e.branch.name if e.branch else '—', str(e.passport_expiry_date), status])
-    return {'columns': cols, 'rows': rows}
-
 def _build_health_cards(req):
     today = date.today()
     soon = today + timedelta(days=90)
@@ -372,7 +355,7 @@ BUILDERS = {
     'salary_expenses': _build_salary_expenses, 'allowances_breakdown': _build_allowances_breakdown,
     'deductions_breakdown': _build_deductions_breakdown, 'insurance_costs': _build_insurance_costs,
     'new_hires': _build_new_hires, 'terminations': _build_terminations, 'tenure_analysis': _build_tenure_analysis,
-    'passport_expiry': _build_passport_expiry, 'health_cards': _build_health_cards, 'warnings': _build_warnings,
+    'health_cards': _build_health_cards, 'warnings': _build_warnings,
     'leaves': _build_leaves, 'leave_balance': _build_leave_balance, 'absences': _build_absences,
     'gender': _build_gender, 'nationality': _build_nationality, 'professions': _build_professions,
     'biometric_daily': _build_biometric_daily,

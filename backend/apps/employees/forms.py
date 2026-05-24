@@ -80,7 +80,7 @@ _EMPLOYEE_FIELDS = [
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
     'cost_center', 'insurance', 'insurance_class', 'housing',
     # تواريخ + حالة
-    'hire_date', 'end_date', 'passport_expiry_date', 'residency_expiry_date',
+    'hire_date', 'end_date',
     'medical_insurance_expiry_date', 'contract_expiry_date', 'status', 'end_reason',
     # الكرت الصحي
     'health_card_status', 'health_card_expiry',
@@ -218,7 +218,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
             'nationality', 'profession', 'sponsorship', 'insurance', 'insurance_class',
             'housing',
             # تواريخ وامتثال
-            'hire_date', 'passport_expiry_date', 'residency_expiry_date',
+            'hire_date',
             'medical_insurance_expiry_date', 'contract_expiry_date',
             'health_card_status', 'health_card_expiry',
             # راتب
@@ -271,9 +271,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
             if field_name in (
                 'hire_date',
                 'end_date',
-                'passport_expiry_date',
                 'health_card_expiry',
-                'residency_expiry_date',
                 'medical_insurance_expiry_date',
                 'contract_expiry_date',
             ):

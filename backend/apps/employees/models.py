@@ -135,11 +135,6 @@ class EmploymentRequest(BaseModel):
 
     # تواريخ
     hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
-    passport_expiry_date = models.DateField("تاريخ انتهاء الجواز", null=True, blank=True)
-    residency_expiry_date = models.DateField(
-        "تاريخ انتهاء الإقامة", null=True, blank=True,
-        help_text="تاريخ انتهاء بطاقة الإقامة/الخروج والعودة إن وُجد.",
-    )
     medical_insurance_expiry_date = models.DateField(
         "تاريخ انتهاء التأمين الطبي", null=True, blank=True,
         help_text="تاريخ تجديد بوليصة التأمين الصحي للموظف.",
@@ -283,11 +278,6 @@ class Employee(BaseModel):
 
     hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
     end_date = models.DateField("تاريخ التوقف", null=True, blank=True)
-    passport_expiry_date = models.DateField("تاريخ انتهاء الجواز", null=True, blank=True)
-    residency_expiry_date = models.DateField(
-        "تاريخ انتهاء الإقامة", null=True, blank=True,
-        help_text="تاريخ انتهاء بطاقة الإقامة/الخروج والعودة إن وُجد.",
-    )
     medical_insurance_expiry_date = models.DateField(
         "تاريخ انتهاء التأمين الطبي", null=True, blank=True,
         help_text="تاريخ تجديد بوليصة التأمين الصحي للموظف (وليس جدول نوع التأمين في الإعدادات).",

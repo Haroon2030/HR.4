@@ -154,15 +154,7 @@
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">تاريخ التوقف</label>
-                        <input type="date" name="end_date" value="{{ employee.end_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء الجواز</label>
-                        <input type="date" name="passport_expiry_date" value="{{ employee.passport_expiry_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء الإقامة</label>
-                        <input type="date" name="residency_expiry_date" value="{{ employee.residency_expiry_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="date" name="end_date" value="{{ employee.end_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" title="يُعبَّأ تلقائياً عند التصفية أو إنهاء العقد، ويمكن تعديله يدوياً">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء التأمين الطبي</label>

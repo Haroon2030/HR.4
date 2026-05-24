@@ -116,7 +116,7 @@
         <div class="flex-1">
             <div class="font-bold text-red-800 text-sm mb-1">تمت تصفية هذا الموظف</div>
             <div class="text-xs text-red-700 grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-                <div><span class="font-bold">تاريخ التصفية:</span> {{ employee.end_date|default:"—" }}</div>
+                <div><span class="font-bold">تاريخ التوقف:</span> {{ employee.end_date|default:"—" }}</div>
                 <div><span class="font-bold">السبب:</span> {{ employee.end_reason|default:"—" }}</div>
                 {% if employee.sponsorship_id %}
                 <div><span class="font-bold">بدل الإجازة المستحق:</span> {{ employee.leave_compensation|floatformat:2 }} ر.س</div>
@@ -155,7 +155,7 @@
                         <i data-lucide="info" class="w-3.5 h-3.5"></i> تنبيه نظامي
                     </div>
                     <ul class="list-disc list-inside space-y-0.5">
-                        <li>تاريخ التصفية وسببها يُحفظ في السجل التاريخي (لا يُحذف)</li>
+                        <li>تاريخ التوقف وسببه يُحفظ في السجل التاريخي (لا يُحذف)</li>
                         <li>رصيد الإجازة يُعاد من تاريخ المباشرة الجديد</li>
                         <li>تُسجَّل إفادة إعادة تفعيل تلقائياً في أرشيف الموظف</li>
                     </ul>
@@ -565,7 +565,7 @@
                 {% endif %}
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التصفية <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التوقف <span class="text-red-500">*</span></label>
                     <input type="date" name="end_date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
@@ -658,9 +658,9 @@
                     </select>
                 </div>
 
-                <!-- تاريخ الانتهاء -->
+                <!-- تاريخ التوقف -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الانتهاء <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التوقف <span class="text-red-500">*</span></label>
                     <input type="date" name="end_date" x-model="endDate" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
@@ -838,9 +838,9 @@
                     </select>
                 </div>
 
-                <!-- تاريخ الانتهاء -->
+                <!-- تاريخ التوقف -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الانتهاء <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التوقف <span class="text-red-500">*</span></label>
                     <input type="date" name="end_date" x-model="endDate" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
@@ -1574,9 +1574,7 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">القسم</div><div class="text-sm text-slate-800">{{ employee.department.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مركز التكلفة</div><div class="text-sm text-slate-800">{{ employee.cost_center.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ المباشرة</div><div class="text-sm text-slate-800">{{ employee.hire_date|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_date|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الجواز</div><div class="text-sm text-slate-800">{{ employee.passport_expiry_date|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الإقامة</div><div class="text-sm text-slate-800">{{ employee.residency_expiry_date|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ التوقف</div><div class="text-sm text-slate-800">{{ employee.end_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">التأمين</div><div class="text-sm text-slate-800">{{ employee.insurance.insurance_type|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء التأمين الطبي</div><div class="text-sm text-slate-800">{{ employee.medical_insurance_expiry_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">فئة التأمين</div><div class="text-sm text-slate-800">{{ employee.insurance_class.class_type|default:"—" }}</div></div>
