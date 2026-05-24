@@ -107,25 +107,84 @@
             });
         });
 
+        function positionPanel() {
+            const rect = btn.getBoundingClientRect();
+            panel.style.position = 'fixed';
+            panel.style.top = Math.round(rect.bottom + 2) + 'px';
+            panel.style.left = Math.round(rect.left) + 'px';
+            panel.style.width = Math.round(rect.width) + 'px';
+            panel.style.right = 'auto';
+            panel.style.zIndex = '9999';
+            panel.classList.add('hr-ms__panel--open');
+        }
+
+        panel._hrMsWrap = wrap;
+        panel._hrMsSelect = select;
+
+        function closePanel() {
+            panel.hidden = true;
+            panel.classList.remove('hr-ms__panel--open');
+            panel.style.position = '';
+            panel.style.top = '';
+            panel.style.left = '';
+            panel.style.right = '';
+            panel.style.width = '';
+            panel.style.zIndex = '';
+            if (panel.parentNode !== wrap) {
+                wrap.insertBefore(panel, select);
+            }
+            btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function closeOtherPanels() {
+            document.querySelectorAll('.hr-ms__panel').forEach(function (p) {
+                if (p === panel || p.hidden) return;
+                p.hidden = true;
+                p.classList.remove('hr-ms__panel--open');
+                p.style.position = '';
+                p.style.top = '';
+                p.style.left = '';
+                p.style.right = '';
+                p.style.width = '';
+                p.style.zIndex = '';
+                if (p._hrMsWrap && p.parentNode === document.body) {
+                    p._hrMsWrap.insertBefore(p, p._hrMsSelect);
+                }
+                const otherBtn = p._hrMsWrap && p._hrMsWrap.querySelector('.hr-ms__btn');
+                if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function openPanel() {
+            closeOtherPanels();
+            if (panel.parentNode !== document.body) {
+                document.body.appendChild(panel);
+            }
+            panel.hidden = false;
+            positionPanel();
+            btn.setAttribute('aria-expanded', 'true');
+        }
+
         btn.addEventListener('click', function (e) {
             e.preventDefault();
-            const open = !panel.hidden;
-            document.querySelectorAll('.hr-ms__panel').forEach(function (p) { p.hidden = true; });
-            document.querySelectorAll('.hr-ms__btn').forEach(function (b) {
-                b.setAttribute('aria-expanded', 'false');
-            });
-            if (!open) {
-                panel.hidden = false;
-                btn.setAttribute('aria-expanded', 'true');
+            e.stopPropagation();
+            if (panel.hidden) {
+                openPanel();
+            } else {
+                closePanel();
             }
         });
 
         document.addEventListener('click', function (e) {
-            if (!wrap.contains(e.target)) {
-                panel.hidden = true;
-                btn.setAttribute('aria-expanded', 'false');
+            if (!wrap.contains(e.target) && !panel.contains(e.target)) {
+                closePanel();
             }
         });
+
+        window.addEventListener('resize', closePanel);
+        window.addEventListener('scroll', function (e) {
+            if (!panel.hidden && !panel.contains(e.target)) closePanel();
+        }, true);
 
         select.classList.add('hr-filter-ms-native');
         select.parentNode.insertBefore(wrap, select);
