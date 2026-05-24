@@ -42,7 +42,7 @@ class Command(BaseCommand):
             
             # حساب مخصص نهاية الخدمة المتراكم حتى اليوم
             eosb_amount = Decimal('0')
-            last_salary = Decimal(emp.total_salary or 0)
+            last_salary = Decimal(emp.salary_for_end_of_service or 0)
             half_salary = (last_salary / Decimal('2')).quantize(Decimal('0.01'))
             
             if service_years <= 5:

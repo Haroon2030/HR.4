@@ -127,7 +127,7 @@ class PayrollLine(BaseModel):
     سطر مسير لموظف واحد — snapshot كامل لحظة الحساب.
     
     معادلة الحساب:
-      gross = basic + housing + transport + other + cash
+      gross = basic + housing + transport + other + cash + meal
       total_earnings = gross + bonus + overtime + other_addition
       total_deductions = absence + unpaid_leave + loan + penalty + insurance + other
       net_salary = total_earnings − total_deductions
@@ -149,6 +149,7 @@ class PayrollLine(BaseModel):
     transport_allowance = models.DecimalField("بدل نقل", max_digits=12, decimal_places=2, default=0)
     other_allowance = models.DecimalField("بدل إضافي", max_digits=12, decimal_places=2, default=0)
     cash_amount = models.DecimalField("كاش", max_digits=12, decimal_places=2, default=0)
+    meal_allowance = models.DecimalField("بدل التغذية", max_digits=12, decimal_places=2, default=0)
     gross_salary = models.DecimalField("إجمالي الراتب", max_digits=12, decimal_places=2, default=0)
 
     # ══ بيانات الحساب ═══════════════════════════════════════════════
@@ -204,6 +205,7 @@ class PayrollLine(BaseModel):
             + Decimal(self.transport_allowance or 0)
             + Decimal(self.other_allowance or 0)
             + Decimal(self.cash_amount or 0)
+            + Decimal(self.meal_allowance or 0)
         )
         # إجمالي الاستحقاقات (راتب + إضافات)
         self.total_earnings = (

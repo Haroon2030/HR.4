@@ -204,6 +204,11 @@
                         <input type="number" step="0.01" name="cash_amount" value="{{ employee.cash_amount }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>
                     <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">بدل التغذية</label>
+                        <input type="number" step="0.01" name="meal_allowance" value="{{ employee.meal_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة">
+                        <p class="text-[10px] text-slate-500">لا يُحتسب ضمن مكافأة نهاية الخدمة</p>
+                    </div>
+                    <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">نسبة خصم التأمينات (%)</label>
                         <input type="number" step="0.01" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>

@@ -589,6 +589,8 @@
             endDate: '',
             terminatedBy: 'company',
             totalSalary: {{ employee.total_salary|default:0 }},
+            eosSalary: {{ employee.salary_for_end_of_service|default:0 }},
+            mealAllowance: {{ employee.meal_allowance|default:0 }},
             remainingLeave: {{ employee.remaining_leave_days|default:0 }},
             hasSponsor: {{ employee.sponsorship_id|yesno:'true,false' }},
 
@@ -609,11 +611,11 @@
                 return '½ راتب × 5 + راتب كامل × ' + extra + ' سنة';
             },
             get eosbBase() {
-                let half = this.totalSalary / 2;
+                let half = this.eosSalary / 2;
                 if (this.category === 'trial') return 0;
                 if (this.category === 'first5') return +(half * this.serviceYears).toFixed(2);
                 let first5 = half * 5;
-                let extra = this.totalSalary * (this.serviceYears - 5);
+                let extra = this.eosSalary * (this.serviceYears - 5);
                 return +(first5 + extra).toFixed(2);
             },
             get resignFactor() {
@@ -678,8 +680,16 @@
                                     <span class="font-bold" x-text="serviceDays + ' يوم (' + serviceYears.toFixed(2) + ' سنة)'"></span>
                                 </div>
                                 <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                    <span class="text-slate-500">آخر راتب</span>
+                                    <span class="text-slate-500">إجمالي الراتب</span>
                                     <span class="font-bold" x-text="totalSalary.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5" x-show="mealAllowance > 0">
+                                    <span class="text-slate-500">أساس مكافأة نهاية الخدمة</span>
+                                    <span class="font-bold text-emerald-800" x-text="eosSalary.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2" x-show="mealAllowance > 0">
+                                    <span class="text-slate-500 text-[10px]">بدل التغذية مستثنى من المكافأة</span>
+                                    <span class="font-bold text-slate-600" x-text="mealAllowance.toFixed(2) + ' ر.س'"></span>
                                 </div>
                             </div>
                         </div>
@@ -769,6 +779,8 @@
             endDate: '',
             terminatedBy: 'company',
             totalSalary: {{ employee.total_salary|default:0 }},
+            eosSalary: {{ employee.salary_for_end_of_service|default:0 }},
+            mealAllowance: {{ employee.meal_allowance|default:0 }},
             remainingLeave: {{ employee.remaining_leave_days|default:0 }},
             hasSponsor: {{ employee.sponsorship_id|yesno:'true,false' }},
 
@@ -789,11 +801,11 @@
                 return '½ راتب × 5 + راتب كامل × ' + extra + ' سنة';
             },
             get eosbBase() {
-                let half = this.totalSalary / 2;
+                let half = this.eosSalary / 2;
                 if (this.category === 'trial') return 0;
                 if (this.category === 'first5') return +(half * this.serviceYears).toFixed(2);
                 let first5 = half * 5;
-                let extra = this.totalSalary * (this.serviceYears - 5);
+                let extra = this.eosSalary * (this.serviceYears - 5);
                 return +(first5 + extra).toFixed(2);
             },
             get resignFactor() {
@@ -858,8 +870,16 @@
                                     <span class="font-bold" x-text="serviceDays + ' يوم (' + serviceYears.toFixed(2) + ' سنة)'"></span>
                                 </div>
                                 <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                    <span class="text-slate-500">آخر راتب</span>
+                                    <span class="text-slate-500">إجمالي الراتب</span>
                                     <span class="font-bold" x-text="totalSalary.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5" x-show="mealAllowance > 0">
+                                    <span class="text-slate-500">أساس مكافأة نهاية الخدمة</span>
+                                    <span class="font-bold text-emerald-800" x-text="eosSalary.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2" x-show="mealAllowance > 0">
+                                    <span class="text-slate-500 text-[10px]">بدل التغذية مستثنى من المكافأة</span>
+                                    <span class="font-bold text-slate-600" x-text="mealAllowance.toFixed(2) + ' ر.س'"></span>
                                 </div>
                             </div>
                         </div>
@@ -950,10 +970,11 @@
             transport: {{ employee.transport_allowance|default:0 }},
             other: {{ employee.other_allowance|default:0 }},
             cash: {{ employee.cash_amount|default:0 }},
+            meal: {{ employee.meal_allowance|default:0 }},
             raise: 0,
             get newBasic(){ return parseFloat(this.basic) + parseFloat(this.raise || 0); },
-            get currentTotal(){ return parseFloat(this.basic)+parseFloat(this.housing)+parseFloat(this.transport)+parseFloat(this.other)+parseFloat(this.cash); },
-            get newTotal(){ return this.newBasic+parseFloat(this.housing)+parseFloat(this.transport)+parseFloat(this.other)+parseFloat(this.cash); },
+            get currentTotal(){ return parseFloat(this.basic)+parseFloat(this.housing)+parseFloat(this.transport)+parseFloat(this.other)+parseFloat(this.cash)+parseFloat(this.meal); },
+            get newTotal(){ return this.newBasic+parseFloat(this.housing)+parseFloat(this.transport)+parseFloat(this.other)+parseFloat(this.cash)+parseFloat(this.meal); },
             get diff(){ return this.newTotal - this.currentTotal; },
             get pct(){ return this.currentTotal ? ((this.diff/this.currentTotal)*100).toFixed(1) : 0; }
          }">
@@ -997,6 +1018,10 @@
                         <div class="flex justify-between bg-white rounded px-2 py-1.5 border border-slate-100">
                             <span class="text-slate-500">نقدي</span>
                             <span class="font-bold text-slate-800">{{ employee.cash_amount|floatformat:0 }}</span>
+                        </div>
+                        <div class="flex justify-between bg-white rounded px-2 py-1.5 border border-slate-100">
+                            <span class="text-slate-500">تغذية</span>
+                            <span class="font-bold text-slate-800">{{ employee.meal_allowance|floatformat:0 }}</span>
                         </div>
                         <div class="flex justify-between bg-primary-50 rounded px-2 py-1.5 border border-primary-200">
                             <span class="text-primary-700 font-bold">الإجمالي</span>
@@ -1593,11 +1618,13 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل السكن</div><div class="text-sm text-slate-800">{{ employee.housing_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل النقل</div><div class="text-sm text-slate-800">{{ employee.transport_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">إضافي</div><div class="text-sm text-slate-800">{{ employee.other_allowance|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">نقدي</div><div class="text-sm text-slate-800">{{ employee.cash_allowance|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">نسبة الاستقطاع</div><div class="text-sm text-slate-800">{{ employee.deduction_rate|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">نقدي</div><div class="text-sm text-slate-800">{{ employee.cash_amount|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">بدل التغذية</div><div class="text-sm text-slate-800">{{ employee.meal_allowance|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">نسبة الاستقطاع</div><div class="text-sm text-slate-800">{{ employee.insurance_deduction_rate|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">البنك</div><div class="text-sm text-slate-800">{{ employee.bank.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الآيبان</div><div class="text-sm text-slate-800 font-mono" dir="ltr">{{ employee.iban|default:"—" }}</div></div>
                 <div class="bg-primary-50 rounded-lg p-3 border border-primary-200"><div class="text-xs font-bold text-primary-700 mb-1">إجمالي الراتب</div><div class="text-lg font-bold text-primary-800">{{ employee.total_salary|default:"—" }}</div></div>
+                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 sm:col-span-2"><div class="text-xs font-bold text-slate-600 mb-1">أساس مكافأة نهاية الخدمة (بدون تغذية)</div><div class="text-sm font-bold text-slate-800">{{ employee.salary_for_end_of_service|default:"—" }}</div></div>
                 </div>
 
                 {# === أرشيف تعديلات الراتب === #}

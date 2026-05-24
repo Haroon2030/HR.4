@@ -137,9 +137,9 @@ def _build_headcount_summary(req):
     return {'columns': cols, 'rows': rows}
 
 def _build_branches(req):
-    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي']
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'الإجمالي']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
-    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.total_salary)] for e in qs]
+    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_departments_overview(req):
@@ -155,18 +155,18 @@ def _build_cost_centers_overview(req):
     return {'columns': cols, 'rows': rows}
 
 def _build_salary_expenses(req):
-    cols = ['الاسم', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي']
+    cols = ['الاسم', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'الإجمالي']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.total_salary)] for e in qs]
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(e.total_salary)] for e in qs]
     return {'columns': cols, 'rows': rows}
 
 def _build_allowances_breakdown(req):
-    cols = ['الاسم', 'الفرع', 'سكن', 'نقل', 'إضافي', 'كاش', 'إجمالي البدلات']
+    cols = ['الاسم', 'الفرع', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'إجمالي البدلات']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
     rows = []
     for e in qs:
-        t = e.housing_allowance + e.transport_allowance + e.other_allowance + e.cash_amount
-        rows.append([e.name, e.branch.name if e.branch else '—', str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(t)])
+        t = e.housing_allowance + e.transport_allowance + e.other_allowance + e.cash_amount + e.meal_allowance
+        rows.append([e.name, e.branch.name if e.branch else '—', str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(t)])
     return {'columns': cols, 'rows': rows}
 
 def _build_deductions_breakdown(req):

@@ -490,7 +490,7 @@ def _execute_contract_end(action, executor):
         raise ValueError('تاريخ الانتهاء يجب أن يكون بعد تاريخ المباشرة.')
     service_years = Decimal(str(round(service_days / 365.25, 4)))
 
-    last_salary = Decimal(employee.total_salary or 0)
+    last_salary = Decimal(employee.salary_for_end_of_service or 0)
     half_salary = (last_salary / 2).quantize(Decimal('0.01'))
 
     # ── حساب المكافأة الأساسية ──
@@ -644,7 +644,7 @@ def _execute_end_of_service(action, executor):
         raise ValueError('تاريخ التصفية يجب أن يكون بعد تاريخ المباشرة.')
     service_years = Decimal(str(round(service_days / 365.25, 4)))
 
-    last_salary = Decimal(employee.total_salary or 0)
+    last_salary = Decimal(employee.salary_for_end_of_service or 0)
     half_salary = (last_salary / 2).quantize(Decimal('0.01'))
 
     # ── حساب المكافأة الأساسية ──

@@ -126,6 +126,7 @@ def build_payroll_run(branch, year: int, month: int, user=None):
             transport_allowance=emp.transport_allowance or 0,
             other_allowance=emp.other_allowance or 0,
             cash_amount=emp.cash_amount or 0,
+            meal_allowance=emp.meal_allowance or 0,
             month_days=month_days,
         )
 
@@ -136,6 +137,7 @@ def build_payroll_run(branch, year: int, month: int, user=None):
             + Decimal(emp.transport_allowance or 0)
             + Decimal(emp.other_allowance or 0)
             + Decimal(emp.cash_amount or 0)
+            + Decimal(emp.meal_allowance or 0)
         )
 
         # المعدل اليومي (يُستخدم لحساب خصم الإجازة بدون راتب)

@@ -53,6 +53,11 @@ class EmployeeModelTests(TestCase):
         expected_total = Decimal('6500.00')
         self.assertEqual(self.employee.total_salary, expected_total)
 
+    def test_meal_allowance_in_total_but_excluded_from_eos_base(self):
+        self.employee.meal_allowance = Decimal('500.00')
+        self.assertEqual(self.employee.total_salary, Decimal('7000.00'))
+        self.assertEqual(self.employee.salary_for_end_of_service, Decimal('6500.00'))
+
     def test_daily_wage(self):
         """Test daily wage calculation (total_salary / 30)"""
         expected_daily_wage = (Decimal('6500.00') / Decimal('30')).quantize(Decimal('0.01'))

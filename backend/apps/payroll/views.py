@@ -299,7 +299,7 @@ def export_payroll_run_excel(request, run_id):
 
     # ── رؤوس الأعمدة ──
     headers = [
-        'الموظف', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'الإجمالي',
+        'الموظف', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'الإجمالي',
         'مكافأة', 'ساعات إضافية',
         'أيام غياب', 'خصم غياب', 'أيام إجازة بدون راتب', 'خصم إجازة',
         'قسط سلفة', 'مخالفات', 'تأمينات', 'خصومات أخرى',
@@ -313,7 +313,7 @@ def export_payroll_run_excel(request, run_id):
             line.employee.name,
             float(line.basic_salary), float(line.housing_allowance),
             float(line.transport_allowance), float(line.other_allowance),
-            float(line.cash_amount), float(line.gross_salary),
+            float(line.cash_amount), float(line.meal_allowance), float(line.gross_salary),
             float(line.bonus), float(line.overtime),
             float(line.absence_days), float(line.absence_deduction),
             float(line.unpaid_leave_days), float(line.unpaid_leave_deduction),

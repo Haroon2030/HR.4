@@ -165,6 +165,10 @@ class EmploymentRequest(BaseModel):
     cash_amount = models.DecimalField(
         "كاش", max_digits=12, decimal_places=2, default=0
     )
+    meal_allowance = models.DecimalField(
+        "بدل التغذية", max_digits=12, decimal_places=2, default=0,
+        help_text="يُضاف لإجمالي الراتب والمسير، ولا يُحتسب ضمن مكافأة نهاية الخدمة.",
+    )
     insurance_deduction_rate = models.DecimalField(
         "نسبة خصم التأمينات", max_digits=5, decimal_places=2, default=0
     )
@@ -297,6 +301,10 @@ class Employee(BaseModel):
     transport_allowance = models.DecimalField("بدل نقل", max_digits=12, decimal_places=2, default=0)
     other_allowance = models.DecimalField("بدل إضافي", max_digits=12, decimal_places=2, default=0)
     cash_amount = models.DecimalField("كاش", max_digits=12, decimal_places=2, default=0)
+    meal_allowance = models.DecimalField(
+        "بدل التغذية", max_digits=12, decimal_places=2, default=0,
+        help_text="يُضاف لإجمالي الراتب والمسير، ولا يُحتسب ضمن مكافأة نهاية الخدمة.",
+    )
     insurance_deduction_rate = models.DecimalField(
         "نسبة خصم التأمينات", max_digits=5, decimal_places=2, default=0
     )
@@ -362,6 +370,15 @@ class Employee(BaseModel):
 
     @property
     def total_salary(self):
+        """إجمالي الراتب الشهري (يشمل بدل التغذية)."""
+        return (
+            self.basic_salary + self.housing_allowance + self.transport_allowance
+            + self.other_allowance + self.cash_amount + self.meal_allowance
+        )
+
+    @property
+    def salary_for_end_of_service(self):
+        """أساس احتساب مكافأة نهاية الخدمة — بدون بدل التغذية."""
         return (
             self.basic_salary + self.housing_allowance + self.transport_allowance
             + self.other_allowance + self.cash_amount

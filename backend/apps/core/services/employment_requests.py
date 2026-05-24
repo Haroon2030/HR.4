@@ -223,6 +223,7 @@ def officer_approve(req, user, notes=''):
             transport_allowance=req.transport_allowance,
             other_allowance=req.other_allowance,
             cash_amount=req.cash_amount,
+            meal_allowance=req.meal_allowance,
             insurance_deduction_rate=req.insurance_deduction_rate,
             bank=req.bank,
             iban=req.iban or '',

@@ -19,6 +19,7 @@ _SALARY_DECIMAL_FIELDS = (
     'transport_allowance',
     'other_allowance',
     'cash_amount',
+    'meal_allowance',
     'insurance_deduction_rate',
     'available_leave_balance',
 )
@@ -86,7 +87,7 @@ _EMPLOYEE_FIELDS = [
     'health_card_status', 'health_card_expiry',
     # راتب
     'basic_salary', 'housing_allowance', 'transport_allowance',
-    'other_allowance', 'cash_amount', 'insurance_deduction_rate',
+    'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
     'bank', 'iban',
     # إجازات (leaves_archive و attendance_notes معروضة كـ textarea في edit.html)
     'available_leave_balance', 'leaves_archive', 'attendance_notes',
@@ -223,7 +224,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
             'health_card_status', 'health_card_expiry',
             # راتب
             'basic_salary', 'housing_allowance', 'transport_allowance',
-            'other_allowance', 'cash_amount', 'insurance_deduction_rate',
+            'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
             'bank', 'iban',
             # مستندات
             'id_document', 'passport_document', 'contract_document', 'other_documents',
