@@ -15,7 +15,7 @@ from django.urls import reverse
 
 from apps.core.decorators import permission_required
 from apps.core.models import Branch
-from apps.core.filter_utils import apply_branch_filter, parse_multi_filter_ids
+from apps.core.filter_utils import apply_branch_filter, append_multi_param, parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids
 from apps.setup.models import Sponsorship
 
@@ -357,18 +357,23 @@ BUILDERS = {
 }
 
 def _filter_querystring(request, exclude=()):
-    params = []
     f = _report_filters(request)
+    params: list[tuple[str, object]] = []
+    if 'branch' not in exclude:
+        append_multi_param(params, 'branch', f.get('branch_ids'))
+    if 'sponsorship' not in exclude:
+        append_multi_param(params, 'sponsorship', f.get('sponsorship_ids'))
     for key, val in (
-        ('branch', f['branch']),
-        ('sponsorship', f['sponsorship']),
         ('from', f['date_from']),
         ('to', f['date_to']),
     ):
         if key in exclude or not val:
             continue
         params.append((key, val))
-    return urlencode(params)
+    report = f.get('report')
+    if 'report' not in exclude and report:
+        params.append(('report', report))
+    return urlencode(params, doseq=True)
 
 
 @login_required

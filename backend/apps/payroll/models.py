@@ -54,6 +54,10 @@ class PayrollRun(BaseModel):
         'core.Company', on_delete=models.PROTECT, related_name='payroll_runs',
         verbose_name="الشركة", null=True, blank=True,
     )
+    sponsorship = models.ForeignKey(
+        'setup.Sponsorship', on_delete=models.PROTECT, related_name='payroll_runs',
+        verbose_name="شركة الكفالة", null=True, blank=True,
+    )
     branch = models.ForeignKey(
         Branch, on_delete=models.PROTECT, related_name='payroll_runs',
         verbose_name="الفرع"

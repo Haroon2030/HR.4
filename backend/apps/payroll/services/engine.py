@@ -55,8 +55,8 @@ def _q(v):
 # 1. بناء المسير
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _employees_for_payroll_run(branch, salary_mode):
-    """موظفون نشطون/في إجازة حسب نوع الراتب (كفالة أم لا)."""
+def _employees_for_payroll_run(branch, salary_mode, *, sponsorship_id=None):
+    """موظفون نشطون/في إجازة حسب نوع الراتب وشركة الكفالة."""
     from apps.employees.models import Employee
 
     qs = Employee.objects.filter(
@@ -66,12 +66,15 @@ def _employees_for_payroll_run(branch, salary_mode):
     if salary_mode == PayrollRun.SalaryMode.CASH:
         return qs.filter(sponsorship__isnull=True)
     if salary_mode == PayrollRun.SalaryMode.TRANSFER:
-        return qs.filter(sponsorship__isnull=False)
+        qs = qs.filter(sponsorship__isnull=False)
+        if sponsorship_id:
+            qs = qs.filter(sponsorship_id=sponsorship_id)
+        return qs
     raise ValueError('نوع الراتب غير صالح.')
 
 
 @transaction.atomic
-def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=None):
+def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=None, sponsorship_id=None):
     """
     يبني أو يُعيد بناء مسير DRAFT لفرع وشهر محددين.
 
@@ -86,6 +89,11 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     if salary_mode not in PayrollRun.SalaryMode.values:
         raise ValueError('نوع الراتب غير صالح.')
 
+    if salary_mode == PayrollRun.SalaryMode.CASH:
+        sponsorship_id = None
+    elif salary_mode == PayrollRun.SalaryMode.TRANSFER and not sponsorship_id:
+        raise ValueError('يرجى اختيار شركة الكفالة لمسير التحويل.')
+
     # ── جلب أو إنشاء المسير ──
     run, _ = PayrollRun.objects.get_or_create(
         branch=branch,
@@ -96,11 +104,18 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             'created_by': user,
             'status': PayrollRun.Status.DRAFT,
             'company': branch.company,
+            'sponsorship_id': sponsorship_id,
         },
     )
+    update_fields = []
     if run.company_id != branch.company_id:
         run.company = branch.company
-        run.save(update_fields=['company'])
+        update_fields.append('company')
+    if run.sponsorship_id != sponsorship_id:
+        run.sponsorship_id = sponsorship_id
+        update_fields.append('sponsorship_id')
+    if update_fields:
+        run.save(update_fields=update_fields)
 
     # لا يمكن إعادة بناء مسير مُرحَّل
     if run.status == PayrollRun.Status.LOCKED:
@@ -118,7 +133,9 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     period_end = date(year, month, month_days)               # آخر يوم
 
     # ── جلب الموظفين حسب نوع الراتب ──
-    employees = _employees_for_payroll_run(branch, salary_mode).order_by('name').distinct()
+    employees = _employees_for_payroll_run(
+        branch, salary_mode, sponsorship_id=sponsorship_id,
+    ).order_by('name').distinct()
 
     seen_ids = set()  # لمنع تكرار الموظف (حماية إضافية)
 

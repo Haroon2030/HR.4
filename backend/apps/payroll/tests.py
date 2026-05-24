@@ -58,7 +58,9 @@ class PayrollEngineTests(TestCase):
 
     def test_build_computes_gross_and_insurance(self):
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
         self.assertEqual(line.gross_salary, Decimal('4500.00'))
@@ -74,7 +76,9 @@ class PayrollEngineTests(TestCase):
             deduction_amount=Decimal('100.00'),
         )
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
         self.assertEqual(line.absence_deduction, Decimal('100.00'))
@@ -88,7 +92,9 @@ class PayrollEngineTests(TestCase):
             days=Decimal('2'),
         )
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
         daily = (Decimal('4500') / Decimal('31')).quantize(Decimal('0.01'))
@@ -104,7 +110,9 @@ class PayrollEngineTests(TestCase):
             deduction_amount=Decimal('50.00'),
         )
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
         self.assertEqual(line.penalty_deduction, Decimal('50.00'))
@@ -123,19 +131,25 @@ class PayrollEngineTests(TestCase):
             loan.installments_log.filter(period_year=2026, period_month=3).exists()
         )
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
         self.assertEqual(line.loan_deduction, Decimal('100.00'))
 
     def test_rebuild_locked_raises(self):
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         lock_payroll_run(run, self.user)
         with self.assertRaises(ValueError) as ctx:
             build_payroll_run(
-                self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+                self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
             )
         self.assertIn('مُغلق', str(ctx.exception))
 
@@ -148,7 +162,9 @@ class PayrollEngineTests(TestCase):
 
     def test_transfer_mode_excludes_unsponsored_employees(self):
         run = build_payroll_run(
-            self.branch, 2026, 5, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 5, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         self.assertEqual(run.lines.count(), 1)
         self.assertEqual(run.lines.get().employee_id, self.employee_transfer.id)
@@ -158,7 +174,9 @@ class PayrollEngineTests(TestCase):
             self.branch, 2026, 6, self.user, salary_mode=PayrollRun.SalaryMode.CASH,
         )
         run_transfer = build_payroll_run(
-            self.branch, 2026, 6, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         self.assertNotEqual(run_cash.id, run_transfer.id)
         self.assertEqual(run_cash.employees_count, 1)
@@ -166,7 +184,9 @@ class PayrollEngineTests(TestCase):
 
     def test_lock_twice_raises(self):
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         lock_payroll_run(run, self.user)
         with self.assertRaises(ValueError):
@@ -181,7 +201,9 @@ class PayrollEngineTests(TestCase):
             deduction_amount=Decimal('75.00'),
         )
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         lock_payroll_run(run, self.user)
         abs_rec.refresh_from_db()
@@ -196,7 +218,9 @@ class PayrollEngineTests(TestCase):
             deduction_amount=Decimal('75.00'),
         )
         run = build_payroll_run(
-            self.branch, 2026, 3, self.user, salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
         )
         lock_payroll_run(run, self.user)
         unlock_payroll_run(run, self.user)

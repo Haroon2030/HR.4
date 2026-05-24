@@ -20,6 +20,7 @@
   - إنشاء/تعديل/ترحيل: employees.edit
   - إلغاء ترحيل: employees.edit + superuser فقط
 """
+import json
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -30,8 +31,10 @@ from django.db.models import Sum, Count
 
 from apps.core.decorators import permission_required
 from apps.core.filter_utils import parse_multi_filter_ids
-from apps.core.models import Branch, Company
+from apps.core.models import Branch
+from apps.employees.models import Employee
 from apps.payroll.models import PayrollRun, PayrollLine
+from apps.setup.models import Sponsorship
 from apps.payroll.services.engine import (
     build_payroll_run, lock_payroll_run, unlock_payroll_run,
 )
@@ -70,6 +73,26 @@ def _user_branches(user):
     return Branch.objects.none()
 
 
+def _branch_sponsorship_map():
+    """فروع ← شركات كفالة لها موظفون نشطون/في إجازة."""
+    mapping: dict[str, list[int]] = {}
+    rows = (
+        Employee.objects.filter(
+            is_deleted=False,
+            sponsorship_id__isnull=False,
+            status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
+        )
+        .values('branch_id', 'sponsorship_id')
+        .distinct()
+    )
+    for row in rows:
+        key = str(row['branch_id'])
+        sid = row['sponsorship_id']
+        if sid not in mapping.get(key, []):
+            mapping.setdefault(key, []).append(sid)
+    return mapping
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. قائمة المسيرات — مع فلاتر (سنة/شهر/فرع/حالة) + ترقيم صفحات
 # ══════════════════════════════════════════════════════════════════════════════
@@ -79,7 +102,7 @@ def _user_branches(user):
 def list_payroll_runs(request):
     """عرض قائمة مسيرات الرواتب مع إمكانية الفلترة والترقيم."""
     qs = PayrollRun.objects.select_related(
-        'branch', 'company', 'created_by', 'locked_by',
+        'branch', 'company', 'sponsorship', 'created_by', 'locked_by',
     )
     user_branches = _user_branches(request.user)
 
@@ -108,13 +131,15 @@ def list_payroll_runs(request):
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     today = date.today()
-    companies = Company.objects.filter(is_deleted=False).order_by('name')
+    sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
+    branch_sponsorship_map = json.dumps(_branch_sponsorship_map())
     return render(request, 'pages/payroll/list.html', {
         'runs': page_obj.object_list,        # المسيرات في الصفحة الحالية
         'page_obj': page_obj,                # كائن الصفحة (للترقيم)
         'paginator': paginator,              # كائن الترقيم
         'branches': user_branches,           # الفروع (للقائمة المنسدلة)
-        'companies': companies,
+        'sponsorships': sponsorships,
+        'branch_sponsorship_map': branch_sponsorship_map,
         'SALARY_MODE_CHOICES': PayrollRun.SalaryMode.choices,
         'current_year': today.year,
         'current_month': today.month,
@@ -166,17 +191,27 @@ def create_payroll_run(request):
         return redirect('web:list_payroll_runs')
 
     try:
-        company_id = int(request.POST.get('company_id') or 0)
+        sponsorship_id = int(request.POST.get('sponsorship_id') or 0)
     except ValueError:
-        company_id = 0
-    if company_id and branch.company_id != company_id:
-        messages.error(request, 'الفرع المحدد لا يتبع الشركة المختارة.')
-        return redirect('web:list_payroll_runs')
+        sponsorship_id = 0
+    if salary_mode == PayrollRun.SalaryMode.TRANSFER:
+        if not sponsorship_id:
+            messages.error(request, 'يرجى اختيار شركة الكفالة لمسير التحويل.')
+            return redirect('web:list_payroll_runs')
+        if not Sponsorship.objects.filter(
+            pk=sponsorship_id, is_deleted=False, is_active=True,
+        ).exists():
+            messages.error(request, 'شركة الكفالة غير صالحة.')
+            return redirect('web:list_payroll_runs')
+    else:
+        sponsorship_id = None
 
     # بناء المسير عبر محرك الرواتب
     try:
         run = build_payroll_run(
-            branch, year, month, request.user, salary_mode=salary_mode,
+            branch, year, month, request.user,
+            salary_mode=salary_mode,
+            sponsorship_id=sponsorship_id or None,
         )
     except ValueError as e:
         messages.error(request, str(e))
@@ -199,7 +234,7 @@ def create_payroll_run(request):
 def view_payroll_run(request, run_id):
     """عرض تفاصيل المسير وأسطر الموظفين."""
     run = get_object_or_404(
-        PayrollRun.objects.select_related('branch', 'created_by', 'locked_by'),
+        PayrollRun.objects.select_related('branch', 'sponsorship', 'created_by', 'locked_by'),
         id=run_id
     )
     # فحص صلاحية الفرع
@@ -233,6 +268,7 @@ def rebuild_payroll_run(request, run_id):
         build_payroll_run(
             run.branch, run.period_year, run.period_month, request.user,
             salary_mode=run.salary_mode,
+            sponsorship_id=run.sponsorship_id,
         )
         messages.success(request, 'تم إعادة بناء المسير.')
     except ValueError as e:

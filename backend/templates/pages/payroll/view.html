@@ -16,6 +16,7 @@
             <h1 class="text-2xl font-bold text-slate-900 mt-1">{{ run.branch.name }} — {{ run.period_label }}</h1>
             <p class="mt-1 flex flex-wrap items-center gap-2">
                 <span class="px-2 py-0.5 text-xs font-bold rounded {% if run.salary_mode == 'cash' %}bg-amber-100 text-amber-800{% else %}bg-sky-100 text-sky-800{% endif %}">{{ run.get_salary_mode_display }}</span>
+                {% if run.sponsorship %}<span class="px-2 py-0.5 text-xs font-bold rounded bg-violet-100 text-violet-800">{{ run.sponsorship.company_name }}</span>{% endif %}
                 {% if run.status == 'draft' %}<span class="px-2 py-0.5 text-xs font-bold rounded bg-amber-100 text-amber-800">مسودة</span>
                 {% elif run.status == 'locked' %}<span class="px-2 py-0.5 text-xs font-bold rounded bg-emerald-100 text-emerald-800">مُرحَّل — {{ run.locked_at|date:"Y-m-d H:i" }}</span>
                 {% else %}<span class="px-2 py-0.5 text-xs font-bold rounded bg-rose-100 text-rose-800">مُلغى</span>
