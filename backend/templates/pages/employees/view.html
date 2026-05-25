@@ -8,7 +8,7 @@
 <div class="space-y-4" x-data="{ activeTab: 'main', quickModal: null, quickOpen: false }">
 
     <!-- Header -->
-    <div class="hr-employee-header flex flex-wrap items-center justify-between gap-3 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+    <div class="hr-employee-header hr-glass-panel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
         <div>
             <div class="flex items-center gap-2 flex-wrap">
                 <h1 class="text-2xl font-bold text-slate-900">{{ employee.name }}</h1>
@@ -1564,8 +1564,8 @@
     </div>
 
     <!-- Tabs -->
-    <div class="hr-glass-panel hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="flex flex-wrap border-b border-slate-200 bg-slate-50">
+    <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
+        <div class="flex flex-wrap border-b border-slate-200/80 bg-white/50 backdrop-blur-sm">
             <button @click="activeTab='main'"     :class="activeTab==='main'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">بيانات الموظف</button>
             <button @click="activeTab='salary'"   :class="activeTab==='salary'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الراتب</button>
             <button @click="activeTab='leaves'"   :class="activeTab==='leaves'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الإجازات</button>
@@ -1585,7 +1585,8 @@
         <div class="p-6">
 
             <!-- Main -->
-            <div x-show="activeTab==='main'" class="hr-field-grid">
+            <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
+            <div class="hr-field-grid hr-glass-field-table">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الاسم</div><div class="text-sm text-slate-800">{{ employee.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الموظف</div><div class="text-sm text-slate-800">{{ employee.employee_number|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الهوية</div><div class="text-sm text-slate-800">{{ employee.id_number|default:"—" }}</div></div>
@@ -1610,10 +1611,12 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الحالة</div><div class="text-sm text-slate-800">{{ employee.get_status_display|default:"—" }}</div></div>
                 <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
+            </div>
 
             <!-- Salary -->
             <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
-                <div class="hr-field-grid">
+                <div class="hr-glass-field-table-wrap">
+                <div class="hr-field-grid hr-glass-field-table">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الراتب الأساسي</div><div class="text-sm text-slate-800">{{ employee.basic_salary|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل السكن</div><div class="text-sm text-slate-800">{{ employee.housing_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل النقل</div><div class="text-sm text-slate-800">{{ employee.transport_allowance|default:"—" }}</div></div>
@@ -1625,6 +1628,7 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الآيبان</div><div class="text-sm text-slate-800 font-mono" dir="ltr">{{ employee.iban|default:"—" }}</div></div>
                 <div class="bg-primary-50 rounded-lg p-3 border border-primary-200"><div class="text-xs font-bold text-primary-700 mb-1">إجمالي الراتب</div><div class="text-lg font-bold text-primary-800">{{ employee.total_salary|default:"—" }}</div></div>
                 <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 sm:col-span-2"><div class="text-xs font-bold text-slate-600 mb-1">أساس مكافأة نهاية الخدمة (بدون تغذية)</div><div class="text-sm font-bold text-slate-800">{{ employee.salary_for_end_of_service|default:"—" }}</div></div>
+                </div>
                 </div>
 
                 {# === أرشيف تعديلات الراتب === #}
