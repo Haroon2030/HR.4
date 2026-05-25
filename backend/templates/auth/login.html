@@ -4,46 +4,40 @@
 
 {% block content %}
 <div class="login-shell">
-    <div class="login-wrap">
-        <div class="login-brand">
-            <div class="login-logo" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <h1>نظام الموارد البشرية</h1>
-            <p>نظام إدارة شؤون الموظفين</p>
-        </div>
+    <div class="login-stage" role="main" aria-label="تسجيل الدخول">
+        <section class="login-stage__form" aria-label="نموذج تسجيل الدخول">
+            <div class="login-stage__form-inner">
+                <h2 class="login-stage__title">تسجيل الدخول</h2>
 
-        <div class="login-card login-glass-panel" role="region" aria-label="نموذج تسجيل الدخول">
-            <div class="login-card__head">
-                <h2>تسجيل الدخول</h2>
-                <p class="login-sub">أدخل بياناتك للوصول إلى حسابك</p>
-            </div>
-
-            <div class="login-card__body">
                 {% if form.errors %}
                 <div class="login-alert" role="alert">
                     <p>اسم المستخدم أو كلمة المرور غير صحيحة</p>
                 </div>
                 {% endif %}
 
-                <form method="post" class="login-form" id="login-form">
+                <form method="post" class="login-form" id="login-form" novalidate>
                     {% csrf_token %}
 
-                    <div class="login-field">
-                        <label for="username">رقم المستخدم أو اسم المستخدم</label>
-                        <input
-                            type="text"
-                            name="username"
-                            id="username"
-                            required
-                            autocomplete="username"
-                            placeholder="أدخل رقم المستخدم أو اسم المستخدم"
-                        >
+                    <div class="login-line-field">
+                        <label for="username" class="login-line-field__label login-line-field__label--accent">اسم المستخدم</label>
+                        <div class="login-line-field__row">
+                            <input
+                                type="text"
+                                name="username"
+                                id="username"
+                                required
+                                autocomplete="username"
+                                placeholder="رقم المستخدم أو اسم المستخدم"
+                            >
+                            <span class="login-line-field__icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="login-field">
-                        <label for="password">كلمة المرور</label>
-                        <div class="login-password-wrap">
+                    <div class="login-line-field">
+                        <label for="password" class="login-line-field__label">كلمة المرور</label>
+                        <div class="login-line-field__row">
                             <input
                                 type="password"
                                 name="password"
@@ -52,19 +46,30 @@
                                 autocomplete="current-password"
                                 placeholder="أدخل كلمة المرور"
                             >
-                            <button type="button" class="login-toggle-pw" id="toggle-password" aria-label="إظهار كلمة المرور" title="إظهار/إخفاء">
+                            <button type="button" class="login-line-field__icon login-line-field__icon--btn" id="toggle-password" aria-label="إظهار كلمة المرور" title="إظهار/إخفاء">
                                 <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                 <svg id="icon-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" class="login-submit">تسجيل الدخول</button>
+                    <button type="submit" class="login-submit-pill">تسجيل الدخول</button>
                 </form>
             </div>
-        </div>
+        </section>
 
-        <p class="login-footer">© 2026 نظام الموارد البشرية. جميع الحقوق محفوظة</p>
+        <aside class="login-stage__welcome" aria-label="ترحيب">
+            <div class="login-stage__welcome-inner">
+                <div class="login-stage__logo" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <h1 class="login-stage__welcome-title">مرحباً بعودتك!</h1>
+                <p class="login-stage__welcome-text">نتمنى لك ولعائلتك يوماً سعيداً</p>
+                <p class="login-stage__welcome-sub">نظام الموارد البشرية — إدارة شؤون الموظفين</p>
+            </div>
+        </aside>
     </div>
+
+    <p class="login-footer">© 2026 نظام الموارد البشرية. جميع الحقوق محفوظة</p>
 </div>
 {% endblock %}
