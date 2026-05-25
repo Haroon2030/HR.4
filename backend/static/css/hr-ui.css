@@ -2311,6 +2311,17 @@ body.hr-app .hr-topbar.is-scrolled {
     }
 }
 
+/* زر طي الشريط — الشاشات الكبيرة فقط */
+.hr-topbar-collapse-btn {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .hr-topbar-collapse-btn {
+        display: inline-flex;
+    }
+}
+
 .hr-topbar-icon-btn {
     display: inline-flex;
     align-items: center;
