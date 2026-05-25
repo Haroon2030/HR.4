@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-4">
+<div class="max-w-3xl mx-auto space-y-4 hr-employee-create-page">
     <!-- Header -->
-    <div class="flex items-center gap-3">
-        <a href="{% url 'web:list_employees' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+    <div class="hr-employee-header flex items-center gap-3">
+        <a href="{% url 'web:list_employees' %}"
+           class="p-2 rounded-lg transition-colors hover:bg-white/60"
+           style="backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">
             <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
         </a>
         <div>
@@ -13,61 +15,75 @@
         </div>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="hr-glass-form bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+    <form method="post" enctype="multipart/form-data"
+          class="hr-glass-form hr-glass-panel rounded-xl overflow-hidden">
         {% csrf_token %}
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- الاسم -->
-            <div class="space-y-1.5 sm:col-span-2">
-                <label class="block text-sm font-bold text-slate-800">الاسم <span class="text-red-500">*</span></label>
-                <input type="text" name="name" required
-                       class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                       placeholder="اسم الموظف الكامل">
-            </div>
+        <div class="p-5 space-y-4">
+            <div class="hr-glass-field-table-wrap">
+                <div class="hr-field-grid hr-glass-field-table">
+                    <!-- الاسم -->
+                    <div class="hr-field-item hr-field-item--full">
+                        <label class="hr-field-lbl">الاسم <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" required
+                               class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none"
+                               placeholder="اسم الموظف الكامل">
+                    </div>
 
-            <!-- الفرع -->
-            <div class="space-y-1.5">
-                <label class="block text-sm font-bold text-slate-800">الفرع</label>
-                <select name="branch"
-                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
-                    <option value="">-- اختر --</option>
-                    {% for b in branches %}<option value="{{ b.id }}">{% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}</option>{% endfor %}
-                </select>
-            </div>
+                    <!-- الفرع -->
+                    <div class="hr-field-item">
+                        <label class="hr-field-lbl">الفرع</label>
+                        <select name="branch"
+                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
+                            <option value="">-- اختر --</option>
+                            {% for b in branches %}
+                            <option value="{{ b.id }}">{% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-            <!-- القسم -->
-            <div class="space-y-1.5">
-                <label class="block text-sm font-bold text-slate-800">القسم</label>
-                <select name="department"
-                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
-                    <option value="">-- اختر --</option>
-                    {% for d in departments %}<option value="{{ d.id }}">{% if d.code %}{{ d.code }}{% if d.name and d.code != d.name %} — {{ d.name }}{% endif %}{% else %}{{ d.name }}{% endif %}</option>{% endfor %}
-                </select>
-            </div>
+                    <!-- القسم -->
+                    <div class="hr-field-item">
+                        <label class="hr-field-lbl">القسم</label>
+                        <select name="department"
+                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
+                            <option value="">-- اختر --</option>
+                            {% for d in departments %}
+                            <option value="{{ d.id }}">{% if d.code %}{{ d.code }}{% if d.name and d.code != d.name %} — {{ d.name }}{% endif %}{% else %}{{ d.name }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-            <!-- مركز التكلفة -->
-            <div class="space-y-1.5 sm:col-span-2">
-                <label class="block text-sm font-bold text-slate-800">مركز التكلفة</label>
-                <select name="cost_center"
-                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
-                    <option value="">-- اختر --</option>
-                    {% for c in cost_centers %}<option value="{{ c.id }}">{% if c.code %}{{ c.code }}{% if c.name and c.code != c.name %} — {{ c.name }}{% endif %}{% else %}{{ c.name }}{% endif %}</option>{% endfor %}
-                </select>
-            </div>
+                    <!-- مركز التكلفة -->
+                    <div class="hr-field-item hr-field-item--full">
+                        <label class="hr-field-lbl">مركز التكلفة</label>
+                        <select name="cost_center"
+                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
+                            <option value="">-- اختر --</option>
+                            {% for c in cost_centers %}
+                            <option value="{{ c.id }}">{% if c.code %}{{ c.code }}{% if c.name and c.code != c.name %} — {{ c.name }}{% endif %}{% else %}{{ c.name }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-            <!-- مستند المباشرة -->
-            <div class="space-y-1.5 sm:col-span-2">
-                {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' %}
-                <p class="text-xs text-slate-500">ارفع مستند المباشرة بصيغة PDF أو صورة (يمكنك تعديل اسم الملف بعد الاختيار)</p>
+                    <!-- مستند المباشرة -->
+                    <div class="hr-field-item hr-field-item--full">
+                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' %}
+                        <p class="text-xs text-slate-500 mt-1 mb-0 font-normal">
+                            ارفع مستند المباشرة بصيغة PDF أو صورة (يمكنك تعديل اسم الملف بعد الاختيار)
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Form Actions -->
-        <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
+        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t"
+             style="border-color:var(--hr-glass-line);background:rgba(248,250,252,0.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
             <a href="{% url 'web:list_employees' %}"
-               class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">إلغاء</a>
+               class="hr-glass-btn hr-glass-btn--slate px-4 py-2 text-sm">إلغاء</a>
             <button type="submit"
-                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
+                    class="hr-glass-btn hr-glass-btn--primary px-4 py-2 text-sm flex items-center gap-2">
                 <i data-lucide="save" class="w-4 h-4"></i>
                 حفظ الموظف
             </button>
