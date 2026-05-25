@@ -2,7 +2,7 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
-# الحد الأقصى لحجم الملف (10MB)
+# الحد الأقصى لحجم الملف — يُوافق DATA_UPLOAD_MAX_MEMORY_SIZE في settings
 MAX_UPLOAD_SIZE_MB = 10
 MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 

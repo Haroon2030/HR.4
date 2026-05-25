@@ -437,16 +437,28 @@ def fetch_devices_from_server(settings: AgentSettings) -> list[DeviceTarget]:
                 device_id=int(row['id']),
                 device_ip=str(row['ip_address']).strip(),
                 device_port=int(row.get('port') or 4370),
-                comm_key=int(row.get('comm_key') or 0),
+                comm_key=0,
                 label=(row.get('name') or '').strip(),
             )
         )
     return devices
 
 
+def _comm_keys_from_devices_list(list_path: Path) -> dict[int, int]:
+    """قراءة comm_key المحلي من devices.list (لا يُنشر من السحابة)."""
+    keys: dict[int, int] = {}
+    if not list_path.exists():
+        return keys
+    for i, line in enumerate(list_path.read_text(encoding='utf-8-sig').splitlines(), 1):
+        row = _parse_device_line(line, i)
+        if row:
+            keys[row.device_id] = row.comm_key
+    return keys
+
+
 def write_devices_list(path: Path, devices: list[DeviceTarget]) -> None:
     lines = [
-        '# أُنشئ تلقائياً من السيرفر — device_id ip port comm_key اسم',
+        '# أُنشئ تلقائياً من السيرفر — comm_key يُضبط محلياً (probe) ولا يُنشر من API',
         '# يجب أن يصل هذا PC لكل IP (Tailscale/VPN لكل فرع)',
         '',
     ]
@@ -457,10 +469,23 @@ def write_devices_list(path: Path, devices: list[DeviceTarget]) -> None:
 
 
 def sync_devices_list_file(config_path: Path, settings: AgentSettings) -> list[DeviceTarget]:
+    list_path = config_path.parent / 'devices.list'
+    local_keys = _comm_keys_from_devices_list(list_path)
     devices = fetch_devices_from_server(settings)
     if not devices:
         raise ValueError('لا أجهزة نشطة على السيرفر — أضفها من: البصمة → أجهزة البصمة')
-    list_path = config_path.parent / 'devices.list'
+    merged: list[DeviceTarget] = []
+    for d in devices:
+        merged.append(
+            DeviceTarget(
+                device_id=d.device_id,
+                device_ip=d.device_ip,
+                device_port=d.device_port,
+                comm_key=local_keys.get(d.device_id, 0),
+                label=d.label,
+            )
+        )
+    devices = merged
     write_devices_list(list_path, devices)
     LOG.info('تم حفظ %s جهاز في %s', len(devices), list_path)
     return devices

@@ -75,6 +75,9 @@ jobs:
       - name: "[3/9] Validate OpenAPI schema"
         run: python manage.py spectacular --validate
 
+      - name: "[3b/9] Check pending model migrations"
+        run: python manage.py makemigrations --check
+
       # ── نفس خطوات entrypoint (محاكاة النشر) ───────────────────────────────
       - name: "[4/9] Migrate database"
         run: python manage.py migrate --noinput

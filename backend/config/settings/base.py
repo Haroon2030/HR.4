@@ -265,9 +265,10 @@ SIDEBAR_COUNTS_CACHE_TTL = env.int('SIDEBAR_COUNTS_CACHE_TTL', default=45)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# حدود الرفع — حماية من الملفات الكبيرة
-DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024     # 15MB (فوق حد validators بـ 10MB)
-FILE_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024     # 15MB
+# حدود الرفع — متوافقة مع apps.core.validators (10MB)
+_UPLOAD_LIMIT = 10 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = _UPLOAD_LIMIT
+FILE_UPLOAD_MAX_MEMORY_SIZE = _UPLOAD_LIMIT
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000                # الحد من نماذج POST الكبيرة
 
 # ══════════════════════════════════════════════════════════════════════════════

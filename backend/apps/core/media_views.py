@@ -13,6 +13,7 @@ from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.views.decorators.http import require_http_methods
 
 from apps.core.media_resolve import find_r2_object_key
+from apps.core.services.media_access import user_may_access_media_path
 from apps.core.storages import HRMediaStorage
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,9 @@ def serve_protected_media(request, path: str):
         safe_path = _normalize_media_path(path)
     except ValueError:
         return HttpResponseForbidden("مسار غير مسموح.")
+
+    if not user_may_access_media_path(request.user, safe_path):
+        return HttpResponseForbidden("غير مصرح بعرض هذا الملف.")
 
     if getattr(settings, "USE_R2", False):
         return _serve_r2_media(request, safe_path)

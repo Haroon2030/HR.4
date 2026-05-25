@@ -604,6 +604,76 @@ class MediaResolveTests(TestCase):
         )
 
 
+class MediaAccessTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(name='شركة')
+        cls.branch_a = Branch.objects.create(name='فرع أ', code='A', company=cls.company)
+        cls.branch_b = Branch.objects.create(name='فرع ب', code='B', company=cls.company)
+        cls.admin_user = User.objects.create_user(username='admin_media', password='x', is_superuser=True)
+        cls.manager = User.objects.create_user(username='mgr_media', password='x', is_staff=True)
+        role = Role.objects.create(
+            name='مدير فرع وسائط',
+            role_type=Role.RoleType.MANAGER,
+        )
+        from apps.core.models import Permission, UserProfile
+
+        profile, _ = UserProfile.objects.get_or_create(user=cls.manager)
+        profile.role = role
+        profile.branch = cls.branch_a
+        profile.save(update_fields=['role', 'branch'])
+        cls.branch_a.manager = cls.manager
+        cls.branch_a.save(update_fields=['manager'])
+        cls.employee_a = Employee.objects.create(
+            name='موظف أ',
+            branch=cls.branch_a,
+            status=Employee.Status.ACTIVE,
+        )
+        cls.employee_a.id_document = 'employees/id/emp_a_id.pdf'
+        cls.employee_a.save(update_fields=['id_document'])
+        cls._employees_view_perm = Permission.objects.get(code='employees.view')
+        role.permissions.add(cls._employees_view_perm)
+
+    def test_superuser_may_access_employee_file(self):
+        from apps.core.services.media_access import user_may_access_media_path
+
+        self.assertTrue(
+            user_may_access_media_path(self.admin_user, 'employees/id/emp_a_id.pdf')
+        )
+
+    def _manager_user(self):
+        """مستخدم مُحدَّث مع الملف والدور (يتجنب كاش profile القديم)."""
+        if hasattr(self.manager, '_perm_codes_cache'):
+            del self.manager._perm_codes_cache
+        return User.objects.select_related('profile__role').get(pk=self.manager.pk)
+
+    def test_branch_manager_denied_other_branch_file(self):
+        from apps.core.services.media_access import user_may_access_media_path
+
+        other = Employee.objects.create(
+            name='موظف ب',
+            branch=self.branch_b,
+            status=Employee.Status.ACTIVE,
+        )
+        other.id_document = 'employees/id/emp_b_id.pdf'
+        other.save(update_fields=['id_document'])
+
+        self.assertFalse(
+            user_may_access_media_path(
+                self._manager_user(), 'employees/id/emp_b_id.pdf'
+            )
+        )
+
+    def test_branch_manager_allowed_own_branch_file(self):
+        from apps.core.services.media_access import user_may_access_media_path
+
+        self.assertTrue(
+            user_may_access_media_path(
+                self._manager_user(), 'employees/id/emp_a_id.pdf'
+            )
+        )
+
+
 class ParseMultiFilterIdsTests(TestCase):
     def test_post_reads_branch_id_not_get(self):
         from django.test import RequestFactory
@@ -613,7 +683,7 @@ class ParseMultiFilterIdsTests(TestCase):
         factory = RequestFactory()
         request = factory.post(
             '/payroll/',
-            data=[('branch_id', '1'), ('branch_id', '9'), ('branch_id', '12')],
+            data={'branch_id': ['1', '9', '12']},
         )
         request.GET = request.GET.copy()
         request.GET.setlist('branch', ['99'])

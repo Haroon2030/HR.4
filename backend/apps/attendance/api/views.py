@@ -40,7 +40,6 @@ class AgentDeviceListView(APIView):
                 'name': d.name,
                 'ip_address': d.ip_address,
                 'port': d.port,
-                'comm_key': d.comm_key,
                 'branch_id': d.branch_id,
                 'branch_name': d.branch.name if d.branch_id else '',
             }

@@ -15,6 +15,9 @@
   - المستخدمون الآخرون → (صلاحيات الدور ∪ الإضافية) − المحرومة
 """
 from functools import wraps
+from urllib.parse import urlencode
+
+from django.conf import settings
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
@@ -159,6 +162,11 @@ def permission_required(permission_code, raise_exception=False):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                login = settings.LOGIN_URL
+                next_url = request.get_full_path()
+                return redirect(f'{login}?{urlencode({"next": next_url})}')
+
             # السوبر يوزر يمر مباشرة
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
