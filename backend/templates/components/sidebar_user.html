@@ -1,46 +1,19 @@
 {% with display_name=user.get_full_name|default:user.username role_name=user.profile.role.name|default:"مستخدم" %}
-<div class="hr-user-block shrink-0">
-    {% if allow_collapse %}
-    <div class="p-2">
-        <div
-            x-show="sidebarOpen"
-            x-cloak
-            class="flex items-center gap-3 min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2"
-            role="group"
-            aria-label="الحساب: {{ display_name }}"
-        >
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <i data-lucide="user" class="h-5 w-5 text-primary-600"></i>
-            </div>
-            <div class="min-w-0 flex-1 text-right leading-tight">
-                <p class="truncate text-sm font-bold text-slate-900" dir="ltr" title="{{ display_name }}">{{ display_name }}</p>
-                <p class="mt-0.5 truncate text-[10px] font-semibold text-slate-700" title="{{ role_name }}">{{ role_name }}</p>
-            </div>
-        </div>
-        <div x-show="!sidebarOpen" x-cloak class="flex justify-center py-0.5">
-            <div
-                class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100"
-                title="{{ display_name }} — {{ role_name }}"
-            >
-                <i data-lucide="user" class="h-5 w-5 text-primary-600"></i>
-            </div>
+<div class="hr-sidebar-user shrink-0">
+    <div class="hr-sidebar-user__inner" {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
+        <span class="hr-sidebar-user__avatar" aria-hidden="true">
+            {{ display_name|slice:":1"|upper }}
+        </span>
+        <div class="hr-sidebar-user__meta min-w-0">
+            <p class="hr-sidebar-user__name truncate" title="{{ display_name }}">{{ display_name }}</p>
+            <p class="hr-sidebar-user__role truncate" title="{{ role_name }}">{{ role_name }}</p>
         </div>
     </div>
-    {% else %}
-    <div class="p-2">
-        <div
-            class="flex items-center gap-3 min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2"
-            role="group"
-            aria-label="الحساب: {{ display_name }}"
-        >
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <i data-lucide="user" class="h-5 w-5 text-primary-600"></i>
-            </div>
-            <div class="min-w-0 flex-1 text-right leading-tight">
-                <p class="truncate text-sm font-bold text-slate-900" dir="ltr" title="{{ display_name }}">{{ display_name }}</p>
-                <p class="mt-0.5 truncate text-[10px] font-semibold text-slate-700" title="{{ role_name }}">{{ role_name }}</p>
-            </div>
-        </div>
+    {% if allow_collapse and not always_show %}
+    <div class="hr-sidebar-user__collapsed" x-show="!sidebarOpen" x-cloak>
+        <span class="hr-sidebar-user__avatar" title="{{ display_name }}">
+            {{ display_name|slice:":1"|upper }}
+        </span>
     </div>
     {% endif %}
 </div>

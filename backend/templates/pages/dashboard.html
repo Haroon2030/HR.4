@@ -27,70 +27,18 @@
 
     {% if show_overview %}
     <!-- ═══ KPI Stats Cards ═══ -->
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 md:gap-4">
-        <a href="{% url 'web:list_employees' %}" class="hr-kpi group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-primary-300 transition">
-            <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center mb-2 group-hover:bg-primary-100 transition">
-                <i data-lucide="users" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">إجمالي الموظفين</p>
-            <p class="text-2xl font-bold text-slate-800 mt-1">{{ stats.employees_total|default:0 }}</p>
-        </a>
-
-        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-                <i data-lucide="user-check" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">على رأس العمل</p>
-            <p class="text-2xl font-bold text-emerald-700 mt-1">{{ stats.employees_active|default:0 }}</p>
-        </div>
-
-        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
-                <i data-lucide="palmtree" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">في إجازة</p>
-            <p class="text-2xl font-bold text-amber-700 mt-1">{{ stats.employees_leave|default:0 }}</p>
-        </div>
-
-        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-2">
-                <i data-lucide="user-x" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">موقوفون</p>
-            <p class="text-2xl font-bold text-rose-700 mt-1">{{ stats.employees_suspended|default:0 }}</p>
-        </div>
-
-        <a href="{% url 'web:list_employment_requests' %}" class="hr-kpi group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-indigo-300 transition">
-            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:bg-indigo-100 transition">
-                <i data-lucide="file-plus" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">طلبات توظيف معلّقة</p>
-            <p class="text-2xl font-bold text-indigo-700 mt-1">{{ stats.employment_requests_open|default:0 }}</p>
-        </a>
-
-        <a href="{% url 'web:list_pending_actions' %}" class="hr-kpi group bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-purple-300 transition">
-            <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-2 group-hover:bg-purple-100 transition">
-                <i data-lucide="clipboard-list" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">عمليات معلّقة</p>
-            <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.pending_actions_open|default:0 }}</p>
-        </a>
-
-        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center mb-2">
-                <i data-lucide="user-minus" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">منتهية العقود</p>
-            <p class="text-2xl font-bold text-slate-700 mt-1">{{ stats.employees_terminated|default:0 }}</p>
-        </div>
-
-        <div class="hr-kpi bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
-                <i data-lucide="calculator" class="w-5 h-5"></i>
-            </div>
-            <p class="text-xs text-slate-500 font-medium">قيد التصفية</p>
-            <p class="text-2xl font-bold text-orange-700 mt-1">{{ stats.clearance_open|default:0 }}</p>
-        </div>
+    <div class="hr-stat-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {% url 'web:list_employees' as list_employees_url %}
+        {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='primary' icon='users' href=list_employees_url %}
+        {% include 'components/kpi_stat_card.html' with label='على رأس العمل' value=stats.employees_active theme='emerald' icon='user-check' %}
+        {% include 'components/kpi_stat_card.html' with label='في إجازة' value=stats.employees_leave theme='amber' icon='palmtree' %}
+        {% include 'components/kpi_stat_card.html' with label='موقوفون' value=stats.employees_suspended theme='rose' icon='user-x' %}
+        {% url 'web:list_employment_requests' as employment_requests_url %}
+        {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='indigo' icon='file-plus' href=employment_requests_url %}
+        {% url 'web:list_pending_actions' as pending_actions_url %}
+        {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='purple' icon='clipboard-list' href=pending_actions_url %}
+        {% include 'components/kpi_stat_card.html' with label='منتهية العقود' value=stats.employees_terminated theme='slate' icon='user-minus' %}
+        {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='orange' icon='calculator' %}
     </div>
     {% endif %}
 

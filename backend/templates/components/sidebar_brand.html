@@ -1,0 +1,11 @@
+{% comment %}
+  شعار الشريط الجانبي — يتكيّف مع الطي (sidebarOpen).
+{% endcomment %}
+<div class="hr-sidebar-brand shrink-0">
+    <a href="{% url 'web:dashboard' %}" class="hr-sidebar-brand__link" title="لوحة التحكم">
+        <span class="hr-sidebar-brand__mark" aria-hidden="true">
+            <i data-lucide="briefcase" class="w-5 h-5"></i>
+        </span>
+        <span class="hr-sidebar-brand__name" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>نظام الموارد البشرية</span>
+    </a>
+</div>

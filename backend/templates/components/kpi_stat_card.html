@@ -1,0 +1,24 @@
+{% comment %}
+  بطاقة إحصائية (نمط لوحة تحكم حديث).
+  {% include 'components/kpi_stat_card.html' with label='...' value=123 theme='primary' icon='users' href=url %}
+  theme: primary | emerald | amber | rose | indigo | purple | slate | orange | cyan
+{% endcomment %}
+{% if href %}
+<a href="{{ href }}" class="hr-stat-card hr-stat-card--link hr-stat-card--{{ theme|default:'primary' }} group">
+{% else %}
+<div class="hr-stat-card hr-stat-card--{{ theme|default:'primary' }}">
+{% endif %}
+    <span class="hr-stat-card__blob" aria-hidden="true"></span>
+    <span class="hr-stat-card__icon" aria-hidden="true">
+        <i data-lucide="{{ icon|default:'bar-chart-2' }}" class="w-5 h-5"></i>
+    </span>
+    <p class="hr-stat-card__label">{{ label }}</p>
+    <p class="hr-stat-card__value">{{ value|default:0 }}</p>
+    {% if hint %}
+    <p class="hr-stat-card__hint">{{ hint }}</p>
+    {% endif %}
+{% if href %}
+</a>
+{% else %}
+</div>
+{% endif %}
