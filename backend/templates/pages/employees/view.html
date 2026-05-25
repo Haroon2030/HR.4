@@ -1566,22 +1566,22 @@
 
     <!-- Tabs -->
     <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
-        <div class="flex flex-wrap border-b border-slate-200/80 bg-white/50 backdrop-blur-sm">
-            <button @click="activeTab='main'"     :class="activeTab==='main'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">بيانات الموظف</button>
-            <button @click="activeTab='salary'"   :class="activeTab==='salary'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الراتب</button>
-            <button @click="activeTab='leaves'"   :class="activeTab==='leaves'   ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الإجازات</button>
-            <button @click="activeTab='schedule'" :class="activeTab==='schedule' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الجدول</button>
-            <button @click="activeTab='warnings'" :class="activeTab==='warnings' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الإفادات والإنذارات</button>
-            <button @click="activeTab='custodies'" :class="activeTab==='custodies' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العهد</button>
-            <button @click="activeTab='trips'" :class="activeTab==='trips' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">رحلات العمل</button>
-            <button @click="activeTab='offers'" :class="activeTab==='offers' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العروض الوظيفية</button>
-            <button @click="activeTab='loans'" :class="activeTab==='loans' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">السلف</button>
-            <button @click="activeTab='absences'" :class="activeTab==='absences' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الغيابات</button>
-            <button @click="activeTab='fingerprint'" :class="activeTab==='fingerprint' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">البصمة</button>
-            <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
-            <button @click="activeTab='accruals'" :class="activeTab==='accruals' ? 'border-emerald-600 text-emerald-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-emerald-700 hover:text-emerald-800">المخصصات والأرصدة</button>
-            <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
-            <button @click="activeTab='termination'" :class="activeTab==='termination' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-rose-700 hover:text-rose-800">التصفيات</button>
+        <div class="hr-page-tabs__bar" role="tablist">
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='main'"         :class="activeTab==='main'         && 'is-active'">بيانات الموظف</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='salary'"       :class="activeTab==='salary'       && 'is-active'">الراتب</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='leaves'"       :class="activeTab==='leaves'       && 'is-active'">الإجازات</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='schedule'"     :class="activeTab==='schedule'     && 'is-active'">الجدول</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='warnings'"     :class="activeTab==='warnings'     && 'is-active'">الإفادات والإنذارات</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='custodies'"    :class="activeTab==='custodies'    && 'is-active'">العهد</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='trips'"         :class="activeTab==='trips'         && 'is-active'">رحلات العمل</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='offers'"       :class="activeTab==='offers'       && 'is-active'">العروض الوظيفية</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='loans'"        :class="activeTab==='loans'        && 'is-active'">السلف</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='absences'"      :class="activeTab==='absences'      && 'is-active'">الغيابات</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='fingerprint'"  :class="activeTab==='fingerprint'  && 'is-active'">البصمة</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='docs'"          :class="activeTab==='docs'          && 'is-active'">المستندات</button>
+            <button type="button" role="tab" class="hr-tab-btn hr-tab-btn--emerald" @click="activeTab='accruals'" :class="activeTab==='accruals' && 'is-active'">المخصصات والأرصدة</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='archive'"      :class="activeTab==='archive'      && 'is-active'">أرشيف الحركة</button>
+            <button type="button" role="tab" class="hr-tab-btn hr-tab-btn--rose" @click="activeTab='termination'" :class="activeTab==='termination' && 'is-active'">التصفيات</button>
         </div>
 
         <div class="p-6">

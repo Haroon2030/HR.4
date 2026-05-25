@@ -41,6 +41,28 @@
     --hr-field-lbl-size: 0.8125rem;   /* 13px */
     --hr-field-val-size: 1.0625rem;   /* 17px */
     --hr-tab-size: 0.9375rem;         /* 15px */
+    --hr-tab-glass-active-bg: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(239, 246, 255, 0.88) 45%,
+        rgba(219, 234, 254, 0.78) 100%
+    );
+    --hr-tab-glass-active-shadow:
+        0 4px 16px rgba(59, 130, 246, 0.14),
+        0 1px 0 rgba(255, 255, 255, 1) inset,
+        0 0 0 1px rgba(147, 197, 253, 0.4);
+    --hr-tab-glass-emerald-bg: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(236, 253, 245, 0.88) 50%,
+        rgba(209, 250, 229, 0.78) 100%
+    );
+    --hr-tab-glass-rose-bg: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 241, 242, 0.88) 50%,
+        rgba(254, 226, 226, 0.78) 100%
+    );
 }
 
 /* خلفية زجاجية بيضاء للتطبيق */
@@ -842,9 +864,137 @@ body.hr-app .hr-glass-panel.hr-page-tabs {
     z-index: 10;
 }
 
-body.hr-app .hr-page-tabs button {
+body.hr-app .hr-page-tabs__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.2rem;
+    padding: 0.45rem 0.5rem 0;
+    background: rgba(248, 250, 252, 0.42);
+    backdrop-filter: blur(10px) saturate(1.05);
+    -webkit-backdrop-filter: blur(10px) saturate(1.05);
+    border-bottom: 1px solid var(--hr-glass-line);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn {
+    position: relative;
+    margin: 0;
+    padding: 0.55rem 0.95rem;
     font-size: var(--hr-tab-size) !important;
     font-weight: 700 !important;
+    line-height: 1.35;
+    color: rgb(100 116 139);
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 0.65rem 0.65rem 0 0;
+    cursor: pointer;
+    transition:
+        color 0.22s ease,
+        background 0.22s ease,
+        box-shadow 0.22s ease,
+        transform 0.18s ease;
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn:hover:not(.is-active) {
+    color: rgb(51 65 85);
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn.is-active {
+    color: rgb(29 78 216);
+    background: var(--hr-tab-glass-active-bg);
+    backdrop-filter: blur(16px) saturate(1.25);
+    -webkit-backdrop-filter: blur(16px) saturate(1.25);
+    border-color: rgba(255, 255, 255, 0.95);
+    border-bottom-color: transparent;
+    box-shadow: var(--hr-tab-glass-active-shadow);
+    transform: translateY(-1px);
+    z-index: 2;
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn.is-active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.55) 0%,
+        transparent 42%
+    );
+    pointer-events: none;
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 12%;
+    right: 12%;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(59 130 246) 20%,
+        rgb(96 165 250) 50%,
+        rgb(59 130 246) 80%,
+        transparent
+    );
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.45);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn--emerald:not(.is-active) {
+    color: rgb(5 150 105);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn--emerald.is-active {
+    color: rgb(4 120 87);
+    background: var(--hr-tab-glass-emerald-bg);
+    box-shadow:
+        0 4px 16px rgba(16, 185, 129, 0.14),
+        0 1px 0 rgba(255, 255, 255, 1) inset,
+        0 0 0 1px rgba(110, 231, 183, 0.45);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn--emerald.is-active::after {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(16 185 129) 20%,
+        rgb(52 211 153) 50%,
+        rgb(16 185 129) 80%,
+        transparent
+    );
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn--rose:not(.is-active) {
+    color: rgb(190 18 60);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn--rose.is-active {
+    color: rgb(159 18 57);
+    background: var(--hr-tab-glass-rose-bg);
+    box-shadow:
+        0 4px 16px rgba(244, 63, 94, 0.12),
+        0 1px 0 rgba(255, 255, 255, 1) inset,
+        0 0 0 1px rgba(253, 164, 175, 0.5);
+}
+
+body.hr-app .hr-page-tabs .hr-tab-btn--rose.is-active::after {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(225 29 72) 20%,
+        rgb(251 113 133) 50%,
+        rgb(225 29 72) 80%,
+        transparent
+    );
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
 }
 
 body.hr-app .hr-dropdown {
