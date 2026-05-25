@@ -5,14 +5,11 @@
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
             {% if cost_center.branch %}
-                <a href="{% url 'web:list_cost_centers' branch_id=cost_center.branch.id %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                    <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
-                </a>
+                {% url 'web:list_cost_centers' branch_id=cost_center.branch.id as back_url %}
             {% else %}
-                <a href="{% url 'web:list_all_cost_centers' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                    <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
-                </a>
+                {% url 'web:list_all_cost_centers' as back_url %}
             {% endif %}
+            {% include 'components/glass_back_link.html' with back_url=back_url aria_label='رجوع' %}
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-2xl font-bold text-slate-900">{{ cost_center.name }}</h1>

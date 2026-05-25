@@ -3,8 +3,9 @@
 {% block content %}
 <div class="max-w-3xl mx-auto">
     <div class="flex items-center gap-3 mb-6">
-        <a href="{% if branch %}{% url 'web:view_branch' branch.id %}{% else %}{% url 'web:list_all_cost_centers' %}{% endif %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
+        <a href="{% if branch %}{% url 'web:view_branch' branch.id %}{% else %}{% url 'web:list_all_cost_centers' %}{% endif %}"
+           class="hr-glass-back-btn" aria-label="رجوع">
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
         </a>
         <div>
             <h1 class="text-2xl font-bold text-slate-900">

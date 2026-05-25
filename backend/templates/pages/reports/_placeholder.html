@@ -43,11 +43,8 @@
             <br>
             تم تجهيز الشاشة وستظهر البيانات والمخططات هنا فور اكتمال البناء.
         </p>
-        <a href="{% url 'web:reports_index' %}"
-           class="inline-flex items-center gap-1.5 mt-6 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            العودة للتقارير
-        </a>
+        {% url 'web:reports_index' as back_url %}
+        {% include 'components/glass_back_link.html' with back_url=back_url label='العودة للتقارير' aria_label='العودة للتقارير' extra_class='mt-6' %}
     </div>
 
 </div>
