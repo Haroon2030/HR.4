@@ -1690,3 +1690,84 @@ body.hr-app .hr-sidebar .hr-nav-link.is-active,
 body.hr-app .hr-sidebar .hr-nav-sublink.is-active {
     color: #1d4ed8 !important;
 }
+
+/* ── أزرار زجاجية ملونة ── */
+.hr-glass-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700 !important;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    text-decoration: none;
+    color: #000000 !important;
+}
+
+.hr-glass-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.hr-glass-btn:active {
+    transform: translateY(0);
+}
+
+.hr-glass-btn--primary {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: rgba(37, 99, 235, 0.35);
+    color: #1e3a8a !important;
+}
+
+.hr-glass-btn--primary:hover {
+    background: rgba(59, 130, 246, 0.32);
+}
+
+.hr-glass-btn--sky {
+    background: rgba(14, 165, 233, 0.2);
+    border-color: rgba(2, 132, 199, 0.35);
+    color: #0c4a6e !important;
+}
+
+.hr-glass-btn--sky:hover {
+    background: rgba(14, 165, 233, 0.3);
+}
+
+.hr-glass-btn--emerald {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(5, 150, 105, 0.35);
+    color: #065f46 !important;
+}
+
+.hr-glass-btn--emerald:hover {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+.hr-glass-btn--slate {
+    background: rgba(148, 163, 184, 0.25);
+    border-color: rgba(100, 116, 139, 0.35);
+    color: #0f172a !important;
+}
+
+.hr-glass-btn--slate:hover {
+    background: rgba(148, 163, 184, 0.38);
+}
+
+.hr-fp-toolbar {
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--hr-table-glass-border);
+    background: var(--hr-table-glass-bg);
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    box-shadow: var(--hr-table-glass-shadow);
+}
