@@ -14,33 +14,32 @@
 
     {% include "components/operations_tabs.html" %}
 
-    <!-- Status Filters -->
-    <div class="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 p-2">
-        <a href="?status=pending" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending' %}bg-amber-100 text-amber-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="clock" class="w-4 h-4 inline-block ml-1"></i>
-            قيد المراجعة (الكل)
+    <nav class="hr-page-tabs__bar hr-glass-panel rounded-xl" role="tablist" aria-label="تصفية حالة الطلب">
+        <a href="?status=pending" role="tab" class="hr-tab-btn hr-tab-btn--amber{% if current_status == 'pending' %} is-active{% endif %}">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>قيد المراجعة (الكل)</span>
         </a>
-        <a href="?status=pending_branch" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending_branch' %}bg-primary-100 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="user-check" class="w-4 h-4 inline-block ml-1"></i>
-            مدير الفرع
+        <a href="?status=pending_branch" role="tab" class="hr-tab-btn{% if current_status == 'pending_branch' %} is-active{% endif %}">
+            <i data-lucide="user-check" class="w-4 h-4"></i>
+            <span>مدير الفرع</span>
         </a>
-        <a href="?status=pending_gm" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending_gm' %}bg-amber-100 text-amber-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="user-cog" class="w-4 h-4 inline-block ml-1"></i>
-            مدير الموارد
+        <a href="?status=pending_gm" role="tab" class="hr-tab-btn hr-tab-btn--amber{% if current_status == 'pending_gm' %} is-active{% endif %}">
+            <i data-lucide="user-cog" class="w-4 h-4"></i>
+            <span>مدير الموارد</span>
         </a>
-        <a href="?status=pending_officer" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'pending_officer' %}bg-indigo-100 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="clipboard-check" class="w-4 h-4 inline-block ml-1"></i>
-            الأخصائي
+        <a href="?status=pending_officer" role="tab" class="hr-tab-btn hr-tab-btn--indigo{% if current_status == 'pending_officer' %} is-active{% endif %}">
+            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+            <span>الأخصائي</span>
         </a>
-        <a href="?status=approved" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'approved' %}bg-emerald-100 text-emerald-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="check-circle" class="w-4 h-4 inline-block ml-1"></i>
-            مقبولة
+        <a href="?status=approved" role="tab" class="hr-tab-btn hr-tab-btn--emerald{% if current_status == 'approved' %} is-active{% endif %}">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            <span>مقبولة</span>
         </a>
-        <a href="?status=rejected" class="px-3 py-2 rounded-lg text-xs font-semibold transition-colors {% if current_status == 'rejected' %}bg-red-100 text-red-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="x-circle" class="w-4 h-4 inline-block ml-1"></i>
-            مرفوضة
+        <a href="?status=rejected" role="tab" class="hr-tab-btn hr-tab-btn--rose{% if current_status == 'rejected' %} is-active{% endif %}">
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
+            <span>مرفوضة</span>
         </a>
-    </div>
+    </nav>
 
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
