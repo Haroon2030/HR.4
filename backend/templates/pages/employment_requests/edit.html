@@ -40,32 +40,21 @@
     <form method="post" enctype="multipart/form-data" class="space-y-4">
         {% csrf_token %}
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-            <!-- Tabs Nav -->
-            <div class="border-b border-slate-200">
-                <nav class="flex -mb-px overflow-x-auto">
-                    <button type="button" @click="activeTab = 'main'"
-                            :class="activeTab === 'main' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="user" class="w-4 h-4"></i> بيانات الموظف
-                    </button>
-                    <button type="button" @click="activeTab = 'org'"
-                            :class="activeTab === 'org' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="building" class="w-4 h-4"></i> التنظيمي والتأمين
-                    </button>
-                    <button type="button" @click="activeTab = 'salary'"
-                            :class="activeTab === 'salary' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="wallet" class="w-4 h-4"></i> الراتب
-                    </button>
-                    <button type="button" @click="activeTab = 'docs'"
-                            :class="activeTab === 'docs' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                            class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="files" class="w-4 h-4"></i> المستندات
-                    </button>
-                </nav>
-            </div>
+        <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
+            <nav class="hr-page-tabs__bar" role="tablist">
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'main'" :class="activeTab === 'main' && 'is-active'">
+                    <i data-lucide="user" class="w-4 h-4"></i><span>بيانات الموظف</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'org'" :class="activeTab === 'org' && 'is-active'">
+                    <i data-lucide="building" class="w-4 h-4"></i><span>التنظيمي والتأمين</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'salary'" :class="activeTab === 'salary' && 'is-active'">
+                    <i data-lucide="wallet" class="w-4 h-4"></i><span>الراتب</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'docs'" :class="activeTab === 'docs' && 'is-active'">
+                    <i data-lucide="files" class="w-4 h-4"></i><span>المستندات</span>
+                </button>
+            </nav>
 
             {# ─── Tab 1: بيانات الموظف الأساسية ──────────────────────── #}
             <div x-show="activeTab === 'main'" class="p-5">

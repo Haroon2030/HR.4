@@ -3,25 +3,21 @@
 {% block page_title %}المستخدمون والأدوار{% endblock %}
 
 {% block content %}
-<div class="bg-white rounded-lg shadow-sm border border-slate-200">
-    <!-- Tabs Header -->
-    <div class="border-b border-slate-200" x-data="{ activeTab: 'users' }">
-        <div class="flex gap-4 px-6">
-            <button 
-                @click="activeTab = 'users'; lucide.createIcons()" 
-                :class="activeTab === 'users' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                class="py-4 px-1 border-b-2 font-medium text-xs transition-colors flex items-center gap-2">
+<div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden" x-data="{ activeTab: 'users' }">
+        <nav class="hr-page-tabs__bar px-2" role="tablist">
+            <button type="button" role="tab" class="hr-tab-btn"
+                @click="activeTab = 'users'; lucide.createIcons()"
+                :class="activeTab === 'users' && 'is-active'">
                 <i data-lucide="user-cog" class="w-4 h-4"></i>
-                المستخدمون
+                <span>المستخدمون</span>
             </button>
-            <button 
-                @click="activeTab = 'roles'; lucide.createIcons()" 
-                :class="activeTab === 'roles' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-                class="py-4 px-1 border-b-2 font-medium text-xs transition-colors flex items-center gap-2">
+            <button type="button" role="tab" class="hr-tab-btn"
+                @click="activeTab = 'roles'; lucide.createIcons()"
+                :class="activeTab === 'roles' && 'is-active'">
                 <i data-lucide="shield" class="w-4 h-4"></i>
-                الأدوار
+                <span>الأدوار</span>
             </button>
-        </div>
+        </nav>
 
         <!-- Tab 1: المستخدمون -->
         <div x-show="activeTab === 'users'" x-cloak>
@@ -205,7 +201,6 @@
                 </div>
             </div>
         </div>
-    </div>
 </div>
 
 <script>

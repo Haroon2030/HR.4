@@ -123,16 +123,16 @@
     </form>
 
     <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="hr-report-tabs" role="tablist">
-            <button type="button" class="hr-report-tab" :class="{ 'is-active': tab === 'daily' }" @click="tab = 'daily'">
-                حضور يومي
-                <span class="cnt">{{ total_daily_rows }}</span>
+        <nav class="hr-page-tabs__bar rounded-lg" role="tablist">
+            <button type="button" role="tab" class="hr-tab-btn" :class="{ 'is-active': tab === 'daily' }" @click="tab = 'daily'">
+                <span>حضور يومي</span>
+                <span class="hr-tab-badge bg-slate-200 text-slate-700">{{ total_daily_rows }}</span>
             </button>
-            <button type="button" class="hr-report-tab" :class="{ 'is-active': tab === 'detail' }" @click="tab = 'detail'">
-                بصمات تفصيلية
-                <span class="cnt">{{ punches_page.paginator.count }}</span>
+            <button type="button" role="tab" class="hr-tab-btn" :class="{ 'is-active': tab === 'detail' }" @click="tab = 'detail'">
+                <span>بصمات تفصيلية</span>
+                <span class="hr-tab-badge bg-slate-200 text-slate-700">{{ punches_page.paginator.count }}</span>
             </button>
-        </div>
+        </nav>
         <p class="text-xs font-semibold text-slate-500 m-0">
             {{ filters.date_from|default:"—" }} — {{ filters.date_to|default:"—" }}
         </p>

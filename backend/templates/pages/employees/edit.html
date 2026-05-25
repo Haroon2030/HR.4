@@ -16,33 +16,30 @@
     <form method="post" enctype="multipart/form-data" class="space-y-4">
         {% csrf_token %}
 
-        <div class="hr-glass-form bg-white rounded-xl shadow-sm border border-slate-200">
-            <!-- Tabs Nav -->
-            <div class="border-b border-slate-200">
-                <nav class="flex -mb-px overflow-x-auto">
-                    <button type="button" @click="activeTab = 'main'" :class="activeTab === 'main' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="user" class="w-4 h-4"></i> بيانات الموظف
-                    </button>
-                    <button type="button" @click="activeTab = 'salary'" :class="activeTab === 'salary' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="wallet" class="w-4 h-4"></i> الراتب
-                    </button>
-                    <button type="button" @click="activeTab = 'leaves'" :class="activeTab === 'leaves' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="palmtree" class="w-4 h-4"></i> الإجازات
-                    </button>
-                    <button type="button" @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="calendar-clock" class="w-4 h-4"></i> الجدول
-                    </button>
-                    <button type="button" @click="activeTab = 'warnings'" :class="activeTab === 'warnings' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> الإفادات والإنذارات
-                    </button>
-                    <button type="button" @click="activeTab = 'docs'" :class="activeTab === 'docs' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="files" class="w-4 h-4"></i> المستندات
-                    </button>
-                    <button type="button" @click="activeTab = 'archive'" :class="activeTab === 'archive' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="px-4 py-3 border-b-2 font-medium text-xs flex items-center gap-2 whitespace-nowrap">
-                        <i data-lucide="archive" class="w-4 h-4"></i> أرشيف الحركة
-                    </button>
-                </nav>
-            </div>
+        <div class="hr-glass-form hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <nav class="hr-page-tabs__bar" role="tablist">
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'main'" :class="activeTab === 'main' && 'is-active'">
+                    <i data-lucide="user" class="w-4 h-4"></i><span>بيانات الموظف</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'salary'" :class="activeTab === 'salary' && 'is-active'">
+                    <i data-lucide="wallet" class="w-4 h-4"></i><span>الراتب</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'leaves'" :class="activeTab === 'leaves' && 'is-active'">
+                    <i data-lucide="palmtree" class="w-4 h-4"></i><span>الإجازات</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'schedule'" :class="activeTab === 'schedule' && 'is-active'">
+                    <i data-lucide="calendar-clock" class="w-4 h-4"></i><span>الجدول</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'warnings'" :class="activeTab === 'warnings' && 'is-active'">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i><span>الإفادات والإنذارات</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'docs'" :class="activeTab === 'docs' && 'is-active'">
+                    <i data-lucide="files" class="w-4 h-4"></i><span>المستندات</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'archive'" :class="activeTab === 'archive' && 'is-active'">
+                    <i data-lucide="archive" class="w-4 h-4"></i><span>أرشيف الحركة</span>
+                </button>
+            </nav>
 
             <!-- Tab 1: بيانات الموظف -->
             <div x-show="activeTab === 'main'" x-cloak class="p-5">

@@ -13,42 +13,42 @@
 
     {% include "components/operations_tabs.html" %}
 
-    <div class="flex flex-wrap items-center gap-2 bg-white rounded-xl border border-slate-200 p-2">
-        <a href="?tab=inbox" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'inbox' %}bg-primary-100 text-primary-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="inbox" class="w-4 h-4 inline-block ml-1"></i>
-            بانتظار إجرائي
-            {% if counts.inbox %}<span class="mr-1 px-2 py-0.5 bg-primary-200 text-primary-800 rounded-full text-xs">{{ counts.inbox }}</span>{% endif %}
+    <nav class="hr-page-tabs__bar hr-glass-panel rounded-xl" role="tablist">
+        <a href="?tab=inbox" class="hr-tab-btn{% if tab == 'inbox' %} is-active{% endif %}">
+            <i data-lucide="inbox" class="w-4 h-4"></i>
+            <span>بانتظار إجرائي</span>
+            {% if counts.inbox %}<span class="hr-tab-badge bg-primary-200 text-primary-800">{{ counts.inbox }}</span>{% endif %}
         </a>
-        <a href="?tab=pending_branch" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'pending_branch' %}bg-amber-100 text-amber-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="user" class="w-4 h-4 inline-block ml-1"></i>
-            مدير الفرع
-            {% if counts.pending_branch %}<span class="mr-1 px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full text-xs">{{ counts.pending_branch }}</span>{% endif %}
+        <a href="?tab=pending_branch" class="hr-tab-btn hr-tab-btn--amber{% if tab == 'pending_branch' %} is-active{% endif %}">
+            <i data-lucide="user" class="w-4 h-4"></i>
+            <span>مدير الفرع</span>
+            {% if counts.pending_branch %}<span class="hr-tab-badge bg-amber-200 text-amber-900">{{ counts.pending_branch }}</span>{% endif %}
         </a>
-        <a href="?tab=pending_gm" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'pending_gm' %}bg-indigo-100 text-indigo-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="user-cog" class="w-4 h-4 inline-block ml-1"></i>
-            المدير العام
-            {% if counts.pending_gm %}<span class="mr-1 px-2 py-0.5 bg-indigo-200 text-indigo-800 rounded-full text-xs">{{ counts.pending_gm }}</span>{% endif %}
+        <a href="?tab=pending_gm" class="hr-tab-btn hr-tab-btn--indigo{% if tab == 'pending_gm' %} is-active{% endif %}">
+            <i data-lucide="user-cog" class="w-4 h-4"></i>
+            <span>المدير العام</span>
+            {% if counts.pending_gm %}<span class="hr-tab-badge bg-indigo-200 text-indigo-900">{{ counts.pending_gm }}</span>{% endif %}
         </a>
-        <a href="?tab=pending_officer" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'pending_officer' %}bg-purple-100 text-purple-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="clipboard-check" class="w-4 h-4 inline-block ml-1"></i>
-            موظف الموارد
-            {% if counts.pending_officer %}<span class="mr-1 px-2 py-0.5 bg-purple-200 text-purple-800 rounded-full text-xs">{{ counts.pending_officer }}</span>{% endif %}
+        <a href="?tab=pending_officer" class="hr-tab-btn hr-tab-btn--purple{% if tab == 'pending_officer' %} is-active{% endif %}">
+            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+            <span>موظف الموارد</span>
+            {% if counts.pending_officer %}<span class="hr-tab-badge bg-purple-200 text-purple-900">{{ counts.pending_officer }}</span>{% endif %}
         </a>
-        <a href="?tab=returned" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'returned' %}bg-rose-100 text-rose-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="undo-2" class="w-4 h-4 inline-block ml-1"></i>
-            مُرتجَعة
-            {% if counts.returned %}<span class="mr-1 px-2 py-0.5 bg-rose-200 text-rose-800 rounded-full text-xs">{{ counts.returned }}</span>{% endif %}
+        <a href="?tab=returned" class="hr-tab-btn hr-tab-btn--rose{% if tab == 'returned' %} is-active{% endif %}">
+            <i data-lucide="undo-2" class="w-4 h-4"></i>
+            <span>مُرتجَعة</span>
+            {% if counts.returned %}<span class="hr-tab-badge bg-rose-200 text-rose-900">{{ counts.returned }}</span>{% endif %}
         </a>
-        <a href="?tab=approved" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'approved' %}bg-emerald-100 text-emerald-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="check-circle" class="w-4 h-4 inline-block ml-1"></i>
-            مكتملة
+        <a href="?tab=approved" class="hr-tab-btn hr-tab-btn--emerald{% if tab == 'approved' %} is-active{% endif %}">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            <span>مكتملة</span>
         </a>
-        <a href="?tab=mine" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors {% if tab == 'mine' %}bg-slate-200 text-slate-800{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-            <i data-lucide="user" class="w-4 h-4 inline-block ml-1"></i>
-            طلباتي
-            {% if counts.mine %}<span class="mr-1 px-2 py-0.5 bg-slate-300 text-slate-800 rounded-full text-xs">{{ counts.mine }}</span>{% endif %}
+        <a href="?tab=mine" class="hr-tab-btn hr-tab-btn--slate{% if tab == 'mine' %} is-active{% endif %}">
+            <i data-lucide="user" class="w-4 h-4"></i>
+            <span>طلباتي</span>
+            {% if counts.mine %}<span class="hr-tab-badge bg-slate-200 text-slate-800">{{ counts.mine }}</span>{% endif %}
         </a>
-    </div>
+    </nav>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <!-- شريط البحث -->
