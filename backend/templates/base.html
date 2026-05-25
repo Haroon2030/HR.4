@@ -264,23 +264,13 @@
         <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden">
             <header class="hr-topbar shrink-0">
                 <div class="hr-topbar__start">
-                    <button type="button" @click="sidebarOpen = !sidebarOpen"
-                            class="hr-topbar-icon-btn hidden md:inline-flex" title="طي القائمة">
-                        <i data-lucide="panel-right" class="w-5 h-5"></i>
-                    </button>
                     <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
-                            class="hr-topbar-icon-btn md:hidden" title="القائمة">
+                            class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة">
                         <i data-lucide="menu" class="w-5 h-5"></i>
                     </button>
                     <nav class="hr-breadcrumb" aria-label="مسار التنقل">
-                        <a href="{% url 'web:dashboard' %}" class="hr-breadcrumb__home" title="الرئيسية">
-                            <i data-lucide="home" class="w-4 h-4"></i>
-                        </a>
                         {% block breadcrumb_parent %}{% endblock %}
-                        <span class="hr-breadcrumb__trail">
-                            <i data-lucide="chevron-left" class="hr-breadcrumb__sep" aria-hidden="true"></i>
-                            <span class="hr-breadcrumb__current">{% block page_title %}{% endblock %}</span>
-                        </span>
+                        <span class="hr-breadcrumb__current">{% block page_title %}{% endblock %}</span>
                     </nav>
                 </div>
                 <div class="hr-topbar__end">

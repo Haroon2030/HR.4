@@ -2300,6 +2300,17 @@ body.hr-app .hr-topbar.is-scrolled {
     gap: 0.35rem;
 }
 
+/* زر القائمة — الجوال فقط */
+.hr-topbar-menu-btn {
+    display: inline-flex;
+}
+
+@media (min-width: 768px) {
+    .hr-topbar-menu-btn {
+        display: none !important;
+    }
+}
+
 .hr-topbar-icon-btn {
     display: inline-flex;
     align-items: center;
@@ -2485,8 +2496,8 @@ body.hr-app .hr-app-main {
 }
 
 @media (max-width: 767px) {
-    .hr-breadcrumb__trail {
-        display: none;
+    .hr-breadcrumb__current {
+        font-size: 0.75rem;
     }
 
     .hr-stat-card__label,
