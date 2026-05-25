@@ -171,13 +171,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const sponsorshipSel = document.getElementById('payrollSponsorship');
     const sponsorshipWrap = document.getElementById('payrollSponsorshipWrap');
     const salaryModeSel = document.querySelector('select[name="salary_mode"]');
-    const branchSel = document.getElementById('payrollBranch');
-    const branchSponsorshipMap = {{ branch_sponsorship_map|safe }};
-    if (!branchSel) return;
-
-    const allBranchOptions = Array.from(branchSel.options).map(function (opt) {
-        return { value: opt.value, label: opt.textContent };
-    });
 
     function syncSponsorshipField() {
         const isCash = salaryModeSel && salaryModeSel.value === 'cash';
@@ -187,44 +180,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isCash) sponsorshipSel.value = '';
     }
 
-    function filterBranches() {
-        const sponsorshipId = sponsorshipSel ? sponsorshipSel.value : '';
-        const isCash = salaryModeSel && salaryModeSel.value === 'cash';
-        const current = branchSel.value;
-        branchSel.innerHTML = '';
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = '— اختر الفرع —';
-        branchSel.appendChild(placeholder);
-
-        allBranchOptions.forEach(function (item) {
-            if (!item.value) return;
-            if (!isCash && sponsorshipId) {
-                const allowed = branchSponsorshipMap[item.value] || [];
-                if (allowed.indexOf(parseInt(sponsorshipId, 10)) === -1) return;
-            }
-            const opt = document.createElement('option');
-            opt.value = item.value;
-            opt.textContent = item.label;
-            if (item.value === current) opt.selected = true;
-            branchSel.appendChild(opt);
-        });
-        if (current && !Array.from(branchSel.options).some(function (o) { return o.value === current; })) {
-            branchSel.value = '';
-        }
-    }
-
-    if (sponsorshipSel) sponsorshipSel.addEventListener('change', filterBranches);
-    if (salaryModeSel) salaryModeSel.addEventListener('change', function () {
-        syncSponsorshipField();
-        filterBranches();
-    });
+    if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);
     syncSponsorshipField();
-    filterBranches();
-    if (sponsorshipSel && sponsorshipSel.options.length === 2) {
-        sponsorshipSel.selectedIndex = 1;
-        filterBranches();
-    }
 });
 </script>
 {% endblock %}

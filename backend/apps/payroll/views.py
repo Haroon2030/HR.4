@@ -20,7 +20,6 @@
   - إنشاء/تعديل/ترحيل: employees.edit
   - إلغاء ترحيل: employees.edit + superuser فقط
 """
-import json
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -32,7 +31,6 @@ from django.db.models import Sum, Count
 from apps.core.decorators import permission_required
 from apps.core.filter_utils import parse_multi_filter_ids
 from apps.core.models import Branch
-from apps.employees.models import Employee
 from apps.payroll.models import PayrollRun, PayrollLine
 from apps.setup.models import Sponsorship
 from apps.payroll.services.engine import (
@@ -71,26 +69,6 @@ def _user_branches(user):
     if branch_ids:
         return Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name')
     return Branch.objects.none()
-
-
-def _branch_sponsorship_map():
-    """فروع ← شركات كفالة لها موظفون نشطون/في إجازة."""
-    mapping: dict[str, list[int]] = {}
-    rows = (
-        Employee.objects.filter(
-            is_deleted=False,
-            sponsorship_id__isnull=False,
-            status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
-        )
-        .values('branch_id', 'sponsorship_id')
-        .distinct()
-    )
-    for row in rows:
-        key = str(row['branch_id'])
-        sid = row['sponsorship_id']
-        if sid not in mapping.get(key, []):
-            mapping.setdefault(key, []).append(sid)
-    return mapping
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -132,14 +110,12 @@ def list_payroll_runs(request):
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
-    branch_sponsorship_map = json.dumps(_branch_sponsorship_map())
     return render(request, 'pages/payroll/list.html', {
         'runs': page_obj.object_list,        # المسيرات في الصفحة الحالية
         'page_obj': page_obj,                # كائن الصفحة (للترقيم)
         'paginator': paginator,              # كائن الترقيم
         'branches': user_branches,           # الفروع (للقائمة المنسدلة)
         'sponsorships': sponsorships,
-        'branch_sponsorship_map': branch_sponsorship_map,
         'SALARY_MODE_CHOICES': PayrollRun.SalaryMode.choices,
         'current_year': today.year,
         'current_month': today.month,
