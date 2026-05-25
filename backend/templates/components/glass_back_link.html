@@ -1,0 +1,10 @@
+{% comment %}
+  زر رجوع زجاجي (RTL: سهم لليمين).
+  {% include 'components/glass_back_link.html' with back_url=url %}
+  أو: with back_url=url aria_label='رجوع للقائمة'
+{% endcomment %}
+<a href="{{ back_url }}"
+   class="hr-glass-back-btn"
+   aria-label="{{ aria_label|default:'رجوع' }}">
+    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+</a>

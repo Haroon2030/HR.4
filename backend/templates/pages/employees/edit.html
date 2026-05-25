@@ -4,9 +4,8 @@
 <div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'main' }">
     <!-- Header -->
     <div class="flex items-center gap-3">
-        <a href="{% url 'web:list_employees' %}" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-600"></i>
-        </a>
+        {% url 'web:list_employees' as employees_list_url %}
+        {% include 'components/glass_back_link.html' with back_url=employees_list_url aria_label='رجوع لقائمة الموظفين' %}
         <div>
             <h1 class="text-2xl font-bold text-slate-900">{% if is_create %}إضافة موظف جديد{% else %}ملف الموظف: {{ employee.name }}{% endif %}</h1>
             <p class="text-slate-500 text-xs">{% if is_create %}أدخل بيانات الموظف الكاملة{% else %}إكمال وتعديل بيانات الموظف{% endif %}</p>

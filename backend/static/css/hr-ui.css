@@ -1876,6 +1876,66 @@ body.hr-app .hr-sidebar .hr-nav-sublink.is-active {
     color: #1d4ed8 !important;
 }
 
+/* ── زر الرجوع الزجاجي (سهم) ── */
+.hr-glass-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.92) 0%,
+        rgba(248, 250, 252, 0.72) 100%
+    );
+    backdrop-filter: blur(14px) saturate(1.12);
+    -webkit-backdrop-filter: blur(14px) saturate(1.12);
+    box-shadow:
+        0 6px 18px rgba(100, 116, 139, 0.16),
+        0 2px 8px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        inset 0 -1px 0 rgba(203, 213, 225, 0.35);
+    color: rgb(51 65 85) !important;
+    text-decoration: none;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.hr-glass-back-btn:hover {
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(239, 246, 255, 0.85) 100%
+    );
+    border-color: rgba(255, 255, 255, 1);
+    color: rgb(29 78 216) !important;
+    transform: translateX(2px);
+    box-shadow:
+        0 8px 22px rgba(100, 116, 139, 0.2),
+        0 3px 10px rgba(59, 130, 246, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.hr-glass-back-btn:active {
+    transform: translateX(0);
+    box-shadow:
+        0 3px 10px rgba(100, 116, 139, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.hr-glass-back-btn svg,
+.hr-glass-back-btn [data-lucide] {
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
 /* ── أزرار زجاجية ملونة ── */
 .hr-glass-btn {
     display: inline-flex;
