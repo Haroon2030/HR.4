@@ -100,6 +100,20 @@ def _filters_to_querystring(filters: dict, *, extra: dict | None = None) -> str:
 @permission_required('attendance.view')
 def attendance_records_list(request):
     filters = _parse_filters(request)
+    filter_employee = None
+    employee_enrollments = []
+
+    if filters['employee_id']:
+        from apps.attendance.selectors.employee_enrollment import apply_employee_enrollment_to_filters
+        from apps.employees.models import Employee
+
+        filter_employee = get_object_or_404(
+            Employee.objects.select_related('branch'),
+            pk=filters['employee_id'],
+        )
+        filters = apply_employee_enrollment_to_filters(filters, filter_employee.id)
+        employee_enrollments = filters.get('enrollments') or []
+
     date_from = None
     date_to = None
     if filters['date_from']:
@@ -110,7 +124,7 @@ def attendance_records_list(request):
     qs = get_punch_queryset(
         device_id=filters['device_id'],
         branch_ids=filters['branch_ids'],
-        employee_id=filters['employee_id'],
+        employee_id=None,
         device_user_id=filters['device_user_id'],
         date_from=date_from,
         date_to=date_to,
@@ -118,6 +132,12 @@ def attendance_records_list(request):
         mapped_only=filters['mapped_only'],
         search=filters['search'] or None,
     ).filter(device_id__in=filter_biometric_devices_for_user(request.user).values('pk'))
+
+    if employee_enrollments:
+        from apps.attendance.selectors.employee_enrollment import enrollment_filter_q
+        qs = qs.filter(enrollment_filter_q(employee_enrollments))
+    elif filters['employee_id']:
+        qs = qs.filter(employee_id=filters['employee_id'])
     stats = get_punch_stats(qs, device_id=filters['device_id'])
     qs = qs.order_by(*PUNCH_LIST_ORDERING)
     paginator = Paginator(qs, per_page=int(request.GET.get('per_page') or 100))
@@ -129,12 +149,19 @@ def attendance_records_list(request):
     if accessible is not None:
         branches_qs = branches_qs.filter(pk__in=accessible)
 
+    from apps.attendance.selectors.employee_enrollment import preferred_device_id
+
+    sync_device_id = filters.get('device_id') or preferred_device_id(employee_enrollments)
+
     return render(request, 'pages/attendance/records.html', {
         'branches': branches_qs,
         'page_obj': page_obj,
         'stats': stats,
         'devices': devices,
         'filters': filters,
+        'filter_employee': filter_employee,
+        'employee_enrollments': employee_enrollments,
+        'sync_device_id': sync_device_id,
         'querystring': _filters_to_querystring(filters),
         'qs_punch_all': _filters_to_querystring({**filters, 'punch_type': None}),
         'qs_punch_in': _filters_to_querystring({**filters, 'punch_type': 'in'}),

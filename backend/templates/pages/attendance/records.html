@@ -15,6 +15,19 @@
                 <span>سجلات</span>
             </nav>
             <h1>سجلات الحضور</h1>
+            {% if filter_employee %}
+            <p class="text-sm font-bold text-primary-900 m-0 mt-1">
+                الموظف: {{ filter_employee.name }}
+                {% if employee_enrollments %}
+                — مربوط على:
+                {% for en in employee_enrollments %}
+                <span class="inline-flex gap-1">{{ en.device.name }} (مستخدم {{ en.device_user_id }}{% if en.device_user_name %} · {{ en.device_user_name }}{% endif %})</span>{% if not forloop.last %}، {% endif %}
+                {% endfor %}
+                {% else %}
+                <span class="text-amber-800">— غير مربوط بجهاز</span>
+                {% endif %}
+            </p>
+            {% endif %}
             <p class="zk-rec-period m-0 mt-0.5">
                 {% if filters.date_from or filters.date_to %}{{ filters.date_from|default:"*" }} → {{ filters.date_to|default:"*" }}{% else %}ALL · {{ stats.total|default:0 }} rows{% endif %}
             </p>
@@ -57,7 +70,7 @@
                         <label class="zk-bio-lbl">الجهاز</label>
                         <select name="device_id" required class="zk-bio-field">
                             {% for d in devices %}
-                            <option value="{{ d.pk }}" dir="ltr">{{ d.name }} · {{ d.ip_address }}:{{ d.port }}</option>
+                            <option value="{{ d.pk }}" dir="ltr"{% if sync_device_id == d.pk %} selected{% endif %}>{{ d.name }} · {{ d.ip_address }}:{{ d.port }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -152,6 +165,8 @@
             </div>
             <div class="zk-rec-panel-body">
             <form method="get" class="zk-rec-filter-form">
+                {% if filters.employee_id %}<input type="hidden" name="employee" value="{{ filters.employee_id }}">{% endif %}
+                {% if filters.device_user_id %}<input type="hidden" name="device_user" value="{{ filters.device_user_id }}">{% endif %}
                 <div class="zk-rec-filter-grid">
                     <div class="fld">
                         <label class="zk-bio-lbl">من</label>

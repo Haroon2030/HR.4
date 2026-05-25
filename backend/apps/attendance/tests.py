@@ -78,6 +78,41 @@ class BiometricMockTests(TestCase):
         self.assertEqual(len(visible), 1)
         self.assertEqual(visible[0].id, p1.id)
 
+    def test_punches_only_from_enrolled_device_pair(self):
+        from datetime import datetime, time
+
+        from apps.attendance.models import EmployeeBiometricEnrollment
+        from apps.attendance.services.employee_punch_display import base_punches_queryset
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        sky = BiometricDevice.objects.create(
+            name='سكاي مول', ip_address='192.168.51.3', port=4370, branch=branch,
+        )
+        waha = BiometricDevice.objects.create(
+            name='الواحة', ip_address='192.168.24.59', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='هارون', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp, device=sky, device_user_id=1,
+        )
+        tz = timezone.get_current_timezone()
+        day = timezone.localdate()
+        ts_sky = timezone.make_aware(datetime.combine(day, time(14, 29)), tz)
+        ts_waha = timezone.make_aware(datetime.combine(day, time(9, 0)), tz)
+        AttendancePunch.objects.create(
+            device=sky, employee=emp, device_user_id=1,
+            punched_at=ts_sky, punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        AttendancePunch.objects.create(
+            device=waha, employee=emp, device_user_id=99,
+            punched_at=ts_waha, punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        ids = set(base_punches_queryset(emp).values_list('device_id', flat=True))
+        self.assertEqual(ids, {sky.id})
+
     def test_duplicate_without_device_uid(self):
         from apps.attendance.services.punch_sync import import_enriched_punches
         from apps.attendance.services.attendance_pull import EnrichedPunch

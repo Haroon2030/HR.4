@@ -3,10 +3,14 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django.utils import timezone
 
-from apps.attendance.models import AttendancePunch, EmployeeBiometricEnrollment, EmployeeBiometricSettings
+from apps.attendance.models import AttendancePunch, EmployeeBiometricSettings
+from apps.attendance.selectors.employee_enrollment import (
+    enrollment_filter_q,
+    enrollments_for_employee,
+)
 from apps.attendance.selectors.punch_records import PUNCH_LIST_ORDERING
 from apps.employees.models import Employee
 
@@ -17,13 +21,7 @@ def get_or_create_biometric_settings(employee: Employee) -> EmployeeBiometricSet
 
 
 def employee_enrollments(employee: Employee) -> QuerySet:
-    return (
-        EmployeeBiometricEnrollment.objects.filter(
-            employee=employee, is_deleted=False,
-        )
-        .select_related('device', 'device__branch')
-        .order_by('device__name')
-    )
+    return enrollments_for_employee(employee.id)
 
 
 def employee_is_biometric_linked(employee: Employee) -> bool:
@@ -36,19 +34,14 @@ def base_punches_queryset(
     date_from: date | None = None,
     date_to: date | None = None,
 ) -> QuerySet:
-    """كل البصمات المرتبطة بالموظف (ربط HR أو أرقام أجهزة مسجّلة)."""
-    enrollments = list(
-        employee_enrollments(employee).values_list('device_id', 'device_user_id')
-    )
-    q = Q(employee_id=employee.id)
-    for device_id, device_user_id in enrollments:
-        q |= Q(device_id=device_id, device_user_id=device_user_id)
-    if not enrollments and not AttendancePunch.objects.filter(employee_id=employee.id).exists():
+    """بصمات الموظف من أجهزة التسجيل فقط (جهاز + رقم مستخدم على الجهاز)."""
+    enrollments = list(employee_enrollments(employee))
+    if not enrollments:
         return AttendancePunch.objects.none()
 
     qs = (
         AttendancePunch.objects.filter(is_deleted=False)
-        .filter(q)
+        .filter(enrollment_filter_q(enrollments))
         .select_related('device', 'device__branch')
         .order_by(*PUNCH_LIST_ORDERING)
     )

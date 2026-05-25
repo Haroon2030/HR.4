@@ -96,11 +96,19 @@
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 تحديث
             </button>
+            {% for en in fp.enrollments %}{% if forloop.first %}
+            <a href="{% url 'web:attendance_records' %}?employee={{ employee.id }}&from={{ fp_date_from }}&to={{ fp_date_to }}&device={{ en.device_id }}&device_user={{ en.device_user_id }}"
+               class="hr-glass-btn hr-glass-btn--emerald">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+                سجلات الحضور
+            </a>
+            {% endif %}{% empty %}
             <a href="{% url 'web:attendance_records' %}?employee={{ employee.id }}&from={{ fp_date_from }}&to={{ fp_date_to }}"
                class="hr-glass-btn hr-glass-btn--emerald">
                 <i data-lucide="external-link" class="w-4 h-4"></i>
                 سجلات الحضور
             </a>
+            {% endfor %}
         </div>
     </form>
 
