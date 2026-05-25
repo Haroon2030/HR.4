@@ -28,7 +28,7 @@ from django.urls import reverse
 from django.http import HttpResponse, Http404
 from django.db.models import Sum, Count
 
-from apps.core.decorators import permission_required
+from apps.core.decorators import has_permission, permission_required
 from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
 from urllib.parse import urlencode
 from apps.core.models import Branch
@@ -72,211 +72,253 @@ def _user_branches(user):
     return Branch.objects.none()
 
 
-def _redirect_payroll_list(request, *, branch_ids=None, year=None, month=None, status=None):
-    url = reverse('web:list_payroll_runs')
-    qs = _payroll_list_querystring(
-        branch_ids=branch_ids,
-        year=year,
-        month=month,
-        status=status,
-    )
-    if qs:
-        url = f'{url}?{qs}'
-    return redirect(url)
-
-
-def _payroll_list_querystring(*, branch_ids=None, year=None, month=None, status=None, page=None):
-    """سلسلة استعلام لفلترة قائمة المسيرات (فروع متعددة)."""
+def _payroll_list_querystring(
+    *,
+    branch_ids=None,
+    year=None,
+    month=None,
+    salary_mode=None,
+    sponsorship_id=None,
+    page=None,
+):
+    """سلسلة استعلام لشاشة المسير الموحّدة."""
     pairs: list[tuple[str, object]] = []
-    append_multi_param(pairs, 'branch', branch_ids)
+    append_multi_param(pairs, 'branch_id', branch_ids)
     if year:
         pairs.append(('year', year))
     if month:
         pairs.append(('month', month))
-    if status:
-        pairs.append(('status', status))
+    if salary_mode:
+        pairs.append(('salary_mode', salary_mode))
+    if sponsorship_id:
+        pairs.append(('sponsorship_id', sponsorship_id))
     if page:
         pairs.append(('page', page))
     return urlencode(pairs, doseq=True) if pairs else ''
 
 
+def _parse_payroll_form(request, user_branches):
+    """قراءة معايير المسير من GET أو POST."""
+    accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
+    use_post = request.method == 'POST'
+    branch_ids = parse_multi_filter_ids(
+        request, 'branch_id', accessible_ids=accessible,
+    ) or []
+    if not branch_ids and not use_post:
+        branch_ids = parse_multi_filter_ids(
+            request, 'branch', accessible_ids=accessible,
+        ) or []
+
+    src = request.POST if use_post else request.GET
+    year_raw = src.get('year')
+    month_raw = src.get('month')
+    salary_mode = (src.get('salary_mode') or '').strip()
+    sponsorship_raw = (src.get('sponsorship_id') or '').strip()
+
+    year = month = None
+    try:
+        if year_raw:
+            year = int(year_raw)
+        if month_raw:
+            month = int(month_raw)
+    except ValueError:
+        pass
+
+    sponsorship_id = None
+    if sponsorship_raw.isdigit():
+        sponsorship_id = int(sponsorship_raw)
+
+    ready = bool(
+        branch_ids and year and month
+        and salary_mode in PayrollRun.SalaryMode.values
+    )
+    if ready and salary_mode == PayrollRun.SalaryMode.TRANSFER:
+        ready = bool(sponsorship_id)
+
+    return {
+        'branch_ids': branch_ids,
+        'year': year,
+        'month': month,
+        'salary_mode': salary_mode,
+        'sponsorship_id': sponsorship_id,
+        'ready': ready,
+    }
+
+
+def _validate_payroll_build(filters):
+    """التحقق من صحة معايير البناء. يُرجع رسالة خطأ أو None."""
+    if not filters['branch_ids']:
+        return 'يرجى اختيار فرع واحد على الأقل.'
+    y, m = filters['year'], filters['month']
+    if not y or not m or not (2020 <= y <= 2100 and 1 <= m <= 12):
+        return 'يرجى تحديد السنة والشهر.'
+    if filters['salary_mode'] not in PayrollRun.SalaryMode.values:
+        return 'يرجى اختيار نوع الراتب (نقدي أو تحويل).'
+    if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
+        sid = filters['sponsorship_id']
+        if not sid:
+            return 'يرجى اختيار شركة الكفالة لمسير التحويل.'
+        if not Sponsorship.objects.filter(
+            pk=sid, is_deleted=False, is_active=True,
+        ).exists():
+            return 'شركة الكفالة غير صالحة.'
+    return None
+
+
+def _build_payroll_runs(request, filters):
+    """بناء مسير لكل فرع. يُرجع (runs_built, errors)."""
+    branch_ids = filters['branch_ids']
+    branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
+    if len(branches) != len(branch_ids):
+        return [], ['أحد الفروع المختارة غير صالح.']
+
+    sponsorship_id = (
+        filters['sponsorship_id']
+        if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER
+        else None
+    )
+    runs_built = []
+    errors = []
+    for branch in branches:
+        try:
+            run = build_payroll_run(
+                branch, filters['year'], filters['month'], request.user,
+                salary_mode=filters['salary_mode'],
+                sponsorship_id=sponsorship_id,
+            )
+            runs_built.append(run)
+        except ValueError as e:
+            errors.append(f'{branch.name}: {e}')
+    return runs_built, errors
+
+
+def _payroll_runs_for_filters(filters, user, user_branches):
+    """مسيرات مطابقة للمعايير."""
+    qs = PayrollRun.objects.filter(
+        branch_id__in=filters['branch_ids'],
+        period_year=filters['year'],
+        period_month=filters['month'],
+        salary_mode=filters['salary_mode'],
+    ).select_related('branch', 'sponsorship')
+    if not user.is_superuser:
+        qs = qs.filter(branch__in=user_branches)
+    if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
+        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+    else:
+        qs = qs.filter(sponsorship__isnull=True)
+    return qs.order_by('branch__name')
+
+
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. قائمة المسيرات — مع فلاتر (سنة/شهر/فرع/حالة) + ترقيم صفحات
+# 1. شاشة المسير الموحّدة — بناء + جدول واحد لكل الفروع
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
 @permission_required('employees.view')
 def list_payroll_runs(request):
-    """عرض قائمة مسيرات الرواتب مع إمكانية الفلترة والترقيم."""
-    qs = PayrollRun.objects.select_related(
-        'branch', 'company', 'sponsorship', 'created_by', 'locked_by',
-    )
+    """بناء مسيرات لعدة فروع وعرض كل أسطر الموظفين في جدول واحد."""
     user_branches = _user_branches(request.user)
+    filters = _parse_payroll_form(request, user_branches)
 
-    # تقييد بالفروع المتاحة للمستخدم
-    if not request.user.is_superuser:
-        qs = qs.filter(branch__in=user_branches)
+    if request.method == 'POST':
+        if not has_permission(request.user, 'employees.edit'):
+            messages.error(request, 'ليس لديك صلاحية بناء المسير.')
+        else:
+            err = _validate_payroll_build(filters)
+            if err:
+                messages.error(request, err)
+            else:
+                runs_built, build_errors = _build_payroll_runs(request, filters)
+                for e in build_errors:
+                    messages.error(request, e)
+                if runs_built:
+                    mode_label = dict(PayrollRun.SalaryMode.choices).get(
+                        filters['salary_mode'], filters['salary_mode'],
+                    )
+                    total_emp = sum(r.employees_count for r in runs_built)
+                    messages.success(
+                        request,
+                        f'تم بناء {len(runs_built)} مسير {mode_label} '
+                        f'({total_emp} موظف في الجدول أدناه).',
+                    )
+        qs = _payroll_list_querystring(
+            branch_ids=filters['branch_ids'] or None,
+            year=filters['year'],
+            month=filters['month'],
+            salary_mode=filters['salary_mode'] or None,
+            sponsorship_id=filters['sponsorship_id'],
+        )
+        url = reverse('web:list_payroll_runs')
+        return redirect(f'{url}?{qs}' if qs else url)
 
-    # ── تطبيق الفلاتر من معاملات URL ──
-    year = request.GET.get('year')
-    month = request.GET.get('month')
-    status = request.GET.get('status')
-    accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
-    branch_ids = parse_multi_filter_ids(request, 'branch', accessible_ids=accessible)
-    if year:
-        qs = qs.filter(period_year=year)
-    if month:
-        qs = qs.filter(period_month=month)
-    if branch_ids:
-        qs = qs.filter(branch_id__in=branch_ids)
-    if status:
-        qs = qs.filter(status=status)
+    lines = []
+    page_obj = None
+    grand_totals = {}
+    runs_count = 0
 
-    # ── ترقيم الصفحات — 20 مسير في كل صفحة ──
-    from django.core.paginator import Paginator
-    paginator = Paginator(qs, 20)
-    page_obj = paginator.get_page(request.GET.get('page') or 1)
+    if filters['ready']:
+        runs_qs = _payroll_runs_for_filters(filters, request.user, user_branches)
+        runs_count = runs_qs.count()
+        lines_qs = PayrollLine.objects.filter(run__in=runs_qs).select_related(
+            'employee', 'run', 'run__branch',
+        ).order_by('run__branch__name', 'employee__name')
+
+        grand_totals = lines_qs.aggregate(
+            total_earnings=Sum('total_earnings'),
+            total_deductions=Sum('total_deductions'),
+            total_net=Sum('net_salary'),
+            employees_count=Count('id'),
+        )
+
+        from django.core.paginator import Paginator
+        paginator = Paginator(lines_qs, 50)
+        page_obj = paginator.get_page(request.GET.get('page') or 1)
+        lines = page_obj.object_list
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
     filter_qs = _payroll_list_querystring(
-        branch_ids=branch_ids,
-        year=year,
-        month=month,
-        status=status,
+        branch_ids=filters['branch_ids'] if filters['ready'] else None,
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'] or None,
+        sponsorship_id=filters['sponsorship_id'],
     )
+
     return render(request, 'pages/payroll/list.html', {
-        'runs': page_obj.object_list,        # المسيرات في الصفحة الحالية
-        'page_obj': page_obj,                # كائن الصفحة (للترقيم)
-        'paginator': paginator,              # كائن الترقيم
-        'branches': user_branches,           # الفروع (للقائمة المنسدلة)
+        'branches': user_branches,
         'sponsorships': sponsorships,
         'SALARY_MODE_CHOICES': PayrollRun.SalaryMode.choices,
         'current_year': today.year,
         'current_month': today.month,
         'years_range': range(today.year - 2, today.year + 1),
         'months_range': range(1, 13),
-        'filter_year': year, 'filter_month': month,
-        'filter_branch_ids': branch_ids or [],
-        'filter_status': status,
+        'filter_branch_ids': filters['branch_ids'],
+        'filter_year': filters['year'],
+        'filter_month': filters['month'],
+        'filter_salary_mode': filters['salary_mode'],
+        'filter_sponsorship_id': filters['sponsorship_id'],
         'filter_qs': filter_qs,
-        'STATUS_CHOICES': PayrollRun.Status.choices,
+        'lines': lines,
+        'page_obj': page_obj,
+        'grand_totals': grand_totals,
+        'runs_count': runs_count,
+        'show_table': filters['ready'],
+        'can_build': has_permission(request.user, 'employees.edit'),
     })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. إنشاء/بناء مسير — POST فقط
-# يبني مسير DRAFT جديد أو يُحدّث الموجود (إذا لم يكن مُغلقاً)
+# 2. إنشاء/بناء مسير — يُوجّه للشاشة الموحّدة (توافق قديم)
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
 @permission_required('employees.edit')
 def create_payroll_run(request):
-    """إنشاء أو إعادة بناء مسير لشهر وفروع محددة (واحد أو أكثر)."""
-    if request.method != 'POST':
-        return redirect('web:list_payroll_runs')
-
-    def _back(**kwargs):
-        return _redirect_payroll_list(
-            request,
-            branch_ids=kwargs.get('branch_ids'),
-            year=kwargs.get('year') or request.POST.get('year'),
-            month=kwargs.get('month') or request.POST.get('month'),
-        )
-
-    try:
-        year = int(request.POST.get('year') or 0)
-        month = int(request.POST.get('month') or 0)
-    except ValueError:
-        messages.error(request, 'بيانات غير صحيحة.')
-        return _back()
-
-    if not (2020 <= year <= 2100 and 1 <= month <= 12):
-        messages.error(request, 'يرجى تحديد السنة والشهر.')
-        return _back(year=str(year), month=str(month))
-
-    salary_mode = (request.POST.get('salary_mode') or '').strip()
-    if salary_mode not in PayrollRun.SalaryMode.values:
-        messages.error(request, 'يرجى اختيار نوع الراتب (نقدي أو تحويل).')
-        return _back(year=str(year), month=str(month))
-
-    user_branches = _user_branches(request.user)
-    accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
-    branch_ids = parse_multi_filter_ids(request, 'branch_id', accessible_ids=accessible) or []
-    if not branch_ids:
-        messages.error(request, 'يرجى اختيار فرع واحد على الأقل.')
-        return _back(year=str(year), month=str(month))
-
-    def _back_with_branches():
-        return _back(branch_ids=branch_ids, year=str(year), month=str(month))
-
-    try:
-        sponsorship_id = int(request.POST.get('sponsorship_id') or 0)
-    except ValueError:
-        sponsorship_id = 0
-    if salary_mode == PayrollRun.SalaryMode.TRANSFER:
-        if not sponsorship_id:
-            messages.error(request, 'يرجى اختيار شركة الكفالة لمسير التحويل.')
-            return _back_with_branches()
-        if not Sponsorship.objects.filter(
-            pk=sponsorship_id, is_deleted=False, is_active=True,
-        ).exists():
-            messages.error(request, 'شركة الكفالة غير صالحة.')
-            return _back_with_branches()
-    else:
-        sponsorship_id = None
-
-    branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
-    if len(branches) != len(branch_ids):
-        messages.error(request, 'أحد الفروع المختارة غير صالح.')
-        return _back_with_branches()
-
-    mode_label = dict(PayrollRun.SalaryMode.choices).get(salary_mode, salary_mode)
-    runs_built = []
-    errors = []
-
-    for branch in branches:
-        try:
-            run = build_payroll_run(
-                branch, year, month, request.user,
-                salary_mode=salary_mode,
-                sponsorship_id=sponsorship_id or None,
-            )
-            runs_built.append(run)
-        except ValueError as e:
-            errors.append(f'{branch.name}: {e}')
-
-    for err in errors:
-        messages.error(request, err)
-
-    if not runs_built:
-        return _back_with_branches()
-
-    total_employees = sum(r.employees_count for r in runs_built)
-    if len(runs_built) == 1:
-        run = runs_built[0]
-        messages.success(
-            request,
-            f'تم بناء مسير {mode_label} لـ {run.branch.name} — {run.period_label} ({run.employees_count} موظف).',
-        )
-        return redirect('web:view_payroll_run', run_id=run.id)
-
-    names = '، '.join(r.branch.name for r in runs_built[:5])
-    if len(runs_built) > 5:
-        names += f' و{len(runs_built) - 5} آخرين'
-    messages.success(
-        request,
-        f'تم بناء {len(runs_built)} مسير {mode_label} — {names} ({total_employees} موظف إجمالاً).',
-    )
-    qs = _payroll_list_querystring(
-        branch_ids=[r.branch_id for r in runs_built],
-        year=str(year),
-        month=str(month),
-    )
-    url = reverse('web:list_payroll_runs')
-    if qs:
-        url = f'{url}?{qs}'
-    return redirect(url)
+    """توافق مع الرابط القديم — نفس شاشة القائمة الموحّدة."""
+    if request.method == 'POST':
+        return list_payroll_runs(request)
+    return redirect('web:list_payroll_runs')
 
 
 # ══════════════════════════════════════════════════════════════════════════════

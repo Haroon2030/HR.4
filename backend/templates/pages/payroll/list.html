@@ -1,22 +1,24 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block page_title %}مسير الرواتب{% endblock %}
 
 {% block content %}
-<div class="space-y-4">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">مسير الرواتب الشهري</h1>
-            <p class="text-slate-500 text-sm">يمكن اختيار فرع واحد أو أكثر لبناء مسير لكل فرع في الشهر المحدد.</p>
-        </div>
+{% include "pages/payroll/_payroll_table_styles.html" %}
+
+<div class="space-y-4" dir="rtl">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">مسير الرواتب الشهري</h1>
+        <p class="text-slate-500 text-sm mt-1">
+            اختر الفروع ونوع الراتب وشركة الكفالة والفترة، ثم اضغط «بناء المسير» لعرض كل الموظفين في جدول واحد.
+        </p>
     </div>
 
-    <!-- Create New Run -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <h3 class="text-sm font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
-            <i data-lucide="plus-circle" class="w-4 h-4 inline-block ml-1"></i> إنشاء/إعادة بناء مسير
+            <i data-lucide="settings-2" class="w-4 h-4 inline-block ml-1"></i> معايير المسير
         </h3>
-        <form method="POST" action="{% url 'web:create_payroll_run' %}" id="payrollCreateForm"
+        <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm"
               class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {% csrf_token %}
             <div id="payrollSponsorshipWrap">
@@ -25,123 +27,161 @@
                         class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     <option value="">— اختر شركة الكفالة —</option>
                     {% for s in sponsorships %}
-                    <option value="{{ s.id }}">{{ s.company_name }}{% if s.code %} ({{ s.code }}){% endif %}</option>
+                    <option value="{{ s.id }}" {% if filter_sponsorship_id == s.id %}selected{% endif %}>
+                        {{ s.company_name }}{% if s.code %} ({{ s.code }}){% endif %}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">الفرع</label>
-                {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollBranch" aria_label="الفرع" no_all=True placeholder="— اختر الفرع —" require_selection=True count_unit="فروع" %}
+                <label class="block text-xs font-semibold text-slate-600 mb-1">الفروع</label>
+                {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollBranch" aria_label="الفروع" no_all=True placeholder="— اختر الفروع —" require_selection=True count_unit="فروع" %}
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">نوع الراتب</label>
                 <select name="salary_mode" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     <option value="">— اختر النوع —</option>
                     {% for v, lbl in SALARY_MODE_CHOICES %}
-                    <option value="{{ v }}">{{ lbl }}</option>
+                    <option value="{{ v }}" {% if filter_salary_mode == v %}selected{% endif %}>{{ lbl }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">السنة</label>
                 <select name="year" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    {% for y in years_range %}<option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                    {% for y in years_range %}
+                    <option value="{{ y }}" {% if filter_year == y %}selected{% elif not filter_year and y == current_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">الشهر</label>
                 <select name="month" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    {% for m in months_range %}<option value="{{ m }}" {% if m == current_month %}selected{% endif %}>{{ m }}</option>{% endfor %}
+                    {% for m in months_range %}
+                    <option value="{{ m }}" {% if filter_month == m %}selected{% elif not filter_month and m == current_month %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
                 </select>
             </div>
-            <div class="flex items-end gap-2">
-                <button type="button" id="payrollShowRunsBtn"
-                    class="flex-1 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md inline-flex items-center justify-center gap-1">
-                    <i data-lucide="list" class="w-4 h-4"></i> عرض المسيرات
-                </button>
+            <div class="flex items-end">
+                {% if can_build %}
                 <button type="submit"
-                    class="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md inline-flex items-center justify-center gap-1">
+                    class="w-full px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md inline-flex items-center justify-center gap-1">
                     <i data-lucide="play" class="w-4 h-4"></i> بناء المسير
                 </button>
+                {% else %}
+                <p class="text-xs text-slate-500">صلاحية البناء غير متوفرة لحسابك.</p>
+                {% endif %}
             </div>
         </form>
     </div>
 
-    <!-- Filters + List -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div class="p-4 border-b border-slate-100">
-            <p class="text-xs text-slate-500 mb-2">تصفية الجدول — أو يُحدَّث تلقائياً عند اختيار الفروع أعلاه</p>
-            <form method="GET" id="payrollListFilterForm" class="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-                {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filter_branch_ids field_class="px-3 py-2 border border-slate-300 rounded-md w-full" select_id="payrollListBranch" aria_label="تصفية الفروع" %}
-                <select name="year" class="hr-filter-select px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">الكل</option>
-                    {% for y in years_range %}<option value="{{ y }}" {% if filter_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>{% endfor %}
-                </select>
-                <select name="month" class="hr-filter-select px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">الكل</option>
-                    {% for m in months_range %}<option value="{{ m }}" {% if filter_month == m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>{% endfor %}
-                </select>
-                <select name="status" class="hr-filter-select px-3 py-2 border border-slate-300 rounded-md">
-                    <option value="">الكل</option>
-                    {% for v, lbl in STATUS_CHOICES %}<option value="{{ v }}" {% if filter_status == v %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
-                </select>
-                <button type="submit"
-                    class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-md font-semibold">تصفية</button>
-            </form>
+    {% if show_table %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500">عدد الفروع / المسيرات</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ runs_count }}</p>
         </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500">عدد الموظفين</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ grand_totals.employees_count|default:0 }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-emerald-200">
+            <p class="text-xs font-semibold text-emerald-700">إجمالي الاستحقاقات</p>
+            <p class="mt-1 text-lg font-bold text-emerald-800">{{ grand_totals.total_earnings|default:0|format_sar:"earn" }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-primary-200">
+            <p class="text-xs font-semibold text-primary-700">الصافي الكلي</p>
+            <p class="mt-1 text-lg font-bold text-primary-900">{{ grand_totals.total_net|default:0|format_sar:"net" }}</p>
+        </div>
+    </div>
 
+    <div class="payroll-lines-card">
+        <div class="payroll-lines-hd flex flex-wrap items-center justify-between gap-2">
+            <h3>
+                <i data-lucide="users" class="w-4 h-4 inline-block ml-1"></i>
+                جدول المسير الموحّد
+                {% if page_obj %}({{ page_obj.paginator.count }} موظف){% endif %}
+            </h3>
+            <p class="text-xs text-slate-500 m-0">
+                {% if filter_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}
+                — {{ filter_month }}/{{ filter_year }}
+            </p>
+        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <table class="payroll-tbl">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-right">الفرع</th>
-                        <th class="px-4 py-3 text-right">نوع الراتب</th>
-                        <th class="px-4 py-3 text-right">الفترة</th>
-                        <th class="px-4 py-3 text-right">الحالة</th>
-                        <th class="px-4 py-3 text-center">عدد الموظفين</th>
-                        <th class="px-4 py-3 text-left">إجمالي الاستحقاقات</th>
-                        <th class="px-4 py-3 text-left">إجمالي الخصومات</th>
-                        <th class="px-4 py-3 text-left">الصافي</th>
-                        <th class="px-4 py-3 text-center">إجراءات</th>
+                        <th class="text-right">الفرع</th>
+                        <th class="text-right">الموظف</th>
+                        <th class="col-num">الإجمالي</th>
+                        <th class="col-num th-deduct">غياب</th>
+                        <th class="col-num th-deduct">إجازة بدون راتب</th>
+                        <th class="col-num th-deduct">قسط سلفة</th>
+                        <th class="col-num th-deduct">مخالفات</th>
+                        <th class="col-num th-deduct">تأمينات</th>
+                        <th class="col-num th-earn">استحقاقات</th>
+                        <th class="col-num th-deduct">خصومات</th>
+                        <th class="col-num th-net">الصافي</th>
+                        <th class="text-center">مسير</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for run in runs %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium">{{ run.branch.name }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 text-xs rounded {% if run.salary_mode == 'cash' %}bg-amber-100 text-amber-800{% else %}bg-sky-100 text-sky-800{% endif %}">
-                                {{ run.get_salary_mode_display }}
-                            </span>
+                <tbody>
+                    {% for line in lines %}
+                    <tr>
+                        <td class="font-semibold text-slate-700 whitespace-nowrap">{{ line.run.branch.name }}</td>
+                        <td class="font-bold text-slate-900">
+                            <a href="{% url 'web:view_employee' line.employee.id %}" class="text-primary-700 hover:underline">{{ line.employee.name }}</a>
                         </td>
-                        <td class="px-4 py-3">{{ run.period_label }}</td>
-                        <td class="px-4 py-3">
-                            {% if run.status == 'draft' %}<span
-                                class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-800">مسودة</span>
-                            {% elif run.status == 'locked' %}<span
-                                class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-800">مُرحَّل</span>
-                            {% else %}<span class="px-2 py-0.5 text-xs rounded bg-rose-100 text-rose-800">مُلغى</span>
-                            {% endif %}
+                        <td class="col-num">{{ line.gross_salary|format_sar:"gross" }}</td>
+                        <td class="col-num td-deduct">
+                            {% if line.absence_deduction %}{{ line.absence_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
                         </td>
-                        <td class="px-4 py-3 text-center">{{ run.employees_count }}</td>
-                        <td class="px-4 py-3 text-left font-mono text-emerald-700">{{ run.total_earnings }}</td>
-                        <td class="px-4 py-3 text-left font-mono text-rose-700">{{ run.total_deductions }}</td>
-                        <td class="px-4 py-3 text-left font-mono font-bold text-slate-900">{{ run.total_net }}</td>
-                        <td class="px-4 py-3">
-                            {% url 'web:view_payroll_run' run.id as act_view %}
-                            {% include "components/table_actions.html" with view_url=act_view view_title="عرض المسير" %}
+                        <td class="col-num td-deduct">
+                            {% if line.unpaid_leave_deduction %}{{ line.unpaid_leave_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+                        </td>
+                        <td class="col-num td-deduct">
+                            {% if line.loan_deduction %}{{ line.loan_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+                        </td>
+                        <td class="col-num td-deduct">
+                            {% if line.penalty_deduction %}{{ line.penalty_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+                        </td>
+                        <td class="col-num td-deduct">
+                            {% if line.insurance_deduction %}{{ line.insurance_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+                        </td>
+                        <td class="col-num td-earn">{{ line.total_earnings|format_sar:"earn" }}</td>
+                        <td class="col-num td-deduct">{{ line.total_deductions|format_sar:"deduct" }}</td>
+                        <td class="col-num td-net">{{ line.net_salary|format_sar:"net" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'web:view_payroll_run' line.run.id %}" class="text-primary-600 hover:text-primary-800" title="تفاصيل مسير الفرع">
+                                <i data-lucide="eye" class="w-4 h-4 inline-block"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="px-4 py-8 text-center text-slate-400">لا توجد مسيرات.</td>
+                        <td colspan="12" class="py-10 text-center font-semibold text-slate-500">
+                            لا يوجد موظفون في المسيرات المطابقة. اضغط «بناء المسير» لإنشاء المسيرات.
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                {% if grand_totals.employees_count %}
+                <tfoot>
+                    <tr>
+                        <td colspan="2" class="text-right font-bold text-slate-900">الإجمالي الكلي</td>
+                        <td class="col-num"></td>
+                        <td class="col-num" colspan="5"></td>
+                        <td class="col-num td-earn">{{ grand_totals.total_earnings|format_sar:"earn" }}</td>
+                        <td class="col-num td-deduct">{{ grand_totals.total_deductions|format_sar:"deduct" }}</td>
+                        <td class="col-num td-net">{{ grand_totals.total_net|format_sar:"net" }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
             </table>
         </div>
 
-        {% if page_obj.has_other_pages %}
+        {% if page_obj and page_obj.has_other_pages %}
         <div class="p-4 border-t border-slate-100 flex items-center justify-center gap-1 text-sm">
             {% if page_obj.has_previous %}
             <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page_obj.previous_page_number }}"
@@ -162,6 +202,13 @@
         </div>
         {% endif %}
     </div>
+    {% else %}
+    <div class="bg-white rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
+        <i data-lucide="table" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+        <p class="font-semibold">حدّد الفروع ونوع الراتب والفترة ثم اضغط «بناء المسير»</p>
+        <p class="text-sm mt-1">ستظهر كل بيانات الموظفين من الفروع المختارة في جدول واحد.</p>
+    </div>
+    {% endif %}
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -169,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const sponsorshipSel = document.getElementById('payrollSponsorship');
     const sponsorshipWrap = document.getElementById('payrollSponsorshipWrap');
-    const salaryModeSel = document.querySelector('select[name="salary_mode"]');
+    const salaryModeSel = document.querySelector('#payrollCreateForm select[name="salary_mode"]');
 
     function syncSponsorshipField() {
         const isCash = salaryModeSel && salaryModeSel.value === 'cash';
@@ -181,37 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);
     syncSponsorshipField();
-
-    const createForm = document.getElementById('payrollCreateForm');
-    const createBranchSel = document.getElementById('payrollBranch');
-
-    function applyListFilterFromSelection() {
-        if (!createBranchSel) return;
-        const params = new URLSearchParams();
-        const yearEl = createForm && createForm.querySelector('select[name="year"]');
-        const monthEl = createForm && createForm.querySelector('select[name="month"]');
-        const statusEl = document.querySelector('#payrollListFilterForm select[name="status"]');
-        if (yearEl && yearEl.value) params.set('year', yearEl.value);
-        if (monthEl && monthEl.value) params.set('month', monthEl.value);
-        if (statusEl && statusEl.value) params.set('status', statusEl.value);
-        Array.from(createBranchSel.options).forEach(function (opt) {
-            if (opt.selected && opt.value) params.append('branch', opt.value);
-        });
-        const qs = params.toString();
-        window.location.href = qs ? ('?' + qs) : window.location.pathname;
-    }
-
-    const showRunsBtn = document.getElementById('payrollShowRunsBtn');
-    if (showRunsBtn) showRunsBtn.addEventListener('click', applyListFilterFromSelection);
-
-    if (createBranchSel) {
-        createBranchSel.addEventListener('hr-ms:closed', applyListFilterFromSelection);
-    }
-    if (createForm) {
-        createForm.querySelectorAll('select[name="year"], select[name="month"]').forEach(function (el) {
-            el.addEventListener('change', applyListFilterFromSelection);
-        });
-    }
 });
 </script>
 {% endblock %}
