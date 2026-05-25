@@ -37,6 +37,10 @@
         0 4px 18px rgba(15, 23, 42, 0.06),
         0 1px 4px rgba(15, 23, 42, 0.04),
         inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    /* شبكة بيانات الموظف — كان: تسمية 10px / قيمة 13px */
+    --hr-field-lbl-size: 0.8125rem;   /* 13px */
+    --hr-field-val-size: 1.0625rem;   /* 17px */
+    --hr-tab-size: 0.9375rem;         /* 15px */
 }
 
 /* خلفية زجاجية بيضاء للتطبيق */
@@ -838,6 +842,11 @@ body.hr-app .hr-glass-panel.hr-page-tabs {
     z-index: 10;
 }
 
+body.hr-app .hr-page-tabs button {
+    font-size: var(--hr-tab-size) !important;
+    font-weight: 700 !important;
+}
+
 body.hr-app .hr-dropdown {
     position: relative;
     z-index: 40;
@@ -896,9 +905,9 @@ body.hr-app .hr-dropdown-menu {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.12rem;
-    min-height: 2.75rem;
-    padding: 0.55rem 0.75rem;
+    gap: 0.2rem;
+    min-height: 3.35rem;
+    padding: 0.65rem 0.85rem;
     background: var(--hr-table-glass-row);
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
@@ -915,18 +924,18 @@ body.hr-app .hr-dropdown-menu {
 
 .hr-field-lbl {
     display: block;
-    font-size: 0.625rem;
+    font-size: var(--hr-field-lbl-size);
     font-weight: 700 !important;
     color: #000000 !important;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .hr-field-val {
     display: block;
-    font-size: 0.8125rem;
-    font-weight: 600 !important;
+    font-size: var(--hr-field-val-size);
+    font-weight: 700 !important;
     color: #000000 !important;
-    line-height: 1.35;
+    line-height: 1.4;
     word-break: break-word;
 }
 
@@ -935,24 +944,24 @@ body.hr-app .hr-dropdown-menu {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.12rem;
-    min-height: 2.75rem;
-    padding: 0.55rem 0.75rem;
+    gap: 0.2rem;
+    min-height: 3.35rem;
+    padding: 0.65rem 0.85rem;
     background: var(--hr-table-glass-row);
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
 }
 
 .hr-field-grid > div:not(.hr-field-item) > div:first-child {
-    font-size: 0.625rem !important;
+    font-size: var(--hr-field-lbl-size) !important;
     font-weight: 700 !important;
     color: #000000 !important;
     margin-bottom: 0 !important;
 }
 
 .hr-field-grid > div:not(.hr-field-item) > div:last-child {
-    font-size: 0.8125rem !important;
-    font-weight: 600 !important;
+    font-size: var(--hr-field-val-size) !important;
+    font-weight: 700 !important;
     color: #000000 !important;
 }
 
