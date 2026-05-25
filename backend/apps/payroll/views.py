@@ -136,22 +136,19 @@ def list_payroll_runs(request):
 @login_required
 @permission_required('employees.edit')
 def create_payroll_run(request):
-    """إنشاء أو إعادة بناء مسير لشهر وفرع محددين."""
+    """إنشاء أو إعادة بناء مسير لشهر وفروع محددة (واحد أو أكثر)."""
     if request.method != 'POST':
         return redirect('web:list_payroll_runs')
 
-    # قراءة البيانات من النموذج
     try:
-        branch_id = int(request.POST.get('branch_id') or 0)
         year = int(request.POST.get('year') or 0)
         month = int(request.POST.get('month') or 0)
     except ValueError:
         messages.error(request, 'بيانات غير صحيحة.')
         return redirect('web:list_payroll_runs')
 
-    # التحقق من صحة البيانات
-    if not (branch_id and 2020 <= year <= 2100 and 1 <= month <= 12):
-        messages.error(request, 'يرجى تحديد الفرع والسنة والشهر.')
+    if not (2020 <= year <= 2100 and 1 <= month <= 12):
+        messages.error(request, 'يرجى تحديد السنة والشهر.')
         return redirect('web:list_payroll_runs')
 
     salary_mode = (request.POST.get('salary_mode') or '').strip()
@@ -159,11 +156,11 @@ def create_payroll_run(request):
         messages.error(request, 'يرجى اختيار نوع الراتب (نقدي أو تحويل).')
         return redirect('web:list_payroll_runs')
 
-    # التحقق من صلاحية الوصول للفرع
-    branch = get_object_or_404(Branch, id=branch_id)
     user_branches = _user_branches(request.user)
-    if not request.user.is_superuser and branch not in user_branches:
-        messages.error(request, 'لا تملك صلاحية على هذا الفرع.')
+    accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
+    branch_ids = parse_multi_filter_ids(request, 'branch_id', accessible_ids=accessible) or []
+    if not branch_ids:
+        messages.error(request, 'يرجى اختيار فرع واحد على الأقل.')
         return redirect('web:list_payroll_runs')
 
     try:
@@ -182,23 +179,49 @@ def create_payroll_run(request):
     else:
         sponsorship_id = None
 
-    # بناء المسير عبر محرك الرواتب
-    try:
-        run = build_payroll_run(
-            branch, year, month, request.user,
-            salary_mode=salary_mode,
-            sponsorship_id=sponsorship_id or None,
-        )
-    except ValueError as e:
-        messages.error(request, str(e))
+    branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
+    if len(branches) != len(branch_ids):
+        messages.error(request, 'أحد الفروع المختارة غير صالح.')
         return redirect('web:list_payroll_runs')
 
     mode_label = dict(PayrollRun.SalaryMode.choices).get(salary_mode, salary_mode)
+    runs_built = []
+    errors = []
+
+    for branch in branches:
+        try:
+            run = build_payroll_run(
+                branch, year, month, request.user,
+                salary_mode=salary_mode,
+                sponsorship_id=sponsorship_id or None,
+            )
+            runs_built.append(run)
+        except ValueError as e:
+            errors.append(f'{branch.name}: {e}')
+
+    for err in errors:
+        messages.error(request, err)
+
+    if not runs_built:
+        return redirect('web:list_payroll_runs')
+
+    total_employees = sum(r.employees_count for r in runs_built)
+    if len(runs_built) == 1:
+        run = runs_built[0]
+        messages.success(
+            request,
+            f'تم بناء مسير {mode_label} لـ {run.branch.name} — {run.period_label} ({run.employees_count} موظف).',
+        )
+        return redirect('web:view_payroll_run', run_id=run.id)
+
+    names = '، '.join(r.branch.name for r in runs_built[:5])
+    if len(runs_built) > 5:
+        names += f' و{len(runs_built) - 5} آخرين'
     messages.success(
         request,
-        f'تم بناء مسير {mode_label} لـ {branch.name} — {run.period_label} ({run.employees_count} موظف).',
+        f'تم بناء {len(runs_built)} مسير {mode_label} — {names} ({total_employees} موظف إجمالاً).',
     )
-    return redirect('web:view_payroll_run', run_id=run.id)
+    return redirect('web:list_payroll_runs')
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -9,6 +9,9 @@
         select.dataset.msReady = '1';
 
         const allLabel = select.dataset.allLabel || 'الكل';
+        const placeholder = select.dataset.placeholder || '— اختر —';
+        const noAll = select.dataset.noAll === '1';
+        const requireSelection = select.dataset.requireSelection === '1';
         const wrap = document.createElement('div');
         wrap.className = 'hr-ms';
         wrap.dir = 'rtl';
@@ -24,15 +27,18 @@
         panel.hidden = true;
         panel.setAttribute('role', 'listbox');
 
-        const allRow = document.createElement('label');
-        allRow.className = 'hr-ms__row hr-ms__row--all';
-        const allCb = document.createElement('input');
-        allCb.type = 'checkbox';
-        allCb.className = 'hr-ms__cb';
-        allCb.value = '';
-        allRow.appendChild(allCb);
-        allRow.appendChild(document.createTextNode(' ' + allLabel));
-        panel.appendChild(allRow);
+        let allCb = null;
+        if (!noAll) {
+            const allRow = document.createElement('label');
+            allRow.className = 'hr-ms__row hr-ms__row--all';
+            allCb = document.createElement('input');
+            allCb.type = 'checkbox';
+            allCb.className = 'hr-ms__cb';
+            allCb.value = '';
+            allRow.appendChild(allCb);
+            allRow.appendChild(document.createTextNode(' ' + allLabel));
+            panel.appendChild(allRow);
+        }
 
         const optionCbs = [];
         Array.from(select.options).forEach(function (opt) {
@@ -52,18 +58,22 @@
 
         function syncFromNative() {
             const selected = optionCbs.filter(function (x) { return x.opt.selected; });
-            if (selected.length === 0) {
-                allCb.checked = true;
-                optionCbs.forEach(function (x) { x.cb.checked = false; });
+            if (allCb) {
+                if (selected.length === 0) {
+                    allCb.checked = true;
+                    optionCbs.forEach(function (x) { x.cb.checked = false; });
+                } else {
+                    allCb.checked = false;
+                    optionCbs.forEach(function (x) { x.cb.checked = x.opt.selected; });
+                }
             } else {
-                allCb.checked = false;
                 optionCbs.forEach(function (x) { x.cb.checked = x.opt.selected; });
             }
             updateLabel();
         }
 
         function syncToNative() {
-            if (allCb.checked) {
+            if (allCb && allCb.checked) {
                 optionCbs.forEach(function (x) {
                     x.opt.selected = false;
                     x.cb.checked = false;
@@ -77,30 +87,34 @@
         }
 
         function updateLabel() {
-            if (allCb.checked || optionCbs.every(function (x) { return !x.opt.selected; })) {
-                btn.textContent = allLabel;
+            const empty = optionCbs.every(function (x) { return !x.opt.selected; });
+            if (empty) {
+                btn.textContent = noAll ? placeholder : allLabel;
                 return;
             }
             const n = optionCbs.filter(function (x) { return x.opt.selected; }).length;
             if (n === 1) {
                 const one = optionCbs.find(function (x) { return x.opt.selected; });
-                btn.textContent = one ? one.opt.textContent.trim() : allLabel;
+                btn.textContent = one ? one.opt.textContent.trim() : placeholder;
             } else {
-                btn.textContent = n + ' محدّد';
+                const unit = select.dataset.countUnit || 'محدّد';
+                btn.textContent = n + ' ' + unit;
             }
         }
 
-        allCb.addEventListener('change', function () {
-            if (allCb.checked) {
-                optionCbs.forEach(function (x) { x.cb.checked = false; });
-            }
-            syncToNative();
-        });
+        if (allCb) {
+            allCb.addEventListener('change', function () {
+                if (allCb.checked) {
+                    optionCbs.forEach(function (x) { x.cb.checked = false; });
+                }
+                syncToNative();
+            });
+        }
 
         optionCbs.forEach(function (x) {
             x.cb.addEventListener('change', function () {
-                if (x.cb.checked) allCb.checked = false;
-                if (optionCbs.every(function (y) { return !y.cb.checked; })) {
+                if (allCb && x.cb.checked) allCb.checked = false;
+                if (allCb && optionCbs.every(function (y) { return !y.cb.checked; })) {
                     allCb.checked = true;
                 }
                 syncToNative();
@@ -195,9 +209,17 @@
         select.addEventListener('change', syncFromNative);
         const form = select.closest('form');
         if (form) {
-            form.addEventListener('submit', function () {
+            form.addEventListener('submit', function (e) {
                 const any = optionCbs.some(function (x) { return x.opt.selected; });
-                select.disabled = !any;
+                if (requireSelection && !any) {
+                    e.preventDefault();
+                    alert('يرجى اختيار خيار واحد على الأقل.');
+                    openPanel();
+                    return;
+                }
+                if (!requireSelection) {
+                    select.disabled = !any;
+                }
             });
         }
 

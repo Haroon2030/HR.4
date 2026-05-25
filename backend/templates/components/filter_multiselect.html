@@ -1,9 +1,13 @@
-{# name, items, selected_ids (list|None), field_class, select_id, aria_label #}
+{# name, items, selected_ids, field_class, select_id, aria_label, no_all, placeholder, require_selection #}
 <select name="{{ name }}"
         id="{{ select_id|default:name }}"
         class="hr-filter-ms {{ field_class|default:'' }}"
         multiple
         data-all-label="{{ all_label|default:'الكل' }}"
+        {% if no_all %}data-no-all="1"{% endif %}
+        {% if placeholder %}data-placeholder="{{ placeholder }}"{% endif %}
+        {% if require_selection %}data-require-selection="1"{% endif %}
+        {% if count_unit %}data-count-unit="{{ count_unit }}"{% endif %}
         {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}>
     {% for item in items %}
     <option value="{{ item.pk }}"

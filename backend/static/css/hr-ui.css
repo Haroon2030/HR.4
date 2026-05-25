@@ -1627,3 +1627,11 @@ body.hr-app .hr-header .bg-white.rounded-xl.shadow-xl {
     margin-bottom: 0.15rem;
     padding-bottom: 0.45rem;
 }
+
+.hr-ms__cb {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #2563eb;
+    cursor: pointer;
+    flex-shrink: 0;
+}
