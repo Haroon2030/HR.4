@@ -29,7 +29,8 @@ from django.http import HttpResponse, Http404
 from django.db.models import Sum, Count
 
 from apps.core.decorators import permission_required
-from apps.core.filter_utils import parse_multi_filter_ids
+from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
+from urllib.parse import urlencode
 from apps.core.models import Branch
 from apps.payroll.models import PayrollRun, PayrollLine
 from apps.setup.models import Sponsorship
@@ -71,6 +72,34 @@ def _user_branches(user):
     return Branch.objects.none()
 
 
+def _redirect_payroll_list(request, *, branch_ids=None, year=None, month=None, status=None):
+    url = reverse('web:list_payroll_runs')
+    qs = _payroll_list_querystring(
+        branch_ids=branch_ids,
+        year=year,
+        month=month,
+        status=status,
+    )
+    if qs:
+        url = f'{url}?{qs}'
+    return redirect(url)
+
+
+def _payroll_list_querystring(*, branch_ids=None, year=None, month=None, status=None, page=None):
+    """سلسلة استعلام لفلترة قائمة المسيرات (فروع متعددة)."""
+    pairs: list[tuple[str, object]] = []
+    append_multi_param(pairs, 'branch', branch_ids)
+    if year:
+        pairs.append(('year', year))
+    if month:
+        pairs.append(('month', month))
+    if status:
+        pairs.append(('status', status))
+    if page:
+        pairs.append(('page', page))
+    return urlencode(pairs, doseq=True) if pairs else ''
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. قائمة المسيرات — مع فلاتر (سنة/شهر/فرع/حالة) + ترقيم صفحات
 # ══════════════════════════════════════════════════════════════════════════════
@@ -110,6 +139,12 @@ def list_payroll_runs(request):
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
+    filter_qs = _payroll_list_querystring(
+        branch_ids=branch_ids,
+        year=year,
+        month=month,
+        status=status,
+    )
     return render(request, 'pages/payroll/list.html', {
         'runs': page_obj.object_list,        # المسيرات في الصفحة الحالية
         'page_obj': page_obj,                # كائن الصفحة (للترقيم)
@@ -124,6 +159,7 @@ def list_payroll_runs(request):
         'filter_year': year, 'filter_month': month,
         'filter_branch_ids': branch_ids or [],
         'filter_status': status,
+        'filter_qs': filter_qs,
         'STATUS_CHOICES': PayrollRun.Status.choices,
     })
 
@@ -140,28 +176,39 @@ def create_payroll_run(request):
     if request.method != 'POST':
         return redirect('web:list_payroll_runs')
 
+    def _back(**kwargs):
+        return _redirect_payroll_list(
+            request,
+            branch_ids=kwargs.get('branch_ids'),
+            year=kwargs.get('year') or request.POST.get('year'),
+            month=kwargs.get('month') or request.POST.get('month'),
+        )
+
     try:
         year = int(request.POST.get('year') or 0)
         month = int(request.POST.get('month') or 0)
     except ValueError:
         messages.error(request, 'بيانات غير صحيحة.')
-        return redirect('web:list_payroll_runs')
+        return _back()
 
     if not (2020 <= year <= 2100 and 1 <= month <= 12):
         messages.error(request, 'يرجى تحديد السنة والشهر.')
-        return redirect('web:list_payroll_runs')
+        return _back(year=str(year), month=str(month))
 
     salary_mode = (request.POST.get('salary_mode') or '').strip()
     if salary_mode not in PayrollRun.SalaryMode.values:
         messages.error(request, 'يرجى اختيار نوع الراتب (نقدي أو تحويل).')
-        return redirect('web:list_payroll_runs')
+        return _back(year=str(year), month=str(month))
 
     user_branches = _user_branches(request.user)
     accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
     branch_ids = parse_multi_filter_ids(request, 'branch_id', accessible_ids=accessible) or []
     if not branch_ids:
         messages.error(request, 'يرجى اختيار فرع واحد على الأقل.')
-        return redirect('web:list_payroll_runs')
+        return _back(year=str(year), month=str(month))
+
+    def _back_with_branches():
+        return _back(branch_ids=branch_ids, year=str(year), month=str(month))
 
     try:
         sponsorship_id = int(request.POST.get('sponsorship_id') or 0)
@@ -170,19 +217,19 @@ def create_payroll_run(request):
     if salary_mode == PayrollRun.SalaryMode.TRANSFER:
         if not sponsorship_id:
             messages.error(request, 'يرجى اختيار شركة الكفالة لمسير التحويل.')
-            return redirect('web:list_payroll_runs')
+            return _back_with_branches()
         if not Sponsorship.objects.filter(
             pk=sponsorship_id, is_deleted=False, is_active=True,
         ).exists():
             messages.error(request, 'شركة الكفالة غير صالحة.')
-            return redirect('web:list_payroll_runs')
+            return _back_with_branches()
     else:
         sponsorship_id = None
 
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
         messages.error(request, 'أحد الفروع المختارة غير صالح.')
-        return redirect('web:list_payroll_runs')
+        return _back_with_branches()
 
     mode_label = dict(PayrollRun.SalaryMode.choices).get(salary_mode, salary_mode)
     runs_built = []
@@ -203,7 +250,7 @@ def create_payroll_run(request):
         messages.error(request, err)
 
     if not runs_built:
-        return redirect('web:list_payroll_runs')
+        return _back_with_branches()
 
     total_employees = sum(r.employees_count for r in runs_built)
     if len(runs_built) == 1:
@@ -221,7 +268,15 @@ def create_payroll_run(request):
         request,
         f'تم بناء {len(runs_built)} مسير {mode_label} — {names} ({total_employees} موظف إجمالاً).',
     )
-    return redirect('web:list_payroll_runs')
+    qs = _payroll_list_querystring(
+        branch_ids=[r.branch_id for r in runs_built],
+        year=str(year),
+        month=str(month),
+    )
+    url = reverse('web:list_payroll_runs')
+    if qs:
+        url = f'{url}?{qs}'
+    return redirect(url)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

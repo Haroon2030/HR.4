@@ -84,6 +84,7 @@
                 });
             }
             updateLabel();
+            select.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         function updateLabel() {
@@ -148,6 +149,7 @@
                 wrap.insertBefore(panel, select);
             }
             btn.setAttribute('aria-expanded', 'false');
+            select.dispatchEvent(new CustomEvent('hr-ms:closed', { bubbles: true }));
         }
 
         function closeOtherPanels() {
@@ -210,7 +212,11 @@
         const form = select.closest('form');
         if (form) {
             form.addEventListener('submit', function (e) {
-                const any = optionCbs.some(function (x) { return x.opt.selected; });
+                optionCbs.forEach(function (x) {
+                    x.opt.selected = x.cb.checked;
+                });
+                select.disabled = false;
+                const any = optionCbs.some(function (x) { return x.cb.checked; });
                 if (requireSelection && !any) {
                     e.preventDefault();
                     alert('يرجى اختيار خيار واحد على الأقل.');

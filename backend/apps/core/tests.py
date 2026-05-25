@@ -602,3 +602,20 @@ class MediaResolveTests(TestCase):
             _normalize_media_path('employees/statements/a%20b.jpg'),
             'employees/statements/a b.jpg',
         )
+
+
+class ParseMultiFilterIdsTests(TestCase):
+    def test_post_reads_branch_id_not_get(self):
+        from django.test import RequestFactory
+
+        from apps.core.filter_utils import parse_multi_filter_ids
+
+        factory = RequestFactory()
+        request = factory.post(
+            '/payroll/',
+            data=[('branch_id', '1'), ('branch_id', '9'), ('branch_id', '12')],
+        )
+        request.GET = request.GET.copy()
+        request.GET.setlist('branch', ['99'])
+        ids = parse_multi_filter_ids(request, 'branch_id')
+        self.assertEqual(ids, [1, 9, 12])

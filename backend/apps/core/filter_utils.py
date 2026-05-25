@@ -15,19 +15,13 @@ def parse_multi_filter_ids(
     قراءة معرّفات من GET/POST (قائمة متعددة أو قيمة واحدة قديمة).
     None = الكل (بدون فلترة).
     """
-    raw: list[str] = []
-    if hasattr(request, 'GET'):
-        raw = list(request.GET.getlist(param))
-        if not raw:
-            single = request.GET.get(param)
-            if single:
-                raw = [single]
-    elif hasattr(request, 'POST'):
-        raw = list(request.POST.getlist(param))
-        if not raw:
-            single = request.POST.get(param)
-            if single:
-                raw = [single]
+    # طلبات POST: Django يوفّر GET و POST معاً — نقرأ POST أولاً وإلا تُفقد القيم.
+    source = request.POST if getattr(request, 'method', '').upper() == 'POST' else request.GET
+    raw = list(source.getlist(param))
+    if not raw:
+        single = source.get(param)
+        if single:
+            raw = [single]
 
     ids: list[int] = []
     for v in raw:
