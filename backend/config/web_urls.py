@@ -58,6 +58,7 @@ urlpatterns = [
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)
     path('employees/<int:employee_id>/', web_views.view_employee, name='view_employee'),                      # عرض ملف الموظف
+    path('employees/<int:employee_id>/biometric-settings/', web_views.save_employee_biometric_settings, name='save_employee_biometric_settings'),
     path('employees/<int:employee_id>/edit/', web_views.edit_employee, name='edit_employee'),                  # تعديل بيانات الموظف
     path('employees/<int:employee_id>/delete/', web_views.delete_employee, name='delete_employee'),            # حذف الموظف (حذف ناعم)
     path('employees/<int:employee_id>/statements/add/', web_views.add_employee_statement, name='add_employee_statement'),  # إضافة إفادة

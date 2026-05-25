@@ -46,6 +46,38 @@ class BiometricMockTests(TestCase):
             count_after_first,
         )
 
+    def test_late_checkin_filter_hides_entry_after_grace(self):
+        from datetime import datetime, time
+        from apps.attendance.models import EmployeeBiometricEnrollment, EmployeeBiometricSettings
+        from apps.attendance.services.employee_punch_display import apply_late_checkin_filter
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(name='جهاز', ip_address='192.168.1.50', port=4370, branch=branch)
+        emp = Employee.objects.create(name='موظف', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(employee=emp, device=device, device_user_id=7)
+        settings = EmployeeBiometricSettings.objects.create(
+            employee=emp, expected_check_in=time(8, 0), late_grace_minutes=30,
+        )
+        tz = timezone.get_current_timezone()
+        day = timezone.localdate()
+        early = timezone.make_aware(datetime.combine(day, time(8, 15)), tz)
+        late = timezone.make_aware(datetime.combine(day, time(9, 0)), tz)
+        p1 = AttendancePunch.objects.create(
+            device=device, employee=emp, device_user_id=7,
+            punched_at=early, punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        p2 = AttendancePunch.objects.create(
+            device=device, employee=emp, device_user_id=7,
+            punched_at=late, punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        visible, hidden = apply_late_checkin_filter([p2, p1], settings)
+        self.assertEqual(hidden, 1)
+        self.assertEqual(len(visible), 1)
+        self.assertEqual(visible[0].id, p1.id)
+
     def test_duplicate_without_device_uid(self):
         from apps.attendance.services.punch_sync import import_enriched_punches
         from apps.attendance.services.attendance_pull import EnrichedPunch

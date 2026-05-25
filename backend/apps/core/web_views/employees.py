@@ -2,7 +2,11 @@
 Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
+from datetime import datetime
+
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
@@ -266,6 +270,36 @@ def view_employee(request, employee_id):
     except Exception:
         accruals = []
 
+    from datetime import timedelta
+    from apps.attendance.services.employee_punch_display import (
+        get_employee_punch_display,
+        get_or_create_biometric_settings,
+    )
+
+    fp_from = request.GET.get('fp_from')
+    fp_to = request.GET.get('fp_to')
+    today = timezone.localdate()
+    date_to = today
+    date_from = today - timedelta(days=30)
+    if fp_from:
+        try:
+            date_from = datetime.strptime(fp_from, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if fp_to:
+        try:
+            date_to = datetime.strptime(fp_to, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    bio_settings = get_or_create_biometric_settings(employee)
+    fingerprint_data = get_employee_punch_display(
+        employee,
+        date_from=date_from,
+        date_to=date_to,
+        settings=bio_settings,
+    )
+
     return render(request, 'pages/employees/view.html', {
         'employee': employee,
         'departments': departments,
@@ -281,7 +315,60 @@ def view_employee(request, employee_id):
         'loans': loans,
         'absences': absences,
         'accruals': accruals,
+        'fingerprint_data': fingerprint_data,
+        'fp_date_from': date_from.isoformat(),
+        'fp_date_to': date_to.isoformat(),
+        'can_edit_biometric_settings': True,
     })
+
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
+def save_employee_biometric_settings(request, employee_id):
+    """حفظ وقت الدخول/الخروع وفترة تجاهل التأخير لتبويب البصمة."""
+    from apps.employees.models import Employee
+    from apps.attendance.services.employee_punch_display import get_or_create_biometric_settings
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+
+    settings = get_or_create_biometric_settings(employee)
+
+    def _parse_time(field: str):
+        raw = (request.POST.get(field) or '').strip()
+        if not raw:
+            return None
+        try:
+            return datetime.strptime(raw, '%H:%M').time()
+        except ValueError:
+            return None
+
+    settings.expected_check_in = _parse_time('expected_check_in')
+    settings.expected_check_out = _parse_time('expected_check_out')
+    try:
+        grace = int(request.POST.get('late_grace_minutes') or 30)
+        settings.late_grace_minutes = max(0, min(grace, 180))
+    except ValueError:
+        settings.late_grace_minutes = 30
+    settings.save(update_fields=[
+        'expected_check_in', 'expected_check_out', 'late_grace_minutes', 'updated_at',
+    ])
+    messages.success(request, 'تم حفظ إعدادات البصمة.')
+
+    from urllib.parse import urlencode
+    params = {}
+    if request.POST.get('fp_from'):
+        params['fp_from'] = request.POST.get('fp_from')
+    if request.POST.get('fp_to'):
+        params['fp_to'] = request.POST.get('fp_to')
+    url = reverse('web:view_employee', kwargs={'employee_id': employee.id})
+    if params:
+        url = f'{url}?{urlencode(params)}#fingerprint'
+    else:
+        url = f'{url}#fingerprint'
+    return redirect(url)
 
 
 @login_required

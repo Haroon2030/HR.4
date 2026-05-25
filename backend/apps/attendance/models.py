@@ -205,3 +205,40 @@ class AttendancePunch(BaseModel):
             self.verify_mode_label = verify_mode_label(self.verify_mode)
         elif not self.verify_mode_label:
             self.verify_mode_label = verify_mode_label(self.verify_mode)
+
+
+class EmployeeBiometricSettings(BaseModel):
+    """إعدادات عرض بصمات الموظف (وقت الدخول/الخروج وتجاهل التأخير)."""
+
+    employee = models.OneToOneField(
+        'employees.Employee', on_delete=models.CASCADE,
+        related_name='biometric_settings', verbose_name='الموظف',
+    )
+    expected_check_in = models.TimeField(
+        'وقت الدخول المتوقع', null=True, blank=True,
+        help_text='بصمات الدخول بعد هذا الوقت + فترة السماح لا تُعرض في تبويب البصمة.',
+    )
+    expected_check_out = models.TimeField(
+        'وقت الخروج المتوقع', null=True, blank=True,
+        help_text='للمرجعية — يُستخدم لاحقاً في التقارير.',
+    )
+    late_grace_minutes = models.PositiveSmallIntegerField(
+        'سماح التأخير (دقيقة)', default=30,
+        help_text='بعد وقت الدخول + هذه الدقائق تُخفى بصمات الدخول المتأخرة.',
+    )
+
+    class Meta:
+        verbose_name = 'إعدادات بصمة الموظف'
+        verbose_name_plural = 'إعدادات بصمات الموظفين'
+
+    def __str__(self):
+        return f'بصمة — {self.employee_id}'
+
+    @property
+    def check_in_cutoff_label(self) -> str:
+        if not self.expected_check_in:
+            return ''
+        from datetime import datetime, timedelta
+        base = datetime.combine(datetime.today(), self.expected_check_in)
+        end = (base + timedelta(minutes=self.late_grace_minutes or 30)).time()
+        return f'{self.expected_check_in.strftime("%H:%M")} + {self.late_grace_minutes} د → {end.strftime("%H:%M")}'

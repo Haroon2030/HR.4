@@ -5,7 +5,8 @@
 {% block page_title %}عرض بيانات الموظف{% endblock %}
 
 {% block content %}
-<div class="space-y-4" x-data="{ activeTab: 'main', quickModal: null, quickOpen: false }">
+<div class="space-y-4" x-data="{ activeTab: 'main', quickModal: null, quickOpen: false }"
+     x-init="if (window.location.hash === '#fingerprint') { activeTab = 'fingerprint'; }">
 
     <!-- Header -->
     <div class="hr-employee-header hr-glass-panel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
@@ -1576,6 +1577,7 @@
             <button @click="activeTab='offers'" :class="activeTab==='offers' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">العروض الوظيفية</button>
             <button @click="activeTab='loans'" :class="activeTab==='loans' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">السلف</button>
             <button @click="activeTab='absences'" :class="activeTab==='absences' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">الغيابات</button>
+            <button @click="activeTab='fingerprint'" :class="activeTab==='fingerprint' ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">البصمة</button>
             <button @click="activeTab='docs'"     :class="activeTab==='docs'     ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">المستندات</button>
             <button @click="activeTab='accruals'" :class="activeTab==='accruals' ? 'border-emerald-600 text-emerald-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2 text-emerald-700 hover:text-emerald-800">المخصصات والأرصدة</button>
             <button @click="activeTab='archive'"  :class="activeTab==='archive'  ? 'border-primary-600 text-primary-700 bg-white' : 'border-transparent text-slate-500'" class="px-4 py-2.5 text-sm font-medium border-b-2">أرشيف الحركة</button>
@@ -1612,6 +1614,8 @@
                 <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
             </div>
+
+            {% include "pages/employees/_tab_fingerprint.html" %}
 
             <!-- Salary -->
             <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
