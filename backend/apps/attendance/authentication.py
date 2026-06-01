@@ -1,4 +1,4 @@
-"""مصادقة وكيل البصمة المحلي (مفتاح API)."""
+"""مصادقة وكيل البصمة المحلي (مفتاح API عام أو مفتاح لكل جهاز)."""
 from __future__ import annotations
 
 import secrets
@@ -7,6 +7,8 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+
+from apps.attendance.services.agent_keys import find_device_by_agent_key
 
 
 class AttendanceAgentPrincipal:
@@ -19,24 +21,42 @@ class AttendanceAgentPrincipal:
     pk = None
     username = 'attendance-agent'
 
+    def __init__(self, *, device=None, is_global_key: bool = False):
+        self.device = device
+        self.is_global_key = is_global_key
+        if device is not None:
+            self.username = f'attendance-agent-device-{device.pk}'
+
     def __str__(self):
         return self.username
 
 
 class AgentAPIKeyAuthentication(BaseAuthentication):
     """
-    Header: X-Attendance-Agent-Key: <ATTENDANCE_AGENT_API_KEY>
+    Header: X-Attendance-Agent-Key: <key>
+
+    - مفتاح عام (ATTENDANCE_AGENT_API_KEY) — وصول كامل (توافق خلفي).
+    - مفتاح جهاز — يُقيَّد بجهاز البصمة المطابق في ingest/ack.
     """
 
     header_name = 'X-Attendance-Agent-Key'
 
     def authenticate(self, request):
-        expected = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
-        if not expected:
-            raise AuthenticationFailed(_('وكيل البصمة غير مُفعّل على الخادم (ATTENDANCE_AGENT_API_KEY).'))
-
+        global_key = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
         provided = (request.headers.get(self.header_name) or '').strip()
-        if not provided or not secrets.compare_digest(provided, expected):
-            raise AuthenticationFailed(_('مفتاح وكيل البصمة غير صحيح.'))
 
-        return (AttendanceAgentPrincipal(), 'agent-api-key')
+        if not provided:
+            if not global_key:
+                raise AuthenticationFailed(
+                    _('وكيل البصمة غير مُفعّل (ATTENDANCE_AGENT_API_KEY أو مفتاح جهاز).')
+                )
+            raise AuthenticationFailed(_('مفتاح وكيل البصمة مطلوب.'))
+
+        if global_key and secrets.compare_digest(provided, global_key):
+            return (AttendanceAgentPrincipal(is_global_key=True), 'agent-api-key')
+
+        device = find_device_by_agent_key(provided)
+        if device:
+            return (AttendanceAgentPrincipal(device=device), 'agent-api-key')
+
+        raise AuthenticationFailed(_('مفتاح وكيل البصمة غير صحيح.'))

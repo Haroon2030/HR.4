@@ -11,6 +11,14 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from .api_permissions import ActionPermissionMixin, has_app_permission
 from .models import Role, UserProfile, Branch, Company, Permission
+from .services.access_control import (
+    assignable_roles_queryset,
+    can_administer_user,
+    can_assign_role,
+    filter_branches_queryset,
+    filter_users_queryset,
+    validate_user_admin_changes,
+)
 from .serializers import (
     RoleSerializer,
     RoleListSerializer,
@@ -67,23 +75,8 @@ class BranchViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         return BranchSerializer
 
     def get_queryset(self):
-        """
-        فلترة الفروع بناءً على صلاحيات المستخدم
-        """
         queryset = super().get_queryset()
-        user = self.request.user
-
-        if user.is_superuser:
-            return queryset
-
-        if not hasattr(user, 'profile') or not user.profile.role:
-            return queryset.none()
-
-        if user.profile.role.role_type in ['admin', 'hr_manager']:
-            return queryset
-
-        accessible_branches = user.profile.get_accessible_branches()
-        return queryset.filter(id__in=accessible_branches.values_list('id', flat=True))
+        return filter_branches_queryset(self.request.user, queryset)
 
     @action(detail=True, methods=['get'])
     def employees(self, request, pk=None):
@@ -190,10 +183,13 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         'assign_role': 'users.edit',
     }
 
+    def get_queryset(self):
+        return filter_users_queryset(self.request.user, super().get_queryset())
+
     @action(detail=False, methods=['get'])
     def roles(self, request):
         """الحصول على قائمة الأدوار المتاحة"""
-        roles = Role.objects.filter(is_active=True)
+        roles = assignable_roles_queryset(request.user)
         return Response(RoleListSerializer(roles, many=True).data)
 
     @action(
@@ -207,18 +203,37 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         role_id = request.data.get('role_id')
         profile, _ = UserProfile.objects.get_or_create(user=user)
 
+        new_role = None
         if role_id:
             try:
-                role = Role.objects.get(id=role_id)
-                profile.role = role
+                new_role = Role.objects.get(id=role_id)
             except Role.DoesNotExist:
                 return Response(
                     {'error': 'الدور غير موجود'},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-        else:
-            profile.role = None
 
+        err = validate_user_admin_changes(
+            request.user,
+            user,
+            new_role=new_role,
+        )
+        if err:
+            return Response({'error': err}, status=status.HTTP_403_FORBIDDEN)
+
+        if new_role and not can_assign_role(request.user, new_role):
+            return Response(
+                {'error': 'لا يمكنك تعيين هذا الدور.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not can_administer_user(request.user, user) and request.user.pk != user.pk:
+            return Response(
+                {'error': 'لا تملك صلاحية إدارة هذا المستخدم.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        profile.role = new_role
         profile.save()
         return Response(UserSerializer(user, context={'request': request}).data)
 

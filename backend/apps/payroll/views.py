@@ -214,7 +214,7 @@ def _payroll_runs_for_filters(filters, user, user_branches):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.view')
+@permission_required('payroll.view')
 def list_payroll_runs(request):
     """بناء مسيرات لعدة فروع وعرض كل أسطر الموظفين في جدول واحد."""
     user_branches = _user_branches(request.user)
@@ -313,7 +313,7 @@ def list_payroll_runs(request):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.edit')
+@permission_required('payroll.edit')
 def create_payroll_run(request):
     """توافق مع الرابط القديم — نفس شاشة القائمة الموحّدة."""
     if request.method == 'POST':
@@ -326,7 +326,7 @@ def create_payroll_run(request):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.view')
+@permission_required('payroll.view')
 def view_payroll_run(request, run_id):
     """عرض تفاصيل المسير وأسطر الموظفين."""
     run = get_object_or_404(
@@ -350,7 +350,7 @@ def view_payroll_run(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.edit')
+@permission_required('payroll.edit')
 def rebuild_payroll_run(request, run_id):
     """إعادة بناء مسير DRAFT — يمسح الأسطر القديمة ويعيد حسابها."""
     if request.method != 'POST':
@@ -377,7 +377,7 @@ def rebuild_payroll_run(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.edit')
+@permission_required('payroll.edit')
 def lock_payroll_run_view(request, run_id):
     """ترحيل المسير — يُغلق التعديل ويربط بنود الخصم."""
     if request.method != 'POST':
@@ -401,7 +401,7 @@ def lock_payroll_run_view(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.edit')
+@permission_required('payroll.edit')
 def unlock_payroll_run_view(request, run_id):
     """
     إعادة فتح مسير مُرحَّل — سوبر يوزر فقط!
@@ -431,7 +431,7 @@ def unlock_payroll_run_view(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('employees.view')
+@permission_required('payroll.view')
 def export_payroll_run_excel(request, run_id):
     """
     تصدير المسير إلى ملف Excel (.xlsx).

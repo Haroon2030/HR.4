@@ -43,6 +43,13 @@ class BiometricDevice(BaseModel):
     last_ping_at = models.DateTimeField('آخر فحص اتصال', null=True, blank=True)
     last_error = models.TextField('آخر خطأ', blank=True)
     notes = models.TextField('ملاحظات', blank=True)
+    agent_api_key = models.CharField(
+        'مفتاح وكيل البصمة (مُجزّأ)',
+        max_length=64,
+        blank=True,
+        default='',
+        help_text='SHA-256 لمفتاح الوكيل المحلي — يُولَّد من لوحة الإدارة أو الأمر generate_attendance_agent_key',
+    )
 
     class Meta:
         verbose_name = 'جهاز بصمة'

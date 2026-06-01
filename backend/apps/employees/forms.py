@@ -177,18 +177,38 @@ class EmploymentRequestForm(forms.ModelForm):
         model = EmploymentRequest
         fields = ['name', 'branch', 'department', 'cost_center', 'commencement_document']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
         super().__init__(*args, **kwargs)
         _apply_fk_label_overrides(self)
         for field_name, field in self.fields.items():
             if field_name != 'name':
                 field.required = False
+        if user is not None and 'branch' in self.fields:
+            from apps.core.models import Branch
+            from apps.core.services.access_control import filter_branches_queryset
+
+            self.fields['branch'].queryset = filter_branches_queryset(
+                user,
+                Branch.objects.filter(is_active=True),
+            )
 
     def clean_name(self):
         name = (self.cleaned_data.get('name') or '').strip()
         if not name:
             raise ValidationError('اسم الموظف مطلوب')
         return name
+
+    def clean_branch(self):
+        branch = self.cleaned_data.get('branch')
+        if branch is None or self.user is None:
+            return branch
+        from apps.core.services.access_control import get_accessible_branch_ids
+
+        accessible = get_accessible_branch_ids(self.user)
+        if accessible is not None and branch.pk not in accessible:
+            raise ValidationError('لا يمكنك اختيار فرع خارج نطاق صلاحياتك.')
+        return branch
 
 
 # الحقول الإلزامية لإكمال الموافقة النهائية من الأخصائي

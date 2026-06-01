@@ -20,8 +20,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.core.models import PendingAction, Role
+from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations
 from apps.core.web_views._helpers import (
     _can_act_at_stage,
+    _can_return_at_stage,
     _is_branch_manager,
     _is_general_manager,
     _is_hr_officer,
@@ -183,6 +185,10 @@ def _wrap_hire(r):
 def list_pending_actions(request):
     from apps.employees.models import EmploymentRequest
 
+    if not can_view_operations(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض طلبات العمليات.')
+        return redirect('web:dashboard')
+
     tab = request.GET.get('tab', 'inbox')
     base = _user_visible_actions(request.user)
     base_hire = _user_visible_hire_requests(request.user)
@@ -289,6 +295,9 @@ def list_pending_actions(request):
 
 @login_required
 def pending_action_detail(request, action_id):
+    if not can_view_operations(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض طلبات العمليات.')
+        return redirect('web:dashboard')
     action = get_object_or_404(
         PendingAction.objects.select_related(
             'employee', 'branch', 'requested_by',
@@ -315,6 +324,7 @@ def pending_action_detail(request, action_id):
     can_resubmit = (
         action.status == PendingAction.Status.RETURNED
         and (action.requested_by_id == request.user.id or request.user.is_superuser)
+        and can_resubmit_operation(request.user)
     )
 
     return render(request, 'pages/pending_actions/detail.html', {
@@ -417,7 +427,7 @@ def return_pending_action(request, action_id):
         with transaction.atomic():
             action = _locked(action_id)
             stage = action.current_stage
-            if not stage or not _can_act_at_stage(request.user, action, stage):
+            if not stage or not _can_return_at_stage(request.user, action, stage):
                 messages.error(request, 'لا تملك صلاحية إرجاع هذا الطلب.')
                 return redirect('web:list_pending_actions')
             from apps.core.services.pending_actions import return_action

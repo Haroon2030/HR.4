@@ -1,13 +1,14 @@
 """API وكيل البصمة — استقبال من شبكة الفرع."""
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
 
 from apps.attendance.api.serializers import AgentIngestSerializer
-from apps.attendance.authentication import AgentAPIKeyAuthentication
+from apps.attendance.authentication import AgentAPIKeyAuthentication, AttendanceAgentPrincipal
 from apps.attendance.models import BiometricDevice
 from apps.attendance.services.agent_ingest import ingest_agent_payload
 from apps.attendance.services.agent_pull_queue import (
@@ -20,7 +21,28 @@ class AgentRateThrottle(SimpleRateThrottle):
     scope = 'attendance_agent'
 
     def get_cache_key(self, request, view):
-        return self.cache_format % {'scope': self.scope, 'ident': 'agent'}
+        principal = getattr(request, 'user', None)
+        ident = 'agent'
+        if isinstance(principal, AttendanceAgentPrincipal) and principal.device is not None:
+            ident = f'device-{principal.device.pk}'
+        return self.cache_format % {'scope': self.scope, 'ident': ident}
+
+
+def _assert_device_access(request, device_id: int) -> BiometricDevice:
+    """يمنع مفتاح جهاز من العمل على جهاز آخر."""
+    principal = request.user
+    if not isinstance(principal, AttendanceAgentPrincipal):
+        raise PermissionDenied('مصادقة وكيل غير صالحة.')
+    if principal.is_global_key:
+        return get_object_or_404(
+            BiometricDevice,
+            pk=device_id,
+            is_deleted=False,
+            is_active=True,
+        )
+    if principal.device is None or principal.device.pk != device_id:
+        raise PermissionDenied('المفتاح غير مصرح لهذا الجهاز.')
+    return principal.device
 
 
 class AgentDeviceListView(APIView):
@@ -65,6 +87,7 @@ class AgentPullRequestsView(APIView):
                 {'success': False, 'message': 'device_id مطلوب'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        _assert_device_access(request, int(device_id))
         acknowledge_pull_request(int(device_id))
         return Response({'success': True, 'message': 'تم إغلاق طلب السحب'})
 
@@ -81,11 +104,7 @@ class AgentIngestView(APIView):
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
 
-        device = get_object_or_404(
-            BiometricDevice,
-            pk=payload['device_id'],
-            is_deleted=False,
-        )
+        device = _assert_device_access(request, int(payload['device_id']))
 
         punches_payload = [dict(p) for p in payload['punches']]
         users_payload = [dict(u) for u in payload['users']] if payload.get('users') else None

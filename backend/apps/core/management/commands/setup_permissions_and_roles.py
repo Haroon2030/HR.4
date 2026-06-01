@@ -82,6 +82,16 @@ class Command(BaseCommand):
             # ═══════════════════════════════════════════════════════════
             {'code': 'settings.view', 'name': 'عرض الإعدادات', 'module': 'settings'},
             {'code': 'settings.manage', 'name': 'إدارة الإعدادات', 'module': 'settings'},
+
+            # ═══════════════════════════════════════════════════════════
+            # طلبات العمليات (Operations workflow)
+            # ═══════════════════════════════════════════════════════════
+            {'code': 'operations.view', 'name': 'عرض طلبات العمليات', 'module': 'operations'},
+            {'code': 'operations.approve_branch', 'name': 'موافقة مدير الفرع', 'module': 'operations'},
+            {'code': 'operations.approve_gm', 'name': 'موافقة المدير العام', 'module': 'operations'},
+            {'code': 'operations.approve_officer', 'name': 'تنفيذ موظف الموارد', 'module': 'operations'},
+            {'code': 'operations.return', 'name': 'إرجاع طلب للتعديل', 'module': 'operations'},
+            {'code': 'operations.resubmit', 'name': 'إعادة إرسال طلب', 'module': 'operations'},
         ]
         
         created_permissions = {}
@@ -141,6 +151,10 @@ class Command(BaseCommand):
                     # التقارير
                     'reports.view',
                     'reports.export',
+                    # طلبات العمليات
+                    'operations.view',
+                    'operations.approve_branch',
+                    'operations.return',
                 ],
             },
             
@@ -182,6 +196,13 @@ class Command(BaseCommand):
                     'reports.view',
                     'reports.view_all',
                     'reports.export',
+                    # طلبات العمليات
+                    'operations.view',
+                    'operations.approve_branch',
+                    'operations.approve_gm',
+                    'operations.approve_officer',
+                    'operations.return',
+                    'operations.resubmit',
                 ],
             },
             

@@ -61,12 +61,22 @@ def _managed_branch_ids(user) -> list[int]:
 
 def _compute_sidebar_counts(user) -> dict[str, int]:
     from apps.core.models import Notification, PendingAction
+    from apps.core.services.workflow_access import can_view_operations
     from apps.core.web_views._helpers import (
         _is_branch_manager,
         _is_general_manager,
         _is_hr_officer,
     )
     from apps.employees.models import EmploymentRequest
+
+    if not can_view_operations(user):
+        return {
+            'pending_actions_count': 0,
+            'pending_for_me_count': 0,
+            'unread_notifications_count': Notification.objects.filter(
+                recipient=user, is_read=False,
+            ).count(),
+        }
 
     managed_ids = _managed_branch_ids(user)
     pending_statuses = _pending_statuses()

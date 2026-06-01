@@ -30,6 +30,7 @@ DEFAULT_MODULE_META: Dict[str, dict] = {
     'payroll':      {'name': 'الرواتب',             'icon': 'banknote',      'order': 9},
     'leaves':       {'name': 'الإجازات',            'icon': 'calendar-days', 'order': 10},
     'attendance':   {'name': 'الحضور والبصمة',      'icon': 'fingerprint',   'order': 11},
+    'operations':   {'name': 'طلبات العمليات',      'icon': 'list-checks',   'order': 12},
 }
 
 # تسميات العمليات
@@ -39,6 +40,11 @@ OPERATION_NAMES = {
     'edit':   'تعديل',
     'delete': 'حذف',
     'manage': 'إدارة',
+    'approve_branch': 'موافقة الفرع',
+    'approve_gm': 'موافقة المدير العام',
+    'approve_officer': 'تنفيذ موظف الموارد',
+    'return': 'إرجاع',
+    'resubmit': 'إعادة إرسال',
 }
 
 # الـ registry الفعلي: {module_code: {'name', 'icon', 'order', 'operations': set()}}

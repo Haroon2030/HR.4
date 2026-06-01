@@ -40,6 +40,7 @@
 {% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="calculator" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
 
+{% if user|has_permission:'operations.view' or user|has_permission:'employees.edit' %}
 <a href="{% url 'web:list_pending_actions' %}"
    class="hr-nav-link {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}is-active{% endif %}">
     <span class="hr-nav-icon relative">
@@ -60,6 +61,7 @@
     </span>
     {% endif %}
 </a>
+{% endif %}
 
 {% if user|has_permission:'attendance.view' %}
 {% include "components/nav_section.html" with label="الحضور والدوام" always_show=always_show %}

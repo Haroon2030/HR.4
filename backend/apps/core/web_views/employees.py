@@ -94,7 +94,7 @@ def add_employee(request):
         renamed = apply_uploaded_file_rename(request, 'commencement_document')
         if renamed is not None:
             files['commencement_document'] = renamed
-        form = EmploymentRequestForm(request.POST, files)
+        form = EmploymentRequestForm(request.POST, files, user=request.user)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.requested_by = request.user
@@ -104,8 +104,10 @@ def add_employee(request):
         for err in form.errors.values():
             messages.error(request, err[0])
 
+    from apps.core.services.access_control import filter_branches_queryset
+
     return render(request, 'pages/employees/form.html', {
-        'branches': Branch.objects.filter(is_active=True),
+        'branches': filter_branches_queryset(request.user, Branch.objects.filter(is_active=True)),
         'departments': Department.objects.all(),
         'cost_centers': CostCenter.objects.all(),
     })

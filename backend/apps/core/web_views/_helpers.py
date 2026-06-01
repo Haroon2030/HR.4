@@ -90,30 +90,10 @@ def filter_employees_queryset_for_user(user, queryset):
 
 
 def _user_accessible_branch_ids(user):
-    """
-    قائمة معرّفات الفروع التي يحق للمستخدم العمل عليها.
-    
-    القواعد:
-      - admin / superuser → None (أي فرع)
-      - غيرهم → الفروع التي يديرها + فرعه الشخصي + الفروع المُعيّنة له
-    """
-    if user.is_superuser:
-        return None  # بدون قيود — يصل لأي فرع
-    
-    profile = getattr(user, 'profile', None)
-    if profile and profile.role and profile.role.role_type in (
-        Role.RoleType.ADMIN,
-        Role.RoleType.HR_MANAGER,
-    ):
-        return None  # الأدمن ومدير الموارد يرون كل الفروع
-    
-    # تجميع كل الفروع المتاحة
-    ids = set(user.managed_branches.values_list('id', flat=True))  # الفروع التي يديرها
-    if profile:
-        if profile.branch_id:
-            ids.add(profile.branch_id)  # فرعه الشخصي
-        ids.update(profile.assigned_branches.values_list('id', flat=True))  # الفروع المُعيّنة
-    return ids
+    """Delegates to centralized branch scoping (see access_control)."""
+    from apps.core.services.access_control import get_accessible_branch_ids
+
+    return get_accessible_branch_ids(user)
 
 
 def employee_branch_access_required(view_func):
@@ -198,28 +178,54 @@ def _is_hr_officer(user):
 def _can_act_at_stage(user, action, stage):
     """
     هل يحق للمستخدم اتخاذ قرار (موافقة/إرجاع) في مرحلة معينة؟
-    
-    المراحل:
-      BRANCH  → مدير الفرع (يدير فرع الطلب)
-      GM      → المدير العام (admin / hr_manager / superuser)
-      OFFICER → موظف الموارد (المُسند إليه هذا الطلب تحديداً)
+    يتطلب صلاحية operations.* المناسبة + نطاق الدور/الفرع.
     """
     from apps.core.models import PendingAction
-    
-    # السوبر يوزر يقدر على كل شيء
+    from apps.core.services.workflow_access import stage_permission_required
+
     if user.is_superuser:
         return True
-    
+
+    if not stage_permission_required(user, stage):
+        return False
+
     if stage == PendingAction.Stage.BRANCH:
-        return _can_review_action(user, action)  # مدير فرع الطلب
-    
+        return _can_review_action(user, action)
+
     if stage == PendingAction.Stage.GM:
-        return _is_general_manager(user)  # مدير عام / مدير موارد
-    
+        return _is_general_manager(user)
+
     if stage == PendingAction.Stage.OFFICER:
-        return action.assigned_officer_id == user.id  # الموظف المُسند إليه فقط
-    
+        return action.assigned_officer_id == user.id
+
     return False
+
+
+def _role_ok_at_stage(user, action, stage):
+    """نطاق الدور/الفرع للمرحلة — بدون فحص صلاحية operations.*."""
+    from apps.core.models import PendingAction
+
+    if stage == PendingAction.Stage.BRANCH:
+        return _can_review_action(user, action)
+    if stage == PendingAction.Stage.GM:
+        return _is_general_manager(user)
+    if stage == PendingAction.Stage.OFFICER:
+        return action.assigned_officer_id == user.id
+    return False
+
+
+def _can_return_at_stage(user, action, stage):
+    """إرجاع الطلب — operations.return + نطاق المرحلة."""
+    from apps.core.models import Permission
+    from apps.core.services.workflow_access import can_return_operation
+
+    if user.is_superuser:
+        return True
+    if not stage or not _role_ok_at_stage(user, action, stage):
+        return False
+    if Permission.objects.filter(code='operations.return', is_active=True).exists():
+        return can_return_operation(user)
+    return True
 
 
 def general_manager_required(view_func):

@@ -137,3 +137,37 @@ class AttendanceAgentAPITests(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_device_key_cannot_ingest_other_device(self):
+        branch = self.device.branch
+        other = BiometricDevice.objects.create(
+            name='other-device',
+            ip_address='192.168.1.51',
+            port=4370,
+            branch=branch,
+        )
+        from apps.attendance.services.agent_keys import set_device_agent_key
+
+        device_key = set_device_agent_key(self.device)
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY=device_key)
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            {'device_id': other.pk, 'punches': []},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_device_key_ingest_own_device(self):
+        from apps.attendance.services.agent_keys import set_device_agent_key
+
+        device_key = set_device_agent_key(self.device)
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY=device_key)
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            {'device_id': self.device.pk, 'punches': []},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])

@@ -8,6 +8,18 @@ from django.contrib import messages
 
 from apps.core.models import Role, Branch, UserProfile
 from apps.core.forms import UserCreateForm, UserEditForm
+from apps.core.services.access_control import (
+    assignable_roles_queryset,
+    can_administer_user,
+    can_assign_role,
+    can_manage_user_permissions,
+    can_view_user,
+    filter_branches_queryset,
+    filter_users_queryset,
+    get_accessible_branch_ids,
+    validate_permission_grants,
+    validate_user_admin_changes,
+)
 
 
 # =============================================================================
@@ -23,7 +35,10 @@ def list_users(request):
     """قائمة المستخدمين والأدوار"""
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    users = User.objects.select_related('profile__role', 'profile__branch').all()
+    users = filter_users_queryset(
+        request.user,
+        User.objects.select_related('profile__role', 'profile__branch').all(),
+    )
     roles = Role.objects.all().prefetch_related('users')
     return render(request, 'pages/users/list.html', {
         'users': users,
@@ -37,6 +52,9 @@ def view_user(request, user_id):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     user = get_object_or_404(User.objects.select_related('profile__role', 'profile__branch'), id=user_id)
+    if not can_view_user(request.user, user):
+        messages.error(request, 'لا تملك صلاحية عرض هذا المستخدم.')
+        return redirect('web:list_users')
     return render(request, 'pages/users/detail.html', {'user_obj': user})
 
 
@@ -48,15 +66,12 @@ def delete_user(request, user_id):
     User = get_user_model()
     user = get_object_or_404(User, id=user_id)
 
-    # منع حذف الذات
     if user.id == request.user.id:
         messages.error(request, 'لا يمكنك حذف حسابك الخاص')
         return redirect('web:list_users')
 
-    # منع حذف المستخدمين المحميين
-    profile = getattr(user, 'profile', None)
-    if profile and getattr(profile, 'is_protected', False):
-        messages.error(request, f'لا يمكن حذف المستخدم المحمي "{user.username}"')
+    if not can_administer_user(request.user, user):
+        messages.error(request, f'لا يمكن حذف المستخدم "{user.username}"')
         return redirect('web:list_users')
 
     if request.method == 'POST':
@@ -76,9 +91,13 @@ def edit_user(request, user_id):
     
     user = get_object_or_404(User, id=user_id)
     profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    if not can_view_user(request.user, user):
+        messages.error(request, 'لا تملك صلاحية عرض هذا المستخدم.')
+        return redirect('web:list_users')
     
-    roles = Role.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True)
+    roles = assignable_roles_queryset(request.user)
+    branches = filter_branches_queryset(request.user, Branch.objects.filter(is_active=True))
     
     if request.method == 'POST':
         form = UserEditForm(request.POST, instance=user)
@@ -90,7 +109,24 @@ def edit_user(request, user_id):
             })
         cd = form.cleaned_data
 
-        # تحديث بيانات المستخدم الأساسية
+        new_role = cd.get('role')
+        new_branch = cd.get('branch')
+        assigned = cd.get('assigned_branches')
+        assigned_ids = list(assigned.values_list('id', flat=True)) if assigned is not None else None
+
+        err = validate_user_admin_changes(
+            request.user,
+            user,
+            new_role=new_role,
+            password=cd.get('password') or None,
+            is_active=cd.get('is_active'),
+            branch=new_branch,
+            assigned_branch_ids=assigned_ids,
+        )
+        if err:
+            messages.error(request, err)
+            return redirect('web:edit_user', user_id=user.id)
+
         user.username = cd['username']
         user.first_name = cd.get('first_name', '') or user.first_name
         user.last_name = cd.get('last_name', '') or user.last_name
@@ -98,7 +134,6 @@ def edit_user(request, user_id):
         if cd.get('is_active') is not None:
             user.is_active = cd['is_active']
         
-        # تحديث كلمة المرور إذا تم إدخالها
         password = cd.get('password')
         if password:
             user.set_password(password)
@@ -118,18 +153,15 @@ def edit_user(request, user_id):
 
         user.save()
         
-        # تحديث البروفايل
-        profile.role = cd.get('role')
-        profile.branch = cd.get('branch')
+        profile.role = new_role
+        profile.branch = new_branch
         profile.user_number = cd.get('user_number')
         profile.phone = cd.get('phone', '')
         profile.position = cd.get('position', '')
         profile.save()
         
-        # تحديث الفروع المكلف بها (للأخصائيين)
-        assigned_branches = cd.get('assigned_branches')
         if profile.role and profile.role.role_type == 'specialist':
-            profile.assigned_branches.set(assigned_branches or [])
+            profile.assigned_branches.set(assigned or [])
         else:
             profile.assigned_branches.clear()
         
@@ -149,8 +181,8 @@ def add_user(request):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
-    roles = Role.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True)
+    roles = assignable_roles_queryset(request.user)
+    branches = filter_branches_queryset(request.user, Branch.objects.filter(is_active=True))
     
     if request.method == 'POST':
         form = UserCreateForm(request.POST)
@@ -161,6 +193,32 @@ def add_user(request):
                 'roles': roles, 'branches': branches
             })
         cd = form.cleaned_data
+        new_role = cd.get('role')
+        new_branch = cd.get('branch')
+        assigned = cd.get('assigned_branches')
+        assigned_ids = list(assigned.values_list('id', flat=True)) if assigned is not None else None
+
+        if new_role and not can_assign_role(request.user, new_role):
+            messages.error(request, 'لا يمكنك تعيين هذا الدور.')
+            return render(request, 'pages/users/form.html', {
+                'roles': roles, 'branches': branches
+            })
+
+        accessible = get_accessible_branch_ids(request.user)
+        if accessible is not None:
+            if new_branch and new_branch.pk not in accessible:
+                messages.error(request, 'لا يمكنك تعيين فرع خارج نطاق صلاحياتك.')
+                return render(request, 'pages/users/form.html', {
+                    'roles': roles, 'branches': branches
+                })
+            if assigned_ids:
+                invalid = set(assigned_ids) - accessible
+                if invalid:
+                    messages.error(request, 'لا يمكنك تعيين فروع خارج نطاق صلاحياتك.')
+                    return render(request, 'pages/users/form.html', {
+                        'roles': roles, 'branches': branches
+                    })
+
         is_active = cd.get('is_active')
         if is_active is None:
             is_active = True
@@ -174,19 +232,16 @@ def add_user(request):
             is_active=is_active,
         )
         
-        # إنشاء البروفايل
         profile, _ = UserProfile.objects.get_or_create(user=user)
-        profile.role = cd.get('role')
-        profile.branch = cd.get('branch')
+        profile.role = new_role
+        profile.branch = new_branch
         profile.user_number = cd.get('user_number')
         profile.phone = cd.get('phone', '')
         profile.position = cd.get('position', '')
         profile.save()
         
-        # تحديث الفروع المكلف بها (للأخصائيين)
-        assigned_branches = cd.get('assigned_branches')
-        if profile.role and profile.role.role_type == 'specialist' and assigned_branches:
-            profile.assigned_branches.set(assigned_branches)
+        if profile.role and profile.role.role_type == 'specialist' and assigned:
+            profile.assigned_branches.set(assigned)
         
         messages.success(request, f'تم إنشاء المستخدم "{user.username}" بنجاح')
         return redirect('web:list_users')
@@ -203,19 +258,18 @@ def add_user(request):
 @login_required
 @permission_required('users.edit')
 def manage_user_permissions(request, user_id):
-    """إدارة الصلاحيات على مستوى المستخدم (تعديل فوق صلاحيات الدور).
-
-    لكل خانة (وحدة×عملية) ثلاث حالات:
-      - inherit  : اتبع صلاحيات الدور (افتراضي)
-      - grant    : امنح صراحةً (ستظهر في extra_permissions)
-      - deny     : امنع صراحةً (ستظهر في denied_permissions)
-    """
+    """إدارة الصلاحيات على مستوى المستخدم (تعديل فوق صلاحيات الدور)."""
     from django.contrib.auth import get_user_model
     from apps.core.models import AppModule, Permission
 
     User = get_user_model()
     user_obj = get_object_or_404(User.objects.select_related('profile__role'), id=user_id)
     profile, _ = UserProfile.objects.get_or_create(user=user_obj)
+
+    if not can_manage_user_permissions(request.user, user_obj):
+        messages.error(request, 'لا تملك صلاحية إدارة صلاحيات هذا المستخدم.')
+        return redirect('web:list_users')
+
     role = profile.role
     is_admin_user = bool(user_obj.is_superuser or (role and role.role_type == Role.RoleType.ADMIN))
 
@@ -236,10 +290,18 @@ def manage_user_permissions(request, user_id):
                 extra_ids.append(pid)
             elif val == 'deny':
                 denied_ids.append(pid)
-            # 'inherit' => لا شيء
 
         extra_qs = Permission.objects.filter(id__in=extra_ids, is_active=True)
         denied_qs = Permission.objects.filter(id__in=denied_ids, is_active=True)
+
+        grant_err = validate_permission_grants(
+            request.user,
+            extra_qs.values_list('code', flat=True),
+        )
+        if grant_err:
+            messages.error(request, grant_err)
+            return redirect('web:manage_user_permissions', user_id=user_obj.id)
+
         profile.extra_permissions.set(extra_qs)
         profile.denied_permissions.set(denied_qs)
         messages.success(
@@ -249,7 +311,6 @@ def manage_user_permissions(request, user_id):
         )
         return redirect('web:manage_user_permissions', user_id=user_obj.id)
 
-    # بناء الجدول
     modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
     operations = list(Permission.Operation.choices)
     role_perm_ids = set(role.permissions.values_list('id', flat=True)) if role else set()
@@ -291,4 +352,3 @@ def manage_user_permissions(request, user_id):
         'operations': operations,
         'matrix': matrix,
     })
-

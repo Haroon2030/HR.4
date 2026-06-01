@@ -44,11 +44,21 @@ class AccessControlMiddleware:
         if request.path.startswith('/api/v1/attendance/agent/'):
             return None
 
-        # 3. التأكد من أن المستخدم مسجل الدخول أساساً (Authentication)
+        # 3. المصادقة — جلسة أو JWT Bearer
+        if not request.user.is_authenticated:
+            try:
+                from rest_framework_simplejwt.authentication import JWTAuthentication
+
+                auth_result = JWTAuthentication().authenticate(request)
+                if auth_result is not None:
+                    request.user, _ = auth_result
+            except Exception:
+                pass
+
         if not request.user.is_authenticated:
             return JsonResponse(
-                {'detail': 'غير مصرح بالدخول. يرجى إرسال التوكن (Token) أو تسجيل الدخول.'}, 
-                status=status.HTTP_401_UNAUTHORIZED
+                {'detail': 'غير مصرح بالدخول. يرجى إرسال التوكن (Token) أو تسجيل الدخول.'},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         # 4. محاولة قراءة 'الصلاحية المطلوبة' المربوطة بالـ View

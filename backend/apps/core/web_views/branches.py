@@ -16,6 +16,7 @@ from apps.core.models import Branch, Company
 
 
 from apps.core.decorators import permission_required
+from apps.core.services.access_control import filter_branches_queryset, get_accessible_branch_ids
 
 @login_required
 @permission_required('branches.view')
@@ -25,10 +26,16 @@ def list_branches(request):
     from apps.departments.models import Department
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass, Building, Bank
     
-    # جلب جميع البيانات
-    branches = Branch.objects.select_related('company', 'manager').all()
+    branches = filter_branches_queryset(
+        request.user,
+        Branch.objects.select_related('company', 'manager').all(),
+    )
+    branch_ids = get_accessible_branch_ids(request.user)
     cost_centers = CostCenter.objects.select_related('branch').all()
     departments = Department.objects.select_related('branch', 'cost_center', 'manager').all()
+    if branch_ids is not None:
+        cost_centers = cost_centers.filter(branch_id__in=branch_ids)
+        departments = departments.filter(branch_id__in=branch_ids)
     nationalities = Nationality.objects.all()
     professions = Profession.objects.all()
     sponsorships = Sponsorship.objects.all()
@@ -55,6 +62,10 @@ def list_branches(request):
 def view_branch(request, branch_id):
     """عرض تفاصيل فرع معين"""
     branch = get_object_or_404(Branch.objects.select_related('company', 'manager'), id=branch_id)
+    accessible = get_accessible_branch_ids(request.user)
+    if accessible is not None and branch.id not in accessible:
+        messages.error(request, 'لا تملك صلاحية عرض هذا الفرع.')
+        return redirect('web:list_branches')
     employees = branch.employees.select_related('user', 'role').all()
     cost_centers = branch.cost_centers.filter(is_deleted=False).order_by('code')
     departments = branch.departments.filter(is_deleted=False).select_related('cost_center').order_by('code')

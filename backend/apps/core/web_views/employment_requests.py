@@ -15,10 +15,14 @@ from apps.core.web_views._helpers import (
     branch_manager_required,
     general_manager_required,
     hr_officer_required,
+    _can_act_at_stage,
+    _can_return_at_stage,
     _is_branch_manager,
     _is_general_manager,
     _is_hr_officer,
 )
+from apps.core.models import PendingAction
+from apps.core.services.workflow_access import stage_permission_required
 from apps.core.services import employment_requests as svc
 
 
@@ -38,7 +42,12 @@ def get_hr_officers():
 @login_required
 def list_employment_requests(request):
     """قائمة طلبات التوظيف — تظهر بحسب دور المستخدم والمرحلة."""
+    from apps.core.services.workflow_access import can_view_operations
     from apps.employees.models import EmploymentRequest
+
+    if not can_view_operations(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض طلبات التوظيف.')
+        return redirect('web:dashboard')
 
     qs = EmploymentRequest.objects.select_related(
         'branch', 'department', 'cost_center', 'requested_by',
@@ -108,6 +117,10 @@ def approve_employment_request(request, request_id):
     if request.method != 'POST':
         return redirect('web:list_employment_requests')
 
+    if not stage_permission_required(request.user, PendingAction.Stage.BRANCH):
+        messages.error(request, 'لا تملك صلاحية الموافقة على هذه المرحلة.')
+        return redirect('web:list_employment_requests')
+
     notes = request.POST.get('review_notes', '')
     try:
         svc.branch_approve(emp_req, request.user, notes=notes)
@@ -127,6 +140,10 @@ def gm_approve_employment_request(request, request_id):
     emp_req = _get_request_or_404(request_id)
 
     if request.method != 'POST':
+        return redirect('web:list_employment_requests')
+
+    if not stage_permission_required(request.user, PendingAction.Stage.GM):
+        messages.error(request, 'لا تملك صلاحية الموافقة كمدير عام.')
         return redirect('web:list_employment_requests')
 
     officer_id = request.POST.get('assigned_officer')
@@ -154,6 +171,10 @@ def officer_approve_employment_request(request, request_id):
     emp_req = _get_request_or_404(request_id)
 
     if request.method != 'POST':
+        return redirect('web:list_employment_requests')
+
+    if not stage_permission_required(request.user, PendingAction.Stage.OFFICER):
+        messages.error(request, 'لا تملك صلاحية التنفيذ.')
         return redirect('web:list_employment_requests')
 
     notes = request.POST.get('review_notes', '')
@@ -187,6 +208,11 @@ def reject_employment_request(request, request_id):
 
     if not can_reject:
         messages.error(request, 'لا تملك صلاحية رفض هذا الطلب')
+        return redirect('web:list_employment_requests')
+
+    from apps.core.services.workflow_access import can_return_operation
+    if not can_return_operation(user):
+        messages.error(request, 'لا تملك صلاحية رفض/إرجاع الطلب.')
         return redirect('web:list_employment_requests')
 
     if request.method != 'POST':

@@ -167,6 +167,11 @@ class Permission(BaseModel):
         ADD = 'add', 'إضافة'
         EDIT = 'edit', 'تعديل'
         DELETE = 'delete', 'حذف'
+        APPROVE_BRANCH = 'approve_branch', 'موافقة الفرع'
+        APPROVE_GM = 'approve_gm', 'موافقة المدير العام'
+        APPROVE_OFFICER = 'approve_officer', 'تنفيذ موظف الموارد'
+        RETURN = 'return', 'إرجاع'
+        RESUBMIT = 'resubmit', 'إعادة إرسال'
 
     module = models.ForeignKey(
         AppModule,
@@ -376,46 +381,26 @@ class UserProfile(BaseModel):
         return self.role and self.role.role_type == Role.RoleType.EMPLOYEE
     
     def get_accessible_branches(self):
-        """
-        الحصول على الفروع التي يمكن للمستخدم الوصول إليها بناءً على دوره:
-        - الأدمن: جميع الفروع
-        - مدير الموارد البشرية: جميع الفروع
-        - المدير: فرعه فقط
-        - الأخصائي: الفروع المكلف بها
-        - الموظف: فرعه فقط
-        """
-        if not self.role:
-            return Branch.objects.none()
-        
-        # الأدمن ومدير الموارد البشرية يرون كل شيء
-        if self.role.role_type in [Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER]:
-            return Branch.objects.all()
-        
-        # الأخصائي يرى الفروع المكلف بها
-        if self.role.role_type == Role.RoleType.SPECIALIST:
-            return self.assigned_branches.all()
-        
-        # المدير والموظف يرون فرعهم فقط
-        if self.branch:
-            return Branch.objects.filter(id=self.branch.id)
-        
-        return Branch.objects.none()
+        """الفروع المتاحة — نفس منطق access_control (managed + branch + assigned)."""
+        from apps.core.services.access_control import (
+            filter_branches_queryset,
+            get_accessible_branch_ids,
+        )
+
+        qs = Branch.objects.filter(is_deleted=False)
+        branch_ids = get_accessible_branch_ids(self.user)
+        if branch_ids is None:
+            return qs
+        return filter_branches_queryset(self.user, qs)
     
     def can_access_branch(self, branch):
         """هل يمكن للمستخدم الوصول لهذا الفرع؟"""
-        if not self.role:
-            return False
-        
-        # الأدمن ومدير الموارد البشرية يمكنهم الوصول لكل الفروع
-        if self.role.role_type in [Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER]:
+        from apps.core.services.access_control import get_accessible_branch_ids
+
+        branch_ids = get_accessible_branch_ids(self.user)
+        if branch_ids is None:
             return True
-        
-        # الأخصائي يمكنه الوصول للفروع المكلف بها
-        if self.role.role_type == Role.RoleType.SPECIALIST:
-            return self.assigned_branches.filter(id=branch.id).exists()
-        
-        # المدير والموظف يمكنهم الوصول لفرعهم فقط
-        return self.branch and self.branch.id == branch.id
+        return branch.id in branch_ids
     
     def can_manage_specialist_branches(self):
         """هل يمكن للمستخدم تعيين فروع للأخصائيين؟ (مدير الموارد البشرية فقط)"""

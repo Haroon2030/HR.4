@@ -19,6 +19,25 @@ from .models import (
 )
 
 
+class SuperuserOnlyAdminMixin:
+    """Restrict Django admin modules that bypass application RBAC."""
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
 class UserProfileInline(admin.StackedInline):
     """عرض ملف المستخدم داخل صفحة المستخدم"""
     model = UserProfile
@@ -30,7 +49,7 @@ class UserProfileInline(admin.StackedInline):
     filter_horizontal = ('assigned_branches',)
 
 
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(SuperuserOnlyAdminMixin, UserAdmin):
     """
     إدارة المستخدمين مع ملفاتهم
     """
@@ -53,7 +72,7 @@ class CustomUserAdmin(UserAdmin):
 
 
 @admin.register(Role)
-class RoleAdmin(admin.ModelAdmin):
+class RoleAdmin(SuperuserOnlyAdminMixin, admin.ModelAdmin):
     """
     إدارة الأدوار
     """
@@ -93,7 +112,7 @@ class RoleAdmin(admin.ModelAdmin):
 
 
 @admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
+class UserProfileAdmin(SuperuserOnlyAdminMixin, admin.ModelAdmin):
     """
     إدارة ملفات المستخدمين
     """
@@ -120,7 +139,8 @@ class UserProfileAdmin(admin.ModelAdmin):
     )
     
     def has_delete_permission(self, request, obj=None):
-        """منع حذف المستخدمين المحميين"""
+        if not request.user.is_superuser:
+            return False
         if obj and obj.is_protected:
             return False
         return super().has_delete_permission(request, obj)
