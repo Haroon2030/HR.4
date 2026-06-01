@@ -7,6 +7,7 @@ from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch, BiometricDevice
+from apps.attendance.selectors.employee_enrollment import linked_punches_q, unlinked_punches_q
 
 # الأحدث أولاً: وقت البصمة ثم معرف السجل في قاعدة البيانات
 PUNCH_LIST_ORDERING = ('-punched_at', '-id')
@@ -43,9 +44,9 @@ def get_punch_queryset(
     if punch_type:
         qs = qs.filter(punch_type=punch_type)
     if mapped_only is True:
-        qs = qs.filter(employee_id__isnull=False)
+        qs = qs.filter(linked_punches_q())
     elif mapped_only is False:
-        qs = qs.filter(employee__isnull=True)
+        qs = qs.filter(unlinked_punches_q())
     if date_from:
         start = timezone.make_aware(datetime.combine(date_from, time.min))
         qs = qs.filter(punched_at__gte=start)
@@ -79,7 +80,7 @@ def get_punch_stats(qs: QuerySet | None = None, *, device_id: int | None = None)
         total=Count('id'),
         check_in=Count('id', filter=Q(punch_type=AttendancePunch.PunchType.CHECK_IN)),
         check_out=Count('id', filter=Q(punch_type=AttendancePunch.PunchType.CHECK_OUT)),
-        unmapped=Count('id', filter=Q(employee_id__isnull=True)),
+        unmapped=Count('id', filter=unlinked_punches_q()),
         from_device=Count('id', filter=Q(punch_type_source=AttendancePunch.PunchTypeSource.DEVICE)),
         inferred=Count('id', filter=Q(punch_type_source=AttendancePunch.PunchTypeSource.INFERRED)),
     )

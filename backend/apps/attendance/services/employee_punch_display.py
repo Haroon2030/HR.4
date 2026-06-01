@@ -14,6 +14,9 @@ from apps.attendance.selectors.employee_enrollment import (
 from apps.attendance.selectors.punch_records import PUNCH_LIST_ORDERING
 from apps.employees.models import Employee
 
+# حد أمان للعرض في تبويب الموظف — الفترة الزمنية تُضيّق النتائج عادةً
+MAX_EMPLOYEE_PUNCHES_DISPLAY = 5000
+
 
 def get_or_create_biometric_settings(employee: Employee) -> EmployeeBiometricSettings:
     settings, _ = EmployeeBiometricSettings.objects.get_or_create(employee=employee)
@@ -104,7 +107,9 @@ def get_employee_punch_display(
     linked = bool(enrollments)
 
     raw_qs = base_punches_queryset(employee, date_from=date_from, date_to=date_to)
-    raw_list = list(raw_qs[:500])
+    total_raw_count = raw_qs.count()
+    raw_list = list(raw_qs[:MAX_EMPLOYEE_PUNCHES_DISPLAY])
+    truncated = total_raw_count > len(raw_list)
     punches, hidden_late = apply_late_checkin_filter(raw_list, settings)
     last_punch = punches[0] if punches else None
 
@@ -114,6 +119,8 @@ def get_employee_punch_display(
         'punches': punches,
         'last_punch': last_punch,
         'hidden_late_count': hidden_late,
-        'total_raw_count': len(raw_list),
+        'total_raw_count': total_raw_count,
+        'displayed_count': len(punches),
+        'truncated': truncated,
         'settings': settings,
     }

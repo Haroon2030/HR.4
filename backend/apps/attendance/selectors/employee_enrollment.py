@@ -1,7 +1,7 @@
 """استعلامات ربط الموظف بأجهزة البصمة."""
 from __future__ import annotations
 
-from django.db.models import Q, QuerySet
+from django.db.models import Exists, OuterRef, Q, QuerySet
 
 from apps.attendance.models import EmployeeBiometricEnrollment
 
@@ -49,3 +49,35 @@ def preferred_device_id(enrollments: list[EmployeeBiometricEnrollment]) -> int |
     if len(enrollments) == 1:
         return enrollments[0].device_id
     return enrollments[0].device_id if enrollments else None
+
+
+def _active_enrollment_exists():
+    return EmployeeBiometricEnrollment.objects.filter(
+        device_id=OuterRef('device_id'),
+        device_user_id=OuterRef('device_user_id'),
+        is_deleted=False,
+    )
+
+
+def linked_punches_q() -> Q:
+    """بصمة مربوطة: employee_id معيّن أو يوجد enrollment نشط لنفس الجهاز/المستخدم."""
+    return Q(employee_id__isnull=False) | Q(Exists(_active_enrollment_exists()))
+
+
+def unlinked_punches_q() -> Q:
+    """بصمة غير مربوطة بـ HR."""
+    return Q(employee_id__isnull=True) & ~Q(Exists(_active_enrollment_exists()))
+
+
+def load_enrollment_employee_map(device_ids: set[int] | list[int] | None = None) -> dict[tuple[int, int], object]:
+    """(device_id, device_user_id) → Employee من جدول الربط."""
+    qs = EmployeeBiometricEnrollment.objects.filter(is_deleted=False).select_related(
+        'employee', 'employee__branch', 'employee__department',
+    )
+    if device_ids:
+        qs = qs.filter(device_id__in=device_ids)
+    return {
+        (en.device_id, en.device_user_id): en.employee
+        for en in qs
+        if en.employee_id
+    }

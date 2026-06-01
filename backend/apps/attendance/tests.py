@@ -139,6 +139,70 @@ class BiometricMockTests(TestCase):
         self.assertEqual(AttendancePunch.objects.filter(device=device).count(), 1)
 
 
+class LinkedEnrollmentDisplayTests(TestCase):
+    """عرض بصمات الموظفين المربوطين حتى بدون employee_id على السجل."""
+
+    def test_mapped_filter_includes_enrollment_without_employee_id(self):
+        from apps.attendance.models import EmployeeBiometricEnrollment
+        from apps.attendance.selectors.punch_records import get_punch_queryset
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.60', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='مربوط', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp, device=device, device_user_id=5,
+        )
+        AttendancePunch.objects.create(
+            device=device,
+            employee=None,
+            device_user_id=5,
+            punched_at=timezone.now(),
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        mapped = get_punch_queryset(mapped_only=True)
+        self.assertEqual(mapped.count(), 1)
+
+    def test_daily_report_groups_enrolled_employee(self):
+        from datetime import datetime, time
+
+        from apps.attendance.models import EmployeeBiometricEnrollment
+        from apps.attendance.selectors.daily_report import build_daily_attendance_rows
+        from apps.attendance.selectors.punch_records import get_punch_queryset
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.61', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='هارون', employee_number='E1', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp, device=device, device_user_id=1,
+        )
+        tz = timezone.get_current_timezone()
+        day = timezone.localdate()
+        ts = timezone.make_aware(datetime.combine(day, time(9, 0)), tz)
+        AttendancePunch.objects.create(
+            device=device,
+            employee=None,
+            device_user_id=1,
+            punched_at=ts,
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        qs = get_punch_queryset()
+        rows = build_daily_attendance_rows(qs)
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0].is_mapped)
+        self.assertEqual(rows[0].employee_name, 'هارون')
+        self.assertEqual(rows[0].status_label, 'بصمة واحدة')
+
+
 class DeviceIpValidatorTests(TestCase):
     def test_valid_ipv4(self):
         self.assertEqual(validate_device_ipv4('192.168.24.59'), '192.168.24.59')

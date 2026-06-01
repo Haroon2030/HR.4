@@ -112,10 +112,17 @@
         </div>
     </form>
 
-    {% if fp.hidden_late_count %}
+    {% if fp.hidden_late_count or fp.truncated %}
     <p class="text-xs text-amber-900 bg-amber-50/90 border border-amber-200 rounded-lg px-3 py-2 m-0">
+        {% if fp.hidden_late_count %}
         تم إخفاء {{ fp.hidden_late_count }} بصمة دخول متأخرة (بعد وقت الدخول + {{ settings.late_grace_minutes }} دقيقة).
-        إجمالي السجلات: {{ fp.total_raw_count }} — المعروض: {{ fp.punches|length }}.
+        {% endif %}
+        إجمالي السجلات في الفترة: {{ fp.total_raw_count }} — المعروض في الجدول: {{ fp.displayed_count }}.
+        {% if fp.truncated %}
+        <strong>يُعرض أول {{ fp.displayed_count }} سجلًا فقط</strong> — ضيّق الفترة أو افتح
+        <a href="{% url 'web:attendance_records' %}?employee={{ employee.id }}&from={{ fp_date_from }}&to={{ fp_date_to }}" class="underline font-bold">سجلات الحضور</a>
+        للعرض الكامل.
+        {% endif %}
     </p>
     {% endif %}
 

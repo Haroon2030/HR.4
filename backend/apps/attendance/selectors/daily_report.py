@@ -9,6 +9,7 @@ from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch
+from apps.attendance.selectors.employee_enrollment import load_enrollment_employee_map
 
 
 @dataclass(frozen=True)
@@ -100,19 +101,37 @@ def _day_group_key(punch: AttendancePunch, day: date) -> tuple:
     return ('dev', day, punch.device_id, punch.device_user_id)
 
 
+def _resolve_employee_for_punch(punch: AttendancePunch, enroll_map: dict) -> object | None:
+    if punch.employee_id and punch.employee:
+        return punch.employee
+    return enroll_map.get((punch.device_id, punch.device_user_id))
+
+
+def _day_group_key_resolved(punch: AttendancePunch, day: date, enroll_map: dict) -> tuple:
+    employee = _resolve_employee_for_punch(punch, enroll_map)
+    if employee is not None:
+        return ('emp', day, employee.pk)
+    return ('dev', day, punch.device_id, punch.device_user_id)
+
+
 def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
     """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
+    device_ids = set(qs.values_list('device_id', flat=True).distinct())
+    enroll_map = load_enrollment_employee_map(device_ids)
+
     groups: dict[tuple, list[AttendancePunch]] = defaultdict(list)
-    for punch in qs.iterator(chunk_size=3000):
+    for punch in qs.select_related('employee', 'employee__branch', 'employee__department', 'device').iterator(
+        chunk_size=3000,
+    ):
         day = timezone.localtime(punch.punched_at).date()
-        groups[_day_group_key(punch, day)].append(punch)
+        groups[_day_group_key_resolved(punch, day, enroll_map)].append(punch)
 
     rows: list[DailyAttendanceRow] = []
     for punches in groups.values():
         punches.sort(key=lambda p: p.punched_at)
         first = punches[0]
         work_date = timezone.localtime(first.punched_at).date()
-        employee = first.employee
+        employee = _resolve_employee_for_punch(first, enroll_map)
         device_names = sorted({p.device.name for p in punches if p.device})
         device_user_ids = sorted({p.device_user_id for p in punches})
         check_in, check_out = _pick_in_out_times(punches)

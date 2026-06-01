@@ -32,6 +32,11 @@ from apps.employees.models import Employee
 
 
 def _punches_for_report(request, filters: dict):
+    from apps.attendance.selectors.employee_enrollment import (
+        apply_employee_enrollment_to_filters,
+        enrollment_filter_q,
+    )
+
     date_from = None
     date_to = None
     if filters['date_from']:
@@ -39,10 +44,17 @@ def _punches_for_report(request, filters: dict):
     if filters['date_to']:
         date_to = datetime.strptime(filters['date_to'], '%Y-%m-%d').date()
 
+    employee_id = filters['employee_id']
+    employee_enrollments = []
+    if employee_id:
+        filters = apply_employee_enrollment_to_filters(filters, employee_id)
+        employee_enrollments = filters.get('enrollments') or []
+        employee_id = None
+
     qs = get_punch_queryset(
         device_id=filters['device_id'],
         branch_ids=filters['branch_ids'],
-        employee_id=filters['employee_id'],
+        employee_id=employee_id,
         device_user_id=filters['device_user_id'],
         date_from=date_from,
         date_to=date_to,
@@ -50,7 +62,10 @@ def _punches_for_report(request, filters: dict):
         mapped_only=filters['mapped_only'],
         search=filters['search'] or None,
     )
-    return qs.filter(device_id__in=filter_biometric_devices_for_user(request.user).values('pk'))
+    qs = qs.filter(device_id__in=filter_biometric_devices_for_user(request.user).values('pk'))
+    if employee_enrollments:
+        qs = qs.filter(enrollment_filter_q(employee_enrollments))
+    return qs
 
 
 @permission_required('attendance.view')
