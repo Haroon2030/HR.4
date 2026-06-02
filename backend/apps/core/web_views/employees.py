@@ -72,11 +72,13 @@ def _save_employee_from_form(request, form):
 
 def _employee_edit_page_context(employee, *, form=None, is_create=False):
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
+    from apps.employees.services.contract_rules import saudi_nationality_ids
 
     return {
         'employee': form.instance if form is not None else employee,
         'form': form,
         'is_create': is_create,
+        'saudi_nationality_ids': saudi_nationality_ids(),
         'nationalities': Nationality.objects.filter(is_active=True),
         'professions': Profession.objects.filter(is_active=True),
         'sponsorships': Sponsorship.objects.filter(is_active=True),
@@ -245,10 +247,26 @@ def view_employee(request, employee_id):
     custodies = employee.custodies.all().order_by('-received_at', '-id')
     active_custodies = employee.custodies.filter(status='active').order_by('-received_at')
     business_trips = employee.business_trips.all().order_by('-start_date', '-id')
-    job_offers = employee.job_offers.all().order_by('-issued_at', '-id')
     loans = employee.loans.all().order_by('-issued_at', '-id')
     absences = employee.absences.all().order_by('-absence_date', '-id')
-    
+
+    from apps.employees.services.contract_rules import (
+        fourth_year_start,
+        is_saudi_nationality,
+        sync_employee_contract,
+    )
+    contract_changed = sync_employee_contract(employee)
+    if contract_changed:
+        employee.save(update_fields=[
+            'contract_type', 'contract_duration_months', 'contract_duration_text',
+            'contract_expiry_date',
+        ])
+    contract_is_saudi = is_saudi_nationality(employee.nationality)
+    contract_fourth_year_start = (
+        fourth_year_start(employee.hire_date)
+        if contract_is_saudi and employee.hire_date else None
+    )
+
     # Ledger accruals — تهيئة تلقائية إذا لم يكن هناك سجل
     accruals = []
     try:
@@ -354,9 +372,10 @@ def view_employee(request, employee_id):
         'custodies': custodies,
         'active_custodies': active_custodies,
         'business_trips': business_trips,
-        'job_offers': job_offers,
         'loans': loans,
         'absences': absences,
+        'contract_is_saudi': contract_is_saudi,
+        'contract_fourth_year_start': contract_fourth_year_start,
         'accruals': accruals,
         'fingerprint_data': fingerprint_data,
         'fp_date_from': date_from.isoformat(),

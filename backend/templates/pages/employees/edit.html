@@ -2,7 +2,44 @@
 {% load custom_tags %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'main' }">
+<div class="max-w-7xl mx-auto space-y-4" x-data="{
+    activeTab: 'main',
+    saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    getNationalityId() {
+        const el = document.querySelector('[name=nationality]');
+        return el && el.value ? parseInt(el.value, 10) : null;
+    },
+    isSaudi() {
+        const id = this.getNationalityId();
+        return id && this.saudiIds.includes(id);
+    },
+    getHireDate() {
+        const el = document.querySelector('[name=hire_date]');
+        return el ? el.value : '';
+    },
+    fourthYearStart() {
+        const hd = this.getHireDate();
+        if (!hd) return null;
+        const p = hd.split('-');
+        if (p.length !== 3) return null;
+        return (parseInt(p[0], 10) + 3) + '-' + p[1] + '-' + p[2];
+    },
+    isAutoUnlimited() {
+        if (!this.isSaudi() || !this.getHireDate()) return false;
+        const today = new Date().toISOString().slice(0, 10);
+        const fy = this.fourthYearStart();
+        return fy && today >= fy;
+    },
+    getContractType() {
+        if (this.isAutoUnlimited()) return 'unlimited';
+        const el = document.querySelector('[name=contract_type]');
+        return el ? el.value : '';
+    },
+    isFixedContract() {
+        if (this.isAutoUnlimited()) return false;
+        return this.getContractType() !== 'unlimited';
+    }
+}">
     <!-- Header -->
     <div class="flex items-center gap-3">
         {% url 'web:list_employees' as employees_list_url %}
@@ -34,6 +71,9 @@
             <nav class="hr-page-tabs__bar" role="tablist">
                 <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'main'" :class="activeTab === 'main' && 'is-active'">
                     <i data-lucide="user" class="w-4 h-4"></i><span>بيانات الموظف</span>
+                </button>
+                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'contract'" :class="activeTab === 'contract' && 'is-active'">
+                    <i data-lucide="file-signature" class="w-4 h-4"></i><span>العقد</span>
                 </button>
                 <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'salary'" :class="activeTab === 'salary' && 'is-active'">
                     <i data-lucide="wallet" class="w-4 h-4"></i><span>الراتب</span>
@@ -181,10 +221,6 @@
                         <input type="date" name="medical_insurance_expiry_date" value="{{ employee.medical_insurance_expiry_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء العقد (مخطط)</label>
-                        <input type="date" name="contract_expiry_date" value="{{ employee.contract_expiry_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    </div>
-                    <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">حالة الموظف</label>
                         <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                             <option value="active" {% if employee.status == 'active' %}selected{% endif %}>على رأس العمل</option>
@@ -196,6 +232,71 @@
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">سبب الانتهاء</label>
                         <input type="text" name="end_reason" value="{{ employee.end_reason }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: العقد -->
+            <div x-show="activeTab === 'contract'" x-cloak class="p-5 space-y-4">
+                <div x-show="isSaudi()" class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-start gap-2">
+                    <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold mb-1">قواعد عقد السعودي</p>
+                        <p>مدة العقد المحدد لا تتجاوز سنة واحدة (12 شهراً).</p>
+                        <p x-show="fourthYearStart()" class="mt-1">من بداية السنة الرابعة (<span x-text="fourthYearStart()"></span>) يتحول العقد تلقائياً إلى <strong>غير محدد المدة</strong>.</p>
+                        <p x-show="isAutoUnlimited()" class="mt-1 text-emerald-800 font-bold">✓ الموظف في مرحلة «غير محدد المدة» حسب تاريخ المباشرة.</p>
+                    </div>
+                </div>
+                <div x-show="!isSaudi() && getNationalityId()" class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-start gap-2">
+                    <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                    <span>الأجنبي: عقد <strong>محدد المدة</strong> — أدخل مدة العقد كنص (مثال: سنتان / 24 شهر).</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">نوع العقد</label>
+                        <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                                :disabled="isAutoUnlimited()"
+                                :name="isAutoUnlimited() ? '_contract_type_ui' : 'contract_type'"
+                                x-effect="if (isAutoUnlimited()) { $el.value = 'unlimited'; }">
+                            <option value="">-- اختر --</option>
+                            <option value="fixed" {% if employee.contract_type == 'fixed' %}selected{% endif %}>محدد المدة</option>
+                            <option value="unlimited" {% if employee.contract_type == 'unlimited' %}selected{% endif %}>غير محدد المدة</option>
+                        </select>
+                        <template x-if="isAutoUnlimited()">
+                        <input type="hidden" name="contract_type" value="unlimited">
+                        </template>
+                    </div>
+
+                    <div class="space-y-1.5" x-show="isSaudi() && isFixedContract()" x-cloak>
+                        <label class="block text-xs font-bold text-slate-800">مدة العقد (أشهر)</label>
+                        <input type="number" name="contract_duration_months" min="1" max="12" step="1"
+                               value="{{ employee.contract_duration_months|default:'' }}"
+                               placeholder="1–12"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <p class="text-[10px] text-slate-500">حد أقصى 12 شهراً للسعودي</p>
+                    </div>
+
+                    <div class="space-y-1.5" x-show="!isSaudi() && isFixedContract()" x-cloak>
+                        <label class="block text-xs font-bold text-slate-800">مدة العقد</label>
+                        <input type="text" name="contract_duration_text" maxlength="100"
+                               value="{{ employee.contract_duration_text|default:'' }}"
+                               placeholder="مثال: سنتان / 24 شهر"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ بداية العقد</label>
+                        <input type="date" name="contract_start_date"
+                               value="{{ employee.contract_start_date|date:'Y-m-d' }}"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+
+                    <div class="space-y-1.5" x-show="isFixedContract()" x-cloak>
+                        <label class="block text-xs font-bold text-slate-800">تاريخ نهاية العقد</label>
+                        <input type="date" name="contract_expiry_date"
+                               value="{{ employee.contract_expiry_date|date:'Y-m-d' }}"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                     </div>
                 </div>
             </div>

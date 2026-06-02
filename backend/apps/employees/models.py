@@ -298,6 +298,25 @@ class Employee(BaseModel):
         "تاريخ انتهاء العقد", null=True, blank=True,
         help_text="تاريخ نهاية العقد المخطط — منفصل عن «تاريخ التوقف» عند التصفية الفعلية.",
     )
+
+    class ContractType(models.TextChoices):
+        FIXED = 'fixed', 'محدد المدة'
+        UNLIMITED = 'unlimited', 'غير محدد المدة'
+
+    contract_type = models.CharField(
+        "نوع العقد", max_length=20,
+        choices=ContractType.choices, blank=True, default='',
+        help_text="محدد أو غير محدد المدة — يُحدَّث تلقائياً للسعودي بعد 3 سنوات.",
+    )
+    contract_start_date = models.DateField("تاريخ بداية العقد", null=True, blank=True)
+    contract_duration_months = models.PositiveSmallIntegerField(
+        "مدة العقد (أشهر)", null=True, blank=True,
+        help_text="للسعودي: حد أقصى 12 شهراً.",
+    )
+    contract_duration_text = models.CharField(
+        "مدة العقد (نص)", max_length=100, blank=True,
+        help_text="للأجنبي: مثال «سنتان» أو «24 شهر».",
+    )
     status = models.CharField(
         "حالة الموظف", max_length=20, choices=Status.choices, default=Status.ACTIVE
     )

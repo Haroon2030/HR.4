@@ -1573,7 +1573,7 @@
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='warnings'"     :class="activeTab==='warnings'     && 'is-active'">الإفادات والإنذارات</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='custodies'"    :class="activeTab==='custodies'    && 'is-active'">العهد</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='trips'"         :class="activeTab==='trips'         && 'is-active'">رحلات العمل</button>
-            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='offers'"       :class="activeTab==='offers'       && 'is-active'">العروض الوظيفية</button>
+            <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='contract'"     :class="activeTab==='contract'     && 'is-active'">العقد</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='loans'"        :class="activeTab==='loans'        && 'is-active'">السلف</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='absences'"      :class="activeTab==='absences'      && 'is-active'">الغيابات</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='fingerprint'"  :class="activeTab==='fingerprint'  && 'is-active'">البصمة</button>
@@ -1609,7 +1609,6 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">السكن</div><div class="text-sm text-slate-800">{{ employee.housing.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.get_health_card_status_display|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.health_card_expiry|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء العقد (مخطط)</div><div class="text-sm text-slate-800">{{ employee.contract_expiry_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الحالة</div><div class="text-sm text-slate-800">{{ employee.get_status_display|default:"—" }}</div></div>
                 <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
@@ -2111,39 +2110,46 @@
                 {% endif %}
             </div>
 
-            <!-- Job Offers -->
-            <div x-show="activeTab==='offers'" class="space-y-3" style="display:none">
-                {% if job_offers %}
-                <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-slate-600 text-xs">
-                            <tr>
-                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
-                                <th class="px-3 py-2 text-right font-bold">الجهة الموجَّه إليها</th>
-                                <th class="px-3 py-2 text-right font-bold">الغرض</th>
-                                <th class="px-3 py-2 text-right font-bold">تاريخ الإصدار</th>
-                                <th class="px-3 py-2 text-right font-bold">المستند</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            {% for o in job_offers %}
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ o.serial_number|default:"—" }}</td>
-                                <td class="px-3 py-2 font-bold text-slate-800">{{ o.addressed_to }}</td>
-                                <td class="px-3 py-2">{{ o.purpose|default:"—" }}</td>
-                                <td class="px-3 py-2">{{ o.issued_at|date:"Y/m/d" }}</td>
-                                <td class="px-3 py-2">{% if o.document %}{% include "components/table_act_file.html" with url=o.document.url title="عرض الملف" %}{% else %}—{% endif %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
-                    <i data-lucide="file-badge" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                    لا توجد عروض وظيفية مسجلة لهذا الموظف
+            <!-- Contract -->
+            <div x-show="activeTab==='contract'" class="space-y-4" style="display:none">
+                {% if contract_is_saudi and contract_fourth_year_start %}
+                <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-start gap-2">
+                    <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="font-bold mb-1">قواعد عقد السعودي</p>
+                        <p>من بداية السنة الرابعة ({{ contract_fourth_year_start|date:"Y/m/d" }}) يتحول العقد تلقائياً إلى غير محدد المدة.</p>
+                        {% if employee.contract_type == 'unlimited' %}
+                        <p class="mt-1 text-emerald-800 font-bold">العقد الحالي: غير محدد المدة</p>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endif %}
+                <div class="hr-glass-field-table-wrap">
+                <div class="hr-field-grid hr-glass-field-table">
+                    <div><div class="text-xs font-bold text-slate-500 mb-1">نوع العقد</div><div class="text-sm text-slate-800">{% if employee.contract_type %}{{ employee.get_contract_type_display }}{% else %}—{% endif %}</div></div>
+                    {% if employee.contract_type == 'fixed' %}
+                        {% if contract_is_saudi %}
+                        <div><div class="text-xs font-bold text-slate-500 mb-1">مدة العقد (أشهر)</div><div class="text-sm text-slate-800">{{ employee.contract_duration_months|default:"—" }}</div></div>
+                        {% else %}
+                        <div><div class="text-xs font-bold text-slate-500 mb-1">مدة العقد</div><div class="text-sm text-slate-800">{{ employee.contract_duration_text|default:"—" }}</div></div>
+                        {% endif %}
+                    {% endif %}
+                    <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ بداية العقد</div><div class="text-sm text-slate-800">{{ employee.contract_start_date|default:"—" }}</div></div>
+                    {% if employee.contract_type != 'unlimited' %}
+                    <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ نهاية العقد</div><div class="text-sm text-slate-800">{{ employee.contract_expiry_date|default:"—" }}</div></div>
+                    {% endif %}
+                    <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ المباشرة</div><div class="text-sm text-slate-800">{{ employee.hire_date|default:"—" }}</div></div>
+                    <div><div class="text-xs font-bold text-slate-500 mb-1">الجنسية</div><div class="text-sm text-slate-800">{{ employee.nationality.name|default:"—" }}</div></div>
+                    <div class="hr-field-item--full">
+                        <div class="text-xs font-bold text-slate-500 mb-1">مستند العقد</div>
+                        <div class="text-sm text-slate-800">
+                            {% if employee.contract_document %}
+                            {% include "components/table_act_file.html" with url=employee.contract_document.url title="عرض العقد" %}
+                            {% else %}—{% endif %}
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
 
             <!-- Loans -->

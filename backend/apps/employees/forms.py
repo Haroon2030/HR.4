@@ -83,7 +83,9 @@ _EMPLOYEE_FIELDS = [
     'administration', 'cost_center', 'insurance', 'insurance_class', 'housing',
     # تواريخ + حالة
     'hire_date', 'end_date',
-    'medical_insurance_expiry_date', 'contract_expiry_date', 'status', 'end_reason',
+    'medical_insurance_expiry_date', 'contract_expiry_date',
+    'contract_type', 'contract_start_date', 'contract_duration_months', 'contract_duration_text',
+    'status', 'end_reason',
     # الكرت الصحي
     'health_card_status', 'health_card_expiry',
     # راتب
@@ -173,7 +175,55 @@ class EmployeeForm(forms.ModelForm):
             cleaned[field_name] = _normalize_non_null_decimal(
                 cleaned.get(field_name), instance, field_name,
             )
+
+        from apps.employees.services.contract_rules import (
+            sync_employee_contract,
+            validate_contract_fields,
+        )
+
+        nationality = cleaned.get('nationality') or (
+            instance.nationality if instance and instance.pk else None
+        )
+        hire_date = cleaned.get('hire_date') or (
+            instance.hire_date if instance and instance.pk else None
+        )
+
+        temp = instance if instance and instance.pk else Employee()
+        for key in (
+            'nationality', 'hire_date', 'contract_type', 'contract_start_date',
+            'contract_duration_months', 'contract_duration_text', 'contract_expiry_date',
+        ):
+            if key in cleaned:
+                setattr(temp, key, cleaned.get(key))
+
+        sync_employee_contract(temp)
+        cleaned['contract_type'] = temp.contract_type
+        cleaned['contract_duration_months'] = temp.contract_duration_months
+        cleaned['contract_duration_text'] = temp.contract_duration_text
+        cleaned['contract_expiry_date'] = temp.contract_expiry_date
+
+        contract_errors = validate_contract_fields(
+            nationality=nationality,
+            hire_date=hire_date,
+            contract_type=cleaned.get('contract_type') or '',
+            contract_duration_months=cleaned.get('contract_duration_months'),
+            contract_duration_text=cleaned.get('contract_duration_text') or '',
+            contract_start_date=cleaned.get('contract_start_date'),
+            contract_expiry_date=cleaned.get('contract_expiry_date'),
+        )
+        for field, msg in contract_errors.items():
+            if field in self.fields:
+                self.add_error(field, msg)
+
         return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        from apps.employees.services.contract_rules import sync_employee_contract
+        sync_employee_contract(instance)
+        if commit:
+            instance.save()
+        return instance
 
 
 class EmploymentRequestForm(forms.ModelForm):
