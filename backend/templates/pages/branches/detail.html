@@ -121,8 +121,7 @@
         </div>
     </div>
 
-    <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
-        <nav class="hr-page-tabs__bar" role="tablist">
+    {% include "components/page_tabs_start.html" with aria_label="أقسام الفرع" %}
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'employees'" :class="activeTab === 'employees' && 'is-active'">
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span>الموظفون ({{ employees.count }})</span>
@@ -135,7 +134,7 @@
                 <i data-lucide="grid-3x3" class="w-4 h-4"></i>
                 <span>الأقسام ({{ departments.count }})</span>
             </button>
-        </nav>
+        {% include "components/page_tabs_body_start.html" %}
 
         <!-- Tab Content: Employees -->
         <div x-show="activeTab === 'employees'" class="fade-in">
@@ -320,7 +319,7 @@
             </div>
             {% endif %}
         </div>
-    </div>
+    {% include "components/page_tabs_end.html" %}
 </div>
 
 <script>

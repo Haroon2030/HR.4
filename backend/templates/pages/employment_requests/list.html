@@ -14,7 +14,8 @@
 
     {% include "components/operations_tabs.html" %}
 
-    <nav class="hr-page-tabs__bar hr-glass-panel rounded-xl" role="tablist" aria-label="تصفية حالة الطلب">
+    <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
+    <nav class="hr-page-tabs__bar" role="tablist" aria-label="تصفية حالة الطلب">
         <a href="?status=pending" role="tab" class="hr-tab-btn hr-tab-btn--amber{% if current_status == 'pending' %} is-active{% endif %}">
             <i data-lucide="clock" class="w-4 h-4"></i>
             <span>قيد المراجعة (الكل)</span>
@@ -40,6 +41,7 @@
             <span>مرفوضة</span>
         </a>
     </nav>
+    </div>
 
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

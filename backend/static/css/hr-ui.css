@@ -63,6 +63,15 @@
         rgba(255, 241, 242, 0.88) 50%,
         rgba(254, 226, 226, 0.78) 100%
     );
+    /* تبويبات الصفحات — حدود وفواصل موحّدة */
+    --hr-tab-idle-bg: rgba(255, 255, 255, 0.32);
+    --hr-tab-idle-border: rgba(203, 213, 225, 0.62);
+    --hr-tab-separator: rgba(148, 163, 184, 0.72);
+    --hr-tab-separator-shadow: rgba(148, 163, 184, 0.22);
+    /* حقل البحث الزجاجي */
+    --hr-search-icon-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(219, 234, 254, 0.9) 100%);
+    --hr-search-icon-border: rgba(96, 165, 250, 0.55);
+    --hr-search-icon-color: rgb(29 78 216);
 }
 
 /* خلفية زجاجية بيضاء للتطبيق */
@@ -673,9 +682,12 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
     stroke: currentColor !important;
 }
 
-.hr-tabs__panel {
-    background: var(--hr-white);
-    border-top: 3px solid var(--hr-accent-soft);
+.hr-tabs__panel,
+body.hr-app .hr-page-tabs__body {
+    background: var(--hr-glass-bg-strong) !important;
+    backdrop-filter: var(--hr-glass-blur);
+    -webkit-backdrop-filter: var(--hr-glass-blur);
+    border-top: 1px solid var(--hr-glass-line);
 }
 
 /* ── إجراءات الجداول (أيقونات فقط) ── */
@@ -897,9 +909,12 @@ body.hr-app .hr-glass-panel.hr-page-tabs {
     z-index: 10;
 }
 
-/* ── تبويبات زجاجية موحّدة (كل الموقع) ── */
+/* ── تبويبات زجاجية موحّدة (كل الموقع) ──
+   الهيكل المعياري: page_tabs_start → أزرار hr-tab-btn → page_tabs_body_start → محتوى → page_tabs_end */
 body.hr-app .hr-page-tabs__bar,
-body.hr-app .hr-tabs__bar {
+body.hr-app .hr-tabs__bar,
+body.hr-app [role="tablist"].hr-page-tabs__bar,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
@@ -911,6 +926,7 @@ body.hr-app .hr-tabs__bar {
     border-bottom: 1px solid var(--hr-glass-line);
 }
 
+body.hr-app [role="tablist"] > [role="tab"],
 body.hr-app .hr-tab-btn,
 body.hr-app .hr-tab,
 body.hr-app .hr-report-tab {
@@ -925,8 +941,8 @@ body.hr-app .hr-report-tab {
     font-weight: 700 !important;
     line-height: 1.35;
     color: rgb(100 116 139);
-    background: rgba(255, 255, 255, 0.32);
-    border: 1px solid rgba(203, 213, 225, 0.62);
+    background: var(--hr-tab-idle-bg);
+    border: 1px solid var(--hr-tab-idle-border);
     border-bottom: none;
     border-radius: 0.65rem 0.65rem 0 0;
     cursor: pointer;
@@ -941,6 +957,7 @@ body.hr-app .hr-report-tab {
 }
 
 /* فاصل خفيف بين التبويبات المتجاورة */
+body.hr-app [role="tablist"] > [role="tab"] + [role="tab"],
 body.hr-app .hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn,
 body.hr-app .hr-page-tabs__bar > .hr-tab + .hr-tab,
 body.hr-app .hr-tabs__bar > .hr-tab-btn + .hr-tab-btn,
@@ -949,11 +966,17 @@ body.hr-app nav.hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn,
 body.hr-app nav.hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn,
 body.hr-app [role="tablist"].hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn,
 body.hr-app [role="tablist"].hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn {
-    border-inline-start-color: rgba(148, 163, 184, 0.72);
-    box-shadow: inset 1px 0 0 rgba(148, 163, 184, 0.22);
+    border-inline-start-color: var(--hr-tab-separator);
+    box-shadow: inset 1px 0 0 var(--hr-tab-separator-shadow);
 }
 
 /* إخفاء الفاصل المزدوج بجانب التبويب النشط */
+body.hr-app [role="tablist"] > [role="tab"].is-active + [role="tab"],
+body.hr-app [role="tablist"] > [role="tab"] + [role="tab"].is-active,
+body.hr-app [role="tablist"] > [role="tab"].hr-tab--active + [role="tab"],
+body.hr-app [role="tablist"] > [role="tab"] + [role="tab"].hr-tab--active,
+body.hr-app [role="tablist"] > [role="tab"][aria-selected="true"] + [role="tab"],
+body.hr-app [role="tablist"] > [role="tab"] + [role="tab"][aria-selected="true"],
 body.hr-app .hr-page-tabs__bar > .hr-tab-btn.is-active + .hr-tab-btn,
 body.hr-app .hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn.is-active,
 body.hr-app .hr-page-tabs__bar > .hr-tab.hr-tab--active + .hr-tab,
@@ -967,6 +990,11 @@ body.hr-app nav.hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn.is-active {
 }
 
 /* تبويب نشط أو عند المرور — نفس المظهر الزجاجي */
+body.hr-app [role="tablist"] > [role="tab"].is-active,
+body.hr-app [role="tablist"] > [role="tab"].hr-tab--active,
+body.hr-app [role="tablist"] > [role="tab"][aria-selected="true"],
+body.hr-app [role="tablist"] > [role="tab"]:hover:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app [role="tablist"] > [role="tab"]:focus-visible:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
 body.hr-app .hr-tab-btn.is-active,
 body.hr-app .hr-tab-btn.hr-tab--active,
 body.hr-app .hr-tab.hr-tab--active,
@@ -1452,6 +1480,8 @@ body.hr-app .hr-main .bg-white.rounded-xl table {
     backdrop-filter: var(--hr-glass-blur);
     -webkit-backdrop-filter: var(--hr-glass-blur);
 }
+
+/* محتوى التبويب — يُدمج مع التعريف أعلاه عند استخدام hr-page-tabs__body */
 
 /* ══════════════════════════════════════════════════════════════
    أزرار زجاجية — كل التطبيق (أساسي / ثانوي / خطر / نجاح)
@@ -2634,32 +2664,160 @@ body.hr-app .hr-topbar.is-scrolled {
     width: min(22rem, 42vw);
 }
 
-.hr-topbar-search__icon {
+.hr-topbar-search__icon,
+.hr-search-field__icon {
     position: absolute;
-    right: 0.85rem;
+    right: 0.65rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #94a3b8 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.2rem;
+    border-radius: 0.5rem;
+    color: var(--hr-search-icon-color) !important;
+    background: var(--hr-search-icon-bg);
+    backdrop-filter: blur(10px) saturate(1.15);
+    -webkit-backdrop-filter: blur(10px) saturate(1.15);
+    border: 1px solid var(--hr-search-icon-border);
+    box-shadow:
+        0 1px 4px rgba(59, 130, 246, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
     pointer-events: none;
+    z-index: 2;
+    opacity: 1 !important;
 }
 
-.hr-topbar-search__input {
+.hr-topbar-search__icon svg,
+.hr-search-field__icon svg,
+body.hr-app .relative > i[data-lucide="search"] svg {
+    stroke: currentColor !important;
+    color: inherit;
+}
+
+.hr-topbar-search__input,
+.hr-search-field__input {
     width: 100%;
     height: 2.5rem;
-    padding: 0 2.5rem 0 1rem;
-    border: none;
-    border-radius: 999px;
-    background: #f1f5f9;
+    padding: 0 3rem 0 1rem;
+    border: 1px solid var(--hr-glass-line) !important;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: #0f172a;
     font-size: 0.8125rem;
     font-weight: 600;
     outline: none;
-    transition: background 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.hr-topbar-search__input:focus {
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.hr-topbar-search__input {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.hr-topbar-search__input:focus,
+.hr-search-field__input:focus {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(59, 130, 246, 0.55) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* ── بحث زجاجي — كل الحقول ذات أيقونة search (تلقائي) ── */
+body.hr-app .hr-search-field {
+    position: relative;
+    width: 100%;
+}
+
+body.hr-app .hr-search-field__input.pl-10,
+body.hr-app .hr-search-field__input[class*="pl-"] {
+    padding-inline-start: 2.5rem !important;
+}
+
+body.hr-app .relative:has(> i[data-lucide="search"]):has(> input[type="text"]),
+body.hr-app .relative:has(> i[data-lucide="search"]):has(> input[type="search"]) {
+    position: relative;
+}
+
+body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > i[data-lucide="search"] {
+    position: absolute;
+    right: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.2rem;
+    border-radius: 0.5rem;
+    color: var(--hr-search-icon-color) !important;
+    background: var(--hr-search-icon-bg);
+    backdrop-filter: blur(10px) saturate(1.15);
+    -webkit-backdrop-filter: blur(10px) saturate(1.15);
+    border: 1px solid var(--hr-search-icon-border);
+    box-shadow:
+        0 1px 4px rgba(59, 130, 246, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 1 !important;
+}
+
+body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > input {
+    padding-inline-end: 3rem !important;
+    background: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hr-glass-line) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > input:focus {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(59, 130, 246, 0.55) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 0 0 3px rgba(59, 130, 246, 0.12);
+    outline: none;
+}
+
+/* أيقونة البحث داخل أزرار الإرسال — بدون شارة زجاجية */
+body.hr-app button > i[data-lucide="search"],
+body.hr-app a[class*="bg-primary"] > i[data-lucide="search"],
+body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
+    position: static !important;
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    color: inherit !important;
+}
+
+/* employee-search-picker — أيقونة البحث في رأس المكوّن */
+body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
+    position: static;
+    transform: none;
+    width: auto;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: rgb(37 99 235) !important;
+}
+
+    /* يبقى الزجاجي داخل حقل الإدخال عبر :has() */
 }
 
 .hr-topbar-actions {

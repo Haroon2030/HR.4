@@ -1,0 +1,6 @@
+{# بداية حاوية التبويبات الموحّدة — استخدم مع page_tabs_body_start و page_tabs_end
+   aria_label: وصف اختياري لشريط التبويب
+   wrapper_class: يستبدل الغلاف الافتراضي (مثال: hr-glass-form hr-page-tabs bg-white rounded-xl ...)
+   extra_class: كلاسات إضافية على الغلاف #}
+<div class="{% if wrapper_class %}{{ wrapper_class }}{% else %}hr-glass-panel hr-page-tabs rounded-xl overflow-hidden{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}">
+<nav class="hr-page-tabs__bar" role="tablist"{% if aria_label %} aria-label="{{ aria_label }}"{% endif %}>

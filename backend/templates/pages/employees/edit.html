@@ -67,8 +67,7 @@
         </div>
         {% endif %}
 
-        <div class="hr-glass-form hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <nav class="hr-page-tabs__bar" role="tablist">
+        {% include "components/page_tabs_start.html" with wrapper_class="hr-glass-form hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" aria_label="أقسام ملف الموظف" %}
                 <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'main'" :class="activeTab === 'main' && 'is-active'">
                     <i data-lucide="user" class="w-4 h-4"></i><span>بيانات الموظف</span>
                 </button>
@@ -93,7 +92,7 @@
                 <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'archive'" :class="activeTab === 'archive' && 'is-active'">
                     <i data-lucide="archive" class="w-4 h-4"></i><span>أرشيف الحركة</span>
                 </button>
-            </nav>
+        {% include "components/page_tabs_body_start.html" %}
 
             <!-- Tab 1: بيانات الموظف -->
             <div x-show="activeTab === 'main'" x-cloak class="p-5">
@@ -535,7 +534,7 @@
                     سيظهر هنا أرشيف حركة الموظف (التنقلات بين الفروع، التغييرات في الراتب، إلخ)
                 </div>
             </div>
-        </div>
+        {% include "components/page_tabs_end.html" %}
 
         <!-- Actions -->
         <div class="flex items-center justify-end gap-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">

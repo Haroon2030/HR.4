@@ -1,5 +1,5 @@
-{# تبويبات مشتركة بين طلبات العمليات وطلبات التوظيف #}
-<nav class="hr-page-tabs__bar rounded-t-xl" role="tablist">
+{# تبويبات مشتركة بين طلبات العمليات وطلبات التوظيف — يُفضّل لفها hr-page-tabs كاملة عند الإمكان #}
+<nav class="hr-page-tabs__bar rounded-t-xl" role="tablist" aria-label="نوع الطلبات">
     <a href="{% url 'web:list_pending_actions' %}" role="tab"
        class="hr-tab-btn{% if request.resolver_match.url_name == 'list_pending_actions' %} is-active{% endif %}">
         <i data-lucide="list-checks" class="w-4 h-4"></i>

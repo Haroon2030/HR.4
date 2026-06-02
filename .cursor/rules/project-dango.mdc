@@ -344,6 +344,15 @@ Example:
 - Arabic-friendly interfaces
 - Responsive layouts
 
+## Page Tabs (unified — all templates)
+
+- Use includes in order: `page_tabs_start.html` → tab buttons → `page_tabs_body_start.html` → panels → `page_tabs_end.html`
+- Every tab: `role="tab"` + class `hr-tab-btn` (optional `hr-tab-btn--emerald|rose|amber|indigo|purple|slate`)
+- Active: `is-active`, or `hr-tab--active`, or `aria-selected="true"`
+- Bar: `nav.hr-page-tabs__bar` + `role="tablist"`; wrapper: `hr-glass-panel hr-page-tabs`
+- Styling only in `backend/static/css/hr-ui.css` — no per-page tab CSS
+- Search fields: use `components/search_field.html` or `relative` + `i[data-lucide="search"]` + input (auto glass via CSS)
+
 ---
 
 # Important

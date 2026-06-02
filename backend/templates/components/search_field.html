@@ -1,0 +1,13 @@
+{# حقل بحث زجاجي موحّد — استخدم في كل الصفحات
+   name, value, placeholder, input_type (text|search), extra_class, id, aria_label #}
+<div class="hr-search-field{% if extra_class %} {{ extra_class }}{% endif %}">
+    <i data-lucide="search" class="hr-search-field__icon w-4 h-4" aria-hidden="true"></i>
+    <input type="{{ input_type|default:'text' }}"
+           name="{{ name|default:'q' }}"
+           {% if id %}id="{{ id }}"{% endif %}
+           value="{{ value|default:'' }}"
+           placeholder="{{ placeholder|default:'ابحث...' }}"
+           class="hr-search-field__input"
+           {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}
+           autocomplete="off">
+</div>

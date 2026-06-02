@@ -1564,8 +1564,7 @@
     </div>
 
     <!-- Tabs -->
-    <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
-        <div class="hr-page-tabs__bar" role="tablist">
+    {% include "components/page_tabs_start.html" with aria_label="أقسام ملف الموظف" %}
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='main'"         :class="activeTab==='main'         && 'is-active'">بيانات الموظف</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='salary'"       :class="activeTab==='salary'       && 'is-active'">الراتب</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='leaves'"       :class="activeTab==='leaves'       && 'is-active'">الإجازات</button>
@@ -1581,9 +1580,7 @@
             <button type="button" role="tab" class="hr-tab-btn hr-tab-btn--emerald" @click="activeTab='accruals'" :class="activeTab==='accruals' && 'is-active'">المخصصات والأرصدة</button>
             <button type="button" role="tab" class="hr-tab-btn" @click="activeTab='archive'"      :class="activeTab==='archive'      && 'is-active'">أرشيف الحركة</button>
             <button type="button" role="tab" class="hr-tab-btn hr-tab-btn--rose" @click="activeTab='termination'" :class="activeTab==='termination' && 'is-active'">التصفيات</button>
-        </div>
-
-        <div class="p-6">
+    {% include "components/page_tabs_body_start.html" with body_class="p-6" %}
 
             <!-- Main -->
             <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
@@ -2780,8 +2777,7 @@
                 </div>
             </div>
 
-        </div>
-    </div>
+    {% include "components/page_tabs_end.html" %}
 </div>
 
 {{ schedule_boxes_json|json_script:"schedule-boxes-data" }}

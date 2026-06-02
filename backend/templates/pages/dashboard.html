@@ -58,11 +58,7 @@
                         <span class="px-2 py-0.5 text-xs font-bold bg-primary-100 text-primary-800 rounded-full">{{ inbox_total }}</span>
                     </div>
                     <form method="get" class="flex items-center gap-2 w-full sm:w-auto">
-                        <div class="relative flex-1 sm:w-64">
-                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
-                            <input type="text" name="q" value="{{ inbox_query }}" placeholder="ابحث عن مهمة..."
-                                class="w-full pr-9 pl-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
-                        </div>
+                        {% include "components/search_field.html" with name="q" value=inbox_query placeholder="ابحث عن مهمة..." extra_class="flex-1 sm:w-64" aria_label="بحث في المهام" %}
                         <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
                             <i data-lucide="search" class="w-4 h-4"></i> بحث
                         </button>

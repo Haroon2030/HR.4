@@ -39,8 +39,7 @@
     <form method="post" enctype="multipart/form-data" class="space-y-4">
         {% csrf_token %}
 
-        <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
-            <nav class="hr-page-tabs__bar" role="tablist">
+        {% include "components/page_tabs_start.html" with aria_label="أقسام طلب التوظيف" %}
                 <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'main'" :class="activeTab === 'main' && 'is-active'">
                     <i data-lucide="user" class="w-4 h-4"></i><span>بيانات الموظف</span>
                 </button>
@@ -53,7 +52,7 @@
                 <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'docs'" :class="activeTab === 'docs' && 'is-active'">
                     <i data-lucide="files" class="w-4 h-4"></i><span>المستندات</span>
                 </button>
-            </nav>
+        {% include "components/page_tabs_body_start.html" %}
 
             {# ─── Tab 1: بيانات الموظف الأساسية ──────────────────────── #}
             <div x-show="activeTab === 'main'" class="p-5">
@@ -112,7 +111,7 @@
                     {% include "pages/employment_requests/_file_field.html" with field=form.other_documents %}
                 </div>
             </div>
-        </div>
+        {% include "components/page_tabs_end.html" %}
 
         {# ─── أزرار الإجراءات ──────────────────────────────────── #}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
