@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'main' }">
@@ -14,6 +15,20 @@
 
     <form method="post" enctype="multipart/form-data" class="space-y-4">
         {% csrf_token %}
+
+        {% if form and form.errors %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">
+            <p class="font-bold mb-2 flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                تعذّر الحفظ — راجع الحقول التالية:
+            </p>
+            <ul class="list-disc list-inside space-y-1 text-xs">
+                {% for field, errors in form.errors.items %}
+                <li><strong>{{ field }}:</strong> {{ errors.0 }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
 
         <div class="hr-glass-form hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <nav class="hr-page-tabs__bar" role="tablist">
@@ -45,7 +60,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">الاسم <span class="text-red-500">*</span></label>
-                        <input type="text" name="name" required value="{{ employee.name }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        <input type="text" name="name" required value="{% if form %}{{ form.name.value|default:employee.name }}{% else %}{{ employee.name }}{% endif %}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">الجنس</label>
@@ -374,23 +389,23 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
                         {% if employee.commencement_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.commencement_document.url title="مستند المباشرة" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' %}
+                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' existing_filename=employee.commencement_document.name|basename %}
                     </div>
                     <div class="space-y-1.5">
                         {% if employee.id_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.id_document.url title="صورة الهوية" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='id_document' label='صورة الهوية' accept='image/*,.pdf' %}
+                        {% include 'components/file_upload.html' with name='id_document' label='صورة الهوية' accept='image/*,.pdf' existing_filename=employee.id_document.name|basename %}
                     </div>
                     <div class="space-y-1.5">
                         {% if employee.passport_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.passport_document.url title="جواز السفر" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='passport_document' label='جواز السفر' accept='image/*,.pdf' %}
+                        {% include 'components/file_upload.html' with name='passport_document' label='جواز السفر' accept='image/*,.pdf' existing_filename=employee.passport_document.name|basename %}
                     </div>
                     <div class="space-y-1.5">
                         {% if employee.contract_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.contract_document.url title="العقد" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='contract_document' label='العقد' accept='image/*,.pdf' %}
+                        {% include 'components/file_upload.html' with name='contract_document' label='العقد' accept='image/*,.pdf' existing_filename=employee.contract_document.name|basename %}
                     </div>
                     <div class="space-y-1.5">
                         {% if employee.other_documents %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.other_documents.url title="مستندات أخرى" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='other_documents' label='مستندات أخرى' accept='image/*,.pdf' %}
+                        {% include 'components/file_upload.html' with name='other_documents' label='مستندات أخرى' accept='image/*,.pdf' existing_filename=employee.other_documents.name|basename %}
                     </div>
                 </div>
             </div>

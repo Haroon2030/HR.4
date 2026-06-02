@@ -42,6 +42,54 @@ def _administrations_qs():
     from apps.setup.models import Administration
     return Administration.objects.filter(is_active=True, is_deleted=False).order_by('code', 'name')
 
+
+_EMPLOYEE_DOC_FIELDS = (
+    'id_document', 'passport_document', 'contract_document',
+    'other_documents', 'commencement_document',
+)
+
+
+def _prepare_employee_upload_files(request):
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    files = request.FILES.copy()
+    for field_name in _EMPLOYEE_DOC_FIELDS:
+        renamed = apply_uploaded_file_rename(request, field_name)
+        if renamed is not None:
+            files[field_name] = renamed
+    return files
+
+
+def _save_employee_from_form(request, form):
+    from apps.core.services.file_helpers import apply_employee_document_renames
+
+    employee = form.save()
+    updated = apply_employee_document_renames(employee, request)
+    if updated:
+        employee.save(update_fields=[*updated, 'updated_at'])
+    return employee
+
+
+def _employee_edit_page_context(employee, *, form=None, is_create=False):
+    from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
+
+    return {
+        'employee': form.instance if form is not None else employee,
+        'form': form,
+        'is_create': is_create,
+        'nationalities': Nationality.objects.filter(is_active=True),
+        'professions': Profession.objects.filter(is_active=True),
+        'sponsorships': Sponsorship.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(is_active=True),
+        'departments': Department.objects.all(),
+        'cost_centers': CostCenter.objects.all(),
+        'insurances': Insurance.objects.filter(is_active=True),
+        'insurance_classes': InsuranceClass.objects.filter(is_active=True),
+        'buildings': _buildings_qs(),
+        'banks': _banks_qs(),
+        'administrations': _administrations_qs(),
+    }
+
 @login_required
 @permission_required('employees.view')
 def list_employees(request):
@@ -127,43 +175,29 @@ def add_employee(request):
 @general_manager_required
 def create_employee_full(request):
     """إنشاء موظف مباشرة عبر النموذج الرئيسي الكامل (7 تبويبات)"""
-    from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
     from apps.employees.models import Employee
     from apps.employees.forms import EmployeeForm
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     if request.method == 'POST':
-        # تطبيق إعادة تسمية الملفات قبل تمريرها للـ form
-        files = request.FILES.copy()
-        for f in ('id_document', 'passport_document', 'contract_document',
-                  'other_documents', 'commencement_document'):
-            renamed = apply_uploaded_file_rename(request, f)
-            if renamed is not None:
-                files[f] = renamed
-
+        files = _prepare_employee_upload_files(request)
         form = EmployeeForm(request.POST, files)
         if form.is_valid():
-            emp = form.save()
+            emp = _save_employee_from_form(request, form)
             messages.success(request, f'تم إضافة الموظف "{emp.name}" بنجاح')
-            return redirect('web:list_employees')
-        for err in form.errors.values():
-            messages.error(request, err[0])
+            return redirect('web:edit_employee', employee_id=emp.id)
+        for field, errors in form.errors.items():
+            messages.error(request, f'{field}: {errors[0]}')
+        return render(
+            request,
+            'pages/employees/edit.html',
+            _employee_edit_page_context(Employee(), form=form, is_create=True),
+        )
 
-    return render(request, 'pages/employees/edit.html', {
-        'employee': Employee(),  # كائن فارغ لإعادة استخدام نفس القالب
-        'is_create': True,
-        'nationalities': Nationality.objects.filter(is_active=True),
-        'professions': Profession.objects.filter(is_active=True),
-        'sponsorships': Sponsorship.objects.filter(is_active=True),
-        'branches': Branch.objects.filter(is_active=True),
-        'departments': Department.objects.all(),
-        'cost_centers': CostCenter.objects.all(),
-        'insurances': Insurance.objects.filter(is_active=True),
-        'insurance_classes': InsuranceClass.objects.filter(is_active=True),
-        'buildings': _buildings_qs(),
-        'banks': _banks_qs(),
-        'administrations': _administrations_qs(),
-    })
+    return render(
+        request,
+        'pages/employees/edit.html',
+        _employee_edit_page_context(Employee(), is_create=True),
+    )
 
 
 @login_required
@@ -385,44 +419,31 @@ def save_employee_biometric_settings(request, employee_id):
 @employee_branch_access_required
 def edit_employee(request, employee_id):
     """تعديل ملف موظف - يكمل الأخصائي بقية الحقول"""
-    from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
     from apps.employees.models import Employee
     from apps.employees.forms import EmployeeForm
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
 
     if request.method == 'POST':
-        files = request.FILES.copy()
-        for f in ('id_document', 'passport_document', 'contract_document',
-                  'other_documents', 'commencement_document'):
-            renamed = apply_uploaded_file_rename(request, f)
-            if renamed is not None:
-                files[f] = renamed
-
+        files = _prepare_employee_upload_files(request)
         form = EmployeeForm(request.POST, files, instance=employee)
         if form.is_valid():
-            employee = form.save()
+            employee = _save_employee_from_form(request, form)
             messages.success(request, f'تم حفظ بيانات الموظف "{employee.name}"')
-            return redirect('web:list_employees')
-        
-        for err in form.errors.values():
-            messages.error(request, err[0])
+            return redirect('web:edit_employee', employee_id=employee.id)
+        for field, errors in form.errors.items():
+            messages.error(request, f'{field}: {errors[0]}')
+        return render(
+            request,
+            'pages/employees/edit.html',
+            _employee_edit_page_context(employee, form=form),
+        )
 
-    return render(request, 'pages/employees/edit.html', {
-        'employee': employee,
-        'nationalities': Nationality.objects.filter(is_active=True),
-        'professions': Profession.objects.filter(is_active=True),
-        'sponsorships': Sponsorship.objects.filter(is_active=True),
-        'branches': Branch.objects.filter(is_active=True),
-        'departments': Department.objects.all(),
-        'cost_centers': CostCenter.objects.all(),
-        'insurances': Insurance.objects.filter(is_active=True),
-        'insurance_classes': InsuranceClass.objects.filter(is_active=True),
-        'buildings': _buildings_qs(),
-        'banks': _banks_qs(),
-        'administrations': _administrations_qs(),
-    })
+    return render(
+        request,
+        'pages/employees/edit.html',
+        _employee_edit_page_context(employee),
+    )
 
 
 @login_required

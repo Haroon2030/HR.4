@@ -1,4 +1,5 @@
 import json as _json
+import os
 import re
 from decimal import Decimal, InvalidOperation
 
@@ -124,6 +125,14 @@ def format_archive_text(value):
     flush_block()
     html.append('</div>')
     return mark_safe('\n'.join(html))
+
+
+@register.filter
+def basename(value):
+    """اسم الملف فقط من مسار التخزين."""
+    if not value:
+        return ''
+    return os.path.basename(str(value))
 
 
 @register.filter
