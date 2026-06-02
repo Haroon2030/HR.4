@@ -46,7 +46,7 @@ def list_branches(request):
     insurance_classes = InsuranceClass.objects.all()
     buildings = Building.objects.filter(is_deleted=False).order_by('name')
     banks = Bank.objects.filter(is_deleted=False).order_by('name')
-    administrations = Administration.objects.filter(is_deleted=False).order_by('code', 'name')
+    administrations = Administration.objects.filter(is_deleted=False).select_related('manager').order_by('code', 'name')
     
     return render(request, 'pages/branches/list.html', {
         'branches': branches,
