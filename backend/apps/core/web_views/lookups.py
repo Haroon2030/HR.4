@@ -31,6 +31,7 @@ def _redirect_with_tab(request):
 
 def _lookup_create(request, form_class, template, label, get_name):
     tab = request.GET.get('tab') or request.POST.get('tab') or ''
+    form = form_class()
     if request.method == 'POST':
         form = form_class(request.POST)
         if form.is_valid():
@@ -39,12 +40,13 @@ def _lookup_create(request, form_class, template, label, get_name):
             return _redirect_with_tab(request)
         for err in form.errors.values():
             messages.error(request, err[0])
-    return render(request, template, {'tab': tab})
+    return render(request, template, {'tab': tab, 'form': form})
 
 
 def _lookup_update(request, model, pk, form_class, template, label, get_name, ctx_key):
     obj = get_object_or_404(model, id=pk)
     tab = request.GET.get('tab') or request.POST.get('tab') or ''
+    form = form_class(instance=obj)
     if request.method == 'POST':
         form = form_class(request.POST, instance=obj)
         if form.is_valid():
@@ -53,7 +55,7 @@ def _lookup_update(request, model, pk, form_class, template, label, get_name, ct
             return _redirect_with_tab(request)
         for err in form.errors.values():
             messages.error(request, err[0])
-    return render(request, template, {ctx_key: obj, 'tab': tab})
+    return render(request, template, {ctx_key: obj, 'tab': tab, 'form': form})
 
 
 def _lookup_delete(request, model, pk, label, get_name):

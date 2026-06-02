@@ -73,6 +73,10 @@ class Command(BaseCommand):
                     'leaves.manage',
                     # التقارير
                     'reports.view',
+                    'operations.view',
+                    'operations.approve_branch',
+                    'operations.approve_administration',
+                    'operations.return',
                 ],
             },
             
@@ -111,6 +115,13 @@ class Command(BaseCommand):
                     'users.edit',
                     # التقارير - عرض
                     'reports.view',
+                    'operations.view',
+                    'operations.approve_branch',
+                    'operations.approve_administration',
+                    'operations.approve_gm',
+                    'operations.approve_officer',
+                    'operations.return',
+                    'operations.resubmit',
                 ],
             },
             
@@ -144,6 +155,8 @@ class Command(BaseCommand):
                     'employees.edit',
                     'leaves.view',
                     'leaves.manage',
+                    'operations.view',
+                    'operations.approve_officer',
                 ],
             },
         ]

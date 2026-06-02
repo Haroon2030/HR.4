@@ -64,6 +64,7 @@ class BankAdmin(admin.ModelAdmin):
 
 @admin.register(Administration)
 class AdministrationAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'is_active', 'created_at')
+    list_display = ('code', 'name', 'manager', 'is_active', 'created_at')
     list_filter = ('is_active',)
     search_fields = ('code', 'name')
+    autocomplete_fields = ('manager',)

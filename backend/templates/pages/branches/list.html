@@ -272,6 +272,7 @@
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">رقم الإدارة</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الإدارة</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">مدير الإدارة</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
                                 <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
                             </tr>
@@ -289,6 +290,9 @@
                                         <span class="text-xs font-medium text-slate-900">{{ adm.name }}</span>
                                     </div>
                                 </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">
+                                    {{ adm.manager.get_full_name|default:adm.manager.username|default:"—" }}
+                                </td>
                                 <td class="px-3 py-2">
                                     {% if adm.is_active %}
                                     <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">نشط</span>
@@ -304,7 +308,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">
                                     <i data-lucide="building" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
                                     <p>لا توجد إدارات مسجلة</p>
                                 </td>

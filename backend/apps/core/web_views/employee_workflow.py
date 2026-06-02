@@ -18,6 +18,7 @@ from apps.core.web_views._helpers import (
     employee_branch_access_required,
 )
 from apps.core.decorators import permission_required
+from apps.core.services.pending_actions import create_pending_action
 
 @login_required
 @permission_required('employees.edit')
@@ -96,7 +97,6 @@ def add_employee_leave(request, employee_id):
 def terminate_employee(request, employee_id):
     """تقديم طلب تصفية (ينتظر موافقة مدير الفرع)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import TerminateEmployeeForm
 
     employee = get_object_or_404(Employee, id=employee_id)
@@ -113,17 +113,16 @@ def terminate_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.TERMINATE,
+    create_pending_action(
+        action_type='terminate',
         employee=employee,
-        branch=employee.branch,
         payload={
             'end_date': cd['end_date'].isoformat(),
             'end_reason': cd.get('end_reason', ''),
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب تصفية الموظف إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب تصفية الموظف إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -133,7 +132,6 @@ def terminate_employee(request, employee_id):
 def reactivate_employee(request, employee_id):
     """تقديم طلب إعادة تفعيل موظف مُصفّى (ينتظر موافقة مدير الفرع)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import ReactivateEmployeeForm
 
     employee = get_object_or_404(Employee, id=employee_id)
@@ -151,10 +149,9 @@ def reactivate_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.REACTIVATE,
+    create_pending_action(
+        action_type='reactivate',
         employee=employee,
-        branch=employee.branch,
         payload={
             'new_hire_date': cd['new_hire_date'].isoformat(),
             'reactivation_reason': cd['reactivation_reason'],
@@ -162,7 +159,7 @@ def reactivate_employee(request, employee_id):
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب إعادة التفعيل إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب إعادة التفعيل إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -174,7 +171,6 @@ def adjust_employee_salary(request, employee_id):
     from decimal import Decimal, InvalidOperation
 
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import SalaryAdjustForm
 
     employee = get_object_or_404(Employee, id=employee_id)
@@ -200,10 +196,9 @@ def adjust_employee_salary(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.SALARY_ADJUST,
+    create_pending_action(
+        action_type='salary_adjust',
         employee=employee,
-        branch=employee.branch,
         payload={
             'new_basic_salary': str(cd['new_basic_salary']),
             'effective_date': cd['effective_date'].isoformat(),
@@ -211,7 +206,7 @@ def adjust_employee_salary(request, employee_id):
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب تعديل الراتب إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب تعديل الراتب إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -221,7 +216,6 @@ def adjust_employee_salary(request, employee_id):
 def transfer_employee(request, employee_id):
     """تقديم طلب نقل (ينتظر موافقة مدير الفرع)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import TransferEmployeeForm
 
     employee = get_object_or_404(Employee, id=employee_id)
@@ -241,10 +235,9 @@ def transfer_employee(request, employee_id):
     new_branch = cd.get('new_branch')
     new_dept = cd.get('new_department')
 
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.TRANSFER,
+    create_pending_action(
+        action_type='transfer',
         employee=employee,
-        branch=employee.branch,
         payload={
             'transfer_date': cd['transfer_date'].isoformat(),
             'reason': cd['reason'],
@@ -253,7 +246,7 @@ def transfer_employee(request, employee_id):
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب النقل إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب النقل إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -417,7 +410,6 @@ def set_work_schedule(request, employee_id):
 def receive_employee_custody(request, employee_id):
     """طلب استلام عهدة جديدة (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import CustodyReceiveForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -440,10 +432,9 @@ def receive_employee_custody(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.CUSTODY_RECEIVE,
+    create_pending_action(
+        action_type='custody_receive',
         employee=employee,
-        branch=employee.branch,
         payload={
             'item_name': cd['item_name'],
             'item_details': cd.get('item_details', ''),
@@ -455,7 +446,7 @@ def receive_employee_custody(request, employee_id):
         attachment=files.get('document') or None,
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب استلام العهدة إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب استلام العهدة إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -465,7 +456,6 @@ def receive_employee_custody(request, employee_id):
 def clear_employee_custody(request, employee_id):
     """طلب تصفية عهدة موجودة (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee, EmployeeCustody
-    from apps.core.models import PendingAction
     from apps.core.forms import CustodyClearForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -492,10 +482,9 @@ def clear_employee_custody(request, employee_id):
         messages.error(request, 'العهدة غير موجودة أو سبق تصفيتها.')
         return redirect('web:view_employee', employee_id=employee.id)
 
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.CUSTODY_CLEAR,
+    create_pending_action(
+        action_type='custody_clear',
         employee=employee,
-        branch=employee.branch,
         payload={
             'custody_id': custody.id,
             'item_name': custody.item_name,
@@ -505,7 +494,7 @@ def clear_employee_custody(request, employee_id):
         attachment=files.get('document') or None,
         requested_by=request.user,
     )
-    messages.success(request, f'تم إرسال طلب تصفية العهدة "{custody.item_name}" إلى مدير الفرع للموافقة.')
+    messages.success(request, f'تم إرسال طلب تصفية العهدة "{custody.item_name}" إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -515,7 +504,6 @@ def clear_employee_custody(request, employee_id):
 def add_employee_job_offer(request, employee_id):
     """طلب إصدار عرض وظيفي / خطاب تعريف (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import JobOfferForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -538,10 +526,9 @@ def add_employee_job_offer(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.JOB_OFFER,
+    create_pending_action(
+        action_type='job_offer',
         employee=employee,
-        branch=employee.branch,
         payload={
             'addressed_to': cd['addressed_to'],
             'purpose': cd.get('purpose', ''),
@@ -551,7 +538,7 @@ def add_employee_job_offer(request, employee_id):
         attachment=files.get('document') or None,
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب العرض الوظيفي إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب العرض الوظيفي إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -561,7 +548,6 @@ def add_employee_job_offer(request, employee_id):
 def add_employee_business_trip(request, employee_id):
     """طلب رحلة عمل (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import BusinessTripForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -584,10 +570,9 @@ def add_employee_business_trip(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.BUSINESS_TRIP,
+    create_pending_action(
+        action_type='business_trip',
         employee=employee,
-        branch=employee.branch,
         payload={
             'destination': cd['destination'],
             'purpose': cd['purpose'],
@@ -599,7 +584,7 @@ def add_employee_business_trip(request, employee_id):
         attachment=files.get('document') or None,
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب رحلة العمل إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب رحلة العمل إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -609,7 +594,6 @@ def add_employee_business_trip(request, employee_id):
 def add_employee_loan(request, employee_id):
     """تقديم سلفة موظف (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import LoanRequestForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -632,10 +616,9 @@ def add_employee_loan(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.LOAN_REQUEST,
+    create_pending_action(
+        action_type='loan_request',
         employee=employee,
-        branch=employee.branch,
         payload={
             'amount': str(cd['amount']),
             'monthly_deduction': str(cd['monthly_deduction']),
@@ -648,7 +631,7 @@ def add_employee_loan(request, employee_id):
         attachment=files.get('document') or None,
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب السلفة إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب السلفة إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -658,7 +641,6 @@ def add_employee_loan(request, employee_id):
 def add_employee_absence(request, employee_id):
     """تسجيل غياب موظف (ينتظر دورة الموافقات، يُخصم من الراتب عند التنفيذ)."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import AbsenceForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -681,10 +663,9 @@ def add_employee_absence(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.ABSENCE,
+    create_pending_action(
+        action_type='absence',
         employee=employee,
-        branch=employee.branch,
         payload={
             'absence_date': cd['absence_date'].isoformat(),
             'days': int(cd['days']),
@@ -694,7 +675,7 @@ def add_employee_absence(request, employee_id):
         attachment=files.get('document') or None,
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب تسجيل الغياب إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب تسجيل الغياب إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -713,7 +694,6 @@ def add_employee_absence(request, employee_id):
 def contract_end_employee(request, employee_id):
     """تقديم طلب انتهاء عقد مع حساب مكافأة نهاية الخدمة."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import ContractEndForm
 
     employee = get_object_or_404(Employee, id=employee_id)
@@ -730,10 +710,9 @@ def contract_end_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.CONTRACT_END,
+    create_pending_action(
+        action_type='contract_end',
         employee=employee,
-        branch=employee.branch,
         payload={
             'end_date': cd['end_date'].isoformat(),
             'terminated_by': cd['terminated_by'],
@@ -742,7 +721,7 @@ def contract_end_employee(request, employee_id):
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب انتهاء العقد إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب انتهاء العقد إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -756,7 +735,6 @@ def contract_end_employee(request, employee_id):
 def end_of_service_employee(request, employee_id):
     """تقديم طلب تصفية نهاية خدمة أو استقالة مع حساب المكافأة وفقاً لـ EOSB."""
     from apps.employees.models import Employee
-    from apps.core.models import PendingAction
     from apps.core.forms import EndOfServiceForm
 
     employee = get_object_or_404(Employee, id=employee_id)
@@ -773,10 +751,9 @@ def end_of_service_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    PendingAction.objects.create(
-        action_type=PendingAction.ActionType.END_OF_SERVICE,
+    create_pending_action(
+        action_type='end_of_service',
         employee=employee,
-        branch=employee.branch,
         payload={
             'end_date': cd['end_date'].isoformat(),
             'terminated_by': cd['terminated_by'],
@@ -785,5 +762,5 @@ def end_of_service_employee(request, employee_id):
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب تصفية نهاية الخدمة إلى مدير الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب تصفية نهاية الخدمة إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)

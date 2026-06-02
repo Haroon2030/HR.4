@@ -13,7 +13,7 @@
             <p class="text-slate-500 text-xs">الموظف: <span class="font-semibold text-slate-700">{{ action.employee.name }}</span> • الفرع: {{ action.branch.name|default:"-" }}</p>
         </div>
         <div>
-            {% if action.status == 'pending_branch' %}<span class="px-3 py-1 rounded bg-amber-100 text-amber-800 text-sm font-semibold">⏳ بانتظار مدير الفرع</span>
+            {% if action.status == 'pending_branch' %}<span class="px-3 py-1 rounded bg-amber-100 text-amber-800 text-sm font-semibold">⏳ بانتظار {{ first_decision.stage_label }}</span>
             {% elif action.status == 'pending_gm' %}<span class="px-3 py-1 rounded bg-indigo-100 text-indigo-800 text-sm font-semibold">⏳ بانتظار المدير العام</span>
             {% elif action.status == 'pending_officer' %}<span class="px-3 py-1 rounded bg-purple-100 text-purple-800 text-sm font-semibold">⏳ بانتظار موظف الموارد</span>
             {% elif action.status == 'returned' %}<span class="px-3 py-1 rounded bg-rose-100 text-rose-800 text-sm font-semibold">↩ مُرتجَع للتعديل</span>
@@ -143,7 +143,7 @@
                 {% if can_act and current_stage == 'branch' %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
                         <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="check" class="w-4 h-4"></i> موافقة كمدير فرع
+                            <i data-lucide="check" class="w-4 h-4"></i> موافقة كـ {{ first_decision.stage_label }}
                         </button>
                         <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
                             <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
@@ -241,7 +241,7 @@
                 <!-- 2. Branch -->
                 <li>
                     <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.branch_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
-                    <p class="text-xs font-bold {% if action.branch_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">مدير الفرع</p>
+                    <p class="text-xs font-bold {% if action.branch_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">{{ first_decision.stage_label }}</p>
                     {% if action.branch_reviewed_at %}
                         <p class="text-xs text-slate-500">{{ action.branch_reviewed_by.get_full_name|default:action.branch_reviewed_by.username }}</p>
                         <p class="text-xs text-slate-400">{{ action.branch_reviewed_at|date:"Y-m-d H:i" }}</p>

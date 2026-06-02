@@ -51,6 +51,18 @@
                         </select>
                     </div>
 
+                    <!-- الإدارة -->
+                    <div class="hr-field-item">
+                        <label class="hr-field-lbl">الإدارة</label>
+                        <select name="administration"
+                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
+                            <option value="">-- اختر --</option>
+                            {% for a in administrations %}
+                            <option value="{{ a.id }}">{% if a.code %}{{ a.code }}{% if a.name and a.code != a.name %} — {{ a.name }}{% endif %}{% else %}{{ a.name }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
                     <!-- مركز التكلفة -->
                     <div class="hr-field-item hr-field-item--full">
                         <label class="hr-field-lbl">مركز التكلفة</label>

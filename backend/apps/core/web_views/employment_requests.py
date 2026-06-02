@@ -24,6 +24,7 @@ from apps.core.web_views._helpers import (
 from apps.core.models import PendingAction
 from apps.core.services.workflow_access import stage_permission_required
 from apps.core.services import employment_requests as svc
+from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, user_can_first_approve
 
 
 User = get_user_model()
@@ -50,7 +51,7 @@ def list_employment_requests(request):
         return redirect('web:dashboard')
 
     qs = EmploymentRequest.objects.select_related(
-        'branch', 'department', 'cost_center', 'requested_by',
+        'branch', 'administration', 'department', 'cost_center', 'requested_by',
         'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer',
         'housing', 'bank',
     )
@@ -64,9 +65,10 @@ def list_employment_requests(request):
     if not is_super:
         cond = Q(requested_by=user)
         if is_branch:
-            managed = list(user.managed_branches.values_list('id', flat=True))
-            if managed:
-                cond |= Q(branch_id__in=managed)
+            cond |= first_stage_pending_q(
+                user,
+                model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+            )
         if is_gm:
             # المدير العام يرى الكل — أبطل الفلترة على الملكية/الفرع
             cond = Q()
@@ -86,8 +88,12 @@ def list_employment_requests(request):
                     'pending_gm', 'pending_officer'}:
         qs = qs.filter(status=status)
 
+    rows = list(qs.order_by('-created_at'))
+    for row in rows:
+        row.first_stage_label = resolve_first_approver(row).stage_label
+
     return render(request, 'pages/employment_requests/list.html', {
-        'requests': qs.order_by('-created_at'),
+        'requests': rows,
         'current_status': status,
         'is_branch_manager': is_branch,
         'is_general_manager': is_gm,
@@ -105,14 +111,12 @@ def _get_request_or_404(request_id):
 @login_required
 @branch_manager_required
 def approve_employment_request(request, request_id):
-    """مرحلة 1: مدير الفرع يوافق → ينتقل لمدير الموارد."""
+    """مرحلة 1: مدير الإدارة/الفرع يوافق → ينتقل لمدير الموارد."""
     emp_req = _get_request_or_404(request_id)
 
-    if not request.user.is_superuser:
-        managed = list(request.user.managed_branches.values_list('id', flat=True))
-        if emp_req.branch_id not in managed:
-            messages.error(request, 'لا تملك صلاحية مراجعة هذا الطلب')
-            return redirect('web:list_employment_requests')
+    if not user_can_first_approve(request.user, emp_req):
+        messages.error(request, 'لا تملك صلاحية مراجعة هذا الطلب')
+        return redirect('web:list_employment_requests')
 
     if request.method != 'POST':
         return redirect('web:list_employment_requests')

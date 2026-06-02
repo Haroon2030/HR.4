@@ -7,6 +7,7 @@ Nationality, Profession, Sponsorship, Insurance, InsuranceClass, SystemSettings.
 القديمة)، ويتم ذلك عبر `Meta.db_table`.
 """
 from django.db import models
+from django.conf import settings
 from simple_history.models import HistoricalRecords
 
 from apps.core.models import BaseModel
@@ -189,6 +190,14 @@ class Administration(BaseModel):
     """الإدارات — جدول تهيئة مركزي (رقم + اسم)."""
     code = models.CharField("رقم الإدارة", max_length=20, unique=True)
     name = models.CharField("اسم الإدارة", max_length=150)
+    manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        verbose_name="مدير الإدارة",
+        related_name="managed_administrations",
+        null=True,
+        blank=True,
+    )
     is_active = models.BooleanField("نشط", default=True)
 
     history = HistoricalRecords(table_name='setup_historicaladministration')

@@ -168,6 +168,7 @@ class Permission(BaseModel):
         EDIT = 'edit', 'تعديل'
         DELETE = 'delete', 'حذف'
         APPROVE_BRANCH = 'approve_branch', 'موافقة الفرع'
+        APPROVE_ADMINISTRATION = 'approve_administration', 'موافقة الإدارة'
         APPROVE_GM = 'approve_gm', 'موافقة المدير العام'
         APPROVE_OFFICER = 'approve_officer', 'تنفيذ موظف الموارد'
         RETURN = 'return', 'إرجاع'
@@ -465,6 +466,11 @@ class PendingAction(BaseModel):
         related_name='pending_actions', verbose_name="الفرع",
         help_text="يُستخدم لتوجيه الطلب لمدير الفرع المسؤول"
     )
+    administration = models.ForeignKey(
+        'setup.Administration', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pending_actions', verbose_name="الإدارة",
+        help_text="يُستخدم لتوجيه الطلب لمدير الإدارة المسؤول (مع fallback للفرع).",
+    )
 
     # حمولة العملية كاملةً (الحقول التي أدخلها الأخصائي)
     payload = models.JSONField("بيانات العملية", default=dict, blank=True)
@@ -542,6 +548,7 @@ class PendingAction(BaseModel):
         indexes = [
             models.Index(fields=['status', '-requested_at']),
             models.Index(fields=['branch', 'status']),
+            models.Index(fields=['administration', 'status']),
             models.Index(fields=['assigned_officer', 'status']),
         ]
 

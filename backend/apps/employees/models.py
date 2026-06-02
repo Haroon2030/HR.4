@@ -45,6 +45,10 @@ class EmploymentRequest(BaseModel):
         Department, on_delete=models.SET_NULL, related_name='employment_requests',
         verbose_name="القسم", null=True, blank=True
     )
+    administration = models.ForeignKey(
+        'setup.Administration', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employment_requests', verbose_name="الإدارة",
+    )
     cost_center = models.ForeignKey(
         CostCenter, on_delete=models.SET_NULL, related_name='employment_requests',
         verbose_name="مركز التكلفة", null=True, blank=True

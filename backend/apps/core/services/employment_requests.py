@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.core.models import Notification
 from apps.core.services import notifications as notif
+from apps.core.services.approval_routing import notify_on_first_stage, resolve_first_approver
 
 
 # ─── روابط ──────────────────────────────────────────────────────────────────
@@ -28,12 +29,6 @@ def _notify_user(user, req, *, title, message='', icon='user-plus',
         link=employment_request_url(req),
         icon=icon, color=color,
     )
-
-
-def _notify_branch_manager(req, **kwargs):
-    branch = req.branch
-    manager = getattr(branch, 'manager', None) if branch else None
-    _notify_user(manager, req, **kwargs)
 
 
 # ─── التحقق من اكتمال بيانات الموظف قبل الموافقة النهائية ────────────────
@@ -100,11 +95,11 @@ def _notify_general_managers(req, **kwargs):
 # ─── تحوّلات الحالة ────────────────────────────────────────────────────────
 @transaction.atomic
 def branch_approve(req, user, notes=''):
-    """مدير الفرع يوافق → الطلب ينتقل لمدير الموارد."""
+    """المرحلة الأولى (إدارة/فرع) توافق → الطلب ينتقل لمدير الموارد."""
     from apps.employees.models import EmploymentRequest
     if req.status not in {EmploymentRequest.Status.PENDING_BRANCH,
                           EmploymentRequest.Status.PENDING}:
-        raise ValueError('هذا الطلب ليس في مرحلة موافقة مدير الفرع.')
+        raise ValueError('هذا الطلب ليس في مرحلة الموافقة الأولى.')
 
     req.status = EmploymentRequest.Status.PENDING_GM
     req.branch_reviewed_by = user
@@ -114,10 +109,12 @@ def branch_approve(req, user, notes=''):
         'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'
     ])
 
+    decision = resolve_first_approver(req)
+    approver_label = decision.stage_label
     _notify_general_managers(
         req,
         title=f'طلب توظيف بانتظار موافقتك — {req.name}',
-        message=f'الفرع: {req.branch.name if req.branch else "—"} • وافق عليه مدير الفرع',
+        message=f'الفرع: {req.branch.name if req.branch else "—"} • وافق عليه {approver_label}',
         icon='user-cog', color=Notification.Color.AMBER,
     )
     return req
@@ -197,6 +194,7 @@ def officer_approve(req, user, notes=''):
             name=req.name,
             branch=req.branch,
             department=req.department,
+            administration=req.administration,
             cost_center=req.cost_center,
             commencement_document=req.commencement_document,
             employment_request=req,
@@ -271,9 +269,10 @@ def reject(req, user, notes=''):
 
 def notify_branch_on_create(req):
     """يُستدعى مرة واحدة عند إنشاء طلب توظيف جديد."""
-    _notify_branch_manager(
+    notify_on_first_stage(
         req,
         title=f'طلب توظيف جديد بانتظار موافقتك — {req.name}',
         message=f'الفرع: {req.branch.name if req.branch else "—"}',
-        icon='user-plus', color=Notification.Color.PRIMARY,
+        icon='user-plus',
+        color=Notification.Color.PRIMARY,
     )

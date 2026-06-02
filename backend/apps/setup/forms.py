@@ -4,6 +4,7 @@ Forms للنماذج الخاصة بـ apps.setup (Lookups).
 """
 from django import forms
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 
 from apps.setup.models import (
     Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
@@ -123,7 +124,16 @@ class BankForm(forms.ModelForm):
 class AdministrationForm(forms.ModelForm):
     class Meta:
         model = Administration
-        fields = ['code', 'name']
+        fields = ['code', 'name', 'manager']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        User = get_user_model()
+        self.fields['manager'].required = False
+        self.fields['manager'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'username')
+        self.fields['manager'].label_from_instance = (
+            lambda u: u.get_full_name().strip() or u.username
+        )
 
     def clean_code(self):
         return _validate_unique_code(Administration, self.cleaned_data.get('code'), self.instance)

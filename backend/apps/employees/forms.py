@@ -181,7 +181,7 @@ class EmploymentRequestForm(forms.ModelForm):
 
     class Meta:
         model = EmploymentRequest
-        fields = ['name', 'branch', 'department', 'cost_center', 'commencement_document']
+        fields = ['name', 'branch', 'administration', 'department', 'cost_center', 'commencement_document']
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
@@ -198,6 +198,11 @@ class EmploymentRequestForm(forms.ModelForm):
                 user,
                 Branch.objects.filter(is_active=True),
             )
+        if 'administration' in self.fields:
+            from apps.setup.models import Administration
+            self.fields['administration'].queryset = Administration.objects.filter(
+                is_active=True, is_deleted=False,
+            ).order_by('code', 'name')
 
     def clean_name(self):
         name = (self.cleaned_data.get('name') or '').strip()
@@ -238,7 +243,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
         model = EmploymentRequest
         fields = [
             # الحقول الأصلية
-            'name', 'branch', 'department', 'cost_center', 'commencement_document',
+            'name', 'branch', 'administration', 'department', 'cost_center', 'commencement_document',
             # بيانات أساسية
             'id_number', 'phone', 'email', 'employee_number', 'gender',
             # Setup

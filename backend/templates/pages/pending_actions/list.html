@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">طلبات العمليات السريعة</h1>
-            <p class="text-slate-500 text-xs">دورة موافقات متعدّدة المراحل: مدير الفرع → المدير العام → موظف الموارد</p>
+            <p class="text-slate-500 text-xs">دورة الموافقات: الخط الأول (مدير إدارة/فرع) → المدير العام → موظف الموارد</p>
         </div>
     </div>
 
@@ -21,7 +21,7 @@
         </a>
         <a href="?tab=pending_branch" role="tab" class="hr-tab-btn hr-tab-btn--amber{% if tab == 'pending_branch' %} is-active{% endif %}">
             <i data-lucide="user" class="w-4 h-4"></i>
-            <span>مدير الفرع</span>
+            <span>الخط الأول</span>
             {% if counts.pending_branch %}<span class="hr-tab-badge bg-amber-200 text-amber-900">{{ counts.pending_branch }}</span>{% endif %}
         </a>
         <a href="?tab=pending_gm" role="tab" class="hr-tab-btn hr-tab-btn--indigo{% if tab == 'pending_gm' %} is-active{% endif %}">
@@ -105,7 +105,7 @@
                         <td class="px-3 py-2 text-xs text-slate-500">{{ a.branch_name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs">
                             {% if a.status == 'pending_branch' %}
-                                <span class="px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200">⏳ بانتظار مدير الفرع</span>
+                                <span class="px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200">⏳ بانتظار {{ a.first_stage_label }}</span>
                             {% elif a.status == 'pending_gm' %}
                                 <span class="px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">⏳ بانتظار المدير العام</span>
                             {% elif a.status == 'pending_officer' %}

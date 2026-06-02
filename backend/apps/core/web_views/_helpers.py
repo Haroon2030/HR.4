@@ -65,7 +65,16 @@ def _is_branch_manager(user):
     يكون مديراً إذا كان يدير فرعاً واحداً على الأقل (عبر managed_branches).
     السوبر يوزر يُعتبر مديراً لكل الفروع.
     """
-    return user.is_superuser or user.managed_branches.filter(is_deleted=False).exists()
+    return (
+        user.is_superuser
+        or user.managed_branches.filter(is_deleted=False).exists()
+        or user.managed_administrations.filter(is_deleted=False).exists()
+    )
+
+
+def _is_administration_manager(user):
+    """هل المستخدم مدير إدارة؟"""
+    return user.is_superuser or user.managed_administrations.filter(is_deleted=False).exists()
 
 
 def branch_manager_required(view_func):
@@ -101,6 +110,7 @@ def employee_branch_access_required(view_func):
     Decorator: يمنع الوصول لملف الموظف ما لم يكن المستخدم:
       - admin / superuser
       - أو مدير فرع الموظف
+      - أو مدير إدارة الموظف
       - أو أخصائي مُعيّن على فرع الموظف
 
     يعتمد على أن مسار الـ URL يتضمن مجموعة اسمها ``employee_id`` (مثل
@@ -116,6 +126,11 @@ def employee_branch_access_required(view_func):
             from django.http import Http404
             raise Http404('employee_id غير موجود في الرابط')
         employee = get_object_or_404(Employee, id=employee_id)
+        if (
+            employee.administration_id
+            and request.user.managed_administrations.filter(id=employee.administration_id).exists()
+        ):
+            return view_func(request, *args, **kwargs)
         accessible = _user_accessible_branch_ids(request.user)
         if accessible is not None and employee.branch_id not in accessible:
             messages.error(request, 'لا تملك صلاحية على فرع هذا الموظف.')
@@ -129,14 +144,8 @@ def _can_review_action(user, action):
     هل يستطيع المستخدم الموافقة/الرفض على طلب معيّن؟
     يُستخدم في المرحلة الأولى (مدير الفرع).
     """
-    if user.is_superuser:
-        return True
-    # هل يدير فرع الطلب؟
-    if action.branch_id and action.branch_id in list(
-        user.managed_branches.values_list('id', flat=True)
-    ):
-        return True
-    return False
+    from apps.core.services.approval_routing import user_can_first_approve
+    return user_can_first_approve(user, action)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

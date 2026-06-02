@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.core.models import PendingAction, Role
+from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver
 from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations
 from apps.core.web_views._helpers import (
     _can_act_at_stage,
@@ -47,7 +48,7 @@ TAB_FILTERS = {
 
 def _user_visible_actions(user):
     qs = PendingAction.objects.select_related(
-        'employee', 'branch', 'requested_by',
+        'employee', 'branch', 'administration', 'requested_by',
         'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer', 'returned_by',
     )
     if user.is_superuser or _is_general_manager(user):
@@ -55,8 +56,11 @@ def _user_visible_actions(user):
 
     filters = Q(requested_by=user)
     managed_ids = list(user.managed_branches.values_list('id', flat=True))
+    managed_admin_ids = list(user.managed_administrations.values_list('id', flat=True))
     if managed_ids:
         filters |= Q(branch_id__in=managed_ids)
+    if managed_admin_ids:
+        filters |= Q(administration_id__in=managed_admin_ids)
     if _is_hr_officer(user):
         filters |= Q(assigned_officer=user)
     return qs.filter(filters).distinct()
@@ -68,13 +72,9 @@ def _inbox_for(user, qs):
     if user.is_superuser or _is_general_manager(user):
         f |= Q(status=PendingAction.Status.PENDING_GM)
         has_filter = True
-    if _is_branch_manager(user):
-        managed_ids = list(user.managed_branches.values_list('id', flat=True))
-        if managed_ids:
-            f |= Q(status=PendingAction.Status.PENDING_BRANCH, branch_id__in=managed_ids)
-            has_filter = True
-    if user.is_superuser:
-        f |= Q(status=PendingAction.Status.PENDING_BRANCH)
+    first_q = first_stage_pending_q(user, model_status_pending_branch=PendingAction.Status.PENDING_BRANCH)
+    if first_q.children:
+        f |= first_q
         has_filter = True
     if _is_hr_officer(user) or user.is_superuser:
         f |= Q(status=PendingAction.Status.PENDING_OFFICER, assigned_officer=user) \
@@ -99,7 +99,7 @@ def _user_visible_hire_requests(user):
     from apps.employees.models import EmploymentRequest
 
     qs = EmploymentRequest.objects.select_related(
-        'branch', 'requested_by', 'branch_reviewed_by',
+        'branch', 'administration', 'requested_by', 'branch_reviewed_by',
         'gm_reviewed_by', 'assigned_officer',
     )
     if user.is_superuser or _is_general_manager(user):
@@ -107,8 +107,11 @@ def _user_visible_hire_requests(user):
 
     filters = Q(requested_by=user)
     managed_ids = list(user.managed_branches.values_list('id', flat=True))
+    managed_admin_ids = list(user.managed_administrations.values_list('id', flat=True))
     if managed_ids:
         filters |= Q(branch_id__in=managed_ids)
+    if managed_admin_ids:
+        filters |= Q(administration_id__in=managed_admin_ids)
     if _is_hr_officer(user):
         filters |= Q(assigned_officer=user)
     return qs.filter(filters).distinct()
@@ -123,13 +126,9 @@ def _inbox_for_hire(user, qs):
     if user.is_superuser or _is_general_manager(user):
         f |= Q(status=EmploymentRequest.Status.PENDING_GM)
         has_filter = True
-    if _is_branch_manager(user):
-        managed_ids = list(user.managed_branches.values_list('id', flat=True))
-        if managed_ids:
-            f |= Q(status=EmploymentRequest.Status.PENDING_BRANCH, branch_id__in=managed_ids)
-            has_filter = True
-    if user.is_superuser:
-        f |= Q(status=EmploymentRequest.Status.PENDING_BRANCH)
+    first_q = first_stage_pending_q(user, model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH)
+    if first_q.children:
+        f |= first_q
         has_filter = True
     if _is_hr_officer(user) or user.is_superuser:
         f |= (
@@ -143,6 +142,7 @@ def _inbox_for_hire(user, qs):
 
 def _wrap_action(a):
     """تحويل PendingAction إلى DTO موحّد للعرض."""
+    first = resolve_first_approver(a)
     return SimpleNamespace(
         kind='action',
         id=a.id,
@@ -150,6 +150,8 @@ def _wrap_action(a):
         action_type_display=a.get_action_type_display(),
         employee_name=a.employee.name if a.employee_id else '-',
         branch_name=a.branch.name if a.branch_id else '-',
+        administration_name=a.administration.name if a.administration_id else '-',
+        first_stage_label=first.stage_label,
         status=a.status,
         status_display=a.get_status_display(),
         assigned_officer=a.assigned_officer,
@@ -163,6 +165,7 @@ def _wrap_action(a):
 
 def _wrap_hire(r):
     """تحويل EmploymentRequest إلى DTO موحّد للعرض."""
+    first = resolve_first_approver(r)
     return SimpleNamespace(
         kind='hire',
         id=r.id,
@@ -170,6 +173,8 @@ def _wrap_hire(r):
         action_type_display='توظيف جديد',
         employee_name=r.name,
         branch_name=r.branch.name if r.branch_id else '-',
+        administration_name=r.administration.name if r.administration_id else '-',
+        first_stage_label=first.stage_label,
         status=r.status,
         status_display=r.get_status_display(),
         assigned_officer=r.assigned_officer,
@@ -290,6 +295,7 @@ def list_pending_actions(request):
         'is_gm': _is_general_manager(request.user),
         'is_hr_officer': _is_hr_officer(request.user),
         'is_branch_mgr': _is_branch_manager(request.user),
+        'resolve_first_approver': resolve_first_approver,
     })
 
 
@@ -300,7 +306,7 @@ def pending_action_detail(request, action_id):
         return redirect('web:dashboard')
     action = get_object_or_404(
         PendingAction.objects.select_related(
-            'employee', 'branch', 'requested_by',
+            'employee', 'branch', 'administration', 'requested_by',
             'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer', 'returned_by',
         ),
         id=action_id,
@@ -333,6 +339,7 @@ def pending_action_detail(request, action_id):
         'can_act': can_act,
         'can_resubmit': can_resubmit,
         'current_stage': current_stage,
+        'first_decision': resolve_first_approver(action),
     })
 
 

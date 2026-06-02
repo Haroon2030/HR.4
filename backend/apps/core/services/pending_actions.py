@@ -29,6 +29,7 @@ from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
+from apps.core.services.approval_routing import notify_on_first_stage, resolve_first_approver, snapshot_routing_fields
 
 
 def _to_date(value):
@@ -802,12 +803,28 @@ def _notify(*args, **kwargs):
     return notif
 
 
+def create_pending_action(*, action_type, employee, payload, requested_by, attachment=None):
+    """إنشاء طلب معلّق مع لقطة مسار الموافقة."""
+    from apps.core.models import PendingAction
+
+    routing = snapshot_routing_fields(employee)
+    return PendingAction.objects.create(
+        action_type=action_type,
+        employee=employee,
+        branch=routing['branch'],
+        administration=routing['administration'],
+        payload=payload,
+        attachment=attachment,
+        requested_by=requested_by,
+    )
+
+
 @transaction.atomic
 def branch_approve(action, user, notes=''):
-    """مدير الفرع يوافق → ينتقل الطلب إلى المدير العام."""
+    """المرحلة الأولى (إدارة/فرع) توافق → ينتقل الطلب إلى المدير العام."""
     from apps.core.models import PendingAction
     if action.status != PendingAction.Status.PENDING_BRANCH:
-        raise ValueError('هذا الطلب ليس في مرحلة موافقة مدير الفرع.')
+        raise ValueError('هذا الطلب ليس في مرحلة الموافقة الأولى.')
 
     action.status = PendingAction.Status.PENDING_GM
     action.branch_reviewed_by = user
@@ -817,11 +834,13 @@ def branch_approve(action, user, notes=''):
         'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'
     ])
 
+    decision = resolve_first_approver(action)
+    approver_label = decision.stage_label
     notif = _notify()
     notif.notify_general_managers(
         action,
         title=f'طلب جديد بانتظار موافقتك — {action.get_action_type_display()}',
-        message=f'الموظف: {action.employee.name} • وافق عليه مدير الفرع',
+        message=f'الموظف: {action.employee.name} • وافق عليه {approver_label}',
         icon='user-cog', color='amber',
     )
     return action
@@ -967,24 +986,23 @@ def resubmit_action(action, user):
         'officer_reviewed_at', 'officer_notes',
     ])
 
-    # إشعار مدير الفرع بإعادة الإرسال
-    notif = _notify()
-    notif.notify_branch_managers(
+    notify_on_first_stage(
         action,
         title=f'طلب مُعاد بعد التعديل — {action.get_action_type_display()}',
-        message=f'الموظف: {action.employee.name} • محاولة #{action.resubmit_count + 1}',
-        icon='refresh-cw', color='primary',
+        message=f'الموظف: {action.employee.name} • محاولة #{action.resubmit_count}',
+        icon='refresh-cw',
+        color='primary',
     )
     return action
 
 
 def notify_branch_on_create(action):
     """يُستدعى مرة واحدة بعد إنشاء PendingAction جديد."""
-    notif = _notify()
-    notif.notify_branch_managers(
+    notify_on_first_stage(
         action,
         title=f'طلب جديد بانتظار موافقتك — {action.get_action_type_display()}',
         message=f'الموظف: {action.employee.name}'
                 f' • مقدّم الطلب: {action.requested_by.get_full_name() or action.requested_by.username}',
-        icon='inbox', color='primary',
+        icon='inbox',
+        color='primary',
     )

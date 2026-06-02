@@ -19,6 +19,7 @@ from apps.core.models import DatabaseBackupLog
 from apps.core.web_views._helpers import (
     _user_accessible_branch_ids,
 )
+from apps.core.services.approval_routing import first_stage_pending_q
 
 @login_required
 def dashboard_view(request):
@@ -127,18 +128,21 @@ def dashboard_view(request):
         'hr_officers': [],
     }
 
-    # طلبات التوظيف المعلقة الخاصة بفروع المستخدم (لمدير الفرع / السوبر)
-    if request.user.is_superuser or accessible_branch_ids:
+    # طلبات التوظيف المعلقة الخاصة بالخط الأول (مدير إدارة/فرع)
+    first_stage_q = first_stage_pending_q(
+        request.user,
+        model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+    )
+    if request.user.is_superuser or first_stage_q.children:
         context['is_branch_manager'] = True
         qs = EmploymentRequest.objects.select_related(
-            'branch', 'department', 'cost_center', 'requested_by'
+            'branch', 'administration', 'department', 'cost_center', 'requested_by'
         ).filter(status__in=[
             EmploymentRequest.Status.PENDING,
             EmploymentRequest.Status.PENDING_BRANCH,
         ])
         if not request.user.is_superuser:
-            managed = list(request.user.managed_branches.values_list('id', flat=True))
-            qs = qs.filter(branch_id__in=managed)
+            qs = qs.filter(first_stage_q)
         context['pending_requests'] = qs.order_by('-created_at')
 
     # ─── المهام المُسندة للمستخدم الحالي (أي شخص له تعيينات) ─────────────────

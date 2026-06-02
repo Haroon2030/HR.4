@@ -89,7 +89,7 @@ def list_employees(request):
 @login_required
 @permission_required('employees.add')
 def add_employee(request):
-    """إنشاء طلب توظيف جديد (يحتاج موافقة مدير الفرع)"""
+    """إنشاء طلب توظيف جديد (يحتاج موافقة الخط الأول)."""
     from apps.employees.forms import EmploymentRequestForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
 
@@ -104,7 +104,7 @@ def add_employee(request):
             obj = form.save(commit=False)
             obj.requested_by = request.user
             obj.save()
-            messages.success(request, f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الفرع للمراجعة')
+            messages.success(request, f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الإدارة/الفرع للمراجعة')
             return redirect('web:list_employment_requests')
         for err in form.errors.values():
             messages.error(request, err[0])
@@ -115,6 +115,7 @@ def add_employee(request):
         'branches': filter_branches_queryset(request.user, Branch.objects.filter(is_active=True)),
         'departments': Department.objects.all(),
         'cost_centers': CostCenter.objects.all(),
+        'administrations': _administrations_qs(),
     })
 
 
