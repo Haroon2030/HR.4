@@ -2580,10 +2580,11 @@ body.hr-app .hr-employee-create-page .hr-field-item input[type="file"] {
 }
 
 body.hr-app .hr-topbar {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
     min-height: 4rem;
     padding: 0.65rem 1rem;
     background: #ffffff !important;
@@ -2594,20 +2595,67 @@ body.hr-app .hr-topbar {
     overflow: visible;
 }
 
+body.hr-app .hr-topbar.hr-topbar--with-search {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 22rem) auto;
+}
+
+@media (max-width: 1023px) {
+    body.hr-app .hr-topbar.hr-topbar--with-search {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    body.hr-app .hr-topbar__center {
+        display: none;
+    }
+}
+
 body.hr-app .hr-topbar.is-scrolled {
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
 }
 
 .hr-topbar__start,
-.hr-topbar__end {
+.hr-topbar__end,
+.hr-topbar__center {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
 }
 
+.hr-topbar__start {
+    grid-column: 1;
+    justify-self: stretch;
+}
+
+.hr-topbar__center {
+    grid-column: 2;
+    justify-self: center;
+    width: 100%;
+    max-width: 22rem;
+}
+
 .hr-topbar__end {
+    grid-column: 2;
+    justify-self: end;
     flex-shrink: 0;
+}
+
+body.hr-app .hr-topbar.hr-topbar--with-search .hr-topbar__end {
+    grid-column: 3;
+}
+
+.hr-topbar-search-form {
+    width: 100%;
+    margin: 0;
+}
+
+body.hr-app .hr-topbar-search.hr-search-field {
+    width: 100%;
+}
+
+body.hr-app .hr-topbar-search .hr-search-field__input {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72) !important;
 }
 
 .hr-breadcrumb {
@@ -2659,13 +2707,13 @@ body.hr-app .hr-topbar.is-scrolled {
     font-weight: 800 !important;
 }
 
-.hr-topbar-search {
+.hr-topbar-search,
+.hr-search-field {
     position: relative;
-    width: min(22rem, 42vw);
 }
 
-.hr-topbar-search__icon,
-.hr-search-field__icon {
+.hr-search-field__icon,
+.hr-topbar-search .hr-search-field__icon {
     position: absolute;
     right: 0.65rem;
     top: 50%;
@@ -2690,14 +2738,13 @@ body.hr-app .hr-topbar.is-scrolled {
     opacity: 1 !important;
 }
 
-.hr-topbar-search__icon svg,
 .hr-search-field__icon svg,
-body.hr-app .relative > i[data-lucide="search"] svg {
+body.hr-app .hr-search-field > i[data-lucide="search"] svg,
+body.hr-app .hr-main .relative > i[data-lucide="search"] svg {
     stroke: currentColor !important;
     color: inherit;
 }
 
-.hr-topbar-search__input,
 .hr-search-field__input {
     width: 100%;
     height: 2.5rem;
@@ -2715,12 +2762,6 @@ body.hr-app .relative > i[data-lucide="search"] svg {
     transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.hr-topbar-search__input {
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.72) !important;
-}
-
-.hr-topbar-search__input:focus,
 .hr-search-field__input:focus {
     background: rgba(255, 255, 255, 0.92) !important;
     border-color: rgba(59, 130, 246, 0.55) !important;
@@ -2740,12 +2781,14 @@ body.hr-app .hr-search-field__input[class*="pl-"] {
     padding-inline-start: 2.5rem !important;
 }
 
-body.hr-app .relative:has(> i[data-lucide="search"]):has(> input[type="text"]),
-body.hr-app .relative:has(> i[data-lucide="search"]):has(> input[type="search"]) {
+body.hr-app .hr-search-field:has(> input),
+body.hr-app .hr-main .relative:has(> i[data-lucide="search"]):has(> input[type="text"]),
+body.hr-app .hr-main .relative:has(> i[data-lucide="search"]):has(> input[type="search"]) {
     position: relative;
 }
 
-body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > i[data-lucide="search"] {
+body.hr-app .hr-search-field > i[data-lucide="search"],
+body.hr-app .hr-main .relative:has(> i[data-lucide="search"]):has(> input) > i[data-lucide="search"] {
     position: absolute;
     right: 0.65rem;
     top: 50%;
@@ -2770,7 +2813,8 @@ body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > i[data-lucid
     opacity: 1 !important;
 }
 
-body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > input {
+body.hr-app .hr-search-field > input,
+body.hr-app .hr-main .relative:has(> i[data-lucide="search"]):has(> input) > input {
     padding-inline-end: 3rem !important;
     background: rgba(255, 255, 255, 0.62) !important;
     backdrop-filter: blur(8px);
@@ -2779,7 +2823,8 @@ body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > input {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-body.hr-app .relative:has(> i[data-lucide="search"]):has(> input) > input:focus {
+body.hr-app .hr-search-field > input:focus,
+body.hr-app .hr-main .relative:has(> i[data-lucide="search"]):has(> input) > input:focus {
     background: rgba(255, 255, 255, 0.92) !important;
     border-color: rgba(59, 130, 246, 0.55) !important;
     box-shadow:
@@ -2817,13 +2862,19 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     color: rgb(37 99 235) !important;
 }
 
-    /* يبقى الزجاجي داخل حقل الإدخال عبر :has() */
-}
-
 .hr-topbar-actions {
-    display: flex;
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.hr-topbar-actions > .relative,
+.hr-topbar-actions > a,
+.hr-topbar-actions > button {
+    flex-shrink: 0;
 }
 
 /* زر القائمة — الجوال فقط */

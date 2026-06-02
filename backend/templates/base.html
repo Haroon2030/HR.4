@@ -262,7 +262,7 @@
         </aside>
 
         <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden">
-            <header class="hr-topbar shrink-0">
+            <header class="hr-topbar shrink-0{% if user|has_permission:'employees.view' %} hr-topbar--with-search{% endif %}">
                 <div class="hr-topbar__start">
                     <button type="button" @click="sidebarOpen = !sidebarOpen"
                             class="hr-topbar-icon-btn hr-topbar-collapse-btn" title="طي القائمة">
@@ -277,15 +277,14 @@
                         <span class="hr-breadcrumb__current">{% block page_title %}{% endblock %}</span>
                     </nav>
                 </div>
-                <div class="hr-topbar__end">
-                    {% if user|has_permission:'employees.view' %}
-                    <form method="get" action="{% url 'web:list_employees' %}" class="hr-topbar-search hidden lg:block">
-                        <i data-lucide="search" class="hr-topbar-search__icon w-4 h-4"></i>
-                        <input type="search" name="q" value="{{ request.GET.q }}"
-                               placeholder="بحث موظفين، فروع، أقسام..."
-                               class="hr-topbar-search__input" autocomplete="off">
+                {% if user|has_permission:'employees.view' %}
+                <div class="hr-topbar__center">
+                    <form method="get" action="{% url 'web:list_employees' %}" class="hr-topbar-search-form">
+                        {% include "components/search_field.html" with name="q" value=request.GET.q placeholder="بحث موظفين، فروع، أقسام..." input_type="search" extra_class="hr-topbar-search" aria_label="بحث سريع في الموظفين" %}
                     </form>
-                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="hr-topbar__end">
                     <div class="hr-topbar-actions">
                         <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                             <button type="button"
