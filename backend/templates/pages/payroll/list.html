@@ -7,17 +7,9 @@
 {% include "pages/payroll/_payroll_table_styles.html" %}
 
 <div class="space-y-4" dir="rtl">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900">مسير الرواتب الشهري</h1>
-        <p class="text-slate-500 text-sm mt-1">
-            اختر الفروع ونوع الراتب وشركة الكفالة والفترة، ثم اضغط «بناء المسير» لعرض كل الموظفين في جدول واحد.
-        </p>
-    </div>
+    <h1 class="text-2xl font-bold text-slate-900">مسير الرواتب الشهري</h1>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <h3 class="text-sm font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
-            <i data-lucide="settings-2" class="w-4 h-4 inline-block ml-1"></i> معايير المسير
-        </h3>
         <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm"
               class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {% csrf_token %}
@@ -69,7 +61,10 @@
                     <i data-lucide="play" class="w-4 h-4"></i> بناء المسير
                 </button>
                 {% else %}
-                <p class="text-xs text-slate-500">صلاحية البناء غير متوفرة لحسابك.</p>
+                <button type="button" disabled
+                    class="w-full px-4 py-2 text-sm font-semibold text-slate-400 bg-slate-100 rounded-md inline-flex items-center justify-center gap-1 cursor-not-allowed">
+                    <i data-lucide="play" class="w-4 h-4"></i> بناء المسير
+                </button>
                 {% endif %}
             </div>
         </form>
@@ -159,9 +154,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="12" class="py-10 text-center font-semibold text-slate-500">
-                            لا يوجد موظفون في المسيرات المطابقة. اضغط «بناء المسير» لإنشاء المسيرات.
-                        </td>
+                        <td colspan="12" class="py-10 text-center font-semibold text-slate-500">لا بيانات</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -201,12 +194,6 @@
             {% endif %}
         </div>
         {% endif %}
-    </div>
-    {% else %}
-    <div class="bg-white rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
-        <i data-lucide="table" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
-        <p class="font-semibold">حدّد الفروع ونوع الراتب والفترة ثم اضغط «بناء المسير»</p>
-        <p class="text-sm mt-1">ستظهر كل بيانات الموظفين من الفروع المختارة في جدول واحد.</p>
     </div>
     {% endif %}
 </div>
