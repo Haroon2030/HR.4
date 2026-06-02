@@ -205,13 +205,13 @@ class Role(BaseModel):
     """دور المستخدم - نظام RBAC مبسط"""
     
     class RoleType(models.TextChoices):
-        ADMIN = 'admin', 'مدير النظام'
-        HR_MANAGER = 'hr_manager', 'مدير موارد بشرية'
-        HR_OFFICER = 'hr_officer', 'موظف موارد'
-        ADMIN_MANAGER = 'admin_manager', 'مدير إدارة'
-        MANAGER = 'manager', 'مدير فرع'
-        SPECIALIST = 'specialist', 'أخصائي'
-        EMPLOYEE = 'employee', 'موظف'
+        ADMIN = 'admin', 'مدير النظام (صلاحيات كاملة)'
+        HR_MANAGER = 'hr_manager', 'مدير الموارد البشرية'
+        HR_OFFICER = 'hr_officer', 'موظف تنفيذ الموارد البشرية'
+        ADMIN_MANAGER = 'admin_manager', 'مدير الإدارة (موافقة أولى)'
+        MANAGER = 'manager', 'مدير الفرع (موافقة أولى)'
+        SPECIALIST = 'specialist', 'أخصائي الموارد البشرية'
+        EMPLOYEE = 'employee', 'موظف عادي'
     
     name = models.CharField("اسم الدور", max_length=100, unique=True)
     role_type = models.CharField(
