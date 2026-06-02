@@ -9,6 +9,17 @@ from apps.core.web_views._helpers import employee_branch_access_required
 from apps.core.decorators import permission_required
 
 
+def _employee_administration_label(employee):
+    adm = getattr(employee, 'administration', None)
+    if not adm:
+        return None
+    code = (getattr(adm, 'code', None) or '').strip()
+    name = (getattr(adm, 'name', None) or '').strip()
+    if code and name:
+        return f'{code} — {name}'
+    return code or name or None
+
+
 @login_required
 @permission_required('employees.view')
 @employee_branch_access_required
@@ -18,7 +29,10 @@ def export_employee_salary_excel(request, employee_id):
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
-    employee = get_object_or_404(Employee, id=employee_id)
+    employee = get_object_or_404(
+        Employee.objects.select_related('administration'),
+        id=employee_id,
+    )
 
     wb = Workbook()
     ws = wb.active
@@ -68,6 +82,7 @@ def export_employee_salary_excel(request, employee_id):
         ("الكفالة", getattr(employee.sponsorship, 'name', None)),
         ("الفرع", getattr(employee.branch, 'name', None)),
         ("القسم", getattr(employee.department, 'name', None)),
+        ("الإدارة", _employee_administration_label(employee)),
         ("مركز التكلفة", getattr(employee.cost_center, 'name', None)),
         ("تاريخ المباشرة", employee.hire_date),
         ("تاريخ التوقف", employee.end_date),

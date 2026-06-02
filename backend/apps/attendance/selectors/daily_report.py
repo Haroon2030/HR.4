@@ -20,6 +20,7 @@ class DailyAttendanceRow:
     employee_number: str
     branch_name: str
     department_name: str
+    administration_name: str
     device_name: str
     device_id: int
     device_user_id: int
@@ -114,13 +115,29 @@ def _day_group_key_resolved(punch: AttendancePunch, day: date, enroll_map: dict)
     return ('dev', day, punch.device_id, punch.device_user_id)
 
 
+def _fmt_employee_administration(employee) -> str:
+    if not employee:
+        return '—'
+    adm = getattr(employee, 'administration', None)
+    if not adm:
+        return '—'
+    code = (getattr(adm, 'code', None) or '').strip()
+    name = (getattr(adm, 'name', None) or '').strip()
+    if code and name:
+        return f'{code} — {name}'
+    return code or name or '—'
+
+
 def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
     """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
     device_ids = set(qs.values_list('device_id', flat=True).distinct())
     enroll_map = load_enrollment_employee_map(device_ids)
 
     groups: dict[tuple, list[AttendancePunch]] = defaultdict(list)
-    for punch in qs.select_related('employee', 'employee__branch', 'employee__department', 'device').iterator(
+    for punch in qs.select_related(
+        'employee', 'employee__branch', 'employee__department',
+        'employee__administration', 'device',
+    ).iterator(
         chunk_size=3000,
     ):
         day = timezone.localtime(punch.punched_at).date()
@@ -154,6 +171,7 @@ def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
                 department_name=(
                     employee.department.name if employee and employee.department else '—'
                 ),
+                administration_name=_fmt_employee_administration(employee),
                 device_name=', '.join(device_names) if device_names else '—',
                 device_id=first.device_id,
                 device_user_id=device_user_ids[0] if len(device_user_ids) == 1 else 0,
@@ -199,7 +217,7 @@ def summarize_daily_rows(rows: list[DailyAttendanceRow], *, punch_total: int = 0
 def daily_rows_to_table(rows: list[DailyAttendanceRow]) -> dict:
     """تحويل الصفوف لعرض التقارير العامة (columns + rows)."""
     columns = [
-        'التاريخ', 'الموظف', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الجهاز',
+        'التاريخ', 'الموظف', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الإدارة', 'الجهاز',
         'رقم المستخدم', 'وقت الدخول', 'وقت الخروج', 'عدد البصمات', 'مدة العمل', 'الحالة',
     ]
     table_rows = [
@@ -209,6 +227,7 @@ def daily_rows_to_table(rows: list[DailyAttendanceRow]) -> dict:
             r.employee_number,
             r.branch_name,
             r.department_name,
+            r.administration_name,
             r.device_name,
             str(r.device_user_id),
             _format_time(r.check_in),

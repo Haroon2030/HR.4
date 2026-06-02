@@ -183,3 +183,21 @@ class Bank(BaseModel):
 
     def __str__(self):
         return self.name
+
+
+class Administration(BaseModel):
+    """الإدارات — جدول تهيئة مركزي (رقم + اسم)."""
+    code = models.CharField("رقم الإدارة", max_length=20, unique=True)
+    name = models.CharField("اسم الإدارة", max_length=150)
+    is_active = models.BooleanField("نشط", default=True)
+
+    history = HistoricalRecords(table_name='setup_historicaladministration')
+
+    class Meta:
+        db_table = 'setup_administration'
+        verbose_name = "إدارة"
+        verbose_name_plural = "الإدارات"
+        ordering = ['code', 'name']
+
+    def __str__(self):
+        return f'{self.code} — {self.name}' if self.code else self.name

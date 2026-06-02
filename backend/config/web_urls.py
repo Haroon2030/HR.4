@@ -191,6 +191,11 @@ urlpatterns = [
     path('setup/bank/add/', web_views.add_bank, name='add_bank'),
     path('setup/bank/<int:bank_id>/edit/', web_views.edit_bank, name='edit_bank'),
     path('setup/bank/<int:bank_id>/delete/', web_views.delete_bank, name='delete_bank'),
+
+    # الإدارات
+    path('setup/administration/add/', web_views.add_administration, name='add_administration'),
+    path('setup/administration/<int:administration_id>/edit/', web_views.edit_administration, name='edit_administration'),
+    path('setup/administration/<int:administration_id>/delete/', web_views.delete_administration, name='delete_administration'),
     
     # ══════════════════════════════════════════════════════════════
     # 9. إدارة المستخدمين

@@ -72,7 +72,7 @@ def unlinked_punches_q() -> Q:
 def load_enrollment_employee_map(device_ids: set[int] | list[int] | None = None) -> dict[tuple[int, int], object]:
     """(device_id, device_user_id) → Employee من جدول الربط."""
     qs = EmployeeBiometricEnrollment.objects.filter(is_deleted=False).select_related(
-        'employee', 'employee__branch', 'employee__department',
+        'employee', 'employee__branch', 'employee__department', 'employee__administration',
     )
     if device_ids:
         qs = qs.filter(device_id__in=device_ids)

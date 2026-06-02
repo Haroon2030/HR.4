@@ -37,6 +37,11 @@ def _banks_qs():
     from apps.setup.models import Bank
     return Bank.objects.filter(is_active=True, is_deleted=False).order_by('name')
 
+
+def _administrations_qs():
+    from apps.setup.models import Administration
+    return Administration.objects.filter(is_active=True, is_deleted=False).order_by('code', 'name')
+
 @login_required
 @permission_required('employees.view')
 def list_employees(request):
@@ -46,7 +51,7 @@ def list_employees(request):
     from django.core.paginator import Paginator
 
     qs = Employee.objects.select_related(
-        'branch', 'department', 'cost_center', 'nationality'
+        'branch', 'department', 'administration', 'cost_center', 'nationality',
     ).all()
     qs = filter_employees_queryset_for_user(request.user, qs)
 
@@ -156,6 +161,7 @@ def create_employee_full(request):
         'insurance_classes': InsuranceClass.objects.filter(is_active=True),
         'buildings': _buildings_qs(),
         'banks': _banks_qs(),
+        'administrations': _administrations_qs(),
     })
 
 
@@ -170,7 +176,7 @@ def view_employee(request, employee_id):
 
     employee = get_object_or_404(
         Employee.objects.select_related(
-            'branch', 'department', 'cost_center', 'nationality',
+            'branch', 'department', 'administration', 'cost_center', 'nationality',
             'profession', 'sponsorship', 'insurance', 'insurance_class',
             'employment_request', 'employment_request__requested_by',
             'employment_request__reviewed_by',
@@ -414,6 +420,7 @@ def edit_employee(request, employee_id):
         'insurance_classes': InsuranceClass.objects.filter(is_active=True),
         'buildings': _buildings_qs(),
         'banks': _banks_qs(),
+        'administrations': _administrations_qs(),
     })
 
 

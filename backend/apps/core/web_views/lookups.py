@@ -282,6 +282,37 @@ def delete_bank(request, bank_id):
                           'البنك', lambda o: o.name)
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Administration (الإدارات)
+# ──────────────────────────────────────────────────────────────────────
+
+@login_required
+@permission_required('system_data.add')
+def add_administration(request):
+    from apps.setup.forms import AdministrationForm
+    return _lookup_create(request, AdministrationForm,
+                          'pages/setup/administration_form.html',
+                          'الإدارة', lambda o: o.name)
+
+
+@login_required
+@permission_required('system_data.edit')
+def edit_administration(request, administration_id):
+    from apps.setup.models import Administration
+    from apps.setup.forms import AdministrationForm
+    return _lookup_update(request, Administration, administration_id, AdministrationForm,
+                          'pages/setup/administration_form.html',
+                          'الإدارة', lambda o: o.name, 'administration')
+
+
+@login_required
+@permission_required('system_data.delete')
+def delete_administration(request, administration_id):
+    from apps.setup.models import Administration
+    return _lookup_delete(request, Administration, administration_id,
+                          'الإدارة', lambda o: o.name)
+
+
 
 # =============================================================================
 # Pending Actions Approval Workflow (Branch Manager)

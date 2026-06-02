@@ -33,6 +33,7 @@ REPORTS = [
     {'group': 'workforce', 'key': 'headcount_summary',     'title': 'ملخص القوى العاملة',          'icon': 'users-round',   'color': 'primary',  'description': 'إجمالي الموظفين حسب الحالة والفرع'},
     {'group': 'workforce', 'key': 'branches',              'title': 'الموظفون حسب الفروع',         'icon': 'building-2',    'color': 'primary',  'description': 'توزيع الموظفين على الفروع'},
     {'group': 'workforce', 'key': 'departments_overview',  'title': 'الموظفون حسب الأقسام',        'icon': 'network',       'color': 'primary',  'description': 'توزيع الموظفين على الأقسام'},
+    {'group': 'workforce', 'key': 'administrations_overview', 'title': 'الموظفون حسب الإدارات',   'icon': 'building',      'color': 'primary',  'description': 'توزيع الموظفين على الإدارات'},
     {'group': 'workforce', 'key': 'cost_centers_overview', 'title': 'الموظفون حسب مراكز التكلفة',  'icon': 'layers',        'color': 'primary',  'description': 'توزيع الموظفين والتكلفة'},
     {'group': 'salary',    'key': 'salary_expenses',       'title': 'تفاصيل الرواتب',              'icon': 'wallet',        'color': 'emerald',  'description': 'رواتب كل موظف بالتفصيل'},
     {'group': 'salary',    'key': 'allowances_breakdown',  'title': 'تفصيل البدلات',               'icon': 'plus-circle',   'color': 'emerald',  'description': 'بدلات كل موظف'},
@@ -118,6 +119,18 @@ def _filtered_employees(request):
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     return qs, filters
 
+
+def _fmt_administration(employee) -> str:
+    """عرض الإدارة: رقم — اسم أو — إن لم تُربط."""
+    adm = getattr(employee, 'administration', None)
+    if not adm:
+        return '—'
+    code = (getattr(adm, 'code', None) or '').strip()
+    name = (getattr(adm, 'name', None) or '').strip()
+    if code and name:
+        return f'{code} — {name}'
+    return code or name or '—'
+
 # ══════════════════════════════════════════════════════════════════════════════
 # دوال البناء — كل واحدة تُرجع columns + rows
 # ══════════════════════════════════════════════════════════════════════════════
@@ -125,13 +138,23 @@ def _filtered_employees(request):
 def _build_headcount_summary(req):
     from apps.employees.models import Employee
     filters = _report_filters(req)
-    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الحالة', 'تاريخ المباشرة']
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الإدارة', 'الحالة', 'تاريخ المباشرة']
     labels = dict(Employee.Status.choices)
-    qs = _emp_qs().select_related('branch', 'department').order_by('branch__name', 'name')
+    qs = _emp_qs().select_related('branch', 'department', 'administration').order_by('branch__name', 'name')
     qs = apply_branch_filter(qs, filters['branch_ids'])
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
-    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', labels.get(e.status, e.status), str(e.hire_date or '—')] for e in qs]
+    rows = [
+        [
+            e.name, e.employee_number or '—',
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            _fmt_administration(e),
+            labels.get(e.status, e.status),
+            str(e.hire_date or '—'),
+        ]
+        for e in qs
+    ]
     return {'columns': cols, 'rows': rows}
 
 def _build_branches(req):
@@ -141,15 +164,59 @@ def _build_branches(req):
     return {'columns': cols, 'rows': rows}
 
 def _build_departments_overview(req):
-    cols = ['الاسم', 'الفرع', 'القسم', 'مركز التكلفة', 'المسمى الوظيفي']
-    qs = _filtered_employees(req)[0].select_related('branch', 'department', 'cost_center', 'profession').order_by('branch__name', 'department__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', e.department.name if e.department else '—', e.cost_center.name if e.cost_center else '—', e.profession.name if e.profession else '—'] for e in qs]
+    cols = ['الاسم', 'الفرع', 'القسم', 'الإدارة', 'مركز التكلفة', 'المسمى الوظيفي']
+    qs = _filtered_employees(req)[0].select_related(
+        'branch', 'department', 'administration', 'cost_center', 'profession',
+    ).order_by('branch__name', 'department__name', 'name')
+    rows = [
+        [
+            e.name,
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            _fmt_administration(e),
+            e.cost_center.name if e.cost_center else '—',
+            e.profession.name if e.profession else '—',
+        ]
+        for e in qs
+    ]
     return {'columns': cols, 'rows': rows}
 
+
+def _build_administrations_overview(req):
+    cols = ['الاسم', 'الفرع', 'رقم الإدارة', 'اسم الإدارة', 'القسم', 'مركز التكلفة']
+    qs = _filtered_employees(req)[0].select_related(
+        'branch', 'administration', 'department', 'cost_center',
+    ).order_by('administration__code', 'administration__name', 'name')
+    rows = []
+    for e in qs:
+        adm = e.administration
+        rows.append([
+            e.name,
+            e.branch.name if e.branch else '—',
+            adm.code if adm else '—',
+            adm.name if adm else '—',
+            e.department.name if e.department else '—',
+            e.cost_center.name if e.cost_center else '—',
+        ])
+    return {'columns': cols, 'rows': rows}
+
+
 def _build_cost_centers_overview(req):
-    cols = ['الاسم', 'مركز التكلفة', 'الفرع', 'القسم', 'الإجمالي']
-    qs = _filtered_employees(req)[0].select_related('branch', 'department', 'cost_center').order_by('cost_center__name', 'name')
-    rows = [[e.name, e.cost_center.name if e.cost_center else '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.total_salary)] for e in qs]
+    cols = ['الاسم', 'مركز التكلفة', 'الفرع', 'القسم', 'الإدارة', 'الإجمالي']
+    qs = _filtered_employees(req)[0].select_related(
+        'branch', 'department', 'administration', 'cost_center',
+    ).order_by('cost_center__name', 'name')
+    rows = [
+        [
+            e.name,
+            e.cost_center.name if e.cost_center else '—',
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            _fmt_administration(e),
+            str(e.total_salary),
+        ]
+        for e in qs
+    ]
     return {'columns': cols, 'rows': rows}
 
 def _build_salary_expenses(req):
@@ -187,13 +254,23 @@ def _build_new_hires(req):
     from apps.employees.models import Employee
     filters = _report_filters(req)
     df, dt = _parse_filter_dates(filters)
-    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'تاريخ المباشرة', 'الجنسية']
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الإدارة', 'تاريخ المباشرة', 'الجنسية']
     qs = _emp_qs().filter(hire_date__gte=df, hire_date__lte=dt).exclude(status=Employee.Status.TERMINATED)
     qs = apply_branch_filter(qs, filters['branch_ids'])
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
-    qs = qs.select_related('branch', 'department', 'nationality').order_by('-hire_date')
-    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', e.department.name if e.department else '—', str(e.hire_date or '—'), e.nationality.name if e.nationality else '—'] for e in qs]
+    qs = qs.select_related('branch', 'department', 'administration', 'nationality').order_by('-hire_date')
+    rows = [
+        [
+            e.name, e.employee_number or '—',
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            _fmt_administration(e),
+            str(e.hire_date or '—'),
+            e.nationality.name if e.nationality else '—',
+        ]
+        for e in qs
+    ]
     return {'columns': cols, 'rows': rows, 'note': f'تعيينات من {df} إلى {dt}'}
 
 def _build_terminations(req):
@@ -346,7 +423,9 @@ def _build_professions(req):
 
 BUILDERS = {
     'headcount_summary': _build_headcount_summary, 'branches': _build_branches,
-    'departments_overview': _build_departments_overview, 'cost_centers_overview': _build_cost_centers_overview,
+    'departments_overview': _build_departments_overview,
+    'administrations_overview': _build_administrations_overview,
+    'cost_centers_overview': _build_cost_centers_overview,
     'salary_expenses': _build_salary_expenses, 'allowances_breakdown': _build_allowances_breakdown,
     'deductions_breakdown': _build_deductions_breakdown, 'insurance_costs': _build_insurance_costs,
     'new_hires': _build_new_hires, 'terminations': _build_terminations, 'tenure_analysis': _build_tenure_analysis,

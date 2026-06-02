@@ -15,6 +15,11 @@
         :aria-selected="activeTab === 'departments'">
         <i data-lucide="folder" class="w-3.5 h-3.5"></i><span>الأقسام</span>
     </button>
+    <button type="button" role="tab" @click="activeTab = 'administrations'; lucide.createIcons()"
+        class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'administrations' }"
+        :aria-selected="activeTab === 'administrations'">
+        <i data-lucide="building" class="w-3.5 h-3.5"></i><span>الإدارات</span>
+    </button>
     <button type="button" role="tab" @click="activeTab = 'nationalities'; lucide.createIcons()"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'nationalities' }"
         :aria-selected="activeTab === 'nationalities'">

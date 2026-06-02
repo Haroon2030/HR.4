@@ -253,6 +253,10 @@ class Employee(BaseModel):
         Department, on_delete=models.SET_NULL, related_name='employee_records',
         verbose_name="القسم", null=True, blank=True
     )
+    administration = models.ForeignKey(
+        'setup.Administration', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employees', verbose_name="الإدارة",
+    )
     cost_center = models.ForeignKey(
         CostCenter, on_delete=models.SET_NULL, related_name='employee_records',
         verbose_name="مركز التكلفة", null=True, blank=True

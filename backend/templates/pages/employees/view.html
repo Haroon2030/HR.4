@@ -1599,6 +1599,7 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الكفالة</div><div class="text-sm text-slate-800">{{ employee.sponsorship.company_name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الفرع</div><div class="text-sm text-slate-800">{{ employee.branch.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">القسم</div><div class="text-sm text-slate-800">{{ employee.department.name|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">الإدارة</div><div class="text-sm text-slate-800">{% if employee.administration %}{{ employee.administration.code }} — {{ employee.administration.name }}{% else %}—{% endif %}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مركز التكلفة</div><div class="text-sm text-slate-800">{{ employee.cost_center.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ المباشرة</div><div class="text-sm text-slate-800">{{ employee.hire_date|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ التوقف</div><div class="text-sm text-slate-800">{{ employee.end_date|default:"—" }}</div></div>

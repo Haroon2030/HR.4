@@ -59,6 +59,7 @@ FK_LABEL_OVERRIDES = {
     'insurance_class': _name_only,
     'housing': _name_only,
     'bank': _name_only,
+    'administration': _code_then_name,
 }
 
 
@@ -79,7 +80,7 @@ _EMPLOYEE_FIELDS = [
     'gender',
     # FKs
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
-    'cost_center', 'insurance', 'insurance_class', 'housing',
+    'administration', 'cost_center', 'insurance', 'insurance_class', 'housing',
     # تواريخ + حالة
     'hire_date', 'end_date',
     'medical_insurance_expiry_date', 'contract_expiry_date', 'status', 'end_reason',
@@ -114,6 +115,11 @@ class EmployeeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _apply_fk_label_overrides(self)
+        if 'administration' in self.fields:
+            from apps.setup.models import Administration
+            self.fields['administration'].queryset = Administration.objects.filter(
+                is_active=True, is_deleted=False,
+            ).order_by('code', 'name')
         # كل الحقول اختيارية على مستوى الـ form باستثناء name
         # (Model أصلاً يسمح بـ blank=True/null=True لمعظمها)
         for field_name, field in self.fields.items():

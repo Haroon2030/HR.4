@@ -1,6 +1,7 @@
 from django.test import TestCase
 
 from apps.setup.models import (
+    Administration,
     Insurance,
     InsuranceClass,
     Nationality,
@@ -11,6 +12,11 @@ from apps.setup.models import (
 
 
 class SetupLookupModelTests(TestCase):
+    def test_administration_str(self):
+        a = Administration.objects.create(code='ADM01', name='الموارد البشرية')
+        self.assertIn('ADM01', str(a))
+        self.assertIn('الموارد البشرية', str(a))
+
     def test_nationality_str_and_ordering(self):
         n = Nationality.objects.create(code='NAT01', name='سعودي')
         self.assertEqual(str(n), 'سعودي')

@@ -24,7 +24,10 @@ def list_branches(request):
     """قائمة الفروع - شاشة بتبويبات"""
     from apps.cost_centers.models import CostCenter
     from apps.departments.models import Department
-    from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass, Building, Bank
+    from apps.setup.models import (
+        Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
+        Building, Bank, Administration,
+    )
     
     branches = filter_branches_queryset(
         request.user,
@@ -43,6 +46,7 @@ def list_branches(request):
     insurance_classes = InsuranceClass.objects.all()
     buildings = Building.objects.filter(is_deleted=False).order_by('name')
     banks = Bank.objects.filter(is_deleted=False).order_by('name')
+    administrations = Administration.objects.filter(is_deleted=False).order_by('code', 'name')
     
     return render(request, 'pages/branches/list.html', {
         'branches': branches,
@@ -55,6 +59,7 @@ def list_branches(request):
         'insurance_classes': insurance_classes,
         'buildings': buildings,
         'banks': banks,
+        'administrations': administrations,
     })
 
 @login_required
