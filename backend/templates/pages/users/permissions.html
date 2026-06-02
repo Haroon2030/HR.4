@@ -31,7 +31,7 @@
             </div>
         </div>
         {% url 'web:list_users' as back_url %}
-        {% include 'components/glass_back_link.html' with back_url=back_url label='رجوع' aria_label='رجوع لقائمة المستخدمين' %}
+        {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع' aria_label='رجوع لقائمة المستخدمين' %}
     </div>
 
     {% if is_admin_user %}

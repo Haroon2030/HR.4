@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from apps.core.models import Role
+from apps.core.models import AppModule, Permission, Role
 from apps.core.forms import RoleForm
 
 
@@ -16,6 +16,49 @@ from apps.core.forms import RoleForm
 
 
 from apps.core.decorators import permission_required
+
+
+def _build_role_permissions_matrix(role):
+    """جدول وحدات × عمليات لنموذج/صفحة صلاحيات الدور."""
+    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
+    operations = list(Permission.Operation.choices)
+    is_admin_role = role.role_type == Role.RoleType.ADMIN
+    role_perm_ids = set(role.permissions.values_list('id', flat=True))
+
+    matrix = []
+    for m in modules:
+        cells = []
+        for op_code, op_label in operations:
+            perm = next(
+                (p for p in m.permissions.all() if p.operation == op_code and p.is_active),
+                None,
+            )
+            cells.append({
+                'op_code': op_code,
+                'op_label': op_label,
+                'perm': perm,
+                'checked': bool(perm and (is_admin_role or perm.id in role_perm_ids)),
+                'available': perm is not None,
+            })
+        matrix.append({'module': m, 'cells': cells})
+
+    return {
+        'role': role,
+        'is_admin_role': is_admin_role,
+        'operations': operations,
+        'matrix': matrix,
+    }
+
+
+def _role_form_context(role=None):
+    if role:
+        return _build_role_permissions_matrix(role)
+    return {
+        'role': None,
+        'is_admin_role': False,
+        'operations': list(Permission.Operation.choices),
+        'matrix': [],
+    }
 
 @login_required
 @permission_required('users.view')
@@ -37,7 +80,6 @@ def view_role(request, role_id):
 def edit_role(request, role_id):
     """تعديل دور (يشمل تعديل الصلاحيات في نفس الصفحة)"""
     from django.shortcuts import get_object_or_404
-    from apps.core.models import AppModule, Permission
 
     role = get_object_or_404(Role, id=role_id)
     is_admin_role = role.role_type == Role.RoleType.ADMIN
@@ -65,49 +107,29 @@ def edit_role(request, role_id):
         for err in form.errors.values():
             messages.error(request, err[0])
 
-    # بناء جدول الصلاحيات (وحدات × عمليات)
-    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
-    operations = list(Permission.Operation.choices)
-    role_perm_ids = set(role.permissions.values_list('id', flat=True))
-
-    matrix = []
-    for m in modules:
-        cells = []
-        for op_code, op_label in operations:
-            perm = next((p for p in m.permissions.all() if p.operation == op_code and p.is_active), None)
-            cells.append({
-                'op_code': op_code,
-                'op_label': op_label,
-                'perm': perm,
-                'checked': bool(perm and (is_admin_role or perm.id in role_perm_ids)),
-                'available': perm is not None,
-            })
-        matrix.append({'module': m, 'cells': cells})
-
-    return render(request, 'pages/roles/form.html', {
-        'role': role,
-        'is_admin_role': is_admin_role,
-        'operations': operations,
-        'matrix': matrix,
-    })
+    ctx = _build_role_permissions_matrix(role)
+    ctx['is_admin_role'] = is_admin_role
+    return render(request, 'pages/roles/form.html', ctx)
 
 @login_required
 @permission_required('users.add')
 def add_role(request):
     """إضافة دور جديد"""
-    
     if request.method == 'POST':
         form = RoleForm(request.POST)
         if form.is_valid():
             role = form.save(commit=False)
             role.is_system_role = False
             role.save()
-            messages.success(request, f'تم إنشاء الدور "{role.name}" بنجاح')
-            return redirect('web:list_roles')
+            messages.success(
+                request,
+                f'تم إنشاء الدور "{role.name}" — يمكنك الآن تحديد الصلاحيات',
+            )
+            return redirect('web:edit_role', role_id=role.id)
         for err in form.errors.values():
             messages.error(request, err[0])
-    
-    return render(request, 'pages/roles/form.html')
+
+    return render(request, 'pages/roles/form.html', _role_form_context())
 
 
 @login_required
@@ -141,8 +163,6 @@ def delete_role(request, role_id):
 @permission_required('users.edit')
 def manage_role_permissions(request, role_id):
     """إدارة صلاحيات دور (جدول وحدات × عمليات)"""
-    from apps.core.models import AppModule, Permission
-
     role = get_object_or_404(Role, id=role_id)
     is_admin_role = role.role_type == Role.RoleType.ADMIN
 
@@ -161,31 +181,9 @@ def manage_role_permissions(request, role_id):
         messages.success(request, f'تم حفظ صلاحيات الدور "{role.name}" ({perms.count()} صلاحية)')
         return redirect('web:manage_role_permissions', role_id=role.id)
 
-    # بناء جدول وحدات × عمليات
-    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
-    operations = list(Permission.Operation.choices)  # [('view','عرض'),...]
-    role_perm_ids = set(role.permissions.values_list('id', flat=True))
-
-    matrix = []
-    for m in modules:
-        cells = []
-        for op_code, op_label in operations:
-            perm = next((p for p in m.permissions.all() if p.operation == op_code and p.is_active), None)
-            cells.append({
-                'op_code': op_code,
-                'op_label': op_label,
-                'perm': perm,
-                'checked': bool(perm and (is_admin_role or perm.id in role_perm_ids)),
-                'available': perm is not None,
-            })
-        matrix.append({'module': m, 'cells': cells})
-
-    return render(request, 'pages/roles/permissions.html', {
-        'role': role,
-        'is_admin_role': is_admin_role,
-        'operations': operations,
-        'matrix': matrix,
-    })
+    ctx = _build_role_permissions_matrix(role)
+    ctx['is_admin_role'] = is_admin_role
+    return render(request, 'pages/roles/permissions.html', ctx)
 
 
 # =============================================================================

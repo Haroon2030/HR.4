@@ -44,7 +44,7 @@
             تم تجهيز الشاشة وستظهر البيانات والمخططات هنا فور اكتمال البناء.
         </p>
         {% url 'web:reports_index' as back_url %}
-        {% include 'components/glass_back_link.html' with back_url=back_url label='العودة للتقارير' aria_label='العودة للتقارير' extra_class='mt-6' %}
+        {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='العودة للتقارير' aria_label='العودة للتقارير' extra_class='mt-6' %}
     </div>
 
 </div>

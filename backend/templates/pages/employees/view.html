@@ -35,7 +35,7 @@
         </div>
         <div class="flex items-center gap-2">
             {% url 'web:list_employees' as employees_list_url %}
-            {% include 'components/glass_back_link.html' with back_url=employees_list_url label='رجوع' aria_label='رجوع لقائمة الموظفين' %}
+            {% include 'components/glass_back_link.html' with back_url=employees_list_url show_label=True label='رجوع' aria_label='رجوع لقائمة الموظفين' %}
 
             {% if employee.status != 'terminated' %}
             <!-- زر إضافة سريعة -->

@@ -8,7 +8,7 @@
     <div class="flex items-center justify-between">
         <div>
             {% url 'web:list_pending_actions' as back_url %}
-            {% include 'components/glass_back_link.html' with back_url=back_url label='رجوع للقائمة' aria_label='رجوع للقائمة' %}
+            {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع للقائمة' aria_label='رجوع للقائمة' %}
             <h1 class="text-2xl font-bold text-slate-900 mt-1">طلب #{{ action.id }} — {{ action.get_action_type_display }}</h1>
             <p class="text-slate-500 text-xs">الموظف: <span class="font-semibold text-slate-700">{{ action.employee.name }}</span> • الفرع: {{ action.branch.name|default:"-" }}</p>
         </div>

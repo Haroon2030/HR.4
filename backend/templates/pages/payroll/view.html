@@ -11,7 +11,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
             {% url 'web:list_payroll_runs' as back_url %}
-            {% include 'components/glass_back_link.html' with back_url=back_url label='رجوع للقائمة' aria_label='رجوع لقائمة المسيرات' %}
+            {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع للقائمة' aria_label='رجوع لقائمة المسيرات' %}
             <h1 class="text-2xl font-bold text-slate-900 mt-1">{{ run.branch.name }} — {{ run.period_label }}</h1>
             <p class="mt-1 flex flex-wrap items-center gap-2">
                 <span class="px-2 py-0.5 text-xs font-bold rounded {% if run.salary_mode == 'cash' %}bg-amber-100 text-amber-800{% else %}bg-sky-100 text-sky-800{% endif %}">{{ run.get_salary_mode_display }}</span>

@@ -1,12 +1,12 @@
 {% comment %}
   زر رجوع زجاجي (RTL: سهم لليمين).
   {% url 'web:list_x' as list_url %}
-  {% include 'components/glass_back_link.html' with back_url=list_url %}
-  مع نص: with back_url=list_url label='رجوع للقائمة' aria_label='رجوع للقائمة'
+  {% include 'components/glass_back_link.html' with back_url=list_url aria_label='رجوع' %}
+  مع نص: أضف show_label=True و label='رجوع للقائمة'
 {% endcomment %}
 <a href="{{ back_url }}"
-   class="hr-glass-back-btn{% if label %} hr-glass-back-btn--labeled{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
-   aria-label="{{ aria_label|default:label|default:'رجوع' }}">
-    <i data-lucide="arrow-right" class="{% if label %}w-4 h-4{% else %}w-5 h-5{% endif %}"></i>
-    {% if label %}<span class="hr-glass-back-btn__text">{{ label }}</span>{% endif %}
+   class="hr-glass-back-btn{% if show_label %} hr-glass-back-btn--labeled{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
+   aria-label="{% if aria_label %}{{ aria_label }}{% elif show_label and label %}{{ label }}{% else %}رجوع{% endif %}">
+    <i data-lucide="arrow-right" class="{% if show_label %}w-4 h-4{% else %}w-5 h-5{% endif %}"></i>
+    {% if show_label and label %}<span class="hr-glass-back-btn__text">{{ label }}</span>{% endif %}
 </a>
