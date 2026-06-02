@@ -4,9 +4,12 @@ from django.test import TestCase
 from apps.core.models import Branch, Company, PendingAction
 from apps.core.services.approval_routing import (
     FirstApproverKind,
+    approver_display_label,
+    first_stage_tab_label,
     resolve_first_approver,
     user_can_first_approve,
 )
+from apps.core.models import Role
 from apps.employees.models import Employee
 from apps.setup.models import Administration
 
@@ -61,3 +64,16 @@ class ApprovalRoutingTests(TestCase):
         self.assertTrue(user_can_first_approve(self.admin_manager, action))
         self.assertFalse(user_can_first_approve(self.branch_manager, action))
         self.assertFalse(user_can_first_approve(self.other_manager, action))
+
+    def test_stage_label_uses_approver_role_name(self):
+        from apps.core.models import UserProfile
+
+        role = Role.objects.create(
+            name='المدير المالي',
+            role_type=Role.RoleType.ADMIN_MANAGER,
+        )
+        UserProfile.objects.create(user=self.admin_manager, role=role)
+        action = self._build_action(with_admin=True)
+        decision = resolve_first_approver(action)
+        self.assertEqual(decision.stage_label, 'المدير المالي')
+        self.assertEqual(first_stage_tab_label(self.admin_manager), 'المدير المالي')

@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">طلبات العمليات السريعة</h1>
-            <p class="text-slate-500 text-xs">دورة الموافقات: الخط الأول (مدير إدارة/فرع) → المدير العام → موظف الموارد</p>
+            <p class="text-slate-500 text-xs">دورة الموافقات: {{ first_stage_tab_label|default:"موافقة أولى" }} → المدير العام → موظف الموارد</p>
         </div>
     </div>
 
@@ -21,7 +21,7 @@
         </a>
         <a href="?tab=pending_branch" role="tab" class="hr-tab-btn hr-tab-btn--amber{% if tab == 'pending_branch' %} is-active{% endif %}">
             <i data-lucide="user" class="w-4 h-4"></i>
-            <span>الخط الأول</span>
+            <span>{{ first_stage_tab_label|default:"موافقة أولى" }}</span>
             {% if counts.pending_branch %}<span class="hr-tab-badge bg-amber-200 text-amber-900">{{ counts.pending_branch }}</span>{% endif %}
         </a>
         <a href="?tab=pending_gm" role="tab" class="hr-tab-btn hr-tab-btn--indigo{% if tab == 'pending_gm' %} is-active{% endif %}">

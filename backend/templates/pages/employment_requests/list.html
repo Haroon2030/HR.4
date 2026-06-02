@@ -8,7 +8,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">طلبات التوظيف</h1>
-            <p class="text-slate-500 text-xs">دورة الموافقات: الخط الأول (مدير إدارة/فرع) ← مدير الموارد البشرية ← أخصائي الموارد</p>
+            <p class="text-slate-500 text-xs">دورة الموافقات: {{ first_stage_tab_label|default:"موافقة أولى" }} ← مدير الموارد البشرية ← أخصائي الموارد</p>
         </div>
     </div>
 
@@ -21,7 +21,7 @@
         </a>
         <a href="?status=pending_branch" role="tab" class="hr-tab-btn{% if current_status == 'pending_branch' %} is-active{% endif %}">
             <i data-lucide="user-check" class="w-4 h-4"></i>
-            <span>الخط الأول</span>
+            <span>{{ first_stage_tab_label|default:"موافقة أولى" }}</span>
         </a>
         <a href="?status=pending_gm" role="tab" class="hr-tab-btn hr-tab-btn--amber{% if current_status == 'pending_gm' %} is-active{% endif %}">
             <i data-lucide="user-cog" class="w-4 h-4"></i>
@@ -96,7 +96,7 @@
                                     {% if is_branch_manager or request.user.is_superuser %}
                                     <form method="POST" action="{% url 'web:approve_employment_request' r.id %}" class="inline" onsubmit="return confirm('الموافقة وتحويل الطلب لمدير الموارد البشرية؟');">
                                         {% csrf_token %}
-                                        <button type="submit" class="hr-act hr-act--approve" title="موافقة (الخط الأول)">
+                                        <button type="submit" class="hr-act hr-act--approve" title="موافقة ({{ first_stage_tab_label|default:'موافقة أولى' }})">
                                             <i data-lucide="check" class="hr-act__icon"></i>
                                         </button>
                                     </form>

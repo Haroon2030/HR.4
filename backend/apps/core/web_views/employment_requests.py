@@ -24,7 +24,7 @@ from apps.core.web_views._helpers import (
 from apps.core.models import PendingAction
 from apps.core.services.workflow_access import stage_permission_required
 from apps.core.services import employment_requests as svc
-from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, user_can_first_approve
+from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, user_can_first_approve, first_stage_tab_label
 
 
 User = get_user_model()
@@ -99,6 +99,7 @@ def list_employment_requests(request):
         'is_general_manager': is_gm,
         'is_hr_officer': is_officer,
         'hr_officers': get_hr_officers() if (is_gm or is_super) else [],
+        'first_stage_tab_label': first_stage_tab_label(user),
     })
 
 

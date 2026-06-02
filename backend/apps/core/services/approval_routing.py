@@ -23,11 +23,55 @@ class FirstApproverDecision:
 
     @property
     def stage_label(self) -> str:
+        if self.recipient:
+            return approver_display_label(self.recipient)
         if self.kind == FirstApproverKind.ADMINISTRATION:
             return 'مدير الإدارة'
         if self.kind == FirstApproverKind.BRANCH:
             return 'مدير الفرع'
         return 'غير محدد'
+
+
+def approver_display_label(user) -> str:
+    """اسم الدور المعتمد للعرض (تبويب الموافقة الأولى وحالة الطلب)."""
+    if not user:
+        return 'غير محدد'
+    profile = getattr(user, 'profile', None)
+    role = getattr(profile, 'role', None) if profile else None
+    if role and (role.name or '').strip():
+        return role.name.strip()
+    if role:
+        label = role.get_role_type_display() or ''
+        if '(' in label:
+            label = label.split('(')[0].strip()
+        return label or 'غير محدد'
+    full = user.get_full_name() if hasattr(user, 'get_full_name') else ''
+    return (full or getattr(user, 'username', '') or 'غير محدد').strip()
+
+
+def first_stage_tab_label(user) -> str:
+    """عنوان تبويب المرحلة الأولى حسب دور المستخدم الحالي."""
+    from apps.core.models import Role
+
+    profile = getattr(user, 'profile', None)
+    role = getattr(profile, 'role', None) if profile else None
+
+    if role and role.role_type in (
+        Role.RoleType.ADMIN_MANAGER,
+        Role.RoleType.MANAGER,
+    ):
+        return approver_display_label(user)
+
+    if user.managed_administrations.filter(is_deleted=False).exists():
+        return approver_display_label(user) if role else 'مدير الإدارة'
+
+    if user.managed_branches.filter(is_deleted=False).exists():
+        return approver_display_label(user) if role else 'مدير الفرع'
+
+    if user.is_superuser:
+        return 'موافقة أولى'
+
+    return 'موافقة أولى'
 
 
 def snapshot_routing_fields(employee) -> dict:

@@ -20,7 +20,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.core.models import PendingAction, Role
-from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver
+from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
 from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations
 from apps.core.web_views._helpers import (
     _can_act_at_stage,
@@ -296,6 +296,7 @@ def list_pending_actions(request):
         'is_hr_officer': _is_hr_officer(request.user),
         'is_branch_mgr': _is_branch_manager(request.user),
         'resolve_first_approver': resolve_first_approver,
+        'first_stage_tab_label': first_stage_tab_label(request.user),
     })
 
 
