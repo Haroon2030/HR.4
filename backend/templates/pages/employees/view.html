@@ -1954,7 +1954,11 @@
                                         {% if st.content %}<div class="text-slate-500 text-xs mt-0.5 line-clamp-2">{{ st.content }}</div>{% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top text-center">
+                                        {% if st.document %}
                                         {% include "components/media_preview_btn.html" with url=st.document.url title=st.title label="عرض" as_icon_only=True %}
+                                        {% else %}
+                                        —
+                                        {% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top text-slate-600 text-xs">
                                         <i data-lucide="user" class="w-3 h-3 inline-block"></i>
