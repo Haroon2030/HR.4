@@ -75,6 +75,32 @@ class Command(BaseCommand):
                     'reports.view',
                     'operations.view',
                     'operations.approve_branch',
+                    'operations.return',
+                ],
+            },
+
+            # ═══════════════════════════════════════════════════════════
+            # 2b مدير إدارة — الموافقة الأولى لموظفي إدارته
+            # ═══════════════════════════════════════════════════════════
+            {
+                'name': 'مدير إدارة',
+                'role_type': Role.RoleType.ADMIN_MANAGER,
+                'description': (
+                    'الموافقة الأولى على طلبات موظفي الإدارة المعيّنة عليه. '
+                    'يُعيَّن أيضاً كـ «مدير الإدارة» من التهيئة → الإدارات.'
+                ),
+                'is_system_role': True,
+                'permissions': [
+                    'employees.view',
+                    'employees.add',
+                    'employees.edit',
+                    'departments.view',
+                    'branches.view',
+                    'leaves.view',
+                    'leaves.approve',
+                    'leaves.manage',
+                    'reports.view',
+                    'operations.view',
                     'operations.approve_admin',
                     'operations.return',
                 ],

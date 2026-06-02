@@ -45,11 +45,9 @@
                         required
                     >
                         <option value="">-- اختر نوع الدور --</option>
-                        <option value="admin" {% if role and role.role_type == 'admin' %}selected{% endif %}>الأدمن</option>
-                        <option value="hr_manager" {% if role and role.role_type == 'hr_manager' %}selected{% endif %}>الموارد البشرية</option>
-                        <option value="manager" {% if role and role.role_type == 'manager' %}selected{% endif %}>مدير</option>
-                        <option value="specialist" {% if role and role.role_type == 'specialist' %}selected{% endif %}>أخصائي</option>
-                        <option value="employee" {% if role and role.role_type == 'employee' %}selected{% endif %}>موظف</option>
+                        {% for value, label in role_type_choices %}
+                        <option value="{{ value }}" {% if role and role.role_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 

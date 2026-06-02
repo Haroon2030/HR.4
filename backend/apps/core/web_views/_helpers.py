@@ -68,13 +68,21 @@ def _is_branch_manager(user):
     return (
         user.is_superuser
         or user.managed_branches.filter(is_deleted=False).exists()
-        or user.managed_administrations.filter(is_deleted=False).exists()
     )
 
 
 def _is_administration_manager(user):
-    """هل المستخدم مدير إدارة؟"""
-    return user.is_superuser or user.managed_administrations.filter(is_deleted=False).exists()
+    """هل المستخدم مدير إدارة (معيّن على إدارة أو بدور مدير إدارة)؟"""
+    if user.is_superuser:
+        return True
+    if user.managed_administrations.filter(is_deleted=False).exists():
+        return True
+    profile = getattr(user, 'profile', None)
+    return bool(
+        profile
+        and profile.role
+        and profile.role.role_type == Role.RoleType.ADMIN_MANAGER
+    )
 
 
 def branch_manager_required(view_func):

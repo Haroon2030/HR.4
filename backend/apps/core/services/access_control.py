@@ -17,6 +17,7 @@ ROLE_RANK = {
     Role.RoleType.SPECIALIST: 20,
     Role.RoleType.HR_OFFICER: 30,
     Role.RoleType.MANAGER: 40,
+    Role.RoleType.ADMIN_MANAGER: 45,
     Role.RoleType.HR_MANAGER: 90,
     Role.RoleType.ADMIN: 100,
 }
@@ -77,6 +78,18 @@ def get_accessible_branch_ids(user) -> set[int] | None:
     ids: set[int] = set(
         user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)
     )
+    admin_ids = list(
+        user.managed_administrations.filter(is_deleted=False).values_list('id', flat=True)
+    )
+    if admin_ids:
+        from apps.employees.models import Employee
+
+        ids.update(
+            Employee.objects.filter(
+                administration_id__in=admin_ids,
+                is_deleted=False,
+            ).values_list('branch_id', flat=True)
+        )
     if profile:
         if profile.branch_id:
             ids.add(profile.branch_id)

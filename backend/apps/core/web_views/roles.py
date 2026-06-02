@@ -47,18 +47,22 @@ def _build_role_permissions_matrix(role):
         'is_admin_role': is_admin_role,
         'operations': operations,
         'matrix': matrix,
+        'role_type_choices': Role.RoleType.choices,
     }
 
 
 def _role_form_context(role=None):
     if role:
-        return _build_role_permissions_matrix(role)
-    return {
-        'role': None,
-        'is_admin_role': False,
-        'operations': list(Permission.Operation.choices),
-        'matrix': [],
-    }
+        ctx = _build_role_permissions_matrix(role)
+    else:
+        ctx = {
+            'role': None,
+            'is_admin_role': False,
+            'operations': list(Permission.Operation.choices),
+            'matrix': [],
+        }
+    ctx['role_type_choices'] = Role.RoleType.choices
+    return ctx
 
 @login_required
 @permission_required('users.view')

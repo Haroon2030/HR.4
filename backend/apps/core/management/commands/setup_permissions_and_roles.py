@@ -129,32 +129,52 @@ class Command(BaseCommand):
             },
             
             # ═══════════════════════════════════════════════════════════
-            # 2️⃣ مدير فرع أو إدارة موظف
+            # 2️⃣ مدير فرع
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'مدير فرع او ادارة موظف',
+                'name': 'مدير فرع',
                 'role_type': Role.RoleType.MANAGER,
-                'description': 'يمكنه عرض وإدارة موظفي فرعه/قسمه، والموافقة على الإجازات والحضور.',
+                'description': 'يمكنه عرض وإدارة موظفي فرعه، والموافقة الأولى (مدير الفرع) على الطلبات.',
                 'is_system_role': True,
                 'permissions': [
-                    # الموظفين
                     'employees.view',
                     'employees.add',
                     'employees.edit',
                     'employees.view_salary',
-                    # الأقسام والفروع
                     'departments.view',
                     'branches.view',
-                    # الإجازات (أكواد legacy)
                     'leaves.view',
                     'leaves.approve',
                     'leaves.manage',
-                    # التقارير
                     'reports.view',
                     'reports.export',
-                    # طلبات العمليات
                     'operations.view',
                     'operations.approve_branch',
+                    'operations.return',
+                ],
+            },
+
+            # ═══════════════════════════════════════════════════════════
+            # 2b مدير إدارة
+            # ═══════════════════════════════════════════════════════════
+            {
+                'name': 'مدير إدارة',
+                'role_type': Role.RoleType.ADMIN_MANAGER,
+                'description': 'الموافقة الأولى على طلبات موظفي إدارته (مع تعيينه مديراً للإدارة في التهيئة).',
+                'is_system_role': True,
+                'permissions': [
+                    'employees.view',
+                    'employees.add',
+                    'employees.edit',
+                    'employees.view_salary',
+                    'departments.view',
+                    'branches.view',
+                    'leaves.view',
+                    'leaves.approve',
+                    'leaves.manage',
+                    'reports.view',
+                    'reports.export',
+                    'operations.view',
                     'operations.approve_admin',
                     'operations.return',
                 ],

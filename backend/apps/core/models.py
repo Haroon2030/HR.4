@@ -208,7 +208,8 @@ class Role(BaseModel):
         ADMIN = 'admin', 'مدير النظام'
         HR_MANAGER = 'hr_manager', 'مدير موارد بشرية'
         HR_OFFICER = 'hr_officer', 'موظف موارد'
-        MANAGER = 'manager', 'مدير قسم'
+        ADMIN_MANAGER = 'admin_manager', 'مدير إدارة'
+        MANAGER = 'manager', 'مدير فرع'
         SPECIALIST = 'specialist', 'أخصائي'
         EMPLOYEE = 'employee', 'موظف'
     
@@ -370,6 +371,10 @@ class UserProfile(BaseModel):
     @property
     def is_manager(self):
         return self.role and self.role.role_type == Role.RoleType.MANAGER
+
+    @property
+    def is_admin_manager(self):
+        return self.role and self.role.role_type == Role.RoleType.ADMIN_MANAGER
     
     @property
     def is_specialist(self):
