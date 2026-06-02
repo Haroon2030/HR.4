@@ -18,8 +18,10 @@ from apps.core.models import Branch
 from apps.core.filter_utils import apply_branch_filter, append_multi_param, parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids
 from apps.setup.models import Sponsorship
+from apps.core.services.reports_catalog import PRIMARY_REPORT_SPECS, merge_reports_catalog
 
 REPORT_GROUPS = [
+    {'key': 'primary',      'title': 'التقارير',          'icon': 'bar-chart-3',   'color': 'primary',  'description': 'التقارير الأساسية المطلوبة'},
     {'key': 'workforce',    'title': 'القوى العاملة',    'icon': 'users-round',   'color': 'primary',  'description': 'توزيع الموظفين على الفروع والأقسام'},
     {'key': 'salary',       'title': 'الرواتب والمصاريف', 'icon': 'wallet',        'color': 'emerald',  'description': 'تحليل الرواتب والبدلات والاستقطاعات'},
     {'key': 'turnover',     'title': 'الدوران الوظيفي',   'icon': 'refresh-cw',    'color': 'indigo',   'description': 'التعيينات والإنهاءات ومعدل الدوران'},
@@ -29,7 +31,7 @@ REPORT_GROUPS = [
     {'key': 'attendance',   'title': 'الحضور والبصمة',     'icon': 'fingerprint',   'color': 'violet',   'description': 'تقارير الحضور من أجهزة البصمة'},
 ]
 
-REPORTS = [
+_BASE_REPORTS = [
     {'group': 'workforce', 'key': 'headcount_summary',     'title': 'ملخص القوى العاملة',          'icon': 'users-round',   'color': 'primary',  'description': 'إجمالي الموظفين حسب الحالة والفرع'},
     {'group': 'workforce', 'key': 'branches',              'title': 'الموظفون حسب الفروع',         'icon': 'building-2',    'color': 'primary',  'description': 'توزيع الموظفين على الفروع'},
     {'group': 'workforce', 'key': 'departments_overview',  'title': 'الموظفون حسب الأقسام',        'icon': 'network',       'color': 'primary',  'description': 'توزيع الموظفين على الأقسام'},
@@ -53,8 +55,15 @@ REPORTS = [
     {'group': 'attendance',  'key': 'biometric_daily',     'title': 'تقرير البصمة اليومي',         'icon': 'fingerprint',   'color': 'violet',   'description': 'دخول وخروج ومدة العمل لكل موظف/يوم'},
 ]
 
+REPORTS = merge_reports_catalog(_BASE_REPORTS, PRIMARY_REPORT_SPECS)
+
 def _grouped_reports():
-    return [{**g, 'items': [r for r in REPORTS if r['group'] == g['key']]} for g in REPORT_GROUPS]
+    groups = []
+    for g in REPORT_GROUPS:
+        items = [r for r in REPORTS if r['group'] == g['key']]
+        if items:
+            groups.append({**g, 'items': items})
+    return groups
 
 
 def _report_keys():
@@ -388,7 +397,7 @@ def _build_absences(req):
     from apps.employees.models import EmployeeAbsence
     filters = _report_filters(req)
     df, dt = _parse_filter_dates(filters)
-    cols = ['الموظف', 'الفرع', 'تاريخ الغياب', 'عدد الأيام', 'مبلغ الخصم', 'محتسب في مسير']
+    cols = ['الموظف', 'الفرع', 'تاريخ الغياب', 'عدد الأيام', 'سبب الغياب', 'مبلغ الخصم', 'محتسب في مسير']
     qs = EmployeeAbsence.objects.filter(
         is_deleted=False,
         absence_date__gte=df,
@@ -398,8 +407,257 @@ def _build_absences(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.order_by('-absence_date')[:500]
-    rows = [[a.employee.name, a.employee.branch.name if a.employee.branch else '—', str(a.absence_date), str(a.days), str(a.deduction_amount), str(a.applied_to_payroll or '—')] for a in qs]
+    rows = [
+        [
+            a.employee.name,
+            a.employee.branch.name if a.employee.branch else '—',
+            str(a.absence_date),
+            str(a.days),
+            a.reason or a.notes or '—',
+            str(a.deduction_amount),
+            str(a.applied_to_payroll or '—'),
+        ]
+        for a in qs
+    ]
     return {'columns': cols, 'rows': rows}
+
+
+def _build_employees(req):
+    from apps.employees.models import Employee
+    filters = _report_filters(req)
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الإدارة', 'الحالة', 'تاريخ المباشرة', 'الجوال']
+    labels = dict(Employee.Status.choices)
+    qs = _emp_qs().select_related('branch', 'department', 'administration').order_by('branch__name', 'name')
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    rows = [
+        [
+            e.name,
+            e.employee_number or '—',
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            _fmt_administration(e),
+            labels.get(e.status, e.status),
+            str(e.hire_date or '—'),
+            e.phone or '—',
+        ]
+        for e in qs
+    ]
+    return {'columns': cols, 'rows': rows}
+
+
+def _build_stopped(req):
+    from apps.employees.models import Employee
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
+    cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'تاريخ التوقف', 'سبب التوقف', 'الحالة']
+    labels = dict(Employee.Status.choices)
+    qs = _emp_qs().filter(status=Employee.Status.TERMINATED)
+    qs = qs.filter(
+        Q(end_date__gte=df, end_date__lte=dt) | Q(end_date__isnull=True),
+    )
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    qs = qs.select_related('branch').order_by('-end_date', 'name')
+    rows = [
+        [
+            e.name,
+            e.branch.name if e.branch else '—',
+            str(e.hire_date or '—'),
+            str(e.end_date or '—'),
+            e.end_reason or '—',
+            labels.get(e.status, e.status),
+        ]
+        for e in qs
+    ]
+    return {'columns': cols, 'rows': rows, 'note': f'متوقفون — من {df} إلى {dt}'}
+
+
+def _build_statements(req):
+    from apps.employees.models import EmployeeStatement
+    filters = _report_filters(req)
+    df, dt = _parse_filter_dates(filters)
+    cols = ['الموظف', 'الفرع', 'النوع', 'العنوان', 'التاريخ', 'الرقم المتسلسل']
+    types = [
+        EmployeeStatement.StatementType.STATEMENT,
+        EmployeeStatement.StatementType.ACKNOWLEDGMENT,
+        EmployeeStatement.StatementType.OTHER,
+    ]
+    qs = EmployeeStatement.objects.filter(
+        statement_type__in=types,
+        is_deleted=False,
+        statement_date__gte=df,
+        statement_date__lte=dt,
+    ).select_related('employee', 'employee__branch')
+    qs = apply_branch_filter(qs, filters['branch_ids'], field='employee__branch_id')
+    if filters['sponsorship_ids']:
+        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
+    qs = qs.order_by('-statement_date')[:500]
+    labels = dict(EmployeeStatement.StatementType.choices)
+    rows = [
+        [
+            s.employee.name,
+            s.employee.branch.name if s.employee.branch else '—',
+            labels.get(s.statement_type, s.statement_type),
+            s.title,
+            str(s.statement_date),
+            s.serial_number or '—',
+        ]
+        for s in qs
+    ]
+    return {'columns': cols, 'rows': rows}
+
+
+def _build_housing(req):
+    cols = ['الاسم', 'الفرع', 'السكن', 'القسم', 'الجوال']
+    qs = _filtered_employees(req)[0].select_related('branch', 'housing', 'department').order_by(
+        'housing__name', 'branch__name', 'name',
+    )
+    rows = [
+        [
+            e.name,
+            e.branch.name if e.branch else '—',
+            e.housing.name if e.housing else '—',
+            e.department.name if e.department else '—',
+            e.phone or '—',
+        ]
+        for e in qs
+    ]
+    return {'columns': cols, 'rows': rows}
+
+
+def _build_active_headcount(req):
+    from apps.employees.models import Employee
+    filters = _report_filters(req)
+    cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'القسم', 'الإدارة', 'تاريخ المباشرة']
+    qs = _emp_qs().filter(status=Employee.Status.ACTIVE)
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    qs = qs.select_related('branch', 'department', 'administration').order_by('branch__name', 'name')
+    rows = [
+        [
+            e.name,
+            e.employee_number or '—',
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            _fmt_administration(e),
+            str(e.hire_date or '—'),
+        ]
+        for e in qs
+    ]
+    return {'columns': cols, 'rows': rows}
+
+
+def _build_suspended(req):
+    from apps.employees.models import Employee
+    filters = _report_filters(req)
+    cols = ['الاسم', 'الفرع', 'القسم', 'تاريخ المباشرة', 'الحالة', 'الجوال']
+    labels = dict(Employee.Status.choices)
+    qs = _emp_qs().filter(status=Employee.Status.SUSPENDED)
+    qs = apply_branch_filter(qs, filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    qs = qs.select_related('branch', 'department').order_by('branch__name', 'name')
+    rows = [
+        [
+            e.name,
+            e.branch.name if e.branch else '—',
+            e.department.name if e.department else '—',
+            str(e.hire_date or '—'),
+            labels.get(e.status, e.status),
+            e.phone or '—',
+        ]
+        for e in qs
+    ]
+    return {'columns': cols, 'rows': rows}
+
+
+def _build_attendance_late(req):
+    from django.utils import timezone
+    from apps.attendance.models import EmployeeBiometricSettings
+    from apps.attendance.selectors.daily_report import build_daily_attendance_rows
+    from apps.attendance.selectors.punch_records import get_punch_queryset
+
+    filters = _report_filters(req)
+    date_from, date_to = _parse_filter_dates(filters)
+    qs = get_punch_queryset(
+        branch_ids=filters['branch_ids'],
+        date_from=date_from,
+        date_to=date_to,
+    )
+    if filters['sponsorship_ids']:
+        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
+    daily_rows = build_daily_attendance_rows(qs)
+    employee_ids = [r.employee_id for r in daily_rows if r.employee_id]
+    settings_map = {
+        s.employee_id: s
+        for s in EmployeeBiometricSettings.objects.filter(employee_id__in=employee_ids)
+    }
+
+    cols = [
+        'التاريخ', 'الموظف', 'الفرع', 'الدخول المتوقع', 'وقت الدخول',
+        'تأخير الدخول (د)', 'الخروج المتوقع', 'وقت الخروج', 'خروج مبكر (د)', 'الملاحظة',
+    ]
+    table_rows = []
+    tz = timezone.get_current_timezone()
+
+    for row in daily_rows:
+        if not row.employee_id or not row.is_mapped:
+            continue
+        settings = settings_map.get(row.employee_id)
+        if not settings:
+            continue
+
+        late_in = ''
+        early_out = ''
+        notes = []
+
+        exp_in = settings.expected_check_in.strftime('%H:%M') if settings.expected_check_in else '—'
+        exp_out = settings.expected_check_out.strftime('%H:%M') if settings.expected_check_out else '—'
+        act_in = timezone.localtime(row.check_in).strftime('%H:%M') if row.check_in else '—'
+        act_out = timezone.localtime(row.check_out).strftime('%H:%M') if row.check_out else '—'
+
+        if settings.expected_check_in and row.check_in:
+            expected_dt = timezone.make_aware(datetime.combine(row.work_date, settings.expected_check_in), tz)
+            check_in_local = timezone.localtime(row.check_in)
+            grace = settings.late_grace_minutes or 30
+            if check_in_local > expected_dt + timedelta(minutes=grace):
+                mins = int((check_in_local - expected_dt).total_seconds() // 60)
+                late_in = str(mins)
+                notes.append(f'تأخر دخول {mins} د')
+
+        if settings.expected_check_out and row.check_out:
+            expected_out = timezone.make_aware(datetime.combine(row.work_date, settings.expected_check_out), tz)
+            check_out_local = timezone.localtime(row.check_out)
+            if check_out_local < expected_out:
+                mins = int((expected_out - check_out_local).total_seconds() // 60)
+                early_out = str(mins)
+                notes.append(f'خروج مبكر {mins} د')
+
+        if not notes:
+            continue
+
+        table_rows.append([
+            str(row.work_date),
+            row.employee_name,
+            row.branch_name,
+            exp_in,
+            act_in,
+            late_in or '—',
+            exp_out,
+            act_out,
+            early_out or '—',
+            ' · '.join(notes),
+        ])
+
+    return {
+        'columns': cols,
+        'rows': table_rows,
+        'note': f'من {date_from} إلى {date_to} — يظهر فقط من لديه إعدادات بصمة وتأخر فعلي',
+    }
 
 def _build_gender(req):
     from apps.employees.models import Employee
@@ -433,6 +691,13 @@ BUILDERS = {
     'leaves': _build_leaves, 'leave_balance': _build_leave_balance, 'absences': _build_absences,
     'gender': _build_gender, 'nationality': _build_nationality, 'professions': _build_professions,
     'biometric_daily': _build_biometric_daily,
+    'employees': _build_employees,
+    'stopped': _build_stopped,
+    'statements': _build_statements,
+    'housing': _build_housing,
+    'active_headcount': _build_active_headcount,
+    'suspended': _build_suspended,
+    'attendance_late': _build_attendance_late,
 }
 
 def _filter_querystring(request, exclude=()):
