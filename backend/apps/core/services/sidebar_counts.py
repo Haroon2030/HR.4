@@ -59,11 +59,19 @@ def _managed_branch_ids(user) -> list[int]:
     )
 
 
+def _managed_administration_ids(user) -> list[int]:
+    if user.is_superuser:
+        return []
+    return list(
+        user.managed_administrations.filter(is_deleted=False).values_list('id', flat=True)
+    )
+
+
 def _compute_sidebar_counts(user) -> dict[str, int]:
     from apps.core.models import Notification, PendingAction
+    from apps.core.services.approval_routing import first_stage_pending_q
     from apps.core.services.workflow_access import can_view_operations
     from apps.core.web_views._helpers import (
-        _is_branch_manager,
         _is_general_manager,
         _is_hr_officer,
     )
@@ -79,6 +87,7 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
         }
 
     managed_ids = _managed_branch_ids(user)
+    managed_admin_ids = _managed_administration_ids(user)
     pending_statuses = _pending_statuses()
     hire_statuses = _hire_pending_statuses()
 
@@ -93,6 +102,8 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
         scope = Q(requested_by=user) | Q(assigned_officer=user)
         if managed_ids:
             scope |= Q(branch_id__in=managed_ids)
+        if managed_admin_ids:
+            scope |= Q(administration_id__in=managed_admin_ids)
         pa_total = pa_qs.filter(scope).distinct().count()
         hire_total = hire_qs.filter(scope).distinct().count()
 
@@ -102,12 +113,13 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
     inbox_filter = Q()
     if user.is_superuser or _is_general_manager(user):
         inbox_filter |= Q(status=PendingAction.Status.PENDING_GM)
-    if _is_branch_manager(user) and managed_ids:
-        inbox_filter |= Q(
-            status=PendingAction.Status.PENDING_BRANCH,
-            branch_id__in=managed_ids,
-        )
-    if user.is_superuser:
+    first_pa_q = first_stage_pending_q(
+        user,
+        model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
+    )
+    if first_pa_q.children:
+        inbox_filter |= first_pa_q
+    elif user.is_superuser:
         inbox_filter |= Q(status=PendingAction.Status.PENDING_BRANCH)
     if _is_hr_officer(user):
         inbox_filter |= Q(
@@ -127,12 +139,13 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
     hire_inbox = Q()
     if user.is_superuser or _is_general_manager(user):
         hire_inbox |= Q(status=EmploymentRequest.Status.PENDING_GM)
-    if _is_branch_manager(user) and managed_ids:
-        hire_inbox |= Q(
-            status=EmploymentRequest.Status.PENDING_BRANCH,
-            branch_id__in=managed_ids,
-        )
-    if user.is_superuser:
+    first_hire_q = first_stage_pending_q(
+        user,
+        model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+    )
+    if first_hire_q.children:
+        hire_inbox |= first_hire_q
+    elif user.is_superuser:
         hire_inbox |= Q(status=EmploymentRequest.Status.PENDING_BRANCH)
     if _is_hr_officer(user):
         hire_inbox |= Q(

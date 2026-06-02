@@ -179,6 +179,13 @@ def dashboard_view(request):
         context['gm_pending_actions'] = gm_actions_qs.order_by('-created_at')
 
     # ─── صندوق المهام الموحَّد (Unified Inbox) ───────────────────────────────
+    from apps.core.web_views.pending_actions import (
+        _inbox_for,
+        _inbox_for_hire,
+        _user_visible_actions,
+        _user_visible_hire_requests,
+    )
+
     inbox = []
 
     def _push_er(req, kind_label, badge, action_url, action_label, action_icon, action_color):
@@ -200,33 +207,70 @@ def dashboard_view(request):
             'badge': badge,
             'title': a.employee.name if a.employee_id else '—',
             'subtitle': f"{(a.employee.branch.name if a.employee_id and a.employee.branch_id else '—')}",
-            'date': a.assigned_at or a.created_at,
+            'date': a.assigned_at or a.requested_at or a.updated_at,
             'action_url': action_url,
             'action_label': action_label,
             'action_icon': action_icon,
             'action_color': action_color,
         })
 
-    for req in context.get('officer_employment_requests') or []:
-        _push_er(req, 'طلب توظيف', 'indigo',
-                 reverse('web:edit_employment_request', args=[req.id]),
-                 'تجهيز واعتماد', 'edit-3', 'indigo')
-    for a in context.get('officer_pending_actions') or []:
-        _push_pa(a, 'amber',
-                 reverse('web:pending_action_detail', args=[a.id]),
-                 'تنفيذ', 'play', 'amber')
-    for req in context.get('pending_requests') or []:
-        _push_er(req, 'طلب توظيف (فرع)', 'amber',
-                 reverse('web:list_employment_requests'),
-                 'مراجعة', 'eye', 'emerald')
-    for req in context.get('gm_employment_requests') or []:
-        _push_er(req, 'طلب توظيف (م.عام)', 'blue',
-                 reverse('web:list_employment_requests') + '?status=pending_gm',
-                 'معالجة', 'eye', 'blue')
-    for a in context.get('gm_pending_actions') or []:
-        _push_pa(a, 'purple',
-                 reverse('web:pending_action_detail', args=[a.id]),
-                 'معالجة', 'eye', 'purple')
+    inbox_pa = _inbox_for(
+        request.user,
+        _user_visible_actions(request.user),
+    ).order_by('-updated_at', '-requested_at')[:100]
+    inbox_hire = _inbox_for_hire(
+        request.user,
+        _user_visible_hire_requests(request.user),
+    ).order_by('-updated_at', '-created_at')[:100]
+
+    for a in inbox_pa:
+        if a.status == PendingAction.Status.PENDING_BRANCH:
+            _push_pa(
+                a, 'amber',
+                reverse('web:pending_action_detail', args=[a.id]),
+                'مراجعة', 'eye', 'emerald',
+            )
+        elif a.status == PendingAction.Status.PENDING_GM:
+            _push_pa(
+                a, 'purple',
+                reverse('web:pending_action_detail', args=[a.id]),
+                'معالجة', 'eye', 'purple',
+            )
+        elif a.status == PendingAction.Status.PENDING_OFFICER:
+            _push_pa(
+                a, 'indigo',
+                reverse('web:pending_action_detail', args=[a.id]),
+                'تنفيذ', 'play', 'indigo',
+            )
+        elif a.status == PendingAction.Status.RETURNED:
+            _push_pa(
+                a, 'rose',
+                reverse('web:pending_action_detail', args=[a.id]),
+                'تعديل', 'edit-3', 'rose',
+            )
+
+    for req in inbox_hire:
+        if req.status in (
+            EmploymentRequest.Status.PENDING_BRANCH,
+            EmploymentRequest.Status.PENDING,
+        ):
+            _push_er(
+                req, 'طلب توظيف', 'amber',
+                reverse('web:list_employment_requests'),
+                'مراجعة', 'eye', 'emerald',
+            )
+        elif req.status == EmploymentRequest.Status.PENDING_GM:
+            _push_er(
+                req, 'طلب توظيف (م.عام)', 'blue',
+                reverse('web:list_employment_requests') + '?status=pending_gm',
+                'معالجة', 'eye', 'blue',
+            )
+        elif req.status == EmploymentRequest.Status.PENDING_OFFICER:
+            _push_er(
+                req, 'طلب توظيف', 'indigo',
+                reverse('web:edit_employment_request', args=[req.id]),
+                'تجهيز', 'edit-3', 'indigo',
+            )
 
     # بحث
     q = (request.GET.get('q') or '').strip()
