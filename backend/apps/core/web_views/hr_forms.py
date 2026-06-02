@@ -16,6 +16,7 @@ from apps.core.models import Company
 from apps.employees.models import Employee, EmployeeLoan, EmployeeStatement
 from apps.core.decorators import permission_required
 from apps.core.web_views._helpers import employee_branch_access_required
+from apps.core.services.hr_forms_catalog import PRIMARY_FORM_SPECS, merge_forms_catalog
 
 
 # اختصارات قصيرة لكود النموذج تظهر في السريال (لو ما وجد، يُؤخذ أول 3 حروف من الـ key)
@@ -32,6 +33,12 @@ FORM_CODE_MAP = {
     'business_trip': 'BT',
     'absence_report': 'AR',
     'employment_letter': 'EL',
+    'permission_request': 'PR',
+    'promotion': 'PM',
+    'salary_adjustment': 'SA',
+    'transfer': 'TR',
+    'clearance': 'CL',
+    'user_account': 'UA',
 }
 
 
@@ -138,7 +145,7 @@ def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
 
 
 # قائمة النماذج المعتمدة
-HR_FORMS = [
+_BASE_HR_FORMS = [
     {
         'key': 'leave_request',
         'title': 'طلب إجازة',
@@ -210,6 +217,8 @@ HR_FORMS = [
         'color': 'primary',
     },
 ]
+
+HR_FORMS = merge_forms_catalog(_BASE_HR_FORMS, PRIMARY_FORM_SPECS)
 
 
 @login_required

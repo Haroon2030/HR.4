@@ -1,0 +1,15 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+{% include "pages/hr_forms/_employee_brief.html" %}
+
+<div class="section">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">اسم المستخدم:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">البريد:</span><span class="blank">{{ employee.email|default:"............" }}</span></div>
+        <div class="field"><span class="label">الصلاحية المطلوبة:</span><span class="blank"></span></div>
+    </div>
+</div>
+
+{% include "pages/hr_forms/_signatures_standard.html" %}
+{% endblock %}
