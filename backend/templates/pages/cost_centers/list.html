@@ -10,10 +10,7 @@
             {% include 'components/glass_back_link.html' with back_url=back_url aria_label='رجوع للفرع' %}
             {% endif %}
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">مراكز التكلفة</h1>
-                <p class="text-slate-500 text-sm">
-                    {% if branch %}{{ branch.name }}{% else %}جميع مراكز التكلفة في النظام{% endif %}
-                </p>
+                <h1 class="text-2xl font-bold text-slate-900">مراكز التكلفة{% if branch %} — {{ branch.name }}{% endif %}</h1>
             </div>
         </div>
         <a href="{% if branch %}{% url 'web:add_cost_center' branch.id %}{% else %}{% url 'web:add_cost_center_global' %}{% endif %}"
@@ -66,7 +63,7 @@
         {% else %}
         <div class="p-12 text-center">
             <i data-lucide="wallet" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
-            <p class="text-slate-500">لا توجد مراكز تكلفة بعد</p>
+            <p class="text-slate-500">لا بيانات</p>
         </div>
         {% endif %}
     </div>

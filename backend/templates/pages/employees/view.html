@@ -243,7 +243,6 @@
                 <div class="md:col-span-3" x-show="stype === 'penalty'" x-cloak>
                     <label class="block text-[11px] font-bold text-rose-700 mb-0.5">مبلغ الخصم (ر.س) <span class="text-red-500">*</span></label>
                     <input type="number" name="deduction_amount" min="0" step="0.01" placeholder="0.00" class="w-full px-2 py-1.5 border border-rose-300 rounded text-xs bg-rose-50">
-                    <p class="text-[10px] text-rose-600 mt-0.5">سيُخصم تلقائياً من راتب الشهر عند بناء المسير.</p>
                 </div>
 
                 <div class="md:col-span-6">
@@ -325,7 +324,7 @@
                 <template x-if="boxes.length === 0">
                     <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
                         <i data-lucide="calendar-plus" class="w-8 h-8 text-slate-300 mx-auto mb-1"></i>
-                        <p class="text-xs text-slate-500">لا يوجد أي شهر — اضغط "إضافة شهر"</p>
+                        <p class="text-xs text-slate-500">لا بيانات</p>
                     </div>
                 </template>
 
@@ -439,7 +438,7 @@
                     <i data-lucide="alert-triangle" class="w-5 h-5 mt-0.5"></i>
                     <div>
                         <div class="font-bold mb-1">لا يمكن تقديم إجازة</div>
-                        <div>الموظف غير مُسجَّل على كفالة. يجب تحديد الكفالة من ملف الموظف أولاً.</div>
+                        <div>لا بيانات</div>
                     </div>
                 </div>
                 <div class="flex justify-end mt-4">
@@ -552,16 +551,10 @@
                             <span class="font-bold">{{ employee.leave_compensation|floatformat:2 }} ر.س</span>
                         </div>
                     </div>
-                    <p class="text-[10px] text-emerald-700 leading-relaxed">
-                        طبقاً لنظام العمل: 21 يوماً مدفوعة الأجر سنوياً من تاريخ المباشرة. يُحسب المتبقي × الأجر اليومي.
-                    </p>
                 </div>
                 {% endwith %}
                 {% else %}
-                <div class="bg-slate-50 border border-slate-200 text-slate-600 rounded-lg p-3 text-xs flex items-start gap-2">
-                    <i data-lucide="info" class="w-4 h-4 mt-0.5"></i>
-                    <span>الموظف غير مُسجَّل على كفالة — لا تُحتسب مستحقات إجازة.</span>
-                </div>
+                <div class="text-center text-xs text-slate-500 py-2">لا بيانات</div>
                 {% endif %}
 
                 <div>
@@ -1633,7 +1626,7 @@
 
                 {# === أرشيف تعديلات الراتب === #}
                 <div class="pt-4 mt-2 border-t border-slate-200">
-                    {% include "components/salary_adjust_archive.html" with records=salary_adjusts show_type_col=True show_count=True section_id="view" footer_note="يتم تسجيل كل تعديل على الراتب تلقائياً في هذا الأرشيف" %}
+                    {% include "components/salary_adjust_archive.html" with records=salary_adjusts show_type_col=True show_count=True section_id="view" %}
                 </div>
             </div>
 
@@ -1649,7 +1642,6 @@
                     <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                         <div class="text-xs font-bold text-emerald-700 mb-1">الرصيد المستحق</div>
                         <div class="text-lg font-bold text-emerald-800">{{ employee.accrued_leave_days|default:"0.0" }} يوم</div>
-                        <div class="text-[10px] text-emerald-600 mt-1">21 يوم/سنة من تاريخ المباشرة</div>
                     </div>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-3">
                         <div class="text-xs font-bold text-red-700 mb-1">الإجازات المستخدمة</div>
@@ -1710,7 +1702,7 @@
                                         <td colspan="7" class="px-3 py-12 text-center">
                                             <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                                 <i data-lucide="calendar-x" class="w-10 h-10"></i>
-                                                <span class="text-sm">لا توجد إجازات مسجّلة لهذا الموظف</span>
+                                                <span class="text-sm">لا بيانات</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -1779,7 +1771,7 @@
                     <template x-if="boxes.length === 0">
                         <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
                             <i data-lucide="calendar-plus" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
-                            <p class="text-sm text-slate-500">لا يوجد أي شهر مُضاف بعد</p>
+                            <p class="text-sm text-slate-500">لا بيانات</p>
                             {% if employee.status != 'terminated' %}
                             <button type="button" @click="addBox()" class="mt-3 px-4 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1.5">
                                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -1967,7 +1959,7 @@
                                     <td colspan="5" class="px-3 py-12 text-center">
                                         <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                             <i data-lucide="file-x" class="w-10 h-10"></i>
-                                            <span class="text-sm">لا توجد إفادات أو إنذارات مسجّلة</span>
+                                            <span class="text-sm">لا بيانات</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -2061,7 +2053,7 @@
                 {% else %}
                 <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
                     <i data-lucide="package" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                    لا توجد عهد مسجلة على هذا الموظف
+                    لا بيانات
                 </div>
                 {% endif %}
             </div>
@@ -2102,7 +2094,7 @@
                 {% else %}
                 <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
                     <i data-lucide="plane" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                    لا توجد رحلات عمل مسجلة على هذا الموظف
+                    لا بيانات
                 </div>
                 {% endif %}
             </div>
@@ -2195,7 +2187,7 @@
                 {% else %}
                 <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
                     <i data-lucide="hand-coins" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                    لا توجد سلف مسجلة لهذا الموظف
+                    لا بيانات
                 </div>
                 {% endif %}
             </div>
@@ -2320,7 +2312,7 @@
                 {% else %}
                 <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
                     <i data-lucide="user-minus" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                    لا توجد غيابات مسجلة لهذا الموظف
+                    لا بيانات
                 </div>
                 {% endif %}
             </div>
@@ -2556,7 +2548,7 @@
                                     <td colspan="5" class="px-3 py-12 text-center">
                                         <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                             <i data-lucide="archive-x" class="w-10 h-10"></i>
-                                            <span class="text-sm">لا توجد عمليات مسجّلة في الأرشيف</span>
+                                            <span class="text-sm">لا بيانات</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -2714,7 +2706,7 @@
                                     <td colspan="6" class="px-4 py-12 text-center">
                                         <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                             <i data-lucide="calculator" class="w-10 h-10"></i>
-                                            <span class="text-sm font-medium">لا توجد حركات مخصصات مسجلة</span>
+                                            <span class="text-sm font-medium">لا بيانات</span>
                                             <p class="text-xs mt-1">يتم إنشاء السجلات تلقائياً مع كل عملية إقفال للرواتب.</p>
                                         </div>
                                     </td>
@@ -2771,8 +2763,7 @@
                         <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i data-lucide="shield-check" class="w-8 h-8"></i>
                         </div>
-                        <h3 class="font-bold text-slate-800 text-lg mb-1">لا توجد تصفيات</h3>
-                        <p class="text-sm text-slate-500">سجل الموظف خالي من أي عمليات تصفية.</p>
+                        <h3 class="font-bold text-slate-800 text-lg">لا بيانات</h3>
                     </div>
                 </div>
             </div>

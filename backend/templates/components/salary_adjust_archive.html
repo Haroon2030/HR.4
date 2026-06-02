@@ -101,7 +101,7 @@
                         <td colspan="{% if show_type_col %}6{% else %}5{% endif %}" class="px-3 py-8 text-center">
                             <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                 <i data-lucide="archive-x" class="w-8 h-8"></i>
-                                <span class="text-xs">{{ empty_text|default:"لا توجد تعديلات راتب مسجّلة" }}</span>
+                                <span class="text-xs">{{ empty_text|default:"لا بيانات" }}</span>
                             </div>
                         </td>
                     </tr>
@@ -110,13 +110,6 @@
             </table>
         </div>
     </div>
-
-    {% if footer_note %}
-    <p class="text-[11px] text-slate-400 text-center mt-2">
-        <i data-lucide="info" class="w-3 h-3 inline-block"></i>
-        {{ footer_note }}
-    </p>
-    {% endif %}
 
     {# نافذة تفاصيل زجاجية #}
     <div x-show="open" x-cloak

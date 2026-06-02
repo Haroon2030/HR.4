@@ -32,7 +32,7 @@
                 — {{ fp.last_punch.device.name }}
             </p>
             {% else %}
-            <p class="text-sm mt-2 m-0">لا توجد بصمات في الفترة المحددة.</p>
+            <p class="text-sm mt-2 m-0">لا بيانات</p>
             {% endif %}
         </div>
     </div>
@@ -152,7 +152,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="px-4 py-8 text-center font-semibold">لا توجد بصمات في هذه الفترة.</td>
+                    <td colspan="5" class="px-4 py-8 text-center font-semibold">لا بيانات</td>
                 </tr>
                 {% endfor %}
             </tbody>

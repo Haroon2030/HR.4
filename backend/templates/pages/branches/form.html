@@ -8,7 +8,6 @@
         {% include 'components/glass_back_link.html' with back_url=back_url aria_label='رجوع لقائمة الفروع' %}
         <div>
             <h1 class="text-2xl font-bold text-slate-900">{% if branch %}تعديل الفرع{% else %}إضافة فرع جديد{% endif %}</h1>
-            <p class="text-slate-500 text-sm">{% if branch %}تعديل تفاصيل الفرع{% else %}إنشاء فرع جديد{% endif %}</p>
         </div>
     </div>
 
@@ -48,7 +47,6 @@
                         placeholder="RHQ"
                         maxlength="20"
                     >
-                    <p class="text-xs text-slate-500">رمز مختصر للفرع (بالإنجليزية)</p>
                 </div>
 
                 <!-- حالة التفعيل -->
@@ -82,7 +80,6 @@
                         </option>
                         {% endfor %}
                     </select>
-                    <p class="text-xs text-slate-500">المستخدم الذي ستصله طلبات التوظيف للموافقة عليها</p>
                 </div>
             </div>
         </div>

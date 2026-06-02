@@ -3,8 +3,8 @@
     <div class="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-slate-100 rounded-full flex items-center justify-center">
         <i data-lucide="{{ icon|default:'inbox' }}" class="w-6 h-6 md:w-8 md:h-8 text-slate-400"></i>
     </div>
-    <h3 class="text-base md:text-lg font-bold text-slate-800 mb-2">{{ title|default:'لا توجد بيانات' }}</h3>
-    <p class="text-sm md:text-base text-slate-500 mb-4 md:mb-6">{{ message|default:'ابدأ بإضافة عنصر جديد' }}</p>
+    <h3 class="text-base md:text-lg font-bold text-slate-800 mb-2">{{ title|default:'لا بيانات' }}</h3>
+    {% if message %}<p class="text-sm md:text-base text-slate-500 mb-4 md:mb-6">{{ message }}</p>{% endif %}
     {% if action_url %}
     <a href="{{ action_url }}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
         <i data-lucide="plus" class="w-4 h-4"></i>

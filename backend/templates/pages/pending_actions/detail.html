@@ -126,7 +126,6 @@
                 </h3>
 
                 {% if can_resubmit %}
-                    <p class="text-xs text-slate-500 mb-3">طلبك مرتجَع للتعديل. عدّل البيانات الأصلية ثم أعد الإرسال.</p>
                     {% if action.return_notes %}
                         <div class="mb-3 px-3 py-2 bg-rose-50 text-rose-700 text-xs rounded border border-rose-200">
                             <strong>ملاحظات الإرجاع:</strong> {{ action.return_notes }}
@@ -198,9 +197,6 @@
                     </div>
                     <form method="POST" action="{% url 'web:officer_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
                         {% csrf_token %}
-                        <div class="px-3 py-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200">
-                            ⚠ بمجرد موافقتك سيتم تنفيذ العملية فعلياً على بيانات الموظف.
-                        </div>
                         <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
                         <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
                         <div class="flex justify-end gap-2">

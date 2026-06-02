@@ -128,17 +128,7 @@
                 </div>
                 {% endif %}
                 {% else %}
-                <div class="p-10 text-center">
-                    <div class="w-16 h-16 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
-                        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-800">
-                        {% if inbox_query %}لا توجد نتائج للبحث "{{ inbox_query }}"{% else %}كل شيء على ما يرام 🎉{% endif %}
-                    </h3>
-                    <p class="text-sm text-slate-500 mt-1">
-                        {% if inbox_query %}جرّب كلمة بحث مختلفة.{% else %}لا توجد مهام بانتظارك حالياً.{% endif %}
-                    </p>
-                </div>
+                <div class="p-10 text-center text-sm font-semibold text-slate-500">لا بيانات</div>
                 {% endif %}
             </div>
 
@@ -195,7 +185,7 @@
                     </div>
                 </div>
                 {% else %}
-                <p class="text-sm text-slate-400 text-center py-6">لا توجد بيانات بعد</p>
+                <p class="text-sm text-slate-400 text-center py-6">لا بيانات</p>
                 {% endif %}
                 {% endwith %}
             </div>

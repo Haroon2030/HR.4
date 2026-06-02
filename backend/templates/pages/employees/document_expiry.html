@@ -2,11 +2,6 @@
 
 {% block page_title %}وثائق تنتهي قريباً{% endblock %}
 
-{% block list_description %}
-عرض الموظفين النشطين الذين تنتهي وثائقهم (كرت صحي، تأمين طبي، عقد مخطط) خلال الفترة المحددة — يتماشى مع أمر
-<code class="text-xs bg-slate-100 px-1 rounded">notify_document_expiry</code>.
-{% endblock %}
-
 {% block list_actions %}
 <form method="get" class="flex flex-wrap items-center gap-2">
     <label class="text-sm text-slate-600 flex items-center gap-2">
@@ -25,7 +20,7 @@
 
 {% if not rows %}
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-800 text-sm">
-    لا توجد وثائق ضمن هذه النافذة ضمن نطاق فروعك.
+    لا بيانات
 </div>
 {% else %}
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

@@ -8,7 +8,6 @@
         {% include 'components/glass_back_link.html' with back_url=back_url aria_label='رجوع لقائمة الأدوار' %}
         <div>
             <h1 class="text-2xl font-bold text-slate-900">{% if role %}تعديل الدور{% else %}إضافة دور جديد{% endif %}</h1>
-            <p class="text-slate-500 text-sm">{% if role %}تعديل تفاصيل الدور{% else %}إنشاء دور جديد{% endif %}</p>
         </div>
     </div>
 
@@ -88,7 +87,6 @@
                     </div>
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">الصلاحيات</h2>
-                        <p class="text-xs text-slate-500">حدد العمليات المسموح بها لهذا الدور</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
@@ -113,7 +111,6 @@
             {% if is_admin_role %}
             <div class="bg-amber-50 border-b border-amber-200 text-amber-800 px-6 py-3 flex items-start gap-2 text-sm">
                 <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                <span><strong>ملاحظة:</strong> دور "الأدمن" يمتلك جميع الصلاحيات تلقائياً ولا يمكن تعديلها.</span>
             </div>
             {% endif %}
 

@@ -13,7 +13,6 @@
                 <i data-lucide="fingerprint" class="w-7 h-7 text-primary-600"></i>
                 أجهزة البصمة
             </h1>
-            <p class="text-slate-500 text-sm mt-1">إدارة أجهزة ZKTeco — IP · منفذ 4370 · ربط الفروع والموظفين</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{% url 'web:attendance_report' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-primary-200 bg-primary-50 rounded-lg text-sm font-semibold text-primary-800 hover:bg-primary-100">
@@ -129,7 +128,7 @@
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">لا توجد أجهزة. أضف جهازاً بعنوان IP.</td></tr>
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">لا بيانات</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

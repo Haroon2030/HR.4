@@ -80,9 +80,7 @@
     </div>
 
     {% if not employees %}
-    <p class="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-        لا يوجد موظفون نشطون — <a href="{% url 'web:add_employee' %}" class="underline font-semibold">أضف موظفاً</a> أولاً.
-    </p>
+    <p class="mt-2 text-xs text-slate-500 text-center">لا بيانات</p>
     {% endif %}
 </div>
 {% endwith %}

@@ -193,7 +193,7 @@
             {% else %}
             <div class="px-6 py-12 text-center">
                 <i data-lucide="users" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
-                <p class="text-slate-500">لا يوجد موظفون مسجلون في هذا الفرع</p>
+                <p class="text-slate-500">لا بيانات</p>
             </div>
             {% endif %}
         </div>
@@ -249,7 +249,7 @@
             {% else %}
             <div class="px-6 py-12 text-center">
                 <i data-lucide="target" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
-                <p class="text-slate-500 mb-4">لا يوجد مراكز تكلفة مسجلة في هذا الفرع</p>
+                <p class="text-slate-500 mb-4">لا بيانات</p>
                 <a href="{% url 'web:add_cost_center' branch.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                     <i data-lucide="plus" class="w-4 h-4"></i>
                     إضافة مركز تكلفة
@@ -311,7 +311,7 @@
             {% else %}
             <div class="px-6 py-12 text-center">
                 <i data-lucide="grid-3x3" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
-                <p class="text-slate-500 mb-4">لا يوجد أقسام مسجلة في هذا الفرع</p>
+                <p class="text-slate-500 mb-4">لا بيانات</p>
                 <a href="{% url 'web:add_department' branch.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                     <i data-lucide="plus" class="w-4 h-4"></i>
                     إضافة قسم

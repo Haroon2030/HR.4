@@ -30,15 +30,6 @@
         {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع' aria_label='رجوع لقائمة الأدوار' %}
     </div>
 
-    {% if is_admin_role %}
-    <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 mb-5 flex items-start gap-3">
-        <i data-lucide="info" class="w-5 h-5 mt-0.5 flex-shrink-0"></i>
-        <div class="text-sm">
-            <strong>ملاحظة:</strong> دور "الأدمن" يمتلك جميع الصلاحيات في النظام تلقائياً ولا يمكن تعديلها.
-        </div>
-    </div>
-    {% endif %}
-
     <form method="post" x-data="permsMatrix()">
         {% csrf_token %}
 
@@ -119,7 +110,7 @@
                         <tr>
                             <td colspan="{{ operations|length|add:2 }}" class="px-4 py-10 text-center text-slate-500">
                                 <i data-lucide="package" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
-                                <p class="text-sm">لا توجد وحدات/صلاحيات.</p>
+                                <p class="text-sm">لا بيانات</p>
                                 <p class="text-xs mt-1">شغّل: <code class="bg-slate-100 px-2 py-0.5 rounded">python manage.py create_permissions</code></p>
                             </td>
                         </tr>
