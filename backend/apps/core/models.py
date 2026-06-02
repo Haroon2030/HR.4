@@ -182,7 +182,7 @@ class Permission(BaseModel):
     )
     operation = models.CharField(
         "العملية",
-        max_length=20,
+        max_length=32,
         choices=Operation.choices,
     )
     code = models.CharField("الرمز", max_length=100, unique=True, help_text="مثل: employees.view")
