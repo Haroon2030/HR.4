@@ -1,4 +1,4 @@
-# Generated manually — approve_administration is 22 chars; field was max_length=20.
+# approve_administration (22 chars) exceeded max_length=20; widen field + use approve_admin.
 
 from django.db import migrations, models
 
@@ -8,7 +8,7 @@ _PERMISSION_OPERATION_CHOICES = [
     ('edit', 'تعديل'),
     ('delete', 'حذف'),
     ('approve_branch', 'موافقة الفرع'),
-    ('approve_administration', 'موافقة الإدارة'),
+    ('approve_admin', 'موافقة الإدارة'),
     ('approve_gm', 'موافقة المدير العام'),
     ('approve_officer', 'تنفيذ موظف الموارد'),
     ('return', 'إرجاع'),

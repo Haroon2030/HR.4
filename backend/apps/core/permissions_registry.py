@@ -41,6 +41,7 @@ OPERATION_NAMES = {
     'delete': 'حذف',
     'manage': 'إدارة',
     'approve_branch': 'موافقة الفرع',
+    'approve_admin': 'موافقة الإدارة',
     'approve_gm': 'موافقة المدير العام',
     'approve_officer': 'تنفيذ موظف الموارد',
     'return': 'إرجاع',

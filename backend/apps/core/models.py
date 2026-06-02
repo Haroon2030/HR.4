@@ -168,7 +168,7 @@ class Permission(BaseModel):
         EDIT = 'edit', 'تعديل'
         DELETE = 'delete', 'حذف'
         APPROVE_BRANCH = 'approve_branch', 'موافقة الفرع'
-        APPROVE_ADMINISTRATION = 'approve_administration', 'موافقة الإدارة'
+        APPROVE_ADMINISTRATION = 'approve_admin', 'موافقة الإدارة'
         APPROVE_GM = 'approve_gm', 'موافقة المدير العام'
         APPROVE_OFFICER = 'approve_officer', 'تنفيذ موظف الموارد'
         RETURN = 'return', 'إرجاع'

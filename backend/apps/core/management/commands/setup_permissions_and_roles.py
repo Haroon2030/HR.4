@@ -88,7 +88,7 @@ class Command(BaseCommand):
             # ═══════════════════════════════════════════════════════════
             {'code': 'operations.view', 'name': 'عرض طلبات العمليات', 'module': 'operations'},
             {'code': 'operations.approve_branch', 'name': 'موافقة مدير الفرع', 'module': 'operations'},
-            {'code': 'operations.approve_administration', 'name': 'موافقة مدير الإدارة', 'module': 'operations'},
+            {'code': 'operations.approve_admin', 'name': 'موافقة مدير الإدارة', 'module': 'operations'},
             {'code': 'operations.approve_gm', 'name': 'موافقة المدير العام', 'module': 'operations'},
             {'code': 'operations.approve_officer', 'name': 'تنفيذ موظف الموارد', 'module': 'operations'},
             {'code': 'operations.return', 'name': 'إرجاع طلب للتعديل', 'module': 'operations'},
@@ -155,7 +155,7 @@ class Command(BaseCommand):
                     # طلبات العمليات
                     'operations.view',
                     'operations.approve_branch',
-                    'operations.approve_administration',
+                    'operations.approve_admin',
                     'operations.return',
                 ],
             },
@@ -201,7 +201,7 @@ class Command(BaseCommand):
                     # طلبات العمليات
                     'operations.view',
                     'operations.approve_branch',
-                    'operations.approve_administration',
+                    'operations.approve_admin',
                     'operations.approve_gm',
                     'operations.approve_officer',
                     'operations.return',

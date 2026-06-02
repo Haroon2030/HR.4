@@ -20,7 +20,7 @@ VIEW_PERMISSION = 'operations.view'
 WORKFLOW_PERMISSION_CODES = (
     VIEW_PERMISSION,
     'operations.approve_branch',
-    'operations.approve_administration',
+    'operations.approve_admin',
     'operations.approve_gm',
     'operations.approve_officer',
     RETURN_PERMISSION,
@@ -63,11 +63,11 @@ def stage_permission_required(user, stage) -> bool:
     if not code:
         return False
     if stage == PendingAction.Stage.BRANCH:
-        if has_permission(user, 'operations.approve_branch') or has_permission(user, 'operations.approve_administration'):
+        if has_permission(user, 'operations.approve_branch') or has_permission(user, 'operations.approve_admin'):
             return True
         from apps.core.models import Permission
         if not Permission.objects.filter(
-            code__in=['operations.approve_branch', 'operations.approve_administration'],
+            code__in=['operations.approve_branch', 'operations.approve_admin'],
             is_active=True,
         ).exists():
             return True
