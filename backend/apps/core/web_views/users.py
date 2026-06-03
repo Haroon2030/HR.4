@@ -29,38 +29,21 @@ from apps.core.services.access_control import (
 
 from apps.core.decorators import permission_required
 
-# أدوار يمكن ربطها بعدة فروع (إضافةً لمدير الإدارة من التهيئة → الإدارات)
-BRANCH_ASSIGNABLE_ROLE_TYPES = frozenset({
-    Role.RoleType.SPECIALIST,
-    Role.RoleType.HR_OFFICER,
-    Role.RoleType.ADMIN_MANAGER,
-})
-
-
-def _role_uses_assigned_branches(role) -> bool:
-    return bool(role and role.role_type in BRANCH_ASSIGNABLE_ROLE_TYPES)
-
-
 def _save_assigned_branches(profile, role, assigned):
-    if _role_uses_assigned_branches(role):
-        profile.assigned_branches.set(assigned or [])
-    else:
+    """حفظ الفروع المعينة — متاح لكل الأدوار ما عدا موظف عادي."""
+    if role and role.role_type == Role.RoleType.EMPLOYEE:
         profile.assigned_branches.clear()
+        return
+    profile.assigned_branches.set(assigned or [])
 
 
 def _user_form_context(user_obj=None, roles=None, branches=None):
     ctx = {
         'roles': roles or [],
         'branches': branches or [],
-        'branch_assignable_role_types': list(BRANCH_ASSIGNABLE_ROLE_TYPES),
     }
     if user_obj:
         ctx['user_obj'] = user_obj
-        ctx['show_assigned_branches'] = _role_uses_assigned_branches(
-            getattr(user_obj.profile, 'role', None) if hasattr(user_obj, 'profile') else None
-        )
-    else:
-        ctx['show_assigned_branches'] = False
     return ctx
 
 
@@ -94,11 +77,10 @@ def view_user(request, user_id):
     if not can_view_user(request.user, user):
         messages.error(request, 'لا تملك صلاحية عرض هذا المستخدم.')
         return redirect('web:list_users')
+    role = getattr(user.profile, 'role', None) if hasattr(user, 'profile') else None
     return render(request, 'pages/users/detail.html', {
         'user_obj': user,
-        'show_assigned_branches': _role_uses_assigned_branches(
-            getattr(user.profile, 'role', None) if hasattr(user, 'profile') else None
-        ),
+        'show_assigned_branches': not (role and role.role_type == Role.RoleType.EMPLOYEE),
     })
 
 
@@ -133,13 +115,17 @@ def edit_user(request, user_id):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
-    user = get_object_or_404(User, id=user_id)
+    user = get_object_or_404(
+        User.objects.select_related('profile__role', 'profile__branch')
+        .prefetch_related('profile__assigned_branches'),
+        id=user_id,
+    )
     profile, _ = UserProfile.objects.get_or_create(user=user)
 
     if not can_view_user(request.user, user):
         messages.error(request, 'لا تملك صلاحية عرض هذا المستخدم.')
         return redirect('web:list_users')
-    
+
     roles = assignable_roles_queryset(request.user)
     branches = filter_branches_queryset(request.user, Branch.objects.filter(is_active=True))
     
