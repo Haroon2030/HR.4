@@ -14,7 +14,10 @@ from django.utils.html import strip_tags
 
 from apps.core.models import Company
 from apps.employees.models import Employee, EmployeeLoan, EmployeeStatement
+from django.contrib import messages
+
 from apps.core.decorators import permission_required
+from apps.core.permission_policy import hr_form_allowed_for_user
 from apps.core.web_views._helpers import employee_branch_access_required
 from apps.core.services.hr_forms_catalog import PRIMARY_FORM_SPECS, merge_forms_catalog
 
@@ -233,8 +236,9 @@ def hr_forms_index(request):
         .select_related('branch', 'department', 'profession')
         .order_by('name'),
     )
+    visible_forms = [f for f in HR_FORMS if hr_form_allowed_for_user(request.user, f['key'])]
     return render(request, 'pages/hr_forms/index.html', {
-        'forms': HR_FORMS,
+        'forms': visible_forms,
         'employees': employees,
     })
 
@@ -247,6 +251,9 @@ def hr_form_print(request, form_type, employee_id):
     form_meta = next((f for f in HR_FORMS if f['key'] == form_type), None)
     if not form_meta:
         raise Http404("نموذج غير معروف")
+    if not hr_form_allowed_for_user(request.user, form_type):
+        messages.error(request, 'لا تملك صلاحية عرض نماذج تحتوي بيانات الرواتب.')
+        return redirect('web:hr_forms_index')
 
     employee = get_object_or_404(
         Employee.objects.select_related(

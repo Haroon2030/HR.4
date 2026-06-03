@@ -208,6 +208,55 @@ def user_has_permission(context, permission_code):
     return check_permission(user, permission_code)
 
 
+@register.filter
+def can_view_salary(user):
+    from apps.core.salary_access import user_can_view_salary
+    return user_can_view_salary(user)
+
+
+@register.filter
+def can_edit_salary(user):
+    from apps.core.salary_access import user_can_edit_salary
+    return user_can_edit_salary(user)
+
+
+@register.inclusion_tag('components/table_actions.html')
+def guarded_table_actions(
+    view_url=None,
+    edit_url=None,
+    delete_url=None,
+    perm_url=None,
+    file_url=None,
+    can_edit=True,
+    can_delete=True,
+    can_perm=True,
+    view_title='',
+    edit_title='تعديل',
+    edit_query='',
+    perm_title='',
+    delete_confirm='',
+    delete_title='',
+    delete_disabled_title='',
+    file_title='',
+):
+    """أزرار جدول مع إخفاء التعديل/الحذف حسب صلاحيات المستخدم."""
+    return {
+        'view_url': view_url or '',
+        'edit_url': edit_url if can_edit and edit_url else '',
+        'delete_url': delete_url if can_delete and delete_url else '',
+        'perm_url': perm_url if can_perm and perm_url else '',
+        'file_url': file_url or '',
+        'view_title': view_title,
+        'edit_title': edit_title,
+        'edit_query': edit_query,
+        'perm_title': perm_title,
+        'delete_confirm': delete_confirm,
+        'delete_title': delete_title,
+        'delete_disabled_title': delete_disabled_title,
+        'file_title': file_title,
+    }
+
+
 @register.simple_tag(takes_context=True)
 def can_see_employee_tab(context, tab_key):
     """هل يظهر تبويب ملف الموظف للمستخدم الحالي؟"""

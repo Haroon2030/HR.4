@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from apps.core.decorators import get_user_permissions, _is_super_or_admin
 from apps.core.permissions_registry import register_module, register_permission
+from apps.core.salary_access import user_can_edit_salary, user_can_view_salary
+
+# تبويبات حساسة مالياً — لا تُعرض بمجرد employees.view
+_SALARY_SENSITIVE_TAB_KEYS = frozenset({'salary', 'accruals'})
 
 # ترتيب العرض في صفحة الموظف
 EMPLOYEE_TABS = (
@@ -67,6 +71,8 @@ def user_can_see_employee_tab(user, tab_key: str) -> bool:
     code = tab_permission_code(tab_key)
     perms = get_user_permissions(user)
     if not _user_has_any_tab_permission(user):
+        if tab_key in _SALARY_SENSITIVE_TAB_KEYS:
+            return user_can_view_salary(user)
         return 'employees.view' in perms
     return code in perms
 
@@ -112,6 +118,8 @@ def enrich_employee_page_context(
     edit_form: bool = False,
 ) -> dict:
     context['tab_visible'] = employee_tab_visibility(user)
+    context['can_view_salary'] = user_can_view_salary(user)
+    context['can_edit_salary'] = user_can_edit_salary(user)
     nav_keys = EDIT_FORM_TAB_KEYS if edit_form else None
     context['employee_tab_nav'] = employee_tab_nav_for_user(user, keys=nav_keys)
     allowed = tuple(nav_keys) if nav_keys else TAB_KEYS

@@ -12,11 +12,6 @@ from django.contrib import messages
 from django.db.models import Q
 
 from apps.core.web_views._helpers import (
-    branch_manager_required,
-    general_manager_required,
-    hr_officer_required,
-    _can_act_at_stage,
-    _can_return_at_stage,
     _is_branch_manager,
     _is_general_manager,
     _is_hr_officer,
@@ -115,7 +110,6 @@ def _get_request_or_404(request_id):
 
 
 @login_required
-@branch_manager_required
 def approve_employment_request(request, request_id):
     """مرحلة 1: مدير الإدارة/الفرع يوافق → ينتقل لمدير الموارد."""
     emp_req = _get_request_or_404(request_id)
@@ -144,12 +138,16 @@ def approve_employment_request(request, request_id):
 
 
 @login_required
-@general_manager_required
 def gm_approve_employment_request(request, request_id):
     """مرحلة 2: مدير الموارد يوافق ويُسند لأخصائي."""
     emp_req = _get_request_or_404(request_id)
 
     if request.method != 'POST':
+        return redirect('web:list_employment_requests')
+
+    from apps.employees.models import EmploymentRequest
+    if emp_req.status != EmploymentRequest.Status.PENDING_GM:
+        messages.error(request, 'لا يمكن الموافقة على هذا الطلب في مرحلته الحالية.')
         return redirect('web:list_employment_requests')
 
     if not stage_permission_required(request.user, PendingAction.Stage.GM):
@@ -175,12 +173,18 @@ def gm_approve_employment_request(request, request_id):
 
 
 @login_required
-@hr_officer_required
 def officer_approve_employment_request(request, request_id):
     """مرحلة 3: الأخصائي يوافق → يُنشَأ الموظف."""
     emp_req = _get_request_or_404(request_id)
 
     if request.method != 'POST':
+        return redirect('web:list_employment_requests')
+
+    if (
+        emp_req.assigned_officer_id != request.user.id
+        and not request.user.is_superuser
+    ):
+        messages.error(request, 'هذا الطلب غير مُسند إليك.')
         return redirect('web:list_employment_requests')
 
     if not stage_permission_required(request.user, PendingAction.Stage.OFFICER):
@@ -205,24 +209,10 @@ def reject_employment_request(request, request_id):
     emp_req = _get_request_or_404(request_id)
     user = request.user
 
-    can_reject = user.is_superuser
-    if not can_reject:
-        if _is_branch_manager(user) and emp_req.branch_id in list(
-            user.managed_branches.values_list('id', flat=True)
-        ):
-            can_reject = True
-        elif _is_general_manager(user):
-            can_reject = True
-        elif _is_hr_officer(user) and emp_req.assigned_officer_id == user.id:
-            can_reject = True
+    from apps.core.services.workflow_access import user_can_reject_employment_request
 
-    if not can_reject:
-        messages.error(request, 'لا تملك صلاحية رفض هذا الطلب')
-        return redirect('web:list_employment_requests')
-
-    from apps.core.services.workflow_access import can_return_operation
-    if not can_return_operation(user):
-        messages.error(request, 'لا تملك صلاحية رفض/إرجاع الطلب.')
+    if not user_can_reject_employment_request(user, emp_req):
+        messages.error(request, 'لا تملك صلاحية رفض/إرجاع هذا الطلب.')
         return redirect('web:list_employment_requests')
 
     if request.method != 'POST':
@@ -239,7 +229,6 @@ def reject_employment_request(request, request_id):
 
 # ─── تعديل بيانات الموظف على الطلب (قبل الموافقة النهائية) ──────────────
 @login_required
-@hr_officer_required
 def edit_employment_request(request, request_id):
     """صفحة لإكمال بيانات الموظف على طلب التوظيف قبل الموافقة النهائية.
 
@@ -256,9 +245,12 @@ def edit_employment_request(request, request_id):
         messages.error(request, 'لا يمكن تعديل البيانات في هذه المرحلة.')
         return redirect('web:list_employment_requests')
 
-    # تحقق من الإسناد
+    # تحقق من الإسناد + صلاحية التنفيذ
     if emp_req.assigned_officer_id != request.user.id and not request.user.is_superuser:
         messages.error(request, 'هذا الطلب غير مُسند إليك.')
+        return redirect('web:list_employment_requests')
+    if not stage_permission_required(request.user, PendingAction.Stage.OFFICER):
+        messages.error(request, 'لا تملك صلاحية تعديل بيانات هذا الطلب.')
         return redirect('web:list_employment_requests')
 
     if request.method == 'POST':

@@ -16,6 +16,7 @@ from apps.core.models import Branch, Company
 
 
 from apps.core.decorators import permission_required
+from apps.core.permission_policy import org_structure_permissions
 from apps.core.services.access_control import filter_branches_queryset, get_accessible_branch_ids
 
 @login_required
@@ -60,6 +61,7 @@ def list_branches(request):
         'buildings': buildings,
         'banks': banks,
         'administrations': administrations,
+        'org_perms': org_structure_permissions(request.user),
     })
 
 @login_required

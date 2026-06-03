@@ -17,7 +17,8 @@ from django.contrib import messages
 from apps.core.web_views._helpers import (
     employee_branch_access_required,
 )
-from apps.core.decorators import permission_required
+from apps.core.decorators import any_permission_required, permission_required
+from apps.core.salary_access import salary_view_required
 from apps.core.services.pending_actions import create_pending_action
 
 @login_required
@@ -164,7 +165,7 @@ def reactivate_employee(request, employee_id):
 
 
 @login_required
-@permission_required('employees.edit')
+@any_permission_required('employees.edit_salary', 'payroll.manage', 'payroll.process')
 @employee_branch_access_required
 def adjust_employee_salary(request, employee_id):
     """تقديم طلب تعديل راتب (ينتظر موافقة مدير الفرع)."""
@@ -690,6 +691,7 @@ def add_employee_absence(request, employee_id):
 
 @login_required
 @permission_required('employees.edit')
+@salary_view_required
 @employee_branch_access_required
 def contract_end_employee(request, employee_id):
     """تقديم طلب انتهاء عقد مع حساب مكافأة نهاية الخدمة."""
@@ -731,6 +733,7 @@ def contract_end_employee(request, employee_id):
 
 @login_required
 @permission_required('employees.edit')
+@salary_view_required
 @employee_branch_access_required
 def end_of_service_employee(request, employee_id):
     """تقديم طلب تصفية نهاية خدمة أو استقالة مع حساب المكافأة وفقاً لـ EOSB."""

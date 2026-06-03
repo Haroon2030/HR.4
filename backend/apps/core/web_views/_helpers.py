@@ -215,7 +215,7 @@ def _can_act_at_stage(user, action, stage):
         return _can_review_action(user, action)
 
     if stage == PendingAction.Stage.GM:
-        return _is_general_manager(user)
+        return True
 
     if stage == PendingAction.Stage.OFFICER:
         return action.assigned_officer_id == user.id
@@ -230,7 +230,7 @@ def _role_ok_at_stage(user, action, stage):
     if stage == PendingAction.Stage.BRANCH:
         return _can_review_action(user, action)
     if stage == PendingAction.Stage.GM:
-        return _is_general_manager(user)
+        return True
     if stage == PendingAction.Stage.OFFICER:
         return action.assigned_officer_id == user.id
     return False
@@ -245,9 +245,7 @@ def _can_return_at_stage(user, action, stage):
         return True
     if not stage or not _role_ok_at_stage(user, action, stage):
         return False
-    if Permission.objects.filter(code='operations.return', is_active=True).exists():
-        return can_return_operation(user)
-    return True
+    return can_return_operation(user)
 
 
 def general_manager_required(view_func):

@@ -284,46 +284,52 @@
             <!-- Tab 2: الراتب -->
             {% if tab_visible.salary %}
             <div x-show="activeTab === 'salary'" x-cloak class="p-5">
+                {% if not can_edit_salary %}
+                <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                    يمكنك عرض بيانات الراتب فقط — التعديل يتطلب صلاحية <strong>تعديل الراتب</strong> أو صلاحيات مسير الرواتب.
+                </div>
+                {% endif %}
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">الراتب الأساسي</label>
-                        <input type="number" step="0.01" name="basic_salary" value="{{ employee.basic_salary }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="number" step="0.01" name="basic_salary" value="{{ employee.basic_salary }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">بدل سكن</label>
-                        <input type="number" step="0.01" name="housing_allowance" value="{{ employee.housing_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="number" step="0.01" name="housing_allowance" value="{{ employee.housing_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">بدل نقل</label>
-                        <input type="number" step="0.01" name="transport_allowance" value="{{ employee.transport_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="number" step="0.01" name="transport_allowance" value="{{ employee.transport_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">بدل إضافي</label>
-                        <input type="number" step="0.01" name="other_allowance" value="{{ employee.other_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="number" step="0.01" name="other_allowance" value="{{ employee.other_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">كاش</label>
-                        <input type="number" step="0.01" name="cash_amount" value="{{ employee.cash_amount }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="number" step="0.01" name="cash_amount" value="{{ employee.cash_amount }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">بدل التغذية</label>
-                        <input type="number" step="0.01" name="meal_allowance" value="{{ employee.meal_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة">
+                        <input type="number" step="0.01" name="meal_allowance" value="{{ employee.meal_allowance }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                         <p class="text-[10px] text-slate-500">لا يُحتسب ضمن مكافأة نهاية الخدمة</p>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">نسبة خصم التأمينات (%)</label>
-                        <input type="number" step="0.01" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="number" step="0.01" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">البنك</label>
-                        <select name="bank" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="bank" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"{% if not can_edit_salary %} disabled{% endif %}>
                             <option value="">-- اختر --</option>
                             {% for bk in banks %}<option value="{{ bk.id }}" {% if employee.bank_id == bk.id %}selected{% endif %}>{{ bk.name }}</option>{% endfor %}
                         </select>
+                        {% if not can_edit_salary and employee.bank_id %}<input type="hidden" name="bank" value="{{ employee.bank_id }}">{% endif %}
                     </div>
                     <div class="space-y-1.5 sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-800">رقم الآيبان</label>
-                        <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm font-mono">
+                        <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm font-mono"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
                     </div>
                     <div class="space-y-1.5 sm:col-span-2 lg:col-span-3">
                         <label class="block text-xs font-bold text-slate-800">الإجمالي</label>
@@ -331,7 +337,7 @@
                     </div>
                 </div>
 
-                {% if not is_create %}
+                {% if not is_create and can_view_salary %}
                 {# ── أرشيف تعديلات الراتب ── #}
                 <div class="mt-6">
                     {% include "components/salary_adjust_archive.html" with records=employee.statements_log.all filter_salary=True show_type_col=False section_id="edit" empty_text="لا بيانات" %}

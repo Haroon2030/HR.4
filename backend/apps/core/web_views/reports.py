@@ -13,7 +13,10 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from django.contrib import messages
+
 from apps.core.decorators import permission_required
+from apps.core.permission_policy import report_allowed_for_user, user_can_view_financial_reports
 from apps.core.models import Branch
 from apps.core.filter_utils import apply_branch_filter, append_multi_param, parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids
@@ -715,6 +718,16 @@ BUILDERS = {
     'attendance_late': _build_attendance_late,
 }
 
+def _catalog_for_user(user):
+    """تقارير ومجموعات مرئية حسب صلاحيات الرواتب."""
+    reports = [r for r in REPORTS if report_allowed_for_user(user, r['key'])]
+    groups = [
+        g for g in REPORT_GROUPS
+        if g['key'] != 'salary' or user_can_view_financial_reports(user)
+    ]
+    return reports, groups
+
+
 def _filter_querystring(request, exclude=()):
     f = _report_filters(request)
     params: list[tuple[str, object]] = []
@@ -738,8 +751,10 @@ def _filter_querystring(request, exclude=()):
 @login_required
 @permission_required('reports.view')
 def reports_index(request):
+    visible_reports, visible_groups = _catalog_for_user(request.user)
+    visible_keys = {r['key'] for r in visible_reports}
     new_report = (request.GET.get('report') or '').strip()
-    if new_report and new_report in _report_keys():
+    if new_report and new_report in visible_keys:
         qs = _filter_querystring(request, exclude=('report',))
         url = reverse('web:report_detail', kwargs={'report_type': new_report})
         if qs:
@@ -749,13 +764,16 @@ def reports_index(request):
     ctx = _report_filter_context(request)
     return render(request, 'pages/reports/index.html', {
         **ctx,
-        'reports': REPORTS,
+        'reports': visible_reports,
+        'report_groups': visible_groups,
         'clear_url': reverse('web:reports_index'),
     })
 
 @login_required
 @permission_required('reports.view')
 def multi_report_detail(request):
+    visible_reports, _ = _catalog_for_user(request.user)
+    visible_by_key = {r['key']: r for r in visible_reports}
     report_keys = request.GET.get('reports', '').split(',')
     selected_reports = []
     
@@ -763,7 +781,7 @@ def multi_report_detail(request):
         key = key.strip()
         if not key:
             continue
-        meta = next((r for r in REPORTS if r['key'] == key), None)
+        meta = visible_by_key.get(key)
         if meta:
             builder = BUILDERS.get(key)
             data = builder(request) if builder else {'columns': [], 'rows': []}
@@ -783,26 +801,32 @@ def multi_report_detail(request):
 @login_required
 @permission_required('reports.view')
 def report_detail(request, report_type):
-    meta = next((r for r in REPORTS if r['key'] == report_type), None)
+    visible_reports, visible_groups = _catalog_for_user(request.user)
+    visible_keys = {r['key'] for r in visible_reports}
+    meta = next((r for r in visible_reports if r['key'] == report_type), None)
     if not meta:
+        if report_type in {r['key'] for r in REPORTS}:
+            messages.error(request, 'لا تملك صلاحية عرض هذا التقرير (بيانات رواتب).')
+            return redirect('web:reports_index')
         raise Http404("تقرير غير معروف")
 
     new_report = (request.GET.get('report') or '').strip()
-    if new_report and new_report != report_type and new_report in _report_keys():
+    if new_report and new_report != report_type and new_report in visible_keys:
         qs = _filter_querystring(request, exclude=('report',))
         url = reverse('web:report_detail', kwargs={'report_type': new_report})
         if qs:
             url = f'{url}?{qs}'
         return redirect(url)
 
-    group = next((g for g in REPORT_GROUPS if g['key'] == meta.get('group')), None)
+    group = next((g for g in visible_groups if g['key'] == meta.get('group')), None)
     builder = BUILDERS.get(report_type)
     data = _cap_report_data(builder(request) if builder else {'columns': [], 'rows': []})
     ctx = _report_filter_context(request)
     return render(request, 'pages/reports/detail.html', {
         'report_meta': meta,
         'group_meta': group,
-        'reports': REPORTS,
+        'reports': visible_reports,
+        'report_groups': visible_groups,
         'data': data,
         'report_type': report_type,
         'selected_report': report_type,

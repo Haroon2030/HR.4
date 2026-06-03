@@ -54,9 +54,11 @@
                     <button type="button" @click="quickModal='terminate'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="user-x" class="w-4 h-4 text-red-600"></i> تصفية موظف
                     </button>
+                    {% if can_edit_salary %}
                     <button type="button" @click="quickModal='salary'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-600"></i> تعديل راتب
                     </button>
+                    {% endif %}
                     <button type="button" @click="quickModal='transfer'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="move" class="w-4 h-4 text-indigo-600"></i> نقل موظف
                     </button>
@@ -86,20 +88,24 @@
                         <i data-lucide="user-minus" class="w-4 h-4 text-orange-600"></i> تسجيل غياب
                     </button>
                     <div class="border-t border-slate-100 my-1"></div>
+                    {% if can_view_salary %}
                     <button type="button" @click="quickModal='contract_end'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-red-50">
                         <i data-lucide="file-x-2" class="w-4 h-4 text-red-600"></i> انتهاء عقد (EOSB)
                     </button>
                     <button type="button" @click="quickModal='end_of_service'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-red-50">
                         <i data-lucide="file-x-2" class="w-4 h-4 text-red-600"></i> تصفية نهاية خدمة / استقالة
                     </button>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
 
+            {% if can_view_salary %}
             <a href="{% url 'web:export_employee_salary_excel' employee.id %}"
                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> تصدير Excel
             </a>
+            {% endif %}
 
             <a href="{% url 'web:edit_employee' employee.id %}" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2">
                 <i data-lucide="pencil" class="w-4 h-4"></i> تعديل / إكمال البيانات
@@ -527,6 +533,7 @@
                 {% csrf_token %}
 
                 {% if employee.sponsorship_id %}
+                {% if can_view_salary %}
                 {% with total_salary=employee.total_salary remaining=employee.remaining_leave_days %}
                 <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-2">
                     <div class="flex items-center gap-2 text-emerald-700 font-bold text-sm">
@@ -554,6 +561,12 @@
                 </div>
                 {% endwith %}
                 {% else %}
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600">
+                    رصيد الإجازة المتاح: <span class="font-bold">{{ employee.remaining_leave_days }} يوم</span>
+                    <span class="block mt-1 text-slate-500">تفاصيل المبالغ تتطلب صلاحية عرض الرواتب.</span>
+                </div>
+                {% endif %}
+                {% else %}
                 <div class="text-center text-xs text-slate-500 py-2">لا بيانات</div>
                 {% endif %}
 
@@ -575,6 +588,7 @@
         </div>
     </div>
 
+    {% if can_view_salary %}
     <!-- Modal: انتهاء عقد — مكافأة نهاية الخدمة (EOSB) -->
     <div x-show="quickModal==='contract_end'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null"
          x-data="{
@@ -954,7 +968,9 @@
             </form>
         </div>
     </div>
+    {% endif %}
 
+    {% if can_edit_salary %}
     <!-- Modal: تعديل راتب -->
     <div x-show="quickModal==='salary'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null"
          x-data="{
@@ -1076,6 +1092,7 @@
             </form>
         </div>
     </div>
+    {% endif %}
 
     <!-- Modal: نقل موظف -->
     <div x-show="quickModal==='transfer'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
@@ -2342,7 +2359,7 @@
                             <option value="statement">إفادة / إنذار</option>
                             <option value="terminate">تصفية</option>
                             <option value="reactivate">إعادة تفعيل</option>
-                            <option value="salary_adjust">تعديل راتب</option>
+                            {% if can_view_salary %}<option value="salary_adjust">تعديل راتب</option>{% endif %}
                             <option value="transfer">نقل</option>
                         </select>
                     </div>

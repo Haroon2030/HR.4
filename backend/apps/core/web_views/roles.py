@@ -15,7 +15,7 @@ from apps.core.forms import RoleForm
 # =============================================================================
 
 
-from apps.core.decorators import permission_required
+from apps.core.decorators import any_permission_required, permission_required
 
 
 def _build_role_permissions_matrix(role):
@@ -80,7 +80,7 @@ def view_role(request, role_id):
     return render(request, 'pages/roles/detail.html', {'role': role})
 
 @login_required
-@permission_required('users.edit')
+@any_permission_required('users.manage_roles', 'users.edit')
 def edit_role(request, role_id):
     """تعديل دور (يشمل تعديل الصلاحيات في نفس الصفحة)"""
     from django.shortcuts import get_object_or_404
@@ -164,7 +164,7 @@ def delete_role(request, role_id):
 # Role Permissions Management
 # =============================================================================
 @login_required
-@permission_required('users.edit')
+@any_permission_required('users.manage_roles', 'users.edit')
 def manage_role_permissions(request, role_id):
     """إدارة صلاحيات دور (جدول وحدات × عمليات)"""
     role = get_object_or_404(Role, id=role_id)

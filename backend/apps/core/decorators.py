@@ -109,9 +109,30 @@ def get_user_permissions(user):
         denied_codes = set(profile.denied_permissions.filter(is_active=True).values_list('code', flat=True))
         codes = (role_codes | extra_codes) - denied_codes
 
+    codes = _expand_implied_permissions(codes)
+
     # حفظ في الكاش
     user._perm_codes_cache = codes
     return codes
+
+
+# صلاحية manage تمنح عمليات CRUD الفرعية (توافق مع مصفوفة الأدوار)
+_MANAGE_IMPLIES: dict[str, frozenset[str]] = {
+    'branches.manage': frozenset({
+        'branches.view', 'branches.add', 'branches.edit', 'branches.delete',
+    }),
+    'departments.manage': frozenset({
+        'departments.view', 'departments.add', 'departments.edit', 'departments.delete',
+    }),
+}
+
+
+def _expand_implied_permissions(codes: set) -> set:
+    expanded = set(codes)
+    for manage_code, implied in _MANAGE_IMPLIES.items():
+        if manage_code in expanded:
+            expanded |= implied
+    return expanded
 
 
 def has_permission(user, permission_code):

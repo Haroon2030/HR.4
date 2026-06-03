@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4"
@@ -23,12 +24,14 @@
         <!-- Tab 1: الفروع -->
         <div class="hr-tabs__panel" x-show="activeTab === 'branches'" x-cloak>
             <div class="p-4">
+                {% if org_perms.branch_write %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_branch' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة فرع جديد
                     </a>
                 </div>
+                {% endif %}
                 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -78,7 +81,7 @@
                                     {% url 'web:view_branch' branch.id as act_view %}
                                     {% url 'web:edit_branch' branch.id as act_edit %}
                                     {% url 'web:delete_branch' branch.id as act_del %}
-                                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض التفاصيل" edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الفرع '"|add:branch.name|add:"' ؟" %}
+                                    {% guarded_table_actions view_url=act_view view_title="عرض التفاصيل" edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=org_perms.branch_edit can_delete=org_perms.branch_delete delete_confirm="هل أنت متأكد من حذف الفرع '"|add:branch.name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -98,6 +101,7 @@
         <!-- Tab 2: مراكز التكلفة -->
         <div class="hr-tabs__panel" x-show="activeTab === 'cost_centers'" x-cloak>
             <div class="p-4">
+                {% if org_perms.cost_center_write %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_cost_center_global' %}"
                         class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -105,6 +109,7 @@
                         إضافة مركز تكلفة
                     </a>
                 </div>
+                {% endif %}
 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -155,9 +160,9 @@
                                     {% url 'web:delete_cost_center' cc.id as act_del %}
                                     {% if cc.branch %}{% url 'web:view_branch' cc.branch.id as act_view %}{% endif %}
                                     {% if cc.branch %}
-                                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض الفرع" edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف مركز التكلفة '"|add:cc.name|add:"' ؟" %}
+                                    {% guarded_table_actions view_url=act_view view_title="عرض الفرع" edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=org_perms.cost_center_edit can_delete=org_perms.cost_center_delete delete_confirm="هل أنت متأكد من حذف مركز التكلفة '"|add:cc.name|add:"' ؟" %}
                                     {% else %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف مركز التكلفة '"|add:cc.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=org_perms.cost_center_edit can_delete=org_perms.cost_center_delete delete_confirm="هل أنت متأكد من حذف مركز التكلفة '"|add:cc.name|add:"' ؟" %}
                                     {% endif %}
                                 </td>
                             </tr>
@@ -178,6 +183,7 @@
         <!-- Tab 3: الأقسام -->
         <div class="hr-tabs__panel" x-show="activeTab === 'departments'" x-cloak>
             <div class="p-4">
+                {% if org_perms.department_write %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_department_global' %}"
                         class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
@@ -185,6 +191,7 @@
                         إضافة قسم
                     </a>
                 </div>
+                {% endif %}
 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -235,9 +242,9 @@
                                     {% url 'web:delete_department' dept.id as act_del %}
                                     {% if dept.branch %}{% url 'web:view_branch' dept.branch.id as act_view %}{% endif %}
                                     {% if dept.branch %}
-                                    {% include "components/table_actions.html" with view_url=act_view view_title="عرض الفرع" edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف القسم '"|add:dept.name|add:"' ؟" %}
+                                    {% guarded_table_actions view_url=act_view view_title="عرض الفرع" edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=org_perms.department_edit can_delete=org_perms.department_delete delete_confirm="هل أنت متأكد من حذف القسم '"|add:dept.name|add:"' ؟" %}
                                     {% else %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف القسم '"|add:dept.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=org_perms.department_edit can_delete=org_perms.department_delete delete_confirm="هل أنت متأكد من حذف القسم '"|add:dept.name|add:"' ؟" %}
                                     {% endif %}
                                 </td>
                             </tr>
@@ -258,12 +265,14 @@
         <!-- Tab: الإدارات -->
         <div class="hr-tabs__panel" x-show="activeTab === 'administrations'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_administration' %}?tab=administrations" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة إدارة
                     </a>
                 </div>
+                {% endif %}
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
                         <thead class="bg-slate-50">
@@ -306,7 +315,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_administration' adm.id as act_edit %}
                                     {% url 'web:delete_administration' adm.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=administrations" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الإدارة '"|add:adm.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=administrations" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف الإدارة '"|add:adm.name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -326,12 +335,14 @@
         <!-- Tab 4: الجنسيات -->
         <div class="hr-tabs__panel" x-show="activeTab === 'nationalities'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_nationality' %}?tab=nationalities" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة جنسية
                     </a>
                 </div>
+                {% endif %}
                 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -367,7 +378,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_nationality' nat.id as act_edit %}
                                     {% url 'web:delete_nationality' nat.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=nationalities" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الجنسية '"|add:nat.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=nationalities" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف الجنسية '"|add:nat.name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -387,12 +398,14 @@
         <!-- Tab 5: المهن -->
         <div class="hr-tabs__panel" x-show="activeTab === 'professions'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_profession' %}?tab=professions" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة مهنة
                     </a>
                 </div>
+                {% endif %}
                 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -428,7 +441,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_profession' prof.id as act_edit %}
                                     {% url 'web:delete_profession' prof.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=professions" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف المهنة '"|add:prof.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=professions" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف المهنة '"|add:prof.name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -448,12 +461,14 @@
         <!-- Tab 6: الكفالات -->
         <div class="hr-tabs__panel" x-show="activeTab === 'sponsorships'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_sponsorship' %}?tab=sponsorships" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة كفالة
                     </a>
                 </div>
+                {% endif %}
                 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -489,7 +504,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_sponsorship' sponsor.id as act_edit %}
                                     {% url 'web:delete_sponsorship' sponsor.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=sponsorships" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الكفالة '"|add:sponsor.company_name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=sponsorships" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف الكفالة '"|add:sponsor.company_name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -509,12 +524,14 @@
         <!-- Tab 7: التأمينات -->
         <div class="hr-tabs__panel" x-show="activeTab === 'insurances'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_insurance' %}?tab=insurances" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة تأمين
                     </a>
                 </div>
+                {% endif %}
                 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -550,7 +567,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_insurance' ins.id as act_edit %}
                                     {% url 'web:delete_insurance' ins.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=insurances" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف التأمين '"|add:ins.insurance_type|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=insurances" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف التأمين '"|add:ins.insurance_type|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -570,12 +587,14 @@
         <!-- Tab 8: فئات التأمين -->
         <div class="hr-tabs__panel" x-show="activeTab === 'insurance_classes'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_insurance_class' %}?tab=insurance_classes" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة فئة تأمين
                     </a>
                 </div>
+                {% endif %}
                 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -611,7 +630,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_insurance_class' ic.id as act_edit %}
                                     {% url 'web:delete_insurance_class' ic.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=insurance_classes" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف فئة التأمين '"|add:ic.class_type|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=insurance_classes" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف فئة التأمين '"|add:ic.class_type|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -631,12 +650,14 @@
         <!-- Tab 9: السكن -->
         <div class="hr-tabs__panel" x-show="activeTab === 'buildings'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_building' %}?tab=buildings" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة عمارة جديدة
                     </a>
                 </div>
+                {% endif %}
 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -670,7 +691,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_building' b.id as act_edit %}
                                     {% url 'web:delete_building' b.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=buildings" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف العمارة '"|add:b.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=buildings" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف العمارة '"|add:b.name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -690,12 +711,14 @@
         <!-- Tab 10: البنوك -->
         <div class="hr-tabs__panel" x-show="activeTab === 'banks'" x-cloak>
             <div class="p-4">
+                {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
                     <a href="{% url 'web:add_bank' %}?tab=banks" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة بنك جديد
                     </a>
                 </div>
+                {% endif %}
 
                 <div class="overflow-x-auto">
                     <table class="w-auto divide-y divide-slate-200">
@@ -729,7 +752,7 @@
                                 <td class="px-3 py-2 text-left">
                                     {% url 'web:edit_bank' bk.id as act_edit %}
                                     {% url 'web:delete_bank' bk.id as act_del %}
-                                    {% include "components/table_actions.html" with edit_url=act_edit edit_query="?tab=banks" edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف البنك '"|add:bk.name|add:"' ؟" %}
+                                    {% guarded_table_actions edit_url=act_edit edit_query="?tab=banks" edit_title="تعديل" delete_url=act_del can_edit=org_perms.system_data_edit can_delete=org_perms.system_data_delete delete_confirm="هل أنت متأكد من حذف البنك '"|add:bk.name|add:"' ؟" %}
                                 </td>
                             </tr>
                             {% empty %}

@@ -26,6 +26,7 @@ from apps.core.web_views._helpers import (
     general_manager_required,
 )
 from apps.core.decorators import permission_required
+from apps.core.salary_access import EMPLOYEE_SALARY_FIELD_NAMES, user_can_edit_salary
 
 
 def _buildings_qs():
@@ -94,6 +95,7 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False, user=No
     }
     if user is not None:
         enrich_employee_page_context(user, ctx, edit_form=True)
+        ctx['can_edit_salary'] = user_can_edit_salary(user)
     return ctx
 
 
@@ -189,6 +191,10 @@ def create_employee_full(request):
         files = _prepare_employee_upload_files(request)
         form = EmployeeForm(request.POST, files)
         if form.is_valid():
+            if not user_can_edit_salary(request.user):
+                for field_name in EMPLOYEE_SALARY_FIELD_NAMES:
+                    if field_name in form.cleaned_data:
+                        form.cleaned_data[field_name] = getattr(Employee(), field_name)
             emp = _save_employee_from_form(request, form)
             messages.success(request, f'تم إضافة الموظف "{emp.name}" بنجاح')
             return redirect('web:edit_employee', employee_id=emp.id)
@@ -456,6 +462,10 @@ def edit_employee(request, employee_id):
         files = _prepare_employee_upload_files(request)
         form = EmployeeForm(request.POST, files, instance=employee)
         if form.is_valid():
+            if not user_can_edit_salary(request.user):
+                for field_name in EMPLOYEE_SALARY_FIELD_NAMES:
+                    if field_name in form.cleaned_data:
+                        form.cleaned_data[field_name] = getattr(employee, field_name)
             employee = _save_employee_from_form(request, form)
             messages.success(request, f'تم حفظ بيانات الموظف "{employee.name}"')
             return redirect('web:edit_employee', employee_id=employee.id)

@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.employees.models import Employee
 from apps.core.web_views._helpers import employee_branch_access_required
 from apps.core.decorators import permission_required
+from apps.core.salary_access import user_can_view_salary
 
 
 def _employee_administration_label(employee):
@@ -25,6 +26,12 @@ def _employee_administration_label(employee):
 @employee_branch_access_required
 def export_employee_salary_excel(request, employee_id):
     """يُنشئ ملف Excel ملوّن يحتوي على بيانات تبويب الموظف فقط."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    if not user_can_view_salary(request.user):
+        messages.error(request, 'لا تملك صلاحية تصدير بيانات الرواتب.')
+        return redirect('web:view_employee', employee_id=employee_id)
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter

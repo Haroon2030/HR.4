@@ -16,9 +16,9 @@
   LOCKED → unlock (سوبر يوزر فقط) → DRAFT مرة أخرى
 
 الصلاحيات:
-  - عرض: employees.view
-  - إنشاء/تعديل/ترحيل: employees.edit
-  - إلغاء ترحيل: employees.edit + superuser فقط
+  - عرض: payroll.view
+  - إنشاء/تعديل/ترحيل: payroll.manage أو payroll.process
+  - إلغاء ترحيل: payroll.manage + superuser فقط
 """
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
@@ -28,7 +28,8 @@ from django.urls import reverse
 from django.http import HttpResponse, Http404
 from django.db.models import Sum, Count
 
-from apps.core.decorators import has_permission, permission_required
+from apps.core.decorators import any_permission_required, permission_required
+from apps.core.salary_access import user_can_manage_payroll
 from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
 from urllib.parse import urlencode
 from apps.core.models import Branch
@@ -221,7 +222,7 @@ def list_payroll_runs(request):
     filters = _parse_payroll_form(request, user_branches)
 
     if request.method == 'POST':
-        if not has_permission(request.user, 'employees.edit'):
+        if not user_can_manage_payroll(request.user):
             messages.error(request, 'ليس لديك صلاحية بناء المسير.')
         else:
             err = _validate_payroll_build(filters)
@@ -304,7 +305,7 @@ def list_payroll_runs(request):
         'grand_totals': grand_totals,
         'runs_count': runs_count,
         'show_table': filters['ready'],
-        'can_build': has_permission(request.user, 'employees.edit'),
+        'can_build': user_can_manage_payroll(request.user),
     })
 
 
@@ -313,7 +314,7 @@ def list_payroll_runs(request):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('payroll.edit')
+@any_permission_required('payroll.manage', 'payroll.process')
 def create_payroll_run(request):
     """توافق مع الرابط القديم — نفس شاشة القائمة الموحّدة."""
     if request.method == 'POST':
@@ -350,7 +351,7 @@ def view_payroll_run(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('payroll.edit')
+@any_permission_required('payroll.manage', 'payroll.process')
 def rebuild_payroll_run(request, run_id):
     """إعادة بناء مسير DRAFT — يمسح الأسطر القديمة ويعيد حسابها."""
     if request.method != 'POST':
@@ -377,7 +378,7 @@ def rebuild_payroll_run(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('payroll.edit')
+@any_permission_required('payroll.manage', 'payroll.process')
 def lock_payroll_run_view(request, run_id):
     """ترحيل المسير — يُغلق التعديل ويربط بنود الخصم."""
     if request.method != 'POST':
@@ -401,7 +402,7 @@ def lock_payroll_run_view(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@permission_required('payroll.edit')
+@any_permission_required('payroll.manage', 'payroll.process')
 def unlock_payroll_run_view(request, run_id):
     """
     إعادة فتح مسير مُرحَّل — سوبر يوزر فقط!
