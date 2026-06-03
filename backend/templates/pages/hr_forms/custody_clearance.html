@@ -10,7 +10,7 @@
         <div class="field"><span class="label">سبب التصفية:</span><span class="blank"></span></div>
         <div class="field">
             <span class="label">جهة الاستلام:</span>
-            <select class="blank-select" aria-label="جهة الاستلام">
+            <select id="custody-receiving-admin" class="blank-select" aria-label="جهة الاستلام">
                 <option value="">— اختر الإدارة —</option>
                 {% for adm in administrations %}
                 <option value="{{ adm.name }}">{{ adm.code }} — {{ adm.name }}</option>
@@ -72,10 +72,27 @@
         <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
     </div>
     <div class="sig-box">
-        <div class="role">المالية / الموارد البشرية</div>
+        <div class="role" id="custody-receiving-sig-role" data-default="المالية / الموارد البشرية">المالية / الموارد البشرية</div>
         <div class="line name-blank">الاسم: ......................</div>
         <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
     </div>
 </div>
 
+{% endblock %}
+
+{% block form_scripts %}
+<script>
+(function () {
+    const sel = document.getElementById('custody-receiving-admin');
+    const roleEl = document.getElementById('custody-receiving-sig-role');
+    if (!sel || !roleEl) return;
+    const fallback = roleEl.dataset.default || 'المالية / الموارد البشرية';
+    function syncReceivingSigRole() {
+        const name = (sel.value || '').trim();
+        roleEl.textContent = name || fallback;
+    }
+    sel.addEventListener('change', syncReceivingSigRole);
+    syncReceivingSigRole();
+})();
+</script>
 {% endblock %}
