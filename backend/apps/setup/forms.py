@@ -13,14 +13,19 @@ from apps.setup.models import (
 
 
 def _validate_unique_code(model, code, instance):
-    """تحقق غير مكرر للـ code (يستثنى الحالي + المحذوف ناعماً)"""
+    """تحقق عدم تكرار الرمز (يشمل المحذوف ناعماً — القيد unique في DB يشملهما)."""
     code = (code or '').strip()
     if not code:
         raise ValidationError('الرمز مطلوب')
-    qs = model.objects.filter(code=code, is_deleted=False)
+    qs = model.all_objects.filter(code=code)
     if instance and instance.pk:
         qs = qs.exclude(pk=instance.pk)
-    if qs.exists():
+    existing = qs.first()
+    if existing:
+        if getattr(existing, 'is_deleted', False):
+            raise ValidationError(
+                f'الرمز "{code}" مستخدم لسجل محذوف. اختر رمزاً آخر أو أعد تفعيل السجل القديم.'
+            )
         raise ValidationError(f'الرمز "{code}" موجود بالفعل')
     return code
 

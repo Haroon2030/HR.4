@@ -5,6 +5,8 @@ Django Template Views - واجهة الويب
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 
 
 
@@ -29,17 +31,31 @@ def _redirect_with_tab(request):
     return redirect(url)
 
 
+def _lookup_save_form(request, form, template, label, get_name, *, extra_context=None):
+    """حفظ نموذج lookup مع رسالة واضحة عند تكرار الرمز في DB."""
+    tab = request.GET.get('tab') or request.POST.get('tab') or ''
+    ctx = {'tab': tab, 'form': form, **(extra_context or {})}
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return render(request, template, ctx)
+    try:
+        obj = form.save()
+    except IntegrityError:
+        form.add_error('code', ValidationError('الرمز مستخدم بالفعل. اختر رمزاً آخر.'))
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return render(request, template, ctx)
+    messages.success(request, f'تم إضافة {label} "{get_name(obj)}" بنجاح')
+    return _redirect_with_tab(request)
+
+
 def _lookup_create(request, form_class, template, label, get_name):
     tab = request.GET.get('tab') or request.POST.get('tab') or ''
     form = form_class()
     if request.method == 'POST':
         form = form_class(request.POST)
-        if form.is_valid():
-            obj = form.save()
-            messages.success(request, f'تم إضافة {label} "{get_name(obj)}" بنجاح')
-            return _redirect_with_tab(request)
-        for err in form.errors.values():
-            messages.error(request, err[0])
+        return _lookup_save_form(request, form, template, label, get_name)
     return render(request, template, {'tab': tab, 'form': form})
 
 
@@ -49,12 +65,21 @@ def _lookup_update(request, model, pk, form_class, template, label, get_name, ct
     form = form_class(instance=obj)
     if request.method == 'POST':
         form = form_class(request.POST, instance=obj)
-        if form.is_valid():
+        tab = request.GET.get('tab') or request.POST.get('tab') or ''
+        ctx = {ctx_key: obj, 'tab': tab, 'form': form}
+        if not form.is_valid():
+            for err in form.errors.values():
+                messages.error(request, err[0])
+            return render(request, template, ctx)
+        try:
             obj = form.save()
-            messages.success(request, f'تم تحديث {label} "{get_name(obj)}" بنجاح')
-            return _redirect_with_tab(request)
-        for err in form.errors.values():
-            messages.error(request, err[0])
+        except IntegrityError:
+            form.add_error('code', ValidationError('الرمز مستخدم بالفعل. اختر رمزاً آخر.'))
+            for err in form.errors.values():
+                messages.error(request, err[0])
+            return render(request, template, ctx)
+        messages.success(request, f'تم تحديث {label} "{get_name(obj)}" بنجاح')
+        return _redirect_with_tab(request)
     return render(request, template, {ctx_key: obj, 'tab': tab, 'form': form})
 
 
