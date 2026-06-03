@@ -25,6 +25,8 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         """تفعيل الـ signals عند تشغيل التطبيق"""
+        from apps.core.employee_tab_permissions import register_employee_tab_permissions
+        register_employee_tab_permissions()
         import apps.core.signals  # noqa: F401
         # ربط الـ post_migrate لمزامنة الصلاحيات تلقائياً
         post_migrate.connect(_sync_permissions_signal, sender=self)

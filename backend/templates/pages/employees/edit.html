@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4" x-data="{
-    activeTab: 'main',
+    activeTab: '{{ default_employee_tab|default:"main" }}',
     saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
     getNationalityId() {
         const el = document.querySelector('[name=nationality]');
@@ -68,33 +68,11 @@
         {% endif %}
 
         {% include "components/page_tabs_start.html" with wrapper_class="hr-glass-form hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" aria_label="أقسام ملف الموظف" %}
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'main'" :class="activeTab === 'main' && 'is-active'">
-                    <i data-lucide="user" class="w-4 h-4"></i><span>بيانات الموظف</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'contract'" :class="activeTab === 'contract' && 'is-active'">
-                    <i data-lucide="file-signature" class="w-4 h-4"></i><span>العقد</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'salary'" :class="activeTab === 'salary' && 'is-active'">
-                    <i data-lucide="wallet" class="w-4 h-4"></i><span>الراتب</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'leaves'" :class="activeTab === 'leaves' && 'is-active'">
-                    <i data-lucide="palmtree" class="w-4 h-4"></i><span>الإجازات</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'schedule'" :class="activeTab === 'schedule' && 'is-active'">
-                    <i data-lucide="calendar-clock" class="w-4 h-4"></i><span>الجدول</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'warnings'" :class="activeTab === 'warnings' && 'is-active'">
-                    <i data-lucide="alert-triangle" class="w-4 h-4"></i><span>الإفادات والإنذارات</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'docs'" :class="activeTab === 'docs' && 'is-active'">
-                    <i data-lucide="files" class="w-4 h-4"></i><span>المستندات</span>
-                </button>
-                <button type="button" role="tab" class="hr-tab-btn" @click="activeTab = 'archive'" :class="activeTab === 'archive' && 'is-active'">
-                    <i data-lucide="archive" class="w-4 h-4"></i><span>أرشيف الحركة</span>
-                </button>
+                {% include "pages/employees/_tab_nav.html" %}
         {% include "components/page_tabs_body_start.html" %}
 
             <!-- Tab 1: بيانات الموظف -->
+            {% if tab_visible.main %}
             <div x-show="activeTab === 'main'" x-cloak class="p-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
@@ -234,8 +212,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Tab: العقد -->
+            {% if tab_visible.contract %}
             <div x-show="activeTab === 'contract'" x-cloak class="p-5 space-y-4">
                 <div x-show="isSaudi()" class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-start gap-2">
                     <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
@@ -299,8 +279,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Tab 2: الراتب -->
+            {% if tab_visible.salary %}
             <div x-show="activeTab === 'salary'" x-cloak class="p-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
@@ -356,8 +338,10 @@
                 </div>
                 {% endif %}
             </div>
+            {% endif %}
 
             <!-- Tab 3: الإجازات -->
+            {% if tab_visible.leaves %}
             <div x-show="activeTab === 'leaves'" x-cloak class="p-5">
                 {% if not employee.hire_date or not employee.sponsorship_id %}
                 <div class="mb-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs flex items-start gap-2">
@@ -391,8 +375,10 @@
                     <textarea name="leaves_archive" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="سجل الإجازات السابقة (التواريخ، الأنواع، الملاحظات...)">{{ employee.leaves_archive }}</textarea>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Tab 4: الجدول -->
+            {% if tab_visible.schedule %}
             <div x-show="activeTab === 'schedule'" x-cloak class="p-5">
                 <div class="space-y-3">
                     <div class="space-y-1.5">
@@ -417,8 +403,10 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
 
             <!-- Tab 5: الإفادات والإنذارات -->
+            {% if tab_visible.warnings %}
             <div x-show="activeTab === 'warnings'" x-cloak class="p-5">
                 {% if not is_create %}
                 <!-- أرشيف الإفادات -->
@@ -483,8 +471,10 @@
                 </div>
                 {% endif %}
             </div>
+            {% endif %}
 
             <!-- Tab 6: المستندات -->
+            {% if tab_visible.docs %}
             <div x-show="activeTab === 'docs'" x-cloak class="p-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
@@ -509,8 +499,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Tab 7: أرشيف الحركة -->
+            {% if tab_visible.archive %}
             <div x-show="activeTab === 'archive'" x-cloak class="p-5">
                 {% if employee.employment_request %}
                 <div class="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
@@ -534,6 +526,7 @@
                     سيظهر هنا أرشيف حركة الموظف (التنقلات بين الفروع، التغييرات في الراتب، إلخ)
                 </div>
             </div>
+            {% endif %}
         {% include "components/page_tabs_end.html" %}
 
         <!-- Actions -->

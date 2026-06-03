@@ -208,6 +208,15 @@ def user_has_permission(context, permission_code):
     return check_permission(user, permission_code)
 
 
+@register.simple_tag(takes_context=True)
+def can_see_employee_tab(context, tab_key):
+    """هل يظهر تبويب ملف الموظف للمستخدم الحالي؟"""
+    from apps.core.employee_tab_permissions import user_can_see_employee_tab
+    request = context.get('request')
+    user = getattr(request, 'user', None) if request else None
+    return user_can_see_employee_tab(user, tab_key)
+
+
 @register.filter
 def role_technical_code(role_type):
     """رمز الدور التقني من role_catalog."""

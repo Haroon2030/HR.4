@@ -70,11 +70,12 @@ def _save_employee_from_form(request, form):
     return employee
 
 
-def _employee_edit_page_context(employee, *, form=None, is_create=False):
+def _employee_edit_page_context(employee, *, form=None, is_create=False, user=None):
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
     from apps.employees.services.contract_rules import saudi_nationality_ids
+    from apps.core.employee_tab_permissions import enrich_employee_page_context
 
-    return {
+    ctx = {
         'employee': form.instance if form is not None else employee,
         'form': form,
         'is_create': is_create,
@@ -91,6 +92,10 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False):
         'banks': _banks_qs(),
         'administrations': _administrations_qs(),
     }
+    if user is not None:
+        enrich_employee_page_context(user, ctx, edit_form=True)
+    return ctx
+
 
 @login_required
 @permission_required('employees.view')
@@ -192,13 +197,13 @@ def create_employee_full(request):
         return render(
             request,
             'pages/employees/edit.html',
-            _employee_edit_page_context(Employee(), form=form, is_create=True),
+            _employee_edit_page_context(Employee(), form=form, is_create=True, user=request.user),
         )
 
     return render(
         request,
         'pages/employees/edit.html',
-        _employee_edit_page_context(Employee(), is_create=True),
+        _employee_edit_page_context(Employee(), is_create=True, user=request.user),
     )
 
 
@@ -361,7 +366,10 @@ def view_employee(request, employee_id):
         settings=bio_settings,
     )
 
-    return render(request, 'pages/employees/view.html', {
+    from apps.core.employee_tab_permissions import enrich_employee_page_context
+
+    requested_tab = (request.GET.get('tab') or '').strip() or None
+    ctx = enrich_employee_page_context(request.user, {
         'employee': employee,
         'departments': departments,
         'branches': branches,
@@ -381,7 +389,8 @@ def view_employee(request, employee_id):
         'fp_date_from': date_from.isoformat(),
         'fp_date_to': date_to.isoformat(),
         'can_edit_biometric_settings': True,
-    })
+    }, requested_tab=requested_tab)
+    return render(request, 'pages/employees/view.html', ctx)
 
 
 @login_required
@@ -455,13 +464,13 @@ def edit_employee(request, employee_id):
         return render(
             request,
             'pages/employees/edit.html',
-            _employee_edit_page_context(employee, form=form),
+            _employee_edit_page_context(employee, form=form, user=request.user),
         )
 
     return render(
         request,
         'pages/employees/edit.html',
-        _employee_edit_page_context(employee),
+        _employee_edit_page_context(employee, user=request.user),
     )
 
 
