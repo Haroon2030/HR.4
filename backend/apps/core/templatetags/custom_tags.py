@@ -9,6 +9,16 @@ from django.utils.safestring import mark_safe
 
 register = template.Library()
 
+_ROLE_BADGE_CLASS = {
+    'admin': 'bg-purple-100 text-purple-800',
+    'hr_manager': 'bg-blue-100 text-blue-800',
+    'hr_officer': 'bg-indigo-100 text-indigo-800',
+    'admin_manager': 'bg-violet-100 text-violet-800',
+    'manager': 'bg-emerald-100 text-emerald-800',
+    'specialist': 'bg-amber-100 text-amber-800',
+    'employee': 'bg-slate-100 text-slate-700',
+}
+
 
 @register.filter
 def format_sar(value, style='neutral'):
@@ -196,6 +206,24 @@ def user_has_permission(context, permission_code):
     if not user:
         return False
     return check_permission(user, permission_code)
+
+
+@register.filter
+def role_technical_code(role_type):
+    """رمز الدور التقني من role_catalog."""
+    if not role_type:
+        return '—'
+    try:
+        from apps.core.role_catalog import ROLE_CATALOG
+        return ROLE_CATALOG.get(role_type, {}).get('code', role_type)
+    except Exception:
+        return role_type
+
+
+@register.filter
+def role_badge_class(role_type):
+    """كلاس شارة الدور حسب النوع."""
+    return _ROLE_BADGE_CLASS.get(role_type, 'bg-slate-100 text-slate-700')
 
 
 @register.simple_tag(takes_context=True)

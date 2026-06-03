@@ -16,6 +16,8 @@ from apps.core.services.access_control import (
     can_view_user,
     filter_branches_queryset,
     filter_users_queryset,
+    order_roles_queryset,
+    order_users_queryset,
     get_accessible_branch_ids,
     validate_permission_grants,
     validate_user_admin_changes,
@@ -53,11 +55,15 @@ def list_users(request):
     """قائمة المستخدمين والأدوار"""
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    users = filter_users_queryset(
-        request.user,
-        User.objects.select_related('profile__role', 'profile__branch').all(),
+    users = order_users_queryset(
+        filter_users_queryset(
+            request.user,
+            User.objects.select_related('profile__role', 'profile__branch').all(),
+        )
     )
-    roles = Role.objects.all().prefetch_related('users')
+    roles = order_roles_queryset(
+        Role.objects.filter(is_active=True).prefetch_related('users')
+    )
     return render(request, 'pages/users/list.html', {
         'users': users,
         'roles': roles

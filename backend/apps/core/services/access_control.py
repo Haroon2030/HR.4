@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q, QuerySet
+from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
 from apps.core.models import Branch, Role
 
@@ -152,6 +152,30 @@ def filter_users_queryset(actor, queryset: QuerySet) -> QuerySet:
         Q(profile__branch_id__in=branch_ids)
         | Q(profile__assigned_branches__in=branch_ids)
     ).distinct()
+
+
+def order_users_queryset(queryset: QuerySet) -> QuerySet:
+    """ترتيب المستخدمين: الأعلى رتبةً أولاً، ثم رقم المستخدم، ثم اسم الدخول."""
+    whens = [
+        When(profile__role__role_type=role_type, then=Value(rank))
+        for role_type, rank in ROLE_RANK.items()
+    ]
+    return queryset.annotate(
+        _sort_rank=Case(*whens, default=Value(0), output_field=IntegerField()),
+    ).order_by('-_sort_rank', 'profile__user_number', 'username')
+
+
+def order_roles_queryset(queryset: QuerySet) -> QuerySet:
+    """ترتيب الأدوار حسب التسلسل التقني في role_catalog."""
+    from apps.core.role_catalog import ROLE_TYPE_ORDER
+
+    whens = [
+        When(role_type=role_type, then=Value(idx))
+        for idx, role_type in enumerate(ROLE_TYPE_ORDER)
+    ]
+    return queryset.annotate(
+        _sort_type=Case(*whens, default=Value(99), output_field=IntegerField()),
+    ).order_by('_sort_type', 'name')
 
 
 def assignable_roles_queryset(actor, queryset: QuerySet | None = None) -> QuerySet:

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block page_title %}المستخدمون والأدوار{% endblock %}
 
@@ -34,9 +35,9 @@
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">المستخدم</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الاسم / الدخول</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">رقم المستخدم</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الدور</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الدور التقني</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
                                 <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
                             </tr>
@@ -46,15 +47,17 @@
                             <tr class="hover:bg-slate-50 transition-colors">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                    <div class="flex items-center gap-2 min-w-[200px]">
+                                        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center shrink-0">
                                             <i data-lucide="user" class="w-4 h-4 text-primary-600"></i>
                                         </div>
-                                        <div>
-                                            <div class="text-xs font-medium text-slate-900">
-                                                {{ user.get_full_name|default:user.username }}
-                                            </div>
-                                            <div class="text-xs text-slate-500">@{{ user.username }}</div>
+                                        <div class="min-w-0">
+                                            {% if user.get_full_name and user.get_full_name != user.username %}
+                                            <div class="text-xs font-semibold text-slate-900 truncate">{{ user.get_full_name }}</div>
+                                            <div class="text-[11px] text-slate-500 font-mono truncate" dir="ltr">@{{ user.username }}</div>
+                                            {% else %}
+                                            <div class="text-xs font-semibold text-slate-900 font-mono truncate" dir="ltr">@{{ user.username }}</div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </td>
@@ -63,14 +66,12 @@
                                 </td>
                                 <td class="px-3 py-2">
                                     {% if user.profile.role %}
-                                    <span class="px-2 py-1 text-xs rounded-md
-                                        {% if user.profile.role.role_type == 'admin' %}bg-purple-100 text-purple-800
-                                        {% elif user.profile.role.role_type == 'hr_manager' %}bg-blue-100 text-blue-800
-                                        {% elif user.profile.role.role_type == 'manager' %}bg-emerald-100 text-emerald-800
-                                        {% elif user.profile.role.role_type == 'specialist' %}bg-amber-100 text-amber-800
-                                        {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                        {{ user.profile.role.get_role_type_display }}
-                                    </span>
+                                    <div class="space-y-0.5">
+                                        <span class="inline-block px-2 py-0.5 text-[10px] font-mono font-semibold rounded {{ user.profile.role.role_type|role_badge_class }}" dir="ltr">
+                                            {{ user.profile.role.role_type|role_technical_code }}
+                                        </span>
+                                        <div class="text-[11px] text-slate-600 leading-snug">{{ user.profile.role.name }}</div>
+                                    </div>
                                     {% else %}
                                     <span class="text-xs text-slate-400">—</span>
                                     {% endif %}
@@ -160,12 +161,8 @@
                                     </div>
                                 </td>
                                 <td class="px-3 py-2">
-                                    <span class="px-2 py-1 text-xs rounded-md
-                                        {% if role.role_type == 'admin' %}bg-purple-100 text-purple-800
-                                        {% elif role.role_type == 'hr_manager' %}bg-blue-100 text-blue-800
-                                        {% elif role.role_type == 'manager' %}bg-emerald-100 text-emerald-800
-                                        {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                        {{ role.get_role_type_display }}
+                                    <span class="inline-block px-2 py-0.5 text-[10px] font-mono font-semibold rounded {{ role.role_type|role_badge_class }}" dir="ltr">
+                                        {{ role.role_type|role_technical_code }}
                                     </span>
                                 </td>
                                 <td class="px-3 py-2 text-xs text-slate-500">
