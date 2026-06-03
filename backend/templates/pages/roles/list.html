@@ -2,6 +2,11 @@
 
 {% block page_title %}الأدوار{% endblock %}
 
+{% block list_back %}
+{% url 'web:list_users' as back_url %}
+{% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع' aria_label='رجوع للمستخدمين' %}
+{% endblock %}
+
 {% block add_url %}{% url 'web:add_role' %}{% endblock %}
 
 {% block add_button_text %}إضافة دور جديد{% endblock %}

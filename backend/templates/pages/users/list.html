@@ -119,7 +119,14 @@
         <!-- Tab 2: الأدوار -->
         <div x-show="activeTab === 'roles'" x-cloak>
             <div class="p-4">
-                <div class="flex justify-end mb-4">
+                <div class="flex items-center justify-between mb-4 gap-3">
+                    <button type="button"
+                            @click="activeTab = 'users'; lucide.createIcons()"
+                            class="hr-glass-back-btn hr-glass-back-btn--labeled"
+                            aria-label="رجوع لقائمة المستخدمين">
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        <span class="hr-glass-back-btn__text">رجوع</span>
+                    </button>
                     <a href="{% url 'web:add_role' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         إضافة دور جديد
