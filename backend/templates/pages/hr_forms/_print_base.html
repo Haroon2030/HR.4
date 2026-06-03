@@ -374,6 +374,7 @@
         });
         // إضافة مربع "ملاحظة / سبب" إلكتروني تحت كل مجموعة اختيارات
         document.querySelectorAll('.checkbox-row').forEach(row => {
+            if (row.dataset.skipChoiceNote !== undefined) return;
             if (row.nextElementSibling?.classList?.contains('choice-note')) return;
             const wrap = document.createElement('div');
             wrap.className = 'choice-note';
