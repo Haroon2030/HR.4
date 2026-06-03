@@ -39,6 +39,24 @@ PY_SYNC
 echo "==> Collecting static files (إنتاج — يضمن وجود ملفات مثل css/login.css)..."
 python manage.py collectstatic --noinput
 
+# ─── Redis (موصى به مع عدة workers — لا يوقف الإقلاع) ───────────────────────
+echo "==> Cache backend check..."
+python manage.py shell <<'PY_REDIS'
+import os
+from django.conf import settings
+
+redis_url = (os.environ.get('REDIS_URL') or '').strip()
+prod = os.environ.get('DJANGO_ENV', '').lower() == 'production' or not settings.DEBUG
+backend = settings.CACHES.get('default', {}).get('BACKEND', '')
+if prod and not redis_url and 'locmem' in backend.lower():
+    print(
+        '!! WARNING: REDIS_URL غير مضبوط — LocMemCache مع عدة workers Gunicorn '
+        'قد يسبب جلسات/حدود API غير متسقة. أضف REDIS_URL عند توفر Redis.'
+    )
+elif redis_url:
+    print('==> REDIS_URL مضبوط — Cache: Redis.')
+PY_REDIS
+
 # ─── فحص قاعدة البيانات والبصمة (بعد migrate + collectstatic) ───────────────
 echo "==> Attendance / database deploy check..."
 if ! python manage.py check_attendance_production --deploy; then
@@ -122,13 +140,10 @@ from django.conf import settings
 key = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
 prod = os.environ.get('DJANGO_ENV', '').lower() == 'production' or not settings.DEBUG
 if prod and not key:
-    import sys
     print(
-        '!! ERROR: ATTENDANCE_AGENT_API_KEY غير مضبوط في .env — '
-        'فعّل المفتاح ثم شغّل وكيل الفرع (backend/scripts/biometric_bridge).',
-        file=sys.stderr,
+        '!! WARNING: ATTENDANCE_AGENT_API_KEY غير مضبوط في .env — '
+        'فعّل المفتاح ثم شغّل وكيل الفرع (backend/scripts/biometric_bridge).'
     )
-    sys.exit(1)
 elif prod:
     print('==> ATTENDANCE_AGENT_API_KEY مضبوط — جاهز لاستقبال الوكيل من الفرع.')
 else:

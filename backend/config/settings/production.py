@@ -85,12 +85,8 @@ else:
             'OPTIONS': {'MAX_ENTRIES': 5000},
         }
     }
-    if not env.bool('REDIS_OPTIONAL', default=False):
-        from django.core.exceptions import ImproperlyConfigured
-        raise ImproperlyConfigured(
-            'REDIS_URL مطلوب في الإنتاج عند تشغيل Gunicorn بعدة workers. '
-            'اضبط REDIS_URL في .env أو REDIS_OPTIONAL=true للتجارب المحلية فقط.'
-        )
+    # LocMemCache مع عدة workers Gunicorn لا يشارك الذاكرة بين العمليات —
+    # يُفضّل REDIS_URL عند التوسع؛ التحذير يُطبع من entrypoint.sh عند الإقلاع.
 
 # استخدام التخزين المؤقت للجلسات أيضاً — يقلل الضغط على قاعدة البيانات
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
