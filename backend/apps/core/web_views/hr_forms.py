@@ -265,6 +265,12 @@ def hr_form_print(request, form_type, employee_id):
         'form_serial': _build_form_serial(form_type, employee.id),
     }
 
+    if form_type in ('custody_clearance', 'custody_receipt'):
+        from apps.setup.models import Administration
+        context['administrations'] = Administration.objects.filter(
+            is_deleted=False, is_active=True,
+        ).order_by('code', 'name')
+
     if form_type == 'final_settlement':
         stmt_id = request.GET.get('stmt_id')
         if stmt_id and stmt_id.isdigit():

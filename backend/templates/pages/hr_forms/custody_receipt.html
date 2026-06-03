@@ -7,7 +7,15 @@
     <h3>تفاصيل العهدة المُستلَمة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
         <div class="field"><span class="label">تاريخ الاستلام:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">جهة التسليم:</span><span class="blank"></span></div>
+        <div class="field">
+            <span class="label">جهة التسليم:</span>
+            <select class="blank-select" aria-label="جهة التسليم">
+                <option value="">— اختر الإدارة —</option>
+                {% for adm in administrations %}
+                <option value="{{ adm.name }}">{{ adm.code }} — {{ adm.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="field"><span class="label">رقم سند التسليم:</span><span class="blank"></span></div>
         <div class="field"><span class="label">القيمة الإجمالية:</span><span class="blank"></span></div>
     </div>

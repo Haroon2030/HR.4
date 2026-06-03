@@ -8,8 +8,15 @@
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
         <div class="field"><span class="label">تاريخ التصفية:</span><span class="blank"></span></div>
         <div class="field"><span class="label">سبب التصفية:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">رقم سند التسليم الأصلي:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">جهة الاستلام:</span><span class="blank"></span></div>
+        <div class="field">
+            <span class="label">جهة الاستلام:</span>
+            <select class="blank-select" aria-label="جهة الاستلام">
+                <option value="">— اختر الإدارة —</option>
+                {% for adm in administrations %}
+                <option value="{{ adm.name }}">{{ adm.code }} — {{ adm.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
     </div>
 
     <table style="width:100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
@@ -50,13 +57,12 @@
     تُقرّ <strong>شركة محمد رشيد الرشيد</strong> بأن الموظف
     <strong>{{ employee.name }}</strong> ـ الرقم الوظيفي
     {{ employee.employee_number|default:"............" }} ـ
-    قد سلّم العهدة المذكورة أعلاه وفق الحالة الموضّحة، ويُعدّ بريء الذمة
-    من جانب العهدة بعد توقيع هذا النموذج، مع احتفاظ الشركة بحقّها في المطالبة بأي نقص يثبت لاحقاً.
+    قد سلّم العهدة المذكورة أعلاه وفق الحالة الموضّحة، مع احتفاظ الشركة بحقّها في المطالبة بأي نقص يثبت لاحقاً.
 </div>
 
 <div class="signatures">
     <div class="sig-box">
-        <div class="role">الموظف (المُسلِّم)</div>
+        <div class="role">الموظف</div>
         <div class="line">الاسم: {{ employee.name }}</div>
         <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
     </div>
