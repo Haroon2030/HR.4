@@ -173,14 +173,41 @@ body.hr-app .hr-sidebar::after {
     flex-direction: column;
     gap: 0.2rem;
     overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
 }
 
-.hr-nav::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
+/* شريط تمرير الشريط الجانبي: خفي → أوضح عند مرور المؤشر */
+body.hr-app .hr-sidebar:hover .hr-nav,
+body.hr-app .hr-sidebar .hr-nav:hover,
+body.hr-app .hr-sidebar .hr-nav:focus-within {
+    scrollbar-color: rgba(100, 116, 139, 0.42) transparent;
+}
+
+body.hr-app .hr-sidebar .hr-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+body.hr-app .hr-sidebar .hr-nav::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+}
+
+body.hr-app .hr-sidebar .hr-nav::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+body.hr-app .hr-sidebar:hover .hr-nav::-webkit-scrollbar-thumb,
+body.hr-app .hr-sidebar .hr-nav:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.45);
+}
+
+body.hr-app .hr-sidebar .hr-nav:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.62);
 }
 
 .hr-main {

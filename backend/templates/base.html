@@ -228,7 +228,7 @@
             :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
         >
             {% include "components/sidebar_brand.html" %}
-            <nav class="hr-nav hr-scroll-hide flex-1 min-h-0"
+            <nav class="hr-nav flex-1 min-h-0"
                  x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                 {% include "components/sidebar_nav.html" with always_show=False %}
             </nav>
@@ -254,7 +254,7 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <nav class="hr-nav hr-scroll-hide flex-1 min-h-0"
+            <nav class="hr-nav flex-1 min-h-0"
                  x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                 {% include "components/sidebar_nav.html" with always_show=True %}
             </nav>
