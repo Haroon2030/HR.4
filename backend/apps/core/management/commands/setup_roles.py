@@ -5,6 +5,17 @@ python manage.py setup_roles
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from apps.core.models import Role, Permission
+from apps.core.role_catalog import ROLE_CATALOG
+
+
+def _role_meta(role_type: str) -> dict:
+    entry = ROLE_CATALOG[role_type]
+    return {
+        'name': entry['name'],
+        'description': entry['description'],
+        'role_type': role_type,
+        'is_system_role': True,
+    }
 
 
 class Command(BaseCommand):
@@ -44,10 +55,7 @@ class Command(BaseCommand):
             # 1️⃣ الأدمن (كل الصلاحيات)
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'الأدمن',
-                'role_type': Role.RoleType.ADMIN,
-                'description': 'صلاحيات كاملة على جميع أجزاء النظام. يمكنه إدارة المستخدمين والإعدادات وجميع البيانات.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.ADMIN),
                 'permissions': 'all',  # كل الصلاحيات
             },
             
@@ -55,10 +63,7 @@ class Command(BaseCommand):
             # 2️⃣ مدير فرع — الموافقة الأولى على طلبات فرعه
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'مدير فرع',
-                'role_type': Role.RoleType.MANAGER,
-                'description': 'الموافقة الأولى في دورة الطلبات (مرحلة مدير الفرع). يدير موظفي فرعه ويراجع طلبات الإجازات والنقل والرواتب.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.MANAGER),
                 'permissions': [
                     # الموظفين
                     'employees.view',
@@ -83,13 +88,7 @@ class Command(BaseCommand):
             # 2b مدير إدارة — الموافقة الأولى لموظفي إدارته
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'مدير إدارة',
-                'role_type': Role.RoleType.ADMIN_MANAGER,
-                'description': (
-                    'الموافقة الأولى على طلبات موظفي الإدارة المعيّنة عليه. '
-                    'يُعيَّن أيضاً كـ «مدير الإدارة» من التهيئة → الإدارات.'
-                ),
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.ADMIN_MANAGER),
                 'permissions': [
                     'employees.view',
                     'employees.add',
@@ -110,10 +109,7 @@ class Command(BaseCommand):
             # 3️⃣ مدير الموارد البشرية (المدير العام في دورة الموافقات)
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'مدير الموارد البشرية',
-                'role_type': Role.RoleType.HR_MANAGER,
-                'description': 'الموافقة الثانية (المدير العام) في دورة الطلبات. يوافق على ما اعتمده مدير الفرع ويُسند المهمة لموظف موارد للتنفيذ.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.HR_MANAGER),
                 'permissions': [
                     # الموظفين - كل الصلاحيات
                     'employees.view',
@@ -155,10 +151,7 @@ class Command(BaseCommand):
             # 4️⃣ موظف عادي
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'موظف',
-                'role_type': Role.RoleType.EMPLOYEE,
-                'description': 'موظف عادي يمكنه فقط عرض بياناته الشخصية وطلب الإجازات.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.EMPLOYEE),
                 'permissions': [
                     # عرض بياناته فقط
                     'employees.view',  # (سيتم تطبيق فلتر لرؤية نفسه فقط في الـ views)
@@ -172,10 +165,7 @@ class Command(BaseCommand):
             # 5️⃣ أخصائي موارد بشرية (المرحلة الأخيرة في دورة الموافقات)
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'أخصائي موارد بشرية',
-                'role_type': Role.RoleType.HR_OFFICER,
-                'description': 'يستلم المهام المُسندة من المدير العام وينفّذها بعد موافقته (المرحلة الأخيرة في دورة الموافقات).',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.HR_OFFICER),
                 'permissions': [
                     'employees.view',
                     'employees.edit',
@@ -183,6 +173,16 @@ class Command(BaseCommand):
                     'leaves.manage',
                     'operations.view',
                     'operations.approve_officer',
+                ],
+            },
+            {
+                **_role_meta(Role.RoleType.SPECIALIST),
+                'permissions': [
+                    'employees.view',
+                    'employees.add',
+                    'employees.edit',
+                    'departments.view',
+                    'branches.view',
                 ],
             },
         ]

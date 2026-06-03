@@ -5,6 +5,17 @@ python manage.py setup_permissions_and_roles
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from apps.core.models import Role, Permission
+from apps.core.role_catalog import ROLE_CATALOG
+
+
+def _role_meta(role_type: str) -> dict:
+    entry = ROLE_CATALOG[role_type]
+    return {
+        'name': entry['name'],
+        'description': entry['description'],
+        'role_type': role_type,
+        'is_system_role': True,
+    }
 
 
 class Command(BaseCommand):
@@ -121,10 +132,7 @@ class Command(BaseCommand):
             # 1️⃣ الأدمن (كل الصلاحيات)
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'الأدمن',
-                'role_type': Role.RoleType.ADMIN,
-                'description': 'صلاحيات كاملة على جميع أجزاء النظام. يمكنه إدارة المستخدمين والإعدادات وجميع البيانات.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.ADMIN),
                 'permissions': list(permissions.keys()),  # كل الصلاحيات
             },
             
@@ -132,10 +140,7 @@ class Command(BaseCommand):
             # 2️⃣ مدير فرع
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'مدير فرع',
-                'role_type': Role.RoleType.MANAGER,
-                'description': 'يمكنه عرض وإدارة موظفي فرعه، والموافقة الأولى (مدير الفرع) على الطلبات.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.MANAGER),
                 'permissions': [
                     'employees.view',
                     'employees.add',
@@ -158,10 +163,7 @@ class Command(BaseCommand):
             # 2b مدير إدارة
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'مدير إدارة',
-                'role_type': Role.RoleType.ADMIN_MANAGER,
-                'description': 'الموافقة الأولى على طلبات موظفي إدارته (مع تعيينه مديراً للإدارة في التهيئة).',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.ADMIN_MANAGER),
                 'permissions': [
                     'employees.view',
                     'employees.add',
@@ -184,10 +186,7 @@ class Command(BaseCommand):
             # 3️⃣ الموارد البشرية
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'الموارد البشرية',
-                'role_type': Role.RoleType.HR_MANAGER,
-                'description': 'صلاحيات إدارة شؤون الموظفين، الرواتب، الحضور، والإجازات.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.HR_MANAGER),
                 'permissions': [
                     # الموظفين
                     'employees.view',
@@ -233,10 +232,7 @@ class Command(BaseCommand):
             # 4️⃣ موظف عادي
             # ═══════════════════════════════════════════════════════════
             {
-                'name': 'موظف',
-                'role_type': Role.RoleType.EMPLOYEE,
-                'description': 'موظف عادي يمكنه فقط عرض بياناته الشخصية وطلب الإجازات.',
-                'is_system_role': True,
+                **_role_meta(Role.RoleType.EMPLOYEE),
                 'permissions': [
                     # عرض بياناته فقط
                     'employees.view',  # (سيتم تطبيق فلتر لرؤية نفسه فقط في الـ views)
