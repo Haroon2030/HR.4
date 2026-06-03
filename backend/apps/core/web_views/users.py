@@ -29,6 +29,41 @@ from apps.core.services.access_control import (
 
 from apps.core.decorators import permission_required
 
+# أدوار يمكن ربطها بعدة فروع (إضافةً لمدير الإدارة من التهيئة → الإدارات)
+BRANCH_ASSIGNABLE_ROLE_TYPES = frozenset({
+    Role.RoleType.SPECIALIST,
+    Role.RoleType.HR_OFFICER,
+    Role.RoleType.ADMIN_MANAGER,
+})
+
+
+def _role_uses_assigned_branches(role) -> bool:
+    return bool(role and role.role_type in BRANCH_ASSIGNABLE_ROLE_TYPES)
+
+
+def _save_assigned_branches(profile, role, assigned):
+    if _role_uses_assigned_branches(role):
+        profile.assigned_branches.set(assigned or [])
+    else:
+        profile.assigned_branches.clear()
+
+
+def _user_form_context(user_obj=None, roles=None, branches=None):
+    ctx = {
+        'roles': roles or [],
+        'branches': branches or [],
+        'branch_assignable_role_types': list(BRANCH_ASSIGNABLE_ROLE_TYPES),
+    }
+    if user_obj:
+        ctx['user_obj'] = user_obj
+        ctx['show_assigned_branches'] = _role_uses_assigned_branches(
+            getattr(user_obj.profile, 'role', None) if hasattr(user_obj, 'profile') else None
+        )
+    else:
+        ctx['show_assigned_branches'] = False
+    return ctx
+
+
 @login_required
 @permission_required('users.view')
 def list_users(request):
@@ -51,11 +86,20 @@ def view_user(request, user_id):
     """عرض تفاصيل مستخدم معين"""
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    user = get_object_or_404(User.objects.select_related('profile__role', 'profile__branch'), id=user_id)
+    user = get_object_or_404(
+        User.objects.select_related('profile__role', 'profile__branch')
+        .prefetch_related('profile__assigned_branches', 'managed_administrations'),
+        id=user_id,
+    )
     if not can_view_user(request.user, user):
         messages.error(request, 'لا تملك صلاحية عرض هذا المستخدم.')
         return redirect('web:list_users')
-    return render(request, 'pages/users/detail.html', {'user_obj': user})
+    return render(request, 'pages/users/detail.html', {
+        'user_obj': user,
+        'show_assigned_branches': _role_uses_assigned_branches(
+            getattr(user.profile, 'role', None) if hasattr(user, 'profile') else None
+        ),
+    })
 
 
 @login_required
@@ -104,9 +148,9 @@ def edit_user(request, user_id):
         if not form.is_valid():
             for err in form.errors.values():
                 messages.error(request, err[0])
-            return render(request, 'pages/users/form.html', {
-                'user_obj': user, 'roles': roles, 'branches': branches
-            })
+            return render(request, 'pages/users/form.html', _user_form_context(
+                user_obj=user, roles=roles, branches=branches,
+            ))
         cd = form.cleaned_data
 
         new_role = cd.get('role')
@@ -160,19 +204,14 @@ def edit_user(request, user_id):
         profile.position = cd.get('position', '')
         profile.save()
         
-        if profile.role and profile.role.role_type == 'specialist':
-            profile.assigned_branches.set(assigned or [])
-        else:
-            profile.assigned_branches.clear()
-        
+        _save_assigned_branches(profile, new_role, assigned)
+
         messages.success(request, f'تم تحديث المستخدم "{user.username}" بنجاح')
         return redirect('web:list_users')
-    
-    return render(request, 'pages/users/form.html', {
-        'user_obj': user,
-        'roles': roles,
-        'branches': branches
-    })
+
+    return render(request, 'pages/users/form.html', _user_form_context(
+        user_obj=user, roles=roles, branches=branches,
+    ))
 
 @login_required
 @permission_required('users.add')
@@ -189,9 +228,9 @@ def add_user(request):
         if not form.is_valid():
             for err in form.errors.values():
                 messages.error(request, err[0])
-            return render(request, 'pages/users/form.html', {
-                'roles': roles, 'branches': branches
-            })
+            return render(request, 'pages/users/form.html', _user_form_context(
+                roles=roles, branches=branches,
+            ))
         cd = form.cleaned_data
         new_role = cd.get('role')
         new_branch = cd.get('branch')
@@ -200,24 +239,24 @@ def add_user(request):
 
         if new_role and not can_assign_role(request.user, new_role):
             messages.error(request, 'لا يمكنك تعيين هذا الدور.')
-            return render(request, 'pages/users/form.html', {
-                'roles': roles, 'branches': branches
-            })
+            return render(request, 'pages/users/form.html', _user_form_context(
+                roles=roles, branches=branches,
+            ))
 
         accessible = get_accessible_branch_ids(request.user)
         if accessible is not None:
             if new_branch and new_branch.pk not in accessible:
                 messages.error(request, 'لا يمكنك تعيين فرع خارج نطاق صلاحياتك.')
-                return render(request, 'pages/users/form.html', {
-                    'roles': roles, 'branches': branches
-                })
+                return render(request, 'pages/users/form.html', _user_form_context(
+                    roles=roles, branches=branches,
+                ))
             if assigned_ids:
                 invalid = set(assigned_ids) - accessible
                 if invalid:
                     messages.error(request, 'لا يمكنك تعيين فروع خارج نطاق صلاحياتك.')
-                    return render(request, 'pages/users/form.html', {
-                        'roles': roles, 'branches': branches
-                    })
+                    return render(request, 'pages/users/form.html', _user_form_context(
+                        roles=roles, branches=branches,
+                    ))
 
         is_active = cd.get('is_active')
         if is_active is None:
@@ -240,16 +279,14 @@ def add_user(request):
         profile.position = cd.get('position', '')
         profile.save()
         
-        if profile.role and profile.role.role_type == 'specialist' and assigned:
-            profile.assigned_branches.set(assigned)
-        
+        _save_assigned_branches(profile, new_role, assigned)
+
         messages.success(request, f'تم إنشاء المستخدم "{user.username}" بنجاح')
         return redirect('web:list_users')
-    
-    return render(request, 'pages/users/form.html', {
-        'roles': roles,
-        'branches': branches
-    })
+
+    return render(request, 'pages/users/form.html', _user_form_context(
+        roles=roles, branches=branches,
+    ))
 
 
 # =============================================================================

@@ -287,13 +287,13 @@ class UserProfile(BaseModel):
         help_text="الفرع الذي ينتمي له المستخدم"
     )
     
-    # الفروع المخصصة للأخصائيين (يمكنهم الوصول لبيانات هذه الفروع)
+    # فروع إضافية لنطاق الصلاحية (أخصائي / موظف موارد / مدير إدارة)
     assigned_branches = models.ManyToManyField(
         Branch,
-        verbose_name="الفروع المكلف بها",
+        verbose_name="الفروع المعينة",
         related_name="assigned_specialists",
         blank=True,
-        help_text="الفروع التي يمكن للأخصائي الوصول إليها (يحددها مدير الموارد البشرية)"
+        help_text="فروع يصل إليها المستخدم (إضافةً لتعيين مدير الإدارة من التهيئة)",
     )
     
     user_number = models.CharField(
