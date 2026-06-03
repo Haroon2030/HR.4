@@ -27,6 +27,13 @@ PRIVILEGED_ROLE_TYPES = frozenset({
     Role.RoleType.HR_MANAGER,
 })
 
+# صلاحيات توسّع نطاق الفروع لكل الموظفين (مالية / رواتب / تقارير شاملة)
+COMPANY_WIDE_BRANCH_PERMISSIONS = frozenset({
+    'payroll.process',
+    'payroll.manage',
+    'reports.view_all',
+})
+
 SENSITIVE_USER_PERMISSIONS = frozenset({
     'users.edit',
     'users.delete',
@@ -60,12 +67,24 @@ def is_privileged_actor(user) -> bool:
     return bool(role and role.role_type in PRIVILEGED_ROLE_TYPES)
 
 
+def has_company_wide_branch_access(user) -> bool:
+    """أدوار المالية/الرواتب أو التقارير الشاملة — كل الفروع."""
+    if is_privileged_actor(user):
+        return True
+    from apps.core.decorators import get_user_permissions
+
+    return bool(COMPANY_WIDE_BRANCH_PERMISSIONS.intersection(get_user_permissions(user)))
+
+
 def get_accessible_branch_ids(user) -> set[int] | None:
     """
     None → unrestricted branch access (superuser, admin, HR manager).
     Otherwise a set of branch primary keys.
     """
     if user.is_superuser:
+        return None
+
+    if has_company_wide_branch_access(user):
         return None
 
     profile = getattr(user, 'profile', None)
