@@ -29,8 +29,8 @@ class BranchSerializer(serializers.ModelSerializer):
     """Serializer للفروع"""
     company_name = serializers.CharField(source='company.name', read_only=True)
     manager_name = serializers.SerializerMethodField()
-    employees_count = serializers.ReadOnlyField()
-    active_employees_count = serializers.ReadOnlyField()
+    employees_count = serializers.IntegerField(read_only=True)
+    active_employees_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Branch

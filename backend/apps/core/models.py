@@ -129,13 +129,17 @@ class Branch(BaseModel):
     
     @property
     def employees_count(self):
-        """عدد الموظفين في هذا الفرع"""
-        return self.employees.filter(is_deleted=False).count()
-    
+        """عدد سجلات الموظفين (Employee) في هذا الفرع."""
+        return self.employee_records.filter(is_deleted=False).count()
+
     @property
     def active_employees_count(self):
-        """عدد الموظفين النشطين في هذا الفرع"""
-        return self.employees.filter(is_deleted=False, user__is_active=True).count()
+        """عدد الموظفين النشطين أو في إجازة في هذا الفرع."""
+        from apps.employees.models import Employee
+        return self.employee_records.filter(
+            is_deleted=False,
+            status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
+        ).count()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # الأدوار - Role Based Access Control مبسط

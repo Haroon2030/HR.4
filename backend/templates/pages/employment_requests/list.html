@@ -165,6 +165,22 @@
             </table>
         </div>
     </div>
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div class="flex items-center justify-between text-sm text-slate-600 px-1">
+        <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+        <div class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?status={{ current_status }}&page={{ page_obj.previous_page_number }}"
+               class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white">السابق</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?status={{ current_status }}&page={{ page_obj.next_page_number }}"
+               class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white">التالي</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>

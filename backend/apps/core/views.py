@@ -75,7 +75,27 @@ class BranchViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         return BranchSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        from django.db.models import Count, Q
+        from apps.employees.models import Employee
+
+        queryset = super().get_queryset().annotate(
+            employees_count=Count(
+                'employee_records',
+                filter=Q(employee_records__is_deleted=False),
+                distinct=True,
+            ),
+            active_employees_count=Count(
+                'employee_records',
+                filter=Q(
+                    employee_records__is_deleted=False,
+                    employee_records__status__in=[
+                        Employee.Status.ACTIVE,
+                        Employee.Status.LEAVE,
+                    ],
+                ),
+                distinct=True,
+            ),
+        )
         return filter_branches_queryset(self.request.user, queryset)
 
     @action(detail=True, methods=['get'])

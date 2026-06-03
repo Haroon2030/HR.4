@@ -130,6 +130,11 @@ def employee_branch_access_required(view_func):
             return redirect('web:auth:login')
         from apps.employees.models import Employee
         employee_id = kwargs.get('employee_id')
+        if employee_id is None and kwargs.get('statement_id') is not None:
+            from apps.employees.models import EmployeeStatement
+            statement = get_object_or_404(EmployeeStatement, id=kwargs['statement_id'])
+            employee_id = statement.employee_id
+            kwargs['employee_id'] = employee_id
         if employee_id is None:
             from django.http import Http404
             raise Http404('employee_id غير موجود في الرابط')

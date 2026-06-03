@@ -59,4 +59,4 @@ EXPOSE 8082
 # Migrations run in entrypoint.sh on every container start (before CMD / Gunicorn).
 ENTRYPOINT ["/entrypoint.sh"]
 # gthread workers — better for I/O-bound apps (DB-heavy). 3 workers × 4 threads = 12 concurrent.
-CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --threads 4 --worker-class gthread --timeout 120 --keep-alive 30 --access-logfile - --error-logfile -"]
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8082} --workers ${GUNICORN_WORKERS:-3} --threads ${GUNICORN_THREADS:-4} --worker-class ${GUNICORN_WORKER_CLASS:-gthread} --timeout ${GUNICORN_TIMEOUT:-120} --keep-alive ${GUNICORN_KEEP_ALIVE:-30} --access-logfile - --error-logfile -"]

@@ -122,10 +122,13 @@ from django.conf import settings
 key = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
 prod = os.environ.get('DJANGO_ENV', '').lower() == 'production' or not settings.DEBUG
 if prod and not key:
+    import sys
     print(
-        '!! WARNING: ATTENDANCE_AGENT_API_KEY غير مضبوط في .env — '
-        'فعّل المفتاح ثم شغّل وكيل الفرع (backend/scripts/biometric_bridge).'
+        '!! ERROR: ATTENDANCE_AGENT_API_KEY غير مضبوط في .env — '
+        'فعّل المفتاح ثم شغّل وكيل الفرع (backend/scripts/biometric_bridge).',
+        file=sys.stderr,
     )
+    sys.exit(1)
 elif prod:
     print('==> ATTENDANCE_AGENT_API_KEY مضبوط — جاهز لاستقبال الوكيل من الفرع.')
 else:

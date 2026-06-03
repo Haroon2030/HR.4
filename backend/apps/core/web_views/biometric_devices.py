@@ -138,12 +138,16 @@ def biometric_devices_dashboard(request):
         device_user_filters['search'],
         device_user_filters['mapped_only'] is not None,
     ])
-    employees = filter_employees_queryset_for_user(
+    _EMPLOYEE_LINK_LIMIT = 2000
+    employees_qs = filter_employees_queryset_for_user(
         request.user,
         Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE)
         .select_related('branch', 'department')
         .order_by('name'),
     )
+    employees_total = employees_qs.count()
+    employees = list(employees_qs[:_EMPLOYEE_LINK_LIMIT])
+    employees_truncated = employees_total > _EMPLOYEE_LINK_LIMIT
 
     link_device_id = request.GET.get('link_device')
     link_user_id = request.GET.get('link_user')
@@ -175,10 +179,11 @@ def biometric_devices_dashboard(request):
         'enrollment_by_device_user': enrollment_by_device_user,
         'branches': branches,
         'employees': employees,
+        'employees_truncated': employees_truncated,
         'link_device_id': link_device_id,
         'link_user_id': link_user_id,
         'link_device_user': link_device_user,
-        'employees_count': employees.count(),
+        'employees_count': employees_total,
     })
 
 

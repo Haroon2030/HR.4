@@ -70,6 +70,7 @@ jobs:
           USE_HTTPS: 'true'
           DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3
           USE_R2: 'False'
+          REDIS_OPTIONAL: 'true'
         run: python manage.py check --deploy
 
       - name: "[3/9] Validate OpenAPI schema"
@@ -105,6 +106,7 @@ jobs:
           DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3
           USE_R2: 'False'
           ATTENDANCE_AGENT_API_KEY: ci-attendance-agent-key-for-deploy-check-only
+          REDIS_OPTIONAL: 'true'
         run: python manage.py check_attendance_production --deploy
 
       # إعدادات الإنتاج تُختبر في [2/9] check --deploy

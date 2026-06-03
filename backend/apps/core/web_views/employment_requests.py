@@ -88,12 +88,17 @@ def list_employment_requests(request):
                     'pending_gm', 'pending_officer'}:
         qs = qs.filter(status=status)
 
-    rows = list(qs.order_by('-created_at'))
-    for row in rows:
+    from django.core.paginator import Paginator
+
+    paginator = Paginator(qs.order_by('-created_at'), 25)
+    page_obj = paginator.get_page(request.GET.get('page') or 1)
+    for row in page_obj.object_list:
         row.first_stage_label = resolve_first_approver(row).stage_label
 
     return render(request, 'pages/employment_requests/list.html', {
-        'requests': rows,
+        'requests': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginator': paginator,
         'current_status': status,
         'is_branch_manager': is_branch,
         'is_general_manager': is_gm,

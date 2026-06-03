@@ -224,9 +224,14 @@ def list_pending_actions(request):
         qs = base
         qs_hire = base_hire
 
-    # ─ دمج وفرز موحّد ────────────────────────────────────────────
-    rows = [_wrap_action(a) for a in qs.order_by('-requested_at')[:500]]
-    rows += [_wrap_hire(r) for r in qs_hire.order_by('-created_at')[:500]]
+    # ─ دمج وفرز موحّد (حد أقصى لتقليل استهلاك الذاكرة) ─────────
+    _MERGE_LIMIT = 200
+    rows = [_wrap_action(a) for a in qs.order_by('-requested_at')[:_MERGE_LIMIT]]
+    rows += [_wrap_hire(r) for r in qs_hire.order_by('-created_at')[:_MERGE_LIMIT]]
+    rows_may_be_truncated = (
+        qs.order_by('-requested_at')[_MERGE_LIMIT:_MERGE_LIMIT + 1].exists()
+        or qs_hire.order_by('-created_at')[_MERGE_LIMIT:_MERGE_LIMIT + 1].exists()
+    )
     rows.sort(key=lambda x: x.updated_at or x.requested_at, reverse=True)
 
     # ─ بحث ذكي عبر الحقول ────────────────────────────────────────
@@ -297,6 +302,7 @@ def list_pending_actions(request):
         'is_branch_mgr': _is_branch_manager(request.user),
         'resolve_first_approver': resolve_first_approver,
         'first_stage_tab_label': first_stage_tab_label(request.user),
+        'rows_may_be_truncated': rows_may_be_truncated,
     })
 
 

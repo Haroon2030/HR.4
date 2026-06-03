@@ -33,6 +33,7 @@
   - البنود لا تُربط حتى يتم الترحيل (lock).
   - إذا تغيّرت البيانات بعد البناء، يجب عمل Rebuild.
 """
+from collections import defaultdict
 from decimal import Decimal
 from calendar import monthrange
 from datetime import date
@@ -49,6 +50,81 @@ from apps.employees.models import (
 def _q(v):
     """تقريب القيمة لرقمين عشريين (لمنع أخطاء الكسور)."""
     return Decimal(v or 0).quantize(Decimal('0.01'))
+
+
+def _applied_filter(run):
+    return Q(applied_to_payroll__isnull=True) | Q(applied_to_payroll_id=run.pk)
+
+
+def _group_by_employee_id(rows, attr='employee_id'):
+    grouped = defaultdict(list)
+    for row in rows:
+        grouped[getattr(row, attr)].append(row)
+    return grouped
+
+
+def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, month):
+    """جلب كل بنود الخصم للموظفين دفعة واحدة."""
+    if not employee_ids:
+        return {}, {}, {}, {}, set()
+
+    applied = _applied_filter(run)
+
+    absences = EmployeeAbsence.objects.filter(
+        employee_id__in=employee_ids,
+        absence_date__range=(period_start, period_end),
+    ).filter(applied)
+
+    unpaid_leaves = EmployeeLeave.objects.filter(
+        employee_id__in=employee_ids,
+        leave_type=EmployeeLeave.LeaveType.UNPAID,
+        date_from__lte=period_end,
+        date_to__gte=period_start,
+    ).filter(applied)
+
+    installments = LoanInstallment.objects.filter(
+        loan__employee_id__in=employee_ids,
+        period_year=year,
+        period_month=month,
+        status=LoanInstallment.Status.PENDING,
+    ).filter(applied)
+
+    penalties = EmployeeStatement.objects.filter(
+        employee_id__in=employee_ids,
+        statement_type=EmployeeStatement.StatementType.PENALTY,
+        statement_date__range=(period_start, period_end),
+    ).filter(applied)
+
+    locked_emp_ids = set(
+        PayrollLine.objects.filter(
+            employee_id__in=employee_ids,
+            run__period_year=year,
+            run__period_month=month,
+            run__status=PayrollRun.Status.LOCKED,
+        )
+        .exclude(run_id=run.pk)
+        .values_list('employee_id', flat=True)
+    )
+
+    inst_by_emp = defaultdict(list)
+    for inst in installments.select_related('loan'):
+        inst_by_emp[inst.loan.employee_id].append(inst)
+
+    return (
+        _group_by_employee_id(absences),
+        _group_by_employee_id(unpaid_leaves),
+        inst_by_emp,
+        _group_by_employee_id(penalties),
+        locked_emp_ids,
+    )
+
+
+def _unpaid_leave_days_in_period(leave, period_start, period_end):
+    s = max(leave.date_from, period_start)
+    e = min(leave.date_to, period_end)
+    if e < s:
+        return Decimal('0')
+    return Decimal((e - s).days + 1)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -133,37 +209,35 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     period_end = date(year, month, month_days)               # آخر يوم
 
     # ── جلب الموظفين حسب نوع الراتب ──
-    employees = _employees_for_payroll_run(
-        branch, salary_mode, sponsorship_id=sponsorship_id,
-    ).order_by('name').distinct()
+    employees = list(
+        _employees_for_payroll_run(
+            branch, salary_mode, sponsorship_id=sponsorship_id,
+        ).order_by('name').distinct()
+    )
+    employee_ids = [e.id for e in employees]
+    abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, locked_emp_ids = _bulk_payroll_deductions(
+        employee_ids, run, period_start, period_end, year, month,
+    )
 
-    seen_ids = set()  # لمنع تكرار الموظف (حماية إضافية)
+    lines_to_create = []
+    seen_ids = set()
 
     for emp in employees:
         if emp.id in seen_ids:
             continue
         seen_ids.add(emp.id)
 
-        # ── حماية النقل نصف الشهر ─────────────────────────────
-        # إذا الموظف مُحتسب في مسير LOCKED لفرع آخر لنفس الشهر → تخطّي
-        # هذا يمنع ازدواج الراتب عند النقل بين الفروع خلال الشهر
-        already_in_locked = PayrollLine.objects.filter(
-            employee=emp,
-            run__period_year=year,
-            run__period_month=month,
-            run__status=PayrollRun.Status.LOCKED,
-        ).exclude(run=run).exists()
-        if already_in_locked:
-            # الموظف محسوب في مسير مُرحَّل لفرع آخر — لا نحسبه مرتين
-            PayrollLine.all_objects.filter(run=run, employee=emp).delete()
+        if emp.id in locked_emp_ids:
             continue
 
-        # حذف أي سطر قديم لنفس الموظف (حماية من القيد الفريد)
-        PayrollLine.all_objects.filter(run=run, employee=emp).delete()
+        emp_absences = abs_by_emp.get(emp.id, [])
+        emp_leaves = leaves_by_emp.get(emp.id, [])
+        emp_installments = inst_by_emp.get(emp.id, [])
+        emp_penalties = pen_by_emp.get(emp.id, [])
 
-        # ── إنشاء سطر جديد بالراتب الأساسي ──
         line = PayrollLine(
-            run=run, employee=emp,
+            run=run,
+            employee=emp,
             basic_salary=emp.basic_salary or 0,
             housing_allowance=emp.housing_allowance or 0,
             transport_allowance=emp.transport_allowance or 0,
@@ -173,7 +247,6 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             month_days=month_days,
         )
 
-        # الراتب الإجمالي (قبل الخصومات)
         gross = (
             Decimal(emp.basic_salary or 0)
             + Decimal(emp.housing_allowance or 0)
@@ -182,87 +255,60 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             + Decimal(emp.cash_amount or 0)
             + Decimal(emp.meal_allowance or 0)
         )
-
-        # المعدل اليومي (يُستخدم لحساب خصم الإجازة بدون راتب)
         line.daily_rate = (gross / Decimal(month_days)).quantize(Decimal('0.01')) if month_days else Decimal('0')
 
-        # ── حساب خصم الغياب ──────────────────────────────────
-        # يجلب الغيابات في هذا الشهر التي لم تُحتسب في مسير آخر (أو محتسبة في هذا المسير)
-        absences = EmployeeAbsence.objects.filter(
-            employee=emp,
-            absence_date__range=(period_start, period_end),
-        ).filter(Q(applied_to_payroll__isnull=True) | Q(applied_to_payroll=run))
-        abs_days = sum((a.days for a in absences), 0)
-        abs_ded = sum((Decimal(a.deduction_amount or 0) for a in absences), Decimal('0'))
-        line.absence_days = abs_days
-        line.absence_deduction = _q(abs_ded)
+        line.absence_days = sum((a.days for a in emp_absences), 0)
+        line.absence_deduction = _q(
+            sum((Decimal(a.deduction_amount or 0) for a in emp_absences), Decimal('0'))
+        )
 
-        # ── حساب خصم الإجازة بدون راتب ──────────────────────
-        # يحسب فقط الأيام المتقاطعة مع هذا الشهر
-        unpaid_leaves = EmployeeLeave.objects.filter(
-            employee=emp,
-            leave_type=EmployeeLeave.LeaveType.UNPAID,
-            date_from__lte=period_end,
-            date_to__gte=period_start,
-        ).filter(Q(applied_to_payroll__isnull=True) | Q(applied_to_payroll=run))
-        unpaid_days = Decimal('0')
-        for lv in unpaid_leaves:
-            # حساب التقاطع: الأيام المشتركة بين الإجازة وحدود الشهر
-            s = max(lv.date_from, period_start)
-            e = min(lv.date_to, period_end)
-            if e >= s:
-                unpaid_days += Decimal((e - s).days + 1)
+        unpaid_days = sum(
+            (_unpaid_leave_days_in_period(lv, period_start, period_end) for lv in emp_leaves),
+            Decimal('0'),
+        )
         line.unpaid_leave_days = unpaid_days
         line.unpaid_leave_deduction = _q(line.daily_rate * unpaid_days)
 
-        # ── حساب خصم أقساط السلف ────────────────────────────
-        # يجلب الأقساط المستحقة لهذا الشهر والمعلّقة (PENDING)
-        installments = LoanInstallment.objects.filter(
-            loan__employee=emp,
-            period_year=year, period_month=month,
-            status=LoanInstallment.Status.PENDING,
-        ).filter(Q(applied_to_payroll__isnull=True) | Q(applied_to_payroll=run))
-        loan_ded = sum((Decimal(i.amount) for i in installments), Decimal('0'))
-        line.loan_deduction = _q(loan_ded)
+        line.loan_deduction = _q(
+            sum((Decimal(i.amount) for i in emp_installments), Decimal('0'))
+        )
+        line.penalty_deduction = _q(
+            sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
+        )
 
-        # ── حساب خصم المخالفات ───────────────────────────────
-        # يجلب المخالفات (إنذارات مالية) في هذا الشهر
-        penalties = EmployeeStatement.objects.filter(
-            employee=emp,
-            statement_type=EmployeeStatement.StatementType.PENALTY,
-            statement_date__range=(period_start, period_end),
-        ).filter(Q(applied_to_payroll__isnull=True) | Q(applied_to_payroll=run))
-        pen_ded = sum((Decimal(p.deduction_amount or 0) for p in penalties), Decimal('0'))
-        line.penalty_deduction = _q(pen_ded)
-
-        # ── حساب خصم التأمينات ───────────────────────────────
         rate = Decimal(emp.insurance_deduction_rate or 0)
         line.insurance_deduction = _q(gross * rate / Decimal('100'))
 
-        # ── حفظ تفاصيل الخصومات (للتتبع عند الترحيل) ────────
         line.breakdown = {
             'absences': [
-                {'id': a.id, 'date': a.absence_date.isoformat(), 'days': a.days,
-                 'amount': str(a.deduction_amount)} for a in absences
+                {
+                    'id': a.id,
+                    'date': a.absence_date.isoformat(),
+                    'days': a.days,
+                    'amount': str(a.deduction_amount),
+                }
+                for a in emp_absences
             ],
             'unpaid_leaves': [
                 {'id': l.id, 'from': l.date_from.isoformat(), 'to': l.date_to.isoformat()}
-                for l in unpaid_leaves
+                for l in emp_leaves
             ],
             'loan_installments': [
                 {'id': i.id, 'loan_id': i.loan_id, 'amount': str(i.amount)}
-                for i in installments
+                for i in emp_installments
             ],
             'penalties': [
                 {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount)}
-                for p in penalties
+                for p in emp_penalties
             ],
             'insurance_rate': str(rate),
         }
 
-        # حساب الإجماليات (استحقاقات − خصومات = صافي)
         line.compute_totals()
-        line.save()
+        lines_to_create.append(line)
+
+    if lines_to_create:
+        PayrollLine.objects.bulk_create(lines_to_create, batch_size=500)
 
     # تحديث إجمالي المسير (مجموع كل الأسطر)
     run.recompute_totals()
@@ -288,53 +334,64 @@ def lock_payroll_run(run: PayrollRun, user):
     if run.status == PayrollRun.Status.LOCKED:
         raise ValueError('المسير مُغلق بالفعل.')
 
-    for line in run.lines.select_related('employee'):
+    from apps.employees.models import EmployeeLedger, EmployeeLoan
+    from apps.employees.services.accrual_ledger_notes import (
+        MONTHLY_LEAVE_ACCRUAL_DAYS,
+        build_monthly_payroll_notes,
+        compute_monthly_ledger_amounts,
+    )
+
+    period_anchor = date(run.period_year, run.period_month, 1)
+    line_list = list(run.lines.select_related('employee'))
+    employee_ids = [ln.employee_id for ln in line_list]
+
+    last_ledger_by_emp = {}
+    if employee_ids:
+        for lg in EmployeeLedger.objects.filter(
+            employee_id__in=employee_ids,
+            date__lt=period_anchor,
+        ).order_by('employee_id', '-date', '-created_at'):
+            if lg.employee_id not in last_ledger_by_emp:
+                last_ledger_by_emp[lg.employee_id] = lg
+
+    loans_to_mark_paid = []
+
+    for line in line_list:
         bd = line.breakdown or {}
 
-        # ربط الغيابات بهذا المسير
         ids = [x['id'] for x in bd.get('absences', [])]
         if ids:
             EmployeeAbsence.objects.filter(id__in=ids).update(applied_to_payroll=run)
 
-        # ربط الإجازات بدون راتب بهذا المسير
         ids = [x['id'] for x in bd.get('unpaid_leaves', [])]
         if ids:
             EmployeeLeave.objects.filter(id__in=ids).update(applied_to_payroll=run)
 
-        # ربط أقساط السلف + تعليمها كمدفوعة
         ids = [x['id'] for x in bd.get('loan_installments', [])]
         if ids:
             LoanInstallment.objects.filter(id__in=ids).update(
                 applied_to_payroll=run, status=LoanInstallment.Status.PAID
             )
-            # فحص: هل اكتملت كل أقساط السلفة؟ إذا نعم → حدّث حالة السلفة لـ PAID
-            from apps.employees.models import EmployeeLoan
-            for inst in LoanInstallment.objects.filter(id__in=ids).select_related('loan'):
+            inst_rows = LoanInstallment.objects.filter(id__in=ids).select_related('loan')
+            loan_ids = {i.loan_id for i in inst_rows}
+            loans_with_pending = set(
+                LoanInstallment.objects.filter(
+                    loan_id__in=loan_ids,
+                    status=LoanInstallment.Status.PENDING,
+                ).values_list('loan_id', flat=True)
+            )
+            for inst in inst_rows:
                 loan = inst.loan
-                if not loan.installments_log.filter(status=LoanInstallment.Status.PENDING).exists():
-                    if loan.status == EmployeeLoan.Status.ACTIVE:
-                        loan.status = EmployeeLoan.Status.PAID
-                        loan.save(update_fields=['status'])
+                if loan.id not in loans_with_pending and loan.status == EmployeeLoan.Status.ACTIVE:
+                    loans_to_mark_paid.append(loan)
 
-        # ربط المخالفات بهذا المسير
         ids = [x['id'] for x in bd.get('penalties', [])]
         if ids:
             EmployeeStatement.objects.filter(id__in=ids).update(applied_to_payroll=run)
 
-        # ── إنشاء سجل المخصصات (Ledger) لهذا الشهر ──
         sid = transaction.savepoint()
         try:
-            from apps.employees.models import EmployeeLedger
-            from apps.employees.services.accrual_ledger_notes import (
-                MONTHLY_LEAVE_ACCRUAL_DAYS,
-                build_monthly_payroll_notes,
-                compute_monthly_ledger_amounts,
-            )
-
-            last_ledger = EmployeeLedger.objects.filter(
-                employee=line.employee,
-                date__lt=date(run.period_year, run.period_month, 1)
-            ).order_by('-date', '-created_at').first()
+            last_ledger = last_ledger_by_emp.get(line.employee_id)
 
             prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
             prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
@@ -390,6 +447,13 @@ def lock_payroll_run(run: PayrollRun, user):
             transaction.savepoint_commit(sid)
         except Exception:
             transaction.savepoint_rollback(sid)
+
+    if loans_to_mark_paid:
+        paid_ids = {ln.id for ln in loans_to_mark_paid}
+        EmployeeLoan.objects.filter(
+            id__in=paid_ids,
+            status=EmployeeLoan.Status.ACTIVE,
+        ).update(status=EmployeeLoan.Status.PAID)
 
     # تحديث حالة المسير إلى مُغلق
     run.status = PayrollRun.Status.LOCKED

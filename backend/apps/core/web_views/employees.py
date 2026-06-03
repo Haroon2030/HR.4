@@ -101,7 +101,7 @@ def list_employees(request):
     from django.core.paginator import Paginator
 
     qs = Employee.objects.select_related(
-        'branch', 'department', 'administration', 'cost_center', 'nationality',
+        'branch', 'department', 'administration', 'cost_center', 'nationality', 'profession',
     ).all()
     qs = filter_employees_queryset_for_user(request.user, qs)
 

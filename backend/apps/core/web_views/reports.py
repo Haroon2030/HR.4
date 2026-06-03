@@ -57,6 +57,21 @@ _BASE_REPORTS = [
 
 REPORTS = merge_reports_catalog(_BASE_REPORTS, PRIMARY_REPORT_SPECS)
 
+MAX_REPORT_ROWS = 5000
+
+
+def _cap_report_data(data: dict) -> dict:
+    """يحدّ عدد صفوف التقرير لحماية الذاكرة ووقت التصدير."""
+    rows = data.get('rows') or []
+    if len(rows) <= MAX_REPORT_ROWS:
+        return data
+    capped = dict(data)
+    capped['rows'] = rows[:MAX_REPORT_ROWS]
+    capped['truncated'] = True
+    capped['total_rows'] = len(rows)
+    capped['max_rows'] = MAX_REPORT_ROWS
+    return capped
+
 def _grouped_reports():
     groups = []
     for g in REPORT_GROUPS:
@@ -754,7 +769,7 @@ def multi_report_detail(request):
             data = builder(request) if builder else {'columns': [], 'rows': []}
             selected_reports.append({
                 'meta': meta,
-                'data': data
+                'data': _cap_report_data(data),
             })
             
     if not selected_reports:
@@ -782,7 +797,7 @@ def report_detail(request, report_type):
 
     group = next((g for g in REPORT_GROUPS if g['key'] == meta.get('group')), None)
     builder = BUILDERS.get(report_type)
-    data = builder(request) if builder else {'columns': [], 'rows': []}
+    data = _cap_report_data(builder(request) if builder else {'columns': [], 'rows': []})
     ctx = _report_filter_context(request)
     return render(request, 'pages/reports/detail.html', {
         'report_meta': meta,

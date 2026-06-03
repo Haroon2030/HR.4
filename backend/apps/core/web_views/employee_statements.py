@@ -151,6 +151,7 @@ def add_employee_statement(request, employee_id):
 
 @login_required
 @permission_required('employees.delete')
+@employee_branch_access_required
 def delete_employee_statement(request, statement_id):
     """حذف إفادة / إنذار."""
     from apps.employees.models import EmployeeStatement
