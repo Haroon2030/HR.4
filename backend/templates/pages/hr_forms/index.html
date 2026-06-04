@@ -15,14 +15,6 @@
 
     {# Step 1 — Employee search/select #}
     <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5">
-        <label class="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-            <i data-lucide="search" class="w-4 h-4 text-primary-600"></i>
-            ابحث عن الموظف
-            <span class="text-xs text-slate-400 font-normal mr-auto" x-show="!selected">
-                إجمالي الموظفين: <span class="font-bold text-slate-600" x-text="employees.length"></span>
-            </span>
-        </label>
-
         {# Selected employee chip #}
         <template x-if="selected">
             <div class="flex items-center justify-between bg-gradient-to-l from-primary-50 to-white border border-primary-200 rounded-lg p-3 shadow-sm">
@@ -57,11 +49,23 @@
             </div>
         </template>
 
-        {# بحث ذكي — النتائج تظهر عند الكتابة فقط #}
-        <div x-show="!selected" x-cloak class="relative hr-employee-smart-search">
-            <div class="hr-search-field">
+        {# بحث ذكي — اكتب هنا ثم تظهر النتائج المطابقة #}
+        <div x-show="!selected" class="relative hr-employee-smart-search hr-forms-employee-search">
+            <div class="hr-forms-employee-search__meta">
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="user-search" class="w-4 h-4 text-primary-600"></i>
+                    اختيار الموظف للنموذج
+                </span>
+                <span class="text-xs text-slate-400 font-normal">
+                    إجمالي: <span class="font-bold text-slate-600" x-text="employees.length"></span>
+                </span>
+            </div>
+            <label for="hr-forms-employee-search" class="sr-only">ابحث عن الموظف</label>
+            <div class="hr-search-field hr-search-field--prominent">
                 <i data-lucide="search" class="hr-search-field__icon w-4 h-4" aria-hidden="true"></i>
-                <input type="text"
+                <input type="search"
+                    id="hr-forms-employee-search"
+                    name="hr_forms_employee_q"
                     x-model="query"
                     x-ref="searchInput"
                     @focus="onSearchFocus()"
@@ -70,20 +74,22 @@
                     @keydown.arrow-up.prevent="moveActive(-1)"
                     @keydown.enter.prevent="pickActive()"
                     @keydown.escape.prevent="clearQuery()"
-                    placeholder="اكتب الاسم، الرقم الوظيفي، أو رقم الهوية…"
+                    placeholder="ابحث عن الموظف — اكتب الاسم أو الرقم الوظيفي أو الهوية"
                     autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="hr-search-field__input"
-                    aria-label="بحث عن موظف">
+                    aria-label="ابحث عن الموظف بالاسم أو الرقم">
                 <button type="button" x-show="query" x-cloak
                         @click="clearQuery()"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded"
+                        class="hr-search-field__clear"
                         title="مسح البحث">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
             <p x-show="!hasQuery" class="hr-employee-smart-search__hint m-0">
-                <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                ابدأ بالكتابة لعرض الموظفين المطابقين — لن تُعرض القائمة كاملة تلقائياً.
+                <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
+                اكتب في الحقل أعلاه — ستظهر قائمة بالموظفين المطابقين فقط (بدون فتح القائمة كاملة).
             </p>
 
             {# نتائج البحث #}
@@ -207,6 +213,17 @@
 
 <script>
 function hrFormsApp() {
+    if (typeof window.employeePickerBase !== 'function') {
+        return {
+            query: '', showList: false, selected: null, employees: [], hasQuery: false,
+            filtered: [], pagedItems: [], totalPages: 1, currentPage: 1, activeIndex: 0,
+            init: function () { if (window.lucide) lucide.createIcons(); },
+            onQueryInput: function () {}, onSearchFocus: function () {}, clearQuery: function () {},
+            moveActive: function () {}, pickActive: function () {}, clearSelection: function () {},
+            selectEmployee: function () {}, highlightMatch: function (t) { return t; },
+            openForm: function () {},
+        };
+    }
     var base = window.employeePickerBase({ pageSize: 8, minQueryLen: 1 });
     return Object.assign(base, {
         employees: [
@@ -234,6 +251,12 @@ function hrFormsApp() {
         },
         init() {
             window.initEmployeePicker(this);
+            var self = this;
+            this.$nextTick(function () {
+                if (self.$refs.searchInput && !self.selected) {
+                    self.$refs.searchInput.focus();
+                }
+            });
         },
         openForm(key, autoPrint) {
             if (!this.selected) return;
