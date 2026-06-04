@@ -37,7 +37,3 @@ class CoreConfig(AppConfig):
         register_employee_tab_permissions()
         import apps.core.signals  # noqa: F401
         post_migrate.connect(_sync_permissions_signal, sender=self)
-        try:
-            _sync_permissions_to_db(verbose=False)
-        except Exception:
-            pass

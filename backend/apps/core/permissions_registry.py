@@ -86,6 +86,44 @@ def get_registry() -> Dict[str, dict]:
     return {k: {**v, 'operations': set(v['operations'])} for k, v in _REGISTRY.items()}
 
 
+def _upsert_app_module(AppModule, module_code: str, entry: dict):
+    """إنشاء/تحديث وحدة مع استعادة السجلات المحذوفة ناعماً."""
+    defaults = {
+        'name': entry.get('name', module_code),
+        'icon': entry.get('icon', 'package'),
+        'order': entry.get('order', 100),
+        'is_active': True,
+    }
+    obj = AppModule.all_objects.filter(code=module_code).first()
+    if obj:
+        if obj.is_deleted:
+            obj.restore()
+        for key, val in defaults.items():
+            setattr(obj, key, val)
+        obj.save()
+        return obj, False
+    return AppModule.objects.create(code=module_code, **defaults), True
+
+
+def _upsert_permission(Permission, perm_code: str, module, operation: str, name: str):
+    """إنشاء/تحديث صلاحية مع استعادة السجلات المحذوفة ناعماً."""
+    defaults = {
+        'module': module,
+        'operation': operation,
+        'name': name,
+        'is_active': True,
+    }
+    obj = Permission.all_objects.filter(code=perm_code).first()
+    if obj:
+        if obj.is_deleted:
+            obj.restore()
+        for key, val in defaults.items():
+            setattr(obj, key, val)
+        obj.save()
+        return obj, False
+    return Permission.objects.create(code=perm_code, **defaults), True
+
+
 def sync_to_db(verbose: bool = False) -> tuple:
     """مزامنة الـ registry مع جداول AppModule و Permission.
 
@@ -94,34 +132,23 @@ def sync_to_db(verbose: bool = False) -> tuple:
 
     Returns: (modules_count, perms_count, new_perms_count)
     """
-    # استيراد متأخّر لتفادي أخطاء التحميل
     from apps.core.models import AppModule, Permission, Role
 
     new_perms = 0
     for module_code, entry in _REGISTRY.items():
-        module, _ = AppModule.objects.update_or_create(
-            code=module_code,
-            defaults={
-                'name': entry.get('name', module_code),
-                'icon': entry.get('icon', 'package'),
-                'order': entry.get('order', 100),
-                'is_active': True,
-            },
-        )
+        module, _ = _upsert_app_module(AppModule, module_code, entry)
         if verbose:
             print(f'  📦 {module.name} ({module_code})')
 
         for op in sorted(entry['operations']):
             perm_code = f'{module_code}.{op}'
             op_label = OPERATION_NAMES.get(op, op)
-            _, created = Permission.objects.update_or_create(
-                code=perm_code,
-                defaults={
-                    'module': module,
-                    'operation': op,
-                    'name': f'{op_label} {module.name}',
-                    'is_active': True,
-                },
+            _, created = _upsert_permission(
+                Permission,
+                perm_code,
+                module,
+                op,
+                f'{op_label} {module.name}',
             )
             if created:
                 new_perms += 1
