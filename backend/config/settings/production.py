@@ -45,18 +45,17 @@ DATABASES['default'].setdefault('CONN_MAX_AGE', env.int('CONN_MAX_AGE', default=
 # فحص صحة الاتصال قبل إعادة استخدامه (Django 4.1+) — يمنع أخطاء الاتصال المنتهي
 DATABASES['default'].setdefault('CONN_HEALTH_CHECKS', True)
 
-# إعدادات التوافق مع Neon / PgBouncer:
-# - تعطيل المؤشرات من جانب السيرفر (غير مدعومة في وضع transaction pooling)
-# - تشفير SSL إجباري لقواعد البيانات السحابية
-# - إبقاء الاتصال حياً عبر TCP keepalives لمنع قطعه بواسطة الشبكة
-DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
-_db_options = DATABASES['default'].setdefault('OPTIONS', {})
-_db_options.setdefault('sslmode', env('DB_SSLMODE', default='require'))
-_db_options.setdefault('connect_timeout', 10)        # مهلة الاتصال: 10 ثوانٍ
-_db_options.setdefault('keepalives', 1)               # تفعيل keepalive
-_db_options.setdefault('keepalives_idle', 30)          # إرسال أول keepalive بعد 30 ثانية من السكون
-_db_options.setdefault('keepalives_interval', 10)      # تكرار keepalive كل 10 ثوانٍ
-_db_options.setdefault('keepalives_count', 5)           # إغلاق الاتصال بعد 5 محاولات فاشلة
+# إعدادات التوافق مع Neon / PgBouncer (PostgreSQL فقط — لا تُمرَّر لـ SQLite في CI)
+_db_engine = DATABASES['default'].get('ENGINE', '')
+if 'postgresql' in _db_engine:
+    DATABASES['default'].setdefault('DISABLE_SERVER_SIDE_CURSORS', True)
+    _db_options = DATABASES['default'].setdefault('OPTIONS', {})
+    _db_options.setdefault('sslmode', env('DB_SSLMODE', default='require'))
+    _db_options.setdefault('connect_timeout', 10)
+    _db_options.setdefault('keepalives', 1)
+    _db_options.setdefault('keepalives_idle', 30)
+    _db_options.setdefault('keepalives_interval', 10)
+    _db_options.setdefault('keepalives_count', 5)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # التخزين المؤقت (Cache)
