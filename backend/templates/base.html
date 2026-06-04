@@ -288,7 +288,7 @@
                     <div class="hr-topbar-actions">
                         <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                             <button type="button"
-                                    @click.stop="open = !open; if(open){ htmx.trigger('#notif-dropdown-content', 'load'); }"
+                                    @click.stop="open = !open; if(open){ htmx.trigger('#notif-dropdown-content', 'notif-open'); }"
                                     class="hr-topbar-icon-btn relative" title="الإشعارات">
                                 <i data-lucide="bell" class="w-5 h-5"></i>
                                 {% if unread_notifications_count %}
@@ -299,9 +299,10 @@
                                  class="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
                                 <div id="notif-dropdown-content"
                                      hx-get="{% url 'web:notifications_dropdown' %}"
-                                     hx-trigger="load" hx-swap="innerHTML">
+                                     hx-trigger="notif-open"
+                                     hx-swap="innerHTML">
                                     <div class="p-6 text-center text-sm text-slate-400">
-                                        <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto"></i>
+                                        اضغط الجرس لتحميل الإشعارات
                                     </div>
                                 </div>
                             </div>

@@ -30,11 +30,14 @@ def list_notifications(request):
 
 @login_required
 def notifications_dropdown(request):
-    qs = _user_notifications(request.user).order_by('-created_at')[:10]
-    unread = _user_notifications(request.user).filter(is_read=False).count()
+    from django.db.models import Count, Q
+
+    base = _user_notifications(request.user)
+    stats = base.aggregate(unread=Count('id', filter=Q(is_read=False)))
+    notifications = list(base.order_by('-created_at')[:10])
     return render(request, 'components/notification_dropdown.html', {
-        'notifications': qs,
-        'unread_count': unread,
+        'notifications': notifications,
+        'unread_count': stats['unread'] or 0,
     })
 
 
