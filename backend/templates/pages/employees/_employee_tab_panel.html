@@ -155,7 +155,8 @@
 
             <!-- Schedule -->
             {% if tab_visible.schedule %}{% if not is_htmx_tab_panel or default_employee_tab == 'schedule' %}
-            <div x-show="activeTab==='schedule'" class="space-y-4" style="display:none" x-data="scheduleBoxes()">
+            {{ schedule_boxes_json|json_script:"schedule-boxes-data" }}
+            <div x-show="activeTab==='schedule'" class="space-y-4"{% if not is_htmx_tab_panel %} style="display:none"{% endif %} x-data="scheduleBoxes()">
 
                 <form method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="space-y-4"
                       x-effect="editMode; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"

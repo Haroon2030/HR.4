@@ -1577,7 +1577,6 @@
 
 </div>
 
-{{ schedule_boxes_json|json_script:"schedule-boxes-data" }}
 <script>
 window.archivePager = function() {
     return {
@@ -1626,8 +1625,10 @@ window.scheduleBoxes = function(loadInitial) {
     if (loadInitial) {
         try {
             var el = document.getElementById('schedule-boxes-data');
-            if (el) initial = JSON.parse(el.textContent || '[]') || [];
-        } catch(e) { console.error('schedule load error', e); }
+            if (el && el.textContent) {
+                initial = JSON.parse(el.textContent) || [];
+            }
+        } catch (e) { console.error('schedule load error', e); }
     }
     return {
         boxes: initial,
