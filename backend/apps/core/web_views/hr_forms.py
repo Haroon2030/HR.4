@@ -107,7 +107,8 @@ def _estimate_leave_comp_for_print(employee) -> tuple[str | None, str | None]:
         days = Decimal(str(employee.remaining_leave_days or 0))
     except (InvalidOperation, TypeError, ValueError):
         return None, None
-    daily = (last / Decimal('30')).quantize(Decimal('0.01'))
+    from apps.core.salary_month import daily_rate_from_total
+    daily = daily_rate_from_total(last)
     comp = (daily * days).quantize(Decimal('0.01'))
     return str(comp), str(days.quantize(Decimal('0.1')))
 

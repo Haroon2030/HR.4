@@ -67,6 +67,17 @@ class PayrollEngineTests(TestCase):
         self.assertEqual(line.insurance_deduction, Decimal('450.00'))
         self.assertGreater(line.net_salary, Decimal('0'))
 
+    def test_build_uses_standard_30_day_month(self):
+        run = build_payroll_run(
+            self.branch, 2026, 2, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        line = run.lines.get(employee=self.employee)
+        self.assertEqual(line.month_days, 30)
+        expected_daily = (Decimal('4500') / Decimal('30')).quantize(Decimal('0.01'))
+        self.assertEqual(line.daily_rate, expected_daily)
+
     def test_build_includes_absence_deduction(self):
         EmployeeAbsence.objects.create(
             employee=self.employee,
@@ -97,7 +108,7 @@ class PayrollEngineTests(TestCase):
             sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
-        daily = (Decimal('4500') / Decimal('31')).quantize(Decimal('0.01'))
+        daily = (Decimal('4500') / Decimal('30')).quantize(Decimal('0.01'))
         expected = (daily * Decimal('2')).quantize(Decimal('0.01'))
         self.assertEqual(line.unpaid_leave_deduction, expected)
 

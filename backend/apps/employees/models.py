@@ -437,9 +437,9 @@ class Employee(BaseModel):
 
     @property
     def daily_wage(self):
-        """الأجر اليومي = إجمالي الراتب ÷ 30."""
-        from decimal import Decimal
-        return (Decimal(self.total_salary or 0) / Decimal('30')).quantize(Decimal('0.01'))
+        """الأجر اليومي = إجمالي الراتب ÷ 30 (قاعدة الشهر الموحدة)."""
+        from apps.core.salary_month import daily_rate_from_total
+        return daily_rate_from_total(self.total_salary)
 
     @property
     def leave_compensation(self):
@@ -884,7 +884,7 @@ class LoanInstallment(BaseModel):
 # غياب موظف (يخصم من الراتب)
 # ══════════════════════════════════════════════════════════════════════════════
 class EmployeeAbsence(BaseModel):
-    """تسجيل غياب يوم/أيام مع خصم تلقائي على أساس راتب الشهر الفعلي."""
+    """تسجيل غياب يوم/أيام مع خصم تلقائي (إجمالي الراتب ÷ 30 يوماً)."""
 
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name='absences',
@@ -901,7 +901,7 @@ class EmployeeAbsence(BaseModel):
     )
     month_days = models.PositiveIntegerField(
         "أيام الشهر", default=30,
-        help_text="عدد أيام الشهر الذي وقع فيه الغياب (28/29/30/31) — لقطة عند الإنشاء"
+        help_text="أيام الشهر للحساب (ثابت 30) — لقطة عند الإنشاء"
     )
     total_salary_snapshot = models.DecimalField(
         "إجمالي الراتب وقت الغياب", max_digits=12, decimal_places=2, default=0

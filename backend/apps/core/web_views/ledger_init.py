@@ -38,7 +38,8 @@ def run_ledger_init(request, employee_id):
         leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
         total_salary = Decimal(str(emp.total_salary or 0))
 
-        daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
+        from apps.core.salary_month import daily_rate_from_total
+        daily_wage = daily_rate_from_total(total_salary)
         leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
 
         # حساب نهاية الخدمة

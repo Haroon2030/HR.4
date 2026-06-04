@@ -23,8 +23,11 @@
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{% url 'web:export_payroll_run_excel' run.id %}" class="hr-btn hr-btn-primary text-sm inline-flex items-center gap-2" style="background:#059669;border:none;">
-                <i data-lucide="download" class="w-4 h-4"></i> Excel
+            <a href="{% url 'web:export_payroll_run_excel' run.id %}"
+               class="hr-glass-btn hr-glass-btn--emerald text-sm"
+               title="تصدير مسير ملوّن إلى Excel">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                <span>تصدير Excel</span>
             </a>
             {% if run.status == 'draft' %}
                 <form method="POST" action="{% url 'web:rebuild_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم إعادة بناء المسير. هل تريد المتابعة؟');">
@@ -83,7 +86,7 @@
                         <th class="text-right">الموظف</th>
                         <th class="col-num">الإجمالي</th>
                         <th class="col-num th-deduct">غياب</th>
-                        <th class="col-num th-deduct">إجازة بدون راتب</th>
+                        <th class="text-right">الفرع</th>
                         <th class="col-num th-deduct">قسط سلفة</th>
                         <th class="col-num th-deduct">مخالفات</th>
                         <th class="col-num th-deduct">تأمينات</th>
@@ -105,11 +108,8 @@
                             <span class="pay-days">{{ line.absence_days }} يوم</span>
                             {% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
                         </td>
-                        <td class="col-num td-deduct">
-                            {% if line.unpaid_leave_deduction %}
-                            {{ line.unpaid_leave_deduction|format_sar:"deduct" }}
-                            <span class="pay-days">{{ line.unpaid_leave_days }} يوم</span>
-                            {% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+                        <td class="text-slate-700 text-sm">
+                            {% if line.employee.branch_id %}{{ line.employee.branch.name }}{% else %}{{ run.branch.name }}{% endif %}
                         </td>
                         <td class="col-num td-deduct">
                             {% if line.loan_deduction %}{{ line.loan_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}

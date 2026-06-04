@@ -195,7 +195,8 @@ def _maybe_init_employee_ledger(employee: Employee, user) -> None:
     service_years = Decimal(str(round(service_days / 365.25, 4)))
     leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
     total_salary = Decimal(str(employee.total_salary or 0))
-    daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
+    from apps.core.salary_month import daily_rate_from_total
+    daily_wage = daily_rate_from_total(total_salary)
     leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
 
     half_salary = (total_salary / Decimal('2')).quantize(Decimal('0.01'))

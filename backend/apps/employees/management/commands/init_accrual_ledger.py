@@ -37,7 +37,8 @@ class Command(BaseCommand):
             current_leave_balance = Decimal(emp.available_leave_balance or 0)
             
             # حساب قيمة الإجازة بالريال
-            daily_wage = (Decimal(emp.total_salary or 0) / Decimal('30')).quantize(Decimal('0.01'))
+            from apps.core.salary_month import daily_rate_from_total
+            daily_wage = daily_rate_from_total(emp.total_salary)
             leave_amount = (current_leave_balance * daily_wage).quantize(Decimal('0.01'))
             
             # حساب مخصص نهاية الخدمة المتراكم حتى اليوم

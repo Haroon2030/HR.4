@@ -1477,15 +1477,9 @@
                 totalSalary: {{ employee.total_salary|default:0 }},
                 absenceDate: '{% now "Y-m-d" %}',
                 days: 1,
-                get monthDays() {
-                    if (!this.absenceDate) return 30;
-                    const d = new Date(this.absenceDate);
-                    if (isNaN(d)) return 30;
-                    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-                },
+                monthDays: 30,
                 get dailyRate() {
-                    const md = this.monthDays || 30;
-                    return md > 0 ? (this.totalSalary / md) : 0;
+                    return this.totalSalary / 30;
                 },
                 get totalDeduction() {
                     return this.dailyRate * (parseInt(this.days) || 0);
@@ -1523,7 +1517,7 @@
                         <span class="font-bold text-slate-800" x-text="fmt(totalSalary) + ' ر.س'"></span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-600">أيام الشهر الفعلية</span>
+                        <span class="text-slate-600">أيام الشهر للحساب</span>
                         <span class="font-bold text-slate-800" x-text="monthDays + ' يوم'"></span>
                     </div>
                     <div class="flex items-center justify-between border-t border-orange-200 pt-1.5">

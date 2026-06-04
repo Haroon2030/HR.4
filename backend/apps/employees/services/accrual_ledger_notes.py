@@ -1,9 +1,15 @@
 """نصوص تفاصيل العمليات الحسابية لسجل المخصصات (EmployeeLedger)."""
 from __future__ import annotations
 
-from calendar import monthrange
 from datetime import date
 from decimal import Decimal
+
+from apps.core.salary_month import (
+    STANDARD_MONTH_DAYS,
+    calendar_month_last_day,
+    daily_rate_from_total,
+    salary_month_days,
+)
 
 # 21 يوم إجازة سنوياً ÷ 12 شهر
 MONTHLY_LEAVE_ACCRUAL_DAYS = Decimal('1.75')
@@ -31,7 +37,7 @@ def compute_monthly_ledger_amounts(
 ) -> dict:
     """حساب مبالغ مخصص الشهر (نفس منطق lock_payroll_run)."""
     gross = Decimal(gross_salary or 0)
-    daily = Decimal(daily_rate or 0) or (gross / Decimal('30')).quantize(Decimal('0.01'))
+    daily = Decimal(daily_rate or 0) or daily_rate_from_total(gross)
     leave_days = MONTHLY_LEAVE_ACCRUAL_DAYS
     leave_amount = (leave_days * daily).quantize(Decimal('0.01'))
 
@@ -41,8 +47,7 @@ def compute_monthly_ledger_amounts(
     service_years = 0.0
 
     if hire_date:
-        last_day = monthrange(period_year, period_month)[1]
-        month_end = date(period_year, period_month, last_day)
+        month_end = calendar_month_last_day(period_year, period_month)
         service_days = (month_end - hire_date).days
         service_years = service_days / 365.25
         eosb, eosb_detail = monthly_eosb_accrual(gross, service_years)
@@ -56,7 +61,7 @@ def compute_monthly_ledger_amounts(
         'gross': gross,
         'service_days': service_days,
         'service_years': round(service_years, 4),
-        'month_end': date(period_year, period_month, monthrange(period_year, period_month)[1]),
+        'month_end': calendar_month_last_day(period_year, period_month),
     }
 
 
@@ -72,12 +77,12 @@ def build_initial_balance_notes(
 ) -> str:
     service_days = (as_of_date - hire_date).days
     service_years = Decimal(str(round(service_days / 365.25, 4)))
-    daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
+    daily_wage = daily_rate_from_total(total_salary)
     return (
         f'عملية: رصيد افتتاحي (من المباشرة حتى {as_of_date})\n'
         f'تاريخ المباشرة: {hire_date} | مدة الخدمة: {service_days} يوم ({service_years} سنة)\n'
         f'── الإجازات ──\n'
-        f'الراتب الإجمالي: {total_salary} ر.س | أجر اليوم: {total_salary} ÷ 30 = {daily_wage} ر.س\n'
+        f'الراتب الإجمالي: {total_salary} ر.س | أجر اليوم: {total_salary} ÷ {STANDARD_MONTH_DAYS} = {daily_wage} ر.س\n'
         f'أيام مستحقة: {service_days} × 21 ÷ 365.25 = {leave_days} يوم\n'
         f'قيمة الإجازات: {leave_days} × {daily_wage} = {leave_amount} ر.س\n'
         f'── مكافأة نهاية الخدمة (تراكمي حتى التاريخ) ──\n'
@@ -176,7 +181,7 @@ def _monthly_display_context(ledger) -> dict | None:
         return None
 
     run = ledger.payroll_run
-    month_days = line.month_days or monthrange(run.period_year, run.period_month)[1]
+    month_days = line.month_days or salary_month_days(run.period_year, run.period_month)
     prev = (
         EmployeeLedger.objects.filter(
             employee_id=ledger.employee_id,
@@ -289,7 +294,7 @@ def _initial_display_context(ledger) -> dict | None:
     service_days = (as_of - emp.hire_date).days
     service_years = round(service_days / 365.25, 4)
     total_salary = Decimal(emp.total_salary or 0)
-    daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
+    daily_wage = daily_rate_from_total(total_salary)
 
     return {
         'kind': 'structured',
@@ -307,7 +312,7 @@ def _initial_display_context(ledger) -> dict | None:
                 'theme': 'emerald',
                 'rows': [
                     {'label': 'الراتب الإجمالي', 'formula': None, 'result': f'{_q(total_salary)} ر.س'},
-                    {'label': 'أجر اليوم', 'formula': f'{_q(total_salary)} ÷ 30', 'result': f'{_q(daily_wage)} ر.س'},
+                    {'label': 'أجر اليوم', 'formula': f'{_q(total_salary)} ÷ {STANDARD_MONTH_DAYS}', 'result': f'{_q(daily_wage)} ر.س'},
                     {
                         'label': 'أيام مستحقة',
                         'formula': f'{service_days} × 21 ÷ 365.25',
@@ -374,7 +379,7 @@ def display_ledger_notes(ledger) -> str:
             return build_monthly_payroll_notes(
                 period_year=run.period_year,
                 period_month=run.period_month,
-                month_days=line.month_days or monthrange(run.period_year, run.period_month)[1],
+                month_days=line.month_days or salary_month_days(run.period_year, run.period_month),
                 gross_salary=line.gross_salary,
                 daily_rate=line.daily_rate,
                 hire_date=hire,

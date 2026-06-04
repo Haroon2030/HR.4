@@ -171,7 +171,7 @@ class PayrollLine(BaseModel):
     gross_salary = models.DecimalField("إجمالي الراتب", max_digits=12, decimal_places=2, default=0)
 
     # ══ بيانات الحساب ═══════════════════════════════════════════════
-    month_days = models.PositiveIntegerField("أيام الشهر", default=30)           # عدد أيام الشهر (28-31)
+    month_days = models.PositiveIntegerField("أيام الشهر", default=30)           # قاعدة الحساب: 30 يوماً
     daily_rate = models.DecimalField("سعر اليوم", max_digits=12, decimal_places=2, default=0)  # إجمالي ÷ أيام
 
     # ══ الخصومات ════════════════════════════════════════════════════

@@ -351,7 +351,7 @@ def view_payroll_run(request, run_id):
     from django.core.paginator import Paginator
     from apps.core.utils.pagination import clamp_page_size
 
-    lines_qs = run.lines.select_related('employee').order_by('employee__name')
+    lines_qs = run.lines.select_related('employee', 'employee__branch').order_by('employee__name')
     paginator = Paginator(
         lines_qs,
         per_page=clamp_page_size(request.GET.get('per_page'), default=50, maximum=200),
@@ -453,63 +453,25 @@ def unlock_payroll_run_view(request, run_id):
 @login_required
 @permission_required('payroll.view')
 def export_payroll_run_excel(request, run_id):
-    """
-    تصدير المسير إلى ملف Excel (.xlsx).
-    يتطلب مكتبة openpyxl.
-    
-    أعمدة الملف:
-      الموظف | الراتب الأساسي | البدلات | الإجمالي | الخصومات | الصافي
-    """
+    """تصدير المسير إلى Excel ملوّن (.xlsx)."""
     try:
-        from openpyxl import Workbook
+        from apps.payroll.services.export_excel import (
+            build_payroll_run_workbook,
+            payroll_run_excel_filename,
+            workbook_to_response,
+        )
     except ImportError:
         messages.error(request, 'مكتبة openpyxl غير مثبتة.')
         return redirect('web:view_payroll_run', run_id=run_id)
 
-    run = get_object_or_404(PayrollRun.objects.select_related('branch'), id=run_id)
+    run = get_object_or_404(
+        PayrollRun.objects.select_related('branch', 'sponsorship'),
+        id=run_id,
+    )
 
-    # فحص صلاحية الفرع
     user_branches = _user_branches(request.user)
     if not request.user.is_superuser and run.branch not in user_branches:
         raise Http404()
 
-    # إنشاء ملف Excel
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'مسير الرواتب'
-    ws.sheet_view.rightToLeft = True  # دعم RTL للعربية
-
-    # ── رؤوس الأعمدة ──
-    headers = [
-        'الموظف', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'الإجمالي',
-        'مكافأة', 'ساعات إضافية',
-        'أيام غياب', 'خصم غياب', 'أيام إجازة بدون راتب', 'خصم إجازة',
-        'قسط سلفة', 'مخالفات', 'تأمينات', 'خصومات أخرى',
-        'إجمالي الاستحقاقات', 'إجمالي الخصومات', 'الصافي'
-    ]
-    ws.append(headers)
-
-    # ── أسطر الموظفين ──
-    for line in run.lines.select_related('employee').order_by('employee__name'):
-        ws.append([
-            line.employee.name,
-            float(line.basic_salary), float(line.housing_allowance),
-            float(line.transport_allowance), float(line.other_allowance),
-            float(line.cash_amount), float(line.meal_allowance), float(line.gross_salary),
-            float(line.bonus), float(line.overtime),
-            float(line.absence_days), float(line.absence_deduction),
-            float(line.unpaid_leave_days), float(line.unpaid_leave_deduction),
-            float(line.loan_deduction), float(line.penalty_deduction),
-            float(line.insurance_deduction), float(line.other_deduction),
-            float(line.total_earnings), float(line.total_deductions),
-            float(line.net_salary),
-        ])
-
-    # ── إرسال الملف كتنزيل ──
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    fname = f'payroll_{run.branch.id}_{run.period_year}_{run.period_month:02d}.xlsx'
-    response['Content-Disposition'] = f'attachment; filename={fname}'
-    wb.save(response)
-    return response
+    wb = build_payroll_run_workbook(run)
+    return workbook_to_response(wb, payroll_run_excel_filename(run))

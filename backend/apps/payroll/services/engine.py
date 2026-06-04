@@ -35,9 +35,15 @@
 """
 from collections import defaultdict
 from decimal import Decimal
-from calendar import monthrange
 from datetime import date
 from django.db import transaction
+
+from apps.core.salary_month import (
+    calendar_period_bounds,
+    calendar_month_last_day,
+    daily_rate_from_total,
+    salary_month_days,
+)
 from django.db.models import Q
 from django.utils import timezone
 
@@ -203,10 +209,9 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     # حذف الأسطر القديمة حذفاً فعلياً (hard delete) لتجنب تعارض القيد الفريد
     PayrollLine.all_objects.filter(run=run).delete()
 
-    # ── حساب حدود الشهر ──
-    month_days = monthrange(year, month)[1]                # عدد أيام الشهر
-    period_start = date(year, month, 1)                     # أول يوم
-    period_end = date(year, month, month_days)               # آخر يوم
+    # ── حدود الشهر: فترة تقويمية للتصفية، 30 يوماً لقسمة الراتب ──
+    period_start, period_end = calendar_period_bounds(year, month)
+    month_days = salary_month_days(year, month)
 
     # ── جلب الموظفين حسب نوع الراتب ──
     employees = list(
@@ -255,7 +260,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             + Decimal(emp.cash_amount or 0)
             + Decimal(emp.meal_allowance or 0)
         )
-        line.daily_rate = (gross / Decimal(month_days)).quantize(Decimal('0.01')) if month_days else Decimal('0')
+        line.daily_rate = daily_rate_from_total(gross)
 
         line.absence_days = sum((a.days for a in emp_absences), 0)
         line.absence_deduction = _q(
@@ -423,7 +428,7 @@ def lock_payroll_run(run: PayrollRun, user):
             notes = build_monthly_payroll_notes(
                 period_year=run.period_year,
                 period_month=run.period_month,
-                month_days=line.month_days or monthrange(run.period_year, run.period_month)[1],
+                month_days=line.month_days or salary_month_days(run.period_year, run.period_month),
                 gross_salary=line.gross_salary,
                 daily_rate=line.daily_rate,
                 hire_date=line.employee.hire_date,
@@ -442,7 +447,7 @@ def lock_payroll_run(run: PayrollRun, user):
             EmployeeLedger.objects.create(
                 employee=line.employee,
                 transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
-                date=date(run.period_year, run.period_month, monthrange(run.period_year, run.period_month)[1]),
+                date=calendar_month_last_day(run.period_year, run.period_month),
                 leave_days_change=leave_days_change,
                 leave_amount_change=leave_amount_change,
                 eosb_amount_change=eosb_amount_change,

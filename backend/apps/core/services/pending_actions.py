@@ -29,6 +29,7 @@ from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
+from apps.core.salary_month import daily_rate_from_total
 from apps.core.services.approval_routing import notify_on_first_stage, resolve_first_approver, snapshot_routing_fields
 
 
@@ -82,7 +83,7 @@ def _execute_leave(action, executor):
         prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
         prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
 
-        daily_wage = (Decimal(employee.total_salary or 0) / 30).quantize(Decimal('0.01'))
+        daily_wage = daily_rate_from_total(employee.total_salary)
         leave_amount_deducted = (days * daily_wage).quantize(Decimal('0.01'))
 
         EmployeeLedger.objects.create(
@@ -417,15 +418,16 @@ def _execute_loan_request(action, executor):
 def _execute_absence(action, executor):
     from apps.employees.models import EmployeeAbsence
     from decimal import Decimal
-    from calendar import monthrange
+    from apps.core.salary_month import daily_rate_from_total, salary_month_days
+
     p = action.payload
     employee = action.employee
     serial = p.get('serial_number') or _build_form_serial_local('AB', employee.id)
     absence_date = _to_date(p['absence_date'])
     days = int(p.get('days') or 1)
-    month_days = monthrange(absence_date.year, absence_date.month)[1]
+    month_days = salary_month_days()
     total_salary = Decimal(employee.total_salary or 0)
-    daily_rate = (total_salary / Decimal(month_days)).quantize(Decimal('0.01'))
+    daily_rate = daily_rate_from_total(total_salary)
     deduction = (daily_rate * Decimal(days)).quantize(Decimal('0.01'))
     absence = EmployeeAbsence.objects.create(
         employee=employee,
@@ -538,7 +540,7 @@ def _execute_contract_end(action, executor):
     leave_comp = Decimal('0.00')
     leave_text = ''
     if employee.sponsorship_id:
-        daily_wage = (last_salary / 30).quantize(Decimal('0.01'))
+        daily_wage = daily_rate_from_total(last_salary)
         leave_days = Decimal(str(employee.remaining_leave_days or 0))
         leave_comp = (daily_wage * leave_days).quantize(Decimal('0.01'))
         leave_text = f'رصيد الإجازة: {leave_days} يوم × {daily_wage} = {leave_comp} ر.س'
@@ -692,7 +694,7 @@ def _execute_end_of_service(action, executor):
     leave_comp = Decimal('0.00')
     leave_text = ''
     if employee.sponsorship_id:
-        daily_wage = (last_salary / 30).quantize(Decimal('0.01'))
+        daily_wage = daily_rate_from_total(last_salary)
         leave_days = Decimal(str(employee.remaining_leave_days or 0))
         leave_comp = (daily_wage * leave_days).quantize(Decimal('0.01'))
         leave_text = f'رصيد الإجازة: {leave_days} يوم × {daily_wage} = {leave_comp} ر.س'
