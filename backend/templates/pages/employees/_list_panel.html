@@ -72,9 +72,6 @@
         <div class="flex items-center gap-1 flex-wrap">
             {% if page_obj.has_previous %}
                 <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
-                   hx-get="{% url 'web:list_employees' %}?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
-                   hx-target="#employees-list-panel" hx-select="#employees-list-panel" hx-swap="innerHTML"
-                   hx-push-url="true" hx-indicator="#hr-htmx-indicator" hx-boost="false"
                    class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
             {% else %}
                 <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">السابق</span>
@@ -84,17 +81,11 @@
                     <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg font-bold">{{ p }}</span>
                 {% else %}
                     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ p }}"
-                       hx-get="{% url 'web:list_employees' %}?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ p }}"
-                       hx-target="#employees-list-panel" hx-select="#employees-list-panel" hx-swap="innerHTML"
-                       hx-push-url="true" hx-indicator="#hr-htmx-indicator" hx-boost="false"
                        class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">{{ p }}</a>
                 {% endif %}
             {% endfor %}
             {% if page_obj.has_next %}
                 <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
-                   hx-get="{% url 'web:list_employees' %}?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
-                   hx-target="#employees-list-panel" hx-select="#employees-list-panel" hx-swap="innerHTML"
-                   hx-push-url="true" hx-indicator="#hr-htmx-indicator" hx-boost="false"
                    class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
             {% else %}
                 <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">التالي</span>

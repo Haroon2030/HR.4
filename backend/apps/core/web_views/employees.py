@@ -134,8 +134,6 @@ def list_employees(request):
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
-    from apps.core.htmx_utils import render_page_or_panel
-
     ctx = {
         'employees': page_obj.object_list,
         'page_obj': page_obj,
@@ -143,13 +141,7 @@ def list_employees(request):
         'query': q,
         'total_count': paginator.count,
     }
-    return render_page_or_panel(
-        request,
-        full_template='pages/employees/list.html',
-        panel_template='pages/employees/_list_panel.html',
-        panel_id='employees-list-panel',
-        context=ctx,
-    )
+    return render(request, 'pages/employees/list.html', ctx)
 
 
 @login_required
@@ -249,7 +241,8 @@ def view_employee(request, employee_id):
         'employment_request', 'employment_request__requested_by',
         'employment_request__reviewed_by',
     )
-    if active_tab in ('warnings', 'archive', 'termination'):
+    stmt_tabs = {'warnings', 'archive', 'termination'}
+    if stmt_tabs & {k for k, v in tab_visible.items() if v}:
         from apps.employees.models import EmployeeStatement
         emp_qs = emp_qs.prefetch_related(
             Prefetch(
@@ -274,15 +267,7 @@ def view_employee(request, employee_id):
         **tab_data,
     }, requested_tab=requested_tab)
 
-    from apps.core.htmx_utils import render_page_or_panel
-
-    return render_page_or_panel(
-        request,
-        full_template='pages/employees/view.html',
-        panel_template='pages/employees/_employee_tab_panel.html',
-        panel_id='employee-tab-panel',
-        context=ctx,
-    )
+    return render(request, 'pages/employees/view.html', ctx)
 
 
 @login_required

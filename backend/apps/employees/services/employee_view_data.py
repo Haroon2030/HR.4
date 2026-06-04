@@ -32,11 +32,26 @@ def resolve_active_employee_tab(user, requested_tab: str | None) -> str:
     return resolve_default_employee_tab(user, requested_tab)
 
 
-def _needs_transfer_lists(active_tab: str, visible: dict[str, bool]) -> bool:
-    """قوائم الفروع/الأقسام لنماذج النقل السريع."""
-    if not visible.get('main'):
+def _tab_needed(
+    tab_key: str,
+    active_tab: str,
+    visible: dict[str, bool],
+    *,
+    load_all_tabs: bool,
+) -> bool:
+    if not visible.get(tab_key):
         return False
-    return active_tab == 'main'
+    return load_all_tabs or active_tab == tab_key
+
+
+def _needs_transfer_lists(
+    active_tab: str,
+    visible: dict[str, bool],
+    *,
+    load_all_tabs: bool,
+) -> bool:
+    """قوائم الفروع/الأقسام لنماذج النقل السريع."""
+    return _tab_needed('main', active_tab, visible, load_all_tabs=load_all_tabs)
 
 
 def load_employee_view_context(
@@ -46,6 +61,7 @@ def load_employee_view_context(
     active_tab: str,
     tab_visible: dict[str, bool],
     request_get,
+    load_all_tabs: bool = True,
 ) -> dict:
     """بيانات إضافية للقالب حسب التبويب — بعد جلب Employee بـ select_related."""
     from apps.core.models import Branch
@@ -73,7 +89,9 @@ def load_employee_view_context(
         'branches': [],
     }
 
-    if _needs_transfer_lists(active_tab, tab_visible):
+    need = lambda key: _tab_needed(key, active_tab, tab_visible, load_all_tabs=load_all_tabs)
+
+    if _needs_transfer_lists(active_tab, tab_visible, load_all_tabs=load_all_tabs):
         ctx['departments'] = list(Department.objects.order_by('name').only('id', 'name'))
         ctx['branches'] = list(
             Branch.objects.filter(is_deleted=False, is_active=True)
@@ -81,13 +99,13 @@ def load_employee_view_context(
             .only('id', 'name'),
         )
 
-    if active_tab == 'warnings':
+    if need('warnings'):
         ctx['statements_count'] = sum(
             1 for st in employee.statements_log.all()
             if st.statement_type in _STMT_COUNT_TYPES
         )
 
-    if active_tab == 'salary':
+    if need('salary'):
         ctx['salary_adjusts'] = list(
             EmployeeStatement.objects.filter(
                 employee_id=employee.pk,
@@ -97,7 +115,7 @@ def load_employee_view_context(
             .order_by('-statement_date', '-created_at'),
         )
 
-    if active_tab == 'schedule' and employee.work_schedule:
+    if need('schedule') and employee.work_schedule:
         try:
             data = json.loads(employee.work_schedule)
             if isinstance(data, dict) and isinstance(data.get('boxes'), list):
@@ -105,35 +123,35 @@ def load_employee_view_context(
         except (ValueError, TypeError):
             pass
 
-    if active_tab in ('custodies', 'main') or tab_visible.get('custodies'):
+    if need('custodies') or need('main'):
         active_qs = EmployeeCustody.objects.filter(
             employee_id=employee.pk, status='active',
         ).order_by('-received_at', '-id')
         ctx['active_custodies'] = list(active_qs)
-        if active_tab == 'custodies':
+        if need('custodies'):
             ctx['custodies'] = list(
                 EmployeeCustody.objects.filter(employee_id=employee.pk)
                 .order_by('-received_at', '-id'),
             )
 
-    if active_tab == 'trips':
+    if need('trips'):
         ctx['business_trips'] = list(
             employee.business_trips.order_by('-start_date', '-id'),
         )
 
-    if active_tab == 'loans':
+    if need('loans'):
         ctx['loans'] = list(employee.loans.all().order_by('-issued_at', '-id'))
 
-    if active_tab == 'absences':
+    if need('absences'):
         ctx['absences'] = list(employee.absences.all().order_by('-absence_date', '-id'))
 
-    if active_tab in ('contract', 'main'):
+    if need('contract') or need('main'):
         from apps.employees.services.contract_rules import (
             fourth_year_start,
             is_saudi_nationality,
             sync_employee_contract,
         )
-        if active_tab == 'contract':
+        if need('contract'):
             changed = sync_employee_contract(employee)
             if changed:
                 employee.save(update_fields=[
@@ -144,10 +162,10 @@ def load_employee_view_context(
         if ctx['contract_is_saudi'] and employee.hire_date:
             ctx['contract_fourth_year_start'] = fourth_year_start(employee.hire_date)
 
-    if active_tab == 'accruals':
+    if need('accruals'):
         ctx['accruals'] = _load_accruals_tab(employee, user)
 
-    if active_tab == 'fingerprint' or request_get.get('fp_from') or request_get.get('fp_to'):
+    if need('fingerprint') or request_get.get('fp_from') or request_get.get('fp_to'):
         ctx.update(_load_fingerprint_tab(employee, request_get))
 
     return ctx

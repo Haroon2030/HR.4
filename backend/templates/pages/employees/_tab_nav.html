@@ -1,16 +1,11 @@
-{% comment %}أزرار تبويبات صفحة العرض — HTMX جزئي. للتعديل استخدم _tab_nav_edit.html{% endcomment %}
+{% comment %}أزرار تبويبات ملف الموظف — Alpine (بدون HTMX){% endcomment %}
 {% for tab in employee_tab_nav %}
 {% if tab.visible %}
-<a href="{% url 'web:view_employee' employee.id %}?tab={{ tab.key }}"
-   role="tab"
-   hx-get="{% url 'web:view_employee' employee.id %}?tab={{ tab.key }}"
-   hx-target="#employee-tab-panel"
-   hx-select="#employee-tab-panel"
-   hx-swap="innerHTML"
-   hx-push-url="true"
-   hx-indicator="#hr-htmx-indicator"
-   hx-boost="false"
-   hx-sync="#employee-tab-panel:replace"
-   class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}{% if default_employee_tab == tab.key %} is-active{% endif %}">{{ tab.label }}</a>
+<button type="button" role="tab"
+        @click="activeTab = '{{ tab.key }}'"
+        :class="activeTab === '{{ tab.key }}' && 'is-active'"
+        class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}{% if default_employee_tab == tab.key %} is-active{% endif %}">
+    {{ tab.label }}
+</button>
 {% endif %}
 {% endfor %}

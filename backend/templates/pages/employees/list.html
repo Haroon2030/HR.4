@@ -5,27 +5,13 @@
 {% block list_actions %}
 <form method="get"
       action="{% url 'web:list_employees' %}"
-      class="flex items-center gap-2 w-full sm:w-auto"
-      hx-get="{% url 'web:list_employees' %}"
-      hx-target="#employees-list-panel"
-      hx-select="#employees-list-panel"
-      hx-swap="innerHTML"
-      hx-push-url="true"
-      hx-indicator="#hr-htmx-indicator"
-      hx-boost="false">
+      class="flex items-center gap-2 w-full sm:w-auto">
     {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
         <i data-lucide="search" class="w-4 h-4"></i> بحث
     </button>
     {% if query %}
     <a href="{% url 'web:list_employees' %}"
-       hx-get="{% url 'web:list_employees' %}"
-       hx-target="#employees-list-panel"
-       hx-select="#employees-list-panel"
-       hx-swap="innerHTML"
-       hx-push-url="true"
-       hx-indicator="#hr-htmx-indicator"
-       hx-boost="false"
        class="px-3 py-2 text-sm text-slate-600 hover:text-slate-800 inline-flex items-center gap-1" title="مسح البحث">
         <i data-lucide="x" class="w-4 h-4"></i>
     </a>

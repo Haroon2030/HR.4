@@ -207,8 +207,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="hr-app min-h-screen"
-      x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }"
-      data-hx-boost-nav="1">
+      x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }">
     <!-- Mobile Overlay -->
     <div 
         x-show="mobileMenuOpen" 
@@ -232,12 +231,6 @@
         >
             {% include "components/sidebar_brand.html" %}
             <nav class="hr-nav flex-1 min-h-0"
-                 hx-boost="true"
-                 hx-target="#hr-page-inner"
-                 hx-select="#hr-page-inner"
-                 hx-swap="innerHTML"
-                 hx-push-url="true"
-                 hx-indicator="#hr-htmx-indicator"
                  x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                 {% include "components/sidebar_nav.html" with always_show=False %}
             </nav>
@@ -264,12 +257,6 @@
                 </button>
             </div>
             <nav class="hr-nav flex-1 min-h-0"
-                 hx-boost="true"
-                 hx-target="#hr-page-inner"
-                 hx-select="#hr-page-inner"
-                 hx-swap="innerHTML"
-                 hx-push-url="true"
-                 hx-indicator="#hr-htmx-indicator"
                  x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
                 {% include "components/sidebar_nav.html" with always_show=True %}
             </nav>
@@ -323,8 +310,7 @@
                             </div>
                         </div>
                         {% if user|has_permission:'branches.view' %}
-                        <a href="{% url 'web:list_branches' %}" class="hr-topbar-icon-btn" title="تهيئة النظام"
-                           hx-boost="true" hx-target="#hr-page-inner" hx-select="#hr-page-inner" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#hr-htmx-indicator">
+                        <a href="{% url 'web:list_branches' %}" class="hr-topbar-icon-btn" title="تهيئة النظام">
                             <i data-lucide="settings" class="w-5 h-5"></i>
                         </a>
                         {% endif %}
@@ -361,13 +347,7 @@
                 <div id="hr-htmx-indicator" class="hr-htmx-indicator htmx-indicator" aria-hidden="true">
                     <span class="hr-htmx-indicator__spinner"></span>
                 </div>
-                <div id="hr-page-inner" class="hr-page-inner" style="direction:rtl;"
-                     hx-boost="true"
-                     hx-target="#hr-page-inner"
-                     hx-select="#hr-page-inner"
-                     hx-swap="innerHTML"
-                     hx-push-url="true"
-                     hx-indicator="#hr-htmx-indicator">
+                <div id="hr-page-inner" class="hr-page-inner" style="direction:rtl;">
                 {% block content %}{% endblock %}
                 </div>
             </main>
@@ -460,42 +440,9 @@
             }
 
             document.body.addEventListener('htmx:afterSwap', function (evt) {
-                hrDisableBoostOnForms();
                 hrScheduleLucide();
-                if (evt.detail.target && evt.detail.target.id === 'employee-tab-panel') {
-                    var params = new URLSearchParams(window.location.search);
-                    var tab = params.get('tab') || 'main';
-                    var host = document.querySelector('.hr-app [x-data*="activeTab"]');
-                    if (host && window.Alpine) {
-                        try {
-                            var data = Alpine.$data(host);
-                            if (data && 'activeTab' in data) {
-                                data.activeTab = tab;
-                            }
-                            Alpine.initTree(evt.detail.target);
-                        } catch (e) { /* ignore */ }
-                    }
-                    if (tab === 'fingerprint' && window.location.hash !== '#fingerprint') {
-                        history.replaceState(null, '', window.location.pathname + window.location.search + '#fingerprint');
-                    }
-                }
-                if (evt.detail.target && evt.detail.target.id === 'hr-page-inner') {
-                    if (window.hrInitFilterMultiselects) {
-                        window.hrInitFilterMultiselects(evt.detail.target);
-                    }
-                    if (window.hrInitPayrollPage) {
-                        window.hrInitPayrollPage(evt.detail.target);
-                    }
-                    var main = document.querySelector('.hr-main');
-                    if (main) {
-                        main.scrollTop = 0;
-                    }
-                    var msgs = evt.detail.target.querySelector('#django-messages');
-                    if (msgs) {
-                        msgs.querySelectorAll('[data-message]').forEach(function (msg) {
-                            showToast(msg.dataset.message, msg.dataset.type);
-                        });
-                    }
+                if (evt.detail.target && evt.detail.target.id === 'notif-dropdown-content') {
+                    return;
                 }
             });
 

@@ -5,8 +5,7 @@
     {% include "components/page_tabs_body_start.html" with body_class="p-6" %}
 
             <!-- Main -->
-            {% if tab_visible.main %}{% if not is_htmx_tab_panel or default_employee_tab == 'main' %}
-            <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
+            {% if tab_visible.main %}            <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
             <div class="hr-field-grid hr-glass-field-table">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الاسم</div><div class="text-sm text-slate-800">{{ employee.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الموظف</div><div class="text-sm text-slate-800">{{ employee.employee_number|default:"—" }}</div></div>
@@ -33,13 +32,12 @@
                 <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
-            {% if tab_visible.fingerprint %}{% if not is_htmx_tab_panel or default_employee_tab == 'fingerprint' %}{% include "pages/employees/_tab_fingerprint.html" %}{% endif %}{% endif %}
+            {% if tab_visible.fingerprint %}{% include "pages/employees/_tab_fingerprint.html" %}{% endif %}
 
             <!-- Salary -->
-            {% if tab_visible.salary %}{% if not is_htmx_tab_panel or default_employee_tab == 'salary' %}
-            <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
+            {% if tab_visible.salary %}            <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
                 <div class="hr-glass-field-table-wrap">
                 <div class="hr-field-grid hr-glass-field-table">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الراتب الأساسي</div><div class="text-sm text-slate-800">{{ employee.basic_salary|default:"—" }}</div></div>
@@ -61,11 +59,10 @@
                     {% include "components/salary_adjust_archive.html" with records=salary_adjusts show_type_col=True show_count=True section_id="view" %}
                 </div>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Leaves -->
-            {% if tab_visible.leaves %}{% if not is_htmx_tab_panel or default_employee_tab == 'leaves' %}
-            <div x-show="activeTab==='leaves'" class="space-y-4" style="display:none">
+            {% if tab_visible.leaves %}            <div x-show="activeTab==='leaves'" class="space-y-4" style="display:none">
                 {% if not employee.hire_date or not employee.sponsorship_id %}
                 <div class="p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs flex items-start gap-2">
                     <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5"></i>
@@ -151,12 +148,11 @@
                     </p>
                 </div>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Schedule -->
-            {% if tab_visible.schedule %}{% if not is_htmx_tab_panel or default_employee_tab == 'schedule' %}
-            {{ schedule_boxes_json|json_script:"schedule-boxes-data" }}
-            <div x-show="activeTab==='schedule'" class="space-y-4"{% if not is_htmx_tab_panel %} style="display:none"{% endif %} x-data="scheduleBoxes()">
+            {% if tab_visible.schedule %}            {{ schedule_boxes_json|json_script:"schedule-boxes-data" }}
+            <div x-show="activeTab==='schedule'" class="space-y-4" style="display:none" x-data="scheduleBoxes()">
 
                 <form method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="space-y-4"
                       x-effect="editMode; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
@@ -295,11 +291,10 @@
                     </div>
                 </form>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Warnings -->
-            {% if tab_visible.warnings %}{% if not is_htmx_tab_panel or default_employee_tab == 'warnings' %}
-            <div x-show="activeTab==='warnings'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
+            {% if tab_visible.warnings %}            <div x-show="activeTab==='warnings'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
 
                 <!-- Toolbar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
@@ -436,22 +431,20 @@
                     يتم تسجيل كل إفادة أو إنذار يصدر بحق الموظف تلقائياً في هذا السجل الزمني
                 </p>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Docs -->
-            {% if tab_visible.docs %}{% if not is_htmx_tab_panel or default_employee_tab == 'docs' %}
-            <div x-show="activeTab==='docs'" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display:none">
+            {% if tab_visible.docs %}            <div x-show="activeTab==='docs'" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display:none">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مستند المباشرة</div>{% if employee.commencement_document %}{% include "components/media_preview_btn.html" with url=employee.commencement_document.url title="مستند المباشرة" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">صورة الهوية</div>{% if employee.id_document %}{% include "components/media_preview_btn.html" with url=employee.id_document.url title="صورة الهوية" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">صورة جواز السفر</div>{% if employee.passport_document %}{% include "components/media_preview_btn.html" with url=employee.passport_document.url title="صورة جواز السفر" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">العقد</div>{% if employee.contract_document %}{% include "components/media_preview_btn.html" with url=employee.contract_document.url title="العقد" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مستندات أخرى</div>{% if employee.other_documents %}{% include "components/media_preview_btn.html" with url=employee.other_documents.url title="مستندات أخرى" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Custodies -->
-            {% if tab_visible.custodies %}{% if not is_htmx_tab_panel or default_employee_tab == 'custodies' %}
-            <div x-show="activeTab==='custodies'" class="space-y-3" style="display:none">
+            {% if tab_visible.custodies %}            <div x-show="activeTab==='custodies'" class="space-y-3" style="display:none">
                 {% if custodies %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
                     <table class="min-w-full text-sm">
@@ -500,11 +493,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Business Trips -->
-            {% if tab_visible.trips %}{% if not is_htmx_tab_panel or default_employee_tab == 'trips' %}
-            <div x-show="activeTab==='trips'" class="space-y-3" style="display:none">
+            {% if tab_visible.trips %}            <div x-show="activeTab==='trips'" class="space-y-3" style="display:none">
                 {% if business_trips %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
                     <table class="min-w-full text-sm">
@@ -543,11 +535,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Contract -->
-            {% if tab_visible.contract %}{% if not is_htmx_tab_panel or default_employee_tab == 'contract' %}
-            <div x-show="activeTab==='contract'" class="space-y-4" style="display:none">
+            {% if tab_visible.contract %}            <div x-show="activeTab==='contract'" class="space-y-4" style="display:none">
                 {% if contract_is_saudi and contract_fourth_year_start %}
                 <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-start gap-2">
                     <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
@@ -587,11 +578,10 @@
                 </div>
                 </div>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Loans -->
-            {% if tab_visible.loans %}{% if not is_htmx_tab_panel or default_employee_tab == 'loans' %}
-            <div x-show="activeTab==='loans'" class="space-y-3" style="display:none">
+            {% if tab_visible.loans %}            <div x-show="activeTab==='loans'" class="space-y-3" style="display:none">
                 {% if loans %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
                     <table class="min-w-full text-sm">
@@ -640,11 +630,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Absences -->
-            {% if tab_visible.absences %}{% if not is_htmx_tab_panel or default_employee_tab == 'absences' %}
-            <div x-show="activeTab==='absences'" class="space-y-3" style="display:none">
+            {% if tab_visible.absences %}            <div x-show="activeTab==='absences'" class="space-y-3" style="display:none">
                 {% if absences %}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
@@ -767,11 +756,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Archive -->
-            {% if tab_visible.archive %}{% if not is_htmx_tab_panel or default_employee_tab == 'archive' %}
-            <div x-show="activeTab==='archive'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
+            {% if tab_visible.archive %}            <div x-show="activeTab==='archive'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
 
                 <!-- Toolbar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
@@ -1039,10 +1027,9 @@
                     يتم تسجيل كل عملية تتم على الموظف تلقائياً في هذا الأرشيف الزمني
                 </p>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
             <!-- Accruals Ledger -->
-            {% if tab_visible.accruals %}{% if not is_htmx_tab_panel or default_employee_tab == 'accruals' %}
-            <div x-show="activeTab==='accruals'" x-cloak class="space-y-4">
+            {% if tab_visible.accruals %}            <div x-show="activeTab==='accruals'" x-cloak class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
                         <i data-lucide="calendar" class="w-6 h-6 text-indigo-500 mb-2"></i>
@@ -1173,11 +1160,10 @@
                 </div>
 
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
             <!-- Termination Tab -->
-            {% if tab_visible.termination %}{% if not is_htmx_tab_panel or default_employee_tab == 'termination' %}
-            <div x-show="activeTab==='termination'" x-cloak>
+            {% if tab_visible.termination %}            <div x-show="activeTab==='termination'" x-cloak>
                 <div class="space-y-4" x-data="{ count: $el.querySelectorAll('.termination-card').length }" x-init="$nextTick(() => { count = $el.querySelectorAll('.termination-card').length })">
                     {% for st in employee.statements_log.all %}
                         {% if st.statement_type == 'terminate' %}
@@ -1223,7 +1209,7 @@
                     </div>
                 </div>
             </div>
-            {% endif %}{% endif %}
+            {% endif %}
 
     {% include "components/page_tabs_end.html" %}
 </div>

@@ -1,5 +1,5 @@
 {# fingerprint_data, fp_date_from, fp_date_to, can_edit_biometric_settings #}
-<div id="fingerprint" x-show="activeTab==='fingerprint'" class="space-y-4"{% if not is_htmx_tab_panel %} style="display:none"{% endif %}>
+<div id="fingerprint" x-show="activeTab==='fingerprint'" class="space-y-4" style="display:none">
 
     {% with fp=fingerprint_data settings=fp.settings %}
     {% if not fp.linked %}
