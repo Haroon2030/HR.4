@@ -796,6 +796,17 @@ def _catalog_for_user(user):
     return reports, groups
 
 
+def _grouped_reports_for_user(user):
+    """مجموعات التقارير مع items[] لكل مجموعة — للقوائم والفلاتر."""
+    visible_reports, visible_groups = _catalog_for_user(user)
+    grouped = []
+    for g in visible_groups:
+        items = [r for r in visible_reports if r.get('group') == g['key']]
+        if items:
+            grouped.append({**g, 'items': items})
+    return grouped
+
+
 def _filter_querystring(request, exclude=()):
     f = _report_filters(request)
     params: list[tuple[str, object]] = []
@@ -833,7 +844,7 @@ def reports_index(request):
     return render(request, 'pages/reports/index.html', {
         **ctx,
         'reports': visible_reports,
-        'report_groups': visible_groups,
+        'report_groups': _grouped_reports_for_user(request.user),
         'clear_url': reverse('web:reports_index'),
     })
 
@@ -907,7 +918,7 @@ def report_detail(request, report_type):
         'report_meta': meta,
         'group_meta': group,
         'reports': visible_reports,
-        'report_groups': visible_groups,
+        'report_groups': _grouped_reports_for_user(request.user),
         'data': data,
         'report_type': report_type,
         'selected_report': report_type,

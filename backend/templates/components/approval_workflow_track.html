@@ -1,0 +1,39 @@
+{# تتبّع مراحل الموافقة — يتطلب: track (كائن فيه status و branch/gm/officer reviewed_at) #}
+{% with status=track.status %}
+{% with s1_done=track.branch_reviewed_at s2_done=track.gm_reviewed_at s3_done=track.officer_reviewed_at %}
+<div class="hr-approval-track{% if status == 'rejected' %} hr-approval-track--rejected{% elif status == 'returned' %} hr-approval-track--returned{% elif status == 'approved' %} hr-approval-track--done{% endif %}"
+     aria-label="مراحل الموافقة">
+    <div class="hr-approval-track__steps" role="list">
+        <div class="hr-approval-track__step{% if s1_done %} is-done{% elif status == 'pending_branch' or status == 'pending' %} is-current{% endif %}" role="listitem">
+            <span class="hr-approval-track__dot" aria-hidden="true"></span>
+            <span class="hr-approval-track__label" title="{{ first_stage_label|default:'موافقة أولى' }}">{{ first_stage_label|default:"أولى"|truncatechars:14 }}</span>
+        </div>
+        <div class="hr-approval-track__connector{% if s1_done %} is-done{% endif %}" aria-hidden="true"></div>
+        <div class="hr-approval-track__step{% if s2_done %} is-done{% elif status == 'pending_gm' %} is-current{% endif %}" role="listitem">
+            <span class="hr-approval-track__dot" aria-hidden="true"></span>
+            <span class="hr-approval-track__label" title="{{ gm_label|default:'مدير الموارد' }}">{{ gm_label|default:"موارد"|truncatechars:14 }}</span>
+        </div>
+        <div class="hr-approval-track__connector{% if s2_done %} is-done{% endif %}" aria-hidden="true"></div>
+        <div class="hr-approval-track__step{% if s3_done or status == 'approved' %} is-done{% elif status == 'pending_officer' %} is-current{% endif %}" role="listitem">
+            <span class="hr-approval-track__dot" aria-hidden="true"></span>
+            <span class="hr-approval-track__label" title="{{ officer_label|default:'الأخصائي' }}">{{ officer_label|default:"أخصائي"|truncatechars:14 }}</span>
+        </div>
+    </div>
+    <p class="hr-approval-track__caption">
+        {% if status == 'pending_branch' or status == 'pending' %}
+            <span class="text-primary-700">بانتظار {{ first_stage_label|default:"الموافقة الأولى" }}</span>
+        {% elif status == 'pending_gm' %}
+            <span class="text-amber-700">بانتظار {{ gm_label|default:"مدير الموارد" }}</span>
+        {% elif status == 'pending_officer' %}
+            <span class="text-indigo-700">بانتظار {{ officer_label|default:"الأخصائي" }}{% if track.assigned_officer %} — {{ track.assigned_officer.get_full_name|default:track.assigned_officer.username }}{% endif %}</span>
+        {% elif status == 'returned' %}
+            <span class="text-rose-700">مُرتجَع للتعديل</span>
+        {% elif status == 'approved' %}
+            <span class="text-emerald-700">مكتمل</span>
+        {% elif status == 'rejected' %}
+            <span class="text-red-700">مرفوض</span>
+        {% endif %}
+    </p>
+</div>
+{% endwith %}
+{% endwith %}

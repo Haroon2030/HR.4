@@ -4,7 +4,33 @@
 (function () {
     'use strict';
 
+    function isNativeReportSelect(select) {
+        if (!select) return false;
+        return select.id === 'reportSelect' || select.getAttribute('data-hr-native-select') === '1';
+    }
+
+    /** إزالة أي غلاف قديم (hr-ss / hr-ms) عن قائمة التقرير — native select فقط. */
+    function restoreNativeReportSelect() {
+        var sel = document.getElementById('reportSelect');
+        if (!sel) return;
+        var guard = 0;
+        while (guard++ < 8) {
+            var wrap = sel.closest('.hr-ms, .hr-ss');
+            if (!wrap || !wrap.parentNode) break;
+            wrap.parentNode.insertBefore(sel, wrap);
+            wrap.remove();
+        }
+        delete sel.dataset.msReady;
+        delete sel.dataset.ssReady;
+        sel.classList.remove('hr-filter-ms-native', 'hr-filter-single');
+        sel.removeAttribute('hidden');
+        sel.style.cssText = '';
+    }
+
+    window.hrRestoreNativeReportSelect = restoreNativeReportSelect;
+
     function initMultiselect(select) {
+        if (isNativeReportSelect(select)) return;
         if (select.dataset.msReady === '1') return;
         select.dataset.msReady = '1';
 
@@ -244,16 +270,28 @@
     }
 
     function init(root) {
+        restoreNativeReportSelect();
         const scope = root && root.querySelectorAll ? root : document;
         scope.querySelectorAll('select.hr-filter-ms:not(.hr-filter-ms-native)').forEach(initMultiselect);
+        scope.querySelectorAll('select.hr-filter-single:not(.hr-filter-ms-native)').forEach(function (select) {
+            if (!isNativeReportSelect(select)) return;
+            restoreNativeReportSelect();
+        });
         scope.querySelectorAll('select.hr-filter-select').forEach(ensureAllOption);
+        restoreNativeReportSelect();
     }
 
     window.hrInitFilterMultiselects = init;
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { init(); });
-    } else {
+    function boot() {
         init();
+        restoreNativeReportSelect();
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+    window.addEventListener('load', restoreNativeReportSelect);
 })();

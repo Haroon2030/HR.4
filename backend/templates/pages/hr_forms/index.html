@@ -14,7 +14,7 @@
     </div>
 
     {# Step 1 — Employee search/select #}
-    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5">
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5 overflow-visible">
         {# Selected employee chip #}
         <template x-if="selected">
             <div class="flex items-center justify-between bg-gradient-to-l from-primary-50 to-white border border-primary-200 rounded-lg p-3 shadow-sm">
@@ -92,17 +92,18 @@
                 اكتب في الحقل أعلاه — ستظهر قائمة بالموظفين المطابقين فقط (بدون فتح القائمة كاملة).
             </p>
 
-            <div x-show="searchLoading && hasQuery" x-cloak
-                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+            <div x-show="searchLoading && hasQuery"
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg px-4 py-3 text-sm text-slate-500 flex items-center gap-2"
+                 style="display: none;">
                 <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
                 جاري البحث…
             </div>
 
             {# نتائج البحث #}
-            <div x-show="!searchLoading && showList && hasQuery && filtered.length > 0"
-                 x-cloak
+            <div x-show="!searchLoading && showList && hasQuery && filteredList.length > 0"
                  @click.away="showList = false"
-                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden"
+                 style="display: none;">
                 <div class="max-h-[26rem] overflow-y-auto">
                 <template x-for="(emp, idx) in pagedItems" :key="emp.id">
                     <button type="button"
@@ -135,8 +136,9 @@
                 </div>
 
                 {# Pagination footer — only when more than one page #}
-                <div x-show="totalPages > 1" x-cloak
-                     class="flex items-center justify-between px-3 py-2 bg-slate-50 border-t border-slate-200 text-xs">
+                <div x-show="totalPages > 1"
+                     class="flex items-center justify-between px-3 py-2 bg-slate-50 border-t border-slate-200 text-xs"
+                     style="display: none;">
                     <button type="button"
                             @click="prevPage()"
                             :disabled="currentPage === 1"
@@ -169,9 +171,9 @@
                 </div>
             </div>
 
-            <div x-show="!searchLoading && showList && hasQuery && filtered.length === 0"
-                 x-cloak
-                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center">
+            <div x-show="!searchLoading && showList && hasQuery && filteredList.length === 0"
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center"
+                 style="display: none;">
                 <i data-lucide="search-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
                 <p class="text-sm text-slate-500 mt-2" x-text="employeeTotal === 0 ? 'لا يوجد موظفون ضمن فروعك — راجع صلاحيات الفروع' : 'لا يوجد موظف مطابق للبحث'"></p>
             </div>
@@ -220,10 +222,12 @@
 <script>
 function hrFormsApp() {
     if (typeof window.employeePickerBase !== 'function') {
+        console.warn('hr-employee-smart-search.js غير محمّل — بحث الموظف معطّل');
         return {
             query: '', showList: false, selected: null, employees: [], employeeTotal: 0,
-            searchLoading: false, hasQuery: false,
+            searchLoading: false, filteredList: [],
             filtered: [], pagedItems: [], totalPages: 1, currentPage: 1, activeIndex: 0,
+            get hasQuery() { return (this.query || '').trim().length >= 1; },
             init: function () { if (window.lucide) lucide.createIcons(); },
             onQueryInput: function () {}, onSearchFocus: function () {}, clearQuery: function () {},
             moveActive: function () {}, pickActive: function () {}, clearSelection: function () {},

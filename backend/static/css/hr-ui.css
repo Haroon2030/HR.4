@@ -2271,6 +2271,62 @@ body.hr-app .hr-header .bg-white.rounded-xl.shadow-xl {
     flex-shrink: 0;
 }
 
+/* تقارير — قائمة التقرير الأصلية (native) */
+body.hr-app .hr-reports-report-select,
+body.hr-app #reportSelect.hr-reports-report-select {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    min-width: 14rem !important;
+    height: auto !important;
+    min-height: 2.125rem !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    -webkit-appearance: menulist !important;
+    appearance: auto !important;
+    padding: 0.45rem 0.65rem !important;
+    padding-inline-end: 2rem !important;
+    color: #0f172a !important;
+    background-color: #fff !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    cursor: pointer !important;
+    z-index: 2 !important;
+}
+
+body.hr-app .hr-reports-report-select option,
+body.hr-app #reportSelect.hr-reports-report-select option {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+    background: #fff !important;
+}
+
+body.hr-app .hr-reports-report-select optgroup,
+body.hr-app #reportSelect.hr-reports-report-select optgroup {
+    font-weight: 800 !important;
+    color: #475569 !important;
+}
+
+/* تقارير — إن بقي غلاف hr-ms/hr-ss قديم */
+body.hr-app .hr-reports-filter-col-report .hr-ms__btn,
+body.hr-app .hr-reports-filter-col-report .hr-ms__panel {
+    display: none !important;
+}
+
+body.hr-app .hr-reports-filter-col-report #reportSelect.hr-filter-ms-native {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 2.125rem !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    clip: auto !important;
+    overflow: visible !important;
+}
+
 /* ── نص أسود واضح (#000) في المحتوى — مع الإبقاء على ألوان الحالة ── */
 body.hr-app .hr-main,
 body.hr-app .hr-header,
@@ -2879,6 +2935,12 @@ body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
 /* بحث موظف ذكي — نتائج عند الكتابة فقط */
 .hr-forms-employee-search {
     margin-top: 0.25rem;
+    overflow: visible;
+    z-index: 20;
+}
+
+.hr-main .bg-white.rounded-xl.shadow-sm.overflow-visible {
+    overflow: visible;
 }
 
 .hr-forms-employee-search__meta {
@@ -2896,25 +2958,28 @@ body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
     min-height: 3rem;
     height: auto;
     padding-block: 0.65rem;
-    padding-inline-end: 3.25rem;
-    padding-inline-start: 2.75rem;
+    padding-inline-start: 3.25rem;
+    padding-inline-end: 2.75rem;
     font-size: 0.9375rem;
     font-weight: 500;
     border-radius: 0.75rem;
     background: #fff !important;
 }
 
+/* أيقونة البحث عند بداية الحقل (inline-start = يمين في RTL) */
 .hr-search-field--prominent .hr-search-field__icon {
     width: 2rem;
     height: 2rem;
     right: auto;
-    inset-inline-end: 0.5rem;
-    inset-inline-start: auto;
+    left: auto;
+    inset-inline-start: 0.5rem;
+    inset-inline-end: auto;
 }
 
 .hr-search-field--prominent .hr-search-field__clear {
     position: absolute;
-    inset-inline-start: 0.5rem;
+    inset-inline-start: auto;
+    inset-inline-end: 0.5rem;
     top: 50%;
     transform: translateY(-50%);
     z-index: 3;
@@ -2944,7 +3009,7 @@ body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
 }
 
 .hr-employee-smart-search__results {
-    z-index: 30;
+    z-index: 200;
 }
 
 .hr-smart-search__mark {
@@ -2954,9 +3019,125 @@ body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
     padding: 0 0.125rem;
 }
 
-body.hr-app .hr-employee-smart-search .hr-search-field__icon {
+body.hr-app .hr-employee-smart-search .hr-search-field--prominent .hr-search-field__icon,
+body.hr-app .hr-forms-employee-search .hr-search-field--prominent .hr-search-field__icon {
+    right: auto !important;
+    left: auto !important;
+    inset-inline-start: 0.5rem !important;
+    inset-inline-end: auto !important;
     color: rgb(37 99 235) !important;
     opacity: 1;
+}
+
+body.hr-app .hr-forms-employee-search .hr-search-field--prominent > input {
+    padding-inline-start: 3.25rem !important;
+    padding-inline-end: 2.75rem !important;
+}
+
+/* ── تتبّع مراحل الموافقة (قوائم الطلبات) ── */
+.hr-col-approval-stage {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.hr-approval-track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 10rem;
+    max-width: 13rem;
+    margin-inline: auto;
+}
+
+.hr-approval-track__steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+}
+
+.hr-approval-track__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    max-width: 4.25rem;
+}
+
+.hr-approval-track__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    background: rgb(203 213 225);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgb(226 232 240);
+}
+
+.hr-approval-track__step.is-done .hr-approval-track__dot {
+    background: rgb(16 185 129);
+    box-shadow: 0 0 0 1px rgb(167 243 208);
+}
+
+.hr-approval-track__step.is-current .hr-approval-track__dot {
+    background: rgb(37 99 235);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+}
+
+.hr-approval-track--rejected .hr-approval-track__step.is-current .hr-approval-track__dot,
+.hr-approval-track--rejected .hr-approval-track__dot {
+    background: rgb(239 68 68);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.hr-approval-track--returned .hr-approval-track__step.is-current .hr-approval-track__dot {
+    background: rgb(244 63 94);
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.18);
+}
+
+.hr-approval-track__connector {
+    align-self: center;
+    flex: 1 1 0.5rem;
+    min-width: 0.5rem;
+    max-width: 1.25rem;
+    height: 2px;
+    margin-top: 0.3rem;
+    background: rgb(226 232 240);
+}
+
+.hr-approval-track__connector.is-done {
+    background: rgb(16 185 129);
+}
+
+.hr-approval-track__label {
+    margin-top: 0.2rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    color: rgb(100 116 139);
+    word-break: break-word;
+}
+
+.hr-approval-track__step.is-done .hr-approval-track__label {
+    color: rgb(5 150 105);
+}
+
+.hr-approval-track__step.is-current .hr-approval-track__label {
+    color: rgb(29 78 216);
+}
+
+.hr-approval-track__caption {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: center;
+    width: 100%;
 }
 
 /* employee-search-picker — أيقونة البحث في رأس المكوّن */

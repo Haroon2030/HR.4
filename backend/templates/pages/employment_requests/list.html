@@ -54,7 +54,7 @@
                         <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">الفرع</th>
                         <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">القسم</th>
                         <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">الإدارة</th>
-                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">المرحلة</th>
+                        <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500 uppercase hr-col-approval-stage">المرحلة</th>
                         <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">المستند</th>
                         <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">مقدم الطلب</th>
                         <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 uppercase">التاريخ</th>
@@ -69,20 +69,8 @@
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.branch.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.department.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.administration.name|default:"-" }}</td>
-                        <td class="px-3 py-2 text-xs">
-                            {% if r.status == 'pending_branch' or r.status == 'pending' %}
-                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-primary-100 text-primary-700">بانتظار {{ r.first_stage_label }}</span>
-                            {% elif r.status == 'pending_gm' %}
-                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700">بانتظار مدير الموارد</span>
-                            {% elif r.status == 'pending_officer' %}
-                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-700">
-                                    أخصائي: {{ r.assigned_officer.get_full_name|default:r.assigned_officer.username|default:"—" }}
-                                </span>
-                            {% elif r.status == 'approved' %}
-                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">مقبول</span>
-                            {% else %}
-                                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">مرفوض</span>
-                            {% endif %}
+                        <td class="px-3 py-2 text-xs hr-col-approval-stage">
+                            {% include "components/approval_workflow_track.html" with track=r first_stage_label=r.first_stage_label gm_label="مدير الموارد" officer_label="الأخصائي" %}
                         </td>
                         <td class="px-3 py-2 text-xs">
                             {% if r.commencement_document %}

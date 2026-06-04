@@ -1,57 +1,45 @@
-{# filter, branches, sponsorships, reports, selected_report (optional), form_action (optional) #}
-<form method="get"
-      class="hr-reports-filter-form"
-      {% if form_action %}action="{{ form_action }}"{% endif %}
-      id="reportsFilterForm">
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table class="hr-reports-filter-tbl w-full text-sm">
-            <thead>
-                <tr>
-                    <th>الفرع</th>
-                    <th>التقرير</th>
-                    <th>شركة الكفالة</th>
-                    <th>من تاريخ</th>
-                    <th>إلى تاريخ</th>
-                    <th class="w-28 text-center">إجراء</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filter.branch_ids field_class="hr-reports-filter-field" aria_label="الفرع" %}
-                    </td>
-                    <td>
-                        <select name="report" id="reportSelect" class="hr-reports-filter-field" required aria-label="التقرير">
-                            <option value="">— اختر التقرير —</option>
-                            {% for g in report_groups %}
-                            <optgroup label="{{ g.title }}">
-                                {% for r in g.items %}
-                                <option value="{{ r.key }}"
-                                    {% if selected_report == r.key or filter.report == r.key %}selected{% endif %}>
-                                    {{ r.title }}
-                                </option>
-                                {% endfor %}
-                            </optgroup>
-                            {% endfor %}
-                        </select>
-                    </td>
-                    <td>
-                        {% include "components/filter_multiselect.html" with name="sponsorship" items=sponsorships selected_ids=filter.sponsorship_ids field_class="hr-reports-filter-field" aria_label="شركة الكفالة" %}
-                    </td>
-                    <td>
-                        <input type="date" name="from" value="{{ filter.date_from }}" class="hr-reports-filter-field" aria-label="من تاريخ">
-                    </td>
-                    <td>
-                        <input type="date" name="to" value="{{ filter.date_to }}" class="hr-reports-filter-field" aria-label="إلى تاريخ">
-                    </td>
-                    <td class="text-center align-middle">
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-1.5 px-1">
-                            <button type="submit" class="hr-filter-btn hr-filter-btn--primary w-full sm:w-auto">عرض</button>
-                            <a href="{% if clear_url %}{{ clear_url }}{% else %}{% url 'web:reports_index' %}{% endif %}" class="hr-filter-btn hr-filter-btn--ghost w-full sm:w-auto text-center">مسح</a>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</form>
+{# filter, branches, sponsorships, reports, selected_report (optional), form_action (optional) #}
+<form method="get"
+      class="hr-reports-filter-form"
+      {% if form_action %}action="{{ form_action }}"{% endif %}
+      id="reportsFilterForm">
+    <div class="hr-reports-filter-scroll overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table class="hr-reports-filter-tbl w-full text-sm">
+            <thead>
+                <tr>
+                    <th>الفرع</th>
+                    <th class="hr-reports-filter-col-report">التقرير</th>
+                    <th>شركة الكفالة</th>
+                    <th>من تاريخ</th>
+                    <th>إلى تاريخ</th>
+                    <th class="w-28 text-center">إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filter.branch_ids field_class="hr-reports-filter-field" aria_label="الفرع" %}
+                    </td>
+                    <td class="hr-reports-filter-col-report">
+                        {% include "components/report_picker.html" with report_groups=report_groups selected_value=selected_report field_class="hr-reports-filter-field" %}
+                    </td>
+                    <td>
+                        {% include "components/filter_multiselect.html" with name="sponsorship" items=sponsorships selected_ids=filter.sponsorship_ids field_class="hr-reports-filter-field" aria_label="شركة الكفالة" %}
+                    </td>
+                    <td>
+                        <input type="date" name="from" value="{{ filter.date_from }}" class="hr-reports-filter-field" aria-label="من تاريخ">
+                    </td>
+                    <td>
+                        <input type="date" name="to" value="{{ filter.date_to }}" class="hr-reports-filter-field" aria-label="إلى تاريخ">
+                    </td>
+                    <td class="text-center align-middle">
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-1.5 px-1">
+                            <button type="submit" class="hr-filter-btn hr-filter-btn--primary w-full sm:w-auto">عرض</button>
+                            <a href="{% if clear_url %}{{ clear_url }}{% else %}{% url 'web:reports_index' %}{% endif %}" class="hr-filter-btn hr-filter-btn--ghost w-full sm:w-auto text-center">مسح</a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</form>

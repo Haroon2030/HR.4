@@ -1,0 +1,50 @@
+{# report_groups: [{title, items:[{key, title}, ...]}, ...] #}
+{# selected_value, filter.report, placeholder, field_class (optional) #}
+{% with sel=selected_value|default:filter.report|default:"" %}
+{% with ph=placeholder|default:"— اختر التقرير —" %}
+<div class="hr-rpt-picker" dir="rtl" data-placeholder="{{ ph }}">
+    <input type="hidden"
+           name="report"
+           id="reportSelect"
+           value="{{ sel }}"
+           required
+           aria-label="التقرير"
+           data-hr-native-select="1">
+    <button type="button"
+            class="hr-rpt-picker__trigger {{ field_class|default:'hr-reports-filter-field' }}"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="hrReportPickerMenu">
+        <span class="hr-rpt-picker__label{% if not sel %} is-placeholder{% endif %}">
+            {% if sel %}
+                {% for g in report_groups %}{% for r in g.items %}{% if r.key == sel %}{{ r.title }}{% endif %}{% endfor %}{% endfor %}
+            {% else %}
+                {{ ph }}
+            {% endif %}
+        </span>
+        <span class="hr-rpt-picker__chevron" aria-hidden="true"></span>
+    </button>
+    <div id="hrReportPickerMenu"
+         class="hr-rpt-picker__menu"
+         role="listbox"
+         hidden>
+        {% for g in report_groups %}
+            {% if g.items %}
+            <div class="hr-rpt-picker__group" role="group" aria-label="{{ g.title }}">
+                <div class="hr-rpt-picker__group-title">{{ g.title }}</div>
+                {% for r in g.items %}
+                <button type="button"
+                        class="hr-rpt-picker__option{% if sel == r.key %} is-selected{% endif %}"
+                        role="option"
+                        data-value="{{ r.key }}"
+                        aria-selected="{% if sel == r.key %}true{% else %}false{% endif %}">
+                    {{ r.title }}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endwith %}
+{% endwith %}
