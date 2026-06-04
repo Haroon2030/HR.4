@@ -95,6 +95,7 @@ jobs:
           print(f'[permissions] CI sync: {m} modules, {p} perms ({n} new)')
           "
 
+      # نفس قاعدة [4/9] بعد migrate — ci-prod.sqlite3 لا تُهاجر في CI فكانت تفشل فحص الجداول
       - name: "[7/9] Attendance DB check (deploy mode)"
         env:
           DJANGO_ENV: production
@@ -103,7 +104,7 @@ jobs:
           ALLOWED_HOSTS: example.com,testserver
           CSRF_TRUSTED_ORIGINS: https://example.com
           USE_HTTPS: 'true'
-          DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci-prod.sqlite3
+          DATABASE_URL: sqlite:////${{ github.workspace }}/backend/ci.sqlite3
           USE_R2: 'False'
           ATTENDANCE_AGENT_API_KEY: ci-attendance-agent-key-for-deploy-check-only
           REDIS_OPTIONAL: 'true'
