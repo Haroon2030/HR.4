@@ -272,6 +272,7 @@ WHITENOISE_MAX_AGE = env.int('WHITENOISE_MAX_AGE', default=31536000)
 
 # مدة تخزين عدادات الشريط الجانبي (ثانية) — يقلّل استعلامات COUNT على كل صفحة
 SIDEBAR_COUNTS_CACHE_TTL = env.int('SIDEBAR_COUNTS_CACHE_TTL', default=45)
+DASHBOARD_CACHE_TTL = env.int('DASHBOARD_CACHE_TTL', default=120)
 
 # الملفات المرفوعة (media)
 MEDIA_URL = '/media/'

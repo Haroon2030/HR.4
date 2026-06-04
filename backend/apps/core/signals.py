@@ -30,9 +30,9 @@ def save_user_profile(sender, instance, **kwargs):
 @receiver(post_save, sender=PendingAction)
 def invalidate_sidebar_on_pending_action(sender, instance, **kwargs):
     """إبطال عدادات الشريط الجانبي عند تغيير طلب معلّق."""
-    from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+    from apps.core.services.navigation_cache import invalidate_user_navigation_caches
 
-    invalidate_sidebar_counts(
+    invalidate_user_navigation_caches(
         instance.requested_by_id,
         instance.assigned_officer_id,
     )
@@ -58,9 +58,9 @@ def _register_employment_request_signal():
     @receiver(post_save, sender=EmploymentRequest, weak=False,
               dispatch_uid='invalidate_sidebar_on_employment_request')
     def _invalidate_sidebar(sender, instance, **kwargs):
-        from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+        from apps.core.services.navigation_cache import invalidate_user_navigation_caches
 
-        invalidate_sidebar_counts(
+        invalidate_user_navigation_caches(
             instance.requested_by_id,
             instance.assigned_officer_id,
         )
@@ -83,9 +83,9 @@ def _register_notification_signal():
     @receiver(post_save, sender=Notification, weak=False,
               dispatch_uid='invalidate_sidebar_on_notification')
     def _invalidate_notif(sender, instance, **kwargs):
-        from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+        from apps.core.services.navigation_cache import invalidate_user_navigation_caches
 
-        invalidate_sidebar_counts(instance.recipient_id)
+        invalidate_user_navigation_caches(instance.recipient_id)
 
 
 _register_notification_signal()

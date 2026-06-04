@@ -74,9 +74,9 @@ def login_view(request):
         
         if user is not None:
             cache.delete(throttle_key)
-            from apps.core.services.sidebar_counts import invalidate_sidebar_counts
+            from apps.core.services.navigation_cache import invalidate_user_navigation_caches
 
-            invalidate_sidebar_counts(user.pk)
+            invalidate_user_navigation_caches(user.pk)
             login(request, user)
             if not remember:
                 request.session.set_expiry(0)

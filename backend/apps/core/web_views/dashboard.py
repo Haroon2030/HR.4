@@ -24,105 +24,35 @@ from apps.core.services.approval_routing import first_stage_pending_q
 @login_required
 def dashboard_view(request):
     """لوحة التحكم الرئيسية"""
-    from django.db.models import Count, Q
     from django.urls import reverse
     from django.core.paginator import Paginator
     from apps.employees.models import EmploymentRequest, Employee
-    from apps.core.models import PendingAction, Branch, DatabaseBackupLog
+    from apps.core.models import PendingAction, DatabaseBackupLog
     from apps.core.web_views._helpers import _is_hr_officer, _is_general_manager
     from apps.core.web_views.employment_requests import get_hr_officers
 
-    # ─── إحصائيات عامة (KPIs) ──────────────────────────────────────
-    accessible_branch_ids = list(_user_accessible_branch_ids(request.user) or [])
-    emp_qs_all = Employee.objects.filter(is_deleted=False)
-    if not request.user.is_superuser and accessible_branch_ids:
-        emp_qs_all = emp_qs_all.filter(branch_id__in=accessible_branch_ids)
+    raw_branch_ids = _user_accessible_branch_ids(request.user)
+    if raw_branch_ids is None:
+        branch_scope = None
+        accessible_branch_ids = []
+    else:
+        branch_scope = list(raw_branch_ids)
+        accessible_branch_ids = branch_scope
 
-    emp_status_counts = emp_qs_all.aggregate(
-        total=Count('id'),
-        active=Count('id', filter=Q(status=Employee.Status.ACTIVE)),
-        leave=Count('id', filter=Q(status=Employee.Status.LEAVE)),
-        suspended=Count('id', filter=Q(status=Employee.Status.SUSPENDED)),
-        terminated=Count('id', filter=Q(status=Employee.Status.TERMINATED)),
+    from apps.core.services.dashboard_cache import (
+        cache_bypass_requested,
+        get_dashboard_overview,
     )
 
-    # طلبات التوظيف المعلقة (لكل المراحل)
-    er_qs = EmploymentRequest.objects.filter(is_deleted=False)
-    if not request.user.is_superuser and accessible_branch_ids:
-        er_qs = er_qs.filter(branch_id__in=accessible_branch_ids)
-    er_open_count = er_qs.exclude(status__in=[
-        EmploymentRequest.Status.APPROVED,
-        EmploymentRequest.Status.REJECTED,
-    ]).count()
-
-    # عمليات معلّقة (إجازات / رواتب / نقل ...)
-    pa_qs = PendingAction.objects.filter(is_deleted=False) if hasattr(PendingAction, 'is_deleted') else PendingAction.objects.all()
-    if not request.user.is_superuser and accessible_branch_ids:
-        pa_qs = pa_qs.filter(branch_id__in=accessible_branch_ids)
-    _clearance_types = [
-        PendingAction.ActionType.CUSTODY_CLEAR,
-        PendingAction.ActionType.TERMINATE,
-        PendingAction.ActionType.CONTRACT_END,
-        PendingAction.ActionType.END_OF_SERVICE,
-    ]
-    pa_stats = pa_qs.aggregate(
-        open_count=Count(
-            'id',
-            filter=~Q(status=PendingAction.Status.APPROVED),
-        ),
-        clearance_count=Count(
-            'id',
-            filter=Q(action_type__in=_clearance_types)
-            & ~Q(status=PendingAction.Status.APPROVED),
-        ),
+    overview, _overview_cached = get_dashboard_overview(
+        request.user,
+        branch_scope,
+        bypass=cache_bypass_requested(request),
     )
-    pa_open_count = pa_stats['open_count'] or 0
-    clearance_count = pa_stats['clearance_count'] or 0
-
-    # توزيع الموظفين حسب الفرع (Top 6)
-    branch_distribution = list(
-        emp_qs_all.values('branch__name')
-        .annotate(c=Count('id'))
-        .order_by('-c')[:6]
-    )
-    max_branch = max((b['c'] for b in branch_distribution), default=1) or 1
-
-    # توزيع حسب الجنس
-    gender_distribution = list(
-        emp_qs_all.values('gender')
-        .annotate(c=Count('id'))
-        .order_by('-c')
-    )
-    max_gender = max((g['c'] for g in gender_distribution), default=1) or 1
-
-    # توزيع حسب الجنسية (Top 6)
-    nationality_distribution = list(
-        emp_qs_all.values('nationality__name')
-        .annotate(c=Count('id'))
-        .order_by('-c')[:6]
-    )
-    max_nationality = max((n['c'] for n in nationality_distribution), default=1) or 1
-
-    stats = {
-        'employees_total': emp_status_counts['total'] or 0,
-        'employees_active': emp_status_counts['active'] or 0,
-        'employees_leave': emp_status_counts['leave'] or 0,
-        'employees_suspended': emp_status_counts['suspended'] or 0,
-        'employees_terminated': emp_status_counts['terminated'] or 0,
-        'employment_requests_open': er_open_count,
-        'pending_actions_open': pa_open_count,
-        'clearance_open': clearance_count,
-        'branches_count': Branch.objects.filter(is_deleted=False).count() if request.user.is_superuser else len(accessible_branch_ids),
-    }
 
     context = {
-        'stats': stats,
-        'branch_distribution': branch_distribution,
-        'max_branch': max_branch,
-        'gender_distribution': gender_distribution,
-        'max_gender': max_gender,
-        'nationality_distribution': nationality_distribution,
-        'max_nationality': max_nationality,
+        **overview,
+        'dashboard_overview_cached': _overview_cached,
         'show_overview': bool(request.user.is_superuser or _is_general_manager(request.user)),
         'is_branch_manager': False,
         'pending_requests': [],
