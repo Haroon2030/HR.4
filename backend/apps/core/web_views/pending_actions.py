@@ -228,10 +228,7 @@ def list_pending_actions(request):
     _MERGE_LIMIT = 200
     rows = [_wrap_action(a) for a in qs.order_by('-requested_at')[:_MERGE_LIMIT]]
     rows += [_wrap_hire(r) for r in qs_hire.order_by('-created_at')[:_MERGE_LIMIT]]
-    rows_may_be_truncated = (
-        qs.order_by('-requested_at')[_MERGE_LIMIT:_MERGE_LIMIT + 1].exists()
-        or qs_hire.order_by('-created_at')[_MERGE_LIMIT:_MERGE_LIMIT + 1].exists()
-    )
+    rows_may_be_truncated = len(rows) >= _MERGE_LIMIT
     rows.sort(key=lambda x: x.updated_at or x.requested_at, reverse=True)
 
     # ─ بحث ذكي عبر الحقول ────────────────────────────────────────

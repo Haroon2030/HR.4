@@ -218,9 +218,12 @@ def create_employee_full(request):
 @employee_branch_access_required
 def view_employee(request, employee_id):
     """عرض بيانات موظف للقراءة فقط"""
-    from apps.employees.models import Employee
+    from django.db.models import Prefetch
+    from apps.employees.models import Employee, EmployeeStatement
     from apps.departments.models import Department
     from apps.core.models import Branch
+
+    requested_tab = (request.GET.get('tab') or '').strip() or None
 
     employee = get_object_or_404(
         Employee.objects.select_related(
@@ -228,17 +231,30 @@ def view_employee(request, employee_id):
             'profession', 'sponsorship', 'insurance', 'insurance_class',
             'employment_request', 'employment_request__requested_by',
             'employment_request__reviewed_by',
+        ).prefetch_related(
+            'custodies',
+            'business_trips',
+            'loans',
+            'absences',
+            Prefetch(
+                'statements_log',
+                queryset=EmployeeStatement.objects.select_related('created_by').order_by(
+                    '-statement_date', '-created_at',
+                ),
+            ),
+            'accruals_ledger__payroll_run',
         ),
         id=employee_id,
     )
     departments = Department.objects.order_by('name')
-    branches = Branch.objects.order_by('name')
-    statements_count = employee.statements_log.filter(
-        statement_type__in=['statement', 'warning', 'final_warning', 'acknowledgment', 'other']
-    ).count()
-    salary_adjusts = employee.statements_log.filter(
-        statement_type='salary_adjust'
-    ).select_related('created_by').order_by('-statement_date', '-created_at')
+    branches = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
+    stmt_types = {'statement', 'warning', 'final_warning', 'acknowledgment', 'other'}
+    statements_count = sum(
+        1 for st in employee.statements_log.all() if st.statement_type in stmt_types
+    )
+    salary_adjusts = [
+        st for st in employee.statements_log.all() if st.statement_type == 'salary_adjust'
+    ]
 
     # توقّع الرقم المتسلسل التالي للإفادات (للمعاينة في النموذج)
     from apps.employees.models import EmployeeStatement
@@ -254,12 +270,15 @@ def view_employee(request, employee_id):
     except (ValueError, TypeError):
         schedule_boxes = []
 
-    # Custodies / Business Trips / Job Offers / Accruals (historical tabs)
-    custodies = employee.custodies.all().order_by('-received_at', '-id')
-    active_custodies = employee.custodies.filter(status='active').order_by('-received_at')
-    business_trips = employee.business_trips.all().order_by('-start_date', '-id')
-    loans = employee.loans.all().order_by('-issued_at', '-id')
-    absences = employee.absences.all().order_by('-absence_date', '-id')
+    custodies = sorted(employee.custodies.all(), key=lambda c: (c.received_at, c.id), reverse=True)
+    active_custodies = [c for c in custodies if c.status == 'active']
+    business_trips = sorted(
+        employee.business_trips.all(), key=lambda t: (t.start_date, t.id), reverse=True,
+    )
+    loans = sorted(employee.loans.all(), key=lambda ln: (ln.issued_at, ln.id), reverse=True)
+    absences = sorted(
+        employee.absences.all(), key=lambda a: (a.absence_date, a.id), reverse=True,
+    )
 
     from apps.employees.services.contract_rules import (
         fourth_year_start,
@@ -287,8 +306,9 @@ def view_employee(request, employee_id):
 
         accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
 
-        # تهيئة تلقائية: إذا لم يكن هناك أي سجل وعنده تاريخ مباشرة
-        if not accruals_qs.exists() and employee.hire_date:
+        # تهيئة أولية فقط عند فتح تبويب المخصصات (تجنب كتابة DB على كل عرض)
+        init_ledger = requested_tab == 'accruals' and employee.hire_date
+        if init_ledger and not accruals_qs.exists():
             today = timezone.now().date()
             service_days = (today - employee.hire_date).days
             if service_days >= 1:
@@ -374,7 +394,6 @@ def view_employee(request, employee_id):
 
     from apps.core.employee_tab_permissions import enrich_employee_page_context
 
-    requested_tab = (request.GET.get('tab') or '').strip() or None
     ctx = enrich_employee_page_context(request.user, {
         'employee': employee,
         'departments': departments,
@@ -456,7 +475,13 @@ def edit_employee(request, employee_id):
     from apps.employees.models import Employee
     from apps.employees.forms import EmployeeForm
 
-    employee = get_object_or_404(Employee, id=employee_id)
+    employee = get_object_or_404(
+        Employee.objects.select_related(
+            'branch', 'department', 'administration', 'cost_center', 'nationality',
+            'profession', 'sponsorship', 'insurance', 'insurance_class', 'bank',
+        ),
+        id=employee_id,
+    )
 
     if request.method == 'POST':
         files = _prepare_employee_upload_files(request)

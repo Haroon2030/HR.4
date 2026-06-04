@@ -128,7 +128,14 @@ def _fmt_employee_administration(employee) -> str:
     return code or name or '—'
 
 
-def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
+MAX_DAILY_ATTENDANCE_ROWS = 15_000
+
+
+def build_daily_attendance_rows(
+    qs: QuerySet,
+    *,
+    max_rows: int | None = MAX_DAILY_ATTENDANCE_ROWS,
+) -> list[DailyAttendanceRow]:
     """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
     device_ids = set(qs.values_list('device_id', flat=True).distinct())
     enroll_map = load_enrollment_employee_map(device_ids)
@@ -195,6 +202,8 @@ def build_daily_attendance_rows(qs: QuerySet) -> list[DailyAttendanceRow]:
         )
 
     rows.sort(key=lambda r: r.sort_key, reverse=True)
+    if max_rows is not None and len(rows) > max_rows:
+        rows = rows[:max_rows]
     return rows
 
 

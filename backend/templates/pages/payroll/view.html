@@ -73,7 +73,7 @@
         <div class="payroll-lines-hd">
             <h3>
                 <i data-lucide="users" class="w-4 h-4 inline-block ml-1"></i>
-                أسطر المسير ({{ lines.count }})
+                أسطر المسير ({{ lines_total }})
             </h3>
         </div>
         <div class="overflow-x-auto">
@@ -144,6 +144,19 @@
                 {% endif %}
             </table>
         </div>
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+            <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+            <div class="flex gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

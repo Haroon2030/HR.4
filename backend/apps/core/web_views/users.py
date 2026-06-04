@@ -55,18 +55,24 @@ def list_users(request):
     """قائمة المستخدمين والأدوار"""
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    users = order_users_queryset(
+    from django.core.paginator import Paginator
+
+    users_qs = order_users_queryset(
         filter_users_queryset(
             request.user,
             User.objects.select_related('profile__role', 'profile__branch').all(),
         )
     )
+    users_paginator = Paginator(users_qs, 25)
+    users_page = users_paginator.get_page(request.GET.get('users_page'))
     roles = order_roles_queryset(
         Role.objects.filter(is_active=True).prefetch_related('users')
     )
     return render(request, 'pages/users/list.html', {
-        'users': users,
-        'roles': roles
+        'users': users_page.object_list,
+        'users_page': users_page,
+        'users_total': users_paginator.count,
+        'roles': roles,
     })
 
 @login_required

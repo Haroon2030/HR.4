@@ -158,7 +158,13 @@ def dashboard_view(request):
         assigned_officer=request.user,
         status=PendingAction.Status.PENDING_OFFICER,
     )
-    if user_emp_qs.exists() or user_actions_qs.exists() or _is_hr_officer(request.user) or request.user.is_superuser:
+    has_officer_work = (
+        user_emp_qs[:1].exists()
+        or user_actions_qs[:1].exists()
+        or _is_hr_officer(request.user)
+        or request.user.is_superuser
+    )
+    if has_officer_work:
         context['is_hr_officer'] = True
         context['officer_employment_requests'] = user_emp_qs.order_by('-assigned_at')
         context['officer_pending_actions'] = user_actions_qs.order_by('-assigned_at')

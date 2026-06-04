@@ -354,41 +354,50 @@ def lock_payroll_run(run: PayrollRun, user):
             if lg.employee_id not in last_ledger_by_emp:
                 last_ledger_by_emp[lg.employee_id] = lg
 
+    def _ids_from_breakdown(key: str) -> list:
+        collected = []
+        for ln in line_list:
+            collected.extend(x['id'] for x in (ln.breakdown or {}).get(key, []))
+        return collected
+
+    absence_ids = _ids_from_breakdown('absences')
+    if absence_ids:
+        EmployeeAbsence.objects.filter(id__in=absence_ids).update(applied_to_payroll=run)
+
+    leave_ids = _ids_from_breakdown('unpaid_leaves')
+    if leave_ids:
+        EmployeeLeave.objects.filter(id__in=leave_ids).update(applied_to_payroll=run)
+
+    penalty_ids = _ids_from_breakdown('penalties')
+    if penalty_ids:
+        EmployeeStatement.objects.filter(id__in=penalty_ids).update(applied_to_payroll=run)
+
     loans_to_mark_paid = []
-
-    for line in line_list:
-        bd = line.breakdown or {}
-
-        ids = [x['id'] for x in bd.get('absences', [])]
-        if ids:
-            EmployeeAbsence.objects.filter(id__in=ids).update(applied_to_payroll=run)
-
-        ids = [x['id'] for x in bd.get('unpaid_leaves', [])]
-        if ids:
-            EmployeeLeave.objects.filter(id__in=ids).update(applied_to_payroll=run)
-
-        ids = [x['id'] for x in bd.get('loan_installments', [])]
-        if ids:
-            LoanInstallment.objects.filter(id__in=ids).update(
-                applied_to_payroll=run, status=LoanInstallment.Status.PAID
-            )
-            inst_rows = LoanInstallment.objects.filter(id__in=ids).select_related('loan')
-            loan_ids = {i.loan_id for i in inst_rows}
+    loan_inst_ids = _ids_from_breakdown('loan_installments')
+    if loan_inst_ids:
+        LoanInstallment.objects.filter(id__in=loan_inst_ids).update(
+            applied_to_payroll=run, status=LoanInstallment.Status.PAID,
+        )
+        inst_rows = list(
+            LoanInstallment.objects.filter(id__in=loan_inst_ids).select_related('loan'),
+        )
+        loan_ids = {i.loan_id for i in inst_rows}
+        if loan_ids:
             loans_with_pending = set(
                 LoanInstallment.objects.filter(
                     loan_id__in=loan_ids,
                     status=LoanInstallment.Status.PENDING,
-                ).values_list('loan_id', flat=True)
+                ).values_list('loan_id', flat=True),
             )
             for inst in inst_rows:
                 loan = inst.loan
-                if loan.id not in loans_with_pending and loan.status == EmployeeLoan.Status.ACTIVE:
+                if (
+                    loan.id not in loans_with_pending
+                    and loan.status == EmployeeLoan.Status.ACTIVE
+                ):
                     loans_to_mark_paid.append(loan)
 
-        ids = [x['id'] for x in bd.get('penalties', [])]
-        if ids:
-            EmployeeStatement.objects.filter(id__in=ids).update(applied_to_payroll=run)
-
+    for line in line_list:
         sid = transaction.savepoint()
         try:
             last_ledger = last_ledger_by_emp.get(line.employee_id)
@@ -507,11 +516,18 @@ def unlock_payroll_run(run: PayrollRun, user):
         loan__status=EmployeeLoan.Status.PAID,  # سلفتها مُعلَّمة مدفوعة
     ).values_list('loan_id', flat=True).distinct()
 
-    for loan in EmployeeLoan.objects.filter(id__in=affected_loan_ids):
-        # إذا عاد لها أقساط معلّقة → أعد الحالة لـ ACTIVE
-        if loan.installments_log.filter(status=LoanInstallment.Status.PENDING).exists():
-            loan.status = EmployeeLoan.Status.ACTIVE
-            loan.save(update_fields=['status'])
+    if affected_loan_ids:
+        loans_with_pending = set(
+            LoanInstallment.objects.filter(
+                loan_id__in=affected_loan_ids,
+                status=LoanInstallment.Status.PENDING,
+            ).values_list('loan_id', flat=True),
+        )
+        if loans_with_pending:
+            EmployeeLoan.objects.filter(
+                id__in=loans_with_pending,
+                status=EmployeeLoan.Status.PAID,
+            ).update(status=EmployeeLoan.Status.ACTIVE)
 
     # إعادة المسير لحالة مسودة
     run.status = PayrollRun.Status.DRAFT

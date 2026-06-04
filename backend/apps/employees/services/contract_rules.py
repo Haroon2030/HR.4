@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
+from functools import lru_cache
 
 from django.db.models import Q
 
@@ -36,8 +37,9 @@ def is_saudi_nationality(nationality) -> bool:
     return 'سعود' in lowered
 
 
-def saudi_nationality_ids() -> list[int]:
-    return list(
+@lru_cache(maxsize=1)
+def saudi_nationality_ids() -> tuple[int, ...]:
+    return tuple(
         Nationality.objects.filter(
             Q(name__icontains='سعود') | Q(code__iexact='SA') | Q(code__iexact='SAU'),
             is_deleted=False,

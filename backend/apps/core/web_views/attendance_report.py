@@ -70,18 +70,36 @@ def _punches_for_report(request, filters: dict):
 
 @permission_required('attendance.view')
 def attendance_report(request):
+    from apps.core.utils.attendance_filters import clamp_attendance_date_range
+
     filters = _apply_default_date_filters(_parse_filters(request))
+    filters, date_clamped = clamp_attendance_date_range(filters)
+    if date_clamped:
+        messages.warning(
+            request,
+            'تم تقييد فترة التقرير إلى 93 يوماً كحد أقصى لحماية الأداء.',
+        )
     qs = _punches_for_report(request, filters)
     punch_stats = get_punch_stats(qs)
     all_rows = build_daily_attendance_rows(qs)
+    rows_truncated = len(all_rows) >= 15_000
     summary = summarize_daily_rows(all_rows, punch_total=punch_stats['total'])
+    if rows_truncated:
+        messages.info(
+            request,
+            'تم عرض أول 15000 صف يومي فقط — ضيّق الفترة أو الفلاتر لعرض كامل.',
+        )
 
-    daily_per_page = int(request.GET.get('per_page') or 50)
+    from apps.core.utils.pagination import clamp_page_size
+
+    daily_per_page = clamp_page_size(request.GET.get('per_page'), default=50, maximum=200)
     daily_paginator = Paginator(all_rows, per_page=daily_per_page)
     daily_page = daily_paginator.get_page(request.GET.get('page'))
 
     punches_qs = qs.order_by(*PUNCH_LIST_ORDERING)
-    punches_per_page = int(request.GET.get('punches_per_page') or 100)
+    punches_per_page = clamp_page_size(
+        request.GET.get('punches_per_page'), default=100, maximum=200,
+    )
     punches_paginator = Paginator(punches_qs, per_page=punches_per_page)
     punches_page = punches_paginator.get_page(request.GET.get('punches_page'))
 
@@ -119,6 +137,8 @@ def attendance_report(request):
         'daily_per_page': daily_per_page,
         'punches_per_page': punches_per_page,
         'punch_types': AttendancePunch.PunchType.choices,
+        'date_range_clamped': date_clamped,
+        'daily_rows_truncated': rows_truncated,
     })
 
 
@@ -133,9 +153,15 @@ def attendance_report_export(request):
         messages.error(request, 'مكتبة openpyxl غير مثبتة.')
         return redirect('web:attendance_report')
 
+    from apps.core.utils.attendance_filters import clamp_attendance_date_range
+
     filters = _apply_default_date_filters(_parse_filters(request))
+    filters, _ = clamp_attendance_date_range(filters)
     qs = _punches_for_report(request, filters)
-    daily_table = daily_rows_to_table(build_daily_attendance_rows(qs))
+    daily_rows = build_daily_attendance_rows(qs)
+    if len(daily_rows) > 5000:
+        daily_rows = daily_rows[:5000]
+    daily_table = daily_rows_to_table(daily_rows)
     punch_table = punches_to_table_rows(qs.order_by(*PUNCH_LIST_ORDERING))
 
     wb = Workbook()

@@ -168,6 +168,8 @@ def _validate_payroll_build(filters):
 
 def _build_payroll_runs(request, filters):
     """بناء مسير لكل فرع. يُرجع (runs_built, errors)."""
+    from django.db import transaction
+
     branch_ids = filters['branch_ids']
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
@@ -180,16 +182,22 @@ def _build_payroll_runs(request, filters):
     )
     runs_built = []
     errors = []
-    for branch in branches:
-        try:
-            run = build_payroll_run(
-                branch, filters['year'], filters['month'], request.user,
-                salary_mode=filters['salary_mode'],
-                sponsorship_id=sponsorship_id,
-            )
-            runs_built.append(run)
-        except ValueError as e:
-            errors.append(f'{branch.name}: {e}')
+    try:
+        with transaction.atomic():
+            for branch in branches:
+                try:
+                    runs_built.append(
+                        build_payroll_run(
+                            branch, filters['year'], filters['month'], request.user,
+                            salary_mode=filters['salary_mode'],
+                            sponsorship_id=sponsorship_id,
+                        )
+                    )
+                except ValueError as e:
+                    errors.append(f'{branch.name}: {e}')
+                    raise
+    except ValueError:
+        return [], errors
     return runs_built, errors
 
 
@@ -264,11 +272,11 @@ def list_payroll_runs(request):
             'employee', 'run', 'run__branch',
         ).order_by('run__branch__name', 'employee__name')
 
-        grand_totals = lines_qs.aggregate(
+        grand_totals = runs_qs.aggregate(
             total_earnings=Sum('total_earnings'),
             total_deductions=Sum('total_deductions'),
-            total_net=Sum('net_salary'),
-            employees_count=Count('id'),
+            total_net=Sum('total_net'),
+            employees_count=Sum('employees_count'),
         )
 
         from django.core.paginator import Paginator
@@ -339,10 +347,20 @@ def view_payroll_run(request, run_id):
     if not request.user.is_superuser and run.branch not in user_branches:
         raise Http404()
 
-    lines = run.lines.select_related('employee').order_by('employee__name')
+    from django.core.paginator import Paginator
+    from apps.core.utils.pagination import clamp_page_size
+
+    lines_qs = run.lines.select_related('employee').order_by('employee__name')
+    paginator = Paginator(
+        lines_qs,
+        per_page=clamp_page_size(request.GET.get('per_page'), default=50, maximum=200),
+    )
+    page_obj = paginator.get_page(request.GET.get('page') or 1)
     return render(request, 'pages/payroll/view.html', {
         'run': run,
-        'lines': lines,
+        'lines': page_obj.object_list,
+        'page_obj': page_obj,
+        'lines_total': paginator.count,
     })
 
 

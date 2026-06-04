@@ -140,7 +140,12 @@ def attendance_records_list(request):
         qs = qs.filter(employee_id=filters['employee_id'])
     stats = get_punch_stats(qs, device_id=filters['device_id'])
     qs = qs.order_by(*PUNCH_LIST_ORDERING)
-    paginator = Paginator(qs, per_page=int(request.GET.get('per_page') or 100))
+    from apps.core.utils.pagination import clamp_page_size
+
+    paginator = Paginator(
+        qs,
+        per_page=clamp_page_size(request.GET.get('per_page'), default=100, maximum=200),
+    )
     page_obj = paginator.get_page(request.GET.get('page'))
 
     devices = get_biometric_devices_queryset(request.user)

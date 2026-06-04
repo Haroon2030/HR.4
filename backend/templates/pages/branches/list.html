@@ -4,13 +4,30 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4"
      x-data="{
-        activeTab: (() => {
-            const h = (window.location.hash || '').replace('#', '');
-            const tabs = ['branches','cost_centers','departments','administrations','nationalities','professions','sponsorships','insurances','insurance_classes','buildings','banks'];
-            return tabs.includes(h) ? h : 'branches';
-        })()
+        activeTab: '{{ active_tab|default:'branches' }}',
+        orgTabs: ['branches','cost_centers','departments','administrations','nationalities','professions','sponsorships','insurances','insurance_classes','buildings','banks'],
      }"
-     x-init="$watch('activeTab', val => { history.replaceState(null, '', '#' + val); lucide.createIcons(); })">
+     x-init="
+        const h = (window.location.hash || '').replace('#', '');
+        if (h && orgTabs.includes(h) && h !== activeTab) {
+            const u = new URL(window.location.href);
+            u.searchParams.set('tab', h);
+            window.location.replace(u.toString());
+        }
+        $watch('activeTab', val => {
+            const u = new URL(window.location.href);
+            if (u.searchParams.get('tab') === val) {
+                u.hash = val;
+                history.replaceState(null, '', u.pathname + u.search + u.hash);
+                lucide.createIcons();
+                return;
+            }
+            u.searchParams.set('tab', val);
+            u.hash = val;
+            window.location.href = u.toString();
+        });
+        lucide.createIcons();
+     ">
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>

@@ -136,7 +136,7 @@
             </button>
         {% include "components/page_tabs_body_start.html" %}
 
-        <!-- Tab Content: Employees -->
+        <!-- Tab Content: Employees (سجلات الموارد البشرية) -->
         <div x-show="activeTab === 'employees'" class="fade-in">
             {% if employees %}
             <div class="overflow-x-auto">
@@ -144,10 +144,11 @@
                     <thead class="bg-slate-50 border-b border-slate-200">
                         <tr>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">الموظف</th>
-                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">البريد الإلكتروني</th>
-                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">الدور</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">رقم الهوية</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">القسم</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">المهنة</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">الحالة</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">إجراء</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -158,32 +159,27 @@
                                     <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                                         <i data-lucide="user" class="w-5 h-5 text-primary-600"></i>
                                     </div>
-                                    <span class="text-sm font-medium text-slate-900">{{ employee.user.get_full_name|default:employee.user.username }}</span>
+                                    <span class="text-sm font-medium text-slate-900">{{ employee.name }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-500">{{ employee.user.email }}</td>
-                            <td class="px-6 py-4">
-                                {% if employee.role %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-md
-                                    {% if employee.role.role_type == 'admin' %}bg-purple-100 text-purple-800
-                                    {% elif employee.role.role_type == 'hr_manager' %}bg-blue-100 text-blue-800
-                                    {% elif employee.role.role_type == 'manager' %}bg-emerald-100 text-emerald-800
-                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                    {{ employee.role.get_role_type_display }}
-                                </span>
-                                {% else %}
-                                <span class="text-sm text-slate-400">—</span>
-                                {% endif %}
-                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500 font-mono">{{ employee.id_number|default:"—" }}</td>
                             <td class="px-6 py-4 text-sm text-slate-500">
                                 {% if employee.department %}{{ employee.department.name }}{% else %}—{% endif %}
                             </td>
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                {% if employee.profession %}{{ employee.profession.name }}{% else %}—{% endif %}
+                            </td>
                             <td class="px-6 py-4">
-                                {% if employee.user.is_active %}
+                                {% if employee.status == 'active' %}
                                 <span class="px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">نشط</span>
+                                {% elif employee.status == 'terminated' %}
+                                <span class="px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800 rounded-full">منتهي</span>
                                 {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded-full">معطل</span>
+                                <span class="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded-full">{{ employee.get_status_display }}</span>
                                 {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-left">
+                                <a href="{% url 'web:view_employee' employee.id %}" class="text-xs text-primary-600 hover:text-primary-800 font-medium">عرض الملف</a>
                             </td>
                         </tr>
                         {% endfor %}

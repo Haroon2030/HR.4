@@ -22,14 +22,15 @@ from apps.core.services.access_control import filter_branches_queryset, get_acce
 @login_required
 @permission_required('branches.view')
 def list_branches(request):
-    """قائمة الفروع - شاشة بتبويبات"""
+    """قائمة الفروع - شاشة بتبويبات (تحميل بيانات التبويب النشط فقط)."""
     from apps.cost_centers.models import CostCenter
     from apps.departments.models import Department
     from apps.setup.models import (
         Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
         Building, Bank, Administration,
     )
-    
+
+    active_tab = (request.GET.get('tab') or 'branches').strip()
     branches = filter_branches_queryset(
         request.user,
         Branch.objects.select_related('company', 'manager').all(),
@@ -40,28 +41,43 @@ def list_branches(request):
     if branch_ids is not None:
         cost_centers = cost_centers.filter(branch_id__in=branch_ids)
         departments = departments.filter(branch_id__in=branch_ids)
-    nationalities = Nationality.objects.all()
-    professions = Profession.objects.all()
-    sponsorships = Sponsorship.objects.all()
-    insurances = Insurance.objects.all()
-    insurance_classes = InsuranceClass.objects.all()
-    buildings = Building.objects.filter(is_deleted=False).order_by('name')
-    banks = Bank.objects.filter(is_deleted=False).order_by('name')
-    administrations = Administration.objects.filter(is_deleted=False).select_related('manager').order_by('code', 'name')
-    
+
+    setup_empty = {
+        'nationalities': [],
+        'professions': [],
+        'sponsorships': [],
+        'insurances': [],
+        'insurance_classes': [],
+        'buildings': [],
+        'banks': [],
+        'administrations': [],
+    }
+    if active_tab == 'nationalities':
+        setup_empty['nationalities'] = list(Nationality.objects.all())
+    elif active_tab == 'professions':
+        setup_empty['professions'] = list(Profession.objects.all())
+    elif active_tab == 'sponsorships':
+        setup_empty['sponsorships'] = list(Sponsorship.objects.all())
+    elif active_tab == 'insurances':
+        setup_empty['insurances'] = list(Insurance.objects.all())
+    elif active_tab == 'insurance_classes':
+        setup_empty['insurance_classes'] = list(InsuranceClass.objects.all())
+    elif active_tab == 'buildings':
+        setup_empty['buildings'] = list(Building.objects.filter(is_deleted=False).order_by('name'))
+    elif active_tab == 'banks':
+        setup_empty['banks'] = list(Bank.objects.filter(is_deleted=False).order_by('name'))
+    elif active_tab == 'administrations':
+        setup_empty['administrations'] = list(
+            Administration.objects.filter(is_deleted=False).select_related('manager').order_by('code', 'name'),
+        )
+
     return render(request, 'pages/branches/list.html', {
         'branches': branches,
         'cost_centers': cost_centers,
         'departments': departments,
-        'nationalities': nationalities,
-        'professions': professions,
-        'sponsorships': sponsorships,
-        'insurances': insurances,
-        'insurance_classes': insurance_classes,
-        'buildings': buildings,
-        'banks': banks,
-        'administrations': administrations,
+        'active_tab': active_tab,
         'org_perms': org_structure_permissions(request.user),
+        **setup_empty,
     })
 
 @login_required
@@ -73,15 +89,21 @@ def view_branch(request, branch_id):
     if accessible is not None and branch.id not in accessible:
         messages.error(request, 'لا تملك صلاحية عرض هذا الفرع.')
         return redirect('web:list_branches')
-    employees = branch.employees.select_related('user', 'role').all()
+    employees = (
+        branch.employee_records.filter(is_deleted=False)
+        .select_related('department', 'cost_center', 'profession')
+        .order_by('name')
+    )
+    branch_users = branch.employees.select_related('user', 'role').all()
     cost_centers = branch.cost_centers.filter(is_deleted=False).order_by('code')
     departments = branch.departments.filter(is_deleted=False).select_related('cost_center').order_by('code')
-    
+
     return render(request, 'pages/branches/detail.html', {
         'branch': branch,
         'employees': employees,
+        'branch_users': branch_users,
         'cost_centers': cost_centers,
-        'departments': departments
+        'departments': departments,
     })
 
 @login_required

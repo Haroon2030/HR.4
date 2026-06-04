@@ -63,6 +63,22 @@ REPORTS = merge_reports_catalog(_BASE_REPORTS, PRIMARY_REPORT_SPECS)
 MAX_REPORT_ROWS = 5000
 
 
+def _materialize_qs(qs, max_rows: int = MAX_REPORT_ROWS):
+    """تحميل صفوف من ORM بحد أقصى في SQL (استعلام +1 للكشف عن التجاوز)."""
+    items = list(qs[: max_rows + 1])
+    if len(items) > max_rows:
+        return items[:max_rows], True
+    return items, False
+
+
+def _report_payload(columns, rows, truncated: bool = False, **extra) -> dict:
+    data = {'columns': columns, 'rows': rows, **extra}
+    if truncated:
+        data['truncated'] = True
+        data['max_rows'] = MAX_REPORT_ROWS
+    return data
+
+
 def _cap_report_data(data: dict) -> dict:
     """يحدّ عدد صفوف التقرير لحماية الذاكرة ووقت التصدير."""
     rows = data.get('rows') or []
@@ -171,6 +187,7 @@ def _build_headcount_summary(req):
     qs = apply_branch_filter(qs, filters['branch_ids'])
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name, e.employee_number or '—',
@@ -180,21 +197,23 @@ def _build_headcount_summary(req):
             labels.get(e.status, e.status),
             str(e.hire_date or '—'),
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 def _build_branches(req):
     cols = ['الاسم', 'الرقم الوظيفي', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'الإجمالي']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
-    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(e.total_salary)] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.employee_number or '—', e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(e.total_salary)] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 def _build_departments_overview(req):
     cols = ['الاسم', 'الفرع', 'القسم', 'الإدارة', 'مركز التكلفة', 'المسمى الوظيفي']
     qs = _filtered_employees(req)[0].select_related(
         'branch', 'department', 'administration', 'cost_center', 'profession',
     ).order_by('branch__name', 'department__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -204,9 +223,9 @@ def _build_departments_overview(req):
             e.cost_center.name if e.cost_center else '—',
             e.profession.name if e.profession else '—',
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 
 def _build_administrations_overview(req):
@@ -214,8 +233,9 @@ def _build_administrations_overview(req):
     qs = _filtered_employees(req)[0].select_related(
         'branch', 'administration', 'department', 'cost_center',
     ).order_by('administration__code', 'administration__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = []
-    for e in qs:
+    for e in employees:
         adm = e.administration
         rows.append([
             e.name,
@@ -225,7 +245,7 @@ def _build_administrations_overview(req):
             e.department.name if e.department else '—',
             e.cost_center.name if e.cost_center else '—',
         ])
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 
 def _build_cost_centers_overview(req):
@@ -233,6 +253,7 @@ def _build_cost_centers_overview(req):
     qs = _filtered_employees(req)[0].select_related(
         'branch', 'department', 'administration', 'cost_center',
     ).order_by('cost_center__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -242,24 +263,26 @@ def _build_cost_centers_overview(req):
             _fmt_administration(e),
             str(e.total_salary),
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 def _build_salary_expenses(req):
     cols = ['الاسم', 'الفرع', 'الأساسي', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'الإجمالي']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(e.total_salary)] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.basic_salary), str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(e.total_salary)] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 def _build_allowances_breakdown(req):
     cols = ['الاسم', 'الفرع', 'سكن', 'نقل', 'إضافي', 'كاش', 'تغذية', 'إجمالي البدلات']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = []
-    for e in qs:
+    for e in employees:
         t = e.housing_allowance + e.transport_allowance + e.other_allowance + e.cash_amount + e.meal_allowance
         rows.append([e.name, e.branch.name if e.branch else '—', str(e.housing_allowance), str(e.transport_allowance), str(e.other_allowance), str(e.cash_amount), str(e.meal_allowance), str(t)])
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 def _build_deductions_breakdown(req):
     from apps.payroll.models import PayrollRun
@@ -267,15 +290,17 @@ def _build_deductions_breakdown(req):
     cols = ['الموظف', 'غياب', 'إجازة بدون راتب', 'سلف', 'مخالفات', 'تأمينات', 'أخرى', 'إجمالي الخصم']
     if not last:
         return {'columns': cols, 'rows': [], 'note': 'لا يوجد مسير مُرحَّل'}
-    lines = last.lines.select_related('employee').order_by('employee__name')
-    rows = [[l.employee.name, str(l.absence_deduction), str(l.unpaid_leave_deduction), str(l.loan_deduction), str(l.penalty_deduction), str(l.insurance_deduction), str(l.other_deduction), str(l.total_deductions)] for l in lines]
-    return {'columns': cols, 'rows': rows, 'note': f'من مسير: {last}'}
+    lines_qs = last.lines.select_related('employee').order_by('employee__name')
+    line_items, truncated = _materialize_qs(lines_qs)
+    rows = [[l.employee.name, str(l.absence_deduction), str(l.unpaid_leave_deduction), str(l.loan_deduction), str(l.penalty_deduction), str(l.insurance_deduction), str(l.other_deduction), str(l.total_deductions)] for l in line_items]
+    return _report_payload(cols, rows, truncated, note=f'من مسير: {last}')
 
 def _build_insurance_costs(req):
     cols = ['الاسم', 'الفرع', 'شركة التأمين', 'فئة التأمين', 'نسبة الخصم %']
     qs = _filtered_employees(req)[0].select_related('branch', 'insurance', 'insurance_class').order_by('insurance__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', e.insurance.name if e.insurance else '—', e.insurance_class.name if e.insurance_class else '—', str(e.insurance_deduction_rate)] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', e.insurance.name if e.insurance else '—', e.insurance_class.name if e.insurance_class else '—', str(e.insurance_deduction_rate)] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 def _build_new_hires(req):
     from apps.employees.models import Employee
@@ -287,6 +312,7 @@ def _build_new_hires(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch', 'department', 'administration', 'nationality').order_by('-hire_date')
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name, e.employee_number or '—',
@@ -296,9 +322,9 @@ def _build_new_hires(req):
             str(e.hire_date or '—'),
             e.nationality.name if e.nationality else '—',
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows, 'note': f'تعيينات من {df} إلى {dt}'}
+    return _report_payload(cols, rows, truncated, note=f'تعيينات من {df} إلى {dt}')
 
 def _build_terminations(req):
     from apps.employees.models import Employee
@@ -310,28 +336,31 @@ def _build_terminations(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch').order_by('-end_date')
-    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—', str(e.total_salary)] for e in qs]
-    return {'columns': cols, 'rows': rows, 'note': f'تصفيات من {df} إلى {dt}'}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date or '—'), str(e.end_date or '—'), e.end_reason or '—', str(e.total_salary)] for e in employees]
+    return _report_payload(cols, rows, truncated, note=f'تصفيات من {df} إلى {dt}')
 
 def _build_tenure_analysis(req):
     today = date.today()
     cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'مدة الخدمة (سنة)', 'مدة الخدمة (يوم)']
     qs = _filtered_employees(req)[0].exclude(hire_date__isnull=True).select_related('branch').order_by('hire_date')
+    employees, truncated = _materialize_qs(qs)
     rows = []
-    for e in qs:
+    for e in employees:
         days = (today - e.hire_date).days
         years = round(days / 365.25, 1)
         rows.append([e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(years), str(days)])
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 def _build_health_cards(req):
     today = date.today()
     soon = today + timedelta(days=90)
     cols = ['الاسم', 'الفرع', 'حالة الكرت', 'تاريخ الانتهاء', 'الوضع']
     qs = _filtered_employees(req)[0].select_related('branch').order_by('branch__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     labels = {'available': 'متوفر', 'not_available': 'غير متوفر'}
     rows = []
-    for e in qs:
+    for e in employees:
         st = labels.get(e.health_card_status, e.health_card_status)
         exp = str(e.health_card_expiry) if e.health_card_expiry else '—'
         if not e.health_card_expiry:
@@ -343,7 +372,7 @@ def _build_health_cards(req):
         else:
             flag = '✅ ساري'
         rows.append([e.name, e.branch.name if e.branch else '—', st, exp, flag])
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 def _build_warnings(req):
     from apps.employees.models import EmployeeStatement
@@ -386,18 +415,22 @@ def _build_leaves(req):
 def _build_leave_balance(req):
     cols = ['الاسم', 'الفرع', 'تاريخ المباشرة', 'المستحق', 'المستخدم', 'المتبقي']
     qs = _filtered_employees(req)[0].exclude(hire_date__isnull=True).exclude(sponsorship__isnull=True).select_related('branch').order_by('branch__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(e.accrued_leave_days), str(e.available_leave_balance), str(e.remaining_leave_days)] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(e.accrued_leave_days), str(e.available_leave_balance), str(e.remaining_leave_days)] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 def _build_biometric_daily(req):
     from apps.attendance.selectors.daily_report import build_daily_attendance_rows, daily_rows_to_table
     from apps.attendance.selectors.punch_records import get_punch_queryset
-    from django.utils import timezone
-    from datetime import datetime
+    from apps.core.utils.attendance_filters import clamp_attendance_date_range
 
-    today = timezone.localdate()
     filters = _report_filters(req)
-    date_from, date_to = _parse_filter_dates(filters)
+    report_filters = {
+        'date_from': filters['date_from'],
+        'date_to': filters['date_to'],
+    }
+    report_filters, date_clamped = clamp_attendance_date_range(report_filters)
+    date_from, date_to = _parse_filter_dates({**filters, **report_filters})
     qs = get_punch_queryset(
         branch_ids=filters['branch_ids'],
         date_from=date_from,
@@ -405,9 +438,22 @@ def _build_biometric_daily(req):
     )
     if filters['sponsorship_ids']:
         qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
-    rows = build_daily_attendance_rows(qs)
-    data = daily_rows_to_table(rows)
-    data['note'] = f'من {date_from} إلى {date_to} — للفلترة الكاملة: قائمة البصمة → تقرير البصمة'
+    daily_rows = build_daily_attendance_rows(qs)
+    if len(daily_rows) > MAX_REPORT_ROWS:
+        daily_rows = daily_rows[:MAX_REPORT_ROWS]
+        truncated = True
+    else:
+        truncated = False
+    data = daily_rows_to_table(daily_rows)
+    note = f'من {date_from} إلى {date_to}'
+    if date_clamped:
+        note += ' — تم تقييد الفترة إلى 93 يوماً'
+    if truncated:
+        note += f' — عُرض أول {MAX_REPORT_ROWS} صف'
+    data['note'] = note + ' — للفلترة الكاملة: قائمة البصمة → تقرير البصمة'
+    if truncated:
+        data['truncated'] = True
+        data['max_rows'] = MAX_REPORT_ROWS
     return data
 
 
@@ -449,6 +495,7 @@ def _build_employees(req):
     qs = apply_branch_filter(qs, filters['branch_ids'])
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -460,9 +507,9 @@ def _build_employees(req):
             str(e.hire_date or '—'),
             e.phone or '—',
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 
 def _build_stopped(req):
@@ -479,6 +526,7 @@ def _build_stopped(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch').order_by('-end_date', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -488,9 +536,9 @@ def _build_stopped(req):
             e.end_reason or '—',
             labels.get(e.status, e.status),
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows, 'note': f'متوقفون — من {df} إلى {dt}'}
+    return _report_payload(cols, rows, truncated, note=f'متوقفون — من {df} إلى {dt}')
 
 
 def _build_statements(req):
@@ -533,6 +581,7 @@ def _build_housing(req):
     qs = _filtered_employees(req)[0].select_related('branch', 'housing', 'department').order_by(
         'housing__name', 'branch__name', 'name',
     )
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -541,9 +590,9 @@ def _build_housing(req):
             e.department.name if e.department else '—',
             e.phone or '—',
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 
 def _build_active_headcount(req):
@@ -555,6 +604,7 @@ def _build_active_headcount(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch', 'department', 'administration').order_by('branch__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -564,9 +614,9 @@ def _build_active_headcount(req):
             _fmt_administration(e),
             str(e.hire_date or '—'),
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 
 def _build_suspended(req):
@@ -579,6 +629,7 @@ def _build_suspended(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
     qs = qs.select_related('branch', 'department').order_by('branch__name', 'name')
+    employees, truncated = _materialize_qs(qs)
     rows = [
         [
             e.name,
@@ -588,9 +639,9 @@ def _build_suspended(req):
             labels.get(e.status, e.status),
             e.phone or '—',
         ]
-        for e in qs
+        for e in employees
     ]
-    return {'columns': cols, 'rows': rows}
+    return _report_payload(cols, rows, truncated)
 
 
 def _build_attendance_late(req):
@@ -598,9 +649,14 @@ def _build_attendance_late(req):
     from apps.attendance.models import EmployeeBiometricSettings
     from apps.attendance.selectors.daily_report import build_daily_attendance_rows
     from apps.attendance.selectors.punch_records import get_punch_queryset
+    from apps.core.utils.attendance_filters import clamp_attendance_date_range
 
     filters = _report_filters(req)
-    date_from, date_to = _parse_filter_dates(filters)
+    report_filters, date_clamped = clamp_attendance_date_range({
+        'date_from': filters['date_from'],
+        'date_to': filters['date_to'],
+    })
+    date_from, date_to = _parse_filter_dates({**filters, **report_filters})
     qs = get_punch_queryset(
         branch_ids=filters['branch_ids'],
         date_from=date_from,
@@ -609,6 +665,9 @@ def _build_attendance_late(req):
     if filters['sponsorship_ids']:
         qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     daily_rows = build_daily_attendance_rows(qs)
+    rows_truncated = len(daily_rows) > MAX_REPORT_ROWS
+    if rows_truncated:
+        daily_rows = daily_rows[:MAX_REPORT_ROWS]
     employee_ids = [r.employee_id for r in daily_rows if r.employee_id]
     settings_map = {
         s.employee_id: s
@@ -671,31 +730,39 @@ def _build_attendance_late(req):
             ' · '.join(notes),
         ])
 
-    return {
-        'columns': cols,
-        'rows': table_rows,
-        'note': f'من {date_from} إلى {date_to} — يظهر فقط من لديه إعدادات بصمة وتأخر فعلي',
-    }
+    note = f'من {date_from} إلى {date_to} — يظهر فقط من لديه إعدادات بصمة وتأخر فعلي'
+    if date_clamped:
+        note += ' — تم تقييد الفترة إلى 93 يوماً'
+    if rows_truncated:
+        note += f' — عُرض أول {MAX_REPORT_ROWS} يوم-موظف'
+    data = {'columns': cols, 'rows': table_rows, 'note': note}
+    if rows_truncated:
+        data['truncated'] = True
+        data['max_rows'] = MAX_REPORT_ROWS
+    return data
 
 def _build_gender(req):
     from apps.employees.models import Employee
     cols = ['الاسم', 'الفرع', 'الجنس', 'الجنسية', 'المهنة']
     labels = dict(Employee.Gender.choices)
     qs = _filtered_employees(req)[0].select_related('branch', 'nationality', 'profession').order_by('gender', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', labels.get(e.gender, e.gender or 'غير محدد'), e.nationality.name if e.nationality else '—', e.profession.name if e.profession else '—'] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', labels.get(e.gender, e.gender or 'غير محدد'), e.nationality.name if e.nationality else '—', e.profession.name if e.profession else '—'] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 def _build_nationality(req):
     cols = ['الاسم', 'الفرع', 'الجنسية', 'رقم الهوية', 'رقم الجوال']
     qs = _filtered_employees(req)[0].select_related('branch', 'nationality').order_by('nationality__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', e.nationality.name if e.nationality else '—', e.id_number or '—', e.phone or '—'] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', e.nationality.name if e.nationality else '—', e.id_number or '—', e.phone or '—'] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 def _build_professions(req):
     cols = ['الاسم', 'الفرع', 'المهنة', 'الجنسية', 'الراتب الإجمالي']
     qs = _filtered_employees(req)[0].select_related('branch', 'profession', 'nationality').order_by('profession__name', 'name')
-    rows = [[e.name, e.branch.name if e.branch else '—', e.profession.name if e.profession else '—', e.nationality.name if e.nationality else '—', str(e.total_salary)] for e in qs]
-    return {'columns': cols, 'rows': rows}
+    employees, truncated = _materialize_qs(qs)
+    rows = [[e.name, e.branch.name if e.branch else '—', e.profession.name if e.profession else '—', e.nationality.name if e.nationality else '—', str(e.total_salary)] for e in employees]
+    return _report_payload(cols, rows, truncated)
 
 BUILDERS = {
     'headcount_summary': _build_headcount_summary, 'branches': _build_branches,

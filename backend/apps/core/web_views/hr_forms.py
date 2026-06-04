@@ -234,7 +234,8 @@ def hr_forms_index(request):
         request.user,
         Employee.objects.filter(is_deleted=False)
         .select_related('branch', 'department', 'profession')
-        .order_by('name'),
+        .prefetch_related('loans')
+        .order_by('name')[:500],
     )
     visible_forms = [f for f in HR_FORMS if hr_form_allowed_for_user(request.user, f['key'])]
     return render(request, 'pages/hr_forms/index.html', {
