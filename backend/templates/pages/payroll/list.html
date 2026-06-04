@@ -11,6 +11,7 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm"
+              hx-boost="false"
               class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {% csrf_token %}
             <div id="payrollSponsorshipWrap">
@@ -69,6 +70,21 @@
             </div>
         </form>
     </div>
+
+    {% if not show_table %}
+    <div class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-600">
+        <i data-lucide="table-2" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
+        {% if not filter_branch_ids or not filter_salary_mode %}
+        <p class="font-semibold m-0">لعرض جدول المسير الموحّد</p>
+        <p class="text-sm mt-2 m-0">اختر <strong>الفروع</strong> و<strong>نوع الراتب</strong>
+            {% if filter_salary_mode == 'transfer' %} و<strong>شركة الكفالة</strong>{% endif %}
+            ، ثم اضغط <strong>بناء المسير</strong>.</p>
+        {% else %}
+        <p class="font-semibold m-0">لا توجد أسطر مسير لهذه المعايير</p>
+        <p class="text-sm mt-2 m-0">اضغط <strong>بناء المسير</strong> لإنشاء أو تحديث المسير، أو غيّر الفلاتر.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% if show_table %}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -198,23 +214,54 @@
     {% endif %}
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (window.lucide) lucide.createIcons();
+(function () {
+    function initPayrollPage(root) {
+        var scope = (root && root.querySelector) ? root : document;
+        if (window.lucide) lucide.createIcons();
+        if (window.hrInitFilterMultiselects) window.hrInitFilterMultiselects(scope);
 
-    const sponsorshipSel = document.getElementById('payrollSponsorship');
-    const sponsorshipWrap = document.getElementById('payrollSponsorshipWrap');
-    const salaryModeSel = document.querySelector('#payrollCreateForm select[name="salary_mode"]');
+        var form = scope.querySelector ? scope.querySelector('#payrollCreateForm') : null;
+        if (!form || form.dataset.payrollBound === '1') return;
+        form.dataset.payrollBound = '1';
 
-    function syncSponsorshipField() {
-        const isCash = salaryModeSel && salaryModeSel.value === 'cash';
-        if (!sponsorshipWrap || !sponsorshipSel) return;
-        sponsorshipWrap.style.display = isCash ? 'none' : '';
-        sponsorshipSel.required = !isCash;
-        if (isCash) sponsorshipSel.value = '';
+        var sponsorshipSel = scope.querySelector('#payrollSponsorship');
+        var sponsorshipWrap = scope.querySelector('#payrollSponsorshipWrap');
+        var salaryModeSel = form.querySelector('select[name="salary_mode"]');
+        var branchSel = scope.querySelector('#payrollBranch');
+
+        function syncBranchHiddenInputs() {
+            if (!branchSel) return;
+            form.querySelectorAll('input[data-payroll-branch-sync]').forEach(function (el) { el.remove(); });
+            Array.from(branchSel.options).forEach(function (opt) {
+                if (!opt.selected || !opt.value) return;
+                var h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'branch_id';
+                h.value = opt.value;
+                h.setAttribute('data-payroll-branch-sync', '1');
+                form.appendChild(h);
+            });
+        }
+
+        function syncSponsorshipField() {
+            var isCash = salaryModeSel && salaryModeSel.value === 'cash';
+            if (!sponsorshipWrap || !sponsorshipSel) return;
+            sponsorshipWrap.style.display = isCash ? 'none' : '';
+            sponsorshipSel.required = !isCash;
+            if (isCash) sponsorshipSel.value = '';
+        }
+
+        if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);
+        syncSponsorshipField();
+        form.addEventListener('submit', syncBranchHiddenInputs);
     }
 
-    if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);
-    syncSponsorshipField();
-});
+    window.hrInitPayrollPage = initPayrollPage;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { initPayrollPage(document); });
+    } else {
+        initPayrollPage(document);
+    }
+})();
 </script>
 {% endblock %}

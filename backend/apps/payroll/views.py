@@ -104,11 +104,12 @@ def _parse_payroll_form(request, user_branches):
     use_post = request.method == 'POST'
     branch_ids = parse_multi_filter_ids(
         request, 'branch_id', accessible_ids=accessible,
-    ) or []
+    )
     if not branch_ids and not use_post:
         branch_ids = parse_multi_filter_ids(
             request, 'branch', accessible_ids=accessible,
-        ) or []
+        )
+    branch_ids = branch_ids or []
 
     src = request.POST if use_post else request.GET
     year_raw = src.get('year')
@@ -251,7 +252,7 @@ def list_payroll_runs(request):
                         f'({total_emp} موظف في الجدول أدناه).',
                     )
         qs = _payroll_list_querystring(
-            branch_ids=filters['branch_ids'] or None,
+            branch_ids=filters['branch_ids'],
             year=filters['year'],
             month=filters['month'],
             salary_mode=filters['salary_mode'] or None,

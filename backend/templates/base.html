@@ -480,6 +480,12 @@
                     }
                 }
                 if (evt.detail.target && evt.detail.target.id === 'hr-page-inner') {
+                    if (window.hrInitFilterMultiselects) {
+                        window.hrInitFilterMultiselects(evt.detail.target);
+                    }
+                    if (window.hrInitPayrollPage) {
+                        window.hrInitPayrollPage(evt.detail.target);
+                    }
                     var main = document.querySelector('.hr-main');
                     if (main) {
                         main.scrollTop = 0;

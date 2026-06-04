@@ -243,13 +243,16 @@
         select.insertBefore(opt, select.firstChild);
     }
 
-    function init() {
-        document.querySelectorAll('select.hr-filter-ms:not(.hr-filter-ms-native)').forEach(initMultiselect);
-        document.querySelectorAll('select.hr-filter-select').forEach(ensureAllOption);
+    function init(root) {
+        const scope = root && root.querySelectorAll ? root : document;
+        scope.querySelectorAll('select.hr-filter-ms:not(.hr-filter-ms-native)').forEach(initMultiselect);
+        scope.querySelectorAll('select.hr-filter-select').forEach(ensureAllOption);
     }
 
+    window.hrInitFilterMultiselects = init;
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function () { init(); });
     } else {
         init();
     }
