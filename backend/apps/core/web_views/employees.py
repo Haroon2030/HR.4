@@ -134,13 +134,22 @@ def list_employees(request):
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
-    return render(request, 'pages/employees/list.html', {
+    from apps.core.htmx_utils import render_page_or_panel
+
+    ctx = {
         'employees': page_obj.object_list,
         'page_obj': page_obj,
         'paginator': paginator,
         'query': q,
         'total_count': paginator.count,
-    })
+    }
+    return render_page_or_panel(
+        request,
+        full_template='pages/employees/list.html',
+        panel_template='pages/employees/_list_panel.html',
+        panel_id='employees-list-panel',
+        context=ctx,
+    )
 
 
 @login_required
@@ -264,7 +273,16 @@ def view_employee(request, employee_id):
         'employee': employee,
         **tab_data,
     }, requested_tab=requested_tab)
-    return render(request, 'pages/employees/view.html', ctx)
+
+    from apps.core.htmx_utils import render_page_or_panel
+
+    return render_page_or_panel(
+        request,
+        full_template='pages/employees/view.html',
+        panel_template='pages/employees/_employee_tab_panel.html',
+        panel_id='employee-tab-panel',
+        context=ctx,
+    )
 
 
 @login_required

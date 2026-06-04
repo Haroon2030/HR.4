@@ -47,6 +47,9 @@ def _lookup_save_form(request, form, template, label, get_name, *, extra_context
             messages.error(request, err[0])
         return render(request, template, ctx)
     messages.success(request, f'تم إضافة {label} "{get_name(obj)}" بنجاح')
+    from apps.core.services.setup_cache import invalidate_setup_cache
+
+    invalidate_setup_cache()
     return _redirect_with_tab(request)
 
 
@@ -79,6 +82,9 @@ def _lookup_update(request, model, pk, form_class, template, label, get_name, ct
                 messages.error(request, err[0])
             return render(request, template, ctx)
         messages.success(request, f'تم تحديث {label} "{get_name(obj)}" بنجاح')
+        from apps.core.services.setup_cache import invalidate_setup_cache
+
+        invalidate_setup_cache()
         return _redirect_with_tab(request)
     return render(request, template, {ctx_key: obj, 'tab': tab, 'form': form})
 
@@ -89,6 +95,9 @@ def _lookup_delete(request, model, pk, label, get_name):
         name = get_name(obj)
         obj.delete()
         messages.success(request, f'تم حذف {label} "{name}" بنجاح')
+        from apps.core.services.setup_cache import invalidate_setup_cache
+
+        invalidate_setup_cache()
     return _redirect_with_tab(request)
 
 

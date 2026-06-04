@@ -462,6 +462,22 @@
             document.body.addEventListener('htmx:afterSwap', function (evt) {
                 hrDisableBoostOnForms();
                 hrScheduleLucide();
+                if (evt.detail.target && evt.detail.target.id === 'employee-tab-panel') {
+                    var params = new URLSearchParams(window.location.search);
+                    var tab = params.get('tab') || 'main';
+                    var host = document.querySelector('.hr-app [x-data*="activeTab"]');
+                    if (host && window.Alpine) {
+                        try {
+                            var data = Alpine.$data(host);
+                            if (data && 'activeTab' in data) {
+                                data.activeTab = tab;
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                    if (tab === 'fingerprint' && window.location.hash !== '#fingerprint') {
+                        history.replaceState(null, '', window.location.pathname + window.location.search + '#fingerprint');
+                    }
+                }
                 if (evt.detail.target && evt.detail.target.id === 'hr-page-inner') {
                     var main = document.querySelector('.hr-main');
                     if (main) {

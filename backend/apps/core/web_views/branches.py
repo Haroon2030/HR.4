@@ -62,23 +62,46 @@ def list_branches(request):
         'banks': [],
         'administrations': [],
     }
+    from apps.core.services.setup_cache import get_cached_list
+
     if active_tab == 'nationalities':
-        setup_empty['nationalities'] = list(Nationality.objects.all())
+        setup_empty['nationalities'] = get_cached_list(
+            'nationalities', lambda: Nationality.objects.all(),
+        )
     elif active_tab == 'professions':
-        setup_empty['professions'] = list(Profession.objects.all())
+        setup_empty['professions'] = get_cached_list(
+            'professions', lambda: Profession.objects.all(),
+        )
     elif active_tab == 'sponsorships':
-        setup_empty['sponsorships'] = list(Sponsorship.objects.all())
+        setup_empty['sponsorships'] = get_cached_list(
+            'sponsorships', lambda: Sponsorship.objects.all(),
+        )
     elif active_tab == 'insurances':
-        setup_empty['insurances'] = list(Insurance.objects.all())
+        setup_empty['insurances'] = get_cached_list(
+            'insurances', lambda: Insurance.objects.all(),
+        )
     elif active_tab == 'insurance_classes':
-        setup_empty['insurance_classes'] = list(InsuranceClass.objects.all())
+        setup_empty['insurance_classes'] = get_cached_list(
+            'insurance_classes', lambda: InsuranceClass.objects.all(),
+        )
     elif active_tab == 'buildings':
-        setup_empty['buildings'] = list(Building.objects.filter(is_deleted=False).order_by('name'))
+        setup_empty['buildings'] = get_cached_list(
+            'buildings',
+            lambda: Building.objects.filter(is_deleted=False).order_by('name'),
+        )
     elif active_tab == 'banks':
-        setup_empty['banks'] = list(Bank.objects.filter(is_deleted=False).order_by('name'))
+        setup_empty['banks'] = get_cached_list(
+            'banks',
+            lambda: Bank.objects.filter(is_deleted=False).order_by('name'),
+        )
     elif active_tab == 'administrations':
-        setup_empty['administrations'] = list(
-            Administration.objects.filter(is_deleted=False).select_related('manager').order_by('code', 'name'),
+        setup_empty['administrations'] = get_cached_list(
+            'administrations',
+            lambda: list(
+                Administration.objects.filter(is_deleted=False)
+                .select_related('manager')
+                .order_by('code', 'name'),
+            ),
         )
 
     return render(request, 'pages/branches/list.html', {
