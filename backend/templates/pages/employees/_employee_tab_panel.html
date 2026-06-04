@@ -1,4 +1,5 @@
-﻿<div id="employee-tab-panel">
+﻿{% load custom_tags %}
+<div id="employee-tab-panel">
     {% include "components/page_tabs_start.html" with aria_label="أقسام ملف الموظف" %}
             {% include "pages/employees/_tab_nav.html" %}
     {% include "components/page_tabs_body_start.html" with body_class="p-6" %}
