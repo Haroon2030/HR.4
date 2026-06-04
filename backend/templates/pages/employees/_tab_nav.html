@@ -1,4 +1,4 @@
-{% comment %}أزرار تبويبات ملف الموظف — تُعرض حسب صلاحيات employee_tab_*.view{% endcomment %}
+{% comment %}أزرار تبويبات صفحة العرض — HTMX جزئي. للتعديل استخدم _tab_nav_edit.html{% endcomment %}
 {% for tab in employee_tab_nav %}
 {% if tab.visible %}
 <a href="{% url 'web:view_employee' employee.id %}?tab={{ tab.key }}"
