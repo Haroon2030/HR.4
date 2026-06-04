@@ -12,6 +12,7 @@ class EmployeeFormTests(TestCase):
         form = EmployeeForm(
             data={
                 'name': 'هارون',
+                'contract_type': 'unlimited',
                 'basic_salary': '',
                 'housing_allowance': '',
                 'transport_allowance': '',

@@ -72,7 +72,7 @@ class ApprovalRoutingTests(TestCase):
             name='المدير المالي',
             role_type=Role.RoleType.ADMIN_MANAGER,
         )
-        UserProfile.objects.create(user=self.admin_manager, role=role)
+        UserProfile.objects.filter(user=self.admin_manager).update(role=role)
         action = self._build_action(with_admin=True)
         decision = resolve_first_approver(action)
         self.assertEqual(decision.stage_label, 'المدير المالي')

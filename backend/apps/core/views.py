@@ -78,13 +78,14 @@ class BranchViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         from django.db.models import Count, Q
         from apps.employees.models import Employee
 
+        # أسماء مختلفة عن @property على النموذج — تجنّب "has no setter" عند التسلسل
         queryset = super().get_queryset().annotate(
-            employees_count=Count(
+            _api_employees_count=Count(
                 'employee_records',
                 filter=Q(employee_records__is_deleted=False),
                 distinct=True,
             ),
-            active_employees_count=Count(
+            _api_active_employees_count=Count(
                 'employee_records',
                 filter=Q(
                     employee_records__is_deleted=False,

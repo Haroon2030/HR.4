@@ -32,12 +32,22 @@ class FirstApproverDecision:
         return 'غير محدد'
 
 
+def _profile_and_role(user):
+    from apps.core.models import UserProfile
+
+    profile = (
+        UserProfile.objects.filter(user_id=user.pk)
+        .select_related('role')
+        .first()
+    )
+    return profile, (profile.role if profile else None)
+
+
 def approver_display_label(user) -> str:
     """اسم الدور المعتمد للعرض (تبويب الموافقة الأولى وحالة الطلب)."""
     if not user:
         return 'غير محدد'
-    profile = getattr(user, 'profile', None)
-    role = getattr(profile, 'role', None) if profile else None
+    _profile, role = _profile_and_role(user)
     if role and (role.name or '').strip():
         return role.name.strip()
     if role:
@@ -53,8 +63,7 @@ def first_stage_tab_label(user) -> str:
     """عنوان تبويب المرحلة الأولى حسب دور المستخدم الحالي."""
     from apps.core.models import Role
 
-    profile = getattr(user, 'profile', None)
-    role = getattr(profile, 'role', None) if profile else None
+    _profile, role = _profile_and_role(user)
 
     if role and role.role_type in (
         Role.RoleType.ADMIN_MANAGER,
