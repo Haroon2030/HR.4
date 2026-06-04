@@ -81,7 +81,16 @@ def attendance_report(request):
         )
     qs = _punches_for_report(request, filters)
     punch_stats = get_punch_stats(qs)
-    all_rows = build_daily_attendance_rows(qs)
+
+    from apps.core.services.report_cache import cache_bypass_requested, get_or_build_daily_attendance_rows
+
+    bypass_cache = cache_bypass_requested(request)
+    all_rows, from_daily_cache = get_or_build_daily_attendance_rows(
+        user_id=request.user.id,
+        filters=filters,
+        bypass=bypass_cache,
+        builder=lambda: build_daily_attendance_rows(qs),
+    )
     rows_truncated = len(all_rows) >= 15_000
     summary = summarize_daily_rows(all_rows, punch_total=punch_stats['total'])
     if rows_truncated:
@@ -139,6 +148,7 @@ def attendance_report(request):
         'punch_types': AttendancePunch.PunchType.choices,
         'date_range_clamped': date_clamped,
         'daily_rows_truncated': rows_truncated,
+        'daily_from_cache': from_daily_cache,
     })
 
 

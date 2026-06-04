@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 {% block title %}{{ report_meta.title }} — التقارير{% endblock %}
 
 {% block content %}
@@ -31,11 +32,30 @@
                 <h1 class="text-lg font-bold text-slate-800">{{ report_meta.title }}</h1>
             </div>
         </div>
-        <div class="flex items-center gap-3 text-xs">
+        <div class="flex items-center gap-3 text-xs flex-wrap">
             {% if data.note %}<span class="text-slate-500 bg-slate-100 px-2 py-1 rounded">{{ data.note }}</span>{% endif %}
             <span class="text-slate-500 bg-slate-100 px-2 py-1 rounded font-semibold">{{ data.rows|length }} سجل</span>
             {% if data.truncated %}
             <span class="text-amber-700 bg-amber-50 px-2 py-1 rounded">عرض أول {{ data.max_rows }} من {{ data.total_rows }}</span>
+            {% endif %}
+            {% if from_cache %}
+            <span class="text-sky-700 bg-sky-50 px-2 py-1 rounded" title="بيانات من الذاكرة المؤقتة">مخزّن مؤقتاً</span>
+            {% endif %}
+            {% if filter_querystring %}
+            <a href="?{{ filter_querystring }}&amp;refresh=1" class="text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 inline-flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> تحديث
+            </a>
+            {% else %}
+            <a href="?refresh=1" class="text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 inline-flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> تحديث
+            </a>
+            {% endif %}
+            {% if user|has_permission:'reports.export' %}
+            <a href="{{ export_url }}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}"
+               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold text-white"
+               style="background:#059669;">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Excel
+            </a>
             {% endif %}
             <button onclick="window.print()" class="hr-btn-print px-3 py-1.5 gap-1">
                 <i data-lucide="printer" class="w-3.5 h-3.5"></i> طباعة

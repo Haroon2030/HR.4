@@ -9,13 +9,14 @@ from urllib.parse import urlencode
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum, Q, F
 from django.db.models.functions import Coalesce
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from django.contrib import messages
 
-from apps.core.decorators import permission_required
+from apps.core.decorators import any_permission_required, permission_required
 from apps.core.permission_policy import report_allowed_for_user, user_can_view_financial_reports
 from apps.core.models import Branch
 from apps.core.filter_utils import apply_branch_filter, append_multi_param, parse_multi_filter_ids
@@ -887,7 +888,20 @@ def report_detail(request, report_type):
 
     group = next((g for g in visible_groups if g['key'] == meta.get('group')), None)
     builder = BUILDERS.get(report_type)
-    data = _cap_report_data(builder(request) if builder else {'columns': [], 'rows': []})
+    filters = _report_filters(request)
+    from apps.core.services.report_cache import cache_bypass_requested, get_or_build_report_data
+
+    def _build():
+        raw = builder(request) if builder else {'columns': [], 'rows': []}
+        return _cap_report_data(raw)
+
+    data, from_cache = get_or_build_report_data(
+        user_id=request.user.id,
+        report_type=report_type,
+        filters=filters,
+        builder=_build,
+        bypass=cache_bypass_requested(request),
+    )
     ctx = _report_filter_context(request)
     return render(request, 'pages/reports/detail.html', {
         'report_meta': meta,
@@ -899,5 +913,70 @@ def report_detail(request, report_type):
         'selected_report': report_type,
         'form_action': reverse('web:report_detail', kwargs={'report_type': report_type}),
         'clear_url': reverse('web:report_detail', kwargs={'report_type': report_type}),
+        'export_url': reverse('web:report_export_excel', kwargs={'report_type': report_type}),
+        'filter_querystring': _filter_querystring(request),
+        'from_cache': from_cache,
         **ctx,
     })
+
+
+@login_required
+@any_permission_required('reports.export')
+def report_export_excel(request, report_type):
+    """تصدير تقرير إلى Excel — يستخدم نفس بيانات العرض (مع كاش)."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font, PatternFill
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        messages.error(request, 'مكتبة openpyxl غير مثبتة.')
+        return redirect('web:report_detail', report_type=report_type)
+
+    visible_reports, _ = _catalog_for_user(request.user)
+    meta = next((r for r in visible_reports if r['key'] == report_type), None)
+    if not meta:
+        if report_type in {r['key'] for r in REPORTS}:
+            messages.error(request, 'لا تملك صلاحية تصدير هذا التقرير (بيانات رواتب).')
+            return redirect('web:reports_index')
+        raise Http404('تقرير غير معروف')
+
+    builder = BUILDERS.get(report_type)
+    filters = _report_filters(request)
+    from apps.core.services.report_cache import cache_bypass_requested, get_or_build_report_data
+
+    def _build():
+        return _cap_report_data(builder(request) if builder else {'columns': [], 'rows': []})
+
+    data, _ = get_or_build_report_data(
+        user_id=request.user.id,
+        report_type=report_type,
+        filters=filters,
+        builder=_build,
+        bypass=cache_bypass_requested(request),
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = (meta.get('title') or report_type)[:31]
+    ws.sheet_view.rightToLeft = True
+    header_fill = PatternFill('solid', fgColor='1E40AF')
+    columns = data.get('columns') or []
+    for col, header in enumerate(columns, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.alignment = Alignment(horizontal='center')
+    for row_idx, row in enumerate(data.get('rows') or [], 2):
+        for col_idx, val in enumerate(row, 1):
+            ws.cell(row=row_idx, column=col_idx, value=val)
+    for col in range(1, len(columns) + 1):
+        ws.column_dimensions[get_column_letter(col)].width = 16
+
+    stamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'report_{report_type}_{stamp}.xlsx'
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response

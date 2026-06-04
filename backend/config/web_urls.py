@@ -215,6 +215,7 @@ urlpatterns = [
 
     path('reports/', web_views.reports_index, name='reports_index'),                    # فهرس التقارير
     path('reports/multi/', web_views.multi_report_detail, name='multi_report_detail'),  # عرض تقارير متعددة مجمعة
+    path('reports/<str:report_type>/export/', web_views.report_export_excel, name='report_export_excel'),
     path('reports/<str:report_type>/', web_views.report_detail, name='report_detail'),  # عرض تقرير محدد
 
     # ══════════════════════════════════════════════════════════════

@@ -180,6 +180,7 @@ class AttendancePunch(BaseModel):
         indexes = [
             models.Index(fields=['device', 'punched_at']),
             models.Index(fields=['employee', 'punched_at']),
+            models.Index(fields=['is_deleted', 'punched_at'], name='att_punch_del_punched_idx'),
         ]
         constraints = [
             models.UniqueConstraint(
