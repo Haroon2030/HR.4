@@ -36,7 +36,7 @@
 </div>
 {% endif %}
 
-{% if user|has_permission:'payroll.view' %}
+{% if user.is_superuser or user|has_permission:'payroll.view' or user|has_permission:'payroll.manage' or user|has_permission:'payroll.process' %}
 {% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="calculator" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
 

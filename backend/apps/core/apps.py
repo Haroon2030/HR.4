@@ -2,19 +2,27 @@ from django.apps import AppConfig
 from django.db.models.signals import post_migrate
 
 
+def _import_permission_registry():
+    """استيراد كل الـ views المحمية لتسجيل الصلاحيات في الـ registry."""
+    import apps.core.web_views  # noqa: F401
+    import apps.payroll.views  # noqa: F401
+
+
+def _sync_permissions_to_db(verbose=False):
+    from apps.core.permissions_registry import sync_to_db
+
+    _import_permission_registry()
+    return sync_to_db(verbose=verbose)
+
+
 def _sync_permissions_signal(sender, **kwargs):
     """مزامنة الصلاحيات تلقائياً بعد كل migrate."""
-    # مزامنة فقط من تطبيق core (لتفادي التكرار)
     if sender.name != 'apps.core':
         return
     try:
-        # تأكد من استيراد كل web_views حتى تُسجَّل decorators
-        import apps.core.web_views  # noqa: F401
-        from apps.core.permissions_registry import sync_to_db
-        modules, perms, new = sync_to_db(verbose=False)
+        modules, perms, new = _sync_permissions_to_db(verbose=False)
         print(f'[permissions] synced: {modules} modules, {perms} perms ({new} new)')
     except Exception as e:
-        # خلال أول migrate، الجداول قد لا تكون موجودة بعد — تجاهل بصمت
         print(f'[permissions] sync skipped: {e}')
 
 
@@ -28,5 +36,8 @@ class CoreConfig(AppConfig):
         from apps.core.employee_tab_permissions import register_employee_tab_permissions
         register_employee_tab_permissions()
         import apps.core.signals  # noqa: F401
-        # ربط الـ post_migrate لمزامنة الصلاحيات تلقائياً
         post_migrate.connect(_sync_permissions_signal, sender=self)
+        try:
+            _sync_permissions_to_db(verbose=False)
+        except Exception:
+            pass

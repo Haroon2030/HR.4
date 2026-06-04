@@ -4,7 +4,8 @@ python manage.py setup_permissions_and_roles
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from apps.core.models import Role, Permission
+from apps.core.models import AppModule, Role, Permission
+from apps.core.permissions_registry import DEFAULT_MODULE_META
 from apps.core.role_catalog import ROLE_CATALOG
 
 
@@ -108,13 +109,28 @@ class Command(BaseCommand):
         
         created_permissions = {}
         for perm_data in permissions_data:
-            perm, created = Permission.objects.get_or_create(
+            module_code = perm_data['module']
+            if '.' not in perm_data['code']:
+                continue
+            operation = perm_data['code'].split('.', 1)[1]
+            meta = DEFAULT_MODULE_META.get(module_code, {})
+            module, _ = AppModule.objects.update_or_create(
+                code=module_code,
+                defaults={
+                    'name': meta.get('name', module_code),
+                    'icon': meta.get('icon', 'package'),
+                    'order': meta.get('order', 100),
+                    'is_active': True,
+                },
+            )
+            perm, created = Permission.objects.update_or_create(
                 code=perm_data['code'],
                 defaults={
                     'name': perm_data['name'],
-                    'module': perm_data['module'],
+                    'module': module,
+                    'operation': operation,
                     'is_active': True,
-                }
+                },
             )
             if created:
                 self.stdout.write(f'  ✓ تم إنشاء: {perm.name}')

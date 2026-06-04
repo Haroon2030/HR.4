@@ -27,7 +27,7 @@ DEFAULT_MODULE_META: Dict[str, dict] = {
     'system_data':  {'name': 'بيانات النظام',       'icon': 'database',      'order': 6},
     'hr_forms':     {'name': 'النماذج الرسمية',     'icon': 'file-text',     'order': 7},
     'reports':      {'name': 'التقارير',            'icon': 'bar-chart-3',   'order': 8},
-    'payroll':      {'name': 'الرواتب',             'icon': 'banknote',      'order': 9},
+    'payroll':      {'name': 'مسير الرواتب',         'icon': 'calculator',    'order': 9},
     'leaves':       {'name': 'الإجازات',            'icon': 'calendar-days', 'order': 10},
     'attendance':   {'name': 'الحضور والبصمة',      'icon': 'fingerprint',   'order': 11},
     'operations':   {'name': 'طلبات العمليات',      'icon': 'list-checks',   'order': 12},
