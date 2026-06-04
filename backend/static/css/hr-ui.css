@@ -2876,6 +2876,32 @@ body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
     color: inherit !important;
 }
 
+/* بحث موظف ذكي — نتائج عند الكتابة فقط */
+.hr-employee-smart-search__hint {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: rgb(100 116 139);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hr-employee-smart-search__results {
+    z-index: 30;
+}
+
+.hr-smart-search__mark {
+    background: rgb(254 240 138);
+    color: rgb(15 23 42);
+    border-radius: 0.125rem;
+    padding: 0 0.125rem;
+}
+
+body.hr-app .hr-employee-smart-search .hr-search-field__icon {
+    color: rgb(37 99 235) !important;
+    opacity: 1;
+}
+
 /* employee-search-picker — أيقونة البحث في رأس المكوّن */
 body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     position: static;

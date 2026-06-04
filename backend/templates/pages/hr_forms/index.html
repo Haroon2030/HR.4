@@ -57,38 +57,40 @@
             </div>
         </template>
 
-        {# Search input — only when no selection #}
-        <div x-show="!selected" x-cloak class="relative">
-            <div class="relative">
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                <input
-                    type="text"
+        {# بحث ذكي — النتائج تظهر عند الكتابة فقط #}
+        <div x-show="!selected" x-cloak class="relative hr-employee-smart-search">
+            <div class="hr-search-field">
+                <i data-lucide="search" class="hr-search-field__icon w-4 h-4" aria-hidden="true"></i>
+                <input type="text"
                     x-model="query"
                     x-ref="searchInput"
-                    @focus="showList = true"
-                    @click="showList = true"
-                    @input="showList = true; activeIndex = 0"
+                    @focus="onSearchFocus()"
+                    @input="onQueryInput()"
                     @keydown.arrow-down.prevent="moveActive(1)"
                     @keydown.arrow-up.prevent="moveActive(-1)"
                     @keydown.enter.prevent="pickActive()"
-                    @keydown.escape="query = ''; showList = false"
+                    @keydown.escape.prevent="clearQuery()"
                     placeholder="اكتب الاسم، الرقم الوظيفي، أو رقم الهوية…"
                     autocomplete="off"
-                    class="w-full pr-10 pl-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                >
-                <button x-show="query"
-                        @click="query = ''; $refs.searchInput.focus()"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5"
-                        title="مسح">
+                    class="hr-search-field__input"
+                    aria-label="بحث عن موظف">
+                <button type="button" x-show="query" x-cloak
+                        @click="clearQuery()"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded"
+                        title="مسح البحث">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
+            <p x-show="!hasQuery" class="hr-employee-smart-search__hint m-0">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                ابدأ بالكتابة لعرض الموظفين المطابقين — لن تُعرض القائمة كاملة تلقائياً.
+            </p>
 
-            {# Dropdown results #}
-            <div x-show="showList && filtered.length > 0"
+            {# نتائج البحث #}
+            <div x-show="showList && hasQuery && filtered.length > 0"
                  x-cloak
                  @click.away="showList = false"
-                 class="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
                 <div class="max-h-[26rem] overflow-y-auto">
                 <template x-for="(emp, idx) in pagedItems" :key="emp.id">
                     <button type="button"
@@ -102,15 +104,15 @@
                                :class="activeIndex === idx ? 'text-primary-600' : ''"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-sm font-semibold text-slate-800 truncate" x-html="highlight(emp.name)"></div>
+                            <div class="text-sm font-semibold text-slate-800 truncate" x-html="highlightMatch(emp.name)"></div>
                             <div class="text-xs text-slate-500 flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
                                 <span x-show="emp.number" class="inline-flex items-center gap-0.5">
                                     <i data-lucide="hash" class="w-3 h-3"></i>
-                                    <span x-html="highlight(emp.number)"></span>
+                                    <span x-html="highlightMatch(emp.number)"></span>
                                 </span>
                                 <span x-show="emp.id_number" class="inline-flex items-center gap-0.5">
                                     <i data-lucide="contact" class="w-3 h-3"></i>
-                                    <span x-html="highlight(emp.id_number)"></span>
+                                    <span x-html="highlightMatch(emp.id_number)"></span>
                                 </span>
                                 <span x-show="emp.dept" class="text-slate-400" x-text="emp.dept"></span>
                             </div>
@@ -155,11 +157,11 @@
                 </div>
             </div>
 
-            <div x-show="showList && query && filtered.length === 0"
+            <div x-show="showList && hasQuery && filtered.length === 0"
                  x-cloak
-                 class="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center">
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center">
                 <i data-lucide="search-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
-                <p class="text-sm text-slate-500 mt-2">لا بيانات</p>
+                <p class="text-sm text-slate-500 mt-2">لا يوجد موظف مطابق للبحث</p>
             </div>
         </div>
 
@@ -205,14 +207,8 @@
 
 <script>
 function hrFormsApp() {
-    const PAGE_SIZE = 8;
-    return {
-        query: '',
-        showList: false,
-        selected: null,
-        activeIndex: 0,
-        currentPage: 1,
-        pageSize: PAGE_SIZE,
+    var base = window.employeePickerBase({ pageSize: 8, minQueryLen: 1 });
+    return Object.assign(base, {
         employees: [
             {% for emp in employees %}
             {
@@ -225,93 +221,26 @@ function hrFormsApp() {
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ],
-        get filtered() {
-            const q = (this.query || '').trim().toLowerCase();
-            if (!q) return this.employees;
-            return this.employees.filter(e =>
-                (e.name || '').toLowerCase().includes(q) ||
-                (e.number || '').toLowerCase().includes(q) ||
-                (e.id_number || '').toLowerCase().includes(q)
-            );
-        },
-        get totalPages() {
-            return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
-        },
-        get pagedItems() {
-            const start = (this.currentPage - 1) * this.pageSize;
-            return this.filtered.slice(start, start + this.pageSize);
-        },
         get pageNumbers() {
-            // returns array of page numbers with ellipsis for compact display
-            const total = this.totalPages;
-            const cur = this.currentPage;
-            if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
-            const pages = [1];
+            var total = this.totalPages;
+            var cur = this.currentPage;
+            if (total <= 7) return Array.from({ length: total }, function (_, i) { return i + 1; });
+            var pages = [1];
             if (cur > 3) pages.push('…');
-            for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
+            for (var i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
             if (cur < total - 2) pages.push('…');
             pages.push(total);
             return pages;
         },
         init() {
-            this.$nextTick(() => lucide.createIcons());
-            this.$watch('selected', () => this.$nextTick(() => lucide.createIcons()));
-            this.$watch('showList', v => { if (v) this.$nextTick(() => lucide.createIcons()); });
-            this.$watch('pagedItems', () => this.$nextTick(() => lucide.createIcons()));
-            this.$watch('query', () => { this.currentPage = 1; this.activeIndex = 0; });
-            this.$watch('currentPage', () => { this.activeIndex = 0; });
-        },
-        moveActive(delta) {
-            const max = this.pagedItems.length;
-            if (max === 0) return;
-            const next = this.activeIndex + delta;
-            if (next < 0) {
-                if (this.currentPage > 1) { this.currentPage--; this.$nextTick(() => this.activeIndex = this.pagedItems.length - 1); }
-            } else if (next >= max) {
-                if (this.currentPage < this.totalPages) { this.currentPage++; this.$nextTick(() => this.activeIndex = 0); }
-            } else {
-                this.activeIndex = next;
-            }
-        },
-        pickActive() {
-            const list = this.pagedItems;
-            if (list.length === 0) return;
-            this.selectEmployee(list[this.activeIndex] || list[0]);
-        },
-        prevPage() { if (this.currentPage > 1) this.currentPage--; },
-        nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; },
-        selectEmployee(emp) {
-            this.selected = emp;
-            this.query = '';
-            this.showList = false;
-        },
-        clearSelection() {
-            this.selected = null;
-            this.query = '';
-            this.currentPage = 1;
-            this.$nextTick(() => {
-                if (this.$refs.searchInput) {
-                    this.$refs.searchInput.focus();
-                    this.showList = true;
-                }
-            });
-        },
-        highlight(text) {
-            const t = String(text || '');
-            const q = (this.query || '').trim();
-            if (!q) return this._escape(t);
-            const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            return this._escape(t).replace(re, '<mark class="bg-yellow-200 text-slate-900 rounded px-0.5">$1</mark>');
-        },
-        _escape(s) {
-            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            window.initEmployeePicker(this);
         },
         openForm(key, autoPrint) {
             if (!this.selected) return;
-            const url = '/hr-forms/' + key + '/' + this.selected.id + '/' + (autoPrint ? '?auto_print=1' : '');
+            var url = '/hr-forms/' + key + '/' + this.selected.id + '/' + (autoPrint ? '?auto_print=1' : '');
             window.open(url, '_blank');
-        }
-    };
+        },
+    });
 }
 </script>
 {% endblock %}

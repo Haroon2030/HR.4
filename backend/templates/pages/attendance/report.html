@@ -116,8 +116,8 @@
                     <option value="0" {% if mapped_filter == 'no' %}selected{% endif %}>غير مربوط</option>
                 </select>
             </div>
-            <div class="hr-filter-slot hr-filter-slot--employee" x-data="employeePickerField()" x-init="initPicker(); {% if filter_employee %}selectEmployee({id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}'}){% endif %}">
-                {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" %}
+            <div class="hr-filter-slot hr-filter-slot--employee">
+                {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" filter_employee=filter_employee %}
             </div>
         </div>
     </form>
@@ -266,68 +266,4 @@
 
 </div>
 
-<script>
-function employeePickerField() {
-    const PAGE_SIZE = 8;
-    return {
-        query: '',
-        showList: false,
-        selected: null,
-        activeIndex: 0,
-        currentPage: 1,
-        pageSize: PAGE_SIZE,
-        employees: [
-            {% for emp in employees %}
-            {
-                id: {{ emp.id }},
-                name: "{{ emp.name|escapejs }}",
-                number: "{{ emp.employee_number|default:''|escapejs }}",
-                id_number: "{{ emp.id_number|default:''|escapejs }}",
-                dept: "{{ emp.department.name|default:''|escapejs }}",
-                branch: "{{ emp.branch.name|default:''|escapejs }}"
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        get filtered() {
-            const q = (this.query || '').trim().toLowerCase();
-            if (!q) return this.employees;
-            return this.employees.filter(e =>
-                (e.name || '').toLowerCase().includes(q) ||
-                (e.number || '').toLowerCase().includes(q) ||
-                (e.id_number || '').toLowerCase().includes(q)
-            );
-        },
-        get totalPages() { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); },
-        get pagedItems() {
-            const start = (this.currentPage - 1) * this.pageSize;
-            return this.filtered.slice(start, start + this.pageSize);
-        },
-        initPicker() {
-            this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
-        },
-        moveActive(delta) {
-            const max = this.pagedItems.length;
-            if (max === 0) return;
-            const next = this.activeIndex + delta;
-            if (next >= 0 && next < max) this.activeIndex = next;
-        },
-        pickActive() {
-            const list = this.pagedItems;
-            if (list.length) this.selectEmployee(list[this.activeIndex] || list[0]);
-        },
-        prevPage() { if (this.currentPage > 1) this.currentPage--; },
-        nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; },
-        selectEmployee(emp) {
-            this.selected = emp;
-            this.query = '';
-            this.showList = false;
-        },
-        clearSelection() {
-            this.selected = null;
-            this.$nextTick(() => this.$refs.searchInput?.focus());
-        },
-    };
-}
-document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
-</script>
 {% endblock %}

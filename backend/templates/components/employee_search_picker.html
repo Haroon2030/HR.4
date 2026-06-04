@@ -1,6 +1,12 @@
-{# بحث واختيار موظف — يتطلب: employees، واختياري: input_name، picker_label #}
+{# بحث واختيار موظف ذكي — يتطلب: employees، واختياري: input_name، label #}
 {% with field_name=input_name|default:"employee_id" picker_label=label|default:"الموظف" %}
-<div class="employee-search-picker" x-data="employeePickerField()" x-init="initPicker()">
+<div class="employee-search-picker hr-employee-smart-search" x-data="employeePickerBase({ pageSize: 8 })"
+     x-init="employees = [
+        {% for emp in employees %}
+        { id: {{ emp.id }}, name: '{{ emp.name|escapejs }}', number: '{{ emp.employee_number|default:''|escapejs }}', id_number: '{{ emp.id_number|default:''|escapejs }}', dept: '{{ emp.department.name|default:''|escapejs }}', branch: '{{ emp.branch.name|default:''|escapejs }}' }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+     ]; initEmployeePicker($data);{% if filter_employee %}
+     selectEmployee({ id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}' });{% endif %}">
     <input type="hidden" name="{{ field_name }}" :value="selected ? selected.id : ''">
     <label class="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1.5">
         <i data-lucide="search" class="w-3.5 h-3.5 text-primary-600"></i>
@@ -32,35 +38,37 @@
 
     <div x-show="!selected" x-cloak class="relative">
         <div class="hr-search-field">
-            <i data-lucide="search" class="hr-search-field__icon w-4 h-4 pointer-events-none" aria-hidden="true"></i>
+            <i data-lucide="search" class="hr-search-field__icon w-4 h-4" aria-hidden="true"></i>
             <input type="text" x-model="query" x-ref="searchInput"
-                @focus="showList = true" @click="showList = true"
-                @input="showList = true; activeIndex = 0; currentPage = 1"
+                @focus="onSearchFocus()"
+                @input="onQueryInput()"
                 @keydown.arrow-down.prevent="moveActive(1)"
                 @keydown.arrow-up.prevent="moveActive(-1)"
                 @keydown.enter.prevent="pickActive()"
-                @keydown.escape="query = ''; showList = false"
-                placeholder="ابحث في قائمة الموظفين…"
+                @keydown.escape.prevent="clearQuery()"
+                placeholder="ابحث بالاسم، الرقم الوظيفي، أو الهوية…"
                 autocomplete="off"
-                class="hr-search-field__input pl-10">
-            <button type="button" x-show="query" @click="query = ''; $refs.searchInput.focus()"
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                class="hr-search-field__input"
+                :aria-label="'{{ picker_label|escapejs }}'">
+            <button type="button" x-show="query" x-cloak @click="clearQuery()"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
+        <p x-show="!hasQuery" class="hr-employee-smart-search__hint m-0 mt-1">ابدأ بالكتابة لعرض النتائج المطابقة.</p>
 
-        <div x-show="showList && filtered.length > 0" x-cloak @click.away="showList = false"
-             class="absolute z-30 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+        <div x-show="showList && hasQuery && filtered.length > 0" x-cloak @click.away="showList = false"
+             class="hr-employee-smart-search__results absolute mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
             <div class="max-h-56 overflow-y-auto">
                 <template x-for="(emp, idx) in pagedItems" :key="emp.id">
                     <button type="button" @click="selectEmployee(emp)" @mouseenter="activeIndex = idx"
                             :class="activeIndex === idx ? 'bg-primary-50' : 'hover:bg-slate-50'"
                             class="w-full text-right px-3 py-2.5 border-b border-slate-100 flex items-center gap-2">
                         <div class="flex-1 min-w-0">
-                            <div class="text-sm font-semibold text-slate-800 truncate" x-text="emp.name"></div>
+                            <div class="text-sm font-semibold text-slate-800 truncate" x-html="highlightMatch(emp.name)"></div>
                             <div class="text-xs text-slate-500" x-show="emp.number || emp.id_number">
-                                <span x-show="emp.number" x-text="'وظيفي: ' + emp.number"></span>
-                                <span x-show="emp.id_number" class="mr-2" x-text="'هوية: ' + emp.id_number"></span>
+                                <span x-show="emp.number" x-html="'وظيفي: ' + highlightMatch(emp.number)"></span>
+                                <span x-show="emp.id_number" class="mr-2" x-html="'هوية: ' + highlightMatch(emp.id_number)"></span>
                             </div>
                         </div>
                     </button>
@@ -73,8 +81,8 @@
             </div>
         </div>
 
-        <div x-show="showList && query && filtered.length === 0" x-cloak
-             class="absolute z-30 mt-1 w-full bg-white border rounded-lg shadow-lg p-4 text-center text-sm text-slate-500">
+        <div x-show="showList && hasQuery && filtered.length === 0" x-cloak
+             class="hr-employee-smart-search__results absolute mt-1 w-full bg-white border rounded-lg shadow-lg p-4 text-center text-sm text-slate-500">
             لا يوجد موظف مطابق
         </div>
     </div>
