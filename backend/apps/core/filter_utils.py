@@ -39,7 +39,8 @@ def parse_multi_filter_ids(
         ids = [i for i in ids if i in allowed]
         if not ids:
             return None
-    return ids
+    # إزالة التكرار (نموذج + حقول مخفية أو branch_id مكرر في الرابط)
+    return list(dict.fromkeys(ids))
 
 
 def apply_branch_filter(qs, branch_ids: list[int] | None, *, field: str = 'branch_id'):

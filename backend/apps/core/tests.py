@@ -689,3 +689,16 @@ class ParseMultiFilterIdsTests(TestCase):
         request.GET.setlist('branch', ['99'])
         ids = parse_multi_filter_ids(request, 'branch_id')
         self.assertEqual(ids, [1, 9, 12])
+
+    def test_post_dedupes_duplicate_branch_id(self):
+        from django.test import RequestFactory
+
+        from apps.core.filter_utils import parse_multi_filter_ids
+
+        factory = RequestFactory()
+        request = factory.post(
+            '/payroll/',
+            data={'branch_id': ['6', '6']},
+        )
+        ids = parse_multi_filter_ids(request, 'branch_id')
+        self.assertEqual(ids, [6])

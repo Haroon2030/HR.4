@@ -171,10 +171,10 @@ def _build_payroll_runs(request, filters):
     """بناء مسير لكل فرع. يُرجع (runs_built, errors)."""
     from django.db import transaction
 
-    branch_ids = filters['branch_ids']
+    branch_ids = list(dict.fromkeys(filters['branch_ids']))
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
-        return [], ['أحد الفروع المختارة غير صالح.']
+        return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
 
     sponsorship_id = (
         filters['sponsorship_id']

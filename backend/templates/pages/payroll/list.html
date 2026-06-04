@@ -227,22 +227,6 @@
         var sponsorshipSel = scope.querySelector('#payrollSponsorship');
         var sponsorshipWrap = scope.querySelector('#payrollSponsorshipWrap');
         var salaryModeSel = form.querySelector('select[name="salary_mode"]');
-        var branchSel = scope.querySelector('#payrollBranch');
-
-        function syncBranchHiddenInputs() {
-            if (!branchSel) return;
-            form.querySelectorAll('input[data-payroll-branch-sync]').forEach(function (el) { el.remove(); });
-            Array.from(branchSel.options).forEach(function (opt) {
-                if (!opt.selected || !opt.value) return;
-                var h = document.createElement('input');
-                h.type = 'hidden';
-                h.name = 'branch_id';
-                h.value = opt.value;
-                h.setAttribute('data-payroll-branch-sync', '1');
-                form.appendChild(h);
-            });
-        }
-
         function syncSponsorshipField() {
             var isCash = salaryModeSel && salaryModeSel.value === 'cash';
             if (!sponsorshipWrap || !sponsorshipSel) return;
@@ -253,7 +237,6 @@
 
         if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);
         syncSponsorshipField();
-        form.addEventListener('submit', syncBranchHiddenInputs);
     }
 
     window.hrInitPayrollPage = initPayrollPage;
