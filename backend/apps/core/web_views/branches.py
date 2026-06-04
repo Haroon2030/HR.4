@@ -19,90 +19,75 @@ from apps.core.decorators import permission_required
 from apps.core.permission_policy import org_structure_permissions
 from apps.core.services.access_control import filter_branches_queryset, get_accessible_branch_ids
 
+ORG_STRUCTURE_TAB_KEYS = frozenset({
+    'branches', 'cost_centers', 'departments', 'administrations',
+    'nationalities', 'professions', 'sponsorships', 'insurances',
+    'insurance_classes', 'buildings', 'banks',
+})
+
+
 @login_required
 @permission_required('branches.view')
 def list_branches(request):
-    """قائمة الفروع - شاشة بتبويبات (تحميل بيانات التبويب النشط فقط)."""
+    """قائمة الفروع — شاشة التهيئة: كل التبويبات في صفحة واحدة (بدون إعادة تحميل عند التبديل)."""
     from apps.cost_centers.models import CostCenter
     from apps.departments.models import Department
     from apps.setup.models import (
         Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
         Building, Bank, Administration,
     )
-
-    active_tab = (request.GET.get('tab') or 'branches').strip()
-    branch_ids = get_accessible_branch_ids(request.user)
-
-    branches = []
-    cost_centers = []
-    departments = []
-    if active_tab == 'branches':
-        branches = list(filter_branches_queryset(
-            request.user,
-            Branch.objects.select_related('company', 'manager').all(),
-        ))
-    elif active_tab == 'cost_centers':
-        cost_centers_qs = CostCenter.objects.select_related('branch').all()
-        if branch_ids is not None:
-            cost_centers_qs = cost_centers_qs.filter(branch_id__in=branch_ids)
-        cost_centers = list(cost_centers_qs)
-    elif active_tab == 'departments':
-        departments_qs = Department.objects.select_related('branch', 'cost_center', 'manager').all()
-        if branch_ids is not None:
-            departments_qs = departments_qs.filter(branch_id__in=branch_ids)
-        departments = list(departments_qs)
-
-    setup_empty = {
-        'nationalities': [],
-        'professions': [],
-        'sponsorships': [],
-        'insurances': [],
-        'insurance_classes': [],
-        'buildings': [],
-        'banks': [],
-        'administrations': [],
-    }
     from apps.core.services.setup_cache import get_cached_list
 
-    if active_tab == 'nationalities':
-        setup_empty['nationalities'] = get_cached_list(
+    requested = (request.GET.get('tab') or '').strip()
+    active_tab = requested if requested in ORG_STRUCTURE_TAB_KEYS else 'branches'
+    branch_ids = get_accessible_branch_ids(request.user)
+
+    branches = list(filter_branches_queryset(
+        request.user,
+        Branch.objects.select_related('company', 'manager').all(),
+    ))
+    cost_centers_qs = CostCenter.objects.select_related('branch').all()
+    if branch_ids is not None:
+        cost_centers_qs = cost_centers_qs.filter(branch_id__in=branch_ids)
+    cost_centers = list(cost_centers_qs)
+    departments_qs = Department.objects.select_related('branch', 'cost_center', 'manager').all()
+    if branch_ids is not None:
+        departments_qs = departments_qs.filter(branch_id__in=branch_ids)
+    departments = list(departments_qs)
+
+    setup_lists = {
+        'nationalities': get_cached_list(
             'nationalities', lambda: Nationality.objects.all(),
-        )
-    elif active_tab == 'professions':
-        setup_empty['professions'] = get_cached_list(
+        ),
+        'professions': get_cached_list(
             'professions', lambda: Profession.objects.all(),
-        )
-    elif active_tab == 'sponsorships':
-        setup_empty['sponsorships'] = get_cached_list(
+        ),
+        'sponsorships': get_cached_list(
             'sponsorships', lambda: Sponsorship.objects.all(),
-        )
-    elif active_tab == 'insurances':
-        setup_empty['insurances'] = get_cached_list(
+        ),
+        'insurances': get_cached_list(
             'insurances', lambda: Insurance.objects.all(),
-        )
-    elif active_tab == 'insurance_classes':
-        setup_empty['insurance_classes'] = get_cached_list(
+        ),
+        'insurance_classes': get_cached_list(
             'insurance_classes', lambda: InsuranceClass.objects.all(),
-        )
-    elif active_tab == 'buildings':
-        setup_empty['buildings'] = get_cached_list(
+        ),
+        'buildings': get_cached_list(
             'buildings',
             lambda: Building.objects.filter(is_deleted=False).order_by('name'),
-        )
-    elif active_tab == 'banks':
-        setup_empty['banks'] = get_cached_list(
+        ),
+        'banks': get_cached_list(
             'banks',
             lambda: Bank.objects.filter(is_deleted=False).order_by('name'),
-        )
-    elif active_tab == 'administrations':
-        setup_empty['administrations'] = get_cached_list(
+        ),
+        'administrations': get_cached_list(
             'administrations',
             lambda: list(
                 Administration.objects.filter(is_deleted=False)
                 .select_related('manager')
                 .order_by('code', 'name'),
             ),
-        )
+        ),
+    }
 
     return render(request, 'pages/branches/list.html', {
         'branches': branches,
@@ -110,7 +95,7 @@ def list_branches(request):
         'departments': departments,
         'active_tab': active_tab,
         'org_perms': org_structure_permissions(request.user),
-        **setup_empty,
+        **setup_lists,
     })
 
 @login_required
