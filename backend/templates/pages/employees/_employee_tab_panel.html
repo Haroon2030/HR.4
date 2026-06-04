@@ -1,6 +1,6 @@
 ﻿{% load custom_tags %}
 <div id="employee-tab-panel">
-    {% include "components/page_tabs_start.html" with aria_label="أقسام ملف الموظف" %}
+    {% include "components/page_tabs_start.html" with aria_label="أقسام ملف الموظف" wrapper_class="hr-glass-panel hr-page-tabs hr-page-tabs--overflow-visible rounded-xl" %}
             {% include "pages/employees/_tab_nav.html" %}
     {% include "components/page_tabs_body_start.html" with body_class="p-6" %}
 
@@ -98,7 +98,7 @@
                                 <i data-lucide="search" class="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-2.5 text-slate-400"></i>
                                 <input type="text" x-model="q" placeholder="بحث في الإجازات..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
                             </div>
-                            <select x-model="filter" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
+                            <select x-model="filter" class="hr-archive-filter-select px-2 py-1.5 border border-slate-300 rounded text-sm bg-white min-w-[10rem] shrink-0">
                                 <option value="all">كل الأنواع</option>
                                 <option value="annual">سنوية</option>
                                 <option value="sick">مرضية</option>
@@ -294,23 +294,16 @@
             {% endif %}
 
             <!-- Warnings -->
-            {% if tab_visible.warnings %}            <div x-show="activeTab==='warnings'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
+            {% if tab_visible.warnings %}            <div x-show="activeTab==='warnings'" x-data="archivePager('warnings')" x-init="init()" class="space-y-3" style="display:none">
 
                 <!-- Toolbar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-                    <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-                        <div class="relative flex-1">
+                    <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
+                        <div class="relative flex-1 min-w-[12rem]">
                             <i data-lucide="search" class="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-2.5 text-slate-400"></i>
                             <input type="text" x-model="q" @input="page = 1; refresh()" placeholder="بحث في الإفادات..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
                         </div>
-                        <select x-model="filter" @change="page = 1; refresh()" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
-                            <option value="all">كل الأنواع</option>
-                            <option value="statement">إفادة</option>
-                            <option value="warning">إنذار</option>
-                            <option value="final_warning">إنذار نهائي</option>
-                            <option value="acknowledgment">إقرار</option>
-                            <option value="other">أخرى</option>
-                        </select>
+                        {% include "components/archive_type_filter.html" with mode="warnings" %}
                     </div>
                     <div class="text-xs text-slate-500 flex items-center gap-2">
                         <i data-lucide="layers" class="w-3.5 h-3.5"></i>
@@ -398,6 +391,9 @@
                                     </td>
                                 </tr>
                                 {% endfor %}
+                                <tr class="archive-empty" style="display:none">
+                                    <td colspan="5" class="px-3 py-10 text-center text-sm text-slate-500">لا نتائج مطابقة للبحث أو نوع الإفادة</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -759,24 +755,16 @@
             {% endif %}
 
             <!-- Archive -->
-            {% if tab_visible.archive %}            <div x-show="activeTab==='archive'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
+            {% if tab_visible.archive %}            <div x-show="activeTab==='archive'" x-data="archivePager('archive')" x-init="init()" class="space-y-3" style="display:none">
 
                 <!-- Toolbar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-                    <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-                        <div class="relative flex-1">
+                    <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
+                        <div class="relative flex-1 min-w-[12rem]">
                             <i data-lucide="search" class="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-2.5 text-slate-400"></i>
-                        <input type="text" x-model="q" @input="page = 1; refresh()" placeholder="بحث في الأرشيف..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
+                            <input type="text" x-model="q" @input="page = 1; refresh()" placeholder="بحث في الأرشيف..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
                         </div>
-                        <select x-model="filter" @change="page = 1; refresh()" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
-                            <option value="all">كل الأنواع</option>
-                            <option value="hire">توظيف</option>
-                            <option value="statement">إفادة / إنذار</option>
-                            <option value="terminate">تصفية</option>
-                            <option value="reactivate">إعادة تفعيل</option>
-                            {% if can_view_salary %}<option value="salary_adjust">تعديل راتب</option>{% endif %}
-                            <option value="transfer">نقل</option>
-                        </select>
+                        {% include "components/archive_type_filter.html" with mode="archive" %}
                     </div>
                     <div class="text-xs text-slate-500 flex items-center gap-2">
                         <i data-lucide="layers" class="w-3.5 h-3.5"></i>
@@ -983,6 +971,9 @@
                                     </td>
                                 </tr>
                                 {% endfor %}
+                                <tr class="archive-empty" style="display:none">
+                                    <td colspan="5" class="px-3 py-10 text-center text-sm text-slate-500">لا نتائج مطابقة للبحث أو نوع العملية</td>
+                                </tr>
 
                                 {% if not employee.employment_request and not employee.statements_log.all %}
                                 <tr>

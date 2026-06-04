@@ -936,6 +936,104 @@ body.hr-app .hr-glass-panel.hr-page-tabs {
     z-index: 10;
 }
 
+body.hr-app .hr-page-tabs--overflow-visible,
+body.hr-app #employee-tab-panel .hr-page-tabs {
+    overflow: visible !important;
+}
+
+body.hr-app .hr-main select.hr-archive-filter-select {
+    -webkit-appearance: menulist !important;
+    appearance: auto !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #0f172a !important;
+    min-width: 10rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    z-index: 20;
+}
+
+body.hr-app .hr-main select.hr-archive-filter-select option {
+    color: #0f172a !important;
+    background: #fff !important;
+    font-weight: 600;
+}
+
+/* فلتر نوع الأرشيف / الإفادات — قائمة مخصصة (Alpine) */
+.hr-atf {
+    position: relative;
+    z-index: 25;
+}
+
+.hr-atf__btn {
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.hr-atf__btn:hover {
+    border-color: #94a3b8;
+}
+
+.hr-atf__chevron {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #64748b;
+}
+
+.hr-atf__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    z-index: 10060;
+    max-height: min(16rem, 50vh);
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    padding: 0.25rem 0;
+    direction: rtl;
+    text-align: right;
+}
+
+.hr-atf__option {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0.45rem 0.75rem;
+    border: none;
+    background: #fff;
+    color: #0f172a;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: right;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.hr-atf__option:hover {
+    background: #f1f5f9;
+}
+
+.hr-atf__option.is-selected {
+    background: #dbeafe;
+    color: #1e40af;
+    font-weight: 700;
+}
+
+.hr-atf__option:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+    background: #eff6ff;
+}
+
 /* ── تبويبات زجاجية موحّدة (كل الموقع) ──
    الهيكل المعياري: page_tabs_start → أزرار hr-tab-btn → page_tabs_body_start → محتوى → page_tabs_end */
 body.hr-app .hr-page-tabs__bar,

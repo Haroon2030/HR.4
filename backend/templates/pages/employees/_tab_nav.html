@@ -2,7 +2,7 @@
 {% for tab in employee_tab_nav %}
 {% if tab.visible %}
 <button type="button" role="tab"
-        @click="activeTab = '{{ tab.key }}'"
+        @click="activeTab = '{{ tab.key }}'; $dispatch('employee-tab-changed', { tab: '{{ tab.key }}' })"
         :class="activeTab === '{{ tab.key }}' && 'is-active'"
         class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}{% if default_employee_tab == tab.key %} is-active{% endif %}">
     {{ tab.label }}

@@ -1576,49 +1576,11 @@
     {% include "pages/employees/_employee_tab_panel.html" %}
 
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script defer src="/static/js/hr-archive-pager.js?v=20260604-4"></script>
 <script>
-window.archivePager = function() {
-    return {
-        q: '',
-        filter: 'all',
-        page: 1,
-        perPage: 6,
-        totalPages: 1,
-        refresh() {
-            var rows = Array.from(this.$el.querySelectorAll('tr.archive-row'));
-            var q = (this.q || '').toLowerCase();
-            var matches = rows.filter(function(r) {
-                var t = r.dataset.type || '';
-                var txt = (r.dataset.text || '').toLowerCase();
-                var okF = (this.filter === 'all' || this.filter === t);
-                var okQ = (q === '' || txt.includes(q));
-                return okF && okQ;
-            }, this);
-            // newest first
-            matches.sort(function(a, b) {
-                return (b.dataset.ts || '').localeCompare(a.dataset.ts || '');
-            });
-            this.totalPages = Math.max(1, Math.ceil(matches.length / this.perPage));
-            if (this.page > this.totalPages) this.page = this.totalPages;
-            if (this.page < 1) this.page = 1;
-            // hide all rows first
-            rows.forEach(function(r) { r.style.display = 'none'; });
-            var start = (this.page - 1) * this.perPage;
-            var slice = matches.slice(start, start + this.perPage);
-            // re-order: append in newest-first order to tbody
-            if (slice.length) {
-                var tbody = slice[0].parentNode;
-                slice.forEach(function(r) {
-                    r.style.display = '';
-                    tbody.appendChild(r);
-                });
-            }
-            this.$nextTick(function() { if (window.lucide) lucide.createIcons(); });
-        }
-    };
-};
-
 window.scheduleBoxes = function(loadInitial) {
     if (loadInitial === undefined) loadInitial = true;
     var initial = [];
