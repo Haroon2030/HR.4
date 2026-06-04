@@ -106,19 +106,6 @@ def biometric_devices_dashboard(request):
         enrollments_qs = enrollments_qs.filter(device__branch_id__in=branch_filter_ids)
     enrollments = list(enrollments_qs[:100])
 
-    enrollment_by_device_user_qs = (
-        EmployeeBiometricEnrollment.objects.filter(is_deleted=False)
-        .select_related('employee', 'device')
-    )
-    if branch_filter_ids:
-        enrollment_by_device_user_qs = enrollment_by_device_user_qs.filter(
-            device__branch_id__in=branch_filter_ids,
-        )
-    enrollment_by_device_user = {
-        (e.device_id, e.device_user_id): e
-        for e in enrollment_by_device_user_qs
-    }
-
     device_user_filters = _parse_device_user_filters(request)
     device_users_qs = get_device_user_queryset(
         device_id=device_user_filters['device_id'],
@@ -128,6 +115,22 @@ def biometric_devices_dashboard(request):
     )
     device_users_paginator = Paginator(device_users_qs, per_page=DEVICE_USERS_PER_PAGE)
     device_users_page = device_users_paginator.get_page(request.GET.get('users_page'))
+
+    page_pairs = [
+        (row.device_id, row.device_user_id)
+        for row in device_users_page.object_list
+    ]
+    enrollment_by_device_user = {}
+    if page_pairs:
+        pair_q = Q()
+        for device_id, device_user_id in page_pairs:
+            pair_q |= Q(device_id=device_id, device_user_id=device_user_id)
+        enrollment_by_device_user = {
+            (e.device_id, e.device_user_id): e
+            for e in EmployeeBiometricEnrollment.objects.filter(
+                is_deleted=False,
+            ).filter(pair_q).select_related('employee', 'device')
+        }
     device_users_stats = device_users_qs.aggregate(
         total=Count('pk'),
         unmapped=Count('pk', filter=Q(is_hr_linked=False)),
@@ -138,7 +141,7 @@ def biometric_devices_dashboard(request):
         device_user_filters['search'],
         device_user_filters['mapped_only'] is not None,
     ])
-    _EMPLOYEE_LINK_LIMIT = 2000
+    _EMPLOYEE_LINK_LIMIT = 400
     employees_qs = filter_employees_queryset_for_user(
         request.user,
         Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE)

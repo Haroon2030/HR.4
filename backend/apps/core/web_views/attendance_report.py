@@ -82,28 +82,38 @@ def attendance_report(request):
     qs = _punches_for_report(request, filters)
     punch_stats = get_punch_stats(qs)
 
-    from apps.core.services.report_cache import cache_bypass_requested, get_or_build_daily_attendance_rows
+    load_daily = not request.GET.get('punches_page')
+    all_rows: list = []
+    from_daily_cache = False
+    rows_truncated = False
+    summary = summarize_daily_rows([], punch_total=punch_stats['total'])
 
-    bypass_cache = cache_bypass_requested(request)
-    all_rows, from_daily_cache = get_or_build_daily_attendance_rows(
-        user_id=request.user.id,
-        filters=filters,
-        bypass=bypass_cache,
-        builder=lambda: build_daily_attendance_rows(qs),
-    )
-    rows_truncated = len(all_rows) >= 15_000
-    summary = summarize_daily_rows(all_rows, punch_total=punch_stats['total'])
-    if rows_truncated:
-        messages.info(
-            request,
-            'تم عرض أول 15000 صف يومي فقط — ضيّق الفترة أو الفلاتر لعرض كامل.',
+    if load_daily:
+        from apps.core.services.report_cache import (
+            cache_bypass_requested,
+            get_or_build_daily_attendance_rows,
         )
+
+        bypass_cache = cache_bypass_requested(request)
+        all_rows, from_daily_cache = get_or_build_daily_attendance_rows(
+            user_id=request.user.id,
+            filters=filters,
+            bypass=bypass_cache,
+            builder=lambda: build_daily_attendance_rows(qs),
+        )
+        rows_truncated = len(all_rows) >= 15_000
+        summary = summarize_daily_rows(all_rows, punch_total=punch_stats['total'])
+        if rows_truncated:
+            messages.info(
+                request,
+                'تم عرض أول 15000 صف يومي فقط — ضيّق الفترة أو الفلاتر لعرض كامل.',
+            )
 
     from apps.core.utils.pagination import clamp_page_size
 
     daily_per_page = clamp_page_size(request.GET.get('per_page'), default=50, maximum=200)
     daily_paginator = Paginator(all_rows, per_page=daily_per_page)
-    daily_page = daily_paginator.get_page(request.GET.get('page'))
+    daily_page = daily_paginator.get_page(request.GET.get('page') if load_daily else 1)
 
     punches_qs = qs.order_by(*PUNCH_LIST_ORDERING)
     punches_per_page = clamp_page_size(
@@ -138,7 +148,7 @@ def attendance_report(request):
         'total_daily_rows': len(all_rows),
         'devices': get_biometric_devices_queryset(request.user),
         'branches': branches_qs,
-        'employees': Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:500],
+        'employees': Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:200],
         'filter_employee': filter_employee,
         'filters': filters,
         'mapped_filter': mapped_filter,

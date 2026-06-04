@@ -46,6 +46,22 @@ TAB_FILTERS = {
 }
 
 
+def _managed_scope_for_user(user) -> tuple[list[int], list[int]]:
+    """فروع وإدارات يديرها المستخدم — مرة واحدة لكل طلب."""
+    cached = getattr(user, '_hr_managed_scope', None)
+    if cached is not None:
+        return cached
+    if user.is_superuser:
+        cached = ([], [])
+    else:
+        cached = (
+            list(user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)),
+            list(user.managed_administrations.filter(is_deleted=False).values_list('id', flat=True)),
+        )
+    user._hr_managed_scope = cached
+    return cached
+
+
 def _user_visible_actions(user):
     qs = PendingAction.objects.select_related(
         'employee', 'branch', 'administration', 'requested_by',
@@ -55,8 +71,7 @@ def _user_visible_actions(user):
         return qs
 
     filters = Q(requested_by=user)
-    managed_ids = list(user.managed_branches.values_list('id', flat=True))
-    managed_admin_ids = list(user.managed_administrations.values_list('id', flat=True))
+    managed_ids, managed_admin_ids = _managed_scope_for_user(user)
     if managed_ids:
         filters |= Q(branch_id__in=managed_ids)
     if managed_admin_ids:
@@ -106,8 +121,7 @@ def _user_visible_hire_requests(user):
         return qs
 
     filters = Q(requested_by=user)
-    managed_ids = list(user.managed_branches.values_list('id', flat=True))
-    managed_admin_ids = list(user.managed_administrations.values_list('id', flat=True))
+    managed_ids, managed_admin_ids = _managed_scope_for_user(user)
     if managed_ids:
         filters |= Q(branch_id__in=managed_ids)
     if managed_admin_ids:
@@ -273,11 +287,10 @@ def list_pending_actions(request):
         c_approved=Count('id', filter=Q(status=EmploymentRequest.Status.APPROVED)),
         c_mine=Count('id', filter=Q(requested_by=request.user)),
     )
+    from apps.core.services.sidebar_counts import get_sidebar_counts
+
     counts = {
-        'inbox': (
-            _inbox_for(request.user, base).count()
-            + _inbox_for_hire(request.user, base_hire).count()
-        ),
+        'inbox': get_sidebar_counts(request.user)['pending_for_me_count'],
         'pending_branch': pa_agg['c_branch'] + hr_agg['c_branch'],
         'pending_gm': pa_agg['c_gm'] + hr_agg['c_gm'],
         'pending_officer': pa_agg['c_officer'] + hr_agg['c_officer'],

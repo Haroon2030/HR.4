@@ -16,6 +16,7 @@ from apps.employees.models import Employee
 
 # حد أمان للعرض في تبويب الموظف — الفترة الزمنية تُضيّق النتائج عادةً
 MAX_EMPLOYEE_PUNCHES_DISPLAY = 5000
+MAX_EMPLOYEE_PUNCHES_DEFAULT = 500
 
 
 def get_or_create_biometric_settings(employee: Employee) -> EmployeeBiometricSettings:
@@ -101,14 +102,18 @@ def get_employee_punch_display(
     date_from: date | None = None,
     date_to: date | None = None,
     settings: EmployeeBiometricSettings | None = None,
+    max_display: int | None = None,
 ) -> dict:
     settings = settings or get_or_create_biometric_settings(employee)
     enrollments = list(employee_enrollments(employee))
     linked = bool(enrollments)
 
+    cap = max_display if max_display is not None else MAX_EMPLOYEE_PUNCHES_DEFAULT
+    cap = min(max(cap, 1), MAX_EMPLOYEE_PUNCHES_DISPLAY)
+
     raw_qs = base_punches_queryset(employee, date_from=date_from, date_to=date_to)
     total_raw_count = raw_qs.count()
-    raw_list = list(raw_qs[:MAX_EMPLOYEE_PUNCHES_DISPLAY])
+    raw_list = list(raw_qs[:cap])
     truncated = total_raw_count > len(raw_list)
     punches, hidden_late = apply_late_checkin_filter(raw_list, settings)
     last_punch = punches[0] if punches else None

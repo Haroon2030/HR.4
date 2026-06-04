@@ -31,16 +31,26 @@ def list_branches(request):
     )
 
     active_tab = (request.GET.get('tab') or 'branches').strip()
-    branches = filter_branches_queryset(
-        request.user,
-        Branch.objects.select_related('company', 'manager').all(),
-    )
     branch_ids = get_accessible_branch_ids(request.user)
-    cost_centers = CostCenter.objects.select_related('branch').all()
-    departments = Department.objects.select_related('branch', 'cost_center', 'manager').all()
-    if branch_ids is not None:
-        cost_centers = cost_centers.filter(branch_id__in=branch_ids)
-        departments = departments.filter(branch_id__in=branch_ids)
+
+    branches = []
+    cost_centers = []
+    departments = []
+    if active_tab == 'branches':
+        branches = list(filter_branches_queryset(
+            request.user,
+            Branch.objects.select_related('company', 'manager').all(),
+        ))
+    elif active_tab == 'cost_centers':
+        cost_centers_qs = CostCenter.objects.select_related('branch').all()
+        if branch_ids is not None:
+            cost_centers_qs = cost_centers_qs.filter(branch_id__in=branch_ids)
+        cost_centers = list(cost_centers_qs)
+    elif active_tab == 'departments':
+        departments_qs = Department.objects.select_related('branch', 'cost_center', 'manager').all()
+        if branch_ids is not None:
+            departments_qs = departments_qs.filter(branch_id__in=branch_ids)
+        departments = list(departments_qs)
 
     setup_empty = {
         'nationalities': [],

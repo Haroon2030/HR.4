@@ -217,203 +217,52 @@ def create_employee_full(request):
 @permission_required('employees.view')
 @employee_branch_access_required
 def view_employee(request, employee_id):
-    """عرض بيانات موظف للقراءة فقط"""
+    """عرض بيانات موظف — تحميل بيانات التبويب النشط فقط."""
+    from apps.employees.models import Employee
+    from apps.core.employee_tab_permissions import (
+        employee_tab_visibility,
+        enrich_employee_page_context,
+    )
+    from apps.employees.services.employee_view_data import (
+        load_employee_view_context,
+        resolve_active_employee_tab,
+    )
+
     from django.db.models import Prefetch
-    from apps.employees.models import Employee, EmployeeStatement
-    from apps.departments.models import Department
-    from apps.core.models import Branch
 
     requested_tab = (request.GET.get('tab') or '').strip() or None
+    tab_visible = employee_tab_visibility(request.user)
+    active_tab = resolve_active_employee_tab(request.user, requested_tab)
 
-    employee = get_object_or_404(
-        Employee.objects.select_related(
-            'branch', 'department', 'administration', 'cost_center', 'nationality',
-            'profession', 'sponsorship', 'insurance', 'insurance_class',
-            'employment_request', 'employment_request__requested_by',
-            'employment_request__reviewed_by',
-        ).prefetch_related(
-            'custodies',
-            'business_trips',
-            'loans',
-            'absences',
+    emp_qs = Employee.objects.select_related(
+        'branch', 'department', 'administration', 'cost_center', 'nationality',
+        'profession', 'sponsorship', 'insurance', 'insurance_class',
+        'employment_request', 'employment_request__requested_by',
+        'employment_request__reviewed_by',
+    )
+    if active_tab in ('warnings', 'archive', 'termination'):
+        from apps.employees.models import EmployeeStatement
+        emp_qs = emp_qs.prefetch_related(
             Prefetch(
                 'statements_log',
                 queryset=EmployeeStatement.objects.select_related('created_by').order_by(
                     '-statement_date', '-created_at',
                 ),
             ),
-            'accruals_ledger__payroll_run',
-        ),
-        id=employee_id,
-    )
-    departments = Department.objects.order_by('name')
-    branches = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
-    stmt_types = {'statement', 'warning', 'final_warning', 'acknowledgment', 'other'}
-    statements_count = sum(
-        1 for st in employee.statements_log.all() if st.statement_type in stmt_types
-    )
-    salary_adjusts = [
-        st for st in employee.statements_log.all() if st.statement_type == 'salary_adjust'
-    ]
-
-    # توقّع الرقم المتسلسل التالي للإفادات (للمعاينة في النموذج)
-    from apps.employees.models import EmployeeStatement
-    next_statement_serial = EmployeeStatement.generate_serial('statement')
-
-    # جدول الدوام: قراءة JSON كصناديق شهرية
-    import json as _json
-    schedule_boxes = []
-    try:
-        _data = _json.loads(employee.work_schedule or '') if employee.work_schedule else None
-        if isinstance(_data, dict) and isinstance(_data.get('boxes'), list):
-            schedule_boxes = _data['boxes']
-    except (ValueError, TypeError):
-        schedule_boxes = []
-
-    custodies = sorted(employee.custodies.all(), key=lambda c: (c.received_at, c.id), reverse=True)
-    active_custodies = [c for c in custodies if c.status == 'active']
-    business_trips = sorted(
-        employee.business_trips.all(), key=lambda t: (t.start_date, t.id), reverse=True,
-    )
-    loans = sorted(employee.loans.all(), key=lambda ln: (ln.issued_at, ln.id), reverse=True)
-    absences = sorted(
-        employee.absences.all(), key=lambda a: (a.absence_date, a.id), reverse=True,
-    )
-
-    from apps.employees.services.contract_rules import (
-        fourth_year_start,
-        is_saudi_nationality,
-        sync_employee_contract,
-    )
-    contract_changed = sync_employee_contract(employee)
-    if contract_changed:
-        employee.save(update_fields=[
-            'contract_type', 'contract_duration_months', 'contract_duration_text',
-            'contract_expiry_date',
-        ])
-    contract_is_saudi = is_saudi_nationality(employee.nationality)
-    contract_fourth_year_start = (
-        fourth_year_start(employee.hire_date)
-        if contract_is_saudi and employee.hire_date else None
-    )
-
-    # Ledger accruals — تهيئة تلقائية إذا لم يكن هناك سجل
-    accruals = []
-    try:
-        from apps.employees.models import EmployeeLedger
-        from decimal import Decimal
-        from django.utils import timezone
-
-        accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
-
-        # تهيئة أولية فقط عند فتح تبويب المخصصات (تجنب كتابة DB على كل عرض)
-        init_ledger = requested_tab == 'accruals' and employee.hire_date
-        if init_ledger and not accruals_qs.exists():
-            today = timezone.now().date()
-            service_days = (today - employee.hire_date).days
-            if service_days >= 1:
-                service_years = Decimal(str(round(service_days / 365.25, 4)))
-                leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
-                total_salary = Decimal(str(employee.total_salary or 0))
-                daily_wage = (total_salary / Decimal('30')).quantize(Decimal('0.01'))
-                leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
-
-                half_salary = (total_salary / Decimal('2')).quantize(Decimal('0.01'))
-                if service_years <= 5:
-                    eosb = (half_salary * service_years).quantize(Decimal('0.01'))
-                    eosb_detail = f'نصف الراتب × سنوات الخدمة = {half_salary} × {service_years} = {eosb}'
-                else:
-                    first5 = (half_salary * Decimal('5')).quantize(Decimal('0.01'))
-                    extra_yrs = (service_years - Decimal('5')).quantize(Decimal('0.0001'))
-                    extra_amt = (total_salary * extra_yrs).quantize(Decimal('0.01'))
-                    eosb = (first5 + extra_amt).quantize(Decimal('0.01'))
-                    eosb_detail = f'أول 5 سنوات: {half_salary} × 5 = {first5} | بعد 5 سنوات: {total_salary} × {extra_yrs} = {extra_amt} | الإجمالي = {eosb}'
-
-                from apps.employees.services.accrual_ledger_notes import build_initial_balance_notes
-                notes = build_initial_balance_notes(
-                    hire_date=employee.hire_date,
-                    as_of_date=today,
-                    total_salary=total_salary,
-                    leave_days=leave_days,
-                    leave_amount=leave_amount,
-                    eosb=eosb,
-                    eosb_detail=eosb_detail,
-                )
-
-                EmployeeLedger.objects.create(
-                    employee=employee,
-                    transaction_type='initial',
-                    date=today,
-                    leave_days_change=leave_days,
-                    leave_amount_change=leave_amount,
-                    eosb_amount_change=eosb,
-                    cumulative_leave_days=leave_days,
-                    cumulative_leave_amount=leave_amount,
-                    cumulative_eosb_amount=eosb,
-                    notes=notes,
-                    created_by=request.user
-                )
-
-        accruals = list(
-            employee.accruals_ledger.select_related('payroll_run', 'employee')
-            .all()
-            .order_by('-date', '-created_at')
         )
-    except Exception:
-        accruals = []
+    employee = get_object_or_404(emp_qs, id=employee_id)
 
-    from datetime import timedelta
-    from apps.attendance.services.employee_punch_display import (
-        get_employee_punch_display,
-        get_or_create_biometric_settings,
+    tab_data = load_employee_view_context(
+        employee=employee,
+        user=request.user,
+        active_tab=active_tab,
+        tab_visible=tab_visible,
+        request_get=request.GET,
     )
-
-    fp_from = request.GET.get('fp_from')
-    fp_to = request.GET.get('fp_to')
-    today = timezone.localdate()
-    date_to = today
-    date_from = today - timedelta(days=30)
-    if fp_from:
-        try:
-            date_from = datetime.strptime(fp_from, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    if fp_to:
-        try:
-            date_to = datetime.strptime(fp_to, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-
-    bio_settings = get_or_create_biometric_settings(employee)
-    fingerprint_data = get_employee_punch_display(
-        employee,
-        date_from=date_from,
-        date_to=date_to,
-        settings=bio_settings,
-    )
-
-    from apps.core.employee_tab_permissions import enrich_employee_page_context
 
     ctx = enrich_employee_page_context(request.user, {
         'employee': employee,
-        'departments': departments,
-        'branches': branches,
-        'statements_count': statements_count,
-        'next_statement_serial': next_statement_serial,
-        'schedule_boxes_json': schedule_boxes,
-        'salary_adjusts': salary_adjusts,
-        'custodies': custodies,
-        'active_custodies': active_custodies,
-        'business_trips': business_trips,
-        'loans': loans,
-        'absences': absences,
-        'contract_is_saudi': contract_is_saudi,
-        'contract_fourth_year_start': contract_fourth_year_start,
-        'accruals': accruals,
-        'fingerprint_data': fingerprint_data,
-        'fp_date_from': date_from.isoformat(),
-        'fp_date_to': date_to.isoformat(),
-        'can_edit_biometric_settings': True,
+        **tab_data,
     }, requested_tab=requested_tab)
     return render(request, 'pages/employees/view.html', ctx)
 

@@ -59,18 +59,25 @@ def dashboard_view(request):
     pa_qs = PendingAction.objects.filter(is_deleted=False) if hasattr(PendingAction, 'is_deleted') else PendingAction.objects.all()
     if not request.user.is_superuser and accessible_branch_ids:
         pa_qs = pa_qs.filter(branch_id__in=accessible_branch_ids)
-    pa_open_count = pa_qs.exclude(status__in=[
-        PendingAction.Status.APPROVED,
-    ]).count()
-
-    clearance_count = pa_qs.filter(
-        action_type__in=[
-            PendingAction.ActionType.CUSTODY_CLEAR,
-            PendingAction.ActionType.TERMINATE,
-            PendingAction.ActionType.CONTRACT_END,
-            PendingAction.ActionType.END_OF_SERVICE
-        ]
-    ).exclude(status=PendingAction.Status.APPROVED).count()
+    _clearance_types = [
+        PendingAction.ActionType.CUSTODY_CLEAR,
+        PendingAction.ActionType.TERMINATE,
+        PendingAction.ActionType.CONTRACT_END,
+        PendingAction.ActionType.END_OF_SERVICE,
+    ]
+    pa_stats = pa_qs.aggregate(
+        open_count=Count(
+            'id',
+            filter=~Q(status=PendingAction.Status.APPROVED),
+        ),
+        clearance_count=Count(
+            'id',
+            filter=Q(action_type__in=_clearance_types)
+            & ~Q(status=PendingAction.Status.APPROVED),
+        ),
+    )
+    pa_open_count = pa_stats['open_count'] or 0
+    clearance_count = pa_stats['clearance_count'] or 0
 
     # توزيع الموظفين حسب الفرع (Top 6)
     branch_distribution = list(
@@ -143,7 +150,7 @@ def dashboard_view(request):
         ])
         if not request.user.is_superuser:
             qs = qs.filter(first_stage_q)
-        context['pending_requests'] = qs.order_by('-created_at')
+        context['pending_requests'] = qs.order_by('-created_at')[:25]
 
     # ─── المهام المُسندة للمستخدم الحالي (أي شخص له تعيينات) ─────────────────
     user_emp_qs = EmploymentRequest.objects.select_related(
@@ -166,8 +173,8 @@ def dashboard_view(request):
     )
     if has_officer_work:
         context['is_hr_officer'] = True
-        context['officer_employment_requests'] = user_emp_qs.order_by('-assigned_at')
-        context['officer_pending_actions'] = user_actions_qs.order_by('-assigned_at')
+        context['officer_employment_requests'] = user_emp_qs.order_by('-assigned_at')[:25]
+        context['officer_pending_actions'] = user_actions_qs.order_by('-assigned_at')[:25]
 
     # ─── المهام في مرحلة المدير العام / مدير الموارد ────────────────────────
     if _is_general_manager(request.user):
@@ -177,12 +184,12 @@ def dashboard_view(request):
         gm_emp_qs = EmploymentRequest.objects.select_related(
             'branch', 'department', 'cost_center', 'requested_by',
         ).filter(status=EmploymentRequest.Status.PENDING_GM)
-        context['gm_employment_requests'] = gm_emp_qs.order_by('-branch_reviewed_at', '-created_at')
+        context['gm_employment_requests'] = gm_emp_qs.order_by('-branch_reviewed_at', '-created_at')[:25]
 
         gm_actions_qs = PendingAction.objects.select_related(
             'employee', 'employee__branch', 'requested_by',
         ).filter(status=PendingAction.Status.PENDING_GM)
-        context['gm_pending_actions'] = gm_actions_qs.order_by('-created_at')
+        context['gm_pending_actions'] = gm_actions_qs.order_by('-created_at')[:25]
 
     # ─── صندوق المهام الموحَّد (Unified Inbox) ───────────────────────────────
     from apps.core.web_views.pending_actions import (
@@ -220,14 +227,15 @@ def dashboard_view(request):
             'action_color': action_color,
         })
 
-    inbox_pa = _inbox_for(
-        request.user,
-        _user_visible_actions(request.user),
-    ).order_by('-updated_at', '-requested_at')[:100]
-    inbox_hire = _inbox_for_hire(
-        request.user,
-        _user_visible_hire_requests(request.user),
-    ).order_by('-updated_at', '-created_at')[:100]
+    _DASH_INBOX_LIMIT = 40
+    visible_pa = _user_visible_actions(request.user)
+    visible_hire = _user_visible_hire_requests(request.user)
+    inbox_pa = _inbox_for(request.user, visible_pa).order_by(
+        '-updated_at', '-requested_at',
+    )[:_DASH_INBOX_LIMIT]
+    inbox_hire = _inbox_for_hire(request.user, visible_hire).order_by(
+        '-updated_at', '-created_at',
+    )[:_DASH_INBOX_LIMIT]
 
     for a in inbox_pa:
         if a.status == PendingAction.Status.PENDING_BRANCH:

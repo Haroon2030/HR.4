@@ -210,6 +210,16 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3')
 }
 
+# تخزين مؤقت افتراضي (يُستبدل بـ Redis في production عند REDIS_URL)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'hr-default',
+        'TIMEOUT': 300,
+        'OPTIONS': {'MAX_ENTRIES': 5000},
+    },
+}
+
 # ══════════════════════════════════════════════════════════════════════════════
 # التحقق من كلمات المرور
 # ══════════════════════════════════════════════════════════════════════════════
