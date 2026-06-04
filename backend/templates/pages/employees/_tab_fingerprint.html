@@ -1,5 +1,5 @@
 {# fingerprint_data, fp_date_from, fp_date_to, can_edit_biometric_settings #}
-<div id="fingerprint" x-show="activeTab==='fingerprint'" class="space-y-4" style="display:none">
+<div id="fingerprint" x-show="activeTab==='fingerprint'" class="space-y-4"{% if not is_htmx_tab_panel %} style="display:none"{% endif %}>
 
     {% with fp=fingerprint_data settings=fp.settings %}
     {% if not fp.linked %}
@@ -76,7 +76,9 @@
     {% endif %}
 
     <form id="fp-filter-form" method="get" action="{% url 'web:view_employee' employee.id %}"
-          class="hr-fp-toolbar flex flex-wrap gap-3 items-end text-sm">
+          class="hr-fp-toolbar flex flex-wrap gap-3 items-end text-sm"
+          hx-boost="false">
+        <input type="hidden" name="tab" value="fingerprint">
         <div>
             <label class="block text-xs font-bold mb-1">من تاريخ</label>
             <input type="date" name="fp_from" value="{{ fp_date_from }}"
@@ -170,12 +172,13 @@
 
     function navigateWithFilters() {
         var params = new URLSearchParams();
+        params.set('tab', 'fingerprint');
         var from = form.querySelector('[name="fp_from"]');
         var to = form.querySelector('[name="fp_to"]');
         if (from && from.value) params.set('fp_from', from.value);
         if (to && to.value) params.set('fp_to', to.value);
         var qs = params.toString();
-        window.location.href = form.action + (qs ? '?' + qs : '') + '#fingerprint';
+        window.location.href = form.action + '?' + qs + '#fingerprint';
     }
 
     refreshBtn.addEventListener('click', navigateWithFilters);

@@ -5,7 +5,7 @@
     {% include "components/page_tabs_body_start.html" with body_class="p-6" %}
 
             <!-- Main -->
-            {% if tab_visible.main %}
+            {% if tab_visible.main %}{% if not is_htmx_tab_panel or default_employee_tab == 'main' %}
             <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
             <div class="hr-field-grid hr-glass-field-table">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الاسم</div><div class="text-sm text-slate-800">{{ employee.name|default:"—" }}</div></div>
@@ -33,12 +33,12 @@
                 <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
             </div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
-            {% if tab_visible.fingerprint %}{% include "pages/employees/_tab_fingerprint.html" %}{% endif %}
+            {% if tab_visible.fingerprint %}{% if not is_htmx_tab_panel or default_employee_tab == 'fingerprint' %}{% include "pages/employees/_tab_fingerprint.html" %}{% endif %}{% endif %}
 
             <!-- Salary -->
-            {% if tab_visible.salary %}
+            {% if tab_visible.salary %}{% if not is_htmx_tab_panel or default_employee_tab == 'salary' %}
             <div x-show="activeTab==='salary'" class="space-y-3" style="display:none">
                 <div class="hr-glass-field-table-wrap">
                 <div class="hr-field-grid hr-glass-field-table">
@@ -61,10 +61,10 @@
                     {% include "components/salary_adjust_archive.html" with records=salary_adjusts show_type_col=True show_count=True section_id="view" %}
                 </div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Leaves -->
-            {% if tab_visible.leaves %}
+            {% if tab_visible.leaves %}{% if not is_htmx_tab_panel or default_employee_tab == 'leaves' %}
             <div x-show="activeTab==='leaves'" class="space-y-4" style="display:none">
                 {% if not employee.hire_date or not employee.sponsorship_id %}
                 <div class="p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs flex items-start gap-2">
@@ -151,10 +151,10 @@
                     </p>
                 </div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Schedule -->
-            {% if tab_visible.schedule %}
+            {% if tab_visible.schedule %}{% if not is_htmx_tab_panel or default_employee_tab == 'schedule' %}
             <div x-show="activeTab==='schedule'" class="space-y-4" style="display:none" x-data="scheduleBoxes()">
 
                 <form method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="space-y-4"
@@ -294,20 +294,20 @@
                     </div>
                 </form>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Warnings -->
-            {% if tab_visible.warnings %}
-            <div x-show="activeTab==='warnings'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" x-effect="q; filter; page; refresh()" class="space-y-3" style="display:none">
+            {% if tab_visible.warnings %}{% if not is_htmx_tab_panel or default_employee_tab == 'warnings' %}
+            <div x-show="activeTab==='warnings'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
 
                 <!-- Toolbar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
                     <div class="flex items-center gap-2 flex-1 min-w-[200px]">
                         <div class="relative flex-1">
                             <i data-lucide="search" class="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-2.5 text-slate-400"></i>
-                            <input type="text" x-model="q" @input="page = 1" placeholder="بحث في الإفادات..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
+                            <input type="text" x-model="q" @input="page = 1; refresh()" placeholder="بحث في الإفادات..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
                         </div>
-                        <select x-model="filter" @change="page = 1" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
+                        <select x-model="filter" @change="page = 1; refresh()" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
                             <option value="all">كل الأنواع</option>
                             <option value="statement">إفادة</option>
                             <option value="warning">إنذار</option>
@@ -409,18 +409,18 @@
 
                 <!-- Pagination -->
                 <div x-show="totalPages > 1" class="flex items-center justify-center gap-1 pt-1">
-                    <button type="button" @click="page = Math.max(1, page-1)" :disabled="page === 1"
+                    <button type="button" @click="page = Math.max(1, page-1); refresh()" :disabled="page === 1"
                             class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
                         <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                         السابق
                     </button>
                     <template x-for="p in totalPages" :key="p">
-                        <button type="button" @click="page = p"
+                        <button type="button" @click="page = p; refresh()"
                                 :class="p === page ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
                                 class="px-3 py-1.5 text-xs font-bold rounded border min-w-[32px]"
                                 x-text="p"></button>
                     </template>
-                    <button type="button" @click="page = Math.min(totalPages, page+1)" :disabled="page === totalPages"
+                    <button type="button" @click="page = Math.min(totalPages, page+1); refresh()" :disabled="page === totalPages"
                             class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
                         التالي
                         <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
@@ -435,10 +435,10 @@
                     يتم تسجيل كل إفادة أو إنذار يصدر بحق الموظف تلقائياً في هذا السجل الزمني
                 </p>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Docs -->
-            {% if tab_visible.docs %}
+            {% if tab_visible.docs %}{% if not is_htmx_tab_panel or default_employee_tab == 'docs' %}
             <div x-show="activeTab==='docs'" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display:none">
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مستند المباشرة</div>{% if employee.commencement_document %}{% include "components/media_preview_btn.html" with url=employee.commencement_document.url title="مستند المباشرة" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">صورة الهوية</div>{% if employee.id_document %}{% include "components/media_preview_btn.html" with url=employee.id_document.url title="صورة الهوية" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
@@ -446,10 +446,10 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">العقد</div>{% if employee.contract_document %}{% include "components/media_preview_btn.html" with url=employee.contract_document.url title="العقد" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">مستندات أخرى</div>{% if employee.other_documents %}{% include "components/media_preview_btn.html" with url=employee.other_documents.url title="مستندات أخرى" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Custodies -->
-            {% if tab_visible.custodies %}
+            {% if tab_visible.custodies %}{% if not is_htmx_tab_panel or default_employee_tab == 'custodies' %}
             <div x-show="activeTab==='custodies'" class="space-y-3" style="display:none">
                 {% if custodies %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
@@ -499,10 +499,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Business Trips -->
-            {% if tab_visible.trips %}
+            {% if tab_visible.trips %}{% if not is_htmx_tab_panel or default_employee_tab == 'trips' %}
             <div x-show="activeTab==='trips'" class="space-y-3" style="display:none">
                 {% if business_trips %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
@@ -542,10 +542,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Contract -->
-            {% if tab_visible.contract %}
+            {% if tab_visible.contract %}{% if not is_htmx_tab_panel or default_employee_tab == 'contract' %}
             <div x-show="activeTab==='contract'" class="space-y-4" style="display:none">
                 {% if contract_is_saudi and contract_fourth_year_start %}
                 <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-start gap-2">
@@ -586,10 +586,10 @@
                 </div>
                 </div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Loans -->
-            {% if tab_visible.loans %}
+            {% if tab_visible.loans %}{% if not is_htmx_tab_panel or default_employee_tab == 'loans' %}
             <div x-show="activeTab==='loans'" class="space-y-3" style="display:none">
                 {% if loans %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
@@ -639,10 +639,10 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Absences -->
-            {% if tab_visible.absences %}
+            {% if tab_visible.absences %}{% if not is_htmx_tab_panel or default_employee_tab == 'absences' %}
             <div x-show="activeTab==='absences'" class="space-y-3" style="display:none">
                 {% if absences %}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
@@ -766,20 +766,20 @@
                 </div>
                 {% endif %}
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Archive -->
-            {% if tab_visible.archive %}
-            <div x-show="activeTab==='archive'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" x-effect="q; filter; page; refresh()" class="space-y-3" style="display:none">
+            {% if tab_visible.archive %}{% if not is_htmx_tab_panel or default_employee_tab == 'archive' %}
+            <div x-show="activeTab==='archive'" x-data="archivePager()" x-init="$nextTick(()=>refresh())" class="space-y-3" style="display:none">
 
                 <!-- Toolbar -->
                 <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
                     <div class="flex items-center gap-2 flex-1 min-w-[200px]">
                         <div class="relative flex-1">
                             <i data-lucide="search" class="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-2.5 text-slate-400"></i>
-                        <input type="text" x-model="q" @input="page = 1" placeholder="بحث في الأرشيف..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
+                        <input type="text" x-model="q" @input="page = 1; refresh()" placeholder="بحث في الأرشيف..." class="w-full pr-8 pl-3 py-1.5 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary-500">
                         </div>
-                        <select x-model="filter" @change="page = 1" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
+                        <select x-model="filter" @change="page = 1; refresh()" class="px-2 py-1.5 border border-slate-300 rounded text-sm bg-white">
                             <option value="all">كل الأنواع</option>
                             <option value="hire">توظيف</option>
                             <option value="statement">إفادة / إنذار</option>
@@ -1012,18 +1012,18 @@
 
                 <!-- Pagination -->
                 <div x-show="totalPages > 1" class="flex items-center justify-center gap-1 pt-1">
-                    <button type="button" @click="page = Math.max(1, page-1)" :disabled="page === 1"
+                    <button type="button" @click="page = Math.max(1, page-1); refresh()" :disabled="page === 1"
                             class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
                         <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                         السابق
                     </button>
                     <template x-for="p in totalPages" :key="p">
-                        <button type="button" @click="page = p"
+                        <button type="button" @click="page = p; refresh()"
                                 :class="p === page ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
                                 class="px-3 py-1.5 text-xs font-bold rounded border min-w-[32px]"
                                 x-text="p"></button>
                     </template>
-                    <button type="button" @click="page = Math.min(totalPages, page+1)" :disabled="page === totalPages"
+                    <button type="button" @click="page = Math.min(totalPages, page+1); refresh()" :disabled="page === totalPages"
                             class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
                         التالي
                         <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
@@ -1038,9 +1038,9 @@
                     يتم تسجيل كل عملية تتم على الموظف تلقائياً في هذا الأرشيف الزمني
                 </p>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
             <!-- Accruals Ledger -->
-            {% if tab_visible.accruals %}
+            {% if tab_visible.accruals %}{% if not is_htmx_tab_panel or default_employee_tab == 'accruals' %}
             <div x-show="activeTab==='accruals'" x-cloak class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
@@ -1172,10 +1172,10 @@
                 </div>
 
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             <!-- Termination Tab -->
-            {% if tab_visible.termination %}
+            {% if tab_visible.termination %}{% if not is_htmx_tab_panel or default_employee_tab == 'termination' %}
             <div x-show="activeTab==='termination'" x-cloak>
                 <div class="space-y-4" x-data="{ count: $el.querySelectorAll('.termination-card').length }" x-init="$nextTick(() => { count = $el.querySelectorAll('.termination-card').length })">
                     {% for st in employee.statements_log.all %}
@@ -1222,7 +1222,7 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
     {% include "components/page_tabs_end.html" %}
 </div>

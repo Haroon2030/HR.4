@@ -23,6 +23,8 @@ def render_page_or_panel(
     context: dict,
 ) -> TemplateResponse:
     """يُرجع القالب الكامل أو جزء اللوحة عند طلب HTMX."""
-    if wants_partial(request, panel_id):
+    partial = wants_partial(request, panel_id)
+    context = {**context, 'is_htmx_tab_panel': partial}
+    if partial:
         return render(request, panel_template, context)
     return render(request, full_template, context)

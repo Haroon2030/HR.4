@@ -321,16 +321,13 @@ def save_employee_biometric_settings(request, employee_id):
     messages.success(request, 'تم حفظ إعدادات البصمة.')
 
     from urllib.parse import urlencode
-    params = {}
+    params = {'tab': 'fingerprint'}
     if request.POST.get('fp_from'):
         params['fp_from'] = request.POST.get('fp_from')
     if request.POST.get('fp_to'):
         params['fp_to'] = request.POST.get('fp_to')
     url = reverse('web:view_employee', kwargs={'employee_id': employee.id})
-    if params:
-        url = f'{url}?{urlencode(params)}#fingerprint'
-    else:
-        url = f'{url}#fingerprint'
+    url = f'{url}?{urlencode(params)}#fingerprint'
     return redirect(url)
 
 

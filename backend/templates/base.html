@@ -472,6 +472,7 @@
                             if (data && 'activeTab' in data) {
                                 data.activeTab = tab;
                             }
+                            Alpine.initTree(evt.detail.target);
                         } catch (e) { /* ignore */ }
                     }
                     if (tab === 'fingerprint' && window.location.hash !== '#fingerprint') {
