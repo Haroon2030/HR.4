@@ -121,6 +121,15 @@ def _validate_production_secret_key(key: str) -> None:
 
 _validate_production_secret_key(SECRET_KEY)
 
+from django.core.exceptions import ImproperlyConfigured as _ImproperlyConfigured
+
+_agent_global_key = (env('ATTENDANCE_AGENT_API_KEY', default='') or '').strip()
+if _agent_global_key and len(_agent_global_key) < 32:
+    raise _ImproperlyConfigured(
+        'ATTENDANCE_AGENT_API_KEY قصير جداً في الإنتاج (32 حرفاً كحد أدنى). '
+        'يُفضّل مفاتيح لكل جهاز: python manage.py generate_attendance_agent_key --device-id=ID'
+    )
+
 if DEBUG:
     from django.core.exceptions import ImproperlyConfigured
 

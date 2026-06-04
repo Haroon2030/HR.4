@@ -28,6 +28,20 @@ class AgentRateThrottle(SimpleRateThrottle):
         return self.cache_format % {'scope': self.scope, 'ident': ident}
 
 
+def _deny_global_key_metadata(request) -> None:
+    """في الإنتاج: المفتاح العام لا يستعلم قائمة الأجهزة/طلبات السحب."""
+    from django.conf import settings
+
+    if settings.DEBUG or getattr(settings, 'AGENT_GLOBAL_KEY_LIST_DEVICES', False):
+        return
+    principal = request.user
+    if isinstance(principal, AttendanceAgentPrincipal) and principal.is_global_key:
+        raise PermissionDenied(
+            'المفتاح العام لا يمكنه هذا الإجراء في الإنتاج. '
+            'استخدم مفتاحاً لكل جهاز (AGENT_GLOBAL_KEY_LIST_DEVICES=true للاستثناء).'
+        )
+
+
 def _assert_device_access(request, device_id: int) -> BiometricDevice:
     """يمنع مفتاح جهاز من العمل على جهاز آخر."""
     principal = request.user
@@ -53,6 +67,7 @@ class AgentDeviceListView(APIView):
     throttle_classes = [AgentRateThrottle]
 
     def get(self, request):
+        _deny_global_key_metadata(request)
         devices = BiometricDevice.objects.filter(
             is_deleted=False, is_active=True,
         ).order_by('name')
@@ -78,6 +93,7 @@ class AgentPullRequestsView(APIView):
     throttle_classes = [AgentRateThrottle]
 
     def get(self, request):
+        _deny_global_key_metadata(request)
         return Response({'success': True, 'data': list_pending_pull_requests()})
 
     def post(self, request):

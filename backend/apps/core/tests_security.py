@@ -126,6 +126,17 @@ class UserAdminSecurityTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse('web:list_users'), response.url)
 
+    def test_logout_requires_post(self):
+        self.client.login(username='specialist_editor', password='Editor-User-99!')
+        get_resp = self.client.get(reverse('web:auth:logout'))
+        self.assertEqual(get_resp.status_code, 302)
+        self.assertNotIn(reverse('web:auth:login'), get_resp.url)
+        self.assertTrue(self.client.session.get('_auth_user_id'))
+
+        post_resp = self.client.post(reverse('web:auth:logout'))
+        self.assertEqual(post_resp.status_code, 302)
+        self.assertEqual(post_resp.url, reverse('web:auth:login'))
+
 
 class BranchScopeTests(TestCase):
     @classmethod

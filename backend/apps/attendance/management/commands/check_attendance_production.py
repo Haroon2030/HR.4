@@ -156,22 +156,48 @@ class Command(BaseCommand):
         return CheckResult(True, '✅ جداول البصمة موجودة', tables)
 
     def _check_agent_api_key(self) -> CheckResult:
+        from apps.attendance.models import BiometricDevice
+
         key = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
         prod = not settings.DEBUG
-        if not key:
+        device_keys = BiometricDevice.objects.filter(
+            is_deleted=False,
+            is_active=True,
+        ).exclude(agent_api_key='').count()
+
+        if not key and device_keys == 0:
             if prod:
                 return CheckResult(
                     False,
                     '❌ مفتاح وكيل البصمة',
-                    'ATTENDANCE_AGENT_API_KEY غير مضبوط في .env',
-                    hint='python manage.py generate_attendance_agent_key',
+                    'لا ATTENDANCE_AGENT_API_KEY ولا مفاتيح أجهزة نشطة',
+                    hint='python manage.py generate_attendance_agent_key --device-id=ID',
                 )
             return CheckResult(
                 True,
                 '⚠ مفتاح وكيل البصمة (تطوير)',
                 'غير مضبوط — مقبول في التطوير فقط',
             )
-        return CheckResult(True, '✅ مفتاح وكيل البصمة', f'مضبوط ({len(key)} حرفاً)')
+
+        parts = []
+        if key:
+            parts.append(f'مفتاح عام ({len(key)} حرفاً)')
+            if prod and getattr(settings, 'AGENT_GLOBAL_KEY_LIST_DEVICES', False) is False:
+                parts.append('قائمة الأجهزة عبر مفاتيح الأجهزة فقط')
+        if device_keys:
+            parts.append(f'{device_keys} جهاز بمفتاح خاص')
+
+        title = '✅ مفتاح وكيل البصمة'
+        if prod and key and len(key) < 32:
+            return CheckResult(
+                False,
+                '❌ مفتاح وكيل البصمة',
+                'المفتاح العام قصير جداً',
+                hint='استخدم token_urlsafe(32)+ أو مفاتيح لكل جهاز',
+            )
+        if prod and key and not getattr(settings, 'AGENT_GLOBAL_KEY_LIST_DEVICES', False):
+            title = '✅ مفتاح وكيل البصمة (مُحكّم)'
+        return CheckResult(True, title, ' — '.join(parts))
 
     def _check_devices(self) -> CheckResult:
         from apps.attendance.models import BiometricDevice

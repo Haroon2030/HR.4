@@ -158,6 +158,13 @@ class AttendanceAgentAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    @override_settings(DEBUG=False, AGENT_GLOBAL_KEY_LIST_DEVICES=False)
+    def test_global_key_cannot_list_devices_in_production_mode(self):
+        client = APIClient()
+        client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY='test-agent-key-secret')
+        response = client.get('/api/v1/attendance/agent/devices/')
+        self.assertEqual(response.status_code, 403)
+
     def test_device_key_ingest_own_device(self):
         from apps.attendance.services.agent_keys import set_device_agent_key
 

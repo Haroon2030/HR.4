@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib import messages
 from django.core.cache import cache
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from apps.core.forms import ArabicPasswordChangeForm
 
 from apps.core.models import UserProfile
@@ -15,11 +16,12 @@ _LOGIN_ATTEMPT_LIMIT = 20
 _LOGIN_LOCKOUT_SECONDS = 3600
 
 
-def _login_throttle_key(request) -> str:
+def _login_throttle_key(request, username: str = '') -> str:
     ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
     if not ip:
         ip = request.META.get('REMOTE_ADDR', 'unknown')
-    return f'login_throttle:{ip}'
+    user_part = (username or '').strip().lower()[:64] or 'unknown'
+    return f'login_throttle:{ip}:{user_part}'
 
 
 # =============================================================================
@@ -36,7 +38,14 @@ def login_view(request):
         return redirect('web:dashboard')
     
     if request.method == 'POST':
-        throttle_key = _login_throttle_key(request)
+        form = LoginForm(request.POST)
+        throttle_username = ''
+        if form.is_valid():
+            throttle_username = form.cleaned_data.get('username') or ''
+        else:
+            throttle_username = (request.POST.get('username') or '').strip()
+
+        throttle_key = _login_throttle_key(request, throttle_username)
         attempts = cache.get(throttle_key, 0)
         if attempts >= _LOGIN_ATTEMPT_LIMIT:
             messages.error(
@@ -45,7 +54,6 @@ def login_view(request):
             )
             return render(request, 'auth/login.html')
 
-        form = LoginForm(request.POST)
         if not form.is_valid():
             for err in form.errors.values():
                 messages.error(request, err[0])
@@ -81,8 +89,13 @@ def login_view(request):
     return render(request, 'auth/login.html')
 
 
+@require_http_methods(['GET', 'POST'])
 def logout_view(request):
-    """تسجيل الخروج"""
+    """تسجيل الخروج — POST فقط (يمنع CSRF logout عبر GET)."""
+    if request.method != 'POST':
+        return redirect('web:dashboard')
+    if not request.user.is_authenticated:
+        return redirect('web:auth:login')
     logout(request)
     messages.success(request, 'تم تسجيل الخروج بنجاح')
     return redirect('web:auth:login')

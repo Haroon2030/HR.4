@@ -358,6 +358,8 @@ BIOMETRIC_ZK_OMIT_PING = env.bool('BIOMETRIC_ZK_OMIT_PING', default=True)
 
 # وكيل البصمة المحلي (وسيط بين جهاز ZK في الفرع والسيرفر السحابي)
 ATTENDANCE_AGENT_API_KEY = env('ATTENDANCE_AGENT_API_KEY', default='')
+# في الإنتاج: المفتاح العام لا يعرض قائمة الأجهزة/طلبات السحب (ingest يبقى مسموحاً)
+AGENT_GLOBAL_KEY_LIST_DEVICES = env.bool('AGENT_GLOBAL_KEY_LIST_DEVICES', default=False)
 
 # نوع المفتاح التلقائي للنماذج
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

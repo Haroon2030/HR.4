@@ -22,16 +22,34 @@ def has_app_permission(permission_code: str):
     return _HasAppPermission
 
 
+class DenyUnmappedAPIAction(BasePermission):
+    """يرفض أي action في ViewSet غير مُعرَّف في permission_map."""
+
+    def has_permission(self, request, view):
+        action = getattr(view, 'action', None)
+        if not action:
+            return True
+        permission_map = getattr(view, 'permission_map', None) or {}
+        return action in permission_map
+
+
 class ActionPermissionMixin:
     """
     ViewSet mixin: set permission_map = {'list': 'users.view', 'create': 'users.add', ...}.
-    Unlisted actions require IsAuthenticated only (avoid for sensitive endpoints).
+    أي action غير مذكور في permission_map يُرفض (لا يكفي تسجيل الدخول فقط).
     """
 
     permission_map: dict = {}
 
     def get_permissions(self):
-        code = self.permission_map.get(getattr(self, 'action', None))
+        action = getattr(self, 'action', None)
+        handler = getattr(self, action, None) if action else None
+        if handler is not None:
+            action_permission_classes = getattr(handler, 'permission_classes', None)
+            if action_permission_classes is not None:
+                return [cls() for cls in action_permission_classes]
+
+        code = self.permission_map.get(action)
         if code:
             return [IsAuthenticated(), has_app_permission(code)()]
-        return [IsAuthenticated()]
+        return [IsAuthenticated(), DenyUnmappedAPIAction()]

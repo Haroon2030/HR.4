@@ -1,4 +1,6 @@
 """Validators مشتركة للحقول."""
+import os
+
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
@@ -13,6 +15,57 @@ document_extension_validator = FileExtensionValidator(
     allowed_extensions=ALLOWED_DOCUMENT_EXTENSIONS,
     message=f'صيغة الملف غير مدعومة. الصيغ المسموحة: {", ".join(ALLOWED_DOCUMENT_EXTENSIONS)}',
 )
+
+
+def _read_upload_header(file, length: int = 16) -> bytes:
+    position = file.tell() if hasattr(file, 'tell') else None
+    try:
+        if hasattr(file, 'seek'):
+            file.seek(0)
+        header = file.read(length)
+        if not isinstance(header, bytes):
+            header = bytes(header or b'')
+        return header
+    finally:
+        if hasattr(file, 'seek') and position is not None:
+            file.seek(position)
+
+
+def _extension_matches_magic(ext: str, header: bytes) -> bool:
+    ext = (ext or '').lower().lstrip('.')
+    if ext == 'pdf':
+        return header.startswith(b'%PDF')
+    if ext in ('jpg', 'jpeg'):
+        return header.startswith(b'\xff\xd8\xff')
+    if ext == 'png':
+        return header.startswith(b'\x89PNG\r\n\x1a\n')
+    if ext == 'gif':
+        return header[:6] in (b'GIF87a', b'GIF89a')
+    if ext == 'webp':
+        return len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WEBP'
+    if ext == 'doc':
+        return header.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1')
+    if ext == 'docx':
+        return header.startswith(b'PK\x03\x04')
+    return False
+
+
+def validate_upload_magic_bytes(file):
+    """يتأكد أن بداية الملف تطابق الامتداد (يقلّل رفع ملفات خبيثة بامتداد مزيف)."""
+    if not file or getattr(file, '_committed', True):
+        return
+    name = getattr(file, 'name', '') or ''
+    ext = os.path.splitext(name)[1].lstrip('.').lower()
+    if ext not in ALLOWED_DOCUMENT_EXTENSIONS and ext not in ALLOWED_IMAGE_EXTENSIONS:
+        return
+    try:
+        header = _read_upload_header(file)
+    except Exception:
+        return
+    if not header:
+        raise ValidationError('الملف فارغ أو غير قابل للقراءة.')
+    if not _extension_matches_magic(ext, header):
+        raise ValidationError('محتوى الملف لا يطابق صيغة الامتداد المرفوع.')
 
 
 def validate_file_size(file):
@@ -39,7 +92,11 @@ def validate_file_size(file):
 
 
 # قائمة validators جاهزة للاستخدام في FileField
-DOCUMENT_VALIDATORS = [document_extension_validator, validate_file_size]
+DOCUMENT_VALIDATORS = [
+    document_extension_validator,
+    validate_file_size,
+    validate_upload_magic_bytes,
+]
 
 
 # ─── الصور (Images) ───────────────────────────────────────────────────
@@ -71,4 +128,8 @@ def validate_image_size(file):
         )
 
 
-IMAGE_VALIDATORS = [image_extension_validator, validate_image_size]
+IMAGE_VALIDATORS = [
+    image_extension_validator,
+    validate_image_size,
+    validate_upload_magic_bytes,
+]
