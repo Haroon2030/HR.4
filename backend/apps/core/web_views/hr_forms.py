@@ -8,6 +8,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.utils.html import strip_tags
@@ -224,24 +225,70 @@ _BASE_HR_FORMS = [
 HR_FORMS = merge_forms_catalog(_BASE_HR_FORMS, PRIMARY_FORM_SPECS)
 
 
+def _hr_forms_employee_queryset(user):
+    """موظفون المتاحون للنماذج — فلترة الفرع ثم الترتيب (لا slice قبل الفلترة)."""
+    from apps.core.web_views._helpers import filter_employees_queryset_for_user
+
+    qs = Employee.objects.filter(is_deleted=False).select_related(
+        'branch', 'department', 'profession',
+    )
+    qs = filter_employees_queryset_for_user(user, qs)
+    return qs.order_by('name')
+
+
 @login_required
 @permission_required('hr_forms.view')
 def hr_forms_index(request):
     """صفحة قسم النماذج الرسمية — اختيار النموذج والموظف"""
-    from apps.core.web_views._helpers import filter_employees_queryset_for_user
-
-    employees = filter_employees_queryset_for_user(
-        request.user,
-        Employee.objects.filter(is_deleted=False)
-        .select_related('branch', 'department', 'profession')
-        .prefetch_related('loans')
-        .order_by('name')[:500],
-    )
+    qs = _hr_forms_employee_queryset(request.user)
     visible_forms = [f for f in HR_FORMS if hr_form_allowed_for_user(request.user, f['key'])]
     return render(request, 'pages/hr_forms/index.html', {
         'forms': visible_forms,
-        'employees': employees,
+        'employees': list(qs[:500]),
+        'employee_total': qs.count(),
+        'employee_search_url': reverse('web:hr_forms_employee_search'),
     })
+
+
+@login_required
+@permission_required('hr_forms.view')
+def hr_forms_employee_search(request):
+    """بحث موظفين للنماذج الرسمية — اقتراحات أثناء الكتابة (JSON)."""
+    from django.db.models import Q
+    from django.http import JsonResponse
+
+    q = (request.GET.get('q') or '').strip()
+    if not q:
+        return JsonResponse({'results': [], 'total': 0})
+
+    qs = _hr_forms_employee_queryset(request.user)
+    terms = [t for t in q.split() if t]
+    if terms:
+        cond = Q()
+        for t in terms:
+            cond &= (
+                Q(name__icontains=t)
+                | Q(id_number__icontains=t)
+                | Q(employee_number__icontains=t)
+                | Q(phone__icontains=t)
+                | Q(branch__name__icontains=t)
+                | Q(department__name__icontains=t)
+                | Q(profession__name__icontains=t)
+            )
+        qs = qs.filter(cond)
+
+    results = [
+        {
+            'id': emp.id,
+            'name': emp.name,
+            'number': emp.employee_number or '',
+            'id_number': emp.id_number or '',
+            'dept': emp.department.name if emp.department_id else '',
+            'branch': emp.branch.name if emp.branch_id else '',
+        }
+        for emp in qs[:40]
+    ]
+    return JsonResponse({'results': results, 'total': len(results)})
 
 
 @login_required

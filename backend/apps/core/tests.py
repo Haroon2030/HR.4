@@ -451,6 +451,15 @@ class HRFormPrintViewTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, self.employee.name)
 
+    def test_hr_forms_employee_search_returns_matches(self):
+        c = Client()
+        self.assertTrue(c.login(username='hrform_su', password='x'))
+        r = c.get(reverse('web:hr_forms_employee_search'), {'q': 'موظف'})
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertGreaterEqual(data['total'], 1)
+        self.assertTrue(any(x['id'] == self.employee.id for x in data['results']))
+
 
 class PasswordChangeViewTests(TestCase):
     @classmethod

@@ -32,6 +32,8 @@
         var minQueryLen = opts.minQueryLen != null ? opts.minQueryLen : DEFAULT_MIN_LEN;
         var pageSize = opts.pageSize || DEFAULT_PAGE_SIZE;
 
+        var searchUrl = opts.searchUrl || '';
+
         return {
             query: '',
             showList: false,
@@ -41,12 +43,19 @@
             pageSize: pageSize,
             minQueryLen: minQueryLen,
             employees: [],
+            searchUrl: searchUrl,
+            remoteResults: [],
+            searchLoading: false,
+            _searchTimer: null,
 
             get hasQuery() {
                 return (this.query || '').trim().length >= this.minQueryLen;
             },
 
             get filtered() {
+                if (this.searchUrl) {
+                    return this.remoteResults;
+                }
                 return window.hrEmployeeSearchFilter(this.employees, this.query, this.minQueryLen);
             },
 
@@ -62,7 +71,52 @@
             onQueryInput() {
                 this.currentPage = 1;
                 this.activeIndex = 0;
-                this.showList = this.hasQuery;
+                if (!this.hasQuery) {
+                    this.showList = false;
+                    this.remoteResults = [];
+                    return;
+                }
+                this.showList = true;
+                if (this.searchUrl) {
+                    this.scheduleRemoteSearch();
+                }
+            },
+
+            scheduleRemoteSearch() {
+                var self = this;
+                if (self._searchTimer) clearTimeout(self._searchTimer);
+                self._searchTimer = setTimeout(function () {
+                    self.runRemoteSearch();
+                }, 280);
+            },
+
+            runRemoteSearch() {
+                var self = this;
+                var q = (self.query || '').trim();
+                if (!self.searchUrl || !q || q.length < self.minQueryLen) {
+                    self.remoteResults = [];
+                    self.searchLoading = false;
+                    return;
+                }
+                self.searchLoading = true;
+                fetch(self.searchUrl + '?q=' + encodeURIComponent(q), {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        self.remoteResults = data.results || [];
+                        self.searchLoading = false;
+                        self.showList = self.hasQuery;
+                        self.$nextTick(function () {
+                            if (window.lucide) lucide.createIcons();
+                        });
+                    })
+                    .catch(function () {
+                        self.searchLoading = false;
+                        self.remoteResults = [];
+                    });
             },
 
             onSearchFocus() {

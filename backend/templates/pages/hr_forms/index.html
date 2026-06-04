@@ -57,7 +57,7 @@
                     اختيار الموظف للنموذج
                 </span>
                 <span class="text-xs text-slate-400 font-normal">
-                    إجمالي: <span class="font-bold text-slate-600" x-text="employees.length"></span>
+                    متاح للبحث: <span class="font-bold text-slate-600" x-text="employeeTotal"></span>
                 </span>
             </div>
             <label for="hr-forms-employee-search" class="sr-only">ابحث عن الموظف</label>
@@ -92,8 +92,14 @@
                 اكتب في الحقل أعلاه — ستظهر قائمة بالموظفين المطابقين فقط (بدون فتح القائمة كاملة).
             </p>
 
+            <div x-show="searchLoading && hasQuery" x-cloak
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+                <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
+                جاري البحث…
+            </div>
+
             {# نتائج البحث #}
-            <div x-show="showList && hasQuery && filtered.length > 0"
+            <div x-show="!searchLoading && showList && hasQuery && filtered.length > 0"
                  x-cloak
                  @click.away="showList = false"
                  class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
@@ -163,11 +169,11 @@
                 </div>
             </div>
 
-            <div x-show="showList && hasQuery && filtered.length === 0"
+            <div x-show="!searchLoading && showList && hasQuery && filtered.length === 0"
                  x-cloak
                  class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center">
                 <i data-lucide="search-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
-                <p class="text-sm text-slate-500 mt-2">لا يوجد موظف مطابق للبحث</p>
+                <p class="text-sm text-slate-500 mt-2" x-text="employeeTotal === 0 ? 'لا يوجد موظفون ضمن فروعك — راجع صلاحيات الفروع' : 'لا يوجد موظف مطابق للبحث'"></p>
             </div>
         </div>
 
@@ -215,7 +221,8 @@
 function hrFormsApp() {
     if (typeof window.employeePickerBase !== 'function') {
         return {
-            query: '', showList: false, selected: null, employees: [], hasQuery: false,
+            query: '', showList: false, selected: null, employees: [], employeeTotal: 0,
+            searchLoading: false, hasQuery: false,
             filtered: [], pagedItems: [], totalPages: 1, currentPage: 1, activeIndex: 0,
             init: function () { if (window.lucide) lucide.createIcons(); },
             onQueryInput: function () {}, onSearchFocus: function () {}, clearQuery: function () {},
@@ -224,8 +231,13 @@ function hrFormsApp() {
             openForm: function () {},
         };
     }
-    var base = window.employeePickerBase({ pageSize: 8, minQueryLen: 1 });
+    var base = window.employeePickerBase({
+        pageSize: 8,
+        minQueryLen: 1,
+        searchUrl: '{{ employee_search_url|escapejs }}',
+    });
     return Object.assign(base, {
+        employeeTotal: {{ employee_total|default:0 }},
         employees: [
             {% for emp in employees %}
             {

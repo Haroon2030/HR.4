@@ -211,6 +211,7 @@ urlpatterns = [
     # 10. النماذج الرسمية والتقارير
     # ══════════════════════════════════════════════════════════════
     path('hr-forms/', web_views.hr_forms_index, name='hr_forms_index'),                                # فهرس النماذج
+    path('hr-forms/employees/search/', web_views.hr_forms_employee_search, name='hr_forms_employee_search'),
     path('hr-forms/<str:form_type>/<int:employee_id>/', web_views.hr_form_print, name='hr_form_print'), # طباعة نموذج
 
     path('reports/', web_views.reports_index, name='reports_index'),                    # فهرس التقارير
