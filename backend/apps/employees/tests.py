@@ -162,6 +162,50 @@ class AccrualLedgerNotesTests(TestCase):
         self.assertEqual(len(ctx['sections']), 2)
         self.assertEqual(ctx['sections'][0]['id'], 'leave')
 
+    def test_display_uses_30_days_not_stored_line_month_days(self):
+        """حتى لو سطر المسير قديماً month_days=31، العرض والمعادلات على 30."""
+        from apps.employees.models import EmployeeLedger
+        from apps.employees.services.accrual_ledger_notes import get_ledger_display_context
+        from apps.payroll.models import PayrollRun, PayrollLine
+        from apps.core.models import Branch, Company
+
+        company = Company.objects.create(name='شركة 2')
+        branch = Branch.objects.create(name='فرع 2', code='B2', company=company)
+        emp = Employee.objects.create(name='موظف 2', basic_salary=Decimal('4000'), hire_date=date(2026, 1, 1))
+        run = PayrollRun.objects.create(branch=branch, period_year=2026, period_month=5, status='locked')
+        PayrollLine.objects.create(
+            run=run,
+            employee=emp,
+            gross_salary=Decimal('4000'),
+            daily_rate=Decimal('129.03'),
+            month_days=31,
+        )
+        ledger = EmployeeLedger.objects.create(
+            employee=emp,
+            transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
+            date=date(2026, 5, 31),
+            leave_days_change=Decimal('1.75'),
+            leave_amount_change=Decimal('225.80'),
+            eosb_amount_change=Decimal('0'),
+            cumulative_leave_days=Decimal('1.75'),
+            cumulative_leave_amount=Decimal('225.80'),
+            cumulative_eosb_amount=Decimal('0'),
+            payroll_run=run,
+        )
+        ctx = get_ledger_display_context(ledger)
+        leave_rows = ctx['sections'][0]['rows']
+        daily_row = next(r for r in leave_rows if r['label'] == 'أجر اليوم')
+        self.assertIn('÷ 30', daily_row['formula'])
+        self.assertEqual(daily_row['result'], '133.33 ر.س')
+        self.assertEqual(
+            next(r for r in leave_rows if r['label'] == 'قيمة مخصص هذا الشهر')['result'],
+            '233.33 ر.س',
+        )
+        self.assertEqual(
+            next(m for m in ctx['meta'] if m['label'] == 'أيام الشهر')['value'],
+            '30',
+        )
+
 
 class EmployeeLoanTests(TestCase):
     def setUp(self):

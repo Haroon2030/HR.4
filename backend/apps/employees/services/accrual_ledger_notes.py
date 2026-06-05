@@ -30,14 +30,14 @@ def monthly_eosb_accrual(gross: Decimal, service_years: float) -> tuple[Decimal,
 def compute_monthly_ledger_amounts(
     *,
     gross_salary: Decimal,
-    daily_rate: Decimal,
+    daily_rate: Decimal | None = None,
     hire_date: date | None,
     period_year: int,
     period_month: int,
 ) -> dict:
-    """حساب مبالغ مخصص الشهر (نفس منطق lock_payroll_run)."""
+    """حساب مبالغ مخصص الشهر — أجر اليوم دائماً = الإجمالي ÷ 30."""
     gross = Decimal(gross_salary or 0)
-    daily = Decimal(daily_rate or 0) or daily_rate_from_total(gross)
+    daily = daily_rate_from_total(gross)
     leave_days = MONTHLY_LEAVE_ACCRUAL_DAYS
     leave_amount = (leave_days * daily).quantize(Decimal('0.01'))
 
@@ -62,6 +62,7 @@ def compute_monthly_ledger_amounts(
         'service_days': service_days,
         'service_years': round(service_years, 4),
         'month_end': calendar_month_last_day(period_year, period_month),
+        'month_days': STANDARD_MONTH_DAYS,
     }
 
 
@@ -112,15 +113,15 @@ def build_monthly_payroll_notes(
 ) -> str:
     calc = compute_monthly_ledger_amounts(
         gross_salary=gross_salary,
-        daily_rate=daily_rate,
         hire_date=hire_date,
         period_year=period_year,
         period_month=period_month,
     )
+    month_days = STANDARD_MONTH_DAYS
     run_ref = f' | مسير #{payroll_run_id}' if payroll_run_id else ''
     return (
         f'عملية: مخصص شهري — إقفال مسير رواتب {period_month}/{period_year}{run_ref}\n'
-        f'تاريخ القيد: آخر يوم في الشهر ({calc["month_end"]}) | أيام الشهر: {month_days}\n'
+        f'تاريخ القيد: آخر يوم في الشهر ({calc["month_end"]}) | أيام الشهر (للحساب): {month_days}\n'
         f'── استحقاق الإجازة السنوية (21 يوم/سنة) ──\n'
         f'المعدل الشهري: 21 ÷ 12 = {MONTHLY_LEAVE_ACCRUAL_DAYS} يوم\n'
         f'الراتب الإجمالي (لقطة المسير): {calc["gross"]} ر.س\n'
@@ -181,7 +182,7 @@ def _monthly_display_context(ledger) -> dict | None:
         return None
 
     run = ledger.payroll_run
-    month_days = line.month_days or salary_month_days(run.period_year, run.period_month)
+    month_days = STANDARD_MONTH_DAYS
     prev = (
         EmployeeLedger.objects.filter(
             employee_id=ledger.employee_id,
@@ -196,11 +197,14 @@ def _monthly_display_context(ledger) -> dict | None:
 
     calc = compute_monthly_ledger_amounts(
         gross_salary=line.gross_salary,
-        daily_rate=line.daily_rate,
         hire_date=ledger.employee.hire_date,
         period_year=run.period_year,
         period_month=run.period_month,
     )
+    display_daily = calc['daily_rate']
+    display_leave_amount = (
+        Decimal(ledger.leave_days_change or 0) * display_daily
+    ).quantize(Decimal('0.01'))
     eosb_rule = '≤5 سنوات خدمة' if calc['service_years'] <= 5 else '>5 سنوات خدمة'
     eosb_divisor = '24' if calc['service_years'] <= 5 else '12'
 
@@ -225,8 +229,8 @@ def _monthly_display_context(ledger) -> dict | None:
                     {'label': 'أجر اليوم', 'formula': f'{_q(calc["gross"])} ÷ {month_days}', 'result': f'{_q(calc["daily_rate"])} ر.س'},
                     {
                         'label': 'قيمة مخصص هذا الشهر',
-                        'formula': f'{_q(ledger.leave_days_change, 4)} × {_q(calc["daily_rate"])}',
-                        'result': f'{_q(ledger.leave_amount_change)} ر.س',
+                        'formula': f'{_q(ledger.leave_days_change, 4)} × {_q(display_daily)}',
+                        'result': f'{_q(display_leave_amount)} ر.س',
                         'highlight': True,
                     },
                 ],
@@ -379,9 +383,9 @@ def display_ledger_notes(ledger) -> str:
             return build_monthly_payroll_notes(
                 period_year=run.period_year,
                 period_month=run.period_month,
-                month_days=line.month_days or salary_month_days(run.period_year, run.period_month),
+                month_days=STANDARD_MONTH_DAYS,
                 gross_salary=line.gross_salary,
-                daily_rate=line.daily_rate,
+                daily_rate=daily_rate_from_total(line.gross_salary),
                 hire_date=hire,
                 prev_leave_days=prev.cumulative_leave_days if prev else Decimal('0'),
                 prev_leave_amount=prev.cumulative_leave_amount if prev else Decimal('0'),

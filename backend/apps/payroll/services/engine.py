@@ -486,7 +486,6 @@ def lock_payroll_run(run: PayrollRun, user):
             leave_days_change = MONTHLY_LEAVE_ACCRUAL_DAYS
             calc = compute_monthly_ledger_amounts(
                 gross_salary=line.gross_salary,
-                daily_rate=line.daily_rate,
                 hire_date=line.employee.hire_date,
                 period_year=run.period_year,
                 period_month=run.period_month,
@@ -500,9 +499,9 @@ def lock_payroll_run(run: PayrollRun, user):
             notes = build_monthly_payroll_notes(
                 period_year=run.period_year,
                 period_month=run.period_month,
-                month_days=line.month_days or salary_month_days(run.period_year, run.period_month),
+                month_days=salary_month_days(run.period_year, run.period_month),
                 gross_salary=line.gross_salary,
-                daily_rate=line.daily_rate,
+                daily_rate=calc['daily_rate'],
                 hire_date=line.employee.hire_date,
                 prev_leave_days=prev_leave_days,
                 prev_leave_amount=prev_leave_amt,
