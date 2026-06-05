@@ -17,11 +17,15 @@ from apps.employees.models import (
     EmployeeLoan,
     LoanInstallment,
 )
-from apps.payroll.models import PayrollRun
+from apps.payroll.models import PayrollAllocationLine, PayrollRun
 from apps.payroll.services.engine import (
     build_payroll_run,
     lock_payroll_run,
     unlock_payroll_run,
+)
+from apps.payroll.services.transfer_payroll import (
+    build_payroll_detailed_run,
+    transfers_in_period,
 )
 
 User = get_user_model()
@@ -219,6 +223,77 @@ class PayrollEngineTests(TestCase):
         lock_payroll_run(run, self.user)
         abs_rec.refresh_from_db()
         self.assertEqual(abs_rec.applied_to_payroll_id, run.id)
+
+    def test_mid_month_transfer_full_salary_on_new_branch_only(self):
+        import json
+
+        branch_b = Branch.objects.create(
+            name='Branch B', code='TST02', company=self.company,
+        )
+        self.employee.branch = branch_b
+        self.employee.save(update_fields=['branch'])
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TRANSFER,
+            title='نقل',
+            statement_date=date(2026, 3, 15),
+            content=json.dumps({
+                'branch_changed': True,
+                'branch_from': 'Branch A',
+                'branch_to': 'Branch B',
+                'branch_from_id': self.branch.id,
+                'branch_to_id': branch_b.id,
+            }, ensure_ascii=False),
+        )
+        run_old = build_payroll_run(
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        self.assertEqual(run_old.lines.count(), 0)
+
+        run_new = build_payroll_run(
+            branch_b, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        line = run_new.lines.get()
+        self.assertEqual(line.net_salary, Decimal('4050.00'))
+        self.assertIn('transfer', line.breakdown)
+        self.assertEqual(line.breakdown['transfer']['rule'], 'full_salary_new_branch')
+
+        detailed = build_payroll_detailed_run(
+            self.company, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        rows = list(detailed.allocation_lines.order_by('branch__name'))
+        self.assertEqual(len(rows), 2)
+        old_row = next(r for r in rows if r.branch_id == self.branch.id)
+        new_row = next(r for r in rows if r.branch_id == branch_b.id)
+        self.assertEqual(old_row.net_amount, Decimal('0'))
+        self.assertFalse(old_row.bears_salary)
+        self.assertEqual(new_row.net_amount, line.net_salary)
+        self.assertTrue(new_row.bears_salary)
+
+    def test_transfers_in_period_parses_statement(self):
+        import json
+
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TRANSFER,
+            title='نقل',
+            statement_date=date(2026, 4, 10),
+            content=json.dumps({
+                'branch_changed': True,
+                'branch_from': 'Branch A',
+                'branch_to': 'Branch A',
+                'branch_from_id': self.branch.id,
+                'branch_to_id': self.branch.id,
+            }, ensure_ascii=False),
+        )
+        evts = transfers_in_period(self.company.id, 2026, 4)
+        self.assertNotIn(self.employee.id, evts)
 
     def test_unlock_clears_payroll_links_and_returns_draft(self):
         abs_rec = EmployeeAbsence.objects.create(

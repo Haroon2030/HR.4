@@ -55,17 +55,20 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="flex items-end">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 sm:col-span-2 lg:col-span-1">
                 {% if can_build %}
-                <button type="submit"
-                    class="w-full px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md inline-flex items-center justify-center gap-1">
+                <button type="submit" name="build_kind" value="standard"
+                    class="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md inline-flex items-center justify-center gap-1">
                     <i data-lucide="play" class="w-4 h-4"></i> بناء المسير
+                </button>
+                <button type="submit" name="build_kind" value="detailed"
+                    class="flex-1 px-4 py-2 text-sm font-semibold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md inline-flex items-center justify-center gap-1"
+                    title="توزيع تحمّل الفروع للموظفين المنقولين">
+                    <i data-lucide="git-branch" class="w-4 h-4"></i> مسير تفصيلي
                 </button>
                 {% else %}
                 <button type="button" disabled
-                    class="w-full px-4 py-2 text-sm font-semibold text-slate-400 bg-slate-100 rounded-md inline-flex items-center justify-center gap-1 cursor-not-allowed">
-                    <i data-lucide="play" class="w-4 h-4"></i> بناء المسير
-                </button>
+                    class="flex-1 px-4 py-2 text-sm font-semibold text-slate-400 bg-slate-100 rounded-md cursor-not-allowed">بناء المسير</button>
                 {% endif %}
             </div>
         </form>
@@ -211,6 +214,67 @@
         </div>
         {% endif %}
     </div>
+
+    {% if show_table and allocation_lines %}
+    <div class="payroll-lines-card border-indigo-200">
+        <div class="payroll-lines-hd flex flex-wrap items-center justify-between gap-2">
+            <h3 class="m-0 text-indigo-900">
+                <i data-lucide="git-branch" class="w-4 h-4 inline-block ml-1"></i>
+                المسير التفصيلي — تحمّل الفروع (نقل)
+            </h3>
+            <p class="text-xs text-slate-500 m-0">الفرع الجديد يتحمل الراتب كاملاً</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="payroll-tbl">
+                <thead>
+                    <tr>
+                        <th class="text-right">الموظف</th>
+                        <th class="text-right">الفرع</th>
+                        <th class="text-center">تاريخ النقل</th>
+                        <th class="col-num">أيام</th>
+                        <th class="col-num th-net">المبلغ</th>
+                        <th class="text-center">يتحمل</th>
+                        <th class="text-center">مسير</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in allocation_lines %}
+                    <tr>
+                        <td class="font-bold text-slate-900">{{ row.employee.name }}</td>
+                        <td>{{ row.branch.name }}</td>
+                        <td class="text-center text-sm">{{ row.transfer_date|default:"—" }}</td>
+                        <td class="col-num">{{ row.days_in_branch }}</td>
+                        <td class="col-num td-net">{{ row.net_amount|format_sar:"net" }}</td>
+                        <td class="text-center">{% if row.bears_salary %}<span class="text-emerald-700 text-xs font-semibold">نعم</span>{% else %}—{% endif %}</td>
+                        <td class="text-center">
+                            <a href="{% url 'web:view_payroll_run' row.run.id %}" class="text-indigo-600 hover:text-indigo-800" title="عرض المسير التفصيلي">
+                                <i data-lucide="eye" class="w-4 h-4 inline-block"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if allocation_page_obj and allocation_page_obj.has_other_pages %}
+        <div class="p-4 border-t border-slate-100 flex items-center justify-center gap-1 text-sm">
+            {% if allocation_page_obj.has_previous %}
+            <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.previous_page_number }}"
+               class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">السابق</a>
+            {% endif %}
+            <span class="px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold">{{ allocation_page_obj.number }}</span>
+            {% if allocation_page_obj.has_next %}
+            <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.next_page_number }}"
+               class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">التالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% elif show_table and can_build %}
+    <div class="bg-indigo-50 border border-dashed border-indigo-200 rounded-xl p-4 text-sm text-indigo-900 text-center">
+        لا يوجد مسير تفصيلي لهذا الشهر. اضغط <strong>مسير تفصيلي</strong> بعد بناء المسير العادي (إن وُجد موظفون منقولون).
+    </div>
+    {% endif %}
     {% endif %}
 </div>
 <script>

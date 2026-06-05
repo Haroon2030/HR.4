@@ -268,6 +268,8 @@ def _execute_transfer(action, executor):
         'reason': reason,
         'branch_from': old_branch.name if old_branch else '—',
         'branch_to': new_branch.name if new_branch else '—',
+        'branch_from_id': old_branch.id if old_branch else None,
+        'branch_to_id': new_branch.id if new_branch else None,
         'dept_from': old_dept.name if old_dept else '—',
         'dept_to': new_dept.name if new_dept else '—',
         'branch_changed': 'branch' in changed,

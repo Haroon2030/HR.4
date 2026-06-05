@@ -107,6 +107,7 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
             run__period_year=year,
             run__period_month=month,
             run__status=PayrollRun.Status.LOCKED,
+            run__run_kind=PayrollRun.RunKind.STANDARD,
         )
         .exclude(run_id=run.pk)
         .values_list('employee_id', flat=True)
@@ -137,8 +138,13 @@ def _unpaid_leave_days_in_period(leave, period_start, period_end):
 # 1. بناء المسير
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _employees_for_payroll_run(branch, salary_mode, *, sponsorship_id=None):
-    """موظفون نشطون/في إجازة حسب نوع الراتب وشركة الكفالة."""
+def _employees_for_payroll_run(branch, salary_mode, *, sponsorship_id=None, year=None, month=None):
+    """موظفون مسير الفرع — مع قاعدة النقل (راتب كامل للفرع الجديد)."""
+    if year is not None and month is not None:
+        from apps.payroll.services.transfer_payroll import employees_queryset_for_branch_payroll
+        return employees_queryset_for_branch_payroll(
+            branch, salary_mode, sponsorship_id=sponsorship_id, year=year, month=month,
+        )
     from apps.employees.models import Employee
 
     qs = Employee.objects.filter(
@@ -153,6 +159,104 @@ def _employees_for_payroll_run(branch, salary_mode, *, sponsorship_id=None):
             qs = qs.filter(sponsorship_id=sponsorship_id)
         return qs
     raise ValueError('نوع الراتب غير صالح.')
+
+
+def _compute_employee_payroll_snapshot(
+    emp,
+    year: int,
+    month: int,
+    *,
+    run: PayrollRun | None,
+    abs_by_emp=None,
+    leaves_by_emp=None,
+    inst_by_emp=None,
+    pen_by_emp=None,
+) -> dict:
+    """حساب snapshot راتب موظف لشهر — يُستخدم في المسير العادي والتفصيلي."""
+    period_start, period_end = calendar_period_bounds(year, month)
+    month_days = salary_month_days(year, month)
+
+    if abs_by_emp is None:
+        if run is None:
+            raise ValueError('run مطلوب لحساب الخصومات.')
+        abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, _ = _bulk_payroll_deductions(
+            [emp.id], run, period_start, period_end, year, month,
+        )
+
+    emp_absences = abs_by_emp.get(emp.id, [])
+    emp_leaves = leaves_by_emp.get(emp.id, [])
+    emp_installments = inst_by_emp.get(emp.id, [])
+    emp_penalties = pen_by_emp.get(emp.id, [])
+
+    gross = (
+        Decimal(emp.basic_salary or 0)
+        + Decimal(emp.housing_allowance or 0)
+        + Decimal(emp.transport_allowance or 0)
+        + Decimal(emp.other_allowance or 0)
+        + Decimal(emp.cash_amount or 0)
+        + Decimal(emp.meal_allowance or 0)
+    )
+    daily_rate = daily_rate_from_total(gross)
+
+    absence_deduction = _q(
+        sum((Decimal(a.deduction_amount or 0) for a in emp_absences), Decimal('0'))
+    )
+    unpaid_days = sum(
+        (_unpaid_leave_days_in_period(lv, period_start, period_end) for lv in emp_leaves),
+        Decimal('0'),
+    )
+    unpaid_leave_deduction = _q(daily_rate * unpaid_days)
+    loan_deduction = _q(sum((Decimal(i.amount) for i in emp_installments), Decimal('0')))
+    penalty_deduction = _q(
+        sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
+    )
+    rate = Decimal(emp.insurance_deduction_rate or 0)
+    insurance_deduction = _q(gross * rate / Decimal('100'))
+    total_deductions = _q(
+        absence_deduction + unpaid_leave_deduction + loan_deduction
+        + penalty_deduction + insurance_deduction
+    )
+    net_salary = _q(gross - total_deductions)
+
+    return {
+        'gross_salary': gross,
+        'daily_rate': daily_rate,
+        'month_days': month_days,
+        'absence_days': sum((a.days for a in emp_absences), 0),
+        'absence_deduction': absence_deduction,
+        'unpaid_leave_days': unpaid_days,
+        'unpaid_leave_deduction': unpaid_leave_deduction,
+        'loan_deduction': loan_deduction,
+        'penalty_deduction': penalty_deduction,
+        'insurance_deduction': insurance_deduction,
+        'total_earnings': gross,
+        'total_deductions': total_deductions,
+        'net_salary': net_salary,
+        'breakdown': {
+            'absences': [
+                {
+                    'id': a.id,
+                    'date': a.absence_date.isoformat(),
+                    'days': a.days,
+                    'amount': str(a.deduction_amount),
+                }
+                for a in emp_absences
+            ],
+            'unpaid_leaves': [
+                {'id': l.id, 'from': l.date_from.isoformat(), 'to': l.date_to.isoformat()}
+                for l in emp_leaves
+            ],
+            'loan_installments': [
+                {'id': i.id, 'loan_id': i.loan_id, 'amount': str(i.amount)}
+                for i in emp_installments
+            ],
+            'penalties': [
+                {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount)}
+                for p in emp_penalties
+            ],
+            'insurance_rate': str(rate),
+        },
+    }
 
 
 @transaction.atomic
@@ -182,6 +286,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         period_year=year,
         period_month=month,
         salary_mode=salary_mode,
+        run_kind=PayrollRun.RunKind.STANDARD,
         defaults={
             'created_by': user,
             'status': PayrollRun.Status.DRAFT,
@@ -213,10 +318,16 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     period_start, period_end = calendar_period_bounds(year, month)
     month_days = salary_month_days(year, month)
 
-    # ── جلب الموظفين حسب نوع الراتب ──
+    from apps.payroll.services.transfer_payroll import (
+        transfer_breakdown_for_employee,
+        transfers_in_period,
+    )
+    company_transfers = transfers_in_period(branch.company_id, year, month)
+
+    # ── جلب الموظفين حسب نوع الراتب + قاعدة النقل ──
     employees = list(
         _employees_for_payroll_run(
-            branch, salary_mode, sponsorship_id=sponsorship_id,
+            branch, salary_mode, sponsorship_id=sponsorship_id, year=year, month=month,
         ).order_by('name').distinct()
     )
     employee_ids = [e.id for e in employees]
@@ -235,10 +346,17 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         if emp.id in locked_emp_ids:
             continue
 
-        emp_absences = abs_by_emp.get(emp.id, [])
-        emp_leaves = leaves_by_emp.get(emp.id, [])
-        emp_installments = inst_by_emp.get(emp.id, [])
-        emp_penalties = pen_by_emp.get(emp.id, [])
+        snap = _compute_employee_payroll_snapshot(
+            emp, year, month, run=run,
+            abs_by_emp=abs_by_emp,
+            leaves_by_emp=leaves_by_emp,
+            inst_by_emp=inst_by_emp,
+            pen_by_emp=pen_by_emp,
+        )
+        breakdown = dict(snap['breakdown'])
+        transfer_info = transfer_breakdown_for_employee(company_transfers.get(emp.id))
+        if transfer_info:
+            breakdown['transfer'] = transfer_info
 
         line = PayrollLine(
             run=run,
@@ -249,67 +367,21 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             other_allowance=emp.other_allowance or 0,
             cash_amount=emp.cash_amount or 0,
             meal_allowance=emp.meal_allowance or 0,
-            month_days=month_days,
+            month_days=snap['month_days'],
+            daily_rate=snap['daily_rate'],
+            absence_days=snap['absence_days'],
+            absence_deduction=snap['absence_deduction'],
+            unpaid_leave_days=snap['unpaid_leave_days'],
+            unpaid_leave_deduction=snap['unpaid_leave_deduction'],
+            loan_deduction=snap['loan_deduction'],
+            penalty_deduction=snap['penalty_deduction'],
+            insurance_deduction=snap['insurance_deduction'],
+            gross_salary=snap['gross_salary'],
+            total_earnings=snap['total_earnings'],
+            total_deductions=snap['total_deductions'],
+            net_salary=snap['net_salary'],
+            breakdown=breakdown,
         )
-
-        gross = (
-            Decimal(emp.basic_salary or 0)
-            + Decimal(emp.housing_allowance or 0)
-            + Decimal(emp.transport_allowance or 0)
-            + Decimal(emp.other_allowance or 0)
-            + Decimal(emp.cash_amount or 0)
-            + Decimal(emp.meal_allowance or 0)
-        )
-        line.daily_rate = daily_rate_from_total(gross)
-
-        line.absence_days = sum((a.days for a in emp_absences), 0)
-        line.absence_deduction = _q(
-            sum((Decimal(a.deduction_amount or 0) for a in emp_absences), Decimal('0'))
-        )
-
-        unpaid_days = sum(
-            (_unpaid_leave_days_in_period(lv, period_start, period_end) for lv in emp_leaves),
-            Decimal('0'),
-        )
-        line.unpaid_leave_days = unpaid_days
-        line.unpaid_leave_deduction = _q(line.daily_rate * unpaid_days)
-
-        line.loan_deduction = _q(
-            sum((Decimal(i.amount) for i in emp_installments), Decimal('0'))
-        )
-        line.penalty_deduction = _q(
-            sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
-        )
-
-        rate = Decimal(emp.insurance_deduction_rate or 0)
-        line.insurance_deduction = _q(gross * rate / Decimal('100'))
-
-        line.breakdown = {
-            'absences': [
-                {
-                    'id': a.id,
-                    'date': a.absence_date.isoformat(),
-                    'days': a.days,
-                    'amount': str(a.deduction_amount),
-                }
-                for a in emp_absences
-            ],
-            'unpaid_leaves': [
-                {'id': l.id, 'from': l.date_from.isoformat(), 'to': l.date_to.isoformat()}
-                for l in emp_leaves
-            ],
-            'loan_installments': [
-                {'id': i.id, 'loan_id': i.loan_id, 'amount': str(i.amount)}
-                for i in emp_installments
-            ],
-            'penalties': [
-                {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount)}
-                for p in emp_penalties
-            ],
-            'insurance_rate': str(rate),
-        }
-
-        line.compute_totals()
         lines_to_create.append(line)
 
     if lines_to_create:

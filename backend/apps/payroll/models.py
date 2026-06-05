@@ -49,6 +49,10 @@ class PayrollRun(BaseModel):
         CASH = 'cash', 'نقدي'           # موظفون بدون كفالة
         TRANSFER = 'transfer', 'تحويل'  # موظفون على كفالة
 
+    class RunKind(models.TextChoices):
+        STANDARD = 'standard', 'مسير'                    # مسير فرع — راتب الموظفين الحاليين
+        DETAILED = 'detailed', 'مسير تفصيلي'             # توزيع تحمّل الفروع عند النقل
+
     # ── العلاقات ──
     company = models.ForeignKey(
         'core.Company', on_delete=models.PROTECT, related_name='payroll_runs',
@@ -58,9 +62,13 @@ class PayrollRun(BaseModel):
         'setup.Sponsorship', on_delete=models.PROTECT, related_name='payroll_runs',
         verbose_name="شركة الكفالة", null=True, blank=True,
     )
+    run_kind = models.CharField(
+        "نوع المسير", max_length=20, choices=RunKind.choices,
+        default=RunKind.STANDARD, db_index=True,
+    )
     branch = models.ForeignKey(
         Branch, on_delete=models.PROTECT, related_name='payroll_runs',
-        verbose_name="الفرع"
+        verbose_name="الفرع", null=True, blank=True,
     )
     salary_mode = models.CharField(
         "نوع الراتب", max_length=20, choices=SalaryMode.choices,
@@ -102,11 +110,23 @@ class PayrollRun(BaseModel):
         verbose_name = "مسير رواتب"
         verbose_name_plural = "مسيرات الرواتب"
         ordering = ['-period_year', '-period_month', 'branch__name']
-        unique_together = [
-            ('branch', 'period_year', 'period_month', 'salary_mode'),
+        constraints = [
+            models.UniqueConstraint(
+                fields=['branch', 'period_year', 'period_month', 'salary_mode'],
+                condition=models.Q(run_kind='standard'),
+                name='payroll_uniq_standard_run',
+            ),
+            models.UniqueConstraint(
+                fields=['company', 'period_year', 'period_month', 'salary_mode', 'sponsorship'],
+                condition=models.Q(run_kind='detailed'),
+                name='payroll_uniq_detailed_run',
+            ),
         ]
 
     def __str__(self):
+        if self.run_kind == self.RunKind.DETAILED:
+            label = self.company.name if self.company_id else 'شركة'
+            return f"{label} — تفصيلي {self.period_year}/{self.period_month:02d}"
         return f"{self.branch.name} — {self.period_year}/{self.period_month:02d}"
 
     @property
@@ -134,6 +154,78 @@ class PayrollRun(BaseModel):
         self.save(update_fields=[
             'total_earnings', 'total_deductions', 'total_net', 'employees_count'
         ])
+
+    def recompute_detailed_totals(self):
+        """إجماليات المسير التفصيلي من أسطر توزيع الفروع."""
+        from django.db.models import Sum, Count
+        agg = self.allocation_lines.filter(bears_salary=True).aggregate(
+            n=Count('employee_id', distinct=True),
+            net=Sum('net_amount'),
+        )
+        self.total_earnings = Decimal('0')
+        self.total_deductions = Decimal('0')
+        self.total_net = agg['net'] or Decimal('0')
+        self.employees_count = agg['n'] or 0
+        self.save(update_fields=[
+            'total_earnings', 'total_deductions', 'total_net', 'employees_count',
+        ])
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# توزيع تحمّل الفروع — مسير تفصيلي (نقل منتصف الشهر)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class PayrollAllocationLine(BaseModel):
+    """
+    سطر توزيع: موظف منقول — فرع + أيام + مبلغ يتحمله الفرع.
+    الفرع الجديد يتحمل الراتب كاملاً؛ الفرع السابق صفر.
+    """
+
+    run = models.ForeignKey(
+        PayrollRun, on_delete=models.CASCADE, related_name='allocation_lines',
+        verbose_name="المسير التفصيلي",
+    )
+    employee = models.ForeignKey(
+        'employees.Employee', on_delete=models.PROTECT, related_name='payroll_allocations',
+        verbose_name="الموظف",
+    )
+    branch = models.ForeignKey(
+        Branch, on_delete=models.PROTECT, related_name='payroll_allocations',
+        verbose_name="الفرع",
+    )
+    from_branch = models.ForeignKey(
+        Branch, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='payroll_allocations_from', verbose_name="من فرع",
+    )
+    transfer_date = models.DateField("تاريخ النقل", null=True, blank=True)
+    days_in_branch = models.DecimalField(
+        "أيام في الفرع", max_digits=6, decimal_places=1, default=0,
+    )
+    net_amount = models.DecimalField(
+        "المبلغ على الفرع", max_digits=12, decimal_places=2, default=0,
+    )
+    employee_net_total = models.DecimalField(
+        "صافي الموظف (كامل)", max_digits=12, decimal_places=2, default=0,
+    )
+    bears_salary = models.BooleanField(
+        "يتحمل الراتب", default=False, db_index=True,
+    )
+    transfer_statement_id = models.PositiveIntegerField(
+        "معرف سجل النقل", null=True, blank=True,
+    )
+    notes = models.CharField("ملاحظة", max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "توزيع فرع — مسير تفصيلي"
+        verbose_name_plural = "توزيعات الفروع — مسير تفصيلي"
+        ordering = ['employee__name', 'branch__name']
+        indexes = [
+            models.Index(fields=['run', 'employee']),
+            models.Index(fields=['run', 'branch']),
+        ]
+
+    def __str__(self):
+        return f"{self.employee_id} @ {self.branch_id} = {self.net_amount}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
