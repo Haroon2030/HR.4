@@ -1086,12 +1086,14 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
 body.hr-app .hr-page-tabs__bar,
 body.hr-app .hr-tabs__bar,
 body.hr-app [role="tablist"].hr-page-tabs__bar,
-body.hr-app nav[role="tablist"].hr-page-tabs__bar {
+body.hr-app nav[role="tablist"].hr-page-tabs__bar,
+body.hr-app .hr-page-tabs > nav[role="tablist"],
+body.hr-app .hr-page-tabs > [role="tablist"] {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.35rem 0.15rem;
-    padding: 0.45rem 0.5rem 0;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
     background: rgba(248, 250, 252, 0.42);
     backdrop-filter: blur(10px) saturate(1.05);
     -webkit-backdrop-filter: blur(10px) saturate(1.05);
@@ -1115,8 +1117,8 @@ body.hr-app .hr-report-tab {
     color: rgb(100 116 139);
     background: var(--hr-tab-idle-bg);
     border: 1px solid var(--hr-tab-idle-border);
-    border-bottom: none;
-    border-radius: 0.65rem 0.65rem 0 0;
+    border-radius: 0.5rem;
+    box-sizing: border-box;
     cursor: pointer;
     white-space: nowrap;
     text-decoration: none;
@@ -1128,40 +1130,7 @@ body.hr-app .hr-report-tab {
         transform 0.18s ease;
 }
 
-/* فاصل خفيف بين التبويبات المتجاورة */
-body.hr-app [role="tablist"] > [role="tab"] + [role="tab"],
-body.hr-app .hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn,
-body.hr-app .hr-page-tabs__bar > .hr-tab + .hr-tab,
-body.hr-app .hr-tabs__bar > .hr-tab-btn + .hr-tab-btn,
-body.hr-app .hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn,
-body.hr-app nav.hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn,
-body.hr-app nav.hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn,
-body.hr-app [role="tablist"].hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn,
-body.hr-app [role="tablist"].hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn {
-    border-inline-start-color: var(--hr-tab-separator);
-    box-shadow: inset 1px 0 0 var(--hr-tab-separator-shadow);
-}
-
-/* إخفاء الفاصل المزدوج بجانب التبويب النشط */
-body.hr-app [role="tablist"] > [role="tab"].is-active + [role="tab"],
-body.hr-app [role="tablist"] > [role="tab"] + [role="tab"].is-active,
-body.hr-app [role="tablist"] > [role="tab"].hr-tab--active + [role="tab"],
-body.hr-app [role="tablist"] > [role="tab"] + [role="tab"].hr-tab--active,
-body.hr-app [role="tablist"] > [role="tab"][aria-selected="true"] + [role="tab"],
-body.hr-app [role="tablist"] > [role="tab"] + [role="tab"][aria-selected="true"],
-body.hr-app .hr-page-tabs__bar > .hr-tab-btn.is-active + .hr-tab-btn,
-body.hr-app .hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn.is-active,
-body.hr-app .hr-page-tabs__bar > .hr-tab.hr-tab--active + .hr-tab,
-body.hr-app .hr-page-tabs__bar > .hr-tab + .hr-tab.hr-tab--active,
-body.hr-app nav.hr-page-tabs__bar > .hr-tab-btn.is-active + .hr-tab-btn,
-body.hr-app nav.hr-page-tabs__bar > .hr-tab-btn + .hr-tab-btn.is-active,
-body.hr-app nav.hr-page-tabs__bar > a.hr-tab-btn.is-active + a.hr-tab-btn,
-body.hr-app nav.hr-page-tabs__bar > a.hr-tab-btn + a.hr-tab-btn.is-active {
-    box-shadow: none;
-    border-inline-start-color: rgba(203, 213, 225, 0.45);
-}
-
-/* تبويب نشط أو عند المرور — نفس المظهر الزجاجي */
+/* تبويب نشط أو عند المرور — حدود كاملة من كل الجهات */
 body.hr-app [role="tablist"] > [role="tab"].is-active,
 body.hr-app [role="tablist"] > [role="tab"].hr-tab--active,
 body.hr-app [role="tablist"] > [role="tab"][aria-selected="true"],
@@ -1186,11 +1155,10 @@ body.hr-app [role="tablist"] .hr-tab:focus-visible:not(.hr-tab--active):not(.is-
     background: var(--hr-tab-glass-active-bg);
     backdrop-filter: blur(16px) saturate(1.25);
     -webkit-backdrop-filter: blur(16px) saturate(1.25);
-    border-color: rgba(255, 255, 255, 0.95);
-    border-bottom-color: transparent;
+    border: 1px solid rgba(147, 197, 253, 0.85);
     box-shadow: var(--hr-tab-glass-active-shadow);
-    transform: translateY(-1px);
-    z-index: 2;
+    transform: none;
+    z-index: 1;
 }
 
 body.hr-app .hr-tab-btn.is-active::before,
@@ -1221,33 +1189,10 @@ body.hr-app .hr-tab-btn.hr-tab--active::after,
 body.hr-app .hr-tab.hr-tab--active::after,
 body.hr-app .hr-tab.is-active::after,
 body.hr-app .hr-report-tab.is-active::after,
-body.hr-app .hr-tab-btn:hover:not(.is-active):not(.hr-tab--active)::after,
-body.hr-app .hr-tab-btn:focus-visible:not(.is-active):not(.hr-tab--active)::after,
-body.hr-app .hr-tab:hover:not(.hr-tab--active):not(.is-active)::after,
-body.hr-app .hr-tab:focus-visible:not(.hr-tab--active):not(.is-active)::after,
-body.hr-app .hr-report-tab:hover:not(.is-active)::after,
-body.hr-app .hr-report-tab:focus-visible:not(.is-active)::after,
-body.hr-app [role="tablist"] .hr-tab-btn:hover:not(.is-active):not(.hr-tab--active)::after,
-body.hr-app [role="tablist"] .hr-tab-btn:focus-visible:not(.is-active):not(.hr-tab--active)::after,
-body.hr-app [role="tablist"] .hr-tab:hover:not(.hr-tab--active):not(.is-active)::after,
-body.hr-app [role="tablist"] .hr-tab:focus-visible:not(.hr-tab--active):not(.is-active)::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 12%;
-    right: 12%;
-    height: 2px;
-    border-radius: 2px 2px 0 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgb(59 130 246) 20%,
-        rgb(96 165 250) 50%,
-        rgb(59 130 246) 80%,
-        transparent
-    );
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.45);
-    pointer-events: none;
+body.hr-app [role="tablist"] > [role="tab"].is-active::after,
+body.hr-app [role="tablist"] > [role="tab"].hr-tab--active::after,
+body.hr-app [role="tablist"] > [role="tab"][aria-selected="true"]::after {
+    content: none;
 }
 
 body.hr-app .hr-tab-btn--emerald:not(.is-active):not(.hr-tab--active) { color: rgb(5 150 105); }
@@ -1257,7 +1202,8 @@ body.hr-app .hr-tab-btn--emerald:hover:not(.is-active):not(.hr-tab--active),
 body.hr-app .hr-tab-btn--emerald:focus-visible:not(.is-active):not(.hr-tab--active) {
     color: rgb(4 120 87);
     background: var(--hr-tab-glass-emerald-bg);
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.14), 0 1px 0 rgba(255, 255, 255, 1) inset, 0 0 0 1px rgba(110, 231, 183, 0.45);
+    border: 1px solid rgba(110, 231, 183, 0.75);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.14), 0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 body.hr-app .hr-tab-btn--emerald.is-active::before,
 body.hr-app .hr-tab-btn--emerald.hr-tab--active::before,
@@ -1274,8 +1220,7 @@ body.hr-app .hr-tab-btn--emerald.is-active::after,
 body.hr-app .hr-tab-btn--emerald.hr-tab--active::after,
 body.hr-app .hr-tab-btn--emerald:hover:not(.is-active):not(.hr-tab--active)::after,
 body.hr-app .hr-tab-btn--emerald:focus-visible:not(.is-active):not(.hr-tab--active)::after {
-    background: linear-gradient(90deg, transparent, rgb(16 185 129) 20%, rgb(52 211 153) 50%, rgb(16 185 129) 80%, transparent);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    content: none;
 }
 
 body.hr-app .hr-tab-btn--rose:not(.is-active):not(.hr-tab--active) { color: rgb(190 18 60); }
@@ -1285,7 +1230,8 @@ body.hr-app .hr-tab-btn--rose:hover:not(.is-active):not(.hr-tab--active),
 body.hr-app .hr-tab-btn--rose:focus-visible:not(.is-active):not(.hr-tab--active) {
     color: rgb(159 18 57);
     background: var(--hr-tab-glass-rose-bg);
-    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.12), 0 1px 0 rgba(255, 255, 255, 1) inset, 0 0 0 1px rgba(253, 164, 175, 0.5);
+    border: 1px solid rgba(253, 164, 175, 0.8);
+    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.12), 0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 body.hr-app .hr-tab-btn--rose.is-active::before,
 body.hr-app .hr-tab-btn--rose.hr-tab--active::before,
@@ -1302,8 +1248,7 @@ body.hr-app .hr-tab-btn--rose.is-active::after,
 body.hr-app .hr-tab-btn--rose.hr-tab--active::after,
 body.hr-app .hr-tab-btn--rose:hover:not(.is-active):not(.hr-tab--active)::after,
 body.hr-app .hr-tab-btn--rose:focus-visible:not(.is-active):not(.hr-tab--active)::after {
-    background: linear-gradient(90deg, transparent, rgb(225 29 72) 20%, rgb(251 113 133) 50%, rgb(225 29 72) 80%, transparent);
-    box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+    content: none;
 }
 
 body.hr-app .hr-tab-btn--amber:not(.is-active):not(.hr-tab--active) { color: rgb(180 83 9); }
@@ -1313,7 +1258,8 @@ body.hr-app .hr-tab-btn--amber:hover:not(.is-active):not(.hr-tab--active),
 body.hr-app .hr-tab-btn--amber:focus-visible:not(.is-active):not(.hr-tab--active) {
     color: rgb(146 64 14);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 251, 235, 0.88) 50%, rgba(254, 243, 199, 0.78) 100%);
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.14), 0 1px 0 rgba(255, 255, 255, 1) inset, 0 0 0 1px rgba(252, 211, 77, 0.5);
+    border: 1px solid rgba(252, 211, 77, 0.8);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.14), 0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 body.hr-app .hr-tab-btn--amber.is-active::before,
 body.hr-app .hr-tab-btn--amber.hr-tab--active::before,
@@ -1330,8 +1276,7 @@ body.hr-app .hr-tab-btn--amber.is-active::after,
 body.hr-app .hr-tab-btn--amber.hr-tab--active::after,
 body.hr-app .hr-tab-btn--amber:hover:not(.is-active):not(.hr-tab--active)::after,
 body.hr-app .hr-tab-btn--amber:focus-visible:not(.is-active):not(.hr-tab--active)::after {
-    background: linear-gradient(90deg, transparent, rgb(217 119 6) 20%, rgb(251 191 36) 50%, rgb(217 119 6) 80%, transparent);
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    content: none;
 }
 
 body.hr-app .hr-tab-btn--indigo:not(.is-active):not(.hr-tab--active) { color: rgb(67 56 202); }
@@ -1341,7 +1286,8 @@ body.hr-app .hr-tab-btn--indigo:hover:not(.is-active):not(.hr-tab--active),
 body.hr-app .hr-tab-btn--indigo:focus-visible:not(.is-active):not(.hr-tab--active) {
     color: rgb(55 48 163);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(238, 242, 255, 0.88) 50%, rgba(224, 231, 255, 0.78) 100%);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.14), 0 1px 0 rgba(255, 255, 255, 1) inset, 0 0 0 1px rgba(165, 180, 252, 0.5);
+    border: 1px solid rgba(165, 180, 252, 0.8);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.14), 0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 body.hr-app .hr-tab-btn--indigo.is-active::before,
 body.hr-app .hr-tab-btn--indigo.hr-tab--active::before,
@@ -1358,8 +1304,7 @@ body.hr-app .hr-tab-btn--indigo.is-active::after,
 body.hr-app .hr-tab-btn--indigo.hr-tab--active::after,
 body.hr-app .hr-tab-btn--indigo:hover:not(.is-active):not(.hr-tab--active)::after,
 body.hr-app .hr-tab-btn--indigo:focus-visible:not(.is-active):not(.hr-tab--active)::after {
-    background: linear-gradient(90deg, transparent, rgb(79 70 229) 20%, rgb(129 140 248) 50%, rgb(79 70 229) 80%, transparent);
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+    content: none;
 }
 
 body.hr-app .hr-tab-btn--purple:not(.is-active):not(.hr-tab--active) { color: rgb(126 34 206); }
@@ -1369,7 +1314,8 @@ body.hr-app .hr-tab-btn--purple:hover:not(.is-active):not(.hr-tab--active),
 body.hr-app .hr-tab-btn--purple:focus-visible:not(.is-active):not(.hr-tab--active) {
     color: rgb(107 33 168);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 245, 255, 0.88) 50%, rgba(243, 232, 255, 0.78) 100%);
-    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.12), 0 1px 0 rgba(255, 255, 255, 1) inset, 0 0 0 1px rgba(216, 180, 254, 0.5);
+    border: 1px solid rgba(216, 180, 254, 0.8);
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.12), 0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 body.hr-app .hr-tab-btn--purple.is-active::before,
 body.hr-app .hr-tab-btn--purple.hr-tab--active::before,
@@ -1386,8 +1332,7 @@ body.hr-app .hr-tab-btn--purple.is-active::after,
 body.hr-app .hr-tab-btn--purple.hr-tab--active::after,
 body.hr-app .hr-tab-btn--purple:hover:not(.is-active):not(.hr-tab--active)::after,
 body.hr-app .hr-tab-btn--purple:focus-visible:not(.is-active):not(.hr-tab--active)::after {
-    background: linear-gradient(90deg, transparent, rgb(147 51 234) 20%, rgb(192 132 252) 50%, rgb(147 51 234) 80%, transparent);
-    box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
+    content: none;
 }
 
 body.hr-app .hr-tab-btn--slate:not(.is-active):not(.hr-tab--active) { color: rgb(71 85 105); }
@@ -1397,7 +1342,8 @@ body.hr-app .hr-tab-btn--slate:hover:not(.is-active):not(.hr-tab--active),
 body.hr-app .hr-tab-btn--slate:focus-visible:not(.is-active):not(.hr-tab--active) {
     color: rgb(30 41 59);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 50%, rgba(226, 232, 240, 0.8) 100%);
-    box-shadow: 0 4px 16px rgba(100, 116, 139, 0.12), 0 1px 0 rgba(255, 255, 255, 1) inset, 0 0 0 1px rgba(203, 213, 225, 0.55);
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    box-shadow: 0 4px 16px rgba(100, 116, 139, 0.12), 0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 body.hr-app .hr-tab-btn--slate.is-active::before,
 body.hr-app .hr-tab-btn--slate.hr-tab--active::before,
@@ -1414,8 +1360,15 @@ body.hr-app .hr-tab-btn--slate.is-active::after,
 body.hr-app .hr-tab-btn--slate.hr-tab--active::after,
 body.hr-app .hr-tab-btn--slate:hover:not(.is-active):not(.hr-tab--active)::after,
 body.hr-app .hr-tab-btn--slate:focus-visible:not(.is-active):not(.hr-tab--active)::after {
-    background: linear-gradient(90deg, transparent, rgb(100 116 139) 20%, rgb(148 163 184) 50%, rgb(100 116 139) 80%, transparent);
-    box-shadow: 0 0 10px rgba(100, 116, 139, 0.35);
+    content: none;
+}
+
+/* إلغاء الشريط السفلي على كل التبويبات (بما فيها hover) */
+body.hr-app [role="tablist"] > [role="tab"]::after,
+body.hr-app .hr-tab-btn::after,
+body.hr-app .hr-tab::after,
+body.hr-app .hr-report-tab::after {
+    content: none !important;
 }
 
 body.hr-app .hr-tab-badge {

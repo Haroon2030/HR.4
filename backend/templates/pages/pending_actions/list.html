@@ -13,8 +13,7 @@
 
     {% include "components/operations_tabs.html" %}
 
-    <div class="hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
-    <nav class="hr-page-tabs__bar" role="tablist" aria-label="تصفية طلبات العمليات">
+    {% include "components/page_tabs_start.html" with aria_label="تصفية طلبات العمليات" %}
         <a href="?tab=inbox" role="tab" class="hr-tab-btn{% if tab == 'inbox' %} is-active{% endif %}">
             <i data-lucide="inbox" class="w-4 h-4"></i>
             <span>بانتظار إجرائي</span>
@@ -49,8 +48,7 @@
             <span>طلباتي</span>
             {% if counts.mine %}<span class="hr-tab-badge bg-slate-200 text-slate-800">{{ counts.mine }}</span>{% endif %}
         </a>
-    </nav>
-    </div>
+    {% include "components/page_tabs_nav_end.html" %}
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <!-- شريط البحث -->
