@@ -247,7 +247,7 @@ def transfer_employee(request, employee_id):
         },
         requested_by=request.user,
     )
-    messages.success(request, 'تم إرسال طلب النقل إلى مدير الإدارة/الفرع للموافقة.')
+    messages.success(request, 'تم إرسال طلب النقل إلى مدير إدارة العمليات للموافقة الأولى.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 

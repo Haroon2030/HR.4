@@ -810,13 +810,19 @@ def _notify(*args, **kwargs):
 def create_pending_action(*, action_type, employee, payload, requested_by, attachment=None):
     """إنشاء طلب معلّق مع لقطة مسار الموافقة."""
     from apps.core.models import PendingAction
+    from apps.core.services.approval_routing import get_operations_administration
 
     routing = snapshot_routing_fields(employee)
+    administration = routing['administration']
+    if action_type in (PendingAction.ActionType.TRANSFER, 'transfer'):
+        ops_admin = get_operations_administration()
+        if ops_admin:
+            administration = ops_admin
     return PendingAction.objects.create(
         action_type=action_type,
         employee=employee,
         branch=routing['branch'],
-        administration=routing['administration'],
+        administration=administration,
         payload=payload,
         attachment=attachment,
         requested_by=requested_by,
