@@ -1,50 +1,78 @@
 {% with ctx=ledger.calculation_display_context %}
 {% if ctx.kind == 'structured' %}
-<div class="space-y-3" dir="rtl">
-    <div class="hr-glass-modal__meta grid grid-cols-2 gap-2 text-[11px]">
-        <div class="hr-glass-modal__chip col-span-2">
-            <span class="text-slate-500">نوع العملية</span>
-            <span class="font-bold text-slate-800">{{ ctx.operation }}</span>
+<div class="hr-ledger-detail" dir="rtl">
+    <div class="hr-ledger-detail__hero">
+        <div class="hr-ledger-detail__hero-row">
+            <span class="hr-ledger-detail__hero-label">نوع العملية</span>
+            <span class="hr-ledger-detail__hero-value">{{ ctx.operation }}</span>
         </div>
-        <div class="hr-glass-modal__chip">
-            <span class="text-slate-500">الفترة</span>
-            <span class="font-bold text-slate-800 font-mono" dir="ltr">{{ ctx.period }}</span>
+        <div class="hr-ledger-detail__meta-grid">
+            <div class="hr-ledger-detail__meta-item hr-ledger-detail__meta-item--period">
+                <span class="hr-ledger-detail__meta-label">الفترة</span>
+                <span class="hr-ledger-detail__meta-value font-mono" dir="ltr">{{ ctx.period }}</span>
+            </div>
+            {% for m in ctx.meta %}
+            <div class="hr-ledger-detail__meta-item">
+                <span class="hr-ledger-detail__meta-label">{{ m.label }}</span>
+                <span class="hr-ledger-detail__meta-value {% if m.mono %}font-mono{% endif %}" dir="ltr">{{ m.value }}</span>
+            </div>
+            {% endfor %}
         </div>
-        {% for m in ctx.meta %}
-        <div class="hr-glass-modal__chip">
-            <span class="text-slate-500">{{ m.label }}</span>
-            <span class="font-bold text-slate-800 {% if m.mono %}font-mono{% endif %}" dir="ltr">{{ m.value }}</span>
-        </div>
-        {% endfor %}
     </div>
 
     {% for section in ctx.sections %}
-    <div class="hr-glass-modal__content whitespace-pre-line text-xs text-slate-700 leading-relaxed space-y-1.5">
-        <p class="font-bold text-slate-800 text-[11px] border-b border-slate-200/80 pb-1 mb-0.5">
-            {{ section.title }}{% if section.hint %} <span class="text-slate-500 font-semibold">({{ section.hint }})</span>{% endif %}
-        </p>
-        {% for row in section.rows %}
-        <p class="{% if row.highlight %}font-semibold text-slate-900{% endif %}">
-            <span class="text-slate-600">{{ row.label }}:</span>
-            {% if row.formula %}<span class="font-mono text-slate-500">{{ row.formula }}</span> ← {% endif %}<span class="font-mono font-bold" dir="ltr">{{ row.result }}</span>
-        </p>
-        {% endfor %}
-        {% if section.balance %}
-        <p class="pt-1 mt-1 border-t border-slate-200/70 text-slate-600">
-            <span class="font-bold">{{ section.balance.label }}:</span>
-            <span class="font-mono" dir="ltr">{{ section.balance.before }} {{ section.balance.change }} = {{ section.balance.after }} {{ section.balance.unit }}</span>
-        </p>
+    <section class="hr-ledger-detail__section hr-ledger-detail__section--{{ section.theme|default:'amber' }}">
+        <header class="hr-ledger-detail__section-head">
+            <span class="hr-ledger-detail__section-title">{{ section.title }}</span>
+            {% if section.hint %}
+            <span class="hr-ledger-detail__section-hint">{{ section.hint }}</span>
+            {% endif %}
+        </header>
+
+        <div class="hr-ledger-detail__rows">
+            {% for row in section.rows %}
+            <div class="hr-ledger-detail__row{% if row.highlight %} hr-ledger-detail__row--highlight{% endif %}">
+                <span class="hr-ledger-detail__row-label">{{ row.label }}</span>
+                <span class="hr-ledger-detail__row-value" dir="ltr">
+                    {% if row.formula %}<span class="hr-ledger-detail__formula">{{ row.formula }}</span><span class="hr-ledger-detail__sep">←</span>{% endif %}
+                    <span class="hr-ledger-detail__result">{{ row.result }}</span>
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if section.balance or section.balance_money %}
+        <div class="hr-ledger-detail__balances">
+            {% if section.balance %}
+            <div class="hr-ledger-detail__balance">
+                <span class="hr-ledger-detail__balance-label">{{ section.balance.label }}</span>
+                <span class="hr-ledger-detail__balance-eq" dir="ltr">
+                    <span class="hr-ledger-detail__bal-chip">{{ section.balance.before }}</span>
+                    <span class="hr-ledger-detail__bal-op">{{ section.balance.change }}</span>
+                    <span class="hr-ledger-detail__bal-eq">=</span>
+                    <span class="hr-ledger-detail__bal-chip hr-ledger-detail__bal-chip--total">{{ section.balance.after }} {{ section.balance.unit }}</span>
+                </span>
+            </div>
+            {% endif %}
+            {% if section.balance_money %}
+            <div class="hr-ledger-detail__balance">
+                <span class="hr-ledger-detail__balance-label">{{ section.balance_money.label }}</span>
+                <span class="hr-ledger-detail__balance-eq" dir="ltr">
+                    <span class="hr-ledger-detail__bal-chip">{{ section.balance_money.before }}</span>
+                    <span class="hr-ledger-detail__bal-op">{{ section.balance_money.change }}</span>
+                    <span class="hr-ledger-detail__bal-eq">=</span>
+                    <span class="hr-ledger-detail__bal-chip hr-ledger-detail__bal-chip--total">{{ section.balance_money.after }} {{ section.balance_money.unit }}</span>
+                </span>
+            </div>
+            {% endif %}
+        </div>
         {% endif %}
-        {% if section.balance_money %}
-        <p class="text-slate-600">
-            <span class="font-bold">{{ section.balance_money.label }}:</span>
-            <span class="font-mono" dir="ltr">{{ section.balance_money.before }} {{ section.balance_money.change }} = {{ section.balance_money.after }} {{ section.balance_money.unit }}</span>
-        </p>
-        {% endif %}
-    </div>
+    </section>
     {% endfor %}
 </div>
 {% else %}
-<div class="hr-glass-modal__content whitespace-pre-line text-xs text-slate-700 leading-relaxed" dir="rtl">{{ ctx.text }}</div>
+<div class="hr-ledger-detail hr-ledger-detail--plain">
+    <div class="hr-ledger-detail__text">{{ ctx.text }}</div>
+</div>
 {% endif %}
 {% endwith %}
