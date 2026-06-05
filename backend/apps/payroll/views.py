@@ -34,6 +34,22 @@ from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
 from urllib.parse import urlencode
 from apps.core.models import Branch
 from apps.payroll.models import PayrollRun, PayrollLine
+
+
+class _PayrollFilterOption:
+    """خيار فلتر (قيمة نصية) — نفس شكل كائنات الفروع لقالب multiselect."""
+
+    __slots__ = ('pk', 'name', 'code')
+
+    def __init__(self, pk: str, name: str):
+        self.pk = pk
+        self.name = name
+        self.code = ''
+
+
+SALARY_MODE_FILTER_ITEMS = [
+    _PayrollFilterOption(v, lbl) for v, lbl in PayrollRun.SalaryMode.choices
+]
 from apps.setup.models import Sponsorship
 from apps.payroll.services.engine import (
     build_payroll_run, lock_payroll_run, unlock_payroll_run,
@@ -115,7 +131,17 @@ def _parse_payroll_form(request, user_branches):
     src = request.POST if use_post else request.GET
     year_raw = src.get('year')
     month_raw = src.get('month')
-    salary_mode = (src.get('salary_mode') or '').strip()
+    salary_mode = ''
+    mode_raw = list(src.getlist('salary_mode'))
+    if not mode_raw:
+        one = (src.get('salary_mode') or '').strip()
+        if one:
+            mode_raw = [one]
+    for v in mode_raw:
+        s = (str(v) or '').strip()
+        if s in PayrollRun.SalaryMode.values:
+            salary_mode = s
+            break
     sponsorship_raw = (src.get('sponsorship_id') or '').strip()
 
     year = month = None
@@ -392,6 +418,8 @@ def list_payroll_runs(request):
         'filter_year': filters['year'],
         'filter_month': filters['month'],
         'filter_salary_mode': filters['salary_mode'],
+        'filter_salary_mode_ids': [filters['salary_mode']] if filters.get('salary_mode') else [],
+        'salary_mode_filter_items': SALARY_MODE_FILTER_ITEMS,
         'filter_sponsorship_id': filters['sponsorship_id'],
         'filter_qs': filter_qs,
         'lines': lines,

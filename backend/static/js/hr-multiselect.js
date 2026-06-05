@@ -38,6 +38,7 @@
         const placeholder = select.dataset.placeholder || '— اختر —';
         const noAll = select.dataset.noAll === '1';
         const requireSelection = select.dataset.requireSelection === '1';
+        const singleMode = select.dataset.single === '1';
         const wrap = document.createElement('div');
         wrap.className = 'hr-ms';
         wrap.dir = 'rtl';
@@ -140,6 +141,14 @@
 
         optionCbs.forEach(function (x) {
             x.cb.addEventListener('change', function () {
+                if (singleMode && x.cb.checked) {
+                    optionCbs.forEach(function (y) {
+                        if (y !== x) {
+                            y.cb.checked = false;
+                            y.opt.selected = false;
+                        }
+                    });
+                }
                 if (allCb && x.cb.checked) allCb.checked = false;
                 if (allCb && optionCbs.every(function (y) { return !y.cb.checked; })) {
                     allCb.checked = true;

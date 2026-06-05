@@ -129,4 +129,92 @@
         color: #9ca3af;
         margin-top: 0.1rem;
     }
+
+    /* ── أزرار بناء المسير (صف مستقل، عرض وارتفاع موحّد) ── */
+    .hr-payroll-build-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .hr-payroll-build-actions__hint {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        flex: 1 1 auto;
+        min-width: 8rem;
+    }
+
+    .hr-payroll-build-actions__group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(9.5rem, 1fr));
+        gap: 0.5rem;
+        width: 100%;
+        max-width: 22rem;
+        flex: 0 0 auto;
+        margin-inline-start: auto;
+    }
+
+    .hr-payroll-build-btn {
+        min-height: 2.5rem;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1.2;
+        border-radius: 0.5rem;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .hr-payroll-build-btn__icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    .hr-payroll-build-btn--primary {
+        color: #fff;
+        background: #2563eb;
+        border-color: #1d4ed8;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+    }
+
+    .hr-payroll-build-btn--primary:hover:not(:disabled) {
+        background: #1d4ed8;
+    }
+
+    .hr-payroll-build-btn--detailed {
+        color: #3730a3;
+        background: #eef2ff;
+        border-color: #c7d2fe;
+    }
+
+    .hr-payroll-build-btn--detailed:hover:not(:disabled) {
+        background: #e0e7ff;
+        border-color: #a5b4fc;
+    }
+
+    .hr-payroll-build-btn--disabled,
+    .hr-payroll-build-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    @media (max-width: 639px) {
+        .hr-payroll-build-actions__group {
+            max-width: none;
+            margin-inline-start: 0;
+        }
+    }
 </style>

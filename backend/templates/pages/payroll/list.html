@@ -12,8 +12,9 @@
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm"
               hx-boost="false"
-              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+              class="payroll-filter-form space-y-3">
             {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             <div id="payrollSponsorshipWrap">
                 <label class="block text-xs font-semibold text-slate-600 mb-1">شركة الكفالة</label>
                 <select name="sponsorship_id" id="payrollSponsorship"
@@ -32,12 +33,7 @@
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">نوع الراتب</label>
-                <select name="salary_mode" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    <option value="">— اختر النوع —</option>
-                    {% for v, lbl in SALARY_MODE_CHOICES %}
-                    <option value="{{ v }}" {% if filter_salary_mode == v %}selected{% endif %}>{{ lbl }}</option>
-                    {% endfor %}
-                </select>
+                {% include "components/filter_multiselect.html" with name="salary_mode" items=salary_mode_filter_items selected_ids=filter_salary_mode_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollSalaryMode" aria_label="نوع الراتب" no_all=True single=True placeholder="— اختر النوع —" require_selection=True %}
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">السنة</label>
@@ -55,21 +51,35 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 sm:col-span-2 lg:col-span-1">
-                {% if can_build %}
-                <button type="submit" name="build_kind" value="standard"
-                    class="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md inline-flex items-center justify-center gap-1">
-                    <i data-lucide="play" class="w-4 h-4"></i> بناء المسير
-                </button>
-                <button type="submit" name="build_kind" value="detailed"
-                    class="flex-1 px-4 py-2 text-sm font-semibold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md inline-flex items-center justify-center gap-1"
-                    title="توزيع تحمّل الفروع للموظفين المنقولين">
-                    <i data-lucide="git-branch" class="w-4 h-4"></i> مسير تفصيلي
-                </button>
-                {% else %}
-                <button type="button" disabled
-                    class="flex-1 px-4 py-2 text-sm font-semibold text-slate-400 bg-slate-100 rounded-md cursor-not-allowed">بناء المسير</button>
-                {% endif %}
+            </div>
+            <div class="hr-payroll-build-actions" role="group" aria-label="بناء المسير">
+                <p class="hr-payroll-build-actions__hint m-0">بعد اختيار المعايير</p>
+                <div class="hr-payroll-build-actions__group">
+                    {% if can_build %}
+                    <button type="submit" name="build_kind" value="standard"
+                        class="hr-payroll-build-btn hr-payroll-build-btn--primary">
+                        <i data-lucide="play" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
+                        <span>بناء المسير</span>
+                    </button>
+                    <button type="submit" name="build_kind" value="detailed"
+                        class="hr-payroll-build-btn hr-payroll-build-btn--detailed"
+                        title="توزيع تحمّل الفروع للموظفين المنقولين">
+                        <i data-lucide="git-branch" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
+                        <span>مسير تفصيلي</span>
+                    </button>
+                    {% else %}
+                    <button type="button" disabled
+                        class="hr-payroll-build-btn hr-payroll-build-btn--primary hr-payroll-build-btn--disabled">
+                        <i data-lucide="play" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
+                        <span>بناء المسير</span>
+                    </button>
+                    <button type="button" disabled
+                        class="hr-payroll-build-btn hr-payroll-build-btn--detailed hr-payroll-build-btn--disabled">
+                        <i data-lucide="git-branch" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
+                        <span>مسير تفصيلي</span>
+                    </button>
+                    {% endif %}
+                </div>
             </div>
         </form>
     </div>
@@ -290,9 +300,15 @@
 
         var sponsorshipSel = scope.querySelector('#payrollSponsorship');
         var sponsorshipWrap = scope.querySelector('#payrollSponsorshipWrap');
-        var salaryModeSel = form.querySelector('select[name="salary_mode"]');
+        var salaryModeSel = form.querySelector('#payrollSalaryMode') || form.querySelector('select[name="salary_mode"]');
+        function getSalaryModeValue() {
+            if (!salaryModeSel) return '';
+            var opts = salaryModeSel.selectedOptions;
+            if (opts && opts.length) return opts[0].value || '';
+            return salaryModeSel.value || '';
+        }
         function syncSponsorshipField() {
-            var isCash = salaryModeSel && salaryModeSel.value === 'cash';
+            var isCash = getSalaryModeValue() === 'cash';
             if (!sponsorshipWrap || !sponsorshipSel) return;
             sponsorshipWrap.style.display = isCash ? 'none' : '';
             sponsorshipSel.required = !isCash;
