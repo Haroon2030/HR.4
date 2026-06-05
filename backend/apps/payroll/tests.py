@@ -83,6 +83,7 @@ class PayrollEngineTests(TestCase):
         self.assertEqual(line.daily_rate, expected_daily)
 
     def test_build_includes_absence_deduction(self):
+        """خصم الغياب يُحسب دائماً من الإجمالي ÷ 30 وليس من المبلغ المخزّن قديماً."""
         EmployeeAbsence.objects.create(
             employee=self.employee,
             absence_date=date(2026, 3, 10),
@@ -96,7 +97,8 @@ class PayrollEngineTests(TestCase):
             sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=self.employee)
-        self.assertEqual(line.absence_deduction, Decimal('100.00'))
+        expected = (Decimal('4500') / Decimal('30')).quantize(Decimal('0.01'))
+        self.assertEqual(line.absence_deduction, expected)
 
     def test_build_unpaid_leave_deduction(self):
         EmployeeLeave.objects.create(

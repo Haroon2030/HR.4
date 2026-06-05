@@ -908,7 +908,7 @@ class EmployeeAbsence(BaseModel):
     )
     daily_rate = models.DecimalField(
         "سعر اليوم (محسوب)", max_digits=12, decimal_places=2, default=0,
-        help_text="إجمالي الراتب ÷ أيام الشهر"
+        help_text="إجمالي الراتب ÷ 30"
     )
     deduction_amount = models.DecimalField(
         "إجمالي الخصم", max_digits=12, decimal_places=2, default=0,
@@ -936,6 +936,20 @@ class EmployeeAbsence(BaseModel):
         verbose_name = "غياب موظف"
         verbose_name_plural = "غيابات الموظفين"
         ordering = ['-absence_date', '-created_at']
+
+    def save(self, *args, **kwargs):
+        from apps.core.salary_month import STANDARD_MONTH_DAYS, daily_rate_from_total
+
+        self.month_days = STANDARD_MONTH_DAYS
+        salary = Decimal(self.total_salary_snapshot or 0)
+        if not salary and self.employee_id:
+            salary = Decimal(self.employee.total_salary or 0)
+        self.total_salary_snapshot = salary
+        self.daily_rate = daily_rate_from_total(salary)
+        self.deduction_amount = (
+            self.daily_rate * Decimal(self.days or 0)
+        ).quantize(Decimal('0.01'))
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.employee.name} — {self.absence_date} ({self.days} يوم)"

@@ -8,7 +8,7 @@
    يبني/يعيد بناء مسير DRAFT لفرع وشهر محددين.
    لكل موظف نشط أو في إجازة:
      - يحسب الراتب الإجمالي = أساسي + سكن + نقل + إضافي + كاش
-     - يحسب خصم الغياب من سجلات EmployeeAbsence
+     - يحسب خصم الغياب من سجلات EmployeeAbsence (أجر اليوم = الإجمالي ÷ 30)
      - يحسب خصم الإجازات بدون راتب من EmployeeLeave
      - يحسب قسط السلفة من LoanInstallment
      - يحسب المخالفات من EmployeeStatement (نوع PENALTY)
@@ -42,6 +42,7 @@ from apps.core.salary_month import (
     calendar_period_bounds,
     calendar_month_last_day,
     daily_rate_from_total,
+    deduction_for_days,
     salary_month_days,
 )
 from django.db.models import Q
@@ -199,7 +200,10 @@ def _compute_employee_payroll_snapshot(
     daily_rate = daily_rate_from_total(gross)
 
     absence_deduction = _q(
-        sum((Decimal(a.deduction_amount or 0) for a in emp_absences), Decimal('0'))
+        sum(
+            (deduction_for_days(gross, a.days) for a in emp_absences),
+            Decimal('0'),
+        )
     )
     unpaid_days = sum(
         (_unpaid_leave_days_in_period(lv, period_start, period_end) for lv in emp_leaves),
@@ -238,7 +242,7 @@ def _compute_employee_payroll_snapshot(
                     'id': a.id,
                     'date': a.absence_date.isoformat(),
                     'days': a.days,
-                    'amount': str(a.deduction_amount),
+                    'amount': str(deduction_for_days(gross, a.days)),
                 }
                 for a in emp_absences
             ],

@@ -23,6 +23,11 @@ def daily_rate_from_total(total) -> Decimal:
     return (Decimal(total or 0) / Decimal(STANDARD_MONTH_DAYS)).quantize(Decimal('0.01'))
 
 
+def deduction_for_days(total, days) -> Decimal:
+    """خصم أيام (غياب / إجازة بدون راتب) = أجر اليوم × عدد الأيام."""
+    return (daily_rate_from_total(total) * Decimal(days or 0)).quantize(Decimal('0.01'))
+
+
 def calendar_month_last_day(year: int, month: int) -> date:
     """آخر يوم تقويمي في الشهر (للفترات والأرشفة)."""
     return date(year, month, monthrange(year, month)[1])

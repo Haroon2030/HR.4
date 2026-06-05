@@ -3,7 +3,7 @@ from decimal import Decimal
 from datetime import date, timedelta
 from django.utils import timezone
 from apps.employees.forms import EmployeeForm
-from apps.employees.models import Employee, EmployeeLoan, LoanInstallment
+from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, LoanInstallment
 from apps.setup.models import Sponsorship
 
 class EmployeeFormTests(TestCase):
@@ -83,6 +83,21 @@ class EmployeeModelTests(TestCase):
         self.employee.end_date = date(2024, 1, 1)
         expected_compensation = (Decimal('16.0') * self.employee.daily_wage).quantize(Decimal('0.01'))
         self.assertEqual(self.employee.leave_compensation, expected_compensation)
+
+    def test_absence_save_enforces_30_day_rule(self):
+        """حفظ الغياب يعيد الحساب دائماً على ÷ 30 حتى لو أُدخلت قيم قديمة."""
+        absence = EmployeeAbsence(
+            employee=self.employee,
+            absence_date=date(2026, 3, 10),
+            days=2,
+            month_days=31,
+            deduction_amount=Decimal('999.00'),
+        )
+        absence.save()
+        expected_daily = (Decimal('6500') / Decimal('30')).quantize(Decimal('0.01'))
+        self.assertEqual(absence.month_days, 30)
+        self.assertEqual(absence.daily_rate, expected_daily)
+        self.assertEqual(absence.deduction_amount, (expected_daily * 2).quantize(Decimal('0.01')))
 
 
 class AccrualLedgerNotesTests(TestCase):
