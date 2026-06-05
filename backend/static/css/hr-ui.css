@@ -1527,6 +1527,41 @@ body.hr-app .hr-main div.border.rounded-lg.overflow-hidden > .overflow-x-auto > 
     box-shadow: none;
 }
 
+/* جدول المخصصات — زر الملاحظات/التفاصيل لا يُقصّ */
+body.hr-app .hr-accruals-ledger {
+    overflow: visible !important;
+}
+
+body.hr-app .hr-accruals-ledger__scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 1.25rem;
+}
+
+body.hr-app .hr-main .hr-accruals-ledger__table {
+    overflow: visible !important;
+}
+
+body.hr-app .hr-accruals-ledger__table .hr-ledger-notes-col,
+body.hr-app .hr-accruals-ledger__table .hr-ledger-notes-cell {
+    width: 4.75rem;
+    min-width: 4.75rem;
+    overflow: visible;
+    position: relative;
+    z-index: 2;
+    vertical-align: middle;
+}
+
+body.hr-app .hr-ledger-notes-btn {
+    position: relative;
+    z-index: 3;
+    margin-inline: auto;
+}
+
+body.hr-app #employee-tab-panel .hr-page-tabs__body {
+    padding-bottom: 1.5rem;
+}
+
 body.hr-app .hr-main .overflow-x-auto,
 body.hr-app .hr-main div.border.rounded-lg.overflow-hidden,
 body.hr-app .hr-main .overflow-hidden.rounded-xl,

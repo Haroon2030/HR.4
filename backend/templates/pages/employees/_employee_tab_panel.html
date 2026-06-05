@@ -1046,16 +1046,16 @@
                     </div>
                 </div>
 
-                <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                <div class="hr-accruals-ledger border border-slate-200 rounded-lg bg-white shadow-sm">
+                    <div class="hr-accruals-ledger__scroll overflow-x-auto">
+                        <table class="w-full text-sm hr-accruals-ledger__table">
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3 text-right font-semibold">التاريخ</th>
                                     <th class="px-4 py-3 text-right font-semibold">نوع الحركة</th>
                                     <th class="px-4 py-3 text-center font-semibold border-x border-slate-200" colspan="2">الإجازة (أيام / قيمة)</th>
                                     <th class="px-4 py-3 text-center font-semibold border-l border-slate-200">مكافأة نهاية الخدمة</th>
-                                    <th class="px-4 py-3 text-right font-semibold">ملاحظات</th>
+                                    <th class="px-4 py-3 text-center font-semibold hr-ledger-notes-col">ملاحظات</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -1098,11 +1098,15 @@
                                         </div>
                                     </td>
 
-                                    <td class="px-4 py-3 text-center" x-data="{ showNotes: false }">
-                                        <button @click="showNotes = true" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-800 transition-all duration-200 shadow-sm hover:shadow" title="عرض التفاصيل الحسابية">
-                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                    <td class="hr-ledger-notes-cell px-4 py-3 text-center" x-data="{ showNotes: false }">
+                                        <button type="button"
+                                                @click="showNotes = true; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
+                                                class="hr-ledger-notes-btn inline-flex items-center justify-center w-9 h-9 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-800 transition-all duration-200 shadow-sm hover:shadow shrink-0"
+                                                title="عرض التفاصيل الحسابية"
+                                                aria-label="عرض التفاصيل الحسابية">
+                                            <i data-lucide="eye" class="w-4 h-4 shrink-0"></i>
                                         </button>
-                                        <!-- Modal -->
+                                        <template x-teleport="body">
                                         <div x-show="showNotes" x-cloak
                                              x-transition:enter="transition ease-out duration-200"
                                              x-transition:enter-start="opacity-0"
@@ -1110,9 +1114,11 @@
                                              x-transition:leave="transition ease-in duration-150"
                                              x-transition:leave-start="opacity-100"
                                              x-transition:leave-end="opacity-0"
-                                             class="hr-glass-modal-overlay fixed inset-0 z-[999] flex items-center justify-center p-4"
+                                             class="hr-glass-modal-overlay fixed inset-0 z-[10050] flex items-center justify-center p-4"
                                              @click.self="showNotes = false"
-                                             @keydown.escape.window="showNotes = false">
+                                             @keydown.escape.window="showNotes = false"
+                                             role="dialog"
+                                             aria-modal="true">
                                             <div class="hr-glass-modal relative max-w-3xl w-full mx-auto overflow-hidden"
                                                  @click.stop>
                                                 <div class="bg-gradient-to-l from-indigo-600 to-indigo-700 px-6 py-4 flex items-center justify-between">
@@ -1120,18 +1126,19 @@
                                                         <i data-lucide="calculator" class="w-5 h-5"></i>
                                                         تفاصيل العملية الحسابية
                                                     </h3>
-                                                    <button @click="showNotes = false" class="text-white/80 hover:text-white transition-colors">
+                                                    <button type="button" @click="showNotes = false" class="text-white/80 hover:text-white transition-colors" aria-label="إغلاق">
                                                         <i data-lucide="x" class="w-5 h-5"></i>
                                                     </button>
                                                 </div>
                                                 {% include 'employees/partials/ledger_calculation_detail.html' with ledger=a %}
                                                 <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-start">
-                                                    <button @click="showNotes = false" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs rounded-lg font-bold transition-colors">
+                                                    <button type="button" @click="showNotes = false" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs rounded-lg font-bold transition-colors">
                                                         إغلاق
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
+                                        </template>
                                     </td>
                                 </tr>
                                 {% empty %}
