@@ -266,6 +266,30 @@ def can_see_employee_tab(context, tab_key):
     return user_can_see_employee_tab(user, tab_key)
 
 
+@register.inclusion_tag('components/hr_breadcrumb.html')
+def hr_breadcrumb(items):
+    """مسار تنقل هرمي: قائمة {'label', 'url'?, 'icon'?} — الأخير بدون url = الحالي."""
+    return {'items': items or []}
+
+
+@register.filter
+def role_arabic_name(role):
+    """الاسم العربي للدور (بدون CODE —)."""
+    from apps.core.role_catalog import arabic_role_label
+    if not role:
+        return ''
+    if hasattr(role, 'role_type'):
+        return arabic_role_label(role_type=role.role_type, name=getattr(role, 'name', None))
+    return arabic_role_label(name=str(role))
+
+
+@register.filter
+def role_type_arabic(role_type):
+    """الاسم العربي لنوع الدور."""
+    from apps.core.role_catalog import arabic_role_label
+    return arabic_role_label(role_type=role_type)
+
+
 @register.filter
 def role_technical_code(role_type):
     """رمز الدور التقني من role_catalog."""

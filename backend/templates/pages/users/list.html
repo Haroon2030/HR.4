@@ -37,7 +37,7 @@
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الاسم / الدخول</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">رقم المستخدم</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الدور التقني</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الدور</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
                                 <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
                             </tr>
@@ -66,12 +66,7 @@
                                 </td>
                                 <td class="px-3 py-2">
                                     {% if user.profile.role %}
-                                    <div class="space-y-0.5">
-                                        <span class="inline-block px-2 py-0.5 text-[10px] font-mono font-semibold rounded {{ user.profile.role.role_type|role_badge_class }}" dir="ltr">
-                                            {{ user.profile.role.role_type|role_technical_code }}
-                                        </span>
-                                        <div class="text-[11px] text-slate-600 leading-snug">{{ user.profile.role.name }}</div>
-                                    </div>
+                                    <span class="text-xs font-medium text-slate-800">{{ user.profile.role|role_arabic_name }}</span>
                                     {% else %}
                                     <span class="text-xs text-slate-400">—</span>
                                     {% endif %}
@@ -170,13 +165,11 @@
                                         {% else %}
                                         <i data-lucide="shield" class="w-4 h-4 text-primary-600"></i>
                                         {% endif %}
-                                        <span class="text-xs font-medium text-slate-900">{{ role.name }}</span>
+                                        <span class="text-xs font-medium text-slate-900">{{ role|role_arabic_name }}</span>
                                     </div>
                                 </td>
                                 <td class="px-3 py-2">
-                                    <span class="inline-block px-2 py-0.5 text-[10px] font-mono font-semibold rounded {{ role.role_type|role_badge_class }}" dir="ltr">
-                                        {{ role.role_type|role_technical_code }}
-                                    </span>
+                                    <span class="text-xs text-slate-700">{{ role.role_type|role_type_arabic }}</span>
                                 </td>
                                 <td class="px-3 py-2 text-xs text-slate-500">
                                     <span class="flex items-center gap-1">

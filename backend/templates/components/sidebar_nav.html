@@ -1,10 +1,13 @@
 {% load custom_tags %}
 {# always_show: عرض عناوين الأقسام دائماً (الجوال) #}
+{# ترتيب القائمة: رئيسية → موارد بشرية → حضور → رواتب → تقارير → إدارة نظام #}
 
 {% include "components/nav_section.html" with label="الرئيسية" always_show=always_show %}
 {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" force_show_label=always_show %}
 
+{% if user|has_permission:'employees.view' or user|has_permission:'employees.add' or user|has_permission:'operations.view' or user|has_permission:'employees.edit' %}
 {% include "components/nav_section.html" with label="الموارد البشرية" always_show=always_show %}
+{% endif %}
 
 {% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
 <div class="hr-nav-dropdown">
@@ -35,10 +38,6 @@
         {% endif %}
     </div>
 </div>
-{% endif %}
-
-{% if user.is_superuser or user|has_permission:'payroll.view' or user|has_permission:'payroll.manage' or user|has_permission:'payroll.process' %}
-{% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="calculator" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
 
 {% if user|has_permission:'operations.view' or user|has_permission:'employees.edit' %}
@@ -82,14 +81,19 @@
         <a href="{% url 'web:biometric_devices' %}" class="hr-nav-sublink {% if '/attendance/devices' in request.path %}is-active{% endif %}">
             <i data-lucide="cpu" class="w-3.5 h-3.5"></i> أجهزة البصمة
         </a>
-        <a href="{% url 'web:attendance_report' %}" class="hr-nav-sublink {% if '/attendance/report' in request.path %}is-active{% endif %}">
-            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> تقرير البصمة
-        </a>
         <a href="{% url 'web:attendance_records' %}" class="hr-nav-sublink {% if '/attendance/records' in request.path %}is-active{% endif %}">
             <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i> سجلات الحضور
         </a>
+        <a href="{% url 'web:attendance_report' %}" class="hr-nav-sublink {% if '/attendance/report' in request.path %}is-active{% endif %}">
+            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> تقرير البصمة
+        </a>
     </div>
 </div>
+{% endif %}
+
+{% if user.is_superuser or user|has_permission:'payroll.view' or user|has_permission:'payroll.manage' or user|has_permission:'payroll.process' %}
+{% include "components/nav_section.html" with label="الرواتب والمالية" always_show=always_show %}
+{% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="calculator" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
 
 {% if user|has_permission:'reports.view' or user|has_permission:'hr_forms.view' %}

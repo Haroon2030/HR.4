@@ -1,18 +1,11 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 {% block title %}صلاحيات المستخدم — {{ user_obj.username }}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto">
 
-    {# Breadcrumb #}
-    <nav class="text-xs text-slate-500 mb-4 flex items-center gap-1">
-        <a href="{% url 'web:list_users' %}" class="hover:text-primary-600 inline-flex items-center gap-1">
-            <i data-lucide="users" class="w-3.5 h-3.5"></i>
-            المستخدمون
-        </a>
-        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-        <span class="text-slate-700 font-semibold">صلاحيات: {{ user_obj.username }}</span>
-    </nav>
+    {% hr_breadcrumb items=breadcrumb_items %}
 
     {# Header #}
     <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5 flex items-start justify-between gap-3 flex-wrap">
@@ -26,7 +19,7 @@
                 </h1>
                 <p class="text-xs text-slate-500 mt-0.5">
                     @{{ user_obj.username }} ·
-                    {% if role %}الدور: <span class="font-semibold">{{ role.name }}</span>{% else %}بدون دور{% endif %}
+                    {% if role %}الدور: <span class="font-semibold">{{ role|role_arabic_name }}</span>{% else %}بدون دور{% endif %}
                 </p>
             </div>
         </div>
@@ -37,33 +30,25 @@
     {# Legend #}
     <div class="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap items-center gap-4 text-xs">
         <div class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-slate-200"></span>
-            <span class="text-slate-600"><strong>افتراضي</strong> — يتبع الدور</span>
-        </div>
-        <div class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded bg-emerald-200"></span>
-            <span class="text-slate-600"><strong>مسموح</strong> — منح صريح</span>
+            <span class="text-slate-600"><strong>مسموح</strong> — الصلاحية مفعّلة</span>
         </div>
         <div class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded bg-rose-200"></span>
-            <span class="text-slate-600"><strong>ممنوع</strong> — رفض صريح</span>
-        </div>
-        <div class="mr-auto text-slate-500">
-            <i data-lucide="check" class="w-3 h-3 inline text-emerald-600"></i>
-            = الصلاحية الفعلية حالياً
+            <span class="text-slate-600"><strong>ممنوع</strong> — الصلاحية غير مفعّلة</span>
         </div>
     </div>
 
     <form method="post">
         {% csrf_token %}
 
-        {# Matrix #}
-        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-slate-50 border-b border-slate-200">
+        {# Matrix — صندوق بارتفاع ثابت وتمرير داخلي #}
+        <div class="hr-perm-matrix">
+            <div class="hr-perm-matrix__scroll hr-scroll-hover">
+                <table class="w-full min-w-max">
+                    <thead class="hr-perm-matrix__head bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700">الوحدة</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 min-w-[9.5rem] whitespace-nowrap">الوحدة</th>
                             {% for op_code, op_label in operations %}
                             <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-40">
                                 {{ op_label }}
@@ -74,12 +59,12 @@
                     <tbody class="divide-y divide-slate-100">
                         {% for row in matrix %}
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
+                            <td class="px-4 py-3 whitespace-nowrap min-w-[9.5rem]">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
                                         <i data-lucide="{{ row.module.icon }}" class="w-4 h-4"></i>
                                     </div>
-                                    <span class="text-sm font-bold text-slate-800">{{ row.module.name }}</span>
+                                    <span class="text-sm font-bold text-slate-800 whitespace-nowrap">{{ row.module.name }}</span>
                                 </div>
                             </td>
                             {% for cell in row.cells %}
@@ -91,19 +76,11 @@
                                         <select name="perm_{{ cell.perm.id }}"
                                                 {% if is_admin_user %}disabled{% endif %}
                                                 class="text-xs px-2 py-1 rounded border
-                                                    {% if cell.state == 'grant' %}bg-emerald-50 border-emerald-300 text-emerald-800
-                                                    {% elif cell.state == 'deny' %}bg-rose-50 border-rose-300 text-rose-800
-                                                    {% else %}bg-slate-50 border-slate-300 text-slate-700{% endif %}
+                                                    {% if cell.effective %}bg-emerald-50 border-emerald-300 text-emerald-800
+                                                    {% else %}bg-rose-50 border-rose-300 text-rose-800{% endif %}
                                                     focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
-                                            <option value="inherit" {% if cell.state == 'inherit' %}selected{% endif %}>
-                                                افتراضي{% if cell.in_role %} (✓){% else %} (✗){% endif %}
-                                            </option>
-                                            <option value="grant" {% if cell.state == 'grant' %}selected{% endif %}>
-                                                مسموح
-                                            </option>
-                                            <option value="deny" {% if cell.state == 'deny' %}selected{% endif %}>
-                                                ممنوع
-                                            </option>
+                                            <option value="allowed" {% if cell.effective %}selected{% endif %}>مسموح</option>
+                                            <option value="denied" {% if not cell.effective %}selected{% endif %}>ممنوع</option>
                                         </select>
                                         {% if cell.effective %}
                                         <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" title="مفعّلة"></i>
@@ -153,13 +130,14 @@
         sel.addEventListener('change', e => {
             const v = e.target.value;
             e.target.classList.remove(
-                'bg-slate-50','border-slate-300','text-slate-700',
                 'bg-emerald-50','border-emerald-300','text-emerald-800',
                 'bg-rose-50','border-rose-300','text-rose-800'
             );
-            if (v === 'grant') e.target.classList.add('bg-emerald-50','border-emerald-300','text-emerald-800');
-            else if (v === 'deny') e.target.classList.add('bg-rose-50','border-rose-300','text-rose-800');
-            else e.target.classList.add('bg-slate-50','border-slate-300','text-slate-700');
+            if (v === 'allowed') {
+                e.target.classList.add('bg-emerald-50','border-emerald-300','text-emerald-800');
+            } else {
+                e.target.classList.add('bg-rose-50','border-rose-300','text-rose-800');
+            }
         });
     });
 </script>

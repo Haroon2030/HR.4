@@ -185,8 +185,33 @@ def manage_role_permissions(request, role_id):
         messages.success(request, f'تم حفظ صلاحيات الدور "{role.name}" ({perms.count()} صلاحية)')
         return redirect('web:manage_role_permissions', role_id=role.id)
 
+    from django.urls import reverse
+    from apps.core.role_catalog import arabic_role_label
+
     ctx = _build_role_permissions_matrix(role)
     ctx['is_admin_role'] = is_admin_role
+    ctx['breadcrumb_items'] = [
+        {
+            'label': 'المستخدمون',
+            'url': reverse('web:list_users'),
+            'icon': 'users',
+        },
+        {
+            'label': 'الأدوار',
+            'url': reverse('web:list_roles'),
+            'icon': 'shield',
+        },
+        {
+            'label': arabic_role_label(role_type=role.role_type, name=role.name),
+            'url': reverse('web:view_role', args=[role.id]),
+            'icon': 'shield-check',
+        },
+        {
+            'label': 'صلاحيات',
+            'url': None,
+            'icon': 'key-round',
+        },
+    ]
     return render(request, 'pages/roles/permissions.html', ctx)
 
 

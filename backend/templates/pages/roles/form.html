@@ -114,11 +114,11 @@
             </div>
             {% endif %}
 
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-slate-50 border-b border-slate-200">
+            <div class="hr-perm-matrix__scroll hr-scroll-hover border-t border-slate-100">
+                <table class="w-full min-w-max">
+                    <thead class="hr-perm-matrix__head bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700">الوحدة</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 min-w-[9.5rem] whitespace-nowrap">الوحدة</th>
                             {% for op_code, op_label in operations %}
                             <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-24">
                                 <div class="flex flex-col items-center gap-1">
@@ -135,12 +135,12 @@
                     <tbody class="divide-y divide-slate-100">
                         {% for row in matrix %}
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
+                            <td class="px-4 py-3 whitespace-nowrap min-w-[9.5rem]">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
                                         <i data-lucide="{{ row.module.icon }}" class="w-4 h-4"></i>
                                     </div>
-                                    <span class="text-sm font-bold text-slate-800">{{ row.module.name }}</span>
+                                    <span class="text-sm font-bold text-slate-800 whitespace-nowrap">{{ row.module.name }}</span>
                                 </div>
                             </td>
                             {% for cell in row.cells %}

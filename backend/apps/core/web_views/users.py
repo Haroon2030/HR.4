@@ -314,6 +314,9 @@ def manage_user_permissions(request, user_id):
             return redirect('web:manage_user_permissions', user_id=user_obj.id)
 
         extra_ids, denied_ids = [], []
+        role_perm_ids_post = (
+            set(role.permissions.values_list('id', flat=True)) if role else set()
+        )
         for key, val in request.POST.items():
             if not key.startswith('perm_'):
                 continue
@@ -321,10 +324,15 @@ def manage_user_permissions(request, user_id):
                 pid = int(key[5:])
             except ValueError:
                 continue
-            if val == 'grant':
-                extra_ids.append(pid)
-            elif val == 'deny':
-                denied_ids.append(pid)
+            # واجهة ثنائية: مسموح / ممنوع (بدون «افتراضي»)
+            if val in ('allowed', 'grant'):
+                if pid not in role_perm_ids_post:
+                    extra_ids.append(pid)
+            elif val in ('denied', 'deny'):
+                if pid in role_perm_ids_post:
+                    denied_ids.append(pid)
+            elif val == 'inherit':
+                pass
 
         extra_qs = Permission.objects.filter(id__in=extra_ids, is_active=True)
         denied_qs = Permission.objects.filter(id__in=denied_ids, is_active=True)
@@ -379,6 +387,27 @@ def manage_user_permissions(request, user_id):
             })
         matrix.append({'module': m, 'cells': cells})
 
+    from django.urls import reverse
+
+    display_label = user_obj.get_full_name() or user_obj.username
+    breadcrumb_items = [
+        {
+            'label': 'المستخدمون',
+            'url': reverse('web:list_users'),
+            'icon': 'users',
+        },
+        {
+            'label': display_label,
+            'url': reverse('web:view_user', args=[user_obj.id]),
+            'icon': 'user',
+        },
+        {
+            'label': 'صلاحيات',
+            'url': None,
+            'icon': 'shield-check',
+        },
+    ]
+
     return render(request, 'pages/users/permissions.html', {
         'user_obj': user_obj,
         'profile': profile,
@@ -386,4 +415,5 @@ def manage_user_permissions(request, user_id):
         'is_admin_user': is_admin_user,
         'operations': operations,
         'matrix': matrix,
+        'breadcrumb_items': breadcrumb_items,
     })

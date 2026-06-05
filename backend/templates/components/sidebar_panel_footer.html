@@ -1,38 +1,38 @@
-{% with display_name=user.get_full_name|default:user.username role_name=user.profile.role.name|default:"مستخدم" email=user.email|default:"" %}
-<div class="hr-sidebar-panel__foot shrink-0">
-    {% if pending_actions_count %}
-    <a href="{% url 'web:list_pending_actions' %}"
-       class="hr-sidebar-panel__pending"
-       {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-        <i data-lucide="clipboard-list" class="w-4 h-4 shrink-0"></i>
-        <span class="flex-1 text-right truncate">طلبات بانتظار الموافقة</span>
-        <span class="hr-sidebar-panel__pending-badge">{{ pending_actions_count }}</span>
-    </a>
-    {% endif %}
-
-    <div class="hr-sidebar-account">
-        <div class="hr-sidebar-account__inner" {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-            <span class="hr-sidebar-account__avatar" aria-hidden="true">{{ display_name|slice:":1"|upper }}</span>
-            <div class="hr-sidebar-account__meta min-w-0">
-                <p class="hr-sidebar-account__label">الحساب</p>
-                <p class="hr-sidebar-account__name truncate" title="{{ display_name }}">{{ display_name }}</p>
-                {% if email %}
-                <p class="hr-sidebar-account__email truncate" title="{{ email }}">{{ email }}</p>
-                {% else %}
-                <p class="hr-sidebar-account__email truncate" title="{{ role_name }}">{{ role_name }}</p>
-                {% endif %}
-            </div>
-            <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-45 shrink-0" aria-hidden="true"></i>
-        </div>
-        {% if allow_collapse and not always_show %}
-        <div class="hr-sidebar-account__collapsed" x-show="!sidebarOpen" x-cloak>
-            <span class="hr-sidebar-account__avatar" title="{{ display_name }}">{{ display_name|slice:":1"|upper }}</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <p class="hr-sidebar-panel__version" {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-        نظام الموارد البشرية
-    </p>
-</div>
-{% endwith %}
+{% load custom_tags %}
+{% with display_name=user.get_full_name|default:user.username role_name=user.profile.role|role_arabic_name email=user.email|default:"" %}
+<div class="hr-sidebar-panel__foot shrink-0">
+    {% if pending_actions_count %}
+    <a href="{% url 'web:list_pending_actions' %}"
+       class="hr-sidebar-panel__pending"
+       {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
+        <i data-lucide="clipboard-list" class="w-4 h-4 shrink-0"></i>
+        <span class="flex-1 text-right truncate">طلبات بانتظار الموافقة</span>
+        <span class="hr-sidebar-panel__pending-badge">{{ pending_actions_count }}</span>
+    </a>
+    {% endif %}
+
+    <div class="hr-sidebar-account">
+        <div class="hr-sidebar-account__inner"
+             role="group"
+             aria-label="الحساب الحالي"
+             {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
+            <div class="hr-sidebar-account__avatar-wrap">
+                <span class="hr-sidebar-account__avatar" aria-hidden="true">{{ display_name|slice:":1"|upper }}</span>
+                <span class="hr-sidebar-account__status" title="جلسة نشطة" aria-hidden="true"></span>
+            </div>
+            <div class="hr-sidebar-account__body min-w-0 flex-1">
+                <p class="hr-sidebar-account__name truncate" title="{{ display_name }}">{{ display_name }}</p>
+                {% if email %}
+                <p class="hr-sidebar-account__sub truncate" dir="ltr" title="{{ email }}">{{ email }}</p>
+                {% endif %}
+                <span class="hr-sidebar-account__role-pill" title="{{ role_name|default:'مستخدم' }}">{{ role_name|default:"مستخدم" }}</span>
+            </div>
+        </div>
+        {% if allow_collapse and not always_show %}
+        <div class="hr-sidebar-account__collapsed" x-show="!sidebarOpen" x-cloak title="{{ display_name }}">
+            <span class="hr-sidebar-account__avatar">{{ display_name|slice:":1"|upper }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endwith %}

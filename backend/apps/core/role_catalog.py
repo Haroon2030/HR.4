@@ -4,6 +4,8 @@
 """
 from __future__ import annotations
 
+import re
+
 from apps.core.models import Role
 
 
@@ -100,3 +102,23 @@ LEGACY_ROLE_NAME_TO_TYPE: dict[str, str] = {
     'مدير المالية': Role.RoleType.MANAGER,
     'المدير التقني': Role.RoleType.ADMIN,
 }
+
+
+def _extract_arabic_label(text: str) -> str:
+    """استخراج الاسم العربي من صيغة CODE — الاسم أو الاسم (ملاحظة)."""
+    label = (text or '').strip()
+    if not label:
+        return '—'
+    if ' — ' in label:
+        label = label.split(' — ', 1)[1].strip()
+    label = re.sub(r'\s*\([^)]*\)\s*$', '', label).strip()
+    return label or '—'
+
+
+def arabic_role_label(*, role_type: str | None = None, name: str | None = None) -> str:
+    """الاسم العربي للدور فقط — بدون الرمز الإنجليزي."""
+    if role_type and role_type in ROLE_CATALOG:
+        return _extract_arabic_label(ROLE_CATALOG[role_type]['name'])
+    if name:
+        return _extract_arabic_label(name)
+    return '—'
