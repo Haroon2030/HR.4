@@ -4,6 +4,21 @@ from decimal import Decimal
 from django.db import migrations, models
 
 STANDARD_MONTH_DAYS = 30
+_GROSS_FIELDS = (
+    'basic_salary',
+    'housing_allowance',
+    'transport_allowance',
+    'other_allowance',
+    'cash_amount',
+    'meal_allowance',
+)
+
+
+def _gross_from_employee_row(row) -> Decimal:
+    """إجمالي الراتب من حقول DB (total_salary خاصية وليست عموداً)."""
+    if not row:
+        return Decimal('0')
+    return sum((Decimal(row.get(f) or 0) for f in _GROSS_FIELDS), Decimal('0'))
 
 
 def _recalc_absences(apps, schema_editor):
@@ -11,10 +26,14 @@ def _recalc_absences(apps, schema_editor):
     Employee = apps.get_model('employees', 'Employee')
 
     for absence in EmployeeAbsence.objects.all().iterator():
-        employee = Employee.objects.filter(pk=absence.employee_id).only('total_salary').first()
         salary = absence.total_salary_snapshot
-        if not salary and employee:
-            salary = employee.total_salary or 0
+        if not salary:
+            row = (
+                Employee.objects.filter(pk=absence.employee_id)
+                .values(*_GROSS_FIELDS)
+                .first()
+            )
+            salary = _gross_from_employee_row(row)
         salary = Decimal(salary or 0)
         daily = (salary / Decimal(STANDARD_MONTH_DAYS)).quantize(Decimal('0.01'))
         deduction = (daily * Decimal(absence.days or 0)).quantize(Decimal('0.01'))
