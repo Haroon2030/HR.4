@@ -201,7 +201,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260604-2" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260605-scroll-hover" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     <script defer src="/static/js/hr-multiselect.js?v=20260604-2"></script>
     
@@ -223,49 +223,10 @@
         style="display: none;"
     ></div>
 
-    <!-- هيكل: شريط جانبي كامل الارتفاع + عمود المحتوى (شريط علوي + صفحة) -->
-    <div class="hr-app-shell flex h-screen min-h-0 overflow-hidden">
-        <!-- Desktop Sidebar -->
-        <aside
-            class="hr-sidebar hidden md:flex transition-all duration-300 flex-col min-h-0 shrink-0"
-            :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
-        >
-            {% include "components/sidebar_brand.html" %}
-            <nav class="hr-nav flex-1 min-h-0"
-                 x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
-                {% include "components/sidebar_nav.html" with always_show=False %}
-            </nav>
-            {% include "components/sidebar_user.html" with allow_collapse=True %}
-        </aside>
-
-        <!-- Mobile Sidebar -->
-        <aside
-            x-show="mobileMenuOpen"
-            @click.away="mobileMenuOpen = false"
-            x-transition:enter="transition-transform ease-out duration-300"
-            x-transition:enter-start="translate-x-full"
-            x-transition:enter-end="translate-x-0"
-            x-transition:leave="transition-transform ease-in duration-200"
-            x-transition:leave-start="translate-x-0"
-            x-transition:leave-end="translate-x-full"
-            class="hr-sidebar hr-sidebar--expanded md:hidden fixed top-0 right-0 bottom-0 flex flex-col z-40"
-            style="display: none;"
-        >
-            <div class="hr-sidebar-mobile-head shrink-0">
-                {% include "components/sidebar_brand.html" with always_show=True %}
-                <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn" title="إغلاق">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <nav class="hr-nav flex-1 min-h-0"
-                 x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
-                {% include "components/sidebar_nav.html" with always_show=True %}
-            </nav>
-            {% include "components/sidebar_user.html" with allow_collapse=False always_show=True %}
-        </aside>
-
-        <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden">
-            <header class="hr-topbar shrink-0{% if user|has_permission:'employees.view' %} hr-topbar--with-search{% endif %}">
+    <!-- هيكل: شريط علوي كامل العرض ← ثم شريط جانبي + المحتوى -->
+    <div class="hr-app-shell flex flex-col h-screen min-h-0 overflow-hidden">
+        <div class="hr-app-chrome shrink-0 w-full">
+            <header class="hr-topbar shrink-0">
                 <div class="hr-topbar__start">
                     <button type="button" @click="sidebarOpen = !sidebarOpen"
                             class="hr-topbar-icon-btn hr-topbar-collapse-btn" title="طي القائمة">
@@ -275,18 +236,15 @@
                             class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة">
                         <i data-lucide="menu" class="w-5 h-5"></i>
                     </button>
-                    <nav class="hr-breadcrumb" aria-label="مسار التنقل">
-                        {% block breadcrumb_parent %}{% endblock %}
-                        <span class="hr-breadcrumb__current">{% block page_title %}{% endblock %}</span>
-                    </nav>
                 </div>
-                {% if user|has_permission:'employees.view' %}
                 <div class="hr-topbar__center">
-                    <form method="get" action="{% url 'web:list_employees' %}" class="hr-topbar-search-form" hx-boost="false">
-                        {% include "components/search_field.html" with name="q" value=request.GET.q placeholder="بحث موظفين، فروع، أقسام..." input_type="search" extra_class="hr-topbar-search" aria_label="بحث سريع في الموظفين" %}
-                    </form>
+                    <div class="hr-topbar-page" aria-label="الصفحة الحالية">
+                        {% block breadcrumb_parent %}{% endblock %}
+                        <h1 id="hr-topbar-page-title" class="hr-topbar-page__title">
+                            {% block page_title %}لوحة التحكم{% endblock %}
+                        </h1>
+                    </div>
                 </div>
-                {% endif %}
                 <div class="hr-topbar__end">
                     <div class="hr-topbar-actions">
                         <div class="relative" x-data="{ open: false }" @click.outside="open = false">
@@ -343,23 +301,74 @@
                     </div>
                 </div>
             </header>
+        </div>
 
-            <main class="hr-main hr-scroll-hide flex-1 min-h-0 p-3 md:p-6 relative" style="direction:ltr;">
-                <div id="hr-htmx-indicator" class="hr-htmx-indicator htmx-indicator" aria-hidden="true">
-                    <span class="hr-htmx-indicator__spinner"></span>
+        <div class="hr-app-body flex flex-1 min-h-0 min-w-0 overflow-hidden">
+            <!-- Desktop Sidebar -->
+            <aside
+                class="hr-sidebar hidden md:flex transition-all duration-300 flex-col min-h-0 shrink-0"
+                :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
+            >
+                <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
+                    {% include "components/app_org_bar.html" %}
+                    <nav class="hr-nav flex-1 min-h-0"
+                         x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
+                        {% include "components/sidebar_nav.html" with always_show=False %}
+                    </nav>
+                    {% include "components/sidebar_panel_footer.html" with allow_collapse=True %}
                 </div>
-                <div id="hr-page-inner" class="hr-page-inner" style="direction:rtl;">
-                {% block content %}{% endblock %}
+            </aside>
+
+            <!-- Mobile Sidebar -->
+            <aside
+                x-show="mobileMenuOpen"
+                @click.away="mobileMenuOpen = false"
+                x-transition:enter="transition-transform ease-out duration-300"
+                x-transition:enter-start="translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition-transform ease-in duration-200"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="translate-x-full"
+                class="hr-sidebar hr-sidebar--expanded md:hidden fixed right-0 bottom-0 flex flex-col z-40 hr-sidebar--mobile-drawer"
+                style="display: none;"
+            >
+                <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
+                    <div class="hr-sidebar-mobile-head shrink-0">
+                        {% include "components/app_org_bar.html" with always_show=True %}
+                        <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn" title="إغلاق">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <nav class="hr-nav flex-1 min-h-0"
+                         x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
+                        {% include "components/sidebar_nav.html" with always_show=True %}
+                    </nav>
+                    {% include "components/sidebar_panel_footer.html" with allow_collapse=False always_show=True %}
                 </div>
-            </main>
-            <footer class="hr-footer shrink-0 border-t py-1.5 text-center">
-                <p class="text-xs text-slate-400 px-2">
-                    <span class="hidden sm:inline">تطوير وتصميم </span>
-                    <span class="font-semibold text-slate-500">هارون الأهدل</span>
-                    <span class="hidden sm:inline">&mdash;</span>
-                    <a href="tel:0531847156" class="hover:text-primary-600 transition-colors">0531847156</a>
-                </p>
-            </footer>
+            </aside>
+
+            <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
+                <main class="hr-main hr-scroll-hide flex-1 min-h-0 relative" style="direction:ltr;">
+                    <div class="hr-page-card">
+                        <div id="hr-htmx-indicator" class="hr-htmx-indicator htmx-indicator" aria-hidden="true">
+                            <span class="hr-htmx-indicator__spinner"></span>
+                        </div>
+                        <div class="hr-page-card__body hr-scroll-hover">
+                            <div id="hr-page-inner" class="hr-page-inner" style="direction:rtl;">
+                            {% block content %}{% endblock %}
+                            </div>
+                        </div>
+                        <footer class="hr-footer hr-page-card__footer shrink-0 py-1.5 text-center">
+                            <p class="text-xs text-slate-400 px-2">
+                                <span class="hidden sm:inline">تطوير وتصميم </span>
+                                <span class="font-semibold text-slate-500">هارون الأهدل</span>
+                                <span class="hidden sm:inline">&mdash;</span>
+                                <a href="tel:0531847156" class="hover:text-primary-600 transition-colors">0531847156</a>
+                            </p>
+                        </footer>
+                    </div>
+                </main>
+            </div>
         </div>
     </div>
     
@@ -440,10 +449,33 @@
                 }, { passive: true });
             }
 
+            function hrSyncTopbarPageTitle(fromNode) {
+                var titleEl = document.getElementById('hr-topbar-page-title');
+                if (!titleEl) return;
+                var text = '';
+                if (fromNode) {
+                    text = (fromNode.getAttribute('data-page-title') || '').trim();
+                }
+                if (!text) {
+                    text = titleEl.textContent.trim();
+                }
+                if (!text) {
+                    text = (document.title || '').replace(/\s*[-—|]\s*نظام الموارد البشرية\s*$/i, '').trim();
+                }
+                if (text) {
+                    titleEl.textContent = text;
+                }
+            }
+
+            hrSyncTopbarPageTitle();
+
             document.body.addEventListener('htmx:afterSwap', function (evt) {
                 hrScheduleLucide();
                 if (evt.detail.target && evt.detail.target.id === 'notif-dropdown-content') {
                     return;
+                }
+                if (evt.detail.target && evt.detail.target.id === 'hr-page-inner') {
+                    hrSyncTopbarPageTitle(evt.detail.target);
                 }
             });
 

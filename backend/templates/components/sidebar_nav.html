@@ -1,6 +1,7 @@
 {% load custom_tags %}
 {# always_show: عرض عناوين الأقسام دائماً (الجوال) #}
 
+{% include "components/nav_section.html" with label="الرئيسية" always_show=always_show %}
 {% include "components/nav_item.html" with url="web:dashboard" icon="layout-dashboard" label="لوحة التحكم" force_show_label=always_show %}
 
 {% include "components/nav_section.html" with label="الموارد البشرية" always_show=always_show %}

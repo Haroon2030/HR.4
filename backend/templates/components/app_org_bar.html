@@ -1,0 +1,14 @@
+{% comment %}
+  رأس صندوق الشريط الجانبي — اسم النظام.
+{% endcomment %}
+<div class="hr-sidebar-panel__head shrink-0" dir="rtl">
+    <a href="{% url 'web:dashboard' %}" class="hr-sidebar-org" title="لوحة التحكم">
+        <span class="hr-sidebar-org__icon" aria-hidden="true">
+            <i data-lucide="briefcase" class="w-4 h-4"></i>
+        </span>
+        <span class="hr-sidebar-org__text" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
+            <span class="hr-sidebar-org__title">نظام الموارد البشرية</span>
+        </span>
+        <i data-lucide="chevrons-up-down" class="hr-sidebar-org__chev w-3.5 h-3.5 opacity-50 shrink-0" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %} aria-hidden="true"></i>
+    </a>
+</div>
