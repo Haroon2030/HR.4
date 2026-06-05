@@ -1562,6 +1562,29 @@ body.hr-app #employee-tab-panel .hr-page-tabs__body {
     padding-bottom: 1.5rem;
 }
 
+/* ── نافذة تفاصيل المخصصات — نفس تصميم أرشيف تعديل الراتب ── */
+body.hr-app .hr-glass-modal--ledger {
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+    max-height: min(400px, 92vh);
+    width: 100%;
+    max-width: 32rem;
+}
+
+body.hr-app .hr-glass-modal--ledger .hr-glass-modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+body.hr-app .hr-glass-modal--ledger .hr-glass-modal__content {
+    max-height: none;
+    overflow: visible;
+}
+
 body.hr-app .hr-main .overflow-x-auto,
 body.hr-app .hr-main div.border.rounded-lg.overflow-hidden,
 body.hr-app .hr-main .overflow-hidden.rounded-xl,
