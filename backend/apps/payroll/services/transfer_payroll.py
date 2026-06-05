@@ -349,20 +349,35 @@ def build_detailed_runs_for_branches(
     user,
     *,
     salary_mode: str,
-    sponsorship_id: int | None,
+    sponsorship_id: int | None = None,
+    sponsorship_ids: list[int] | None = None,
 ) -> list[PayrollRun]:
-    """مسير تفصيلي واحد لكل شركة من الفروع المختارة."""
+    """مسير تفصيلي لكل شركة (ومنشأة كفالة عند التحويل)."""
     companies = {}
     for br in branches:
         if br.company_id:
             companies[br.company_id] = br.company
+    if salary_mode == PayrollRun.SalaryMode.CASH:
+        sp_loop = [None]
+    elif sponsorship_ids is not None:
+        sp_loop = sponsorship_ids
+    elif sponsorship_id:
+        sp_loop = [sponsorship_id]
+    else:
+        from apps.setup.models import Sponsorship
+        sp_loop = list(
+            Sponsorship.objects.filter(is_deleted=False, is_active=True)
+            .values_list('id', flat=True),
+        )
+
     built = []
     for company in companies.values():
-        built.append(
-            build_payroll_detailed_run(
-                company, year, month, user,
-                salary_mode=salary_mode,
-                sponsorship_id=sponsorship_id,
+        for sp_id in sp_loop:
+            built.append(
+                build_payroll_detailed_run(
+                    company, year, month, user,
+                    salary_mode=salary_mode,
+                    sponsorship_id=sp_id,
+                )
             )
-        )
     return built

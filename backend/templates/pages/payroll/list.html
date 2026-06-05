@@ -17,15 +17,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             <div id="payrollSponsorshipWrap">
                 <label class="block text-xs font-semibold text-slate-600 mb-1">شركة الكفالة</label>
-                <select name="sponsorship_id" id="payrollSponsorship"
-                        class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    <option value="">— اختر شركة الكفالة —</option>
-                    {% for s in sponsorships %}
-                    <option value="{{ s.id }}" {% if filter_sponsorship_id == s.id %}selected{% endif %}>
-                        {{ s.company_name }}{% if s.code %} ({{ s.code }}){% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
+                {% include "components/filter_multiselect.html" with name="sponsorship_id" items=sponsorships selected_ids=filter_sponsorship_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollSponsorship" aria_label="شركة الكفالة" all_label="جميع الشركات" placeholder="— اختر شركة الكفالة —" count_unit="شركات" %}
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">الفروع</label>
@@ -298,8 +290,8 @@
         if (!form || form.dataset.payrollBound === '1') return;
         form.dataset.payrollBound = '1';
 
-        var sponsorshipSel = scope.querySelector('#payrollSponsorship');
         var sponsorshipWrap = scope.querySelector('#payrollSponsorshipWrap');
+        var sponsorshipSel = scope.querySelector('#payrollSponsorship');
         var salaryModeSel = form.querySelector('#payrollSalaryMode') || form.querySelector('select[name="salary_mode"]');
         function getSalaryModeValue() {
             if (!salaryModeSel) return '';
@@ -309,10 +301,15 @@
         }
         function syncSponsorshipField() {
             var isCash = getSalaryModeValue() === 'cash';
-            if (!sponsorshipWrap || !sponsorshipSel) return;
+            if (!sponsorshipWrap) return;
             sponsorshipWrap.style.display = isCash ? 'none' : '';
-            sponsorshipSel.required = !isCash;
-            if (isCash) sponsorshipSel.value = '';
+            if (sponsorshipSel) {
+                sponsorshipSel.disabled = isCash;
+                if (isCash) {
+                    Array.from(sponsorshipSel.options).forEach(function (o) { o.selected = false; });
+                    sponsorshipSel.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
         }
 
         if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);

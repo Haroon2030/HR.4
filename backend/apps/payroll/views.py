@@ -96,7 +96,7 @@ def _payroll_list_querystring(
     year=None,
     month=None,
     salary_mode=None,
-    sponsorship_id=None,
+    sponsorship_ids=None,
     page=None,
 ):
     """سلسلة استعلام لشاشة المسير الموحّدة."""
@@ -108,11 +108,28 @@ def _payroll_list_querystring(
         pairs.append(('month', month))
     if salary_mode:
         pairs.append(('salary_mode', salary_mode))
-    if sponsorship_id:
-        pairs.append(('sponsorship_id', sponsorship_id))
+    append_multi_param(pairs, 'sponsorship_id', sponsorship_ids)
     if page:
         pairs.append(('page', page))
     return urlencode(pairs, doseq=True) if pairs else ''
+
+
+def _active_sponsorship_ids() -> list[int]:
+    return list(
+        Sponsorship.objects.filter(is_deleted=False, is_active=True)
+        .order_by('company_name')
+        .values_list('id', flat=True),
+    )
+
+
+def _effective_sponsorship_ids(filters) -> list[int]:
+    """قائمة شركات الكفالة للبناء/العرض. None في الفلتر = جميع الشركات."""
+    if filters['salary_mode'] != PayrollRun.SalaryMode.TRANSFER:
+        return []
+    ids = filters.get('sponsorship_ids')
+    if ids is None:
+        return _active_sponsorship_ids()
+    return list(ids)
 
 
 def _parse_payroll_form(request, user_branches):
@@ -142,7 +159,7 @@ def _parse_payroll_form(request, user_branches):
         if s in PayrollRun.SalaryMode.values:
             salary_mode = s
             break
-    sponsorship_raw = (src.get('sponsorship_id') or '').strip()
+    sponsorship_ids = parse_multi_filter_ids(request, 'sponsorship_id')
 
     year = month = None
     try:
@@ -153,23 +170,19 @@ def _parse_payroll_form(request, user_branches):
     except ValueError:
         pass
 
-    sponsorship_id = None
-    if sponsorship_raw.isdigit():
-        sponsorship_id = int(sponsorship_raw)
-
     ready = bool(
         branch_ids and year and month
         and salary_mode in PayrollRun.SalaryMode.values
     )
     if ready and salary_mode == PayrollRun.SalaryMode.TRANSFER:
-        ready = bool(sponsorship_id)
+        ready = sponsorship_ids is None or bool(sponsorship_ids)
 
     return {
         'branch_ids': branch_ids,
         'year': year,
         'month': month,
         'salary_mode': salary_mode,
-        'sponsorship_id': sponsorship_id,
+        'sponsorship_ids': sponsorship_ids,
         'ready': ready,
     }
 
@@ -184,13 +197,13 @@ def _validate_payroll_build(filters):
     if filters['salary_mode'] not in PayrollRun.SalaryMode.values:
         return 'يرجى اختيار نوع الراتب (نقدي أو تحويل).'
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
-        sid = filters['sponsorship_id']
-        if not sid:
-            return 'يرجى اختيار شركة الكفالة لمسير التحويل.'
-        if not Sponsorship.objects.filter(
-            pk=sid, is_deleted=False, is_active=True,
-        ).exists():
-            return 'شركة الكفالة غير صالحة.'
+        effective = _effective_sponsorship_ids(filters)
+        if not effective:
+            return 'لا توجد شركات كفالة نشطة.'
+        if filters['sponsorship_ids'] is not None:
+            allowed = set(_active_sponsorship_ids())
+            if not set(filters['sponsorship_ids']).issubset(allowed):
+                return 'إحدى شركات الكفالة المختارة غير صالحة.'
     return None
 
 
@@ -203,27 +216,31 @@ def _build_payroll_runs(request, filters):
     if len(branches) != len(branch_ids):
         return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
 
-    sponsorship_id = (
-        filters['sponsorship_id']
+    sponsorship_ids = (
+        _effective_sponsorship_ids(filters)
         if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER
-        else None
+        else [None]
     )
     runs_built = []
     errors = []
     try:
         with transaction.atomic():
-            for branch in branches:
-                try:
-                    runs_built.append(
-                        build_payroll_run(
-                            branch, filters['year'], filters['month'], request.user,
-                            salary_mode=filters['salary_mode'],
-                            sponsorship_id=sponsorship_id,
+            for sponsorship_id in sponsorship_ids:
+                for branch in branches:
+                    try:
+                        runs_built.append(
+                            build_payroll_run(
+                                branch, filters['year'], filters['month'], request.user,
+                                salary_mode=filters['salary_mode'],
+                                sponsorship_id=sponsorship_id,
+                            )
                         )
-                    )
-                except ValueError as e:
-                    errors.append(f'{branch.name}: {e}')
-                    raise
+                    except ValueError as e:
+                        sp_label = ''
+                        if sponsorship_id:
+                            sp_label = f' / كفالة #{sponsorship_id}'
+                        errors.append(f'{branch.name}{sp_label}: {e}')
+                        raise
     except ValueError:
         return [], errors
     return runs_built, errors
@@ -241,7 +258,9 @@ def _payroll_runs_for_filters(filters, user, user_branches):
     if not user.is_superuser:
         qs = qs.filter(branch__in=user_branches)
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
-        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+        sp_ids = filters.get('sponsorship_ids')
+        if sp_ids is not None:
+            qs = qs.filter(sponsorship_id__in=sp_ids)
     else:
         qs = qs.filter(sponsorship__isnull=True)
     return qs.order_by('branch__name')
@@ -263,7 +282,9 @@ def _detailed_runs_for_filters(filters, user, user_branches):
         allowed = user_branches.values_list('company_id', flat=True).distinct()
         qs = qs.filter(company_id__in=allowed)
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
-        qs = qs.filter(sponsorship_id=filters['sponsorship_id'])
+        sp_ids = filters.get('sponsorship_ids')
+        if sp_ids is not None:
+            qs = qs.filter(sponsorship_id__in=sp_ids)
     else:
         qs = qs.filter(sponsorship__isnull=True)
     return qs.order_by('company__name')
@@ -277,11 +298,6 @@ def _build_detailed_payroll_runs(request, filters):
     if len(branches) != len(branch_ids):
         return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
 
-    sponsorship_id = (
-        filters['sponsorship_id']
-        if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER
-        else None
-    )
     runs_built = []
     errors = []
     try:
@@ -292,7 +308,11 @@ def _build_detailed_payroll_runs(request, filters):
                 filters['month'],
                 request.user,
                 salary_mode=filters['salary_mode'],
-                sponsorship_id=sponsorship_id,
+                sponsorship_ids=(
+                    _effective_sponsorship_ids(filters)
+                    if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER
+                    else None
+                ),
             )
     except ValueError as e:
         errors.append(str(e))
@@ -349,7 +369,7 @@ def list_payroll_runs(request):
             year=filters['year'],
             month=filters['month'],
             salary_mode=filters['salary_mode'] or None,
-            sponsorship_id=filters['sponsorship_id'],
+            sponsorship_ids=filters['sponsorship_ids'],
         )
         url = reverse('web:list_payroll_runs')
         return redirect(f'{url}?{qs}' if qs else url)
@@ -403,7 +423,7 @@ def list_payroll_runs(request):
         year=filters['year'],
         month=filters['month'],
         salary_mode=filters['salary_mode'] or None,
-        sponsorship_id=filters['sponsorship_id'],
+        sponsorship_ids=filters['sponsorship_ids'],
     )
 
     return render(request, 'pages/payroll/list.html', {
@@ -420,7 +440,7 @@ def list_payroll_runs(request):
         'filter_salary_mode': filters['salary_mode'],
         'filter_salary_mode_ids': [filters['salary_mode']] if filters.get('salary_mode') else [],
         'salary_mode_filter_items': SALARY_MODE_FILTER_ITEMS,
-        'filter_sponsorship_id': filters['sponsorship_id'],
+        'filter_sponsorship_ids': filters['sponsorship_ids'] or [],
         'filter_qs': filter_qs,
         'lines': lines,
         'page_obj': page_obj,
