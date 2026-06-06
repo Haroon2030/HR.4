@@ -289,6 +289,8 @@ def attendance_records_export(request):
         punch_type=filters['punch_type'],
         mapped_only=filters['mapped_only'],
         search=filters['search'] or None,
+    ).filter(
+        device_id__in=filter_biometric_devices_for_user(request.user).values('pk'),
     ).order_by(*PUNCH_LIST_ORDERING)[:50000]
 
     from openpyxl import Workbook

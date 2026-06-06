@@ -810,12 +810,17 @@ class EmployeeLoan(BaseModel):
             return  # موجودة بالفعل
         first = self.first_deduction_date or self.issued_at
         n = max(1, int(self.installments or 1))
-        amount = Decimal(self.monthly_deduction)
-        # قسط أخير = الباقي بعد قسمة لتجنّب التقريب
-        per = amount
+        total_loan = Decimal(self.amount)
+        per = Decimal(self.monthly_deduction)
         from calendar import monthrange
         y, m = first.year, first.month
         for i in range(n):
+            if i == n - 1:
+                installment_amount = (
+                    total_loan - per * Decimal(n - 1)
+                ).quantize(Decimal('0.01'))
+            else:
+                installment_amount = per
             # تاريخ القسط: نفس يوم الشهر الأول، أو آخر يوم في الشهر إن لم يوجد
             try:
                 due = date(y, m, first.day)
@@ -826,7 +831,7 @@ class EmployeeLoan(BaseModel):
                 loan=self,
                 period_year=y, period_month=m,
                 due_date=due,
-                amount=per,
+                amount=installment_amount,
                 status=LoanInstallment.Status.PENDING,
             )
             # تقدم شهراً

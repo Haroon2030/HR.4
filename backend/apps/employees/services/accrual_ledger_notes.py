@@ -31,12 +31,14 @@ def compute_monthly_ledger_amounts(
     *,
     gross_salary: Decimal,
     daily_rate: Decimal | None = None,
+    eosb_base: Decimal | None = None,
     hire_date: date | None,
     period_year: int,
     period_month: int,
 ) -> dict:
-    """حساب مبالغ مخصص الشهر — أجر اليوم دائماً = الإجمالي ÷ 30."""
+    """حساب مبالغ مخصص الشهر — أجر اليوم = الإجمالي ÷ 30؛ EOSB بدون بدل التغذية."""
     gross = Decimal(gross_salary or 0)
+    eosb_gross = Decimal(eosb_base if eosb_base is not None else gross_salary or 0)
     daily = daily_rate_from_total(gross)
     leave_days = MONTHLY_LEAVE_ACCRUAL_DAYS
     leave_amount = (leave_days * daily).quantize(Decimal('0.01'))
@@ -50,7 +52,7 @@ def compute_monthly_ledger_amounts(
         month_end = calendar_month_last_day(period_year, period_month)
         service_days = (month_end - hire_date).days
         service_years = service_days / 365.25
-        eosb, eosb_detail = monthly_eosb_accrual(gross, service_years)
+        eosb, eosb_detail = monthly_eosb_accrual(eosb_gross, service_years)
 
     return {
         'leave_days': leave_days,
@@ -59,6 +61,7 @@ def compute_monthly_ledger_amounts(
         'eosb_detail': eosb_detail,
         'daily_rate': daily,
         'gross': gross,
+        'eosb_base': eosb_gross,
         'service_days': service_days,
         'service_years': round(service_years, 4),
         'month_end': calendar_month_last_day(period_year, period_month),

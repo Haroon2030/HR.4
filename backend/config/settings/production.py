@@ -129,6 +129,8 @@ if _agent_global_key and len(_agent_global_key) < 32:
         'يُفضّل مفاتيح لكل جهاز: python manage.py generate_attendance_agent_key --device-id=ID'
     )
 
+ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=True)
+
 if DEBUG:
     from django.core.exceptions import ImproperlyConfigured
 

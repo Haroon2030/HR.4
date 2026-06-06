@@ -100,6 +100,14 @@ def edit_role(request, role_id):
                 except (TypeError, ValueError):
                     selected_ids = []
                 perms = Permission.objects.filter(id__in=selected_ids, is_active=True)
+                from apps.core.services.access_control import validate_permission_grants
+                err = validate_permission_grants(
+                    request.user,
+                    perms.values_list('code', flat=True),
+                )
+                if err:
+                    messages.error(request, err)
+                    return redirect('web:edit_role', role_id=role.id)
                 role.permissions.set(perms)
                 messages.success(
                     request,
@@ -181,6 +189,14 @@ def manage_role_permissions(request, role_id):
         except (TypeError, ValueError):
             selected_ids = []
         perms = Permission.objects.filter(id__in=selected_ids, is_active=True)
+        from apps.core.services.access_control import validate_permission_grants
+        err = validate_permission_grants(
+            request.user,
+            perms.values_list('code', flat=True),
+        )
+        if err:
+            messages.error(request, err)
+            return redirect('web:manage_role_permissions', role_id=role.id)
         role.permissions.set(perms)
         messages.success(request, f'تم حفظ صلاحيات الدور "{role.name}" ({perms.count()} صلاحية)')
         return redirect('web:manage_role_permissions', role_id=role.id)

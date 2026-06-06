@@ -61,6 +61,21 @@ def _prepare_employee_upload_files(request):
     return files
 
 
+def _employee_post_tries_termination(request) -> bool:
+    """رفض محاولات إنهاء الخدمة عبر نموذج التعديل المباشر."""
+    from apps.employees.models import Employee
+
+    if 'status' in request.POST:
+        posted = (request.POST.get('status') or '').strip()
+        if posted and posted != Employee.Status.ACTIVE and posted != Employee.Status.LEAVE:
+            return True
+    if (request.POST.get('end_date') or '').strip():
+        return True
+    if (request.POST.get('end_reason') or '').strip():
+        return True
+    return False
+
+
 def _save_employee_from_form(request, form):
     from apps.core.services.file_helpers import apply_employee_document_renames
 
@@ -190,7 +205,7 @@ def create_employee_full(request):
 
     if request.method == 'POST':
         files = _prepare_employee_upload_files(request)
-        form = EmployeeForm(request.POST, files)
+        form = EmployeeForm(request.POST, files, user=request.user)
         if form.is_valid():
             if not user_can_edit_salary(request.user):
                 for field_name in EMPLOYEE_SALARY_FIELD_NAMES:
@@ -334,7 +349,14 @@ def edit_employee(request, employee_id):
 
     if request.method == 'POST':
         files = _prepare_employee_upload_files(request)
-        form = EmployeeForm(request.POST, files, instance=employee)
+        if _employee_post_tries_termination(request):
+            messages.error(
+                request,
+                'تغيير حالة الموظف أو إنهاء الخدمة يتم عبر سير الموافقات فقط.',
+            )
+            return redirect('web:view_employee', employee_id=employee.id)
+
+        form = EmployeeForm(request.POST, files, instance=employee, user=request.user)
         if form.is_valid():
             if not user_can_edit_salary(request.user):
                 for field_name in EMPLOYEE_SALARY_FIELD_NAMES:

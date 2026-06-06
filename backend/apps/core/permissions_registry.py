@@ -23,7 +23,7 @@ DEFAULT_MODULE_META: Dict[str, dict] = {
     'branches':     {'name': 'الفروع',             'icon': 'building-2',    'order': 2},
     'departments':  {'name': 'الأقسام',            'icon': 'network',       'order': 3},
     'cost_centers': {'name': 'مراكز التكلفة',       'icon': 'wallet',        'order': 4},
-    'users':        {'name': 'المستخدمون',           'icon': 'shield-check',  'order': 5},
+    'users':        {'name': 'المستخدمين والأدوار', 'icon': 'shield-check',  'order': 5},
     'system_data':  {'name': 'بيانات النظام',       'icon': 'database',      'order': 6},
     'hr_forms':     {'name': 'النماذج الرسمية',     'icon': 'file-text',     'order': 7},
     'reports':      {'name': 'التقارير',            'icon': 'bar-chart-3',   'order': 8},

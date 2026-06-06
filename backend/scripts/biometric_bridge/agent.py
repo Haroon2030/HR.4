@@ -12,6 +12,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
+import json
 import logging
 import sys
 import time
@@ -245,6 +248,15 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
                 pass
 
 
+def _ingest_signature(api_key: str, body: bytes) -> str:
+    digest = hmac.new(
+        api_key.encode('utf-8'),
+        body,
+        hashlib.sha256,
+    ).hexdigest()
+    return f'sha256={digest}'
+
+
 def push_to_server(
     settings: AgentSettings,
     device: DeviceTarget,
@@ -260,13 +272,15 @@ def push_to_server(
         'punches': punches,
         'users': users,
     }
+    body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
     resp = requests.post(
         url,
         headers={
             'X-Attendance-Agent-Key': settings.api_key,
             'Content-Type': 'application/json',
+            'X-Attendance-Signature': _ingest_signature(settings.api_key, body),
         },
-        json=payload,
+        data=body,
         timeout=180,
     )
     try:

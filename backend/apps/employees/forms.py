@@ -81,11 +81,10 @@ _EMPLOYEE_FIELDS = [
     # FKs
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
     'administration', 'cost_center', 'insurance', 'insurance_class', 'housing',
-    # تواريخ + حالة
-    'hire_date', 'end_date',
+    # تواريخ (الحالة وإنهاء الخدمة عبر سير الموافقات فقط)
+    'hire_date',
     'medical_insurance_expiry_date', 'contract_expiry_date',
     'contract_type', 'contract_start_date', 'contract_duration_months', 'contract_duration_text',
-    'status', 'end_reason',
     # الكرت الصحي
     'health_card_status', 'health_card_expiry',
     # راتب
@@ -114,9 +113,18 @@ class EmployeeForm(forms.ModelForm):
         model = Employee
         fields = _EMPLOYEE_FIELDS
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
         super().__init__(*args, **kwargs)
         _apply_fk_label_overrides(self)
+        if user is not None and 'branch' in self.fields:
+            from apps.core.models import Branch
+            from apps.core.services.access_control import filter_branches_queryset
+
+            self.fields['branch'].queryset = filter_branches_queryset(
+                user,
+                Branch.objects.filter(is_active=True, is_deleted=False),
+            )
         if 'administration' in self.fields:
             from apps.setup.models import Administration
             self.fields['administration'].queryset = Administration.objects.filter(
@@ -159,12 +167,24 @@ class EmployeeForm(forms.ModelForm):
         # السماح بقيمة فارغة (model يسمح blank=True)
         return self.cleaned_data.get('email') or ''
 
-    def clean_status(self):
-        # الإبقاء على الحالة الحالية إذا لم تُرسل
-        status = self.cleaned_data.get('status')
-        if not status:
-            return self.instance.status if self.instance and self.instance.pk else Employee.Status.ACTIVE
-        return status
+    def clean_branch(self):
+        branch = self.cleaned_data.get('branch')
+        if branch is None or self.user is None:
+            return branch
+        from apps.core.services.access_control import get_accessible_branch_ids
+
+        accessible = get_accessible_branch_ids(self.user)
+        if accessible is not None and branch.pk not in accessible:
+            raise ValidationError('لا يمكنك اختيار فرع خارج نطاق صلاحياتك.')
+        return branch
+
+    def clean_insurance_deduction_rate(self):
+        rate = self.cleaned_data.get('insurance_deduction_rate')
+        if rate is None:
+            return rate
+        if rate < 0 or rate > 100:
+            raise ValidationError('نسبة التأمين يجب أن تكون بين 0 و 100.')
+        return rate
 
     def clean(self):
         cleaned = super().clean()
@@ -214,6 +234,19 @@ class EmployeeForm(forms.ModelForm):
         for field, msg in contract_errors.items():
             if field in self.fields:
                 self.add_error(field, msg)
+
+        branch = cleaned.get('branch')
+        department = cleaned.get('department')
+        if branch and department and department.branch_id and department.branch_id != branch.pk:
+            self.add_error('department', 'القسم لا يتبع الفرع المختار.')
+
+        cost_center = cleaned.get('cost_center')
+        if branch and cost_center and cost_center.branch_id and cost_center.branch_id != branch.pk:
+            self.add_error('cost_center', 'مركز التكلفة لا يتبع الفرع المختار.')
+
+        administration = cleaned.get('administration')
+        if branch and administration and administration.branch_id and administration.branch_id != branch.pk:
+            self.add_error('administration', 'الإدارة لا تتبع الفرع المختار.')
 
         return cleaned
 
@@ -422,6 +455,15 @@ class EmployeeStatementForm(forms.ModelForm):
         # في حال تم تركه فارغاً نستخدم تاريخ اليوم
         from datetime import date
         return self.cleaned_data.get('statement_date') or date.today()
+
+    def clean(self):
+        cleaned = super().clean()
+        stype = cleaned.get('statement_type')
+        if stype == EmployeeStatement.StatementType.PENALTY:
+            amt = cleaned.get('deduction_amount')
+            if amt is None or Decimal(amt or 0) <= 0:
+                raise ValidationError('مبلغ الغرامة يجب أن يكون أكبر من صفر.')
+        return cleaned
 
     def clean_send_email(self):
         return self.data.get('send_email') == '1'

@@ -152,7 +152,12 @@ def user_may_access_media_path(user, path: str) -> bool:
         return has_permission(user, 'users.view')
 
     if path.startswith('pending_actions/'):
-        return has_permission(user, 'employees.view')
+        if not has_permission(user, 'employees.view'):
+            return False
+        branch_id = branch_id_for_media_path(path)
+        if branch_id is None:
+            return False
+        return _branch_allowed(user, branch_id)
 
     if path.startswith('employees/'):
         if not has_permission(user, 'employees.view'):

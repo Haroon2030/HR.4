@@ -250,3 +250,109 @@ class EmployeeBiometricSettings(BaseModel):
         base = datetime.combine(datetime.today(), self.expected_check_in)
         end = (base + timedelta(minutes=self.late_grace_minutes or 30)).time()
         return f'{self.expected_check_in.strftime("%H:%M")} + {self.late_grace_minutes} د → {end.strftime("%H:%M")}'
+
+
+class AttendanceIngestLog(BaseModel):
+    """سجل تدقيق استقبال دفعات البصمات من الوكيل المحلي."""
+
+    class Status(models.TextChoices):
+        SUCCESS = 'success', 'نجاح'
+        REJECTED_SIGNATURE = 'rejected_signature', 'توقيع مرفوض'
+        REJECTED_PAYLOAD = 'rejected_payload', 'حمولة مرفوضة'
+        ERROR = 'error', 'خطأ'
+
+    device = models.ForeignKey(
+        BiometricDevice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ingest_logs',
+        verbose_name='الجهاز',
+    )
+    agent_id = models.CharField('معرّف الوكيل', max_length=120, blank=True, default='')
+    status = models.CharField(
+        'الحالة',
+        max_length=32,
+        choices=Status.choices,
+        db_index=True,
+    )
+    signature_valid = models.BooleanField('توقيع صالح', null=True, blank=True)
+    punches_received = models.PositiveIntegerField('بصمات مستلمة', default=0)
+    imported = models.PositiveIntegerField('بصمات جديدة', default=0)
+    skipped_duplicate = models.PositiveIntegerField('مكررة', default=0)
+    skipped_time_filter = models.PositiveIntegerField('مرفوضة زمنياً', default=0)
+    users_updated = models.PositiveIntegerField('مستخدمون محدّثون', default=0)
+    message = models.TextField('رسالة', blank=True, default='')
+    client_ip = models.GenericIPAddressField('عنوان IP', null=True, blank=True)
+    user_agent = models.CharField('وكيل المستخدم', max_length=255, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'سجل استقبال بصمات'
+        verbose_name_plural = 'سجلات استقبال البصمات'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['device', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        device_label = self.device_id or '—'
+        return f'ingest #{self.pk} — جهاز {device_label} — {self.status}'
+
+
+class BiometricEnrollmentAuditLog(BaseModel):
+    """تدقيق إعادة ربط موظف برقم مستخدم على جهاز البصمة."""
+
+    class Action(models.TextChoices):
+        CREATE = 'create', 'ربط جديد'
+        REASSIGN = 'reassign', 'إعادة ربط'
+        UPDATE = 'update', 'تحديث'
+
+    device = models.ForeignKey(
+        BiometricDevice,
+        on_delete=models.CASCADE,
+        related_name='enrollment_audit_logs',
+        verbose_name='الجهاز',
+    )
+    device_user_id = models.PositiveIntegerField('رقم المستخدم على الجهاز', db_index=True)
+    previous_employee = models.ForeignKey(
+        'employees.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='biometric_enrollment_replaced_audit',
+        verbose_name='الموظف السابق',
+    )
+    new_employee = models.ForeignKey(
+        'employees.Employee',
+        on_delete=models.CASCADE,
+        related_name='biometric_enrollment_audit',
+        verbose_name='الموظف الجديد',
+    )
+    device_user_name = models.CharField('اسم المستخدم على الجهاز', max_length=120, blank=True, default='')
+    action = models.CharField('الإجراء', max_length=16, choices=Action.choices)
+    punches_relinked = models.PositiveIntegerField('بصمات أُعيد ربطها', default=0)
+    performed_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='biometric_enrollment_audits',
+        verbose_name='نُفّذ بواسطة',
+    )
+
+    class Meta:
+        verbose_name = 'تدقيق ربط بصمة'
+        verbose_name_plural = 'تدقيق ربط البصمات'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['device', 'device_user_id', '-created_at']),
+            models.Index(fields=['new_employee', '-created_at']),
+        ]
+
+    def __str__(self):
+        return (
+            f'ربط جهاز {self.device_id} — مستخدم {self.device_user_id} '
+            f'→ موظف {self.new_employee_id} ({self.action})'
+        )

@@ -21,9 +21,10 @@ class AttendanceAgentPrincipal:
     pk = None
     username = 'attendance-agent'
 
-    def __init__(self, *, device=None, is_global_key: bool = False):
+    def __init__(self, *, device=None, is_global_key: bool = False, api_key_presented: str = ''):
         self.device = device
         self.is_global_key = is_global_key
+        self.api_key_presented = (api_key_presented or '').strip()
         if device is not None:
             self.username = f'attendance-agent-device-{device.pk}'
 
@@ -53,10 +54,16 @@ class AgentAPIKeyAuthentication(BaseAuthentication):
             raise AuthenticationFailed(_('مفتاح وكيل البصمة مطلوب.'))
 
         if global_key and secrets.compare_digest(provided, global_key):
-            return (AttendanceAgentPrincipal(is_global_key=True), 'agent-api-key')
+            return (
+                AttendanceAgentPrincipal(is_global_key=True, api_key_presented=provided),
+                'agent-api-key',
+            )
 
         device = find_device_by_agent_key(provided)
         if device:
-            return (AttendanceAgentPrincipal(device=device), 'agent-api-key')
+            return (
+                AttendanceAgentPrincipal(device=device, api_key_presented=provided),
+                'agent-api-key',
+            )
 
         raise AuthenticationFailed(_('مفتاح وكيل البصمة غير صحيح.'))

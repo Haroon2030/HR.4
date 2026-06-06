@@ -57,7 +57,9 @@ def _execute_leave(action, executor):
 
     d_from = _to_date(p['date_from'])
     d_to = _to_date(p['date_to'])
-    days = _to_decimal(p['days'])
+    if d_to < d_from:
+        raise ValueError('تاريخ نهاية الإجازة يجب أن يكون بعد البداية.')
+    days = Decimal((d_to - d_from).days + 1)
 
     EmployeeLeave.objects.create(
         employee=employee,
@@ -538,16 +540,10 @@ def _execute_contract_end(action, executor):
     eosb_before = eosb
     eosb = (eosb * resignation_factor).quantize(Decimal('0.01'))
 
-    # ── حساب مستحقات الإجازة ──
-    leave_comp = Decimal('0.00')
-    leave_text = ''
-    if employee.sponsorship_id:
-        daily_wage = daily_rate_from_total(last_salary)
-        leave_days = Decimal(str(employee.remaining_leave_days or 0))
-        leave_comp = (daily_wage * leave_days).quantize(Decimal('0.01'))
-        leave_text = f'رصيد الإجازة: {leave_days} يوم × {daily_wage} = {leave_comp} ر.س'
-    else:
-        leave_text = 'لا يوجد كفالة — لم تُحتسب مستحقات الإجازة'
+    # ── مستحقات الإجازة من سجل المخصصات ──
+    from apps.employees.services.ledger_balances import settlement_leave_from_ledger
+
+    leave_days, leave_comp, leave_text = settlement_leave_from_ledger(employee)
 
     total_entitlement = eosb + leave_comp
 
@@ -692,16 +688,10 @@ def _execute_end_of_service(action, executor):
     eosb_before = eosb
     eosb = (eosb * resignation_factor).quantize(Decimal('0.01'))
 
-    # ── حساب مستحقات الإجازة ──
-    leave_comp = Decimal('0.00')
-    leave_text = ''
-    if employee.sponsorship_id:
-        daily_wage = daily_rate_from_total(last_salary)
-        leave_days = Decimal(str(employee.remaining_leave_days or 0))
-        leave_comp = (daily_wage * leave_days).quantize(Decimal('0.01'))
-        leave_text = f'رصيد الإجازة: {leave_days} يوم × {daily_wage} = {leave_comp} ر.س'
-    else:
-        leave_text = 'لا يوجد كفالة — لم تُحتسب مستحقات الإجازة'
+    # ── مستحقات الإجازة من سجل المخصصات ──
+    from apps.employees.services.ledger_balances import settlement_leave_from_ledger
+
+    leave_days, leave_comp, leave_text = settlement_leave_from_ledger(employee)
 
     total_entitlement = eosb + leave_comp
 
@@ -781,6 +771,9 @@ EXECUTORS['end_of_service'] = _execute_end_of_service
 
 def execute_pending_action(action, executor_user):
     """ينفّذ الـ PendingAction المعتمد. يرفع استثناء عند الفشل."""
+    if action.executed_at:
+        raise ValueError('تم تنفيذ هذا الطلب مسبقاً.')
+
     fn = EXECUTORS.get(action.action_type)
     if not fn:
         raise ValueError(f'نوع عملية غير معروف: {action.action_type}')
@@ -810,19 +803,13 @@ def _notify(*args, **kwargs):
 def create_pending_action(*, action_type, employee, payload, requested_by, attachment=None):
     """إنشاء طلب معلّق مع لقطة مسار الموافقة."""
     from apps.core.models import PendingAction
-    from apps.core.services.approval_routing import get_operations_administration
 
     routing = snapshot_routing_fields(employee)
-    administration = routing['administration']
-    if action_type in (PendingAction.ActionType.TRANSFER, 'transfer'):
-        ops_admin = get_operations_administration()
-        if ops_admin:
-            administration = ops_admin
     return PendingAction.objects.create(
         action_type=action_type,
         employee=employee,
         branch=routing['branch'],
-        administration=administration,
+        administration=routing['administration'],
         payload=payload,
         attachment=attachment,
         requested_by=requested_by,

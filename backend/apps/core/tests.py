@@ -138,6 +138,21 @@ class LeaveAnnualWithoutSponsorshipTests(TestCase):
         self.assertIn('كفالة', str(ctx.exception))
 
 
+class PendingActionIdempotencyTests(_BaseExecutorTests):
+    def test_execute_twice_raises(self):
+        action = self._make_action('absence', {
+            'absence_date': '2025-06-10',
+            'days': 1,
+            'reason': 'اختبار',
+        })
+        execute_pending_action(action, self.approver)
+        action.refresh_from_db()
+        self.assertIsNotNone(action.executed_at)
+        with self.assertRaises(ValueError) as ctx:
+            execute_pending_action(action, self.approver)
+        self.assertIn('مسبقاً', str(ctx.exception))
+
+
 class LoanRequestExecutorTests(_BaseExecutorTests):
     def test_creates_loan_and_installments(self):
         action = self._make_action('loan_request', {

@@ -165,6 +165,9 @@ class UserSerializer(serializers.ModelSerializer):
         if request and request.user.is_superuser:
             self.fields['is_staff'].read_only = False
             self.fields['is_superuser'].read_only = False
+        if request and request.user.is_authenticated and 'role' in self.fields:
+            from apps.core.services.access_control import assignable_roles_queryset
+            self.fields['role'].queryset = assignable_roles_queryset(request.user)
 
     def _strip_privileged_fields(self, validated_data):
         request = self.context.get('request')

@@ -3,6 +3,7 @@
 """
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -15,8 +16,11 @@ from .services.access_control import (
     assignable_roles_queryset,
     can_administer_user,
     can_assign_role,
+    can_view_user,
     filter_branches_queryset,
     filter_users_queryset,
+    target_is_protected,
+    validate_permission_grants,
     validate_user_admin_changes,
 )
 from .serializers import (
@@ -127,10 +131,43 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         'remove_permission': 'users.edit',
     }
 
+    def get_queryset(self):
+        return assignable_roles_queryset(self.request.user)
+
     def get_serializer_class(self):
         if self.action == 'list':
             return RoleListSerializer
         return RoleSerializer
+
+    def perform_create(self, serializer):
+        role_type = serializer.validated_data.get('role_type')
+        if role_type in (Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER):
+            if not self.request.user.is_superuser:
+                raise PermissionDenied('لا يمكنك إنشاء دور بهذا المستوى.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        role = serializer.instance
+        if role.is_system_role and not self.request.user.is_superuser:
+            raise PermissionDenied('لا يمكن تعديل دور نظامي.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.is_system_role:
+            raise PermissionDenied('لا يمكن حذف دور نظامي.')
+        if instance.users.exists():
+            raise ValidationError('لا يمكن حذف دور مرتبط بمستخدمين.')
+        instance.delete()
+
+    def _set_role_permissions(self, role, permission_ids):
+        if role.is_system_role or role.role_type == Role.RoleType.ADMIN:
+            raise PermissionDenied('لا يمكن تعديل صلاحيات هذا الدور.')
+        permissions = Permission.objects.filter(id__in=permission_ids, is_active=True)
+        codes = list(permissions.values_list('code', flat=True))
+        err = validate_permission_grants(self.request.user, codes)
+        if err:
+            raise PermissionDenied(err)
+        role.permissions.set(permissions)
 
     @action(
         detail=True,
@@ -141,8 +178,7 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         """تعيين صلاحيات للدور"""
         role = self.get_object()
         permission_ids = request.data.get('permission_ids', [])
-        permissions = Permission.objects.filter(id__in=permission_ids)
-        role.permissions.set(permissions)
+        self._set_role_permissions(role, permission_ids)
         return Response(RoleSerializer(role).data)
 
     @action(
@@ -156,6 +192,11 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         permission_id = request.data.get('permission_id')
         try:
             permission = Permission.objects.get(id=permission_id)
+            err = validate_permission_grants(self.request.user, [permission.code])
+            if err:
+                raise PermissionDenied(err)
+            if role.is_system_role or role.role_type == Role.RoleType.ADMIN:
+                raise PermissionDenied('لا يمكن تعديل صلاحيات هذا الدور.')
             role.permissions.add(permission)
             return Response(RoleSerializer(role).data)
         except Permission.DoesNotExist:
@@ -206,6 +247,52 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         return filter_users_queryset(self.request.user, super().get_queryset())
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not can_view_user(request.user, instance):
+            return Response(
+                {'error': 'لا تملك صلاحية عرض هذا المستخدم.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().retrieve(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        actor = self.request.user
+        role = serializer.validated_data.get('role')
+        if role and not can_assign_role(actor, role):
+            raise PermissionDenied('لا يمكنك تعيين هذا الدور.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        actor = self.request.user
+        instance = serializer.instance
+        if not can_view_user(actor, instance):
+            raise PermissionDenied('لا تملك صلاحية عرض هذا المستخدم.')
+        validated = serializer.validated_data
+        new_role = validated.get('role') if 'role' in validated else None
+        err = validate_user_admin_changes(
+            actor,
+            instance,
+            new_role=new_role,
+            password=validated.get('password'),
+            is_active=validated.get('is_active') if 'is_active' in validated else None,
+        )
+        if err:
+            raise PermissionDenied(err)
+        if new_role is not None and not can_assign_role(actor, new_role):
+            raise PermissionDenied('لا يمكنك تعيين هذا الدور.')
+        if not can_administer_user(actor, instance) and actor.pk != instance.pk:
+            raise PermissionDenied('لا تملك صلاحية إدارة هذا المستخدم.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        actor = self.request.user
+        if target_is_protected(instance) and not actor.is_superuser:
+            raise PermissionDenied('المستخدم محمي — الحذف متاح لمدير النظام فقط.')
+        if not can_administer_user(actor, instance):
+            raise PermissionDenied('لا تملك صلاحية حذف هذا المستخدم.')
+        instance.delete()
 
     @action(detail=False, methods=['get'])
     def roles(self, request):

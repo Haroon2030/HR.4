@@ -465,6 +465,20 @@ def biometric_enrollment_save(request):
         )
         return redirect('web:biometric_devices')
 
+    from apps.attendance.models import BiometricEnrollmentAuditLog
+    from apps.attendance.services.ingest_audit import log_enrollment_change
+
+    prev_enrollment = (
+        EmployeeBiometricEnrollment.objects.filter(
+            device_id=device_id,
+            device_user_id=int(device_user_id),
+            is_deleted=False,
+        )
+        .select_related('employee')
+        .first()
+    )
+    previous_employee = prev_enrollment.employee if prev_enrollment else None
+
     EmployeeBiometricEnrollment.objects.update_or_create(
         device_id=device_id,
         device_user_id=int(device_user_id),
@@ -475,13 +489,33 @@ def biometric_enrollment_save(request):
         },
     )
 
-    AttendancePunch.objects.filter(
+    punches_relinked = AttendancePunch.objects.filter(
         device_id=device_id,
         device_user_id=int(device_user_id),
         is_deleted=False,
     ).update(
         employee_id=employee_id,
         device_user_name=device_user_name,
+    )
+
+    if previous_employee and previous_employee.pk == int(employee_id):
+        audit_action = BiometricEnrollmentAuditLog.Action.UPDATE
+    elif previous_employee:
+        audit_action = BiometricEnrollmentAuditLog.Action.REASSIGN
+    else:
+        audit_action = BiometricEnrollmentAuditLog.Action.CREATE
+
+    log_enrollment_change(
+        request=request,
+        device=device,
+        device_user_id=int(device_user_id),
+        new_employee=employee,
+        previous_employee=previous_employee if (
+            previous_employee and previous_employee.pk != int(employee_id)
+        ) else None,
+        device_user_name=device_user_name,
+        action=audit_action,
+        punches_relinked=punches_relinked,
     )
     messages.success(
         request,

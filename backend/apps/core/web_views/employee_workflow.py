@@ -70,25 +70,24 @@ def add_employee_leave(request, employee_id):
             )
             return redirect('web:view_employee', employee_id=employee.id)
 
-    EmployeeLeave.objects.create(
+    create_pending_action(
+        action_type='leave',
         employee=employee,
-        leave_type=leave_type,
-        date_from=d_from,
-        date_to=d_to,
-        days=days,
-        notes=cd.get('notes', ''),
-        document=files.get('document'),
-        created_by=request.user,
+        payload={
+            'leave_type': leave_type,
+            'date_from': d_from.isoformat(),
+            'date_to': d_to.isoformat(),
+            'days': str(days),
+            'notes': cd.get('notes', ''),
+        },
+        requested_by=request.user,
+        attachment=files.get('document'),
     )
 
-    # خصم الإجازة السنوية من الرصيد
-    if leave_type == EmployeeLeave.LeaveType.ANNUAL:
-        employee.available_leave_balance = (
-            Decimal(employee.available_leave_balance or 0) + days
-        )
-        employee.save(update_fields=['available_leave_balance'])
-
-    messages.success(request, f'تم تسجيل الإجازة ({days} يوم) بنجاح.')
+    messages.success(
+        request,
+        f'تم إرسال طلب الإجازة ({days} يوم) لمسار الموافقات.',
+    )
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -226,7 +225,7 @@ def transfer_employee(request, employee_id):
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
-    form = TransferEmployeeForm(request.POST)
+    form = TransferEmployeeForm(request.POST, user=request.user)
     if not form.is_valid():
         for err in form.errors.values():
             messages.error(request, err[0])
@@ -338,9 +337,14 @@ def set_work_schedule(request, employee_id):
     # ── إرسال بالبريد إن طُلب ──
     send_email_flag = bool(request.POST.get('send_email'))
     if send_email_flag:
-        emp_email = (request.POST.get('employee_email') or '').strip()
-        hr_email = (request.POST.get('hr_email') or '').strip()
-        recipients = [e for e in [emp_email, hr_email] if e]
+        from apps.core.services.email_recipients import resolve_statement_email_recipients
+
+        recipients = resolve_statement_email_recipients(
+            employee,
+            posted_employee_email=request.POST.get('employee_email') or '',
+            posted_hr_email=request.POST.get('hr_email') or '',
+            actor=request.user,
+        )
         if not recipients:
             messages.warning(request, f'تم حفظ {len(cleaned)} شهر — لكن لم يتم الإرسال (لا يوجد بريد).')
             return redirect('web:view_employee', employee_id=employee.id)

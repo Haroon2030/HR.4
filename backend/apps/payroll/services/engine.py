@@ -214,12 +214,14 @@ def _compute_employee_payroll_snapshot(
     penalty_deduction = _q(
         sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
     )
-    rate = Decimal(emp.insurance_deduction_rate or 0)
+    rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
     insurance_deduction = _q(gross * rate / Decimal('100'))
     total_deductions = _q(
         absence_deduction + unpaid_leave_deduction + loan_deduction
         + penalty_deduction + insurance_deduction
     )
+    if total_deductions > gross:
+        total_deductions = _q(gross)
     net_salary = _q(gross - total_deductions)
 
     return {
@@ -412,6 +414,7 @@ def lock_payroll_run(run: PayrollRun, user):
 
     الأخطاء: ValueError إذا كان المسير مُغلقاً بالفعل.
     """
+    run = PayrollRun.objects.select_for_update().get(pk=run.pk)
     if run.status == PayrollRun.Status.LOCKED:
         raise ValueError('المسير مُغلق بالفعل.')
 
@@ -435,32 +438,47 @@ def lock_payroll_run(run: PayrollRun, user):
             if lg.employee_id not in last_ledger_by_emp:
                 last_ledger_by_emp[lg.employee_id] = lg
 
-    def _ids_from_breakdown(key: str) -> list:
-        collected = []
-        for ln in line_list:
-            collected.extend(x['id'] for x in (ln.breakdown or {}).get(key, []))
-        return collected
-
-    absence_ids = _ids_from_breakdown('absences')
-    if absence_ids:
-        EmployeeAbsence.objects.filter(id__in=absence_ids).update(applied_to_payroll=run)
-
-    leave_ids = _ids_from_breakdown('unpaid_leaves')
-    if leave_ids:
-        EmployeeLeave.objects.filter(id__in=leave_ids).update(applied_to_payroll=run)
-
-    penalty_ids = _ids_from_breakdown('penalties')
-    if penalty_ids:
-        EmployeeStatement.objects.filter(id__in=penalty_ids).update(applied_to_payroll=run)
+    def _bind_breakdown_items(line, key: str, model, *, extra_filter=None):
+        ids = [x['id'] for x in (line.breakdown or {}).get(key, [])]
+        if not ids:
+            return []
+        qs = model.objects.filter(
+            id__in=ids,
+            employee_id=line.employee_id,
+            applied_to_payroll__isnull=True,
+        )
+        if extra_filter:
+            qs = qs.filter(**extra_filter)
+        bound_ids = list(qs.values_list('id', flat=True))
+        if len(bound_ids) != len(ids):
+            raise ValueError(
+                f'تعذّر ربط بعض بنود {key} للموظف {line.employee.name} — '
+                'أعد بناء المسير أو تحقق من البيانات.'
+            )
+        qs.update(applied_to_payroll=run)
+        return bound_ids
 
     loans_to_mark_paid = []
-    loan_inst_ids = _ids_from_breakdown('loan_installments')
-    if loan_inst_ids:
-        LoanInstallment.objects.filter(id__in=loan_inst_ids).update(
-            applied_to_payroll=run, status=LoanInstallment.Status.PAID,
+    all_loan_inst_ids = []
+    for ln in line_list:
+        _bind_breakdown_items(ln, 'absences', EmployeeAbsence)
+        _bind_breakdown_items(ln, 'unpaid_leaves', EmployeeLeave)
+        _bind_breakdown_items(ln, 'penalties', EmployeeStatement)
+        inst_ids = _bind_breakdown_items(
+            ln,
+            'loan_installments',
+            LoanInstallment,
+            extra_filter={'status': LoanInstallment.Status.PENDING},
         )
+        if inst_ids:
+            LoanInstallment.objects.filter(id__in=inst_ids).update(
+                status=LoanInstallment.Status.PAID,
+            )
+            all_loan_inst_ids.extend(inst_ids)
+
+    if all_loan_inst_ids:
         inst_rows = list(
-            LoanInstallment.objects.filter(id__in=loan_inst_ids).select_related('loan'),
+            LoanInstallment.objects.filter(id__in=all_loan_inst_ids).select_related('loan'),
         )
         loan_ids = {i.loan_id for i in inst_rows}
         if loan_ids:
@@ -479,6 +497,13 @@ def lock_payroll_run(run: PayrollRun, user):
                     loans_to_mark_paid.append(loan)
 
     for line in line_list:
+        if EmployeeLedger.objects.filter(
+            employee_id=line.employee_id,
+            payroll_run=run,
+            transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
+        ).exists():
+            continue
+
         sid = transaction.savepoint()
         try:
             last_ledger = last_ledger_by_emp.get(line.employee_id)
@@ -488,8 +513,10 @@ def lock_payroll_run(run: PayrollRun, user):
             prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
 
             leave_days_change = MONTHLY_LEAVE_ACCRUAL_DAYS
+            eosb_base = line.gross_salary - Decimal(line.meal_allowance or 0)
             calc = compute_monthly_ledger_amounts(
                 gross_salary=line.gross_salary,
+                eosb_base=eosb_base,
                 hire_date=line.employee.hire_date,
                 period_year=run.period_year,
                 period_month=run.period_month,
@@ -549,6 +576,7 @@ def lock_payroll_run(run: PayrollRun, user):
     run.locked_at = timezone.now()
     run.locked_by = user
     run.save(update_fields=['status', 'locked_at', 'locked_by'])
+    run.refresh_from_db()
     return run
 
 
@@ -569,6 +597,7 @@ def unlock_payroll_run(run: PayrollRun, user):
     يجب إعادة بناء المسير (Rebuild) بعد فك القفل.
     فحص الصلاحية (is_superuser) يتم في الـ View.
     """
+    run = PayrollRun.objects.select_for_update().get(pk=run.pk)
     if run.status != PayrollRun.Status.LOCKED:
         raise ValueError('المسير ليس مغلقاً.')
 

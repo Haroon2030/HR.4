@@ -87,11 +87,7 @@ def _inbox_for(user, qs):
     if user.is_superuser or _is_general_manager(user):
         f |= Q(status=PendingAction.Status.PENDING_GM)
         has_filter = True
-    first_q = first_stage_pending_q(
-        user,
-        model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
-        supports_transfer=True,
-    )
+    first_q = first_stage_pending_q(user, model_status_pending_branch=PendingAction.Status.PENDING_BRANCH)
     if first_q.children:
         f |= first_q
         has_filter = True

@@ -134,6 +134,25 @@ class PayrollEngineTests(TestCase):
         line = run.lines.get(employee=self.employee)
         self.assertEqual(line.penalty_deduction, Decimal('50.00'))
 
+    def test_net_salary_never_negative(self):
+        self.employee.insurance_deduction_rate = Decimal('100')
+        self.employee.save(update_fields=['insurance_deduction_rate'])
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.PENALTY,
+            title='غرامة كبيرة',
+            statement_date=date(2026, 3, 15),
+            deduction_amount=Decimal('5000.00'),
+        )
+        run = build_payroll_run(
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        line = run.lines.get(employee=self.employee)
+        self.assertGreaterEqual(line.net_salary, Decimal('0'))
+        self.assertEqual(line.net_salary, Decimal('0'))
+
     def test_build_loan_installment(self):
         loan = EmployeeLoan.objects.create(
             employee=self.employee,
@@ -296,6 +315,33 @@ class PayrollEngineTests(TestCase):
         )
         evts = transfers_in_period(self.company.id, 2026, 4)
         self.assertNotIn(self.employee.id, evts)
+
+    def test_relock_after_unlock_no_duplicate_ledger(self):
+        from apps.employees.models import EmployeeLedger
+
+        run = build_payroll_run(
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        lock_payroll_run(run, self.user)
+        self.assertEqual(
+            EmployeeLedger.objects.filter(
+                payroll_run=run,
+                employee=self.employee,
+            ).count(),
+            1,
+        )
+        unlock_payroll_run(run, self.user)
+        self.assertEqual(EmployeeLedger.objects.filter(payroll_run=run).count(), 0)
+        lock_payroll_run(run, self.user)
+        self.assertEqual(
+            EmployeeLedger.objects.filter(
+                payroll_run=run,
+                employee=self.employee,
+            ).count(),
+            1,
+        )
 
     def test_unlock_clears_payroll_links_and_returns_draft(self):
         abs_rec = EmployeeAbsence.objects.create(

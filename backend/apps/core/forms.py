@@ -324,10 +324,19 @@ class SalaryAdjustForm(forms.Form):
 class TransferEmployeeForm(forms.Form):
     transfer_date = forms.DateField(error_messages={'invalid': 'تاريخ النقل غير صحيح', 'required': 'تاريخ النقل مطلوب'})
     reason = forms.CharField(error_messages={'required': 'سبب النقل مطلوب'})
-    new_branch = forms.ModelChoiceField(queryset=Branch.objects.all(), required=False,
+    new_branch = forms.ModelChoiceField(queryset=Branch.objects.none(), required=False,
                                         error_messages={'invalid_choice': 'الفرع المختار غير موجود'})
     new_department = forms.ModelChoiceField(queryset=Department.objects.all(), required=False,
                                             error_messages={'invalid_choice': 'القسم المختار غير موجود'})
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            from apps.core.services.access_control import filter_branches_queryset
+            self.fields['new_branch'].queryset = filter_branches_queryset(
+                user,
+                Branch.objects.filter(is_active=True, is_deleted=False),
+            )
 
     def clean_reason(self):
         v = (self.cleaned_data.get('reason') or '').strip()
@@ -426,8 +435,15 @@ class LoanRequestForm(forms.Form):
         cd = super().clean()
         amount = cd.get('amount')
         monthly = cd.get('monthly_deduction')
+        installments = cd.get('installments') or 1
+        cd['installments'] = installments
         if amount and monthly and monthly > amount:
             raise ValidationError('الخصم الشهري لا يمكن أن يكون أكبر من مبلغ السلفة')
+        if amount and monthly and installments > 1:
+            if monthly * Decimal(installments - 1) >= amount:
+                raise ValidationError(
+                    'عدد الأقساط أو الخصم الشهري كبيران — القسط الأخير يصبح صفراً أو سالباً'
+                )
         return cd
 
 

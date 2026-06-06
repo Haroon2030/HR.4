@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from django.db import transaction
@@ -25,6 +25,11 @@ class AgentIngestResult:
     batch: str
 
 
+AGENT_PUNCH_MAX_FUTURE_MINUTES = 10
+AGENT_PUNCH_MAX_PAST_DAYS_INCREMENTAL = 93
+AGENT_PUNCH_MAX_PAST_DAYS_FULL_SYNC = 365
+
+
 def _parse_punched_at(value: datetime | str) -> datetime:
     if isinstance(value, datetime):
         dt = value
@@ -35,6 +40,21 @@ def _parse_punched_at(value: datetime | str) -> datetime:
     if timezone.is_naive(dt):
         dt = timezone.make_aware(dt, timezone.get_current_timezone())
     return dt
+
+
+def _validate_punched_at_bounds(dt: datetime, *, incremental: bool) -> None:
+    now = timezone.now()
+    if dt > now + timedelta(minutes=AGENT_PUNCH_MAX_FUTURE_MINUTES):
+        raise ValueError('وقت البصمة في المستقبل — مرفوض.')
+    max_past_days = (
+        AGENT_PUNCH_MAX_PAST_DAYS_INCREMENTAL
+        if incremental
+        else AGENT_PUNCH_MAX_PAST_DAYS_FULL_SYNC
+    )
+    if dt < now - timedelta(days=max_past_days):
+        raise ValueError(
+            f'وقت البصمة أقدم من {max_past_days} يوماً — مرفوض.'
+        )
 
 
 def _row_from_payload(item: dict[str, Any]) -> RawAttendanceRow:
@@ -112,7 +132,11 @@ def ingest_agent_payload(
         ).only('device_user_id', 'employee_id')
     }
 
-    rows = [_row_from_payload(p) for p in punches]
+    rows = []
+    for p in punches:
+        row = _row_from_payload(p)
+        _validate_punched_at_bounds(row.punched_at, incremental=incremental)
+        rows.append(row)
     outcome = import_raw_attendance_rows(
         device,
         rows,

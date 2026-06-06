@@ -362,6 +362,9 @@ BIOMETRIC_ZK_OMIT_PING = env.bool('BIOMETRIC_ZK_OMIT_PING', default=True)
 ATTENDANCE_AGENT_API_KEY = env('ATTENDANCE_AGENT_API_KEY', default='')
 # في الإنتاج: المفتاح العام لا يعرض قائمة الأجهزة/طلبات السحب (ingest يبقى مسموحاً)
 AGENT_GLOBAL_KEY_LIST_DEVICES = env.bool('AGENT_GLOBAL_KEY_LIST_DEVICES', default=False)
+AGENT_GLOBAL_KEY_ALLOW_INGEST = env.bool('AGENT_GLOBAL_KEY_ALLOW_INGEST', default=False)
+# توقيع HMAC لطلبات ingest — افتراضياً معطّل في التطوير
+ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=False)
 
 # نوع المفتاح التلقائي للنماذج
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

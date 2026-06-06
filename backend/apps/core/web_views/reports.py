@@ -111,6 +111,8 @@ def _report_filters(request):
     first = today.replace(day=1)
     accessible = _user_accessible_branch_ids(request.user)
     branch_ids = parse_multi_filter_ids(request, 'branch', accessible_ids=accessible)
+    if branch_ids is None and accessible is not None:
+        branch_ids = list(accessible)
     sponsorship_ids = parse_multi_filter_ids(request, 'sponsorship')
     report = (request.GET.get('report') or '').strip()
     return {
@@ -421,6 +423,7 @@ def _build_leave_balance(req):
     return _report_payload(cols, rows, truncated)
 
 def _build_biometric_daily(req):
+    from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
     from apps.attendance.selectors.daily_report import build_daily_attendance_rows, daily_rows_to_table
     from apps.attendance.selectors.punch_records import get_punch_queryset
     from apps.core.utils.attendance_filters import clamp_attendance_date_range
@@ -436,7 +439,7 @@ def _build_biometric_daily(req):
         branch_ids=filters['branch_ids'],
         date_from=date_from,
         date_to=date_to,
-    )
+    ).filter(device_id__in=filter_biometric_devices_for_user(req.user).values('pk'))
     if filters['sponsorship_ids']:
         qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     daily_rows = build_daily_attendance_rows(qs)
@@ -648,6 +651,7 @@ def _build_suspended(req):
 def _build_attendance_late(req):
     from django.utils import timezone
     from apps.attendance.models import EmployeeBiometricSettings
+    from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
     from apps.attendance.selectors.daily_report import build_daily_attendance_rows
     from apps.attendance.selectors.punch_records import get_punch_queryset
     from apps.core.utils.attendance_filters import clamp_attendance_date_range
@@ -662,7 +666,7 @@ def _build_attendance_late(req):
         branch_ids=filters['branch_ids'],
         date_from=date_from,
         date_to=date_to,
-    )
+    ).filter(device_id__in=filter_biometric_devices_for_user(req.user).values('pk'))
     if filters['sponsorship_ids']:
         qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
     daily_rows = build_daily_attendance_rows(qs)

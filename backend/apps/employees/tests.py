@@ -100,6 +100,35 @@ class EmployeeModelTests(TestCase):
         self.assertEqual(absence.deduction_amount, (expected_daily * 2).quantize(Decimal('0.01')))
 
 
+class LedgerBalanceTests(TestCase):
+    def test_settlement_uses_ledger_cumulative_amount(self):
+        from apps.employees.models import EmployeeLedger
+        from apps.employees.services.ledger_balances import settlement_leave_from_ledger
+        from apps.setup.models import Sponsorship
+
+        sponsorship = Sponsorship.objects.create(code='SP-L', company_name='K')
+        emp = Employee.objects.create(
+            name='Ledger Emp',
+            hire_date=date(2024, 1, 1),
+            sponsorship=sponsorship,
+            basic_salary=Decimal('3000'),
+        )
+        EmployeeLedger.objects.create(
+            employee=emp,
+            transaction_type=EmployeeLedger.TransactionType.INITIAL_BALANCE,
+            date=date(2025, 1, 1),
+            leave_days_change=Decimal('10'),
+            leave_amount_change=Decimal('1000'),
+            cumulative_leave_days=Decimal('10'),
+            cumulative_leave_amount=Decimal('1000'),
+            cumulative_eosb_amount=Decimal('500'),
+        )
+        days, amount, text = settlement_leave_from_ledger(emp)
+        self.assertEqual(days, Decimal('10'))
+        self.assertEqual(amount, Decimal('1000'))
+        self.assertIn('سجل المخصصات', text)
+
+
 class AccrualLedgerNotesTests(TestCase):
     def test_monthly_leave_and_eosb_formulas(self):
         from apps.employees.services.accrual_ledger_notes import (
@@ -120,6 +149,19 @@ class AccrualLedgerNotesTests(TestCase):
         self.assertEqual(calc['leave_days'], Decimal('1.75'))
         self.assertEqual(calc['leave_amount'], Decimal('233.33'))
         self.assertEqual(calc['eosb'], Decimal('166.67'))  # 4000/24
+
+    def test_eosb_excludes_meal_allowance_base(self):
+        from apps.employees.services.accrual_ledger_notes import compute_monthly_ledger_amounts
+
+        calc = compute_monthly_ledger_amounts(
+            gross_salary=Decimal('4300'),
+            eosb_base=Decimal('4000'),
+            hire_date=date(2026, 1, 1),
+            period_year=2026,
+            period_month=6,
+        )
+        self.assertEqual(calc['eosb'], Decimal('166.67'))
+        self.assertEqual(calc['eosb_base'], Decimal('4000'))
 
     def test_monthly_notes_contains_formulas(self):
         from apps.employees.services.accrual_ledger_notes import build_monthly_payroll_notes
@@ -261,3 +303,18 @@ class EmployeeLoanTests(TestCase):
         first_installment.save()
         
         self.assertEqual(self.loan.remaining_balance, Decimal('750.00'))
+
+    def test_last_installment_covers_loan_remainder(self):
+        loan = EmployeeLoan.objects.create(
+            employee=self.employee,
+            amount=Decimal('1000.00'),
+            monthly_deduction=Decimal('333.33'),
+            installments=3,
+            issued_at=date(2023, 1, 15),
+            first_deduction_date=date(2023, 2, 1),
+        )
+        loan.generate_installments()
+        total = sum(
+            i.amount for i in loan.installments_log.all()
+        )
+        self.assertEqual(total, Decimal('1000.00'))

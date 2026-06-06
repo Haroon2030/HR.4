@@ -9,8 +9,14 @@ from rest_framework.views import APIView
 
 from apps.attendance.api.serializers import AgentIngestSerializer
 from apps.attendance.authentication import AgentAPIKeyAuthentication, AttendanceAgentPrincipal
-from apps.attendance.models import BiometricDevice
+from apps.attendance.models import AttendanceIngestLog, BiometricDevice
 from apps.attendance.services.agent_ingest import ingest_agent_payload
+from apps.attendance.services.ingest_audit import log_ingest_attempt
+from apps.attendance.services.ingest_signature import (
+    SIGNATURE_HEADER,
+    signature_required,
+    verify_ingest_signature,
+)
 from apps.attendance.services.agent_pull_queue import (
     acknowledge_pull_request,
     list_pending_pull_requests,
@@ -39,6 +45,20 @@ def _deny_global_key_metadata(request) -> None:
         raise PermissionDenied(
             'المفتاح العام لا يمكنه هذا الإجراء في الإنتاج. '
             'استخدم مفتاحاً لكل جهاز (AGENT_GLOBAL_KEY_LIST_DEVICES=true للاستثناء).'
+        )
+
+
+def _deny_global_key_ingest(request) -> None:
+    """في الإنتاج: المفتاح العام لا يُدخل بصمات لأي جهاز."""
+    from django.conf import settings
+
+    if settings.DEBUG or getattr(settings, 'AGENT_GLOBAL_KEY_ALLOW_INGEST', False):
+        return
+    principal = request.user
+    if isinstance(principal, AttendanceAgentPrincipal) and principal.is_global_key:
+        raise PermissionDenied(
+            'المفتاح العام لا يمكنه إدخال البصمات في الإنتاج. '
+            'استخدم مفتاحاً لكل جهاز.'
         )
 
 
@@ -116,10 +136,60 @@ class AgentIngestView(APIView):
     throttle_classes = [AgentRateThrottle]
 
     def post(self, request):
-        serializer = AgentIngestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        payload = serializer.validated_data
+        _deny_global_key_ingest(request)
+        principal = request.user
+        raw_key = (
+            principal.api_key_presented
+            if isinstance(principal, AttendanceAgentPrincipal)
+            else ''
+        )
+        body = request.body or b''
+        provided_sig = (request.headers.get(SIGNATURE_HEADER) or '').strip()
+        require_sig = signature_required()
 
+        if require_sig and not provided_sig:
+            log_ingest_attempt(
+                request=request,
+                device=getattr(principal, 'device', None),
+                status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
+                signature_valid=False,
+                message='توقيع الطلب مطلوب (X-Attendance-Signature).',
+            )
+            return Response(
+                {'success': False, 'message': 'توقيع الطلب مطلوب (X-Attendance-Signature).'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        sig_valid: bool | None = None
+        if provided_sig:
+            sig_valid = verify_ingest_signature(raw_key, body, provided_sig)
+            if not sig_valid:
+                log_ingest_attempt(
+                    request=request,
+                    device=getattr(principal, 'device', None),
+                    status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
+                    signature_valid=False,
+                    message='توقيع الطلب غير صالح.',
+                )
+                return Response(
+                    {'success': False, 'message': 'توقيع الطلب غير صالح.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        elif require_sig:
+            sig_valid = False
+
+        serializer = AgentIngestSerializer(data=request.data)
+        if not serializer.is_valid():
+            log_ingest_attempt(
+                request=request,
+                device=getattr(principal, 'device', None),
+                status=AttendanceIngestLog.Status.REJECTED_PAYLOAD,
+                signature_valid=sig_valid,
+                message=str(serializer.errors),
+            )
+            serializer.is_valid(raise_exception=True)
+
+        payload = serializer.validated_data
         device = _assert_device_access(request, int(payload['device_id']))
 
         punches_payload = [dict(p) for p in payload['punches']]
@@ -133,6 +203,15 @@ class AgentIngestView(APIView):
                 incremental=payload.get('incremental', True),
             )
         except ValueError as exc:
+            log_ingest_attempt(
+                request=request,
+                device=device,
+                agent_id=(payload.get('agent_id') or '').strip(),
+                status=AttendanceIngestLog.Status.REJECTED_PAYLOAD,
+                signature_valid=sig_valid,
+                punches_received=len(punches_payload),
+                message=str(exc),
+            )
             return Response(
                 {'success': False, 'message': str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -145,6 +224,20 @@ class AgentIngestView(APIView):
         )
         if result.skipped_time_filter:
             msg += f' — قديم {result.skipped_time_filter}'
+
+        log_ingest_attempt(
+            request=request,
+            device=device,
+            agent_id=agent_id,
+            status=AttendanceIngestLog.Status.SUCCESS,
+            signature_valid=sig_valid,
+            punches_received=result.punches_received,
+            imported=result.imported,
+            skipped_duplicate=result.skipped_duplicate,
+            skipped_time_filter=result.skipped_time_filter,
+            users_updated=result.users_updated,
+            message=msg,
+        )
 
         return Response({
             'success': True,

@@ -57,12 +57,16 @@ def add_employee_statement(request, employee_id):
     statement.created_by = request.user
     statement.save()
 
-    employee_email = cd.get('employee_email') or ''
-    hr_email = cd.get('hr_email') or ''
-
     # ── إرسال الإيميل إن طُلب ──
     if send_email_flag:
-        recipients = [e for e in [employee_email, hr_email] if e]
+        from apps.core.services.email_recipients import resolve_statement_email_recipients
+
+        recipients = resolve_statement_email_recipients(
+            employee,
+            posted_employee_email=cd.get('employee_email') or '',
+            posted_hr_email=cd.get('hr_email') or '',
+            actor=request.user,
+        )
         if not recipients:
             messages.warning(
                 request,
@@ -158,6 +162,9 @@ def delete_employee_statement(request, statement_id):
     statement = get_object_or_404(EmployeeStatement, id=statement_id)
     employee_id = statement.employee_id
     if request.method == 'POST':
+        if statement.applied_to_payroll_id:
+            messages.error(request, 'لا يمكن حذف إفادة مُطبّقة على مسير رواتب مُرحّل.')
+            return redirect('web:edit_employee', employee_id=employee_id)
         statement.delete()
         messages.success(request, 'تم حذف الإفادة')
     return redirect('web:edit_employee', employee_id=employee_id)
