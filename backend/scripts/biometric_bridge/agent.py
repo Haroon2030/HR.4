@@ -290,10 +290,22 @@ def push_to_server(
     if resp.status_code >= 400:
         hint = ''
         if resp.status_code in (401, 403):
-            hint = (
-                ' — تحقق: AGENT_API_KEY = مفتاح هذا الجهاز من HR (مفتاح وكيل) '
-                'و DEVICE_ID يطابق id الجهاز.'
-            )
+            code = body.get('code', '')
+            if code == 'missing_signature':
+                hint = (
+                    ' — حدّث agent.py من السيرفر (يرسل X-Attendance-Signature) '
+                    'أو عطّل ATTENDANCE_REQUIRE_INGEST_SIGNATURE على السيرفر مؤقتاً.'
+                )
+            elif code == 'invalid_signature':
+                hint = (
+                    ' — المفتاح في config.env يجب أن يطابق AGENT_API_KEY '
+                    'الذي وُقّع به الطلب (مفتاح وكيل الجهاز من HR).'
+                )
+            else:
+                hint = (
+                    ' — تحقق: AGENT_API_KEY = مفتاح هذا الجهاز من HR (مفتاح وكيل) '
+                    'و DEVICE_ID يطابق id الجهاز. لا تستخدم ATTENDANCE_AGENT_API_KEY العام.'
+                )
         raise RuntimeError(f'HTTP {resp.status_code}: {body.get("message", body)}{hint}')
     return body
 

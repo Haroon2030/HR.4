@@ -1,4 +1,6 @@
 """API وكيل البصمة — استقبال من شبكة الفرع."""
+import logging
+
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
@@ -12,15 +14,17 @@ from apps.attendance.authentication import AgentAPIKeyAuthentication, Attendance
 from apps.attendance.models import AttendanceIngestLog, BiometricDevice
 from apps.attendance.services.agent_ingest import ingest_agent_payload
 from apps.attendance.services.ingest_audit import log_ingest_attempt
+from apps.attendance.services.agent_pull_queue import (
+    acknowledge_pull_request,
+    list_pending_pull_requests,
+)
 from apps.attendance.services.ingest_signature import (
     SIGNATURE_HEADER,
     signature_required,
     verify_ingest_signature,
 )
-from apps.attendance.services.agent_pull_queue import (
-    acknowledge_pull_request,
-    list_pending_pull_requests,
-)
+
+logger = logging.getLogger(__name__)
 
 
 class AgentRateThrottle(SimpleRateThrottle):
@@ -166,16 +170,23 @@ class AgentIngestView(APIView):
         provided_sig = (request.headers.get(SIGNATURE_HEADER) or '').strip()
         require_sig = signature_required()
 
+        device_hint = getattr(getattr(principal, 'device', None), 'pk', None)
         if require_sig and not provided_sig:
+            msg = 'توقيع الطلب مطلوب (X-Attendance-Signature).'
+            logger.warning(
+                'Agent ingest rejected: missing signature (device_key=%s body_len=%s)',
+                device_hint,
+                len(body),
+            )
             log_ingest_attempt(
                 request=request,
                 device=getattr(principal, 'device', None),
                 status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
                 signature_valid=False,
-                message='توقيع الطلب مطلوب (X-Attendance-Signature).',
+                message=msg,
             )
             return Response(
-                {'success': False, 'message': 'توقيع الطلب مطلوب (X-Attendance-Signature).'},
+                {'success': False, 'message': msg, 'code': 'missing_signature'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -183,15 +194,21 @@ class AgentIngestView(APIView):
         if provided_sig:
             sig_valid = verify_ingest_signature(raw_key, body, provided_sig)
             if not sig_valid:
+                msg = 'توقيع الطلب غير صالح.'
+                logger.warning(
+                    'Agent ingest rejected: invalid signature (device_key=%s body_len=%s)',
+                    device_hint,
+                    len(body),
+                )
                 log_ingest_attempt(
                     request=request,
                     device=getattr(principal, 'device', None),
                     status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
                     signature_valid=False,
-                    message='توقيع الطلب غير صالح.',
+                    message=msg,
                 )
                 return Response(
-                    {'success': False, 'message': 'توقيع الطلب غير صالح.'},
+                    {'success': False, 'message': msg, 'code': 'invalid_signature'},
                     status=status.HTTP_403_FORBIDDEN,
                 )
         elif require_sig:

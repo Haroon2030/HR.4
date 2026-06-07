@@ -116,7 +116,6 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
     first_pa_q = first_stage_pending_q(
         user,
         model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
-        supports_transfer=True,
     )
     if first_pa_q.children:
         inbox_filter |= first_pa_q
