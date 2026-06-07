@@ -19,7 +19,7 @@ import logging
 import sys
 import time
 from dataclasses import dataclass
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 try:
@@ -43,6 +43,11 @@ PUNCH_STATUS = {
     2: 'break_out',
     3: 'break_in',
 }
+
+# يطابق حدود السيرفر في agent_ingest.py
+MAX_PAST_DAYS_INCREMENTAL = 93
+MAX_PAST_DAYS_FULL_SYNC = 365
+MAX_FUTURE_MINUTES = 10
 
 
 @dataclass
@@ -248,6 +253,38 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
                 pass
 
 
+def _parse_punch_time(value: str) -> datetime:
+    dt = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def filter_punches_for_upload(
+    punches: list[dict],
+    *,
+    incremental: bool,
+) -> tuple[list[dict], int]:
+    """يستبعد البصمات خارج نافذة السيرفر (93 يوماً تدريجياً / 365 كاملاً)."""
+    now = datetime.now(timezone.utc)
+    max_past = MAX_PAST_DAYS_INCREMENTAL if incremental else MAX_PAST_DAYS_FULL_SYNC
+    cutoff = now - timedelta(days=max_past)
+    future_limit = now + timedelta(minutes=MAX_FUTURE_MINUTES)
+    kept: list[dict] = []
+    skipped = 0
+    for punch in punches:
+        try:
+            ts = _parse_punch_time(punch['punched_at'])
+        except (KeyError, TypeError, ValueError):
+            skipped += 1
+            continue
+        if ts < cutoff or ts > future_limit:
+            skipped += 1
+            continue
+        kept.append(punch)
+    return kept, skipped
+
+
 def _ingest_signature(api_key: str, body: bytes) -> str:
     digest = hmac.new(
         api_key.encode('utf-8'),
@@ -273,12 +310,15 @@ def push_to_server(
         'users': users,
     }
     body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    signature = _ingest_signature(settings.api_key, body)
     resp = requests.post(
         url,
         headers={
             'X-Attendance-Agent-Key': settings.api_key,
             'Content-Type': 'application/json',
-            'X-Attendance-Signature': _ingest_signature(settings.api_key, body),
+            'X-Attendance-Signature': signature,
+            'Authorization': f'Attendance-HMAC {signature}',
+            'X-Attendance-Agent-Version': '2',
         },
         data=body,
         timeout=180,
@@ -331,9 +371,24 @@ def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
         LOG.error('فشل السحب: %s', err)
         return False
 
-    LOG.info('على الجهاز: %s سجل، %s مستخدم — رفع ...', len(punches), len(users))
+    upload_punches, skipped_bounds = filter_punches_for_upload(
+        punches,
+        incremental=settings.incremental,
+    )
+    if skipped_bounds:
+        LOG.info(
+            'تصفية: %s سجل خارج النافذة الزمنية — يُرفع %s فقط',
+            skipped_bounds,
+            len(upload_punches),
+        )
+    LOG.info(
+        'على الجهاز: %s سجل، %s مستخدم — رفع %s ...',
+        len(punches),
+        len(users),
+        len(upload_punches),
+    )
     try:
-        result = push_to_server(settings, device, punches, users)
+        result = push_to_server(settings, device, upload_punches, users)
     except Exception as exc:
         LOG.error('فشل الرفع: %s', exc)
         return False

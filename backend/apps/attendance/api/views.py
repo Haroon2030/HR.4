@@ -19,7 +19,8 @@ from apps.attendance.services.agent_pull_queue import (
     list_pending_pull_requests,
 )
 from apps.attendance.services.ingest_signature import (
-    SIGNATURE_HEADER,
+    extract_provided_signature,
+    get_ingest_body,
     signature_required,
     verify_ingest_signature,
 )
@@ -166,8 +167,8 @@ class AgentIngestView(APIView):
             if isinstance(principal, AttendanceAgentPrincipal)
             else ''
         )
-        body = request.body or b''
-        provided_sig = (request.headers.get(SIGNATURE_HEADER) or '').strip()
+        body = get_ingest_body(request)
+        provided_sig = extract_provided_signature(request)
         require_sig = signature_required()
 
         device_hint = getattr(getattr(principal, 'device', None), 'pk', None)
@@ -260,6 +261,8 @@ class AgentIngestView(APIView):
         )
         if result.skipped_time_filter:
             msg += f' — قديم {result.skipped_time_filter}'
+        if result.skipped_out_of_bounds:
+            msg += f' — خارج النافذة {result.skipped_out_of_bounds}'
 
         log_ingest_attempt(
             request=request,
@@ -284,6 +287,7 @@ class AgentIngestView(APIView):
                 'imported': result.imported,
                 'skipped_duplicate': result.skipped_duplicate,
                 'skipped_time_filter': result.skipped_time_filter,
+                'skipped_out_of_bounds': result.skipped_out_of_bounds,
                 'punches_received': result.punches_received,
                 'users_updated': result.users_updated,
                 'batch': result.batch,

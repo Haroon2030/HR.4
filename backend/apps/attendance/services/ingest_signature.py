@@ -8,6 +8,29 @@ import secrets
 from django.conf import settings
 
 SIGNATURE_HEADER = 'X-Attendance-Signature'
+AUTH_SIGNATURE_PREFIX = 'Attendance-HMAC '
+
+
+def get_ingest_body(request) -> bytes:
+    """جسم الطلب الخام — يُفضّل النسخة المحفوظة في middleware."""
+    cached = getattr(request, '_ingest_raw_body', None)
+    if cached is not None:
+        return cached
+    body = request.body or b''
+    if not body and hasattr(request, '_request'):
+        body = getattr(request._request, 'body', b'') or b''
+    return body
+
+
+def extract_provided_signature(request) -> str:
+    """يقرأ التوقيع من ترويسات متعددة (بعض البروكسيات تحذف X-Attendance-*)."""
+    sig = (request.headers.get(SIGNATURE_HEADER) or '').strip()
+    if sig:
+        return sig
+    auth = (request.headers.get('Authorization') or '').strip()
+    if auth.lower().startswith(AUTH_SIGNATURE_PREFIX.lower()):
+        return auth[len(AUTH_SIGNATURE_PREFIX):].strip()
+    return (request.META.get('HTTP_X_ATTENDANCE_SIGNATURE') or '').strip()
 
 
 def compute_ingest_signature(raw_key: str, body: bytes) -> str:

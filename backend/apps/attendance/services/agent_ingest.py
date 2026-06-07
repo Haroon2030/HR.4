@@ -20,6 +20,7 @@ class AgentIngestResult:
     imported: int
     skipped_duplicate: int
     skipped_time_filter: int
+    skipped_out_of_bounds: int
     punches_received: int
     users_updated: int
     batch: str
@@ -42,19 +43,16 @@ def _parse_punched_at(value: datetime | str) -> datetime:
     return dt
 
 
-def _validate_punched_at_bounds(dt: datetime, *, incremental: bool) -> None:
+def _is_within_punch_bounds(dt: datetime, *, incremental: bool) -> bool:
     now = timezone.now()
     if dt > now + timedelta(minutes=AGENT_PUNCH_MAX_FUTURE_MINUTES):
-        raise ValueError('وقت البصمة في المستقبل — مرفوض.')
+        return False
     max_past_days = (
         AGENT_PUNCH_MAX_PAST_DAYS_INCREMENTAL
         if incremental
         else AGENT_PUNCH_MAX_PAST_DAYS_FULL_SYNC
     )
-    if dt < now - timedelta(days=max_past_days):
-        raise ValueError(
-            f'وقت البصمة أقدم من {max_past_days} يوماً — مرفوض.'
-        )
+    return dt >= now - timedelta(days=max_past_days)
 
 
 def _row_from_payload(item: dict[str, Any]) -> RawAttendanceRow:
@@ -133,9 +131,12 @@ def ingest_agent_payload(
     }
 
     rows = []
+    skipped_out_of_bounds = 0
     for p in punches:
         row = _row_from_payload(p)
-        _validate_punched_at_bounds(row.punched_at, incremental=incremental)
+        if not _is_within_punch_bounds(row.punched_at, incremental=incremental):
+            skipped_out_of_bounds += 1
+            continue
         rows.append(row)
     outcome = import_raw_attendance_rows(
         device,
@@ -149,6 +150,7 @@ def ingest_agent_payload(
         imported=outcome['imported'],
         skipped_duplicate=outcome['skipped'],
         skipped_time_filter=outcome.get('skipped_time_filter', 0),
+        skipped_out_of_bounds=skipped_out_of_bounds,
         punches_received=len(punches),
         users_updated=users_updated,
         batch=outcome.get('batch', ''),

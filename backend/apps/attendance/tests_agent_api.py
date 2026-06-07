@@ -191,7 +191,7 @@ class AttendanceAgentAPITests(TestCase):
         response = client.get('/api/v1/attendance/agent/devices/')
         self.assertEqual(response.status_code, 403)
 
-    def test_ingest_rejects_punch_too_far_in_past(self):
+    def test_ingest_skips_punch_too_far_in_past(self):
         from datetime import timedelta
 
         client = self._device_client()
@@ -209,7 +209,10 @@ class AttendanceAgentAPITests(TestCase):
             },
             format='json',
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['imported'], 0)
+        self.assertEqual(data['skipped_out_of_bounds'], 1)
 
     def test_device_key_ingest_own_device(self):
         from apps.attendance.services.agent_keys import set_device_agent_key
@@ -253,6 +256,20 @@ class AttendanceAgentAPITests(TestCase):
             HTTP_X_ATTENDANCE_SIGNATURE='sha256=deadbeef',
         )
         self.assertEqual(response.status_code, 403)
+
+    @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
+    def test_ingest_accepts_authorization_hmac_header(self):
+        client = self._device_client()
+        payload = {'device_id': self.device.pk, 'punches': []}
+        body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        sig = compute_ingest_signature(self.device_key, body)
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            data=body,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Attendance-HMAC {sig}',
+        )
+        self.assertEqual(response.status_code, 200)
 
     @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
     def test_ingest_accepts_valid_signature(self):

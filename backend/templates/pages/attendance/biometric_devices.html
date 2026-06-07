@@ -113,7 +113,9 @@
                             {% if d.last_ingest_log %}
                             <span class="block text-[10px] mt-0.5 {% if d.last_ingest_log.status == 'success' %}text-emerald-700{% else %}text-red-700{% endif %}">
                                 آخر رفع: +{{ d.last_ingest_log.imported }} جديد
-                                {% if d.last_ingest_log.status != 'success' %} — {{ d.last_ingest_log.get_status_display }}{% endif %}
+                                {% if d.last_ingest_log.status != 'success' %}
+                                — {{ d.last_ingest_log.message|default:d.last_ingest_log.get_status_display }}
+                                {% endif %}
                             </span>
                             {% endif %}
                             {% if d.pull_pending %}

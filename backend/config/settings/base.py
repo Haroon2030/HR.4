@@ -97,6 +97,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',          # حماية أمنية أساسية
+    'apps.attendance.middleware.AgentIngestBodyMiddleware',   # جسم خام لـ HMAC ingest
     'config.middleware.DisableCOOPMiddleware',                # إزالة COOP header (يسبب تحذيرات على HTTP)
     'whitenoise.middleware.WhiteNoiseMiddleware',             # خدمة الملفات الثابتة بكفاءة
     'django.middleware.gzip.GZipMiddleware',                  # ضغط الاستجابات (HTML/JSON)
