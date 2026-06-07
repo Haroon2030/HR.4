@@ -2323,6 +2323,67 @@ body.hr-app .hr-sidebar button.rounded-lg:hover {
     background: rgba(255, 255, 255, 0.95) !important;
 }
 
+/* عمود إحصاء البصمات — تخطيط تقني أفقي */
+.hr-app .zk-bio-punch-cell {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 14rem;
+}
+
+.hr-app .zk-bio-punch-cell__count {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--hr-text);
+    letter-spacing: -0.02em;
+}
+
+.hr-app .zk-bio-punch-cell__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.25;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.hr-app .zk-bio-punch-cell__tag--db {
+    color: #64748b;
+    background: rgba(148, 163, 184, 0.14);
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+.hr-app .zk-bio-punch-cell__tag--ok {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.28);
+}
+
+.hr-app .zk-bio-punch-cell__tag--err {
+    color: #b91c1c;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+    max-width: 100%;
+    white-space: normal;
+}
+
+.hr-app .zk-bio-punch-cell__tag--pull {
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.28);
+}
+
+.hr-app .zk-bio-punch-cell__err-hint {
+    font-weight: 500;
+    opacity: 0.92;
+}
+
 /* تنبيهات ثابتة داخل الصفحات */
 body.hr-app .rounded-lg.border[class*="bg-emerald-"],
 body.hr-app .rounded-lg.border[class*="bg-red-"],

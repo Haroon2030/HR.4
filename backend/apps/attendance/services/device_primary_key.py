@@ -87,16 +87,35 @@ def _repoint_device_foreign_keys(*, old_id: int, new_id: int) -> None:
 
 
 def _fix_id_sequence() -> None:
+    """مزامنة عداد المعرف التلقائي بعد إدراج بمعرف صريح (Postgres أو SQLite)."""
+    table = BiometricDevice._meta.db_table
+    quoted_table = connection.ops.quote_name(table)
     with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT setval(
-                pg_get_serial_sequence('attendance_biometricdevice', 'id'),
-                COALESCE((SELECT MAX(id) FROM attendance_biometricdevice), 1),
-                true
+        if connection.vendor == 'postgresql':
+            cursor.execute(
+                f"""
+                SELECT setval(
+                    pg_get_serial_sequence(%s, 'id'),
+                    COALESCE((SELECT MAX(id) FROM {quoted_table}), 1),
+                    true
+                )
+                """,
+                [table],
             )
-            """
-        )
+            return
+        if connection.vendor == 'sqlite':
+            cursor.execute(f'SELECT COALESCE(MAX(id), 1) FROM {quoted_table}')
+            row = cursor.fetchone()
+            max_id = int(row[0]) if row else 1
+            cursor.execute(
+                'UPDATE sqlite_sequence SET seq = %s WHERE name = %s',
+                [max_id, table],
+            )
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    'INSERT INTO sqlite_sequence (name, seq) VALUES (%s, %s)',
+                    [table, max_id],
+                )
 
 
 @transaction.atomic

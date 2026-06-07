@@ -47,7 +47,7 @@ if (-not $BranchName) {
     $BranchName = Read-Host 'Branch name (latin, example: alwaha)'
 }
 if (-not $ApiKey) {
-    $ApiKey = Read-Host 'AGENT_API_KEY (per-device key from HR — Biometric devices → مفتاح وكيل)'
+    $ApiKey = Read-Host 'AGENT_API_KEY (per-device key from HR: Biometric devices page)'
 }
 $urlIn = Read-Host "Server URL [$ServerUrl]"
 if ($urlIn) { $ServerUrl = $urlIn.TrimEnd('/') }
@@ -133,4 +133,4 @@ if ($InstallTask) {
 
 Write-Host ''
 Write-Host 'Done.' -ForegroundColor Green
-Write-Host "  python agent.py --once --device $DeviceId" -ForegroundColor Cyan
+Write-Host ('  python agent.py --once --device ' + $DeviceId) -ForegroundColor Cyan
