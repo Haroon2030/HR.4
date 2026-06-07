@@ -39,6 +39,18 @@
     </div>
     {% endif %}
 
+    <div class="rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 space-y-2">
+        <div class="flex items-start gap-2 font-semibold text-slate-900">
+            <i data-lucide="key-round" class="w-4 h-4 shrink-0 text-primary-600 mt-0.5"></i>
+            <span>مفتاح وكيل لكل جهاز (موصى به)</span>
+        </div>
+        <ol class="list-decimal list-inside text-xs text-slate-600 space-y-1 mr-1">
+            <li>سجّل الجهاز هنا واحفظ عمود <strong>ID</strong> (مثال: 2).</li>
+            <li>من «مفتاح وكيل» ولّد مفتاحاً وانسخه إلى <code dir="ltr" class="bg-white px-1 rounded">config.env</code> على PC الفرع: <code dir="ltr" class="bg-white px-1 rounded">AGENT_API_KEY=...</code> و <code dir="ltr" class="bg-white px-1 rounded">DEVICE_ID=نفس الرقم</code>.</li>
+            <li>اختبر: <code dir="ltr" class="bg-white px-1 rounded">run_agent.bat --probe</code> ثم <code dir="ltr" class="bg-white px-1 rounded">--once</code>.</li>
+        </ol>
+    </div>
+
     <div class="zk-bio-card">
         <div class="zk-bio-card-hd">
             <div class="flex items-center gap-3">
@@ -69,6 +81,7 @@
                         <th class="text-right px-3 py-2">الحالة</th>
                         <th class="text-right px-3 py-2">آخر مزامنة</th>
                         <th class="text-right px-3 py-2">بصمات</th>
+                        <th class="text-right px-3 py-2">مفتاح وكيل</th>
                         {% if user|has_permission:'attendance.manage' %}
                         <th class="text-right px-3 py-2">إجراء</th>
                         {% endif %}
@@ -95,9 +108,25 @@
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}</td>
                         <td class="px-4 py-3">{{ d.punch_count }}</td>
+                        <td class="px-4 py-3">
+                            {% if d.agent_api_key %}
+                            <span class="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                <i data-lucide="shield-check" class="w-3 h-3"></i> مُفعّل
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">غير مُولَّد</span>
+                            {% endif %}
+                        </td>
                         {% if user|has_permission:'attendance.manage' %}
                         <td class="px-4 py-3">
                             <div class="hr-tbl-actions zk-bio-actions">
+                                <button type="button"
+                                    @click="generateAgentKey({{ d.pk }}, '{{ d.name|escapejs }}', {{ d.agent_api_key|yesno:'true,false' }}, '{{ d.ip_address }}', {{ d.port }})"
+                                    class="px-2 py-1 text-xs rounded bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+                                    :disabled="loadingId === {{ d.pk }}"
+                                    title="مفتاح خاص بهذا الجهاز فقط">
+                                    مفتاح وكيل
+                                </button>
                                 {% if d.ip_address|is_private_lan_ip %}
                                 <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="inline">
                                     {% csrf_token %}
@@ -128,7 +157,7 @@
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">لا بيانات</td></tr>
+                    <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">لا بيانات</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -259,6 +288,7 @@
     {% include "pages/attendance/_device_modal.html" %}
     {% if user|has_permission:'attendance.manage' %}
     {% include "pages/attendance/_enrollment_modal.html" %}
+    {% include "pages/attendance/_agent_key_modal.html" %}
     {% endif %}
 </div>
 
@@ -268,6 +298,11 @@ function biometricPage() {
     return {
         deviceModal: false,
         enrollModal: false,
+        agentKeyModal: false,
+        agentKeyValue: '',
+        agentKeyDeviceId: '',
+        agentKeyMeta: '',
+        agentKeyConfigSnippet: '',
         enrollFormKey: 0,
         enrollForm: { device_id: '', device_user_id: '', device_name: '', user_name: '' },
         loadingId: null,
@@ -309,6 +344,73 @@ function biometricPage() {
             this.toastMsg = msg;
             this.toast = true;
             setTimeout(() => { this.toast = false; }, 5000);
+        },
+        closeAgentKeyModal() {
+            this.agentKeyModal = false;
+            this.agentKeyValue = '';
+            this.agentKeyConfigSnippet = '';
+        },
+        _buildAgentConfigSnippet(data) {
+            const origin = window.location.origin;
+            return [
+                `SERVER_URL=${origin}`,
+                `AGENT_API_KEY=${data.api_key}`,
+                `DEVICE_ID=${data.device_id}`,
+                `DEVICE_IP=${data.device_ip}`,
+                `DEVICE_PORT=${data.device_port}`,
+                'COMM_KEY=0',
+                'AGENT_ID=branch-agent',
+                'POLL_INTERVAL_SEC=300',
+                'INCREMENTAL=true',
+            ].join('\n');
+        },
+        async copyAgentKey() {
+            if (!this.agentKeyValue) return;
+            try {
+                await navigator.clipboard.writeText(this.agentKeyValue);
+                this.showToast(true, 'تم نسخ المفتاح');
+            } catch (e) {
+                this.$refs.agentKeyInput?.select();
+                this.showToast(false, 'انسخ المفتاح يدوياً');
+            }
+        },
+        async copyAgentConfig() {
+            if (!this.agentKeyConfigSnippet) return;
+            try {
+                await navigator.clipboard.writeText(this.agentKeyConfigSnippet);
+                this.showToast(true, 'تم نسخ إعدادات config.env');
+            } catch (e) {
+                this.showToast(false, 'انسخ الإعدادات يدوياً');
+            }
+        },
+        async generateAgentKey(id, name, hasKey, ip, port) {
+            if (hasKey) {
+                const ok = window.confirm(
+                    `سيتم إلغاء مفتاح «${name}» (ID=${id}) الحالي وتوليد مفتاح جديد.\nهل تريد المتابعة؟`
+                );
+                if (!ok) return;
+            }
+            this.loadingId = id;
+            try {
+                const { status, data } = await this._postJson(`/attendance/devices/${id}/agent-key/`);
+                if (status === 403) {
+                    this.showToast(false, 'انتهت الجلسة — سجّل الدخول مرة أخرى');
+                    return;
+                }
+                if (!data.ok || !data.api_key) {
+                    this.showToast(false, data.error || data.message || 'فشل توليد المفتاح');
+                    return;
+                }
+                this.agentKeyValue = data.api_key;
+                this.agentKeyDeviceId = String(data.device_id);
+                this.agentKeyMeta = `الجهاز: ${data.device_name} — ID=${data.device_id} — ${data.device_ip}:${data.device_port}`;
+                this.agentKeyConfigSnippet = this._buildAgentConfigSnippet(data);
+                this.agentKeyModal = true;
+                this.$nextTick(() => lucide.createIcons());
+            } catch (e) {
+                this.showToast(false, 'خطأ في الاتصال بالخادم');
+            }
+            this.loadingId = null;
         },
         async _postJson(url) {
             const r = await fetch(url, {

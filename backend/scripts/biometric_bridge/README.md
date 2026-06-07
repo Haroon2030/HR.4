@@ -2,6 +2,17 @@
 
 Pulls attendance from branch LAN devices and uploads to the cloud HR server via API.
 
+## Per-device API key (recommended)
+
+Each ZKTeco device in HR has its own agent key (not the global server key).
+
+1. In HR web: **Attendance → Biometric devices** — note the device **ID** column.
+2. Click **مفتاح وكيل** (or on server: `python manage.py generate_attendance_agent_key --device-id=ID`).
+3. Copy the key once into `config.env` as `AGENT_API_KEY=...` and set `DEVICE_ID` to the same ID.
+4. On server: `python manage.py check_attendance_production --details`
+
+The raw key is shown only once; HR stores SHA-256 only.
+
 ## Branch PC (recommended)
 
 1. Copy this folder to `C:\biometric_bridge`

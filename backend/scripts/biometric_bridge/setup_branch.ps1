@@ -47,7 +47,7 @@ if (-not $BranchName) {
     $BranchName = Read-Host 'Branch name (latin, example: alwaha)'
 }
 if (-not $ApiKey) {
-    $ApiKey = Read-Host 'AGENT_API_KEY (same as ATTENDANCE_AGENT_API_KEY on server)'
+    $ApiKey = Read-Host 'AGENT_API_KEY (per-device key from HR — Biometric devices → مفتاح وكيل)'
 }
 $urlIn = Read-Host "Server URL [$ServerUrl]"
 if ($urlIn) { $ServerUrl = $urlIn.TrimEnd('/') }

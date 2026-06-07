@@ -192,6 +192,33 @@ def biometric_devices_dashboard(request):
 
 @permission_required('attendance.manage')
 @require_POST
+def biometric_device_generate_agent_key(request, device_id):
+    """توليد مفتاح وكيل بصمة لجهاز واحد — يُعرض مرة واحدة."""
+    device = get_device_for_user(request.user, device_id)
+    from apps.attendance.services.agent_keys import set_device_agent_key
+
+    raw = set_device_agent_key(device)
+    payload = {
+        'ok': True,
+        'api_key': raw,
+        'device_id': device.pk,
+        'device_name': device.name,
+        'device_ip': device.ip_address,
+        'device_port': device.port,
+        'message': (
+            f'تم توليد مفتاح وكيل لـ «{device.name}» (ID={device.pk}). '
+            'انسخه الآن — لن يُعرض مرة أخرى.'
+        ),
+    }
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(payload)
+    messages.success(request, payload['message'])
+    messages.warning(request, f'مفتاح الوكيل: {raw}')
+    return redirect('web:biometric_devices')
+
+
+@permission_required('attendance.manage')
+@require_POST
 def biometric_device_save(request):
     original_device_id_raw = (request.POST.get('original_device_id') or '').strip()
     requested_device_id_raw = (request.POST.get('device_id') or '').strip()

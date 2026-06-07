@@ -1,0 +1,55 @@
+{# نافذة عرض مفتاح وكيل البصمة (مرة واحدة) #}
+<div x-show="agentKeyModal" x-cloak
+    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50"
+    @keydown.escape.window="closeAgentKeyModal()">
+    <div class="zk-modal-panel bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden max-h-[90vh] overflow-y-auto"
+        @click.outside="closeAgentKeyModal()">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="key-round" class="w-4 h-4 text-amber-600"></i>
+                مفتاح وكيل البصمة
+            </h3>
+            <button type="button" @click="closeAgentKeyModal()" class="text-slate-400 hover:text-slate-600" aria-label="إغلاق">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="px-4 py-4 space-y-3 text-sm" dir="rtl">
+            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-xs">
+                <strong>مهم:</strong> انسخ المفتاح الآن — يُخزَّن مُجزّأاً في قاعدة البيانات ولن يُعرض مرة أخرى.
+            </div>
+            <p class="text-slate-600 text-xs" x-text="agentKeyMeta"></p>
+            <div>
+                <label class="zk-modal-label">AGENT_API_KEY</label>
+                <div class="flex gap-2 items-stretch">
+                    <input type="text" readonly dir="ltr"
+                        class="zk-modal-field flex-1 font-mono text-xs"
+                        :value="agentKeyValue"
+                        x-ref="agentKeyInput">
+                    <button type="button" @click="copyAgentKey()"
+                        class="shrink-0 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700">
+                        نسخ
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="zk-modal-label">مقتطف config.env (PC الفرع)</label>
+                <textarea readonly dir="ltr" rows="8"
+                    class="zk-modal-field w-full font-mono text-[10px] leading-relaxed resize-none"
+                    x-text="agentKeyConfigSnippet"></textarea>
+                <button type="button" @click="copyAgentConfig()"
+                    class="mt-2 text-xs font-semibold text-primary-700 hover:text-primary-900">
+                    نسخ إعدادات الوكيل
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-500">
+                على السيرفر: <code dir="ltr" class="text-xs bg-slate-100 px-1 rounded">python manage.py generate_attendance_agent_key --device-id=<span x-text="agentKeyDeviceId"></span></code>
+            </p>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-100 flex justify-end">
+            <button type="button" @click="closeAgentKeyModal()"
+                class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900">
+                تم النسخ — إغلاق
+            </button>
+        </div>
+    </div>
+</div>

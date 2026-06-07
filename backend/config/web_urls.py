@@ -228,6 +228,11 @@ urlpatterns = [
     path('attendance/devices/<int:device_id>/test/', web_views.biometric_device_test, name='biometric_device_test'),
     path('attendance/devices/<int:device_id>/sync/', web_views.biometric_device_sync, name='biometric_device_sync'),
     path('attendance/devices/<int:device_id>/sync-users/', web_views.biometric_device_sync_users, name='biometric_device_sync_users'),
+    path(
+        'attendance/devices/<int:device_id>/agent-key/',
+        web_views.biometric_device_generate_agent_key,
+        name='biometric_device_generate_agent_key',
+    ),
     path('attendance/enrollments/save/', web_views.biometric_enrollment_save, name='biometric_enrollment_save'),
     path('attendance/records/', web_views.attendance_records_list, name='attendance_records'),
     path('attendance/records/pull/', web_views.attendance_records_pull, name='attendance_records_pull'),
