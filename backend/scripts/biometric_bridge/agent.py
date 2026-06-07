@@ -291,7 +291,8 @@ def push_to_server(
         hint = ''
         if resp.status_code in (401, 403):
             hint = (
-                ' — تحقق: AGENT_API_KEY = ATTENDANCE_AGENT_API_KEY على السيرفر.'
+                ' — تحقق: AGENT_API_KEY = مفتاح هذا الجهاز من HR (مفتاح وكيل) '
+                'و DEVICE_ID يطابق id الجهاز.'
             )
         raise RuntimeError(f'HTTP {resp.status_code}: {body.get("message", body)}{hint}')
     return body
@@ -451,7 +452,7 @@ def fetch_devices_from_server(settings: AgentSettings) -> list[DeviceTarget]:
                 device_id=int(row['id']),
                 device_ip=str(row['ip_address']).strip(),
                 device_port=int(row.get('port') or 4370),
-                comm_key=0,
+                comm_key=int(row.get('comm_key') or 0),
                 label=(row.get('name') or '').strip(),
             )
         )

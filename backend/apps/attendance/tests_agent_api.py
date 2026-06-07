@@ -108,7 +108,7 @@ class AttendanceAgentAPITests(TestCase):
         )
 
         client = self._device_client()
-        queue_pull_request(self.device.pk, requested_by_id=1)
+        queue_pull_request(self.device.pk)
 
         r = client.get('/api/v1/attendance/agent/pull-requests/')
         self.assertEqual(r.status_code, 200)

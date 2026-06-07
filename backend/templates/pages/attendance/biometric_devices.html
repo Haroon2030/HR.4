@@ -107,7 +107,19 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}</td>
-                        <td class="px-4 py-3">{{ d.punch_count }}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-medium text-slate-800">{{ d.punch_count }}</span>
+                            <span class="block text-[10px] text-slate-500">في قاعدة HR</span>
+                            {% if d.last_ingest_log %}
+                            <span class="block text-[10px] mt-0.5 {% if d.last_ingest_log.status == 'success' %}text-emerald-700{% else %}text-red-700{% endif %}">
+                                آخر رفع: +{{ d.last_ingest_log.imported }} جديد
+                                {% if d.last_ingest_log.status != 'success' %} — {{ d.last_ingest_log.get_status_display }}{% endif %}
+                            </span>
+                            {% endif %}
+                            {% if d.pull_pending %}
+                            <span class="block text-[10px] text-primary-700 mt-0.5">طلب سحب معلّق…</span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-3">
                             {% if d.agent_api_key %}
                             <span class="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -358,7 +370,7 @@ function biometricPage() {
                 `DEVICE_ID=${data.device_id}`,
                 `DEVICE_IP=${data.device_ip}`,
                 `DEVICE_PORT=${data.device_port}`,
-                'COMM_KEY=0',
+                `COMM_KEY=${data.comm_key || 0}`,
                 'AGENT_ID=branch-agent',
                 'POLL_INTERVAL_SEC=300',
                 'INCREMENTAL=true',

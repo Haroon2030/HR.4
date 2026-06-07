@@ -88,15 +88,23 @@ class AgentDeviceListView(APIView):
 
     def get(self, request):
         _deny_global_key_metadata(request)
+        principal = request.user
         devices = BiometricDevice.objects.filter(
             is_deleted=False, is_active=True,
         ).order_by('name')
+        if (
+            isinstance(principal, AttendanceAgentPrincipal)
+            and principal.device is not None
+            and not principal.is_global_key
+        ):
+            devices = devices.filter(pk=principal.device.pk)
         data = [
             {
                 'id': d.pk,
                 'name': d.name,
                 'ip_address': d.ip_address,
                 'port': d.port,
+                'comm_key': int(d.comm_key or 0),
                 'branch_id': d.branch_id,
                 'branch_name': d.branch.name if d.branch_id else '',
             }
@@ -114,7 +122,18 @@ class AgentPullRequestsView(APIView):
 
     def get(self, request):
         _deny_global_key_metadata(request)
-        return Response({'success': True, 'data': list_pending_pull_requests()})
+        principal = request.user
+        device_id = None
+        if (
+            isinstance(principal, AttendanceAgentPrincipal)
+            and principal.device is not None
+            and not principal.is_global_key
+        ):
+            device_id = principal.device.pk
+        return Response({
+            'success': True,
+            'data': list_pending_pull_requests(device_id=device_id),
+        })
 
     def post(self, request):
         device_id = request.data.get('device_id')

@@ -94,7 +94,7 @@ def _device_users_querystring(filters: dict, *, extra: dict | None = None) -> st
 @permission_required('attendance.view')
 def biometric_devices_dashboard(request):
     branch_filter_ids = _parse_branch_filter(request)
-    devices = get_biometric_devices_queryset(request.user, branch_ids=branch_filter_ids)
+    devices = list(get_biometric_devices_queryset(request.user, branch_ids=branch_filter_ids))
     branches = _accessible_branches(request.user)
 
     enrollments_qs = (
@@ -167,6 +167,34 @@ def biometric_devices_dashboard(request):
         BiometricDevice.objects.filter(is_deleted=False, branch__isnull=True),
     ).count()
 
+    device_id_list = [d.pk for d in devices]
+    last_ingest_by_device: dict[int, object] = {}
+    pending_pull_device_ids: set[int] = set()
+    if device_id_list:
+        from apps.attendance.models import AttendanceIngestLog, BiometricPullRequest
+
+        for log in (
+            AttendanceIngestLog.objects.filter(
+                device_id__in=device_id_list,
+                is_deleted=False,
+            )
+            .order_by('-created_at')
+        ):
+            if log.device_id and log.device_id not in last_ingest_by_device:
+                last_ingest_by_device[log.device_id] = log
+
+        pending_pull_device_ids = set(
+            BiometricPullRequest.objects.filter(
+                device_id__in=device_id_list,
+                acknowledged_at__isnull=True,
+                is_deleted=False,
+            ).values_list('device_id', flat=True),
+        )
+
+    for device in devices:
+        device.last_ingest_log = last_ingest_by_device.get(device.pk)
+        device.pull_pending = device.pk in pending_pull_device_ids
+
     return render(request, 'pages/attendance/biometric_devices.html', {
         'devices': devices,
         'branch_filter_ids': branch_filter_ids or [],
@@ -205,6 +233,7 @@ def biometric_device_generate_agent_key(request, device_id):
         'device_name': device.name,
         'device_ip': device.ip_address,
         'device_port': device.port,
+        'comm_key': int(device.comm_key or 0),
         'message': (
             f'تم توليد مفتاح وكيل لـ «{device.name}» (ID={device.pk}). '
             'انسخه الآن — لن يُعرض مرة أخرى.'
@@ -379,8 +408,14 @@ def biometric_device_sync(request, device_id):
     if not device.branch_id:
         messages.error(request, f'حدّد فرعاً لجهاز «{device.name}» قبل المزامنة.')
         return redirect('web:biometric_devices')
+    lan_only = bool(cloud_pull_blocked_message(device, force_mock=False))
     queued, queue_msg = queue_lan_device_sync(device, requested_by_id=request.user.pk)
-    if queued:
+    if lan_only:
+        if not queued:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'ok': False, 'error': queue_msg})
+            messages.error(request, queue_msg)
+            return redirect('web:biometric_devices')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': True, 'queued': True, 'message': queue_msg})
         messages.success(request, queue_msg)
@@ -411,8 +446,14 @@ def biometric_device_sync(request, device_id):
 @require_POST
 def biometric_device_sync_users(request, device_id):
     device = get_device_for_user(request.user, device_id)
+    lan_only = bool(cloud_pull_blocked_message(device, force_mock=False))
     queued, queue_msg = queue_lan_device_sync(device, requested_by_id=request.user.pk)
-    if queued:
+    if lan_only:
+        if not queued:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'ok': False, 'error': queue_msg})
+            messages.error(request, queue_msg)
+            return redirect('web:biometric_devices')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': True, 'queued': True, 'message': queue_msg})
         messages.success(request, queue_msg)

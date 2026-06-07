@@ -356,3 +356,37 @@ class BiometricEnrollmentAuditLog(BaseModel):
             f'ربط جهاز {self.device_id} — مستخدم {self.device_user_id} '
             f'→ موظف {self.new_employee_id} ({self.action})'
         )
+
+
+class BiometricPullRequest(BaseModel):
+    """طلب سحب من لوحة HR — ينفّذه وكيل الفرع (يُخزَّن في DB وليس cache فقط)."""
+
+    device = models.ForeignKey(
+        BiometricDevice,
+        on_delete=models.CASCADE,
+        related_name='pull_requests',
+        verbose_name='الجهاز',
+    )
+    requested_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='biometric_pull_requests',
+        verbose_name='طُلب بواسطة',
+    )
+    date_from = models.DateField('من تاريخ', null=True, blank=True)
+    date_to = models.DateField('إلى تاريخ', null=True, blank=True)
+    acknowledged_at = models.DateTimeField('تم التنفيذ', null=True, blank=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'طلب سحب بصمة'
+        verbose_name_plural = 'طلبات سحب البصمة'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['device', 'acknowledged_at', '-created_at']),
+        ]
+
+    def __str__(self):
+        state = 'مُنفَّذ' if self.acknowledged_at else 'معلّق'
+        return f'سحب جهاز {self.device_id} — {state}'
