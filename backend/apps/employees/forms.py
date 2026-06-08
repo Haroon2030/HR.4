@@ -244,10 +244,6 @@ class EmployeeForm(forms.ModelForm):
         if branch and cost_center and cost_center.branch_id and cost_center.branch_id != branch.pk:
             self.add_error('cost_center', 'مركز التكلفة لا يتبع الفرع المختار.')
 
-        administration = cleaned.get('administration')
-        if branch and administration and administration.branch_id and administration.branch_id != branch.pk:
-            self.add_error('administration', 'الإدارة لا تتبع الفرع المختار.')
-
         return cleaned
 
     def save(self, commit=True):
