@@ -16,6 +16,7 @@ from apps.attendance.services.agent_ingest import ingest_agent_payload
 from apps.attendance.services.ingest_audit import log_ingest_attempt
 from apps.attendance.services.agent_pull_queue import (
     acknowledge_pull_request,
+    acknowledge_pull_request_after_ingest,
     list_pending_pull_requests,
 )
 from apps.attendance.services.ingest_signature import (
@@ -264,6 +265,8 @@ class AgentIngestView(APIView):
         if result.skipped_out_of_bounds:
             msg += f' — خارج النافذة {result.skipped_out_of_bounds}'
 
+        pull_acknowledged = acknowledge_pull_request_after_ingest(device.pk)
+
         log_ingest_attempt(
             request=request,
             device=device,
@@ -291,5 +294,6 @@ class AgentIngestView(APIView):
                 'punches_received': result.punches_received,
                 'users_updated': result.users_updated,
                 'batch': result.batch,
+                'pull_acknowledged': pull_acknowledged,
             },
         })

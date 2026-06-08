@@ -83,16 +83,24 @@ def list_pending_pull_requests(*, device_id: int | None = None) -> list[dict[str
     return rows
 
 
-def acknowledge_pull_request(device_id: int) -> None:
+def acknowledge_pull_request(device_id: int) -> int:
+    """يُغلق طلبات السحب المعلّقة لجهاز — يُرجع عدد الصفوف المُحدَّثة."""
     from apps.attendance.models import BiometricPullRequest
 
     now = timezone.now()
-    BiometricPullRequest.objects.filter(
+    updated = BiometricPullRequest.objects.filter(
         device_id=device_id,
         acknowledged_at__isnull=True,
         is_deleted=False,
     ).update(acknowledged_at=now, updated_at=now)
-    _sync_cache_from_db()
+    if updated:
+        _sync_cache_from_db()
+    return updated
+
+
+def acknowledge_pull_request_after_ingest(device_id: int) -> bool:
+    """بعد نجاح ingest — يُغلق طلب السحب حتى لو فشل ack من الوكيل."""
+    return acknowledge_pull_request(device_id) > 0
 
 
 def queue_lan_device_sync(
