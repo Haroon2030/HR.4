@@ -726,3 +726,24 @@ class ParseMultiFilterIdsTests(TestCase):
         )
         ids = parse_multi_filter_ids(request, 'branch_id')
         self.assertEqual(ids, [6])
+
+
+class DecimalNumberInputTests(TestCase):
+    def test_format_decimal_uses_dot(self):
+        from decimal import Decimal
+
+        from apps.core.widgets import DecimalNumberInput, format_decimal_for_number_input
+
+        self.assertEqual(format_decimal_for_number_input(Decimal('10000.00')), '10000.00')
+        self.assertEqual(format_decimal_for_number_input('10000,50'), '10000.50')
+        self.assertEqual(format_decimal_for_number_input(None), '')
+        widget = DecimalNumberInput()
+        self.assertEqual(widget.format_value(Decimal('5000.25')), '5000.25')
+
+    def test_hr_form_renders_decimal_with_dot(self):
+        from apps.core.forms import SalaryAdjustForm
+
+        form = SalaryAdjustForm(initial={'new_basic_salary': '7500.00'})
+        html = str(form['new_basic_salary'])
+        self.assertIn('value="7500.00"', html)
+        self.assertNotIn('value="7500,00"', html)

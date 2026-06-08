@@ -107,6 +107,11 @@ class BuildingForm(forms.ModelForm):
             'notes', 'is_active',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.core.widgets import apply_decimal_number_widgets
+        apply_decimal_number_widgets(self)
+
     def clean_code(self):
         return _validate_unique_code(Building, self.cleaned_data.get('code'), self.instance)
 

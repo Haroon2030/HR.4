@@ -116,6 +116,8 @@ class EmployeeForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
+        from apps.core.widgets import apply_decimal_number_widgets
+        apply_decimal_number_widgets(self)
         _apply_fk_label_overrides(self)
         if user is not None and 'branch' in self.fields:
             from apps.core.models import Branch
@@ -389,9 +391,13 @@ class EmploymentRequestEditForm(forms.ModelForm):
                 widget.input_type = 'date'
             # خطوة الأرقام للراتب
             if field_name in ('basic_salary', 'housing_allowance', 'transport_allowance',
-                              'other_allowance', 'cash_amount', 'insurance_deduction_rate'):
+                              'other_allowance', 'cash_amount', 'meal_allowance',
+                              'insurance_deduction_rate'):
                 widget.attrs.setdefault('step', '0.01')
                 widget.attrs.setdefault('min', '0')
+
+        from apps.core.widgets import apply_decimal_number_widgets
+        apply_decimal_number_widgets(self)
 
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة

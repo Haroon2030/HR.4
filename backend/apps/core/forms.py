@@ -13,11 +13,20 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 
 from apps.core.models import Role, Branch
+from apps.core.widgets import apply_decimal_number_widgets
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
 
 
 User = get_user_model()
+
+
+class HRForm(forms.Form):
+    """نموذج أساسي — يضمن عرض القيم العشرية في حقول الرقم بشكل متوافق مع HTML."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_decimal_number_widgets(self)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -305,7 +314,7 @@ class ReactivateEmployeeForm(forms.Form):
         return v if v in ('active', 'leave') else 'active'
 
 
-class SalaryAdjustForm(forms.Form):
+class SalaryAdjustForm(HRForm):
     new_basic_salary = forms.DecimalField(
         min_value=0, max_digits=12, decimal_places=2,
         error_messages={'invalid': 'قيمة الراتب غير صحيحة', 'required': 'الراتب الجديد مطلوب',
@@ -345,7 +354,7 @@ class TransferEmployeeForm(forms.Form):
         return v
 
 
-class CustodyReceiveForm(forms.Form):
+class CustodyReceiveForm(HRForm):
     """استلام عهدة جديدة من الشركة."""
     item_name = forms.CharField(error_messages={'required': 'اسم العهدة مطلوب'})
     item_details = forms.CharField(required=False)
@@ -384,7 +393,7 @@ class JobOfferForm(forms.Form):
         return v
 
 
-class BusinessTripForm(forms.Form):
+class BusinessTripForm(HRForm):
     """تسجيل رحلة عمل."""
     destination = forms.CharField(error_messages={'required': 'الوجهة مطلوبة'})
     purpose = forms.CharField(error_messages={'required': 'الغرض مطلوب'})
@@ -415,7 +424,7 @@ class BusinessTripForm(forms.Form):
         return cd
 
 
-class LoanRequestForm(forms.Form):
+class LoanRequestForm(HRForm):
     """تقديم سلفة موظف."""
     amount = forms.DecimalField(min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
         error_messages={'required': 'مبلغ السلفة مطلوب', 'invalid': 'المبلغ غير صحيح',

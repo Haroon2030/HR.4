@@ -26,13 +26,8 @@ def input_decimal(value):
     تنسيق رقم لحقول HTML type=number — دائماً بنقطة عشرية (بدون فاصلة آلاف).
     المتصفح لا يعرض قيمة مثل 10000,00 في input type=number.
     """
-    if value is None or value == '':
-        return ''
-    try:
-        amount = Decimal(str(value).replace(',', '.'))
-    except (InvalidOperation, ValueError, TypeError):
-        return ''
-    return format(amount, 'f')
+    from apps.core.widgets import format_decimal_for_number_input
+    return format_decimal_for_number_input(value)
 
 
 @register.filter

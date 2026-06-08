@@ -250,7 +250,7 @@
                     <div class="space-y-1.5" x-show="isSaudi() && isFixedContract()" x-cloak>
                         <label class="block text-xs font-bold text-slate-800">مدة العقد (أشهر)</label>
                         <input type="number" name="contract_duration_months" min="1" max="12" step="1"
-                               value="{{ employee.contract_duration_months|default:'' }}"
+                               value="{{ employee.contract_duration_months|input_decimal|default:'' }}"
                                placeholder="1–12"
                                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                         <p class="text-[10px] text-slate-500">حد أقصى 12 شهراً للسعودي</p>
