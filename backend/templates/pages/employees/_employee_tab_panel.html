@@ -44,12 +44,17 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل السكن</div><div class="text-sm text-slate-800">{{ employee.housing_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل النقل</div><div class="text-sm text-slate-800">{{ employee.transport_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">إضافي</div><div class="text-sm text-slate-800">{{ employee.other_allowance|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">نقدي</div><div class="text-sm text-slate-800">{{ employee.cash_amount|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">بدل التغذية</div><div class="text-sm text-slate-800">{{ employee.meal_allowance|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">نسبة الاستقطاع</div><div class="text-sm text-slate-800">{{ employee.insurance_deduction_rate|default:"—" }}</div></div>
+                <div class="bg-primary-50 rounded-lg p-3 border border-primary-200 sm:col-span-2"><div class="text-xs font-bold text-primary-700 mb-1">إجمالي الراتب</div><div class="text-lg font-bold text-primary-800">{{ employee.total_salary|default:"—" }}</div></div>
+                <div class="sm:col-span-2 lg:col-span-3 rounded-lg p-3 border {% if employee.sponsorship_id %}bg-sky-50 border-sky-200{% else %}bg-amber-50 border-amber-200{% endif %}">
+                    <div class="text-xs font-bold {% if employee.sponsorship_id %}text-sky-800{% else %}text-amber-800{% endif %} mb-1">طريقة الصرف</div>
+                    <div class="text-sm font-bold {% if employee.sponsorship_id %}text-sky-900{% else %}text-amber-900{% endif %}">{{ employee.payroll_salary_mode_label }}</div>
+                </div>
+                {% if employee.sponsorship_id %}
                 <div><div class="text-xs font-bold text-slate-500 mb-1">البنك</div><div class="text-sm text-slate-800">{{ employee.bank.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الآيبان</div><div class="text-sm text-slate-800 font-mono" dir="ltr">{{ employee.iban|default:"—" }}</div></div>
-                <div class="bg-primary-50 rounded-lg p-3 border border-primary-200"><div class="text-xs font-bold text-primary-700 mb-1">إجمالي الراتب</div><div class="text-lg font-bold text-primary-800">{{ employee.total_salary|default:"—" }}</div></div>
+                {% endif %}
                 <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 sm:col-span-2"><div class="text-xs font-bold text-slate-600 mb-1">أساس مكافأة نهاية الخدمة (بدون تغذية)</div><div class="text-sm font-bold text-slate-800">{{ employee.salary_for_end_of_service|default:"—" }}</div></div>
                 </div>
                 </div>

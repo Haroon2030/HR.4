@@ -6,6 +6,37 @@ from apps.employees.forms import EmployeeForm
 from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, LoanInstallment
 from apps.setup.models import Sponsorship
 
+class SalaryPaymentSplitTests(TestCase):
+    def test_transfer_employee_gets_full_bank_amount(self):
+        from decimal import Decimal
+        from apps.employees.models import Employee
+        from apps.setup.models import Sponsorship
+        from apps.employees.services.salary_payment import (
+            contract_bank_transfer_amount,
+            split_net_by_payment_mode,
+        )
+
+        sp = Sponsorship.objects.create(code='SP-1', company_name='كفالة')
+        emp = Employee.objects.create(
+            name='تحويل', sponsorship=sp, basic_salary=Decimal('8000'),
+            housing_allowance=Decimal('2000'),
+        )
+        self.assertEqual(contract_bank_transfer_amount(emp), Decimal('10000.00'))
+        net_cash, net_bank = split_net_by_payment_mode(Decimal('9500'), emp)
+        self.assertEqual(net_cash, Decimal('0'))
+        self.assertEqual(net_bank, Decimal('9500.00'))
+
+    def test_cash_employee_gets_full_cash_net(self):
+        from decimal import Decimal
+        from apps.employees.models import Employee
+        from apps.employees.services.salary_payment import split_net_by_payment_mode
+
+        emp = Employee.objects.create(name='نقدي', basic_salary=Decimal('5000'))
+        net_cash, net_bank = split_net_by_payment_mode(Decimal('5000'), emp)
+        self.assertEqual(net_cash, Decimal('5000.00'))
+        self.assertEqual(net_bank, Decimal('0'))
+
+
 class EmployeeFormTests(TestCase):
     def test_empty_basic_salary_in_post_defaults_to_zero(self):
         employee = Employee.objects.create(name='هارون', hire_date=date(2026, 5, 14))

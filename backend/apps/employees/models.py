@@ -412,6 +412,17 @@ class Employee(BaseModel):
         )
 
     @property
+    def contract_bank_transfer_amount(self):
+        """مبلغ التحويل البنكي من العقد — كامل الإجمالي إن وُجدت كفالة."""
+        from apps.employees.services.salary_payment import contract_bank_transfer_amount
+        return contract_bank_transfer_amount(self)
+
+    @property
+    def payroll_salary_mode_label(self):
+        from apps.employees.services.salary_payment import payroll_salary_mode_label
+        return payroll_salary_mode_label(self)
+
+    @property
     def accrued_leave_days(self):
         """رصيد الإجازات المستحق: 21 يوم سنوياً من تاريخ المباشرة (يُحسب فقط إذا كانت الكفالة معبّأة)."""
         if not self.hire_date or not self.sponsorship_id:

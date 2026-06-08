@@ -303,6 +303,18 @@ class PayrollLine(BaseModel):
     def __str__(self):
         return f"{self.employee.name} — {self.run} = {self.net_salary}"
 
+    @property
+    def net_cash_amount(self):
+        from apps.employees.services.salary_payment import split_net_by_payment_mode
+        net_cash, _ = split_net_by_payment_mode(self.net_salary, self.employee)
+        return net_cash
+
+    @property
+    def net_bank_transfer(self):
+        from apps.employees.services.salary_payment import split_net_by_payment_mode
+        _, net_bank = split_net_by_payment_mode(self.net_salary, self.employee)
+        return net_bank
+
     def compute_totals(self):
         """
         يحسب الإجماليات من البنود الفرعية.

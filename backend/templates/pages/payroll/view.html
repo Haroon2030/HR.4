@@ -92,6 +92,8 @@
                         <th class="col-num th-deduct">تأمينات</th>
                         <th class="col-num th-earn">استحقاقات</th>
                         <th class="col-num th-deduct">إجمالي خصومات</th>
+                        <th class="col-num">نقدي</th>
+                        <th class="col-num">بنكي</th>
                         <th class="col-num th-net">الصافي</th>
                     </tr>
                 </thead>
@@ -122,11 +124,13 @@
                         </td>
                         <td class="col-num td-earn">{{ line.total_earnings|format_sar:"earn" }}</td>
                         <td class="col-num td-deduct">{{ line.total_deductions|format_sar:"deduct" }}</td>
+                        <td class="col-num">{% if line.net_cash_amount %}{{ line.net_cash_amount|format_sar:"neutral" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}</td>
+                        <td class="col-num">{% if line.net_bank_transfer %}{{ line.net_bank_transfer|format_sar:"neutral" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}</td>
                         <td class="col-num td-net">{{ line.net_salary|format_sar:"net" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="py-10 text-center font-semibold text-slate-500">لا بيانات</td>
+                        <td colspan="12" class="py-10 text-center font-semibold text-slate-500">لا بيانات</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -138,6 +142,7 @@
                         <td class="col-num td-deduct" colspan="5"></td>
                         <td class="col-num td-earn">{{ run.total_earnings|format_sar:"earn" }}</td>
                         <td class="col-num td-deduct">{{ run.total_deductions|format_sar:"deduct" }}</td>
+                        <td class="col-num" colspan="2"></td>
                         <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
                     </tr>
                 </tfoot>

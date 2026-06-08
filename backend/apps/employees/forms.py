@@ -246,6 +246,13 @@ class EmployeeForm(forms.ModelForm):
         if branch and cost_center and cost_center.branch_id and cost_center.branch_id != branch.pk:
             self.add_error('cost_center', 'مركز التكلفة لا يتبع الفرع المختار.')
 
+        from apps.employees.services.salary_payment import (
+            normalize_salary_payment_fields,
+            validate_salary_payment_fields,
+        )
+        normalize_salary_payment_fields(cleaned, instance)
+        validate_salary_payment_fields(self, cleaned, instance)
+
         return cleaned
 
     def save(self, commit=True):
@@ -399,6 +406,14 @@ class EmploymentRequestEditForm(forms.ModelForm):
         from apps.core.widgets import apply_decimal_number_widgets
         apply_decimal_number_widgets(self)
 
+        _salary_field_labels = {
+            'bank': 'البنك',
+            'iban': 'رقم الآيبان',
+        }
+        for fname, label in _salary_field_labels.items():
+            if fname in self.fields:
+                self.fields[fname].label = label
+
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة
         if self.instance and self.instance.pk and self.data:
@@ -433,6 +448,12 @@ class EmploymentRequestEditForm(forms.ModelForm):
             cleaned[field_name] = _normalize_non_null_decimal(
                 cleaned.get(field_name), instance, field_name,
             )
+        from apps.employees.services.salary_payment import (
+            normalize_salary_payment_fields,
+            validate_salary_payment_fields,
+        )
+        normalize_salary_payment_fields(cleaned, instance)
+        validate_salary_payment_fields(self, cleaned, instance)
         return cleaned
 
 

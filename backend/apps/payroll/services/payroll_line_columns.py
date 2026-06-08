@@ -18,6 +18,8 @@ PAYROLL_LINE_COLUMNS = [
     ('other_deduction', 'خصومات أخرى', 'deduction', 'money'),
     ('total_earnings', 'إجمالي الاستحقاقات', 'total', 'money'),
     ('total_deductions', 'إجمالي الخصومات', 'total', 'money'),
+    ('net_cash_amount', 'صرف نقدي', 'total', 'money'),
+    ('net_bank_transfer', 'تحويل بنكي', 'total', 'money'),
     ('net_salary', 'صافي الراتب', 'total', 'money'),
 ]
 
@@ -63,4 +65,8 @@ def resolve_cell_value(line, run, key: str):
         return emp.bank.name if emp.bank_id else ''
     if key == 'iban':
         return (emp.iban or '').strip()
+    if key == 'net_cash_amount':
+        return line.net_cash_amount
+    if key == 'net_bank_transfer':
+        return line.net_bank_transfer
     return getattr(line, key)

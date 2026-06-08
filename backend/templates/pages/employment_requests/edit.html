@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'main' }">
+<div class="max-w-7xl mx-auto space-y-4" x-data="{
+    activeTab: 'main',
+    hasSponsorship() {
+        const el = document.querySelector('[name=sponsorship]');
+        return !!(el && el.value);
+    }
+}">
     <!-- Header -->
     <div class="flex items-center gap-3">
         {% url 'web:list_employment_requests' as back_url %}
@@ -87,15 +93,22 @@
             </div>
 
             {# ─── Tab 3: الراتب ──────────────────────────────────── #}
-            <div x-show="activeTab === 'salary'" x-cloak class="p-5">
+            <div x-show="activeTab === 'salary'" x-cloak class="p-5 space-y-4">
+                <div class="p-3 rounded-lg bg-sky-50 border border-sky-200 text-sky-900 text-xs leading-relaxed">
+                    <strong>بكفالة</strong> → الراتب كله تحويل بنكي (بنك + آيبان مطلوبان).
+                    <strong>بدون كفالة</strong> → الراتب كله نقدي (لا حاجة للبنك).
+                    يُحدد تلقائياً من <strong>الكفالة</strong> في تبويب التنظيمي.
+                </div>
+                <input type="hidden" name="cash_amount" value="0">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% include "pages/employment_requests/_field.html" with field=form.basic_salary %}
                     {% include "pages/employment_requests/_field.html" with field=form.housing_allowance %}
                     {% include "pages/employment_requests/_field.html" with field=form.transport_allowance %}
                     {% include "pages/employment_requests/_field.html" with field=form.other_allowance %}
-                    {% include "pages/employment_requests/_field.html" with field=form.cash_amount %}
                     {% include "pages/employment_requests/_field.html" with field=form.meal_allowance %}
                     {% include "pages/employment_requests/_field.html" with field=form.insurance_deduction_rate %}
+                </div>
+                <div x-show="hasSponsorship()" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="empReqBankFields">
                     {% include "pages/employment_requests/_field.html" with field=form.bank %}
                     {% include "pages/employment_requests/_field.html" with field=form.iban %}
                 </div>
