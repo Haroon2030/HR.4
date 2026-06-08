@@ -2,73 +2,7 @@
 {% load custom_tags %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-4" x-data="{
-    activeTab: '{{ default_employee_tab|default:"main" }}',
-    saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-    getNationalityId() {
-        const el = document.querySelector('[name=nationality]');
-        return el && el.value ? parseInt(el.value, 10) : null;
-    },
-    isSaudi() {
-        const id = this.getNationalityId();
-        return id && this.saudiIds.includes(id);
-    },
-    getHireDate() {
-        const el = document.querySelector('[name=hire_date]');
-        return el ? el.value : '';
-    },
-    fourthYearStart() {
-        const hd = this.getHireDate();
-        if (!hd) return null;
-        const p = hd.split('-');
-        if (p.length !== 3) return null;
-        return (parseInt(p[0], 10) + 3) + '-' + p[1] + '-' + p[2];
-    },
-    isAutoUnlimited() {
-        if (!this.isSaudi() || !this.getHireDate()) return false;
-        const today = new Date().toISOString().slice(0, 10);
-        const fy = this.fourthYearStart();
-        return fy && today >= fy;
-    },
-    getContractType() {
-        if (this.isAutoUnlimited()) return 'unlimited';
-        const el = document.querySelector('[name=contract_type]');
-        return el ? el.value : '';
-    },
-    isFixedContract() {
-        if (this.isAutoUnlimited()) return false;
-        return this.getContractType() !== 'unlimited';
-    },
-    salary: {
-        basic: {{ employee.basic_salary|default:0 }},
-        housing: {{ employee.housing_allowance|default:0 }},
-        transport: {{ employee.transport_allowance|default:0 }},
-        other: {{ employee.other_allowance|default:0 }},
-        meal: {{ employee.meal_allowance|default:0 }},
-        insuranceRate: {{ employee.insurance_deduction_rate|default:0 }},
-        num(v) {
-            const n = parseFloat(v);
-            return isNaN(n) ? 0 : n;
-        },
-        total() {
-            return this.num(this.basic) + this.num(this.housing) + this.num(this.transport)
-                + this.num(this.other) + this.num(this.meal);
-        },
-        payrollMode() {
-            const el = document.querySelector('[name=sponsorship]');
-            return el && el.value ? 'transfer' : 'cash';
-        },
-        payrollModeLabel() {
-            if (this.payrollMode() === 'transfer') {
-                const el = document.querySelector('[name=sponsorship]');
-                const opt = el && el.selectedOptions && el.selectedOptions[0];
-                const text = opt ? opt.text.trim() : '';
-                return text ? 'تحويل بنكي كامل — ' + text : 'تحويل بنكي كامل';
-            }
-            return 'صرف نقدي كامل';
-        }
-    }
-}">
+<div class="max-w-7xl mx-auto space-y-4" x-data="employeeEditForm">
     <!-- Header -->
     <div class="flex items-center gap-3">
         {% url 'web:list_employees' as employees_list_url %}
@@ -102,7 +36,7 @@
 
             <!-- Tab 1: بيانات الموظف -->
             {% if tab_visible.main %}
-            <div x-show="activeTab === 'main'" x-cloak class="p-5">
+            <div x-show="activeTab === 'main'" class="p-5"{% if default_employee_tab == 'main' or not default_employee_tab %} style="display:block"{% else %} x-cloak{% endif %}>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">الاسم <span class="text-red-500">*</span></label>
@@ -517,7 +451,75 @@
 </div>
 
 <script>
-    document.addEventListener('alpine:init', () => { lucide.createIcons(); });
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('employeeEditForm', () => ({
+            activeTab: '{% firstof default_employee_tab "main" %}',
+            saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            salaryBasic: parseFloat('{{ employee.basic_salary|input_decimal|default:"0" }}') || 0,
+            salaryHousing: parseFloat('{{ employee.housing_allowance|input_decimal|default:"0" }}') || 0,
+            salaryTransport: parseFloat('{{ employee.transport_allowance|input_decimal|default:"0" }}') || 0,
+            salaryOther: parseFloat('{{ employee.other_allowance|input_decimal|default:"0" }}') || 0,
+            salaryMeal: parseFloat('{{ employee.meal_allowance|input_decimal|default:"0" }}') || 0,
+            salaryInsuranceRate: parseFloat('{{ employee.insurance_deduction_rate|input_decimal|default:"0" }}') || 0,
+            salaryNum(v) {
+                const n = parseFloat(v);
+                return Number.isFinite(n) ? n : 0;
+            },
+            salaryTotal() {
+                return this.salaryNum(this.salaryBasic) + this.salaryNum(this.salaryHousing)
+                    + this.salaryNum(this.salaryTransport) + this.salaryNum(this.salaryOther)
+                    + this.salaryNum(this.salaryMeal);
+            },
+            payrollMode() {
+                const el = document.querySelector('[name=sponsorship]');
+                return el && el.value ? 'transfer' : 'cash';
+            },
+            payrollModeLabel() {
+                if (this.payrollMode() === 'transfer') {
+                    const el = document.querySelector('[name=sponsorship]');
+                    const opt = el && el.selectedOptions && el.selectedOptions[0];
+                    const text = opt ? opt.text.trim() : '';
+                    return text ? ('تحويل بنكي كامل - ' + text) : 'تحويل بنكي كامل';
+                }
+                return 'صرف نقدي كامل';
+            },
+            getNationalityId() {
+                const el = document.querySelector('[name=nationality]');
+                return el && el.value ? parseInt(el.value, 10) : null;
+            },
+            isSaudi() {
+                const id = this.getNationalityId();
+                return id && this.saudiIds.includes(id);
+            },
+            getHireDate() {
+                const el = document.querySelector('[name=hire_date]');
+                return el ? el.value : '';
+            },
+            fourthYearStart() {
+                const hd = this.getHireDate();
+                if (!hd) return null;
+                const p = hd.split('-');
+                if (p.length !== 3) return null;
+                return (parseInt(p[0], 10) + 3) + '-' + p[1] + '-' + p[2];
+            },
+            isAutoUnlimited() {
+                if (!this.isSaudi() || !this.getHireDate()) return false;
+                const today = new Date().toISOString().slice(0, 10);
+                const fy = this.fourthYearStart();
+                return fy && today >= fy;
+            },
+            getContractType() {
+                if (this.isAutoUnlimited()) return 'unlimited';
+                const el = document.querySelector('[name=contract_type]');
+                return el ? el.value : '';
+            },
+            isFixedContract() {
+                if (this.isAutoUnlimited()) return false;
+                return this.getContractType() !== 'unlimited';
+            },
+        }));
+        lucide.createIcons();
+    });
     document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
 </script>
 <style>[x-cloak] { display: none !important; }</style>
