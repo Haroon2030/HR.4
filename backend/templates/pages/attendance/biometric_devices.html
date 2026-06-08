@@ -15,14 +15,6 @@
             </h1>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{% url 'web:attendance_report' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-primary-200 bg-primary-50 rounded-lg text-sm font-semibold text-primary-800 hover:bg-primary-100">
-                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
-                تقرير البصمة
-            </a>
-            <a href="{% url 'web:attendance_records' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-                سجلات الحضور
-            </a>
             {% if user|has_permission:'attendance.manage' %}
             <button type="button" @click="openDeviceForm()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-semibold">
                 <i data-lucide="plus" class="w-4 h-4"></i>
@@ -38,18 +30,6 @@
         <span>{{ devices_without_branch }} جهاز بدون فرع — عيّنه من «تعديل» قبل المزامنة.</span>
     </div>
     {% endif %}
-
-    <div class="rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 space-y-2">
-        <div class="flex items-start gap-2 font-semibold text-slate-900">
-            <i data-lucide="key-round" class="w-4 h-4 shrink-0 text-primary-600 mt-0.5"></i>
-            <span>مفتاح وكيل لكل جهاز (موصى به)</span>
-        </div>
-        <ol class="list-decimal list-inside text-xs text-slate-600 space-y-1 mr-1">
-            <li>سجّل الجهاز هنا واحفظ عمود <strong>ID</strong> (مثال: 2).</li>
-            <li>من «مفتاح وكيل» ولّد مفتاحاً وانسخه إلى <code dir="ltr" class="bg-white px-1 rounded">config.env</code> على PC الفرع: <code dir="ltr" class="bg-white px-1 rounded">AGENT_API_KEY=...</code> و <code dir="ltr" class="bg-white px-1 rounded">DEVICE_ID=نفس الرقم</code>.</li>
-            <li>اختبر: <code dir="ltr" class="bg-white px-1 rounded">run_agent.bat --probe</code> ثم <code dir="ltr" class="bg-white px-1 rounded">--once</code>.</li>
-        </ol>
-    </div>
 
     <div class="zk-bio-card">
         <div class="zk-bio-card-hd">
@@ -83,7 +63,7 @@
                         <th class="text-right px-3 py-2">بصمات</th>
                         <th class="text-right px-3 py-2">مفتاح وكيل</th>
                         {% if user|has_permission:'attendance.manage' %}
-                        <th class="text-right px-3 py-2">إجراء</th>
+                        <th class="text-right px-3 py-2 min-w-[11rem]">إجراء</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -136,24 +116,38 @@
                         </td>
                         {% if user|has_permission:'attendance.manage' %}
                         <td class="px-4 py-3">
-                            <div class="hr-tbl-actions zk-bio-actions">
+                            <div class="zk-bio-action-bar" dir="ltr">
                                 <button type="button"
                                     @click="generateAgentKey({{ d.pk }}, '{{ d.name|escapejs }}', {{ d.agent_api_key|yesno:'true,false' }}, '{{ d.ip_address }}', {{ d.port }})"
-                                    class="px-2 py-1 text-xs rounded bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+                                    class="zk-bio-action-bar__chip zk-bio-action-bar__chip--key"
                                     :disabled="loadingId === {{ d.pk }}"
-                                    title="مفتاح خاص بهذا الجهاز فقط">
-                                    مفتاح وكيل
+                                    title="مفتاح وكيل — خاص بهذا الجهاز فقط">
+                                    <i data-lucide="key-round" class="zk-bio-action-bar__ico"></i>
+                                    <span>key</span>
                                 </button>
                                 {% if d.ip_address|is_private_lan_ip %}
-                                <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="inline">
+                                <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="zk-bio-action-bar__form">
                                     {% csrf_token %}
-                                    <button type="submit" class="px-2 py-1 text-xs rounded bg-primary-600 text-white hover:bg-primary-700" title="يُنفَّذ خلال ~5 دقائق عبر وكيل الفرع (LAN)">مزامنة</button>
+                                    <button type="submit" class="zk-bio-action-bar__chip zk-bio-action-bar__chip--sync" title="طلب سحب عبر وكيل الفرع (LAN) — ~5 دقائق">
+                                        <i data-lucide="refresh-cw" class="zk-bio-action-bar__ico"></i>
+                                        <span>sync</span>
+                                    </button>
                                 </form>
                                 {% else %}
-                                <button type="button" @click="testDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200" :disabled="loadingId === {{ d.pk }}">اختبار</button>
-                                <button type="button" @click="syncUsers({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100" :disabled="loadingId === {{ d.pk }}">المستخدمون</button>
-                                <button type="button" @click="syncDevice({{ d.pk }})" class="px-2 py-1 text-xs rounded bg-primary-50 text-primary-700 hover:bg-primary-100" :disabled="loadingId === {{ d.pk }}">مزامنة</button>
+                                <button type="button" @click="testDevice({{ d.pk }})" class="zk-bio-action-bar__chip zk-bio-action-bar__chip--test" :disabled="loadingId === {{ d.pk }}" title="اختبار اتصال الجهاز">
+                                    <i data-lucide="activity" class="zk-bio-action-bar__ico"></i>
+                                    <span>ping</span>
+                                </button>
+                                <button type="button" @click="syncUsers({{ d.pk }})" class="zk-bio-action-bar__chip zk-bio-action-bar__chip--users" :disabled="loadingId === {{ d.pk }}" title="مزامنة مستخدمي الجهاز">
+                                    <i data-lucide="users" class="zk-bio-action-bar__ico"></i>
+                                    <span>users</span>
+                                </button>
+                                <button type="button" @click="syncDevice({{ d.pk }})" class="zk-bio-action-bar__chip zk-bio-action-bar__chip--sync" :disabled="loadingId === {{ d.pk }}" title="مزامنة البصمات من السحابة">
+                                    <i data-lucide="download" class="zk-bio-action-bar__ico"></i>
+                                    <span>sync</span>
+                                </button>
                                 {% endif %}
+                                <span class="zk-bio-action-bar__sep" aria-hidden="true"></span>
                                 <button type="button" @click="openDeviceForm({
                                     id: {{ d.pk }},
                                     name: '{{ d.name|escapejs }}',
@@ -162,12 +156,12 @@
                                     comm_key: {{ d.comm_key }},
                                     branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
                                     is_active: {{ d.is_active|yesno:'true,false' }}
-                                })" title="تعديل" aria-label="تعديل" class="hr-act hr-act--edit"><i data-lucide="pencil" class="hr-act__icon"></i></button>
+                                })" title="تعديل الجهاز" aria-label="تعديل" class="hr-act hr-act--edit zk-bio-action-bar__icon"><i data-lucide="pencil" class="hr-act__icon"></i></button>
                                 {% url 'web:biometric_device_delete' d.pk as act_del %}
                                 {% if d.punch_count %}
-                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ سيُحذف "|add:d.punch_count|add:" سجل بصمة وكل الربط — لا يمكن التراجع." title="حذف الجهاز" %}
+                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ سيُحذف "|add:d.punch_count|add:" سجل بصمة وكل الربط — لا يمكن التراجع." title="حذف الجهاز" extra_class="zk-bio-action-bar__icon" %}
                                 {% else %}
-                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ لا يمكن التراجع." title="حذف الجهاز" %}
+                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ لا يمكن التراجع." title="حذف الجهاز" extra_class="zk-bio-action-bar__icon" %}
                                 {% endif %}
                             </div>
                         </td>
