@@ -2384,99 +2384,118 @@ body.hr-app .hr-sidebar button.rounded-lg:hover {
     opacity: 0.92;
 }
 
-/* شريط إجراءات أجهزة البصمة — أفقي تقني */
+/* شريط إجراءات أجهزة البصمة — سطر أفقي مضغوط (أيقونات فقط) */
+.hr-app .zk-bio-tbl__actions-th,
+.hr-app .zk-bio-tbl__actions-td {
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
 .hr-app .zk-bio-action-bar {
     display: inline-flex;
-    flex-wrap: nowrap;
+    flex-flow: row nowrap;
     align-items: center;
-    gap: 0.3rem;
-    max-width: none;
+    gap: 0.25rem;
 }
 
 .hr-app .zk-bio-action-bar__form {
     display: inline-flex;
+    flex: 0 0 auto;
     margin: 0;
     padding: 0;
 }
 
-.hr-app .zk-bio-action-bar__chip {
+.hr-app .zk-bio-action-bar__btn,
+.hr-app .zk-bio-action-bar__btn.hr-act {
     display: inline-flex;
     align-items: center;
-    gap: 0.2rem;
-    padding: 0.2rem 0.45rem;
-    border-radius: 0.25rem;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 1.625rem;
+    height: 1.625rem;
+    min-width: 1.625rem;
+    padding: 0;
+    border-radius: 0.3rem;
     border: 1px solid transparent;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.625rem;
-    font-weight: 700;
-    line-height: 1.25;
-    white-space: nowrap;
+    background: transparent;
     cursor: pointer;
+    line-height: 1;
     transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-.hr-app .zk-bio-action-bar__chip:disabled {
+.hr-app .zk-bio-action-bar__btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
 
-.hr-app .zk-bio-action-bar__ico {
-    width: 0.7rem;
-    height: 0.7rem;
+.hr-app .zk-bio-action-bar__ico,
+.hr-app .zk-bio-action-bar__btn .hr-act__icon,
+.hr-app .zk-bio-action-bar__btn i[data-lucide],
+.hr-app .zk-bio-action-bar__btn svg {
+    width: 0.8rem;
+    height: 0.8rem;
     flex-shrink: 0;
 }
 
-.hr-app .zk-bio-action-bar__chip--key {
+.hr-app .zk-bio-action-bar__btn--key {
     color: #92400e;
     background: rgba(245, 158, 11, 0.14);
     border-color: rgba(245, 158, 11, 0.35);
 }
 
-.hr-app .zk-bio-action-bar__chip--key:hover:not(:disabled) {
+.hr-app .zk-bio-action-bar__btn--key:hover:not(:disabled) {
     background: rgba(245, 158, 11, 0.24);
 }
 
-.hr-app .zk-bio-action-bar__chip--sync {
+.hr-app .zk-bio-action-bar__btn--sync {
     color: #1d4ed8;
     background: rgba(59, 130, 246, 0.14);
     border-color: rgba(59, 130, 246, 0.32);
 }
 
-.hr-app .zk-bio-action-bar__chip--sync:hover:not(:disabled) {
+.hr-app .zk-bio-action-bar__btn--sync:hover:not(:disabled) {
     background: rgba(59, 130, 246, 0.24);
 }
 
-.hr-app .zk-bio-action-bar__chip--test {
+.hr-app .zk-bio-action-bar__btn--test {
     color: #475569;
     background: rgba(148, 163, 184, 0.16);
     border-color: rgba(148, 163, 184, 0.3);
 }
 
-.hr-app .zk-bio-action-bar__chip--test:hover:not(:disabled) {
+.hr-app .zk-bio-action-bar__btn--test:hover:not(:disabled) {
     background: rgba(148, 163, 184, 0.26);
 }
 
-.hr-app .zk-bio-action-bar__chip--users {
+.hr-app .zk-bio-action-bar__btn--users {
     color: #4338ca;
     background: rgba(99, 102, 241, 0.12);
     border-color: rgba(99, 102, 241, 0.28);
 }
 
-.hr-app .zk-bio-action-bar__chip--users:hover:not(:disabled) {
+.hr-app .zk-bio-action-bar__btn--users:hover:not(:disabled) {
     background: rgba(99, 102, 241, 0.22);
 }
 
-.hr-app .zk-bio-action-bar__sep {
-    display: inline-block;
-    width: 1px;
-    height: 1.1rem;
-    margin: 0 0.1rem;
-    background: rgba(148, 163, 184, 0.45);
-    flex-shrink: 0;
+.hr-app .zk-bio-action-bar__btn--edit {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.28);
 }
 
-.hr-app .zk-bio-action-bar__icon {
-    flex-shrink: 0;
+.hr-app .zk-bio-action-bar__btn--edit:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.22);
+}
+
+.hr-app .zk-bio-action-bar__btn--delete {
+    color: #b91c1c;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.28);
+}
+
+.hr-app .zk-bio-action-bar__btn--delete:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.18);
 }
 
 /* تنبيهات ثابتة داخل الصفحات */

@@ -37,6 +37,27 @@
     .zk-bio-tbl tbody tr:hover { background: #eff6ff; }
     .zk-bio-tbl tbody tr.zk-row-warn { background: #fffbeb; }
     .zk-bio-tbl .zk-mono { font-family: ui-monospace, monospace; font-size: 0.75rem; }
+    .zk-bio-tbl__actions-th,
+    .zk-bio-tbl__actions-td { width: 1%; white-space: nowrap; vertical-align: middle; }
+    .zk-bio-action-bar {
+        display: inline-flex; flex-flow: row nowrap; align-items: center; gap: 0.25rem;
+    }
+    .zk-bio-action-bar__form { display: inline-flex; flex: 0 0 auto; margin: 0; padding: 0; }
+    .zk-bio-action-bar__btn {
+        display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+        width: 1.625rem; height: 1.625rem; padding: 0; border-radius: 0.3rem;
+        border: 1px solid transparent; background: transparent; cursor: pointer; line-height: 1;
+    }
+    .zk-bio-action-bar__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .zk-bio-action-bar__ico,
+    .zk-bio-action-bar__btn i[data-lucide],
+    .zk-bio-action-bar__btn svg { width: 0.8rem; height: 0.8rem; flex-shrink: 0; }
+    .zk-bio-action-bar__btn--key { color: #92400e; background: #fef3c7; border-color: #fcd34d; }
+    .zk-bio-action-bar__btn--sync { color: #1d4ed8; background: #dbeafe; border-color: #93c5fd; }
+    .zk-bio-action-bar__btn--test { color: #475569; background: #f1f5f9; border-color: #cbd5e1; }
+    .zk-bio-action-bar__btn--users { color: #4338ca; background: #e0e7ff; border-color: #a5b4fc; }
+    .zk-bio-action-bar__btn--edit { color: #047857; background: #d1fae5; border-color: #6ee7b7; }
+    .zk-bio-action-bar__btn--delete { color: #b91c1c; background: #fee2e2; border-color: #fca5a5; }
     .zk-bio-stat-grid {
         display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem;
     }
