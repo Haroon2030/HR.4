@@ -21,6 +21,21 @@ _ROLE_BADGE_CLASS = {
 
 
 @register.filter
+def input_decimal(value):
+    """
+    تنسيق رقم لحقول HTML type=number — دائماً بنقطة عشرية (بدون فاصلة آلاف).
+    المتصفح لا يعرض قيمة مثل 10000,00 في input type=number.
+    """
+    if value is None or value == '':
+        return ''
+    try:
+        amount = Decimal(str(value).replace(',', '.'))
+    except (InvalidOperation, ValueError, TypeError):
+        return ''
+    return format(amount, 'f')
+
+
+@register.filter
 def format_sar(value, style='neutral'):
     """
     تنسيق مبلغ: 1,234.56 ر.س
