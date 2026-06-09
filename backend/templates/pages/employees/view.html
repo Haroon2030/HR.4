@@ -1743,6 +1743,10 @@ window.scheduleBoxes = function(loadInitial) {
             if (!form) return;
             var confirmInput = form.querySelector('[name=confirm_clear]');
             if (confirmInput) confirmInput.value = '1';
+            var actionInput = form.querySelector('[name=schedule_action]');
+            if (actionInput) actionInput.value = 'delete';
+            var deletedLabelInput = form.querySelector('[name=deleted_month_label]');
+            if (deletedLabelInput) deletedLabelInput.value = label;
             form.submit();
         }
     };

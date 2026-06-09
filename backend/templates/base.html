@@ -481,6 +481,8 @@
 
             var messagesContainer = document.getElementById('django-messages');
             if (messagesContainer) {
+                var toastContainer = document.getElementById('toast-container');
+                if (toastContainer) toastContainer.innerHTML = '';
                 messagesContainer.querySelectorAll('[data-message]').forEach(function (msg) {
                     showToast(msg.dataset.message, msg.dataset.type);
                 });

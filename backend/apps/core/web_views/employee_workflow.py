@@ -445,7 +445,19 @@ def set_work_schedule(request, employee_id):
         except Exception as e:
             messages.error(request, f'تم حفظ الجدول لكن فشل الإرسال: {e}')
     else:
-        messages.success(request, f'تم حفظ {len(cleaned)} شهر')
+        schedule_action = (request.POST.get('schedule_action') or 'save').strip()
+        deleted_label = (request.POST.get('deleted_month_label') or '').strip()
+        if schedule_action == 'delete':
+            if deleted_label:
+                messages.success(request, f'تم حذف جدول دوام {deleted_label}')
+            else:
+                messages.success(request, 'تم حذف الشهر من جدول الدوام')
+        else:
+            count = len(cleaned)
+            if count == 1:
+                messages.success(request, 'تم حفظ شهر واحد')
+            else:
+                messages.success(request, f'تم حفظ {count} شهر')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
