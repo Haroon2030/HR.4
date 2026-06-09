@@ -102,6 +102,11 @@
                     this.showList = false;
                     this.remoteResults = [];
                     this.filteredList = [];
+                    this.searchLoading = false;
+                    if (this._searchTimer) {
+                        clearTimeout(this._searchTimer);
+                        this._searchTimer = null;
+                    }
                     return;
                 }
                 syncFilteredList(this);
@@ -163,7 +168,7 @@
                         self.searchLoading = false;
                         self.remoteResults = [];
                         syncFilteredList(self);
-                        self.showList = hasMinQuery(self) && self.filteredList.length > 0;
+                        self.showList = hasMinQuery(self);
                     });
             },
 
@@ -259,16 +264,76 @@
         ctx.$watch('showList', function (v) { if (v) ctx.$nextTick(refreshIcons); });
         ctx.$watch('filteredList', function () { ctx.$nextTick(refreshIcons); });
         ctx.$watch('query', function () {
-            ctx.currentPage = 1;
-            ctx.activeIndex = 0;
-            if (!hasMinQuery(ctx)) {
-                ctx.showList = false;
-                ctx.remoteResults = [];
-                ctx.filteredList = [];
-            } else {
-                syncFilteredList(ctx);
+            if (typeof ctx.onQueryInput === 'function') {
+                ctx.onQueryInput();
             }
         });
         ctx.$watch('currentPage', function () { ctx.activeIndex = 0; });
+    };
+
+    function buildHrFormsApp(opts) {
+        opts = opts || {};
+        if (typeof window.employeePickerBase !== 'function') {
+            console.error('hr-employee-smart-search.js غير محمّل — بحث الموظف معطّل');
+            return {
+                query: '', showList: false, selected: null, employees: [], employeeTotal: 0,
+                searchLoading: false, filteredList: [],
+                filtered: [], pagedItems: [], totalPages: 1, currentPage: 1, activeIndex: 0,
+                get hasQuery() { return (this.query || '').trim().length >= 1; },
+                init: function () { if (window.lucide) lucide.createIcons(); },
+                onQueryInput: function () {}, onSearchFocus: function () {}, clearQuery: function () {},
+                moveActive: function () {}, pickActive: function () {}, clearSelection: function () {},
+                selectEmployee: function () {}, highlightMatch: function (t) { return t; },
+                openForm: function () {},
+            };
+        }
+
+        var base = window.employeePickerBase({
+            pageSize: 8,
+            minQueryLen: 1,
+            searchUrl: opts.searchUrl || '',
+        });
+
+        return Object.assign(base, {
+            employeeTotal: opts.employeeTotal || 0,
+            employees: [],
+            get pageNumbers() {
+                var total = this.totalPages;
+                var cur = this.currentPage;
+                if (total <= 7) return Array.from({ length: total }, function (_, i) { return i + 1; });
+                var pages = [1];
+                if (cur > 3) pages.push('…');
+                for (var i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
+                if (cur < total - 2) pages.push('…');
+                pages.push(total);
+                return pages;
+            },
+            init() {
+                window.initEmployeePicker(this);
+                var self = this;
+                this.$nextTick(function () {
+                    if (self.$refs.searchInput && !self.selected) {
+                        self.$refs.searchInput.focus();
+                    }
+                    if (window.lucide) lucide.createIcons();
+                });
+            },
+            openForm(key, autoPrint) {
+                if (!this.selected) return;
+                var url = '/hr-forms/' + key + '/' + this.selected.id + '/' + (autoPrint ? '?auto_print=1' : '');
+                window.open(url, '_blank');
+            },
+        });
+    }
+
+    window.registerHrFormsApp = function (opts) {
+        window.__hrFormsAppOpts = opts || {};
+        window.hrFormsApp = function () { return buildHrFormsApp(window.__hrFormsAppOpts); };
+        function register() {
+            if (!window.Alpine || typeof window.Alpine.data !== 'function') return;
+            window.Alpine.data('hrFormsApp', function () { return buildHrFormsApp(window.__hrFormsAppOpts); });
+        }
+        document.addEventListener('alpine:init', register);
+        register();
     };
 })();

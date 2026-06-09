@@ -1,7 +1,7 @@
-{% extends "pages/hr_forms/_print_base.html" %}
+﻿{% extends "pages/hr_forms/_print_base.html" %}
 {% block body %}
 
-{% include "pages/hr_forms/_employee_brief.html" %}
+{% include "pages/hr_forms/_employee_info.html" %}
 
 <div class="section">
     <h3>بيانات نهاية الخدمة</h3>
@@ -28,13 +28,35 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td style="padding:8px; border:1px solid #cbd5e1;">الراتب الإجمالي الأخير</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ employee.total_salary|floatformat:2 }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
-            <tr><td style="padding:8px; border:1px solid #cbd5e1;">رصيد الإجازات المتبقي ({{ leave_days|default:employee.remaining_leave_days }} يوم)</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ leave_comp|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;">تعويض نقدي عن رصيد الإجازة غير المستنفد</td></tr>
-            <tr><td style="padding:8px; border:1px solid #cbd5e1;">مكافأة نهاية الخدمة</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ eosb_amount|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;">حسب النظام استناداً لسبب الإنهاء</td></tr>
-            <tr><td style="padding:8px; border:1px solid #cbd5e1;">بدل تذكرة سفر</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;">تُدفع نقداً أو تذكرة فعلية حسب الاتفاق</td></tr>
-            <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">يخصم: السلف والقروض</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ loans_deduction|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;">إجمالي الرصيد غير المسدد من السلف</td></tr>
-            <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">يخصم: غيابات / خصومات</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;">أي خصومات أخرى مستحقة على الموظف</td></tr>
-            <tr style="background:#dcfce7;"><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; color:#166534;">صافي المستحق للموظف</td><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; text-align:center;">{{ total_entitlement|default:"" }}</td><td style="padding:10px; border:1px solid #cbd5e1;">(مجموع الاستحقاقات) ناقص (مجموع الخصومات)</td></tr>
+            <tr><td style="padding:8px; border:1px solid #cbd5e1;">الراتب حتى تاريخ</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ employee.total_salary|floatformat:2 }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr><td style="padding:8px; border:1px solid #cbd5e1;">رصيد الإجازات المتبقي ({{ leave_days|default:employee.remaining_leave_days }} يوم)</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ leave_comp|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr><td style="padding:8px; border:1px solid #cbd5e1;">مكافأة نهاية الخدمة</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ eosb_amount|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr><td style="padding:8px; border:1px solid #cbd5e1;">بدل تذكرة سفر</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">السلف والقروض</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ loans_deduction|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">غيابات / خصومات</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr style="background:#fef3c7;">
+                <td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">
+                    العهد
+                    <a href="{{ employee_custodies_url }}" target="_blank" rel="noopener"
+                       class="hr-form-screen-link"
+                       style="display:inline-block; margin-right:8px; font-size:11px; font-weight:600; color:#2563eb; text-decoration:none;">
+                        عرض سجل العهد ↗
+                    </a>
+                </td>
+                <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">
+                    {% if custody_total_estimated %}{{ custody_total_estimated|floatformat:2 }}{% endif %}
+                </td>
+                <td style="padding:8px; border:1px solid #cbd5e1; font-size:12px; color:#475569;">
+                    {% if active_custodies %}
+                        {% for c in active_custodies %}
+                            <span>{{ c.item_name }}{% if c.quantity > 1 %} (×{{ c.quantity }}){% endif %}{% if c.serial_number %} — {{ c.serial_number }}{% endif %}</span>{% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span style="color:#94a3b8;">لا عهد نشطة —</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr style="background:#dcfce7;"><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; color:#166534;">صافي المستحق للموظف</td><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; text-align:center;">{{ total_entitlement|default:"" }}</td><td style="padding:10px; border:1px solid #cbd5e1;"></td></tr>
         </tbody>
     </table>
 

@@ -1,57 +1,20 @@
 {% extends "pages/hr_forms/_print_base.html" %}
 {% block body %}
 
-{% include "pages/hr_forms/_employee_brief.html" %}
+{% include "pages/hr_forms/_employee_info.html" %}
 
 <div class="section">
-    <h3>تفاصيل المباشرة بعد الإجازة</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">نوع الإجازة:</span><span class="blank"></span></div>
+    <h3>نوع الإجازة</h3>
+    <div class="checkbox-row" data-skip-choice-note>
+        <label><span class="box"></span> جديد</label>
+        <label><span class="box"></span> بعد الإجازة</label>
+    </div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
         <div class="field"><span class="label">عدد أيام الإجازة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ بداية الإجازة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ نهاية الإجازة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ المباشرة الفعلية:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">وقت الحضور:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank"></span></div>
     </div>
 </div>
 
-<div class="clause">
-    <strong>إقرار الموظف:</strong>
-    أُقرّ أنا الموظف <strong>{{ employee.name }}</strong> ـ الرقم الوظيفي
-    {{ employee.employee_number|default:"............" }} ـ بأنني عُدت ومباشرت العمل
-    لدى <strong>شركة محمد رشيد الرشيد</strong> بعد انتهاء إجازتي المذكورة أعلاه،
-    وأنني بحالة صحية تُمكّنني من استئناف مهامي الوظيفية بشكل طبيعي.
-</div>
-
-<div class="section">
-    <h3>اعتماد المدير المباشر</h3>
-    <div class="checkbox-row">
-        <label><span class="box"></span> مباشر في الموعد المحدد</label>
-        <label><span class="box"></span> تأخر عن المباشرة</label>
-        <label><span class="box"></span> مباشر مع ملاحظات</label>
-    </div>
-    <div style="margin-top: 10px;">
-        <span class="label" style="font-weight:600; color:#334155;">الملاحظات:</span>
-        <div class="blank-block"></div>
-    </div>
-</div>
-
-<div class="signatures">
-    <div class="sig-box">
-        <div class="role">الموظف</div>
-        <div class="line">الاسم: {{ employee.name }}</div>
-        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
-    </div>
-    <div class="sig-box">
-        <div class="role">المدير المباشر</div>
-        <div class="line name-blank">الاسم: ......................</div>
-        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
-    </div>
-    <div class="sig-box">
-        <div class="role">الموارد البشرية</div>
-        <div class="line name-blank">الاسم: ......................</div>
-        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
-    </div>
-</div>
+{% include "pages/hr_forms/_signatures_standard.html" %}
 
 {% endblock %}

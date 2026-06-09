@@ -69,7 +69,6 @@
                     x-model="query"
                     x-ref="searchInput"
                     @focus="onSearchFocus()"
-                    @input="onQueryInput()"
                     @keydown.arrow-down.prevent="moveActive(1)"
                     @keydown.arrow-up.prevent="moveActive(-1)"
                     @keydown.enter.prevent="pickActive()"
@@ -92,18 +91,17 @@
                 اكتب في الحقل أعلاه — ستظهر قائمة بالموظفين المطابقين فقط (بدون فتح القائمة كاملة).
             </p>
 
-            <div x-show="searchLoading && hasQuery"
-                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg px-4 py-3 text-sm text-slate-500 flex items-center gap-2"
-                 style="display: none;">
+            <div x-show="searchLoading && hasQuery" x-cloak
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
                 <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
                 جاري البحث…
             </div>
 
             {# نتائج البحث #}
             <div x-show="!searchLoading && showList && hasQuery && filteredList.length > 0"
+                 x-cloak
                  @click.away="showList = false"
-                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden"
-                 style="display: none;">
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
                 <div class="max-h-[26rem] overflow-y-auto">
                 <template x-for="(emp, idx) in pagedItems" :key="emp.id">
                     <button type="button"
@@ -136,9 +134,8 @@
                 </div>
 
                 {# Pagination footer — only when more than one page #}
-                <div x-show="totalPages > 1"
-                     class="flex items-center justify-between px-3 py-2 bg-slate-50 border-t border-slate-200 text-xs"
-                     style="display: none;">
+                <div x-show="totalPages > 1" x-cloak
+                     class="flex items-center justify-between px-3 py-2 bg-slate-50 border-t border-slate-200 text-xs">
                     <button type="button"
                             @click="prevPage()"
                             :disabled="currentPage === 1"
@@ -172,15 +169,15 @@
             </div>
 
             <div x-show="!searchLoading && showList && hasQuery && filteredList.length === 0"
-                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center"
-                 style="display: none;">
+                 x-cloak
+                 class="hr-employee-smart-search__results absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl p-6 text-center">
                 <i data-lucide="search-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
                 <p class="text-sm text-slate-500 mt-2" x-text="employeeTotal === 0 ? 'لا يوجد موظفون ضمن فروعك — راجع صلاحيات الفروع' : 'لا يوجد موظف مطابق للبحث'"></p>
             </div>
         </div>
 
-        {% if not employees %}
-        <div class="mt-4 text-center text-sm text-slate-500">لا بيانات</div>
+        {% if employee_total == 0 %}
+        <div class="mt-4 text-center text-sm text-slate-500">لا يوجد موظفون ضمن فروعك</div>
         {% endif %}
     </div>
 
@@ -219,67 +216,21 @@
 
 </div>
 
+{{ employee_search_url|json_script:"hr-forms-search-url" }}
+{% endblock %}
+
+{% block extra_js %}
 <script>
-function hrFormsApp() {
-    if (typeof window.employeePickerBase !== 'function') {
-        console.warn('hr-employee-smart-search.js غير محمّل — بحث الموظف معطّل');
-        return {
-            query: '', showList: false, selected: null, employees: [], employeeTotal: 0,
-            searchLoading: false, filteredList: [],
-            filtered: [], pagedItems: [], totalPages: 1, currentPage: 1, activeIndex: 0,
-            get hasQuery() { return (this.query || '').trim().length >= 1; },
-            init: function () { if (window.lucide) lucide.createIcons(); },
-            onQueryInput: function () {}, onSearchFocus: function () {}, clearQuery: function () {},
-            moveActive: function () {}, pickActive: function () {}, clearSelection: function () {},
-            selectEmployee: function () {}, highlightMatch: function (t) { return t; },
-            openForm: function () {},
-        };
+(function () {
+    'use strict';
+    var searchUrlEl = document.getElementById('hr-forms-search-url');
+    var searchUrl = searchUrlEl ? JSON.parse(searchUrlEl.textContent) : '';
+    if (typeof window.registerHrFormsApp === 'function') {
+        window.registerHrFormsApp({
+            searchUrl: searchUrl,
+            employeeTotal: {{ employee_total|default:0 }},
+        });
     }
-    var base = window.employeePickerBase({
-        pageSize: 8,
-        minQueryLen: 1,
-        searchUrl: '{{ employee_search_url|escapejs }}',
-    });
-    return Object.assign(base, {
-        employeeTotal: {{ employee_total|default:0 }},
-        employees: [
-            {% for emp in employees %}
-            {
-                id: {{ emp.id }},
-                name: "{{ emp.name|escapejs }}",
-                number: "{{ emp.employee_number|default:''|escapejs }}",
-                id_number: "{{ emp.id_number|default:''|escapejs }}",
-                dept: "{{ emp.department.name|default:''|escapejs }}",
-                branch: "{{ emp.branch.name|default:''|escapejs }}"
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        get pageNumbers() {
-            var total = this.totalPages;
-            var cur = this.currentPage;
-            if (total <= 7) return Array.from({ length: total }, function (_, i) { return i + 1; });
-            var pages = [1];
-            if (cur > 3) pages.push('…');
-            for (var i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
-            if (cur < total - 2) pages.push('…');
-            pages.push(total);
-            return pages;
-        },
-        init() {
-            window.initEmployeePicker(this);
-            var self = this;
-            this.$nextTick(function () {
-                if (self.$refs.searchInput && !self.selected) {
-                    self.$refs.searchInput.focus();
-                }
-            });
-        },
-        openForm(key, autoPrint) {
-            if (!this.selected) return;
-            var url = '/hr-forms/' + key + '/' + this.selected.id + '/' + (autoPrint ? '?auto_print=1' : '');
-            window.open(url, '_blank');
-        },
-    });
-}
+})();
 </script>
 {% endblock %}

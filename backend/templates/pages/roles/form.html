@@ -184,28 +184,11 @@
     </form>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="/static/js/hr-perms-matrix.js?v=20260610-1"></script>
 <script>
-    function permsMatrix() {
-        return {
-            checkAll(state) {
-                document.querySelectorAll('.perm-cb:not(:disabled)').forEach(cb => cb.checked = state);
-            },
-            checkColumn(op, state) {
-                document.querySelectorAll(`.perm-cb[data-op="${op}"]:not(:disabled)`).forEach(cb => cb.checked = state);
-            },
-            checkRow(moduleCode, state) {
-                document.querySelectorAll(`.perm-cb[data-module="${moduleCode}"]:not(:disabled)`).forEach(cb => cb.checked = state);
-            },
-            rowAllChecked(moduleCode) {
-                const cbs = document.querySelectorAll(`.perm-cb[data-module="${moduleCode}"]:not(:disabled)`);
-                if (!cbs.length) return false;
-                return Array.from(cbs).every(cb => cb.checked);
-            },
-            selectedCount() {
-                return document.querySelectorAll('.perm-cb:checked').length;
-            },
-        };
-    }
-    document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
+    document.addEventListener('DOMContentLoaded', function () { if (window.lucide) lucide.createIcons(); });
 </script>
 {% endblock %}

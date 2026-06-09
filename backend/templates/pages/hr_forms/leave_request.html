@@ -6,12 +6,15 @@
 <div class="section">
     <h3>تفاصيل الإجازة</h3>
 
-    <div class="checkbox-row">
+    <div class="checkbox-row" data-skip-choice-note>
         <label><span class="box"></span> إجازة سنوية</label>
         <label><span class="box"></span> إجازة مرضية</label>
         <label><span class="box"></span> إجازة اضطرارية</label>
         <label><span class="box"></span> إجازة بدون راتب</label>
-        <label><span class="box"></span> إجازة أخرى: <span style="border-bottom:1.5px dotted #94a3b8; min-width:120px; display:inline-block;"></span></label>
+    </div>
+    <div class="choice-note">
+        <label>ملاحظة:</label>
+        <textarea placeholder="اكتب الملاحظة هنا..."></textarea>
     </div>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
@@ -25,26 +28,6 @@
         <span class="label">رصيد الإجازات المتاح حالياً:</span>
         <span class="blank">{{ employee.remaining_leave_days|default_if_none:"" }} يوم</span>
     </div>
-
-    <div style="margin-top: 14px;">
-        <span class="label" style="font-weight:600; color:#334155;">سبب الإجازة / ملاحظات:</span>
-        <div class="blank-block"></div>
-    </div>
-
-    <div class="field" style="margin-top: 14px;">
-        <span class="label">عنوان الإقامة أثناء الإجازة:</span>
-        <span class="blank"></span>
-    </div>
-    <div class="field">
-        <span class="label">رقم التواصل أثناء الإجازة:</span>
-        <span class="blank"></span>
-    </div>
-</div>
-
-<div class="clause">
-    <strong>إقرار:</strong>
-    أُقرّ أنا الموظف المذكور أعلاه بأنني تسلّمت جميع المهام وقمت بتسليم العهد المسؤول عنها قبل بدء الإجازة،
-    وأنني سأعود لمباشرة العمل في التاريخ المحدد، وأتحمل كامل المسؤولية في حال التأخر دون عذر مقبول.
 </div>
 
 <div class="signatures">

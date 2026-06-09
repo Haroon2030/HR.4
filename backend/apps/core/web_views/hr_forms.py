@@ -7,14 +7,15 @@ import re
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
-from django.shortcuts import render, get_object_or_404
+from django.db.models import Count, Prefetch, Q
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.utils.html import strip_tags
 
 from apps.core.models import Company
-from apps.employees.models import Employee, EmployeeLoan, EmployeeStatement
+from apps.employees.models import Employee, EmployeeLoan, EmployeeStatement, EmployeeCustody
 from django.contrib import messages
 
 from apps.core.decorators import permission_required
@@ -123,6 +124,30 @@ def _active_loans_total_str(employee) -> str | None:
     return str(total.quantize(Decimal('0.01')))
 
 
+def _custody_final_settlement_context(employee) -> dict:
+    """عهد نشطة للموظف — للعرض في نموذج التصفية وربط تبويب العهد."""
+    active = list(
+        employee.custodies.filter(status=EmployeeCustody.Status.ACTIVE)
+        .order_by('-received_at', '-id')
+    )
+    total = Decimal('0')
+    has_value = False
+    for custody in active:
+        if custody.estimated_value is not None and custody.estimated_value > 0:
+            total += Decimal(str(custody.estimated_value))
+            has_value = True
+    ctx = {
+        'active_custodies': active,
+        'custody_active_count': len(active),
+        'employee_custodies_url': (
+            reverse('web:view_employee', args=[employee.id]) + '?tab=custodies'
+        ),
+    }
+    if has_value:
+        ctx['custody_total_estimated'] = str(total.quantize(Decimal('0.01')))
+    return ctx
+
+
 def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
     """إكمال الحقول الفارغة من النموذج: تعويض إجازة تقديري، سلف، صافي عند غياب سطر الإجمالي."""
     leave_comp, leave_days = _estimate_leave_comp_for_print(employee)
@@ -166,7 +191,7 @@ _BASE_HR_FORMS = [
     },
     {
         'key': 'warning_notice',
-        'title': 'إنذار / مخالفة',
+        'title': 'إنذار',
         'description': 'إشعار رسمي بمخالفة أو إنذار للموظف',
         'icon': 'alert-triangle',
         'color': 'amber',
@@ -220,13 +245,9 @@ HR_FORMS = merge_forms_catalog(_BASE_HR_FORMS, PRIMARY_FORM_SPECS)
 
 def _hr_forms_employee_queryset(user):
     """موظفون المتاحون للنماذج — فلترة الفرع ثم الترتيب (لا slice قبل الفلترة)."""
-    from apps.core.web_views._helpers import filter_employees_queryset_for_user
+    from apps.core.selectors.employee_picker_search import employee_picker_queryset
 
-    qs = Employee.objects.filter(is_deleted=False).select_related(
-        'branch', 'department', 'profession',
-    )
-    qs = filter_employees_queryset_for_user(user, qs)
-    return qs.order_by('name')
+    return employee_picker_queryset(user)
 
 
 @login_required
@@ -237,7 +258,6 @@ def hr_forms_index(request):
     visible_forms = [f for f in HR_FORMS if hr_form_allowed_for_user(request.user, f['key'])]
     return render(request, 'pages/hr_forms/index.html', {
         'forms': visible_forms,
-        'employees': list(qs[:500]),
         'employee_total': qs.count(),
         'employee_search_url': reverse('web:hr_forms_employee_search'),
     })
@@ -247,40 +267,10 @@ def hr_forms_index(request):
 @permission_required('hr_forms.view')
 def hr_forms_employee_search(request):
     """بحث موظفين للنماذج الرسمية — اقتراحات أثناء الكتابة (JSON)."""
-    from django.db.models import Q
-    from django.http import JsonResponse
+    from apps.core.selectors.employee_picker_search import search_employees_for_picker
 
     q = (request.GET.get('q') or '').strip()
-    if not q:
-        return JsonResponse({'results': [], 'total': 0})
-
-    qs = _hr_forms_employee_queryset(request.user)
-    terms = [t for t in q.split() if t]
-    if terms:
-        cond = Q()
-        for t in terms:
-            cond &= (
-                Q(name__icontains=t)
-                | Q(id_number__icontains=t)
-                | Q(employee_number__icontains=t)
-                | Q(phone__icontains=t)
-                | Q(branch__name__icontains=t)
-                | Q(department__name__icontains=t)
-                | Q(profession__name__icontains=t)
-            )
-        qs = qs.filter(cond)
-
-    results = [
-        {
-            'id': emp.id,
-            'name': emp.name,
-            'number': emp.employee_number or '',
-            'id_number': emp.id_number or '',
-            'dept': emp.department.name if emp.department_id else '',
-            'branch': emp.branch.name if emp.branch_id else '',
-        }
-        for emp in qs[:40]
-    ]
+    results = search_employees_for_picker(request.user, q)
     return JsonResponse({'results': results, 'total': len(results)})
 
 
@@ -296,13 +286,35 @@ def hr_form_print(request, form_type, employee_id):
         messages.error(request, 'لا تملك صلاحية عرض نماذج تحتوي بيانات الرواتب.')
         return redirect('web:hr_forms_index')
 
-    employee = get_object_or_404(
-        Employee.objects.select_related(
-            'branch', 'branch__company', 'department', 'cost_center',
-            'nationality', 'profession', 'sponsorship',
-        ),
-        id=employee_id,
+    emp_qs = Employee.objects.select_related(
+        'branch', 'branch__company', 'department', 'cost_center',
+        'nationality', 'profession', 'sponsorship',
     )
+    if form_type == 'final_settlement':
+        emp_qs = emp_qs.prefetch_related(
+            Prefetch(
+                'loans',
+                queryset=EmployeeLoan.objects.filter(status=EmployeeLoan.Status.ACTIVE),
+            ),
+            Prefetch(
+                'custodies',
+                queryset=EmployeeCustody.objects.filter(status=EmployeeCustody.Status.ACTIVE),
+            ),
+            'statements_log',
+        )
+    elif form_type == 'warning_notice':
+        emp_qs = emp_qs.annotate(
+            _warning_stmt_count=Count(
+                'statements_log',
+                filter=Q(
+                    statements_log__statement_type__in=[
+                        EmployeeStatement.StatementType.WARNING,
+                        EmployeeStatement.StatementType.FINAL_WARNING,
+                    ]
+                ),
+            ),
+        )
+    employee = get_object_or_404(emp_qs, id=employee_id)
     company = (employee.branch.company if employee.branch_id else None) or Company.objects.first()
 
     context = {
@@ -331,5 +343,11 @@ def hr_form_print(request, form_type, employee_id):
         if stmt and (stmt.content or '').strip():
             context.update(_parse_final_settlement_statement(stmt.content))
         _apply_final_settlement_fallbacks(employee, context)
+        context.update(_custody_final_settlement_context(employee))
+
+    if form_type == 'warning_notice':
+        context['warning_serial'] = EmployeeStatement.generate_serial('warning')
+        context['next_statement_serial'] = EmployeeStatement.generate_serial('statement')
+        context['employee_warning_no'] = getattr(employee, '_warning_stmt_count', 0) + 1
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)

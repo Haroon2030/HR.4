@@ -54,6 +54,7 @@ urlpatterns = [
     # كل عملية سريعة تنشئ PendingAction ينتظر دورة الموافقات
     # ══════════════════════════════════════════════════════════════
     path('employees/', web_views.list_employees, name='list_employees'),                                     # قائمة الموظفين
+    path('employees/picker/search/', web_views.employee_picker_search, name='employee_picker_search'),       # بحث اختيار موظف
     path('employees/document-expiry/', web_views.document_expiry_dashboard, name='document_expiry_dashboard'),  # وثائق تنتهي قريباً
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)

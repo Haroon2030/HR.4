@@ -108,7 +108,7 @@ def attendance_records_list(request):
         from apps.employees.models import Employee
 
         filter_employee = get_object_or_404(
-            Employee.objects.select_related('branch'),
+            Employee.objects.select_related('branch', 'department'),
             pk=filters['employee_id'],
         )
         filters = apply_employee_enrollment_to_filters(filters, filter_employee.id)
@@ -164,6 +164,7 @@ def attendance_records_list(request):
         'stats': stats,
         'devices': devices,
         'filters': filters,
+        'employee_search_url': reverse('web:employee_picker_search'),
         'filter_employee': filter_employee,
         'employee_enrollments': employee_enrollments,
         'sync_device_id': sync_device_id,

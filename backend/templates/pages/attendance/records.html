@@ -165,7 +165,6 @@
             </div>
             <div class="zk-rec-panel-body">
             <form method="get" class="zk-rec-filter-form">
-                {% if filters.employee_id %}<input type="hidden" name="employee" value="{{ filters.employee_id }}">{% endif %}
                 {% if filters.device_user_id %}<input type="hidden" name="device_user" value="{{ filters.device_user_id }}">{% endif %}
                 <div class="zk-rec-filter-grid">
                     <div class="fld">
@@ -188,6 +187,9 @@
                             <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
                             {% endfor %}
                         </select>
+                    </div>
+                    <div class="fld fld--full">
+                        {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" filter_employee=filter_employee employee_search_url=employee_search_url %}
                     </div>
                     <div class="fld fld--full">
                         <label class="zk-bio-lbl">بحث</label>

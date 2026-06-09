@@ -217,6 +217,9 @@ class EmploymentRequest(BaseModel):
         verbose_name = "طلب توظيف"
         verbose_name_plural = "طلبات التوظيف"
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'branch'], name='er_status_branch_idx'),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.get_status_display()})"
@@ -406,6 +409,10 @@ class Employee(BaseModel):
         verbose_name = "موظف"
         verbose_name_plural = "الموظفين"
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['branch', 'status'], name='emp_branch_status_idx'),
+            models.Index(fields=['branch', 'is_deleted'], name='emp_branch_del_idx'),
+        ]
 
     def __str__(self):
         return self.name
@@ -975,6 +982,9 @@ class EmployeeAbsence(BaseModel):
         verbose_name = "غياب موظف"
         verbose_name_plural = "غيابات الموظفين"
         ordering = ['-absence_date', '-created_at']
+        indexes = [
+            models.Index(fields=['employee', 'absence_date'], name='empabs_emp_date_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         from apps.core.salary_month import STANDARD_MONTH_DAYS, daily_rate_from_total

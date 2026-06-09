@@ -116,6 +116,18 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False, user=No
 
 @login_required
 @permission_required('employees.view')
+def employee_picker_search(request):
+    """بحث موظفين لاختيار الواجهة — JSON (مشترك بين النماذج والبصمة والحضور)."""
+    from django.http import JsonResponse
+    from apps.core.selectors.employee_picker_search import search_employees_for_picker
+
+    q = (request.GET.get('q') or '').strip()
+    results = search_employees_for_picker(request.user, q)
+    return JsonResponse({'results': results, 'total': len(results)})
+
+
+@login_required
+@permission_required('employees.view')
 def list_employees(request):
     """قائمة الموظفين مع بحث ذكي وترقيم"""
     from apps.employees.models import Employee
@@ -275,6 +287,7 @@ def view_employee(request, employee_id):
         active_tab=active_tab,
         tab_visible=tab_visible,
         request_get=request.GET,
+        load_all_tabs=False,
     )
 
     ctx = enrich_employee_page_context(request.user, {

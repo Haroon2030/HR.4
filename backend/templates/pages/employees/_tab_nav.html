@@ -1,11 +1,10 @@
-{% comment %}أزرار تبويبات ملف الموظف — Alpine (بدون HTMX){% endcomment %}
+{% comment %}أزرار تبويبات ملف الموظف — تنقّل عبر الخادم (تحميل التبويب النشط فقط){% endcomment %}
 {% for tab in employee_tab_nav %}
 {% if tab.visible %}
-<button type="button" role="tab"
-        @click="activeTab = '{{ tab.key }}'; $dispatch('employee-tab-changed', { tab: '{{ tab.key }}' })"
-        :class="{ 'is-active': activeTab === '{{ tab.key }}' }"
-        class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}">
+<a href="?tab={{ tab.key }}#employee-tab-panel"
+   role="tab"
+   class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}{% if default_employee_tab == tab.key %} is-active{% endif %}">
     {{ tab.label }}
-</button>
+</a>
 {% endif %}
 {% endfor %}

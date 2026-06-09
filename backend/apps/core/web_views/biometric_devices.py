@@ -141,16 +141,12 @@ def biometric_devices_dashboard(request):
         device_user_filters['search'],
         device_user_filters['mapped_only'] is not None,
     ])
-    _EMPLOYEE_LINK_LIMIT = 400
-    employees_qs = filter_employees_queryset_for_user(
-        request.user,
-        Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE)
-        .select_related('branch', 'department')
-        .order_by('name'),
-    )
-    employees_total = employees_qs.count()
-    employees = list(employees_qs[:_EMPLOYEE_LINK_LIMIT])
-    employees_truncated = employees_total > _EMPLOYEE_LINK_LIMIT
+    from apps.core.selectors.employee_picker_search import employee_picker_queryset
+    from django.urls import reverse
+
+    employees_total = employee_picker_queryset(request.user).filter(
+        status=Employee.Status.ACTIVE,
+    ).count()
 
     link_device_id = request.GET.get('link_device')
     link_user_id = request.GET.get('link_user')
@@ -173,14 +169,18 @@ def biometric_devices_dashboard(request):
     if device_id_list:
         from apps.attendance.models import AttendanceIngestLog, BiometricPullRequest
 
-        for log in (
-            AttendanceIngestLog.objects.filter(
-                device_id__in=device_id_list,
-                is_deleted=False,
-            )
-            .order_by('-created_at')
-        ):
-            if log.device_id and log.device_id not in last_ingest_by_device:
+        from django.db.models import Max
+
+        latest_per_device = AttendanceIngestLog.objects.filter(
+            device_id__in=device_id_list,
+            is_deleted=False,
+        ).values('device_id').annotate(latest=Max('created_at'))
+        ingest_cond = Q()
+        for row in latest_per_device:
+            if row['device_id'] and row['latest']:
+                ingest_cond |= Q(device_id=row['device_id'], created_at=row['latest'])
+        if ingest_cond:
+            for log in AttendanceIngestLog.objects.filter(ingest_cond):
                 last_ingest_by_device[log.device_id] = log
 
         pending_pull_device_ids = set(
@@ -209,12 +209,11 @@ def biometric_devices_dashboard(request):
         'device_users_per_page': DEVICE_USERS_PER_PAGE,
         'enrollment_by_device_user': enrollment_by_device_user,
         'branches': branches,
-        'employees': employees,
-        'employees_truncated': employees_truncated,
+        'employee_search_url': reverse('web:employee_picker_search'),
+        'employee_total': employees_total,
         'link_device_id': link_device_id,
         'link_user_id': link_user_id,
         'link_device_user': link_device_user,
-        'employees_count': employees_total,
     })
 
 

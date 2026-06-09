@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
@@ -138,7 +139,7 @@ def attendance_report(request):
         filter_employee = Employee.objects.filter(
             pk=filters['employee_id'],
             is_deleted=False,
-        ).first()
+        ).select_related('branch', 'department').first()
 
     return render(request, 'pages/attendance/report.html', {
         'daily_page': daily_page,
@@ -148,7 +149,7 @@ def attendance_report(request):
         'total_daily_rows': len(all_rows),
         'devices': get_biometric_devices_queryset(request.user),
         'branches': branches_qs,
-        'employees': Employee.objects.filter(is_deleted=False, status=Employee.Status.ACTIVE).order_by('name')[:200],
+        'employee_search_url': reverse('web:employee_picker_search'),
         'filter_employee': filter_employee,
         'filters': filters,
         'mapped_filter': mapped_filter,
