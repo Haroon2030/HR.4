@@ -315,7 +315,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         raise ValueError('المسير مُغلق ولا يمكن إعادة بنائه. أعد فتحه أولاً.')
 
     # قفل صف المسير لمنع أي عملية بناء متوازية (race condition)
-    PayrollRun.objects.select_for_update().filter(pk=run.pk).first()
+    PayrollRun.acquire_row_lock(run.pk)
 
     # حذف الأسطر القديمة حذفاً فعلياً (hard delete) لتجنب تعارض القيد الفريد
     PayrollLine.all_objects.filter(run=run).delete()
@@ -414,7 +414,7 @@ def lock_payroll_run(run: PayrollRun, user):
 
     الأخطاء: ValueError إذا كان المسير مُغلقاً بالفعل.
     """
-    run = PayrollRun.objects.select_for_update().get(pk=run.pk)
+    run = PayrollRun.acquire_row_lock(run.pk)
     if run.status == PayrollRun.Status.LOCKED:
         raise ValueError('المسير مُغلق بالفعل.')
 
@@ -598,7 +598,7 @@ def unlock_payroll_run(run: PayrollRun, user):
     يجب إعادة بناء المسير (Rebuild) بعد فك القفل.
     فحص الصلاحية (is_superuser) يتم في الـ View.
     """
-    run = PayrollRun.objects.select_for_update().get(pk=run.pk)
+    run = PayrollRun.acquire_row_lock(run.pk)
     if run.status != PayrollRun.Status.LOCKED:
         raise ValueError('المسير ليس مغلقاً.')
 

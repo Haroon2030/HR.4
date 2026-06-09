@@ -136,6 +136,22 @@ class PayrollRun(BaseModel):
                      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
         return f"{months_ar[self.period_month]} {self.period_year}"
 
+    @classmethod
+    def acquire_row_lock(cls, pk: int) -> 'PayrollRun':
+        """
+        قفل صف المسير داخل transaction.
+
+        Meta.ordering يستخدم branch__name فيُنشئ LEFT JOIN؛ PostgreSQL يرفض
+        FOR UPDATE على الجانب القابل للإبطال من outer join.
+        """
+        return (
+            cls.objects
+            .select_for_update(of=('self',))
+            .filter(pk=pk)
+            .order_by('pk')
+            .get()
+        )
+
     def recompute_totals(self):
         """
         يُعيد حساب إجماليات المسير من مجموع أسطر الموظفين.

@@ -254,7 +254,7 @@ def build_payroll_detailed_run(
     if run.status == PayrollRun.Status.LOCKED:
         raise ValueError('المسير التفصيلي مُغلق ولا يمكن إعادة بنائه.')
 
-    PayrollRun.objects.select_for_update().filter(pk=run.pk).first()
+    PayrollRun.acquire_row_lock(run.pk)
     PayrollAllocationLine.all_objects.filter(run=run).delete()
 
     transfers = transfers_in_period(company.id, year, month)
