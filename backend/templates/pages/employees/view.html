@@ -78,9 +78,6 @@
                     <button type="button" @click="quickModal='job_offer'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="file-badge" class="w-4 h-4 text-primary-600"></i> عرض وظيفي
                     </button>
-                    <button type="button" @click="quickModal='business_trip'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="plane-takeoff" class="w-4 h-4 text-sky-600"></i> رحلة عمل
-                    </button>
                     <button type="button" @click="quickModal='loan'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="wallet" class="w-4 h-4 text-amber-600"></i> تقديم سلفة
                     </button>
@@ -612,12 +609,14 @@
                 return 'above5';
             },
             get categoryLabel() {
+                if (!this.hasSponsor) return 'لا يوجد كفالة — لا تُحسب مكافأة نهاية الخدمة';
                 if (this.category === 'trial') return 'فترة تجربة (بدون مكافأة مالية)';
                 if (this.category === 'first5') return 'أول 5 سنوات — ½ راتب × ' + this.serviceYears.toFixed(2) + ' سنة';
                 let extra = (this.serviceYears - 5).toFixed(2);
                 return '½ راتب × 5 + راتب كامل × ' + extra + ' سنة';
             },
             get eosbBase() {
+                if (!this.hasSponsor) return 0;
                 let half = this.eosSalary / 2;
                 if (this.category === 'trial') return 0;
                 if (this.category === 'first5') return +(half * this.serviceYears).toFixed(2);
@@ -690,38 +689,50 @@
                                     <span class="text-slate-500">إجمالي الراتب</span>
                                     <span class="font-bold" x-text="totalSalary.toFixed(2) + ' ر.س'"></span>
                                 </div>
-                                <div class="flex justify-between bg-white rounded px-2 py-1.5" x-show="mealAllowance > 0">
-                                    <span class="text-slate-500">أساس مكافأة نهاية الخدمة</span>
-                                    <span class="font-bold text-emerald-800" x-text="eosSalary.toFixed(2) + ' ر.س'"></span>
-                                </div>
-                                <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2" x-show="mealAllowance > 0">
-                                    <span class="text-slate-500 text-[10px]">بدل التغذية مستثنى من المكافأة</span>
-                                    <span class="font-bold text-slate-600" x-text="mealAllowance.toFixed(2) + ' ر.س'"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- فئة المكافأة -->
-                        <div class="rounded-lg p-3 space-y-1.5"
-                             :class="category === 'trial' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'">
-                            <div class="text-xs font-bold flex items-center gap-1"
-                                 :class="category === 'trial' ? 'text-amber-700' : 'text-emerald-700'">
-                                <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
-                                <span x-text="categoryLabel"></span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                    <span class="text-slate-500">المكافأة الأساسية</span>
-                                    <span class="font-bold text-emerald-700" x-text="eosbBase.toFixed(2) + ' ر.س'"></span>
-                                </div>
-                                <template x-if="terminatedBy === 'employee' && resignLabel">
+                                <template x-if="hasSponsor">
                                     <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                        <span class="text-slate-500" x-text="resignLabel"></span>
-                                        <span class="font-bold text-amber-700" x-text="eosb.toFixed(2) + ' ر.س'"></span>
+                                        <span class="text-slate-500">أساس مكافأة نهاية الخدمة</span>
+                                        <span class="font-bold text-emerald-800" x-text="eosSalary.toFixed(2) + ' ر.س'"></span>
+                                    </div>
+                                </template>
+                                <template x-if="hasSponsor && mealAllowance > 0">
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2">
+                                        <span class="text-slate-500 text-[10px]">بدل التغذية مستثنى من المكافأة</span>
+                                        <span class="font-bold text-slate-600" x-text="mealAllowance.toFixed(2) + ' ر.س'"></span>
                                     </div>
                                 </template>
                             </div>
                         </div>
+
+                        <!-- فئة المكافأة -->
+                        <template x-if="hasSponsor">
+                            <div class="rounded-lg p-3 space-y-1.5"
+                                 :class="category === 'trial' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'">
+                                <div class="text-xs font-bold flex items-center gap-1"
+                                     :class="category === 'trial' ? 'text-amber-700' : 'text-emerald-700'">
+                                    <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                                    <span x-text="categoryLabel"></span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">المكافأة الأساسية</span>
+                                        <span class="font-bold text-emerald-700" x-text="eosbBase.toFixed(2) + ' ر.س'"></span>
+                                    </div>
+                                    <template x-if="terminatedBy === 'employee' && resignLabel">
+                                        <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                            <span class="text-slate-500" x-text="resignLabel"></span>
+                                            <span class="font-bold text-amber-700" x-text="eosb.toFixed(2) + ' ر.س'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!hasSponsor">
+                            <div class="rounded-lg p-3 bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                                <i data-lucide="info" class="w-3.5 h-3.5 inline-block"></i>
+                                لا تُحسب مكافأة نهاية الخدمة — الموظف غير مكفول.
+                            </div>
+                        </template>
 
                         <!-- مستحقات الإجازة -->
                         <template x-if="hasSponsor">
@@ -754,7 +765,7 @@
                                 </span>
                                 <span class="text-lg font-bold text-red-700" x-text="grandTotal.toFixed(2) + ' ر.س'"></span>
                             </div>
-                            <div class="text-[10px] text-red-600 mt-1" x-text="'مكافأة: ' + eosb.toFixed(2) + ' + إجازة: ' + leaveComp.toFixed(2)"></div>
+                            <div class="text-[10px] text-red-600 mt-1" x-text="hasSponsor ? ('مكافأة: ' + eosb.toFixed(2) + ' + إجازة: ' + leaveComp.toFixed(2)) : ('إجازة: ' + leaveComp.toFixed(2) + ' ر.س (بدون مكافأة نهاية خدمة)')"></div>
                         </div>
                     </div>
                 </template>
@@ -802,12 +813,14 @@
                 return 'above5';
             },
             get categoryLabel() {
+                if (!this.hasSponsor) return 'لا يوجد كفالة — لا تُحسب مكافأة نهاية الخدمة';
                 if (this.category === 'trial') return 'فترة تجربة (بدون مكافأة مالية)';
                 if (this.category === 'first5') return 'أول 5 سنوات — ½ راتب × ' + this.serviceYears.toFixed(2) + ' سنة';
                 let extra = (this.serviceYears - 5).toFixed(2);
                 return '½ راتب × 5 + راتب كامل × ' + extra + ' سنة';
             },
             get eosbBase() {
+                if (!this.hasSponsor) return 0;
                 let half = this.eosSalary / 2;
                 if (this.category === 'trial') return 0;
                 if (this.category === 'first5') return +(half * this.serviceYears).toFixed(2);
@@ -880,38 +893,50 @@
                                     <span class="text-slate-500">إجمالي الراتب</span>
                                     <span class="font-bold" x-text="totalSalary.toFixed(2) + ' ر.س'"></span>
                                 </div>
-                                <div class="flex justify-between bg-white rounded px-2 py-1.5" x-show="mealAllowance > 0">
-                                    <span class="text-slate-500">أساس مكافأة نهاية الخدمة</span>
-                                    <span class="font-bold text-emerald-800" x-text="eosSalary.toFixed(2) + ' ر.س'"></span>
-                                </div>
-                                <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2" x-show="mealAllowance > 0">
-                                    <span class="text-slate-500 text-[10px]">بدل التغذية مستثنى من المكافأة</span>
-                                    <span class="font-bold text-slate-600" x-text="mealAllowance.toFixed(2) + ' ر.س'"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- فئة المكافأة -->
-                        <div class="rounded-lg p-3 space-y-1.5"
-                             :class="category === 'trial' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'">
-                            <div class="text-xs font-bold flex items-center gap-1"
-                                 :class="category === 'trial' ? 'text-amber-700' : 'text-emerald-700'">
-                                <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
-                                <span x-text="categoryLabel"></span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                    <span class="text-slate-500">المكافأة الأساسية</span>
-                                    <span class="font-bold text-emerald-700" x-text="eosbBase.toFixed(2) + ' ر.س'"></span>
-                                </div>
-                                <template x-if="terminatedBy === 'employee' && resignLabel">
+                                <template x-if="hasSponsor">
                                     <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                        <span class="text-slate-500" x-text="resignLabel"></span>
-                                        <span class="font-bold text-amber-700" x-text="eosb.toFixed(2) + ' ر.س'"></span>
+                                        <span class="text-slate-500">أساس مكافأة نهاية الخدمة</span>
+                                        <span class="font-bold text-emerald-800" x-text="eosSalary.toFixed(2) + ' ر.س'"></span>
+                                    </div>
+                                </template>
+                                <template x-if="hasSponsor && mealAllowance > 0">
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2">
+                                        <span class="text-slate-500 text-[10px]">بدل التغذية مستثنى من المكافأة</span>
+                                        <span class="font-bold text-slate-600" x-text="mealAllowance.toFixed(2) + ' ر.س'"></span>
                                     </div>
                                 </template>
                             </div>
                         </div>
+
+                        <!-- فئة المكافأة -->
+                        <template x-if="hasSponsor">
+                            <div class="rounded-lg p-3 space-y-1.5"
+                                 :class="category === 'trial' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'">
+                                <div class="text-xs font-bold flex items-center gap-1"
+                                     :class="category === 'trial' ? 'text-amber-700' : 'text-emerald-700'">
+                                    <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                                    <span x-text="categoryLabel"></span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">المكافأة الأساسية</span>
+                                        <span class="font-bold text-emerald-700" x-text="eosbBase.toFixed(2) + ' ر.س'"></span>
+                                    </div>
+                                    <template x-if="terminatedBy === 'employee' && resignLabel">
+                                        <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                            <span class="text-slate-500" x-text="resignLabel"></span>
+                                            <span class="font-bold text-amber-700" x-text="eosb.toFixed(2) + ' ر.س'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!hasSponsor">
+                            <div class="rounded-lg p-3 bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                                <i data-lucide="info" class="w-3.5 h-3.5 inline-block"></i>
+                                لا تُحسب مكافأة نهاية الخدمة — الموظف غير مكفول.
+                            </div>
+                        </template>
 
                         <!-- مستحقات الإجازة -->
                         <template x-if="hasSponsor">
@@ -944,7 +969,7 @@
                                 </span>
                                 <span class="text-lg font-bold text-red-700" x-text="grandTotal.toFixed(2) + ' ر.س'"></span>
                             </div>
-                            <div class="text-[10px] text-red-600 mt-1" x-text="'مكافأة: ' + eosb.toFixed(2) + ' + إجازة: ' + leaveComp.toFixed(2)"></div>
+                            <div class="text-[10px] text-red-600 mt-1" x-text="hasSponsor ? ('مكافأة: ' + eosb.toFixed(2) + ' + إجازة: ' + leaveComp.toFixed(2)) : ('إجازة: ' + leaveComp.toFixed(2) + ' ر.س (بدون مكافأة نهاية خدمة)')"></div>
                         </div>
                     </div>
                 </template>
@@ -1333,69 +1358,6 @@
                     <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
                     <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--primary">
                         <i data-lucide="file-badge" class="w-4 h-4"></i> إرسال للموافقة
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: رحلة عمل -->
-    <div x-show="quickModal==='business_trip'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="quickModal=null">
-        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
-            <div class="flex items-center justify-between p-4 border-b border-slate-200">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="plane-takeoff" class="w-5 h-5 text-sky-600"></i>
-                    <span>تسجيل رحلة عمل</span>
-                </h3>
-                <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <form method="post" action="{% url 'web:add_employee_business_trip' employee.id %}" enctype="multipart/form-data" class="p-4 space-y-3">
-                {% csrf_token %}
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">الوجهة <span class="text-red-500">*</span></label>
-                        <input type="text" name="destination" required placeholder="مثال: جدة"
-                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">التكلفة التقديرية (ر.س)</label>
-                        <input type="number" name="estimated_cost" min="0" step="0.01" placeholder="0.00"
-                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">الغرض <span class="text-red-500">*</span></label>
-                    <input type="text" name="purpose" required placeholder="مثال: زيارة عميل / حضور مؤتمر"
-                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">من تاريخ <span class="text-red-500">*</span></label>
-                        <input type="date" name="start_date" required
-                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">إلى تاريخ <span class="text-red-500">*</span></label>
-                        <input type="date" name="end_date" required
-                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
-                    <textarea name="notes" rows="2"
-                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
-                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
-                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-sky-50 file:border-0 file:text-sky-700 file:rounded">
-                </div>
-                <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--sky">
-                        <i data-lucide="plane-takeoff" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
             </form>

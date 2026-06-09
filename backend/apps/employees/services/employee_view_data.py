@@ -75,7 +75,6 @@ def load_employee_view_context(
         'salary_adjusts': [],
         'custodies': [],
         'active_custodies': [],
-        'business_trips': [],
         'loans': [],
         'absences': [],
         'contract_is_saudi': False,
@@ -133,11 +132,6 @@ def load_employee_view_context(
                 EmployeeCustody.objects.filter(employee_id=employee.pk)
                 .order_by('-received_at', '-id'),
             )
-
-    if need('trips'):
-        ctx['business_trips'] = list(
-            employee.business_trips.order_by('-start_date', '-id'),
-        )
 
     if need('loans'):
         ctx['loans'] = list(employee.loans.all().order_by('-issued_at', '-id'))

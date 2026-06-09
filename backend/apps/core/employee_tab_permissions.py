@@ -20,7 +20,6 @@ EMPLOYEE_TABS = (
     {'key': 'schedule', 'label': 'الجدول', 'order': 134},
     {'key': 'warnings', 'label': 'الإفادات والإنذارات', 'order': 135},
     {'key': 'custodies', 'label': 'العهد', 'order': 136},
-    {'key': 'trips', 'label': 'رحلات العمل', 'order': 137},
     {'key': 'contract', 'label': 'العقد', 'order': 138},
     {'key': 'loans', 'label': 'السلف', 'order': 139},
     {'key': 'absences', 'label': 'الغيابات', 'order': 140},

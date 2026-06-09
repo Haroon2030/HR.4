@@ -500,11 +500,13 @@ def _execute_contract_end(action, executor):
     last_salary = Decimal(employee.salary_for_end_of_service or 0)
     half_salary = (last_salary / 2).quantize(Decimal('0.01'))
 
-    # ── حساب المكافأة الأساسية ──
+    # ── حساب المكافأة الأساسية (كفالة فقط) ──
     eosb = Decimal('0.00')
     category = ''
 
-    if service_days <= 180:
+    if not employee.sponsorship_id:
+        category = 'لا يوجد كفالة — لا تُحسب مكافأة نهاية الخدمة'
+    elif service_days <= 180:
         # فترة تجربة — بدون مكافأة مالية
         eosb = Decimal('0.00')
         category = 'فترة تجربة (بدون مكافأة مالية)'
@@ -523,7 +525,7 @@ def _execute_contract_end(action, executor):
     # ── معامل الاستقالة ──
     resignation_factor = Decimal('1.0')
     resignation_note = ''
-    if terminated_by == 'employee':
+    if employee.sponsorship_id and terminated_by == 'employee':
         if service_years < 2:
             resignation_factor = Decimal('0.0')
             resignation_note = 'استقالة أقل من سنتين — لا مكافأة'
@@ -648,11 +650,13 @@ def _execute_end_of_service(action, executor):
     last_salary = Decimal(employee.salary_for_end_of_service or 0)
     half_salary = (last_salary / 2).quantize(Decimal('0.01'))
 
-    # ── حساب المكافأة الأساسية ──
+    # ── حساب المكافأة الأساسية (كفالة فقط) ──
     eosb = Decimal('0.00')
     category = ''
 
-    if service_days <= 180:
+    if not employee.sponsorship_id:
+        category = 'لا يوجد كفالة — لا تُحسب مكافأة نهاية الخدمة'
+    elif service_days <= 180:
         # فترة تجربة — بدون مكافأة مالية
         eosb = Decimal('0.00')
         category = 'فترة تجربة (بدون مكافأة مالية)'
@@ -671,7 +675,7 @@ def _execute_end_of_service(action, executor):
     # ── معامل الاستقالة ──
     resignation_factor = Decimal('1.0')
     resignation_note = ''
-    if terminated_by == 'employee':
+    if employee.sponsorship_id and terminated_by == 'employee':
         if service_years < 2:
             resignation_factor = Decimal('0.0')
             resignation_note = 'استقالة أقل من سنتين — لا مكافأة'

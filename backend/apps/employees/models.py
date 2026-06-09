@@ -404,8 +404,16 @@ class Employee(BaseModel):
         )
 
     @property
+    def eligible_for_end_of_service(self) -> bool:
+        """مكافأة نهاية الخدمة تُحتسب فقط للموظفين المسجّلين على كفالة."""
+        return bool(self.sponsorship_id)
+
+    @property
     def salary_for_end_of_service(self):
-        """أساس احتساب مكافأة نهاية الخدمة — بدون بدل التغذية."""
+        """أساس احتساب مكافأة نهاية الخدمة — بدون بدل التغذية (كفالة فقط)."""
+        from decimal import Decimal
+        if not self.eligible_for_end_of_service:
+            return Decimal('0')
         return (
             self.basic_salary + self.housing_allowance + self.transport_allowance
             + self.other_allowance + self.cash_amount

@@ -520,6 +520,7 @@ def lock_payroll_run(run: PayrollRun, user):
                 hire_date=line.employee.hire_date,
                 period_year=run.period_year,
                 period_month=run.period_month,
+                eligible_for_eosb=bool(line.employee.sponsorship_id),
             )
             leave_amount_change = calc['leave_amount']
             eosb_amount_change = calc['eosb']

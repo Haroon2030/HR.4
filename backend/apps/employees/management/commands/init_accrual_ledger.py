@@ -41,18 +41,19 @@ class Command(BaseCommand):
             daily_wage = daily_rate_from_total(emp.total_salary)
             leave_amount = (current_leave_balance * daily_wage).quantize(Decimal('0.01'))
             
-            # حساب مخصص نهاية الخدمة المتراكم حتى اليوم
+            # حساب مخصص نهاية الخدمة المتراكم حتى اليوم (كفالة فقط)
             eosb_amount = Decimal('0')
-            last_salary = Decimal(emp.salary_for_end_of_service or 0)
-            half_salary = (last_salary / Decimal('2')).quantize(Decimal('0.01'))
-            
-            if service_years <= 5:
-                eosb_amount = (half_salary * service_years).quantize(Decimal('0.01'))
-            else:
-                first_5 = (half_salary * 5).quantize(Decimal('0.01'))
-                extra_years = service_years - 5
-                extra = (last_salary * extra_years).quantize(Decimal('0.01'))
-                eosb_amount = first_5 + extra
+            if emp.sponsorship_id:
+                last_salary = Decimal(emp.salary_for_end_of_service or 0)
+                half_salary = (last_salary / Decimal('2')).quantize(Decimal('0.01'))
+
+                if service_years <= 5:
+                    eosb_amount = (half_salary * service_years).quantize(Decimal('0.01'))
+                else:
+                    first_5 = (half_salary * 5).quantize(Decimal('0.01'))
+                    extra_years = service_years - 5
+                    extra = (last_salary * extra_years).quantize(Decimal('0.01'))
+                    eosb_amount = first_5 + extra
                 
             # إنشاء السجل الافتتاحي
             EmployeeLedger.objects.create(

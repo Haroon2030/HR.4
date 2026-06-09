@@ -35,6 +35,7 @@ def compute_monthly_ledger_amounts(
     hire_date: date | None,
     period_year: int,
     period_month: int,
+    eligible_for_eosb: bool = True,
 ) -> dict:
     """حساب مبالغ مخصص الشهر — أجر اليوم = الإجمالي ÷ 30؛ EOSB بدون بدل التغذية."""
     gross = Decimal(gross_salary or 0)
@@ -48,7 +49,9 @@ def compute_monthly_ledger_amounts(
     service_days = 0
     service_years = 0.0
 
-    if hire_date:
+    if not eligible_for_eosb:
+        eosb_detail = 'لا يوجد كفالة — لا يُحسب استحقاق نهاية الخدمة'
+    elif hire_date:
         month_end = calendar_month_last_day(period_year, period_month)
         service_days = (month_end - hire_date).days
         service_years = service_days / 365.25

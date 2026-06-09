@@ -90,6 +90,12 @@ class EmployeeModelTests(TestCase):
         self.assertEqual(self.employee.total_salary, Decimal('7000.00'))
         self.assertEqual(self.employee.salary_for_end_of_service, Decimal('6500.00'))
 
+    def test_eosb_not_calculated_without_sponsorship(self):
+        self.employee.sponsorship = None
+        self.employee.basic_salary = Decimal('5000.00')
+        self.assertFalse(self.employee.eligible_for_end_of_service)
+        self.assertEqual(self.employee.salary_for_end_of_service, Decimal('0'))
+
     def test_daily_wage(self):
         """Test daily wage calculation (total_salary / 30)"""
         expected_daily_wage = (Decimal('6500.00') / Decimal('30')).quantize(Decimal('0.01'))

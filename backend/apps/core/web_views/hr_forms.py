@@ -34,7 +34,6 @@ FORM_CODE_MAP = {
     'evaluation': 'EV',
     'resumption_after_leave': 'RL',
     'contract_termination': 'CT',
-    'business_trip': 'BT',
     'absence_report': 'AR',
     'employment_letter': 'EL',
     'permission_request': 'PR',
@@ -213,13 +212,6 @@ _BASE_HR_FORMS = [
         'description': 'إشعار رسمي بإنهاء عقد العمل',
         'icon': 'file-x',
         'color': 'rose',
-    },
-    {
-        'key': 'business_trip',
-        'title': 'رحلة عمل',
-        'description': 'إذن وتفاصيل رحلة عمل رسمية للموظف',
-        'icon': 'plane-takeoff',
-        'color': 'primary',
     },
 ]
 

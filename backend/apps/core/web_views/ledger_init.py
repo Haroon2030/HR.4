@@ -43,16 +43,18 @@ def run_ledger_init(request, employee_id):
         daily_wage = daily_rate_from_total(total_salary)
         leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
 
-        # مكافأة نهاية الخدمة — بدون بدل التغذية
-        half_salary = (eosb_base / Decimal('2')).quantize(Decimal('0.01'))
+        # مكافأة نهاية الخدمة — بدون بدل التغذية (كفالة فقط)
+        eosb_amount = Decimal('0')
+        if emp.sponsorship_id:
+            half_salary = (eosb_base / Decimal('2')).quantize(Decimal('0.01'))
 
-        if service_years <= 5:
-            eosb_amount = (half_salary * service_years).quantize(Decimal('0.01'))
-        else:
-            first_5 = (half_salary * Decimal('5')).quantize(Decimal('0.01'))
-            extra_years = service_years - Decimal('5')
-            extra = (eosb_base * extra_years).quantize(Decimal('0.01'))
-            eosb_amount = first_5 + extra
+            if service_years <= 5:
+                eosb_amount = (half_salary * service_years).quantize(Decimal('0.01'))
+            else:
+                first_5 = (half_salary * Decimal('5')).quantize(Decimal('0.01'))
+                extra_years = service_years - Decimal('5')
+                extra = (eosb_base * extra_years).quantize(Decimal('0.01'))
+                eosb_amount = first_5 + extra
 
         EmployeeLedger.objects.create(
             employee=emp,
