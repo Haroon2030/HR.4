@@ -634,7 +634,7 @@ def export_payroll_run_excel(request, run_id):
         return redirect('web:view_payroll_run', run_id=run_id)
 
     run = get_object_or_404(
-        PayrollRun.objects.select_related('branch', 'sponsorship'),
+        PayrollRun.objects.select_related('branch', 'sponsorship', 'company'),
         id=run_id,
     )
 
