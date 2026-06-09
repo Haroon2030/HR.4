@@ -159,6 +159,11 @@
         margin-inline-start: auto;
     }
 
+    .hr-payroll-build-actions__group--triple {
+        grid-template-columns: repeat(3, minmax(7.5rem, 1fr));
+        max-width: 34rem;
+    }
+
     .hr-payroll-build-btn {
         min-height: 2.5rem;
         padding: 0.5rem 0.85rem;
@@ -202,6 +207,17 @@
     .hr-payroll-build-btn--detailed:hover:not(:disabled) {
         background: #e0e7ff;
         border-color: #a5b4fc;
+    }
+
+    .hr-payroll-build-btn--view {
+        color: #0f766e;
+        background: #f0fdfa;
+        border-color: #99f6e4;
+    }
+
+    .hr-payroll-build-btn--view:hover:not(:disabled) {
+        background: #ccfbf1;
+        border-color: #5eead4;
     }
 
     .hr-payroll-build-btn--disabled,

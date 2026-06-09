@@ -50,6 +50,9 @@ class _PayrollFilterOption:
 SALARY_MODE_FILTER_ITEMS = [
     _PayrollFilterOption(v, lbl) for v, lbl in PayrollRun.SalaryMode.choices
 ]
+
+_PAYROLL_LIST_SESSION_KEY = 'hr_payroll_list_filters'
+
 from apps.setup.models import Sponsorship
 from apps.payroll.services.engine import (
     build_payroll_run, lock_payroll_run, unlock_payroll_run,
@@ -132,6 +135,173 @@ def _effective_sponsorship_ids(filters) -> list[int]:
     return list(ids)
 
 
+def _default_payroll_period(filters: dict) -> dict:
+    """توحيد السنة/الشهر مع القيم الافتراضية في الواجهة."""
+    today = date.today()
+    if not filters.get('year'):
+        filters['year'] = today.year
+    if not filters.get('month'):
+        filters['month'] = today.month
+    return filters
+
+
+def _recompute_payroll_ready(filters: dict) -> dict:
+    ready = bool(
+        filters.get('branch_ids') and filters.get('year') and filters.get('month')
+        and filters.get('salary_mode') in PayrollRun.SalaryMode.values
+    )
+    if ready and filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
+        ready = filters.get('sponsorship_ids') is None or bool(filters['sponsorship_ids'])
+    filters['ready'] = ready
+    return filters
+
+
+def _store_payroll_list_filters(request, filters: dict) -> None:
+    if not filters.get('ready'):
+        return
+    request.session[_PAYROLL_LIST_SESSION_KEY] = {
+        'branch_ids': list(filters['branch_ids']),
+        'year': filters['year'],
+        'month': filters['month'],
+        'salary_mode': filters['salary_mode'],
+        'sponsorship_ids': filters['sponsorship_ids'],
+    }
+    request.session.modified = True
+
+
+def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=None):
+    """مسودات STANDARD لشهر محدد (اختياري: فروع معيّنة)."""
+    year, month = filters.get('year'), filters.get('month')
+    if not year or not month:
+        return []
+    qs = PayrollRun.objects.filter(
+        period_year=year,
+        period_month=month,
+        run_kind=PayrollRun.RunKind.STANDARD,
+        status=PayrollRun.Status.DRAFT,
+    )
+    if not user.is_superuser:
+        qs = qs.filter(branch__in=user_branches)
+    if branch_ids:
+        qs = qs.filter(branch_id__in=branch_ids)
+    return list(qs.select_related('branch', 'sponsorship').order_by('-updated_at'))
+
+
+def _apply_draft_run_to_filters(filters: dict, run: PayrollRun) -> dict:
+    if run.branch_id and not filters.get('branch_ids'):
+        filters['branch_ids'] = [run.branch_id]
+    if not filters.get('salary_mode'):
+        filters['salary_mode'] = run.salary_mode
+    if (
+        run.salary_mode == PayrollRun.SalaryMode.TRANSFER
+        and run.sponsorship_id
+        and filters.get('sponsorship_ids') is None
+    ):
+        filters['sponsorship_ids'] = [run.sponsorship_id]
+    return filters
+
+
+def _infer_payroll_filters_from_drafts(filters: dict, user, user_branches) -> dict:
+    """استنتاج الفروع/النوع/الكفالة من مسودات محفوظة لنفس الشهر."""
+    if filters.get('salary_mode'):
+        return filters
+
+    year, month = filters.get('year'), filters.get('month')
+    if not year or not month:
+        return filters
+
+    branch_ids = filters.get('branch_ids') or None
+    runs = _draft_runs_for_period(filters, user, user_branches, branch_ids=branch_ids)
+    if not runs:
+        return filters
+
+    if branch_ids:
+        modes = {r.salary_mode for r in runs}
+        if len(modes) == 1:
+            filters['salary_mode'] = next(iter(modes))
+            if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
+                sp_ids = list(dict.fromkeys(
+                    r.sponsorship_id for r in runs if r.sponsorship_id
+                ))
+                if len(sp_ids) == 1:
+                    filters['sponsorship_ids'] = sp_ids
+        elif len(modes) > 1:
+            filters = _apply_draft_run_to_filters(filters, runs[0])
+        return filters
+
+    modes = {r.salary_mode for r in runs}
+    if len(modes) != 1:
+        return _apply_draft_run_to_filters(filters, runs[0])
+
+    filters['branch_ids'] = list(dict.fromkeys(r.branch_id for r in runs if r.branch_id))
+    filters['salary_mode'] = next(iter(modes))
+    if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
+        sp_ids = list(dict.fromkeys(r.sponsorship_id for r in runs if r.sponsorship_id))
+        filters['sponsorship_ids'] = sp_ids if len(sp_ids) == 1 else None
+    return filters
+
+
+def _merge_stored_payroll_filters(filters: dict, stored: dict) -> dict:
+    if stored.get('branch_ids') and not filters.get('branch_ids'):
+        filters['branch_ids'] = list(stored['branch_ids'])
+    if stored.get('salary_mode') and not filters.get('salary_mode'):
+        filters['salary_mode'] = stored['salary_mode']
+    if 'sponsorship_ids' in stored and filters.get('sponsorship_ids') is None:
+        filters['sponsorship_ids'] = stored['sponsorship_ids']
+    if stored.get('year'):
+        filters['year'] = stored['year']
+    if stored.get('month'):
+        filters['month'] = stored['month']
+    return filters
+
+
+def _payroll_filters_missing_from_query(request, filters: dict) -> bool:
+    """هل الرابط ناقص مع أن الفلاتر جاهزة للعرض؟"""
+    if not filters.get('ready'):
+        return False
+    if filters.get('branch_ids') and not request.GET.getlist('branch_id'):
+        return True
+    if filters.get('salary_mode') and not (request.GET.get('salary_mode') or '').strip():
+        return True
+    if filters.get('sponsorship_ids') and not request.GET.getlist('sponsorship_id'):
+        return True
+    return False
+
+
+def _restore_payroll_list_filters(request, filters: dict, user, user_branches):
+    """استعادة آخر فلاتر أو مسودات محفوظة عند فتح الصفحة."""
+    filters = _default_payroll_period(filters)
+    if request.method != 'GET':
+        return _recompute_payroll_ready(filters), None
+
+    stored = request.session.get(_PAYROLL_LIST_SESSION_KEY)
+    if stored:
+        filters = _merge_stored_payroll_filters(filters, stored)
+
+    filters = _infer_payroll_filters_from_drafts(filters, user, user_branches)
+    filters = _recompute_payroll_ready(filters)
+
+    redirect_response = None
+    if _payroll_filters_missing_from_query(request, filters):
+        redirect_response = _redirect_payroll_list(request, filters)
+    return filters, redirect_response
+
+
+def _count_saved_draft_runs(filters: dict, user, user_branches) -> int:
+    year, month = filters.get('year'), filters.get('month')
+    if not year or not month:
+        return 0
+    qs = PayrollRun.objects.filter(
+        period_year=year,
+        period_month=month,
+        run_kind=PayrollRun.RunKind.STANDARD,
+        status=PayrollRun.Status.DRAFT,
+    )
+    if not user.is_superuser:
+        qs = qs.filter(branch__in=user_branches)
+    return qs.count()
+
+
 def _parse_payroll_form(request, user_branches):
     """قراءة معايير المسير من GET أو POST."""
     accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
@@ -170,21 +340,15 @@ def _parse_payroll_form(request, user_branches):
     except ValueError:
         pass
 
-    ready = bool(
-        branch_ids and year and month
-        and salary_mode in PayrollRun.SalaryMode.values
-    )
-    if ready and salary_mode == PayrollRun.SalaryMode.TRANSFER:
-        ready = sponsorship_ids is None or bool(sponsorship_ids)
-
-    return {
+    filters = {
         'branch_ids': branch_ids,
         'year': year,
         'month': month,
         'salary_mode': salary_mode,
         'sponsorship_ids': sponsorship_ids,
-        'ready': ready,
+        'ready': False,
     }
+    return _recompute_payroll_ready(_default_payroll_period(filters))
 
 
 def _validate_payroll_build(filters):
@@ -340,7 +504,8 @@ def _lock_payroll_runs_for_filters(request, filters, user, user_branches):
     return locked, errors
 
 
-def _redirect_payroll_list(filters):
+def _redirect_payroll_list(request, filters):
+    _store_payroll_list_filters(request, filters)
     qs = _payroll_list_querystring(
         branch_ids=filters['branch_ids'],
         year=filters['year'],
@@ -362,6 +527,11 @@ def list_payroll_runs(request):
     """بناء مسيرات لعدة فروع وعرض كل أسطر الموظفين في جدول واحد."""
     user_branches = _user_branches(request.user)
     filters = _parse_payroll_form(request, user_branches)
+    filters, redirect_response = _restore_payroll_list_filters(
+        request, filters, request.user, user_branches,
+    )
+    if redirect_response is not None:
+        return redirect_response
 
     if request.method == 'POST':
         payroll_action = (request.POST.get('payroll_action') or '').strip()
@@ -415,7 +585,10 @@ def list_payroll_runs(request):
                         f'تم بناء {len(runs_built)} مسير تفصيلي '
                         f'({total_rows} موظف منقول).',
                     )
-        return _redirect_payroll_list(filters)
+        return _redirect_payroll_list(request, filters)
+
+    if request.method == 'GET' and filters['ready']:
+        _store_payroll_list_filters(request, filters)
 
     lines = []
     page_obj = None
@@ -465,6 +638,7 @@ def list_payroll_runs(request):
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
+    saved_drafts_count = _count_saved_draft_runs(filters, request.user, user_branches)
     filter_qs = _payroll_list_querystring(
         branch_ids=filters['branch_ids'] if filters['ready'] else None,
         year=filters['year'],
@@ -498,6 +672,7 @@ def list_payroll_runs(request):
         'has_draft_runs': has_draft_runs,
         'has_payroll_lines': has_payroll_lines,
         'can_export': filters['ready'] and has_payroll_lines,
+        'saved_drafts_count': saved_drafts_count,
         'detailed_runs': detailed_runs,
         'allocation_lines': allocation_lines,
         'allocation_page_obj': allocation_page_obj,
@@ -685,6 +860,11 @@ def export_payroll_list_excel(request):
 
     user_branches = _user_branches(request.user)
     filters = _parse_payroll_form(request, user_branches)
+    filters, redirect_response = _restore_payroll_list_filters(
+        request, filters, request.user, user_branches,
+    )
+    if redirect_response is not None:
+        return redirect_response
     if not filters['ready']:
         messages.error(request, 'يرجى اختيار معايير المسير أولاً.')
         return redirect('web:list_payroll_runs')
@@ -692,12 +872,12 @@ def export_payroll_list_excel(request):
     runs = list(_payroll_runs_for_filters(filters, request.user, user_branches))
     if not runs:
         messages.error(request, 'لا يوجد مسير للتصدير — ابنِ المسير أولاً.')
-        return _redirect_payroll_list(filters)
+        return _redirect_payroll_list(request, filters)
 
     lines_qs = PayrollLine.objects.filter(run__in=runs)
     if not lines_qs.exists():
         messages.error(request, 'لا توجد أسطر موظفين للتصدير.')
-        return _redirect_payroll_list(filters)
+        return _redirect_payroll_list(request, filters)
 
     wb = build_payroll_runs_workbook(runs)
     filename = payroll_runs_excel_filename(
