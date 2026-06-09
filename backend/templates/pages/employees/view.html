@@ -1747,6 +1747,8 @@ window.scheduleBoxes = function(loadInitial) {
             if (actionInput) actionInput.value = 'delete';
             var deletedLabelInput = form.querySelector('[name=deleted_month_label]');
             if (deletedLabelInput) deletedLabelInput.value = label;
+            var boxesInput = form.querySelector('[name=boxes_json]');
+            if (boxesInput) boxesInput.value = JSON.stringify(this.boxes);
             form.submit();
         }
     };
