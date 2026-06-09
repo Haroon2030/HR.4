@@ -4645,24 +4645,9 @@ body.hr-app .hr-app-main {
 }
 
 /* ── جدول ورديات الدوام (شكل Excel) ── */
-.hr-schedule-roster__legend {
-    display: flex;
-    flex-direction: column;
-    border-bottom: 1px solid #cbd5e1;
+.hr-schedule-roster__title {
+    background: linear-gradient(to left, #f0fdfa, #f0f9ff);
 }
-
-.hr-schedule-roster__legend-item {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #0f172a;
-    text-align: center;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.hr-schedule-roster__legend-item--s1 { background: #86efac; }
-.hr-schedule-roster__legend-item--s2 { background: #fca5a5; }
-.hr-schedule-roster__legend-item--s3 { background: #fde047; }
 
 .hr-schedule-roster__scroll {
     max-width: 100%;
@@ -4676,14 +4661,37 @@ body.hr-app .hr-app-main {
 .hr-schedule-roster__weekday,
 .hr-schedule-roster__day-num,
 .hr-schedule-roster__cell {
-    width: 2rem;
-    min-width: 2rem;
+    width: 1.75rem;
+    min-width: 1.75rem;
 }
 
 .hr-schedule-roster__weekday {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     letter-spacing: 0;
     white-space: nowrap;
+    padding: 0.125rem 0;
+    line-height: 1.1;
+}
+
+.hr-schedule-roster__day-num {
+    font-size: 0.65rem;
+    padding: 0.125rem 0;
+    line-height: 1.1;
+}
+
+.hr-schedule-roster__cell {
+    height: 1.625rem;
+    padding: 0;
+    vertical-align: middle;
+}
+
+.hr-schedule-roster__code {
+    min-width: 1.75rem;
+    height: 1.625rem;
+    min-height: 1.625rem;
+    padding: 0;
+    font-size: 0.65rem;
+    line-height: 1;
 }
 
 .hr-schedule-roster__shift-title {
@@ -4692,8 +4700,20 @@ body.hr-app .hr-app-main {
 
 .hr-schedule-roster__notes-head,
 .hr-schedule-roster__notes {
-    width: 7.5rem;
-    min-width: 7.5rem;
+    width: 6.5rem;
+    min-width: 6.5rem;
+}
+
+.hr-schedule-roster__notes {
+    padding: 0.125rem;
+    vertical-align: top;
+}
+
+.hr-schedule-roster__notes-input {
+    min-height: 2.25rem;
+    max-height: 3.5rem;
+    padding: 0.125rem 0.25rem;
+    line-height: 1.3;
 }
 
 .hr-schedule-roster__cell--inactive {
@@ -4708,7 +4728,7 @@ body.hr-app .hr-app-main {
 .hr-schedule-roster__cell--work .hr-schedule-roster__code {
     color: #047857;
     background: #ecfdf5;
-    font-size: 1rem;
+    font-size: 0.8rem;
     line-height: 1;
 }
 
@@ -4728,4 +4748,8 @@ body.hr-app .hr-app-main {
 
 body.hr-app .hr-schedule-roster-modal {
     max-width: min(96vw, 72rem);
+}
+
+body.hr-app .hr-schedule-months-table tbody tr {
+    cursor: pointer;
 }

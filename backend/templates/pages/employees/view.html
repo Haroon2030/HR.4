@@ -7,7 +7,8 @@
 {% block content %}
 <div class="space-y-4" x-data="{ activeTab: '{{ default_employee_tab }}', quickModal: null, quickOpen: false }"
      x-init="{% if tab_visible.fingerprint %}if (window.location.hash === '#fingerprint') { activeTab = 'fingerprint'; }{% endif %}"
-     @open-schedule-modal.window="quickModal = 'schedule'">
+     @open-schedule-modal.window="quickModal = 'schedule'"
+     @close-schedule-modal.window="quickModal = null">
 
     <!-- Header -->
     <div class="hr-employee-header hr-glass-panel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
@@ -66,7 +67,7 @@
                     <button type="button" @click="quickModal='statement'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i> إفادات ومخالفات
                     </button>
-                    <button type="button" @click="quickModal='schedule'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                    <button type="button" @click="quickModal='schedule'; quickOpen=false; $dispatch('open-schedule-modal', { add: true })" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="calendar-days" class="w-4 h-4 text-teal-600"></i> جدول الدوام
                     </button>
                     <div class="border-t border-slate-100 my-1"></div>
@@ -297,50 +298,79 @@
     </div>
 
     <!-- Modal: جدول الدوام (ورديات + بريد) -->
-    <div x-show="quickModal==='schedule'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" @click.self="quickModal=null">
+    <div x-show="quickModal==='schedule'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
+         @click.self="window.dispatchEvent(new CustomEvent('close-schedule-modal'))">
         <div class="hr-glass-modal hr-schedule-roster-modal w-full max-h-[94vh] overflow-y-auto"
              x-data="Object.assign(scheduleBoxes(true), {
                 editable: true,
+                focusedBoxId: null,
                 sendEmail: false,
                 empEmail: '{{ employee.email|default:''|escapejs }}',
-                hrEmail: '{{ hr_notification_email|default:request.user.email|default:''|escapejs }}'
+                hrEmail: '{{ hr_notification_email|default:request.user.email|default:''|escapejs }}',
+                handleScheduleOpen(detail) {
+                    detail = detail || {};
+                    if (detail.add) {
+                        this.addBox();
+                        this.focusedBoxId = this.boxes[this.boxes.length - 1].id;
+                    } else if (detail.boxId) {
+                        this.focusedBoxId = detail.boxId;
+                    } else {
+                        this.focusedBoxId = null;
+                    }
+                    this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                },
+                closeScheduleModal() {
+                    this.focusedBoxId = null;
+                    window.dispatchEvent(new CustomEvent('close-schedule-modal'));
+                },
+                boxIndexById(id) {
+                    return this.boxes.findIndex(function(b) { return b.id === id; });
+                }
              })"
-             x-effect="if (quickModal === 'schedule' && boxes.length === 0) { addBox(); } $nextTick(() => { if (window.lucide) lucide.createIcons(); })">
+             @open-schedule-modal.window="handleScheduleOpen($event.detail)"
+             @close-schedule-modal.window="focusedBoxId = null"
+             x-effect="if ($root.quickModal === 'schedule' && boxes.length === 0 && !focusedBoxId) { addBox(); focusedBoxId = boxes.length ? boxes[0].id : null; } $nextTick(() => { if (window.lucide) lucide.createIcons(); })">
             <form method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="p-4 space-y-4"
                   @submit="boxes.forEach(b => syncDaysFromCodes(b))">
                 {% csrf_token %}
                 <input type="hidden" name="boxes_json" :value="JSON.stringify(boxes)">
 
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="calendar-days" class="w-5 h-5 text-teal-600"></i>
-                        جدول الدوام الشهري
-                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-bold" x-text="boxes.length + ' شهر'"></span>
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 min-w-0">
+                        <i data-lucide="calendar-days" class="w-5 h-5 text-teal-600 shrink-0"></i>
+                        <span class="truncate" x-text="modalTitle()"></span>
                     </h3>
-                    <div class="flex items-center gap-2">
-                        <button type="button" @click="addBox()" class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <template x-if="focusedBoxId && boxes.length > 1">
+                            <button type="button" @click="focusedBoxId = null"
+                                    class="px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg">
+                                كل الأشهر
+                            </button>
+                        </template>
+                        <button type="button" @click="addBox(); focusedBoxId = boxes[boxes.length - 1].id;"
+                                class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             إضافة شهر
                         </button>
-                        <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600 p-1" aria-label="إغلاق">
+                        <button type="button" @click="closeScheduleModal()" class="text-slate-400 hover:text-slate-600 p-1" aria-label="إغلاق">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
                 </div>
 
-                <template x-if="boxes.length === 0">
+                <template x-if="displayBoxes().length === 0">
                     <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
                         <i data-lucide="calendar-plus" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
                         <p class="text-sm text-slate-500 mb-3">لا يوجد جدول — ابدأ بإضافة شهر</p>
-                        <button type="button" @click="addBox()" class="px-4 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg">إضافة شهر</button>
+                        <button type="button" @click="addBox(); focusedBoxId = boxes[boxes.length - 1].id;" class="px-4 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg">إضافة شهر</button>
                     </div>
                 </template>
 
                 <div class="space-y-4">
-                    <template x-for="(box, i) in boxes" :key="box.id">
+                    <template x-for="box in displayBoxes()" :key="box.id">
                         <div class="relative">
                             {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
-                            <button type="button" @click="removeBox(i)"
+                            <button type="button" @click="removeBox(boxIndexById(box.id)); if (focusedBoxId === box.id) focusedBoxId = boxes.length ? boxes[0].id : null;"
                                     class="absolute top-2 left-2 z-10 p-1.5 rounded-lg bg-white/90 border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 shadow-sm"
                                     title="حذف الشهر">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -376,7 +406,7 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white/95 backdrop-blur flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-100 -mx-4 px-4 pb-1">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="closeScheduleModal()" class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-cancel">إلغاء</button>
                     <button type="submit"
                             class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-save"
                             :class="sendEmail ? 'hr-quick-btn-save--emerald' : 'hr-quick-btn-save--primary'">
@@ -1542,7 +1572,20 @@ window.scheduleBoxes = function(loadInitial) {
             });
         }
         if (!box.days) box.days = [];
-        if (!box.shift) box.shift = 1;
+        var legacyShiftLabels = {
+            1: 'الوردية 1 (8ص–4م)',
+            2: 'الوردية 2 (4م–12ص)',
+            3: 'الوردية 3 (12ص–8ص)'
+        };
+        if (!box.shift_label) {
+            if (typeof box.shift === 'number' && legacyShiftLabels[box.shift]) {
+                box.shift_label = legacyShiftLabels[box.shift];
+            } else if (box.shift && typeof box.shift === 'string') {
+                box.shift_label = String(box.shift).trim();
+            } else {
+                box.shift_label = '';
+            }
+        }
         if (!box.notes) box.notes = '';
         return box;
     };
@@ -1557,11 +1600,6 @@ window.scheduleBoxes = function(loadInitial) {
         weekDays: ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
         dayNumbers: Array.from({ length: 31 }, function(_, i) { return i + 1; }),
         codeCycle: ['', '✓', 'off', 'a'],
-        shiftTitles: {
-            1: '(الوردية 1 ( 8 صباحاً - 4 مساءً',
-            2: '(الوردية 2 ( 4 مساءً - 12 صباحاً',
-            3: '(الوردية 3 ( 12 صباحاً - 8 صباحاً'
-        },
         _seq: 1,
         page: 1,
         perPage: 4,
@@ -1590,7 +1628,32 @@ window.scheduleBoxes = function(loadInitial) {
             var wd = new Date(box.year, box.month - 1, day).getDay();
             return this.weekDays[wd] || '';
         },
-        shiftTitle(box) { return this.shiftTitles[box.shift] || this.shiftTitles[1]; },
+        shiftShortLabel(box) {
+            var label = (box.shift_label || '').trim();
+            return label || '—';
+        },
+        boxMonthLabel(box) {
+            return (this.months[box.month - 1] || box.month) + ' ' + box.year;
+        },
+        get sortedBoxes() {
+            return this.boxes.slice().sort(function(a, b) {
+                if (a.year !== b.year) return b.year - a.year;
+                return b.month - a.month;
+            });
+        },
+        displayBoxes() {
+            if (!this.focusedBoxId) return this.boxes;
+            var id = this.focusedBoxId;
+            var found = this.boxes.filter(function(b) { return b.id === id; });
+            return found.length ? found : this.boxes;
+        },
+        modalTitle() {
+            if (this.focusedBoxId) {
+                var box = this.boxes.find(function(b) { return b.id === this.focusedBoxId; }.bind(this));
+                if (box) return 'جدول الدوام — ' + this.boxMonthLabel(box);
+            }
+            return 'جدول الدوام الشهري (' + this.boxes.length + ' شهر)';
+        },
         getDayCode(box, day) {
             if (!this.isDayInMonth(box, day)) return '';
             return (box.day_codes && box.day_codes[String(day)]) || '';
@@ -1645,7 +1708,7 @@ window.scheduleBoxes = function(loadInitial) {
                 month: d.getMonth() + 1,
                 days: [],
                 day_codes: {},
-                shift: 1,
+                shift_label: '',
                 notes: ''
             });
             this.boxes.push(box);

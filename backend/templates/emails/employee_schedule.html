@@ -24,22 +24,16 @@
             {% for box in boxes %}
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;">
               <tr>
-                <td colspan="32" style="padding:8px 10px;background:#86efac;font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #cbd5e1;">الوردية الأولى من الساعة 8 صباحاً وحتى الساعة 4 مساءً</td>
-              </tr>
-              <tr>
-                <td colspan="32" style="padding:8px 10px;background:#fca5a5;font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #cbd5e1;">الوردية الثانية من الساعة 4 مساءً وحتى الساعة 12 صباحاً</td>
-              </tr>
-              <tr>
-                <td colspan="32" style="padding:8px 10px;background:#fde047;font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #cbd5e1;">الوردية الثالثة من الساعة 12 صباحاً وحتى الساعة 8 صباحاً</td>
-              </tr>
-              <tr>
-                <td colspan="31" style="padding:6px;background:#e0f2fe;font-size:11px;font-weight:700;text-align:center;border-bottom:1px solid #cbd5e1;">{{ box.shift_title }}</td>
-                <td rowspan="3" style="width:90px;padding:8px;background:#f1f5f9;font-size:11px;font-weight:700;text-align:center;border-right:1px solid #cbd5e1;vertical-align:middle;">ملاحظات</td>
+                <td colspan="32" style="padding:12px 14px;background:linear-gradient(to left,#f0fdfa,#f0f9ff);font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid #cbd5e1;color:#0f172a;">
+                  جدول عملك لشهر {{ box.month_name }} {{ box.year }}
+                  <span style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-top:4px;">{{ box.shift_title }} — {{ box.days_count }} يوم دوام</span>
+                </td>
               </tr>
               <tr>
                 {% for cell in box.day_cells %}
                 <td style="padding:3px 0;font-size:9px;font-weight:700;text-align:center;border:1px solid #e2e8f0;{% if cell.active %}color:#0c4a6e;background:#f0f9ff;{% else %}color:#cbd5e1;background:#f8fafc;{% endif %}">{{ cell.weekday|default:"—" }}</td>
                 {% endfor %}
+                <td rowspan="2" style="width:90px;padding:8px;background:#f1f5f9;font-size:11px;font-weight:700;text-align:center;border-right:1px solid #cbd5e1;vertical-align:middle;">ملاحظات</td>
               </tr>
               <tr>
                 {% for cell in box.day_cells %}
@@ -52,12 +46,13 @@
                 {% endfor %}
                 <td style="padding:8px;font-size:10px;color:#475569;vertical-align:top;border:1px solid #e2e8f0;">{{ box.notes|default:"" }}</td>
               </tr>
+              {% if box.days_str %}
               <tr>
                 <td colspan="32" style="padding:8px 12px;background:#f8fafc;font-size:11px;color:#475569;border-top:1px solid #e2e8f0;">
-                  <strong>{{ box.month_name }} {{ box.year }}</strong> — {{ box.days_count }} يوم دوام
-                  {% if box.days_str %}<span style="color:#64748b;"> ({{ box.days_str }})</span>{% endif %}
+                  أيام الدوام: {{ box.days_str }}
                 </td>
               </tr>
+              {% endif %}
             </table>
             {% endfor %}
 

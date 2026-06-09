@@ -322,12 +322,18 @@ def set_work_schedule(request, employee_id):
 
             days.sort()
 
-            try:
-                shift = int(box.get('shift') or 1)
-            except (TypeError, ValueError):
-                shift = 1
-            if shift not in (1, 2, 3):
-                shift = 1
+            shift_label = str(box.get('shift_label') or '').strip()[:200]
+            if not shift_label:
+                legacy_shift_labels = {
+                    1: 'الوردية 1 (8ص–4م)',
+                    2: 'الوردية 2 (4م–12ص)',
+                    3: 'الوردية 3 (12ص–8ص)',
+                }
+                try:
+                    shift_num = int(box.get('shift') or 0)
+                    shift_label = legacy_shift_labels.get(shift_num, '')
+                except (TypeError, ValueError):
+                    shift_label = ''
 
             notes = str(box.get('notes') or '').strip()[:2000]
 
@@ -337,7 +343,7 @@ def set_work_schedule(request, employee_id):
                 'month': month,
                 'days': days,
                 'day_codes': day_codes,
-                'shift': shift,
+                'shift_label': shift_label,
                 'notes': notes,
             })
 
@@ -391,11 +397,6 @@ def set_work_schedule(request, employee_id):
             import calendar as _cal
             months_ar = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
                          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-            shift_titles = {
-                1: '(الوردية 1 ( 8 صباحاً - 4 مساءً',
-                2: '(الوردية 2 ( 4 مساءً - 12 صباحاً',
-                3: '(الوردية 3 ( 12 صباحاً - 8 صباحاً',
-            }
             week_days_ar = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
             boxes_ctx = []
             for b in cleaned:
@@ -415,7 +416,7 @@ def set_work_schedule(request, employee_id):
                             'active': True,
                             'weekday': weekday,
                         })
-                shift = b.get('shift') or 1
+                shift_label = (b.get('shift_label') or '').strip()
                 boxes_ctx.append({
                     'year': year,
                     'month': month,
@@ -424,8 +425,7 @@ def set_work_schedule(request, employee_id):
                     'days_count': len(b['days']),
                     'days_str': '، '.join(str(d) for d in b['days']),
                     'day_cells': day_cells,
-                    'shift': shift,
-                    'shift_title': shift_titles.get(shift, shift_titles[1]),
+                    'shift_title': shift_label or '—',
                     'notes': b.get('notes') or '',
                 })
             ctx = {'employee': employee, 'boxes': boxes_ctx}

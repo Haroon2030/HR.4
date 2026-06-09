@@ -1,41 +1,41 @@
 {# جدول ورديات شهري — يُستخدم داخل x-for مع متغير box و editable (boolean) #}
 <div class="hr-schedule-roster border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
-    <div class="hr-schedule-roster__legend">
-        <div class="hr-schedule-roster__legend-item hr-schedule-roster__legend-item--s1">الوردية الأولى من الساعة 8 صباحاً وحتى الساعة 4 مساءً</div>
-        <div class="hr-schedule-roster__legend-item hr-schedule-roster__legend-item--s2">الوردية الثانية من الساعة 4 مساءً وحتى الساعة 12 صباحاً</div>
-        <div class="hr-schedule-roster__legend-item hr-schedule-roster__legend-item--s3">الوردية الثالثة من الساعة 12 صباحاً وحتى الساعة 8 صباحاً</div>
-    </div>
-
-    <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
-        <div class="flex flex-wrap items-center gap-2">
-            <template x-if="editable">
-                <div class="flex items-center gap-1">
-                    <select x-model.number="box.month" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 bg-white">
-                        <template x-for="(mn, idx) in months" :key="idx">
-                            <option :value="idx+1" x-text="mn"></option>
-                        </template>
-                    </select>
-                    <input type="number" x-model.number="box.year" min="2020" max="2100"
-                           class="w-20 text-xs font-bold border border-slate-300 rounded px-2 py-1 text-center bg-white">
-                </div>
-            </template>
-            <template x-if="!editable">
-                <span class="text-sm font-bold text-slate-800" x-text="months[box.month - 1] + ' ' + box.year"></span>
-            </template>
-            <template x-if="editable">
-                <select x-model.number="box.shift"
-                        class="text-xs font-bold border border-slate-300 rounded px-2 py-1 bg-white">
-                    <option :value="1">الوردية 1 (8ص–4م)</option>
-                    <option :value="2">الوردية 2 (4م–12ص)</option>
-                    <option :value="3">الوردية 3 (12ص–8ص)</option>
-                </select>
-            </template>
-            <template x-if="!editable">
-                <span class="text-xs font-bold text-slate-600 px-2 py-1 bg-slate-100 rounded" x-text="shiftTitle(box)"></span>
-            </template>
-        </div>
-        <div class="text-[11px] text-slate-500 font-medium">
-            <span x-text="workDaysCount(box)"></span> يوم دوام
+    <div class="hr-schedule-roster__title px-4 py-3 bg-gradient-to-l from-sky-50 to-teal-50 border-b border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+                <h4 class="text-sm sm:text-base font-bold text-slate-800 flex flex-wrap items-center gap-2">
+                    <i data-lucide="calendar-range" class="w-4 h-4 text-teal-600 shrink-0"></i>
+                    <span>جدول عملك لشهر</span>
+                    <template x-if="editable">
+                        <span class="inline-flex flex-wrap items-center gap-1.5">
+                            <select x-model.number="box.month" class="text-sm font-bold border border-slate-300 rounded-lg px-2 py-1 bg-white">
+                                <template x-for="(mn, idx) in months" :key="idx">
+                                    <option :value="idx+1" x-text="mn"></option>
+                                </template>
+                            </select>
+                            <input type="number" x-model.number="box.year" min="2020" max="2100"
+                                   class="w-20 text-sm font-bold border border-slate-300 rounded-lg px-2 py-1 text-center bg-white">
+                        </span>
+                    </template>
+                    <template x-if="!editable">
+                        <span class="text-teal-800" x-text="boxMonthLabel(box)"></span>
+                    </template>
+                </h4>
+                <p class="text-[11px] text-slate-500 mt-1" x-show="editable" x-text="'الشهر المحدد: ' + boxMonthLabel(box)"></p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <template x-if="editable">
+                    <input type="text" x-model="box.shift_label"
+                           placeholder="اكتب الوردية (مثال: 8ص–4م)"
+                           class="text-xs font-bold border border-slate-300 rounded-lg px-2 py-1.5 bg-white min-w-[9rem] w-full sm:w-52">
+                </template>
+                <template x-if="!editable">
+                    <span class="text-xs font-bold text-slate-600 px-2 py-1 bg-white/80 border border-slate-200 rounded-lg" x-text="shiftShortLabel(box)"></span>
+                </template>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span x-text="workDaysCount(box)"></span> يوم دوام
+                </span>
+            </div>
         </div>
     </div>
 
@@ -43,22 +43,18 @@
         <table class="hr-schedule-roster__table w-full text-center text-xs border-collapse">
             <thead>
                 <tr>
-                    <th :colspan="31" class="hr-schedule-roster__shift-title px-2 py-1.5 font-bold text-slate-800 border border-slate-300 bg-sky-50"
-                        x-text="shiftTitle(box)"></th>
-                    <th rowspan="3" class="hr-schedule-roster__notes-head border border-slate-300 bg-slate-100 font-bold text-slate-700 align-middle min-w-[7rem]">
+                    <template x-for="d in dayNumbers" :key="'wd-' + d">
+                        <th class="hr-schedule-roster__weekday border border-slate-300 bg-sky-50/80 font-bold leading-none"
+                            :class="isDayInMonth(box, d) ? 'text-sky-800' : 'text-slate-300'"
+                            x-text="weekdayForDay(box, d) || '—'"></th>
+                    </template>
+                    <th rowspan="2" class="hr-schedule-roster__notes-head border border-slate-300 bg-slate-100 font-bold text-slate-700 align-middle min-w-[7rem]">
                         ملاحظات
                     </th>
                 </tr>
                 <tr>
-                    <template x-for="d in dayNumbers" :key="'wd-' + d">
-                        <th class="hr-schedule-roster__weekday border border-slate-300 bg-sky-50/80 text-[10px] font-bold py-1 leading-tight"
-                            :class="isDayInMonth(box, d) ? 'text-sky-800' : 'text-slate-300'"
-                            x-text="weekdayForDay(box, d) || '—'"></th>
-                    </template>
-                </tr>
-                <tr>
                     <template x-for="d in dayNumbers" :key="'num-' + d">
-                        <th class="hr-schedule-roster__day-num border border-slate-300 bg-sky-50 font-bold text-slate-800 py-1"
+                        <th class="hr-schedule-roster__day-num border border-slate-300 bg-sky-50 font-bold text-slate-800 leading-none"
                             x-text="d"></th>
                     </template>
                 </tr>
@@ -74,16 +70,16 @@
                                 'hr-schedule-roster__cell--work': isWorkDayCode(getDayCode(box, d))
                             }">
                             <button type="button"
-                                    class="hr-schedule-roster__code w-full min-w-[1.65rem] h-8 flex items-center justify-center font-bold"
-                                    :class="isWorkDayCode(getDayCode(box, d)) ? 'text-emerald-700 text-base' : 'uppercase'"
+                                    class="hr-schedule-roster__code w-full flex items-center justify-center font-bold"
+                                    :class="isWorkDayCode(getDayCode(box, d)) ? 'text-emerald-700' : 'uppercase'"
                                     :disabled="!editable || !isDayInMonth(box, d)"
                                     @click="cycleDayCode(box, d)"
                                     x-text="formatDayCode(getDayCode(box, d))"></button>
                         </td>
                     </template>
-                    <td rowspan="1" class="hr-schedule-roster__notes border border-slate-300 align-top p-1 bg-white">
-                        <textarea x-model="box.notes" rows="4" :readonly="!editable"
-                                  class="w-full min-h-[4.5rem] text-xs border-0 resize-y bg-transparent focus:outline-none focus:ring-1 focus:ring-primary-400 rounded p-1"
+                    <td rowspan="1" class="hr-schedule-roster__notes border border-slate-300 align-top bg-white">
+                        <textarea x-model="box.notes" rows="2" :readonly="!editable"
+                                  class="hr-schedule-roster__notes-input w-full text-xs border-0 resize-y bg-transparent focus:outline-none focus:ring-1 focus:ring-primary-400 rounded"
                                   placeholder="ملاحظات..."></textarea>
                     </td>
                 </tr>

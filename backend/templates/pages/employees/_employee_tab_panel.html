@@ -244,10 +244,10 @@
                     </div>
                     {% if employee.status != 'terminated' %}
                         {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
-                        <button type="button" @click="$dispatch('open-schedule-modal')"
+                        <button type="button" @click="$dispatch('open-schedule-modal', { add: true })"
                                 class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1.5">
-                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                            إدارة الجدول / إرسال
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            إضافة شهر
                         </button>
                         {% endif %}
                     {% endif %}
@@ -259,7 +259,7 @@
                         <p class="text-sm text-slate-500 mb-3">لا يوجد جدول دوام محفوظ</p>
                         {% if employee.status != 'terminated' %}
                             {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
-                            <button type="button" @click="$dispatch('open-schedule-modal')"
+                            <button type="button" @click="$dispatch('open-schedule-modal', { add: true })"
                                     class="px-4 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1.5">
                                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                                 إنشاء جدول دوام
@@ -269,30 +269,52 @@
                     </div>
                 </template>
 
-                <div class="space-y-4">
-                    <template x-for="box in pagedBoxesOnly" :key="box.id">
-                        {% include "components/schedule_roster_box.html" %}
-                    </template>
-                </div>
-
-                <div x-show="boxes.length > perPage" class="flex items-center justify-center gap-1 pt-2">
-                    <button type="button" @click="gotoPage(page - 1)" :disabled="page === 1"
-                            class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                        السابق
-                    </button>
-                    <template x-for="p in totalPages" :key="p">
-                        <button type="button" @click="gotoPage(p)"
-                                :class="p === page ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
-                                class="px-3 py-1.5 text-xs font-bold rounded border min-w-[32px]"
-                                x-text="p"></button>
-                    </template>
-                    <button type="button" @click="gotoPage(page + 1)" :disabled="page === totalPages"
-                            class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
-                        التالي
-                        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
+                <template x-if="boxes.length > 0">
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm hr-schedule-months-table">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-2.5 text-right font-bold">الشهر</th>
+                                    <th class="px-4 py-2.5 text-right font-bold">الوردية</th>
+                                    <th class="px-4 py-2.5 text-center font-bold">أيام الدوام</th>
+                                    <th class="px-4 py-2.5 text-right font-bold">ملاحظات</th>
+                                    <th class="px-4 py-2.5 text-center font-bold w-24">عرض</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="box in sortedBoxes" :key="box.id">
+                                    <tr class="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                                        @click="$dispatch('open-schedule-modal', { boxId: box.id })">
+                                        <td class="px-4 py-3 font-bold text-slate-800">
+                                            <span class="inline-flex items-center gap-2">
+                                                <i data-lucide="calendar" class="w-4 h-4 text-primary-600 shrink-0"></i>
+                                                <span x-text="boxMonthLabel(box)"></span>
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-600 text-xs" x-text="shiftShortLabel(box)"></td>
+                                        <td class="px-4 py-3 text-center">
+                                            <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"
+                                                  x-text="workDaysCount(box)"></span>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-500 text-xs max-w-[12rem] truncate" x-text="box.notes || '—'"></td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button type="button"
+                                                    @click.stop="$dispatch('open-schedule-modal', { boxId: box.id })"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg">
+                                                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                                فتح
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-[11px] text-slate-400 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3 h-3"></i>
+                        انقر على أي شهر لفتح جدول الورديات في نافذة منبثقة
+                    </p>
+                </template>
             </div>
             {% endif %}
 
