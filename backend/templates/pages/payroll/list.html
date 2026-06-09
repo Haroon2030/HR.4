@@ -92,6 +92,59 @@
     {% endif %}
 
     {% if show_table %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="hr-payroll-run-actions" role="group" aria-label="إجراءات المسير">
+            <p class="hr-payroll-run-actions__hint m-0">بعد مراجعة الجدول</p>
+            <div class="hr-payroll-run-actions__group">
+                {% if can_build %}
+                <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
+                      onsubmit="return confirm('سيتم تحديث المسودة بأحدث البيانات. هل تريد الحفظ؟');">
+                    {% csrf_token %}
+                    {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                    <button type="submit" name="payroll_action" value="save"
+                            class="hr-payroll-run-btn hr-payroll-run-btn--save"
+                            {% if not has_payroll_lines %}disabled title="لا توجد أسطر للحفظ"{% endif %}>
+                        <i data-lucide="save" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
+                        <span>حفظ</span>
+                    </button>
+                </form>
+                <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
+                      onsubmit="return confirm('بمجرد الإغلاق النهائي لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
+                    {% csrf_token %}
+                    {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                    <button type="submit" name="payroll_action" value="lock"
+                            class="hr-payroll-run-btn hr-payroll-run-btn--lock"
+                            {% if not has_draft_runs %}disabled title="المسير مُغلق مسبقاً"{% endif %}>
+                        <i data-lucide="lock" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
+                        <span>الإغلاق النهائي</span>
+                    </button>
+                </form>
+                {% else %}
+                <button type="button" disabled class="hr-payroll-run-btn hr-payroll-run-btn--save hr-payroll-run-btn--disabled">
+                    <i data-lucide="save" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
+                    <span>حفظ</span>
+                </button>
+                <button type="button" disabled class="hr-payroll-run-btn hr-payroll-run-btn--lock hr-payroll-run-btn--disabled">
+                    <i data-lucide="lock" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
+                    <span>الإغلاق النهائي</span>
+                </button>
+                {% endif %}
+                {% if can_export %}
+                <a href="{% url 'web:export_payroll_list_excel' %}?{{ filter_qs }}"
+                   class="hr-payroll-run-btn hr-payroll-run-btn--export">
+                    <i data-lucide="file-spreadsheet" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
+                    <span>تصدير إلى Excel</span>
+                </a>
+                {% else %}
+                <span class="hr-payroll-run-btn hr-payroll-run-btn--export hr-payroll-run-btn--disabled" aria-disabled="true">
+                    <i data-lucide="file-spreadsheet" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
+                    <span>تصدير إلى Excel</span>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-white p-4 rounded-xl border border-slate-200">
             <p class="text-xs font-semibold text-slate-500">عدد الفروع / المسيرات</p>

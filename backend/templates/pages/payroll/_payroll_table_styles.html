@@ -217,4 +217,104 @@
             margin-inline-start: 0;
         }
     }
+
+    /* ── أزرار حفظ / إغلاق / تصدير ── */
+    .hr-payroll-run-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .hr-payroll-run-actions__hint {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        flex: 1 1 auto;
+        min-width: 8rem;
+    }
+
+    .hr-payroll-run-actions__group {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(7.5rem, 1fr));
+        gap: 0.5rem;
+        width: 100%;
+        max-width: 34rem;
+        flex: 0 0 auto;
+        margin-inline-start: auto;
+    }
+
+    .hr-payroll-run-btn {
+        min-height: 2.5rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1.2;
+        border-radius: 0.5rem;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        white-space: nowrap;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .hr-payroll-run-btn__icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    .hr-payroll-run-btn--save {
+        color: #1e40af;
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .hr-payroll-run-btn--save:hover:not(:disabled) {
+        background: #dbeafe;
+        border-color: #93c5fd;
+    }
+
+    .hr-payroll-run-btn--lock {
+        color: #fff;
+        background: #059669;
+        border-color: #047857;
+        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+    }
+
+    .hr-payroll-run-btn--lock:hover:not(:disabled) {
+        background: #047857;
+    }
+
+    .hr-payroll-run-btn--export {
+        color: #065f46;
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+    }
+
+    .hr-payroll-run-btn--export:hover {
+        background: #d1fae5;
+        border-color: #6ee7b7;
+    }
+
+    .hr-payroll-run-btn--disabled,
+    .hr-payroll-run-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+        pointer-events: none;
+    }
+
+    @media (max-width: 639px) {
+        .hr-payroll-run-actions__group {
+            max-width: none;
+            margin-inline-start: 0;
+            grid-template-columns: 1fr;
+        }
+    }
 </style>

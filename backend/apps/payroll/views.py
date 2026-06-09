@@ -319,6 +319,39 @@ def _build_detailed_payroll_runs(request, filters):
     return runs_built, errors
 
 
+def _lock_payroll_runs_for_filters(request, filters, user, user_branches):
+    """ترحيل كل مسيرات STANDARD المطابقة للفلاتر. يُرجع (locked_count, errors)."""
+    runs = list(_payroll_runs_for_filters(filters, user, user_branches))
+    locked = 0
+    errors = []
+    skipped = 0
+    for run in runs:
+        if run.status == PayrollRun.Status.LOCKED:
+            skipped += 1
+            continue
+        try:
+            lock_payroll_run(run, user)
+            locked += 1
+        except ValueError as e:
+            label = run.branch.name if run.branch_id else f'مسير #{run.pk}'
+            errors.append(f'{label}: {e}')
+    if skipped and not locked and not errors:
+        errors.append('جميع المسيرات مُرحَّلة مسبقاً.')
+    return locked, errors
+
+
+def _redirect_payroll_list(filters):
+    qs = _payroll_list_querystring(
+        branch_ids=filters['branch_ids'],
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'] or None,
+        sponsorship_ids=filters['sponsorship_ids'],
+    )
+    url = reverse('web:list_payroll_runs')
+    return redirect(f'{url}?{qs}' if qs else url)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. شاشة المسير الموحّدة — بناء + جدول واحد لكل الفروع
 # ══════════════════════════════════════════════════════════════════════════════
@@ -331,30 +364,37 @@ def list_payroll_runs(request):
     filters = _parse_payroll_form(request, user_branches)
 
     if request.method == 'POST':
+        payroll_action = (request.POST.get('payroll_action') or '').strip()
+        build_kind = (request.POST.get('build_kind') or '').strip()
+
         if not user_can_manage_payroll(request.user):
-            messages.error(request, 'ليس لديك صلاحية بناء المسير.')
+            messages.error(request, 'ليس لديك صلاحية إدارة المسير.')
         else:
             err = _validate_payroll_build(filters)
             if err:
                 messages.error(request, err)
-            else:
-                build_detailed = request.POST.get('build_kind') == 'detailed'
-                if build_detailed:
-                    runs_built, build_errors = _build_detailed_payroll_runs(request, filters)
-                    for e in build_errors:
-                        messages.error(request, e)
-                    if runs_built:
-                        total_rows = sum(r.employees_count for r in runs_built)
+            elif payroll_action == 'lock':
+                locked, lock_errors = _lock_payroll_runs_for_filters(
+                    request, filters, request.user, user_branches,
+                )
+                for e in lock_errors:
+                    messages.error(request, e)
+                if locked:
+                    messages.success(
+                        request,
+                        f'تم الإغلاق النهائي لـ {locked} مسير وربط بنود الخصم.',
+                    )
+            elif payroll_action == 'save' or build_kind == 'standard':
+                runs_built, build_errors = _build_payroll_runs(request, filters)
+                for e in build_errors:
+                    messages.error(request, e)
+                if runs_built:
+                    if payroll_action == 'save':
                         messages.success(
                             request,
-                            f'تم بناء {len(runs_built)} مسير تفصيلي '
-                            f'({total_rows} موظف منقول).',
+                            f'تم حفظ المسير كمسودة ({sum(r.employees_count for r in runs_built)} موظف).',
                         )
-                else:
-                    runs_built, build_errors = _build_payroll_runs(request, filters)
-                    for e in build_errors:
-                        messages.error(request, e)
-                    if runs_built:
+                    else:
                         mode_label = dict(PayrollRun.SalaryMode.choices).get(
                             filters['salary_mode'], filters['salary_mode'],
                         )
@@ -364,20 +404,25 @@ def list_payroll_runs(request):
                             f'تم بناء {len(runs_built)} مسير {mode_label} '
                             f'({total_emp} موظف في الجدول أدناه).',
                         )
-        qs = _payroll_list_querystring(
-            branch_ids=filters['branch_ids'],
-            year=filters['year'],
-            month=filters['month'],
-            salary_mode=filters['salary_mode'] or None,
-            sponsorship_ids=filters['sponsorship_ids'],
-        )
-        url = reverse('web:list_payroll_runs')
-        return redirect(f'{url}?{qs}' if qs else url)
+            elif build_kind == 'detailed':
+                runs_built, build_errors = _build_detailed_payroll_runs(request, filters)
+                for e in build_errors:
+                    messages.error(request, e)
+                if runs_built:
+                    total_rows = sum(r.employees_count for r in runs_built)
+                    messages.success(
+                        request,
+                        f'تم بناء {len(runs_built)} مسير تفصيلي '
+                        f'({total_rows} موظف منقول).',
+                    )
+        return _redirect_payroll_list(filters)
 
     lines = []
     page_obj = None
     grand_totals = {}
     runs_count = 0
+    has_draft_runs = False
+    has_payroll_lines = False
     allocation_lines = []
     allocation_page_obj = None
     detailed_runs = []
@@ -385,6 +430,7 @@ def list_payroll_runs(request):
     if filters['ready']:
         runs_qs = _payroll_runs_for_filters(filters, request.user, user_branches)
         runs_count = runs_qs.count()
+        has_draft_runs = runs_qs.filter(status=PayrollRun.Status.DRAFT).exists()
         lines_qs = PayrollLine.objects.filter(run__in=runs_qs).select_related(
             'employee', 'run', 'run__branch',
         ).order_by('run__branch__name', 'employee__name')
@@ -400,6 +446,7 @@ def list_payroll_runs(request):
         paginator = Paginator(lines_qs, 50)
         page_obj = paginator.get_page(request.GET.get('page') or 1)
         lines = page_obj.object_list
+        has_payroll_lines = lines_qs.exists()
 
         detailed_runs = list(_detailed_runs_for_filters(filters, request.user, user_branches))
         if detailed_runs:
@@ -448,6 +495,9 @@ def list_payroll_runs(request):
         'runs_count': runs_count,
         'show_table': filters['ready'],
         'can_build': user_can_manage_payroll(request.user),
+        'has_draft_runs': has_draft_runs,
+        'has_payroll_lines': has_payroll_lines,
+        'can_export': filters['ready'] and has_payroll_lines,
         'detailed_runs': detailed_runs,
         'allocation_lines': allocation_lines,
         'allocation_page_obj': allocation_page_obj,
@@ -618,6 +668,45 @@ def unlock_payroll_run_view(request, run_id):
 # ══════════════════════════════════════════════════════════════════════════════
 # 7. تصدير المسير إلى Excel — ملف .xlsx قابل للتنزيل
 # ══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@permission_required('payroll.view')
+def export_payroll_list_excel(request):
+    """تصدير المسير الموحّد (كل الفروع المختارة) إلى Excel."""
+    try:
+        from apps.payroll.services.export_excel import (
+            build_payroll_runs_workbook,
+            payroll_runs_excel_filename,
+            workbook_to_response,
+        )
+    except ImportError:
+        messages.error(request, 'مكتبة openpyxl غير مثبتة.')
+        return redirect('web:list_payroll_runs')
+
+    user_branches = _user_branches(request.user)
+    filters = _parse_payroll_form(request, user_branches)
+    if not filters['ready']:
+        messages.error(request, 'يرجى اختيار معايير المسير أولاً.')
+        return redirect('web:list_payroll_runs')
+
+    runs = list(_payroll_runs_for_filters(filters, request.user, user_branches))
+    if not runs:
+        messages.error(request, 'لا يوجد مسير للتصدير — ابنِ المسير أولاً.')
+        return _redirect_payroll_list(filters)
+
+    lines_qs = PayrollLine.objects.filter(run__in=runs)
+    if not lines_qs.exists():
+        messages.error(request, 'لا توجد أسطر موظفين للتصدير.')
+        return _redirect_payroll_list(filters)
+
+    wb = build_payroll_runs_workbook(runs)
+    filename = payroll_runs_excel_filename(
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'],
+    )
+    return workbook_to_response(wb, filename)
+
 
 @login_required
 @permission_required('payroll.view')

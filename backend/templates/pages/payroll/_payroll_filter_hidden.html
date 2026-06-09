@@ -1,0 +1,15 @@
+{% for bid in filter_branch_ids %}
+<input type="hidden" name="branch_id" value="{{ bid }}">
+{% endfor %}
+{% for sid in filter_sponsorship_ids %}
+<input type="hidden" name="sponsorship_id" value="{{ sid }}">
+{% endfor %}
+{% if filter_salary_mode %}
+<input type="hidden" name="salary_mode" value="{{ filter_salary_mode }}">
+{% endif %}
+{% if filter_year %}
+<input type="hidden" name="year" value="{{ filter_year }}">
+{% endif %}
+{% if filter_month %}
+<input type="hidden" name="month" value="{{ filter_month }}">
+{% endif %}

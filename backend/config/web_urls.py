@@ -244,6 +244,7 @@ urlpatterns = [
     # 11. مسير الرواتب الشهري
     # ══════════════════════════════════════════════════════════════
     path('payroll/', payroll_views.list_payroll_runs, name='list_payroll_runs'),                            # قائمة المسيرات
+    path('payroll/export/', payroll_views.export_payroll_list_excel, name='export_payroll_list_excel'),    # تصدير المسير الموحّد
     path('payroll/create/', payroll_views.create_payroll_run, name='create_payroll_run'),                    # إنشاء/بناء مسير
     path('payroll/<int:run_id>/', payroll_views.view_payroll_run, name='view_payroll_run'),                  # عرض تفاصيل المسير
     path('payroll/<int:run_id>/rebuild/', payroll_views.rebuild_payroll_run, name='rebuild_payroll_run'),     # إعادة بناء

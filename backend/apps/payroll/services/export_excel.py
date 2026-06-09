@@ -57,18 +57,11 @@ def _money(val) -> float:
     return float(val)
 
 
-def build_payroll_run_workbook(run):
-    """يُنشئ Workbook بتنسيق كشف الرواتب (ترويسة ملوّنة + صفوف الموظفين)."""
-    from openpyxl import Workbook
+def _write_payroll_sheet(ws, line_pairs, *, meta_note: str):
+    """يكتب ترويسة وصفوف وإجماليات على ورقة واحدة. line_pairs: [(run, line), ...]."""
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'كشف الرواتب'[:31]
-    ws.sheet_view.rightToLeft = True
-
-    n_cols = len(PAYROLL_EXPORT_COLUMNS)
     thin = Side(border_style='thin', color='000000')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
     align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
@@ -92,10 +85,9 @@ def build_payroll_run_workbook(run):
     ws.row_dimensions[header_row].height = 36
     ws.freeze_panes = ws.cell(row=data_start, column=1).coordinate
 
-    lines = list(payroll_lines_select_related(run.lines).order_by('employee__name'))
     totals = {key: 0.0 for key in MONEY_SUM_KEYS}
 
-    for i, line in enumerate(lines):
+    for i, (run, line) in enumerate(line_pairs):
         r = data_start + i
         for col_idx, (key, _label, _color, col_type) in enumerate(PAYROLL_EXPORT_COLUMNS, start=1):
             raw = resolve_cell_value(line, run, key)
@@ -122,8 +114,8 @@ def build_payroll_run_workbook(run):
 
         ws.row_dimensions[r].height = ROW_HEIGHT
 
-    if lines:
-        footer_row = data_start + len(lines)
+    if line_pairs:
+        footer_row = data_start + len(line_pairs)
         ws.row_dimensions[footer_row].height = ROW_HEIGHT
         for col_idx, (key, _label, _color, col_type) in enumerate(PAYROLL_EXPORT_COLUMNS, start=1):
             cell = ws.cell(row=footer_row, column=col_idx)
@@ -141,19 +133,68 @@ def build_payroll_run_workbook(run):
     ws.page_setup.orientation = 'landscape'
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
+    ws.oddHeader.center.text = meta_note
 
+
+def _payroll_line_pairs_for_runs(runs):
+    pairs = []
+    for run in runs:
+        qs = payroll_lines_select_related(run.lines).order_by('run__branch__name', 'employee__name')
+        for line in qs:
+            pairs.append((run, line))
+    return pairs
+
+
+def build_payroll_run_workbook(run):
+    """يُنشئ Workbook بتنسيق كشف الرواتب (ترويسة ملوّنة + صفوف الموظفين)."""
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'كشف الرواتب'[:31]
+    ws.sheet_view.rightToLeft = True
+
+    line_pairs = [(run, line) for line in payroll_lines_select_related(run.lines).order_by('employee__name')]
     meta_note = (
         f'{run.branch.name if run.branch_id else ""} — {run.period_label} — '
         f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
     )
-    ws.oddHeader.center.text = meta_note
+    _write_payroll_sheet(ws, line_pairs, meta_note=meta_note)
+    return wb
 
+
+def build_payroll_runs_workbook(runs):
+    """Workbook موحّد لعدة مسيرات (جدول واحد لكل الفروع المختارة)."""
+    from openpyxl import Workbook
+
+    runs = list(runs)
+    if not runs:
+        raise ValueError('لا توجد مسيرات للتصدير.')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'كشف الرواتب'[:31]
+    ws.sheet_view.rightToLeft = True
+
+    first = runs[0]
+    branch_names = ', '.join(
+        r.branch.name for r in runs if r.branch_id
+    )[:120]
+    meta_note = (
+        f'{branch_names or "مسير موحّد"} — {first.period_label} — '
+        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
+    )
+    _write_payroll_sheet(ws, _payroll_line_pairs_for_runs(runs), meta_note=meta_note)
     return wb
 
 
 def payroll_run_excel_filename(run) -> str:
     branch = run.branch_id or 'run'
     return f'payroll_{branch}_{run.period_year}_{run.period_month:02d}.xlsx'
+
+
+def payroll_runs_excel_filename(*, year: int, month: int, salary_mode: str) -> str:
+    return f'payroll_{year}_{month:02d}_{salary_mode}.xlsx'
 
 
 def workbook_to_response(wb, filename: str):
