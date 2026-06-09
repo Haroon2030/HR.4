@@ -36,6 +36,20 @@ class SalaryPaymentSplitTests(TestCase):
         self.assertEqual(net_cash, Decimal('5000.00'))
         self.assertEqual(net_bank, Decimal('0'))
 
+    def test_account_type_export_label_only_for_sponsored(self):
+        from apps.employees.models import Employee, SalaryAccountType
+        from apps.employees.services.salary_payment import account_type_export_label
+
+        sp = Sponsorship.objects.create(code='SP-2', company_name='كفالة 2')
+        sponsored = Employee.objects.create(
+            name='بنكي',
+            sponsorship=sp,
+            account_type=SalaryAccountType.SARIE,
+        )
+        cash = Employee.objects.create(name='نقد')
+        self.assertEqual(account_type_export_label(sponsored), 'SARIE')
+        self.assertEqual(account_type_export_label(cash), '')
+
 
 class EmployeeFormTests(TestCase):
     def test_empty_basic_salary_in_post_defaults_to_zero(self):

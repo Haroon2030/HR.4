@@ -225,6 +225,7 @@ def officer_approve(req, user, notes=''):
             insurance_deduction_rate=req.insurance_deduction_rate,
             bank=req.bank,
             iban=req.iban or '',
+            account_type=req.account_type or '',
             id_document=req.id_document,
             passport_document=req.passport_document,
             contract_document=req.contract_document,

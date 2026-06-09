@@ -1632,6 +1632,14 @@ window.scheduleBoxes = function(loadInitial) {
             var label = (box.shift_label || '').trim();
             return label || '—';
         },
+        scheduleRecordsLabel(count) {
+            var n = Number(count) || 0;
+            if (n <= 0) return '';
+            if (n === 1) return 'شهر واحد مسجّل';
+            if (n === 2) return 'شهران مسجّلان';
+            if (n >= 3 && n <= 10) return n + ' أشهر مسجّلة';
+            return n + ' شهراً مسجّلاً';
+        },
         boxMonthLabel(box) {
             return (this.months[box.month - 1] || box.month) + ' ' + box.year;
         },
@@ -1652,7 +1660,8 @@ window.scheduleBoxes = function(loadInitial) {
                 var box = this.boxes.find(function(b) { return b.id === this.focusedBoxId; }.bind(this));
                 if (box) return 'جدول الدوام — ' + this.boxMonthLabel(box);
             }
-            return 'جدول الدوام الشهري (' + this.boxes.length + ' شهر)';
+            if (!this.boxes.length) return 'جدول الدوام الشهري';
+            return 'جدول الدوام — ' + this.scheduleRecordsLabel(this.boxes.length);
         },
         getDayCode(box, day) {
             if (!this.isDayInMonth(box, day)) return '';
@@ -1718,6 +1727,23 @@ window.scheduleBoxes = function(loadInitial) {
         removeBox(i) {
             this.boxes.splice(i, 1);
             if (this.page > this.totalPages) this.page = this.totalPages;
+        },
+        removeBoxById(id) {
+            var i = this.boxes.findIndex(function(b) { return b.id === id; });
+            if (i >= 0) this.removeBox(i);
+        },
+        deleteBoxPersist(boxId) {
+            var self = this;
+            var box = this.boxes.find(function(b) { return b.id === boxId; });
+            var label = box ? this.boxMonthLabel(box) : '';
+            if (!window.confirm('حذف جدول دوام «' + label + '» نهائياً؟')) return;
+            this.removeBoxById(boxId);
+            this.boxes.forEach(function(b) { self.syncDaysFromCodes(b); });
+            var form = this.$refs.scheduleSaveForm;
+            if (!form) return;
+            var confirmInput = form.querySelector('[name=confirm_clear]');
+            if (confirmInput) confirmInput.value = '1';
+            form.submit();
         }
     };
 };

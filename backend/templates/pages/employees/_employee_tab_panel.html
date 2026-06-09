@@ -120,6 +120,10 @@
                                     <td class="px-4 py-2.5 text-sky-800 font-medium">رقم الآيبان</td>
                                     <td class="px-4 py-2.5 text-sky-900 font-bold font-mono" dir="ltr">{{ employee.iban|default:"—" }}</td>
                                 </tr>
+                                <tr>
+                                    <td class="px-4 py-2.5 text-sky-800 font-medium">طبيعة الحساب</td>
+                                    <td class="px-4 py-2.5 text-sky-900 font-bold" dir="ltr">{% if employee.account_type %}{{ employee.get_account_type_display }}{% else %}—{% endif %}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -240,7 +244,9 @@
                     <div class="flex items-center gap-2">
                         <i data-lucide="calendar-days" class="w-4 h-4 text-primary-600"></i>
                         <span class="text-sm font-bold text-slate-800">جدول العمل الشهري</span>
-                        <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold" x-text="boxes.length + ' شهر'"></span>
+                        <span x-show="boxes.length > 0"
+                              class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold"
+                              x-text="scheduleRecordsLabel(boxes.length)"></span>
                     </div>
                     {% if employee.status != 'terminated' %}
                         {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
@@ -269,6 +275,12 @@
                     </div>
                 </template>
 
+                <form x-ref="scheduleSaveForm" method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="hidden">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirm_clear" value="">
+                    <input type="hidden" name="boxes_json" :value="JSON.stringify(boxes)">
+                </form>
+
                 <template x-if="boxes.length > 0">
                     <div class="overflow-x-auto border border-slate-200 rounded-lg">
                         <table class="w-full text-sm hr-schedule-months-table">
@@ -277,8 +289,7 @@
                                     <th class="px-4 py-2.5 text-right font-bold">الشهر</th>
                                     <th class="px-4 py-2.5 text-right font-bold">الوردية</th>
                                     <th class="px-4 py-2.5 text-center font-bold">أيام الدوام</th>
-                                    <th class="px-4 py-2.5 text-right font-bold">ملاحظات</th>
-                                    <th class="px-4 py-2.5 text-center font-bold w-24">عرض</th>
+                                    <th class="px-4 py-2.5 text-center font-bold w-36">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -296,14 +307,26 @@
                                             <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"
                                                   x-text="workDaysCount(box)"></span>
                                         </td>
-                                        <td class="px-4 py-3 text-slate-500 text-xs max-w-[12rem] truncate" x-text="box.notes || '—'"></td>
-                                        <td class="px-4 py-3 text-center">
-                                            <button type="button"
-                                                    @click.stop="$dispatch('open-schedule-modal', { boxId: box.id })"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg">
-                                                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                                                فتح
-                                            </button>
+                                        <td class="px-4 py-3 text-center" @click.stop>
+                                            <div class="inline-flex items-center justify-center gap-1">
+                                                <button type="button"
+                                                        @click="$dispatch('open-schedule-modal', { boxId: box.id })"
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg">
+                                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                                    فتح
+                                                </button>
+                                                {% if employee.status != 'terminated' %}
+                                                    {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
+                                                    <button type="button"
+                                                            @click="deleteBoxPersist(box.id)"
+                                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg"
+                                                            title="حذف هذا الشهر">
+                                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                        مسح
+                                                    </button>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>

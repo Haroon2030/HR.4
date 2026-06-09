@@ -90,7 +90,7 @@ _EMPLOYEE_FIELDS = [
     # راتب
     'basic_salary', 'housing_allowance', 'transport_allowance',
     'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
-    'bank', 'iban',
+    'bank', 'iban', 'account_type',
     # إجازات (leaves_archive و attendance_notes معروضة كـ textarea في edit.html)
     'available_leave_balance', 'leaves_archive', 'attendance_notes',
     # ملفات
@@ -344,7 +344,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
             # راتب
             'basic_salary', 'housing_allowance', 'transport_allowance',
             'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
-            'bank', 'iban',
+            'bank', 'iban', 'account_type',
             # مستندات
             'id_document', 'passport_document', 'contract_document', 'other_documents',
         ]
@@ -409,10 +409,16 @@ class EmploymentRequestEditForm(forms.ModelForm):
         _salary_field_labels = {
             'bank': 'البنك',
             'iban': 'رقم الآيبان',
+            'account_type': 'طبيعة الحساب',
         }
         for fname, label in _salary_field_labels.items():
             if fname in self.fields:
                 self.fields[fname].label = label
+        if 'account_type' in self.fields:
+            from apps.employees.models import SalaryAccountType
+            self.fields['account_type'].widget = forms.Select(
+                choices=[('', '-- اختر --')] + list(SalaryAccountType.choices),
+            )
 
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة

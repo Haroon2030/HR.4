@@ -111,6 +111,7 @@
                 <div x-show="hasSponsorship()" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="empReqBankFields">
                     {% include "pages/employment_requests/_field.html" with field=form.bank %}
                     {% include "pages/employment_requests/_field.html" with field=form.iban %}
+                    {% include "pages/employment_requests/_field.html" with field=form.account_type %}
                 </div>
             </div>
 

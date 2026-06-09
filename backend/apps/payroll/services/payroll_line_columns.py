@@ -100,7 +100,8 @@ def resolve_cell_value(line, run, key: str):
     if key == 'bank':
         return emp.bank.name if emp.bank_id else ''
     if key == 'account_type':
-        return ''
+        from apps.employees.services.salary_payment import account_type_export_label
+        return account_type_export_label(emp)
     if key == 'salary_gross':
         return line.gross_salary
     if key == 'id_number':

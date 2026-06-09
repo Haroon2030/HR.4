@@ -38,6 +38,16 @@ def is_bank_transfer_employee(employee) -> bool:
     return payroll_salary_mode_for_employee(employee) == 'transfer'
 
 
+def account_type_export_label(employee) -> str:
+    """تسمية طبيعة الحساب للتصدير — فارغة للموظف النقدي."""
+    if not is_bank_transfer_employee(employee):
+        return ''
+    code = (getattr(employee, 'account_type', None) or '').strip()
+    if not code:
+        return ''
+    return employee.get_account_type_display()
+
+
 def contract_bank_transfer_amount(employee) -> Decimal:
     """مبلغ العقد المخصص للتحويل — كامل الإجمالي إن وُجدت كفالة."""
     gross = Decimal(getattr(employee, 'total_salary', 0) or 0)
@@ -81,6 +91,8 @@ def normalize_salary_payment_fields(cleaned: dict, instance=None) -> dict:
         cleaned['bank'] = None
     if 'iban' in cleaned:
         cleaned['iban'] = ''
+    if 'account_type' in cleaned:
+        cleaned['account_type'] = ''
     return cleaned
 
 
@@ -97,14 +109,22 @@ def validate_salary_payment_fields(form, cleaned: dict, instance=None) -> None:
     if not iban and instance is not None and getattr(instance, 'pk', None):
         iban = (getattr(instance, 'iban', None) or '').strip()
 
+    account_type = (cleaned.get('account_type') or '').strip()
+    if not account_type and instance is not None and getattr(instance, 'pk', None):
+        account_type = (getattr(instance, 'account_type', None) or '').strip()
+
     if sponsorship:
         if not bank and 'bank' in form.fields:
             form.add_error('bank', 'الموظف على كفالة — أدخل بيانات البنك للتحويل.')
         if not iban and 'iban' in form.fields:
             form.add_error('iban', 'الموظف على كفالة — أدخل رقم الآيبان للتحويل.')
+        if not account_type and 'account_type' in form.fields:
+            form.add_error('account_type', 'الموظف على كفالة — اختر طبيعة الحساب.')
         return
 
     if bank and 'bank' in form.fields:
         form.add_error('bank', 'الموظف بدون كفالة — الصرف نقدي ولا حاجة لبيانات البنك.')
     if iban and 'iban' in form.fields:
         form.add_error('iban', 'الموظف بدون كفالة — الصرف نقدي ولا حاجة للآيبان.')
+    if account_type and 'account_type' in form.fields:
+        form.add_error('account_type', 'طبيعة الحساب للموظفين على الكفالة فقط.')

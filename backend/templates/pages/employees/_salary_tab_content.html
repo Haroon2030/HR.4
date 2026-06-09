@@ -81,6 +81,16 @@
                 <label class="block text-xs font-bold text-slate-800">رقم الآيبان <span class="text-red-500">*</span></label>
                 <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm font-mono bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
+            <div class="space-y-1.5 sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-800">طبيعة الحساب <span class="text-red-500">*</span></label>
+                <select name="account_type" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} disabled{% endif %}>
+                    <option value="">-- اختر --</option>
+                    <option value="bank_account" {% if employee.account_type == 'bank_account' %}selected{% endif %}>BANK ACCOUNT</option>
+                    <option value="salary_card" {% if employee.account_type == 'salary_card' %}selected{% endif %}>SALARY CARD</option>
+                    <option value="sarie" {% if employee.account_type == 'sarie' %}selected{% endif %}>SARIE</option>
+                </select>
+                {% if not can_edit_salary and employee.account_type %}<input type="hidden" name="account_type" value="{{ employee.account_type }}">{% endif %}
+            </div>
         </div>
         <div class="rounded-lg bg-white border border-sky-200 p-3 text-xs text-sky-900">
             مبلغ التحويل في المسير = <strong x-text="salaryTotal().toFixed(2) + ' ر.س'">—</strong> (بعد خصم التأمينات والخصومات الأخرى)

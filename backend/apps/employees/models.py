@@ -14,6 +14,13 @@ from apps.departments.models import Department
 from apps.cost_centers.models import CostCenter
 
 
+class SalaryAccountType(models.TextChoices):
+    """طبيعة الحساب البنكي — تُستخدم في تصدير الرواتب (موظفو الكفالة فقط)."""
+    BANK_ACCOUNT = 'bank_account', 'BANK ACCOUNT'
+    SALARY_CARD = 'salary_card', 'SALARY CARD'
+    SARIE = 'sarie', 'SARIE'
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # طلب التوظيف
 # ══════════════════════════════════════════════════════════════════════════════
@@ -181,6 +188,10 @@ class EmploymentRequest(BaseModel):
         related_name='employment_requests', verbose_name="البنك",
     )
     iban = models.CharField("رقم الآيبان", max_length=34, blank=True)
+    account_type = models.CharField(
+        "طبيعة الحساب", max_length=20,
+        choices=SalaryAccountType.choices, blank=True, default='',
+    )
 
     # المستندات
     id_document = models.FileField(
@@ -340,6 +351,10 @@ class Employee(BaseModel):
         related_name='employees', verbose_name="البنك"
     )
     iban = models.CharField("رقم الآيبان", max_length=34, blank=True)
+    account_type = models.CharField(
+        "طبيعة الحساب", max_length=20,
+        choices=SalaryAccountType.choices, blank=True, default='',
+    )
 
     # ── الإجازات ───────────────────────────────────────────────
     # ⚠️ هذا الحقل يُراكم الأيام *المأخوذة* (المستهلكة) وليس المتوفرة.
