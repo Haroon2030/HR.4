@@ -41,29 +41,6 @@
 {% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="calculator" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
 
-{% if user|has_permission:'operations.view' or user|has_permission:'employees.edit' %}
-<a href="{% url 'web:list_pending_actions' %}"
-   class="hr-nav-link {% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %}is-active{% endif %}">
-    <span class="hr-nav-icon relative">
-        <i data-lucide="list-checks" class="w-4 h-4"></i>
-        {% if pending_actions_count and not always_show %}
-        <span x-show="!sidebarOpen" class="hr-nav-badge hr-nav-badge--dot">{{ pending_actions_count }}</span>
-        {% endif %}
-    </span>
-    {% if always_show %}
-    <span class="hr-nav-text flex items-center gap-1.5">
-        طلبات العمليات
-        {% if pending_actions_count %}<span class="hr-nav-badge">{{ pending_actions_count }}</span>{% endif %}
-    </span>
-    {% else %}
-    <span x-show="sidebarOpen" class="hr-nav-text flex items-center gap-1.5">
-        طلبات العمليات
-        {% if pending_actions_count %}<span class="hr-nav-badge">{{ pending_actions_count }}</span>{% endif %}
-    </span>
-    {% endif %}
-</a>
-{% endif %}
-
 {% if user|has_permission:'attendance.view' %}
 {% include "components/nav_section.html" with label="الحضور والدوام" always_show=always_show %}
 <div class="hr-nav-dropdown">

@@ -3630,7 +3630,8 @@ body.hr-app .hr-sidebar-panel .hr-nav-sub {
     transition: background 0.18s ease, border-color 0.18s ease;
 }
 
-.hr-sidebar-panel__pending:hover {
+.hr-sidebar-panel__pending:hover,
+.hr-sidebar-panel__pending.is-active {
     background: #eff6ff;
     border-color: rgba(147, 197, 253, 0.85);
     color: #1d4ed8 !important;

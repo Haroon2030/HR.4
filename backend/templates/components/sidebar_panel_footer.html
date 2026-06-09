@@ -1,12 +1,13 @@
+{% load custom_tags %}
 {% with display_name=user.get_full_name|default:user.username role_name=user.profile.role.name|default:"مستخدم" email=user.email|default:"" %}
 <div class="hr-sidebar-panel__foot shrink-0">
-    {% if pending_actions_count %}
+    {% if user|has_permission:'operations.view' or user|has_permission:'employees.edit' %}
     <a href="{% url 'web:list_pending_actions' %}"
-       class="hr-sidebar-panel__pending"
-       {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-        <i data-lucide="clipboard-list" class="w-4 h-4 shrink-0"></i>
-        <span class="flex-1 text-right truncate">طلبات بانتظار الموافقة</span>
-        <span class="hr-sidebar-panel__pending-badge">{{ pending_actions_count }}</span>
+       class="hr-sidebar-panel__pending{% if request.resolver_match.url_name == 'list_pending_actions' or request.resolver_match.url_name == 'list_employment_requests' %} is-active{% endif %}"
+       title="طلبات العمليات">
+        <i data-lucide="list-checks" class="w-4 h-4 shrink-0"></i>
+        <span class="flex-1 text-right truncate">طلبات العمليات</span>
+        {% if pending_actions_count %}<span class="hr-sidebar-panel__pending-badge">{{ pending_actions_count }}</span>{% endif %}
     </a>
     {% endif %}
 
