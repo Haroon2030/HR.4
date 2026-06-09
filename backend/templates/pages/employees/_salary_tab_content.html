@@ -60,30 +60,38 @@
 
     <!-- تحويل بنكي — عند وجود كفالة -->
     <div x-show="payrollMode() === 'transfer'" x-cloak
-         class="rounded-xl border border-sky-200 bg-sky-50/60 p-4 space-y-3">
-        <div class="flex items-center gap-2">
-            <i data-lucide="landmark" class="w-4 h-4 text-sky-700"></i>
-            <h3 class="text-sm font-bold text-sky-900">بيانات التحويل البنكي</h3>
+         class="rounded-xl border border-sky-200 bg-gradient-to-l from-sky-50/90 to-white p-4 space-y-3 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sky-100 pb-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-sky-100 text-sky-700 shrink-0">
+                    <i data-lucide="landmark" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-bold text-sky-950">بيانات التحويل البنكي</h3>
+                    <p class="text-[10px] text-sky-700 m-0 mt-0.5">راتب كامل بالتحويل — موظف على كفالة</p>
+                </div>
+            </div>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200 shrink-0">
+                <i data-lucide="arrow-left-right" class="w-3 h-3"></i>
+                مسير التحويل
+            </span>
         </div>
-        <p class="text-[11px] text-sky-800 m-0">
-            الموظف على كفالة — يُصرف الراتب <strong>كاملاً بالتحويل البنكي</strong> عبر مسير التحويل.
-        </p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">البنك <span class="text-red-500">*</span></label>
-                <select name="bank" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} disabled{% endif %}>
+        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] gap-2.5 items-end">
+            <div class="space-y-1.5 min-w-0 rounded-lg bg-white border border-sky-100 px-3 py-2.5">
+                <label class="block text-[10px] font-bold text-sky-600 uppercase tracking-wide">البنك <span class="text-red-500">*</span></label>
+                <select name="bank" class="w-full px-2 py-1.5 border border-slate-200 rounded-md text-sm bg-white"{% if not can_edit_salary %} disabled{% endif %}>
                     <option value="">-- اختر --</option>
                     {% for bk in banks %}<option value="{{ bk.id }}" {% if employee.bank_id == bk.id %}selected{% endif %}>{{ bk.name }}</option>{% endfor %}
                 </select>
                 {% if not can_edit_salary and employee.bank_id %}<input type="hidden" name="bank" value="{{ employee.bank_id }}">{% endif %}
             </div>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">رقم الآيبان <span class="text-red-500">*</span></label>
-                <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm font-mono bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+            <div class="space-y-1.5 min-w-0 rounded-lg bg-white border border-sky-100 px-3 py-2.5">
+                <label class="block text-[10px] font-bold text-sky-600 uppercase tracking-wide">رقم الآيبان <span class="text-red-500">*</span></label>
+                <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr" class="w-full px-2 py-1.5 border border-slate-200 rounded-md text-sm font-mono bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
-            <div class="space-y-1.5 sm:col-span-2">
-                <label class="block text-xs font-bold text-slate-800">طبيعة الحساب <span class="text-red-500">*</span></label>
-                <select name="account_type" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} disabled{% endif %}>
+            <div class="space-y-1.5 w-full max-w-[10.5rem] sm:w-[10.5rem] shrink-0 rounded-lg bg-white border border-sky-100 px-3 py-2.5">
+                <label class="block text-[10px] font-bold text-sky-600 uppercase tracking-wide whitespace-nowrap">طبيعة الحساب <span class="text-red-500">*</span></label>
+                <select name="account_type" class="w-full px-2 py-1.5 border border-slate-200 rounded-md text-xs bg-white"{% if not can_edit_salary %} disabled{% endif %}>
                     <option value="">-- اختر --</option>
                     <option value="bank_account" {% if employee.account_type == 'bank_account' %}selected{% endif %}>BANK ACCOUNT</option>
                     <option value="salary_card" {% if employee.account_type == 'salary_card' %}selected{% endif %}>SALARY CARD</option>
