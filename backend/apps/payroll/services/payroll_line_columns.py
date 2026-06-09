@@ -4,6 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from apps.core.salary_month import calendar_period_bounds
+from apps.payroll.models import PayrollRun
 
 # (مفتاح الحقل، عنوان العمود، لون الترويسة، النوع: text | money | days)
 # الترتيب من اليمين لليسار (عمود 1 = أقصى اليمين في Excel RTL)
@@ -79,13 +80,18 @@ def _prorate(line, amount) -> Decimal:
 
 
 def _company_name(line, run) -> str:
+    """عمود الشركة في التصدير: شركة الكفالة لمسير التحويل، وإلا المنشأة."""
+    emp = line.employee
+    if run.salary_mode == PayrollRun.SalaryMode.TRANSFER:
+        sponsorship = getattr(run, 'sponsorship', None)
+        if sponsorship:
+            return (sponsorship.company_name or '').strip()
+        if emp.sponsorship_id and getattr(emp, 'sponsorship', None):
+            return (emp.sponsorship.company_name or '').strip()
     if run.company_id:
         return run.company.name or ''
-    emp = line.employee
     if emp.branch_id and getattr(emp.branch, 'company_id', None):
         return emp.branch.company.name or ''
-    if emp.sponsorship_id:
-        return (emp.sponsorship.company_name or '').strip()
     return ''
 
 

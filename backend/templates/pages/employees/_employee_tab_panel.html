@@ -15,7 +15,7 @@
                 <div><div class="text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني</div><div class="text-sm text-slate-800">{{ employee.email|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الجنسية</div><div class="text-sm text-slate-800">{{ employee.nationality.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">المهنة</div><div class="text-sm text-slate-800">{{ employee.profession.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الكفالة</div><div class="text-sm text-slate-800">{{ employee.sponsorship.company_name|default:"—" }}</div></div>
+                <div><div class="text-xs font-bold text-slate-500 mb-1">الشركة</div><div class="text-sm text-slate-800">{{ employee.sponsorship.company_name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الفرع</div><div class="text-sm text-slate-800">{{ employee.branch.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">القسم</div><div class="text-sm text-slate-800">{{ employee.department.name|default:"—" }}</div></div>
                 <div><div class="text-xs font-bold text-slate-500 mb-1">الإدارة</div><div class="text-sm text-slate-800">{% if employee.administration %}{{ employee.administration.code }} — {{ employee.administration.name }}{% else %}—{% endif %}</div></div>
