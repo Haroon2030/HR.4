@@ -232,144 +232,67 @@
 
             <!-- Schedule -->
             {% if tab_visible.schedule %}            {{ schedule_boxes_json|json_script:"schedule-boxes-data" }}
-            <div x-show="activeTab==='schedule'" class="space-y-4" style="display:none" x-data="scheduleBoxes()">
+            <div x-show="activeTab==='schedule'" class="space-y-4" style="display:none"
+                 x-data="Object.assign(scheduleBoxes(), { editable: false })"
+                 x-effect="$nextTick(() => { if (window.lucide) lucide.createIcons(); })">
 
-                <form method="post" action="{% url 'web:set_work_schedule' employee.id %}" class="space-y-4"
-                      x-effect="editMode; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
-                      @submit="if (Array.isArray(boxes) &amp;&amp; boxes.length &lt; _initialCount) { if (!confirm('سيتم حفظ ' + boxes.length + ' شهر بدلاً من ' + _initialCount + '. هل أنت متأكد؟')) { $event.preventDefault(); } else { $refs.confirmClear.value = '1'; } }">
-                    {% csrf_token %}
-                    <input type="hidden" name="boxes_json" :value="JSON.stringify(boxes)">
-                    <input type="hidden" name="confirm_clear" value="0" x-ref="confirmClear">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar-days" class="w-4 h-4 text-primary-600"></i>
+                        <span class="text-sm font-bold text-slate-800">جدول العمل الشهري</span>
+                        <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold" x-text="boxes.length + ' شهر'"></span>
+                    </div>
+                    {% if employee.status != 'terminated' %}
+                        {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
+                        <button type="button" @click="$dispatch('open-schedule-modal')"
+                                class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1.5">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            إدارة الجدول / إرسال
+                        </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
 
-                    <!-- Header / Toolbar -->
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="calendar-days" class="w-4 h-4 text-primary-600"></i>
-                            <span class="text-sm font-bold text-slate-800">جدول العمل الشهري</span>
-                            <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold" x-text="boxes.length + ' شهر'"></span>
-                        </div>
+                <template x-if="boxes.length === 0">
+                    <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
+                        <i data-lucide="calendar-plus" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                        <p class="text-sm text-slate-500 mb-3">لا يوجد جدول دوام محفوظ</p>
                         {% if employee.status != 'terminated' %}
                             {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
-                            <div class="flex items-center gap-2">
-                                <button type="button" x-show="!editMode" @click="editMode = true"
-                                    class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1.5">
-                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                                    تعديل شهر
-                                </button>
-                                <template x-if="editMode">
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" @click="addBox()"
-                                            class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1.5">
-                                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                            إضافة شهر
-                                        </button>
-                                        <button type="submit"
-                                            class="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5">
-                                            <i data-lucide="save" class="w-3.5 h-3.5"></i>
-                                            حفظ التعديل
-                                        </button>
-                                        <button type="button" @click="editMode = false"
-                                            class="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5">
-                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                            إلغاء
-                                        </button>
-                                    </div>
-                                </template>
-                            </div>
+                            <button type="button" @click="$dispatch('open-schedule-modal')"
+                                    class="px-4 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1.5">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                إنشاء جدول دوام
+                            </button>
                             {% endif %}
                         {% endif %}
                     </div>
+                </template>
 
-                    <!-- Empty state -->
-                    <template x-if="boxes.length === 0">
-                        <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
-                            <i data-lucide="calendar-plus" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
-                            <p class="text-sm text-slate-500">لا بيانات</p>
-                            {% if employee.status != 'terminated' %}
-                            <button type="button" @click="addBox()" class="mt-3 px-4 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1.5">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                ابدأ بإضافة شهر
-                            </button>
-                            {% endif %}
-                        </div>
+                <div class="space-y-4">
+                    <template x-for="box in pagedBoxesOnly" :key="box.id">
+                        {% include "components/schedule_roster_box.html" %}
                     </template>
+                </div>
 
-                    <!-- Boxes Grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        <template x-for="entry in pagedBoxes" :key="entry.box.id">
-                            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-                                <!-- Header: month/year selectors -->
-                                <div class="flex items-center justify-between gap-1 mb-2">
-                                    <div class="flex items-center gap-1">
-                                        <select x-model.number="entry.box.month"
-                                            class="text-xs font-bold border border-slate-200 rounded px-1.5 py-1 bg-white">
-                                            <template x-for="(mn, idx) in months" :key="idx">
-                                                <option :value="idx+1" x-text="mn"></option>
-                                            </template>
-                                        </select>
-                                        <input type="number" x-model.number="entry.box.year" min="2020" max="2100"
-                                            class="w-20 text-xs font-bold border border-slate-200 rounded px-1.5 py-1 text-center">
-                                    </div>
-                                    {% if employee.status != 'terminated' %}
-                                        {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
-                                        <button type="button" x-show="editMode" @click="removeBox(entry.gIdx)" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded" title="حذف">
-                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                        {% endif %}
-                                    {% endif %}
-                                </div>
-
-                                <!-- Selected count -->
-                                <div class="text-[10px] text-slate-500 mb-1.5 text-center">
-                                    <span x-text="entry.box.days.length"></span> يوم محدد
-                                </div>
-
-                                <!-- Weekday headers -->
-                                <div class="grid grid-cols-7 gap-0.5 mb-1">
-                                    <template x-for="wd in weekDays" :key="wd">
-                                        <div class="text-[10px] font-bold text-slate-400 text-center" x-text="wd"></div>
-                                    </template>
-                                </div>
-
-                                <!-- Day cells -->
-                                <div class="grid grid-cols-7 gap-0.5">
-                                    <template x-for="(d, idx) in monthGrid(entry.box)" :key="idx">
-                                        <div class="aspect-square">
-                                            <button type="button" x-show="d !== null"
-                                                {% if employee.status == 'terminated' %}disabled{% else %}@click="toggleDay(entry.box, d)"{% endif %}
-                                                :class="entry.box.days.includes(d) ? 'bg-blue-600 text-white font-bold' : 'bg-slate-50 text-slate-700 hover:bg-blue-100'"
-                                                class="w-full h-full text-[11px] rounded transition-colors flex items-center justify-center"
-                                                x-text="d"></button>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Pagination -->
-                    <div x-show="boxes.length > perPage" class="flex items-center justify-center gap-1 pt-2">
-                        <button type="button" @click="gotoPage(page - 1)" :disabled="page === 1"
-                                class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
-                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            السابق
-                        </button>
-                        <template x-for="p in totalPages" :key="p">
-                            <button type="button" @click="gotoPage(p)"
-                                    :class="p === page ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
-                                    class="px-3 py-1.5 text-xs font-bold rounded border min-w-[32px]"
-                                    x-text="p"></button>
-                        </template>
-                        <button type="button" @click="gotoPage(page + 1)" :disabled="page === totalPages"
-                                class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
-                            التالي
-                            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <span class="text-[11px] text-slate-500 mx-2">
-                            صفحة <span class="font-bold text-slate-700" x-text="page"></span> من <span class="font-bold text-slate-700" x-text="totalPages"></span>
-                        </span>
-                    </div>
-                </form>
+                <div x-show="boxes.length > perPage" class="flex items-center justify-center gap-1 pt-2">
+                    <button type="button" @click="gotoPage(page - 1)" :disabled="page === 1"
+                            class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        السابق
+                    </button>
+                    <template x-for="p in totalPages" :key="p">
+                        <button type="button" @click="gotoPage(p)"
+                                :class="p === page ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+                                class="px-3 py-1.5 text-xs font-bold rounded border min-w-[32px]"
+                                x-text="p"></button>
+                    </template>
+                    <button type="button" @click="gotoPage(page + 1)" :disabled="page === totalPages"
+                            class="px-2.5 py-1.5 text-xs font-bold rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
+                        التالي
+                        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
             </div>
             {% endif %}
 

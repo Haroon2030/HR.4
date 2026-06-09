@@ -297,12 +297,48 @@ def set_work_schedule(request, employee_id):
                         continue
                     if 1 <= di <= 31 and di not in days:
                         days.append(di)
+
+            day_codes: dict[str, str] = {}
+            raw_codes = box.get('day_codes') or {}
+            if isinstance(raw_codes, dict):
+                allowed = {'d', 'off', 'a', 'check', 'v'}
+                for k, v in raw_codes.items():
+                    try:
+                        di = int(k)
+                    except (TypeError, ValueError):
+                        continue
+                    if not (1 <= di <= 31):
+                        continue
+                    code = str(v or '').strip()
+                    if not code:
+                        continue
+                    norm = code.lower()
+                    if norm in ('d', 'check', 'v') or code == '✓':
+                        day_codes[str(di)] = '✓'
+                        if di not in days:
+                            days.append(di)
+                    elif norm in allowed:
+                        day_codes[str(di)] = norm
+
             days.sort()
+
+            try:
+                shift = int(box.get('shift') or 1)
+            except (TypeError, ValueError):
+                shift = 1
+            if shift not in (1, 2, 3):
+                shift = 1
+
+            notes = str(box.get('notes') or '').strip()[:2000]
+
             cleaned.append({
                 'id': str(box.get('id') or f'b{idx+1}'),
                 'year': year,
                 'month': month,
                 'days': days,
+                'day_codes': day_codes,
+                'shift': shift,
+                'notes': notes,
             })
 
     payload = {'version': 3, 'boxes': cleaned}
@@ -355,26 +391,31 @@ def set_work_schedule(request, employee_id):
             import calendar as _cal
             months_ar = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
                          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+            shift_titles = {
+                1: '(الوردية 1 ( 8 صباحاً - 4 مساءً',
+                2: '(الوردية 2 ( 4 مساءً - 12 صباحاً',
+                3: '(الوردية 3 ( 12 صباحاً - 8 صباحاً',
+            }
             week_days_ar = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
             boxes_ctx = []
             for b in cleaned:
                 year, month = b['year'], b['month']
-                days_set = set(b['days'])
-                # Build weeks: list of 7-cell rows (Sunday-first)
-                # Python: calendar.weekday() Mon=0..Sun=6 ; we want Sun=0..Sat=6
-                first_wd_py = _cal.weekday(year, month, 1)  # Mon=0..Sun=6
-                offset = (first_wd_py + 1) % 7  # Sun=0
                 total_days = _cal.monthrange(year, month)[1]
-                cells = [None] * offset + list(range(1, total_days + 1))
-                while len(cells) % 7 != 0:
-                    cells.append(None)
-                weeks = [cells[i:i + 7] for i in range(0, len(cells), 7)]
-                rows = []
-                for wk in weeks:
-                    rows.append([
-                        {'day': d, 'on': (d in days_set) if d else False}
-                        for d in wk
-                    ])
+                codes = b.get('day_codes') or {}
+                day_cells = []
+                for d in range(1, 32):
+                    if d > total_days:
+                        day_cells.append({'day': d, 'code': '', 'active': False, 'weekday': ''})
+                    else:
+                        wd = _cal.weekday(year, month, d)
+                        weekday = week_days_ar[(wd + 1) % 7]
+                        day_cells.append({
+                            'day': d,
+                            'code': codes.get(str(d), ''),
+                            'active': True,
+                            'weekday': weekday,
+                        })
+                shift = b.get('shift') or 1
                 boxes_ctx.append({
                     'year': year,
                     'month': month,
@@ -382,9 +423,12 @@ def set_work_schedule(request, employee_id):
                     'days': b['days'],
                     'days_count': len(b['days']),
                     'days_str': '، '.join(str(d) for d in b['days']),
-                    'weeks': rows,
+                    'day_cells': day_cells,
+                    'shift': shift,
+                    'shift_title': shift_titles.get(shift, shift_titles[1]),
+                    'notes': b.get('notes') or '',
                 })
-            ctx = {'employee': employee, 'boxes': boxes_ctx, 'week_days': week_days_ar}
+            ctx = {'employee': employee, 'boxes': boxes_ctx}
             html_body = render_to_string('emails/employee_schedule.html', ctx)
             text_lines = [f'جدول الدوام — {employee.name}', '']
             for b in boxes_ctx:

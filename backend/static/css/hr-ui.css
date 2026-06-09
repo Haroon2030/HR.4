@@ -4643,3 +4643,89 @@ body.hr-app .hr-app-main {
 @keyframes hr-htmx-spin {
     to { transform: rotate(360deg); }
 }
+
+/* ── جدول ورديات الدوام (شكل Excel) ── */
+.hr-schedule-roster__legend {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.hr-schedule-roster__legend-item {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.hr-schedule-roster__legend-item--s1 { background: #86efac; }
+.hr-schedule-roster__legend-item--s2 { background: #fca5a5; }
+.hr-schedule-roster__legend-item--s3 { background: #fde047; }
+
+.hr-schedule-roster__scroll {
+    max-width: 100%;
+}
+
+.hr-schedule-roster__table {
+    min-width: 52rem;
+    table-layout: fixed;
+}
+
+.hr-schedule-roster__weekday,
+.hr-schedule-roster__day-num,
+.hr-schedule-roster__cell {
+    width: 2rem;
+    min-width: 2rem;
+}
+
+.hr-schedule-roster__weekday {
+    font-size: 0.65rem;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+.hr-schedule-roster__shift-title {
+    font-size: 0.75rem;
+}
+
+.hr-schedule-roster__notes-head,
+.hr-schedule-roster__notes {
+    width: 7.5rem;
+    min-width: 7.5rem;
+}
+
+.hr-schedule-roster__cell--inactive {
+    background: #f1f5f9;
+}
+
+.hr-schedule-roster__cell--inactive .hr-schedule-roster__code {
+    color: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.hr-schedule-roster__cell--work .hr-schedule-roster__code {
+    color: #047857;
+    background: #ecfdf5;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.hr-schedule-roster__cell--off .hr-schedule-roster__code {
+    color: #475569;
+    background: #f8fafc;
+}
+
+.hr-schedule-roster__cell--absent .hr-schedule-roster__code {
+    color: #dc2626;
+    background: #fff1f2;
+}
+
+.hr-schedule-roster__code:not(:disabled):hover {
+    background: #e0f2fe;
+}
+
+body.hr-app .hr-schedule-roster-modal {
+    max-width: min(96vw, 72rem);
+}

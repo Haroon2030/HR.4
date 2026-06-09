@@ -116,9 +116,14 @@ def enrich_employee_page_context(
     requested_tab: str | None = None,
     edit_form: bool = False,
 ) -> dict:
+    from django.conf import settings
+
     context['tab_visible'] = employee_tab_visibility(user)
     context['can_view_salary'] = user_can_view_salary(user)
     context['can_edit_salary'] = user_can_edit_salary(user)
+    context['hr_notification_email'] = (
+        getattr(settings, 'HR_NOTIFICATION_EMAIL', '') or ''
+    )
     nav_keys = EDIT_FORM_TAB_KEYS if edit_form else None
     context['employee_tab_nav'] = employee_tab_nav_for_user(user, keys=nav_keys)
     allowed = tuple(nav_keys) if nav_keys else TAB_KEYS
