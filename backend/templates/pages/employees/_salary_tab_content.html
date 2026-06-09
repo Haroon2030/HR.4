@@ -10,7 +10,7 @@
     <input type="hidden" name="cash_amount" value="0">
 
     <!-- مكوّنات الراتب -->
-    <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+    <div class="space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2">
                 <i data-lucide="layers" class="w-4 h-4 text-slate-600"></i>
@@ -25,36 +25,60 @@
         <p class="text-[11px] text-slate-500 m-0">
             نوع الصرف يُحدد تلقائياً من <strong>الكفالة</strong> في تبويب بيانات الموظف.
         </p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">الراتب الأساسي</label>
-                <input type="number" step="0.01" name="basic_salary" x-model.number="salaryBasic" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-            </div>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">بدل سكن</label>
-                <input type="number" step="0.01" name="housing_allowance" x-model.number="salaryHousing" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-            </div>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">بدل نقل</label>
-                <input type="number" step="0.01" name="transport_allowance" x-model.number="salaryTransport" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-            </div>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">بدل إضافي</label>
-                <input type="number" step="0.01" name="other_allowance" x-model.number="salaryOther" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-            </div>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">بدل التغذية</label>
-                <input type="number" step="0.01" name="meal_allowance" x-model.number="salaryMeal" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-                <p class="text-[10px] text-slate-500 m-0">لا يُحتسب ضمن مكافأة نهاية الخدمة</p>
-            </div>
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">نسبة خصم التأمينات (%)</label>
-                <input type="number" step="0.01" name="insurance_deduction_rate" x-model.number="salaryInsuranceRate" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-            </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200">
-            <div class="text-xs text-slate-600">إجمالي الراتب:</div>
-            <div class="text-base font-bold text-primary-700" x-text="salaryTotal().toFixed(2) + ' ر.س'">{{ employee.total_salary|input_decimal }} ر.س</div>
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+            <table class="w-full text-sm hr-salary-components-table">
+                <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-2.5 text-right font-bold">البند</th>
+                        <th class="px-4 py-2.5 text-left font-bold w-44 min-w-[10rem]" dir="ltr">المبلغ (ر.س)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <tr>
+                        <td class="px-4 py-2.5 text-slate-700">الراتب الأساسي</td>
+                        <td class="px-4 py-2">
+                            <input type="number" step="0.01" name="basic_salary" x-model.number="salaryBasic" class="w-full min-w-[8rem] px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2.5 text-slate-700">بدل السكن</td>
+                        <td class="px-4 py-2">
+                            <input type="number" step="0.01" name="housing_allowance" x-model.number="salaryHousing" class="w-full min-w-[8rem] px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2.5 text-slate-700">بدل النقل</td>
+                        <td class="px-4 py-2">
+                            <input type="number" step="0.01" name="transport_allowance" x-model.number="salaryTransport" class="w-full min-w-[8rem] px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2.5 text-slate-700">بدل إضافي</td>
+                        <td class="px-4 py-2">
+                            <input type="number" step="0.01" name="other_allowance" x-model.number="salaryOther" class="w-full min-w-[8rem] px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2.5 text-slate-700">
+                            بدل التغذية
+                            <span class="block text-[10px] font-normal text-slate-400 mt-0.5">لا يُحتسب ضمن مكافأة نهاية الخدمة</span>
+                        </td>
+                        <td class="px-4 py-2">
+                            <input type="number" step="0.01" name="meal_allowance" x-model.number="salaryMeal" class="w-full min-w-[8rem] px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2.5 text-slate-700">نسبة خصم التأمينات (%)</td>
+                        <td class="px-4 py-2">
+                            <input type="number" step="0.01" name="insurance_deduction_rate" x-model.number="salaryInsuranceRate" class="w-full min-w-[8rem] px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr class="hr-salary-total-row">
+                        <td class="px-4 py-3 text-primary-800 font-bold">إجمالي الراتب</td>
+                        <td class="px-4 py-3 text-primary-800 font-black text-base font-mono whitespace-nowrap" dir="ltr" x-text="salaryTotal().toFixed(2)">{{ employee.total_salary|input_decimal }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -64,36 +88,46 @@
             <i data-lucide="landmark" class="w-3.5 h-3.5 text-sky-600"></i>
             بيانات التحويل البنكي
         </h3>
-        <div class="hr-bank-transfer-list text-xs w-fit max-w-full border border-slate-200 rounded-lg overflow-hidden bg-white divide-y divide-slate-100">
-            <div class="px-2.5 py-1.5 bg-slate-50/50 whitespace-nowrap">
-                <span class="inline-flex items-center gap-2">
-                    <label class="font-bold text-slate-600">البنك <span class="text-red-500">*</span></label>
-                    <select name="bank" class="px-2 py-1 border border-slate-200 rounded text-xs bg-white"{% if not can_edit_salary %} disabled{% endif %}>
-                        <option value="">-- اختر --</option>
-                        {% for bk in banks %}<option value="{{ bk.id }}" {% if employee.bank_id == bk.id %}selected{% endif %}>{{ bk.name }}</option>{% endfor %}
-                    </select>
-                    {% if not can_edit_salary and employee.bank_id %}<input type="hidden" name="bank" value="{{ employee.bank_id }}">{% endif %}
-                </span>
-            </div>
-            <div class="px-2.5 py-1.5 bg-slate-50/50 whitespace-nowrap">
-                <span class="inline-flex items-center gap-2">
-                    <label class="font-bold text-slate-600">رقم الآيبان <span class="text-red-500">*</span></label>
-                    <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr"
-                           class="w-[11rem] max-w-full px-2 py-1 border border-slate-200 rounded text-xs font-mono bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
-                </span>
-            </div>
-            <div class="px-2.5 py-1.5 bg-slate-50/50 whitespace-nowrap">
-                <span class="inline-flex items-center gap-2">
-                    <label class="font-bold text-slate-600">طبيعة الحساب <span class="text-red-500">*</span></label>
-                    <select name="account_type" class="px-2 py-1 border border-slate-200 rounded text-[11px] bg-white"{% if not can_edit_salary %} disabled{% endif %}>
-                        <option value="">-- اختر --</option>
-                        <option value="bank_account" {% if employee.account_type == 'bank_account' %}selected{% endif %}>BANK ACCOUNT</option>
-                        <option value="salary_card" {% if employee.account_type == 'salary_card' %}selected{% endif %}>SALARY CARD</option>
-                        <option value="sarie" {% if employee.account_type == 'sarie' %}selected{% endif %}>SARIE</option>
-                    </select>
-                    {% if not can_edit_salary and employee.account_type %}<input type="hidden" name="account_type" value="{{ employee.account_type }}">{% endif %}
-                </span>
-            </div>
+        <div class="overflow-x-auto border border-slate-200 rounded-lg w-fit max-w-full">
+            <table class="text-sm hr-table-fit">
+                <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                    <tr>
+                        <th class="px-3 py-2 text-right font-bold">البند</th>
+                        <th class="px-3 py-2 text-right font-bold">القيمة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <tr>
+                        <td class="px-3 py-2 text-slate-600 font-bold whitespace-nowrap">البنك <span class="text-red-500">*</span></td>
+                        <td class="px-3 py-2">
+                            <select name="bank" class="min-w-[10rem] px-2 py-1 border border-slate-200 rounded text-xs bg-white"{% if not can_edit_salary %} disabled{% endif %}>
+                                <option value="">-- اختر --</option>
+                                {% for bk in banks %}<option value="{{ bk.id }}" {% if employee.bank_id == bk.id %}selected{% endif %}>{{ bk.name }}</option>{% endfor %}
+                            </select>
+                            {% if not can_edit_salary and employee.bank_id %}<input type="hidden" name="bank" value="{{ employee.bank_id }}">{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-3 py-2 text-slate-600 font-bold whitespace-nowrap">رقم الآيبان <span class="text-red-500">*</span></td>
+                        <td class="px-3 py-2">
+                            <input type="text" name="iban" value="{{ employee.iban }}" maxlength="34" dir="ltr"
+                                   class="w-[11rem] max-w-full px-2 py-1 border border-slate-200 rounded text-xs font-mono bg-white"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-3 py-2 text-slate-600 font-bold whitespace-nowrap">طبيعة الحساب <span class="text-red-500">*</span></td>
+                        <td class="px-3 py-2">
+                            <select name="account_type" class="min-w-[10rem] px-2 py-1 border border-slate-200 rounded text-[11px] bg-white"{% if not can_edit_salary %} disabled{% endif %}>
+                                <option value="">-- اختر --</option>
+                                <option value="bank_account" {% if employee.account_type == 'bank_account' %}selected{% endif %}>BANK ACCOUNT</option>
+                                <option value="salary_card" {% if employee.account_type == 'salary_card' %}selected{% endif %}>SALARY CARD</option>
+                                <option value="sarie" {% if employee.account_type == 'sarie' %}selected{% endif %}>SARIE</option>
+                            </select>
+                            {% if not can_edit_salary and employee.account_type %}<input type="hidden" name="account_type" value="{{ employee.account_type }}">{% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         <p class="text-[10px] text-slate-500 m-0">مبلغ التحويل = <strong class="text-slate-700" x-text="salaryTotal().toFixed(2) + ' ر.س'">—</strong></p>
     </div>

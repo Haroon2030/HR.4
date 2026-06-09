@@ -1527,6 +1527,23 @@ body.hr-app .hr-main div.border.rounded-lg.overflow-hidden > .overflow-x-auto > 
     box-shadow: none;
 }
 
+/* جداول مضغوطة — عرض حسب المحتوى (بيانات بنكية، إلخ) */
+body.hr-app .hr-main table.hr-table-fit {
+    width: auto !important;
+    max-width: 100%;
+}
+
+body.hr-app .hr-main table.hr-table-fit th,
+body.hr-app .hr-main table.hr-table-fit td {
+    white-space: nowrap;
+}
+
+/* صف إجمالي الراتب */
+body.hr-app .hr-main table.hr-salary-components-table tbody tr.hr-salary-total-row td {
+    background: rgba(59, 130, 246, 0.08) !important;
+    border-top: 2px solid rgba(59, 130, 246, 0.25);
+}
+
 /* جدول المخصصات — زر الملاحظات/التفاصيل لا يُقصّ */
 body.hr-app .hr-accruals-ledger {
     overflow: visible !important;
