@@ -1015,20 +1015,57 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
 }
 
 .hr-atf__btn {
+    min-height: 2.375rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
     cursor: pointer;
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
 }
 
 .hr-atf__btn:hover {
     border-color: #94a3b8;
+    background: #f8fafc;
 }
 
-.hr-atf__chevron {
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid #64748b;
+.hr-atf.is-open .hr-atf__btn,
+.hr-atf__btn:focus-visible {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    outline: none;
+}
+
+.hr-atf__btn-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.05rem;
+    line-height: 1.2;
+}
+
+.hr-atf__btn-kicker {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.01em;
+}
+
+.hr-atf__btn-value {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
+    max-width: 100%;
+}
+
+.hr-atf__chevron-icon {
+    color: #64748b;
+    transition: transform 0.18s ease, color 0.12s ease;
+}
+
+.hr-atf__chevron-icon.is-open,
+.hr-atf.is-open .hr-atf__chevron-icon {
+    transform: rotate(180deg);
+    color: #2563eb;
 }
 
 .hr-atf__menu {
@@ -1037,7 +1074,8 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
     right: 0;
     left: 0;
     z-index: 10060;
-    max-height: min(16rem, 50vh);
+    min-width: 100%;
+    max-height: min(18rem, 52vh);
     overflow-x: hidden;
     overflow-y: auto;
     background: #fff;
@@ -1050,7 +1088,10 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
 }
 
 .hr-atf__option {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
     width: 100%;
     margin: 0;
     padding: 0.45rem 0.75rem;
@@ -1079,6 +1120,34 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
     outline: 2px solid #2563eb;
     outline-offset: -2px;
     background: #eff6ff;
+}
+
+.hr-atf__count {
+    flex-shrink: 0;
+    min-width: 1.35rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.625rem;
+    font-weight: 800;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.hr-atf__option.is-selected .hr-atf__count {
+    background: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.hr-atf__count.is-zero {
+    opacity: 0.45;
+}
+
+/* صفوف أرشيف/إفادات الموظف — إخفاء التصفية (يتجاوز display الافتراضي للجداول) */
+body.hr-app tr.archive-row.is-filtered-out,
+body.hr-app tr.archive-empty.is-filtered-out {
+    display: none !important;
 }
 
 /* ── تبويبات زجاجية موحّدة (كل الموقع) ──

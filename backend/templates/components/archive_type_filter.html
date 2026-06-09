@@ -1,36 +1,40 @@
-{# داخل نطاق archivePager — filterOpen, filterLabel(), setFilter() #}
-{# mode: warnings | archive #}
-<div class="hr-atf shrink-0 min-w-[10.5rem]" @click.outside="filterOpen = false">
+{# داخل نطاق archivePager — filterOpen, filterLabel(), filterOptionsList, setFilter() #}
+<div class="hr-atf shrink-0 min-w-[11.5rem] w-full sm:w-[12.5rem]"
+     :class="filterOpen && 'is-open'"
+     @click.outside="filterOpen = false"
+     @keydown.escape.window="filterOpen = false">
     <button type="button"
-            class="hr-atf__btn w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white text-right flex items-center justify-between gap-2"
-            @click="filterOpen = !filterOpen"
+            class="hr-atf__btn w-full text-sm bg-white text-right flex items-center justify-between gap-2"
+            @click.stop="filterOpen = !filterOpen; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
             :aria-expanded="filterOpen ? 'true' : 'false'"
-            aria-haspopup="listbox">
-        <span class="font-semibold text-slate-800 truncate" x-text="filterLabel()"></span>
-        <span class="hr-atf__chevron shrink-0" aria-hidden="true"></span>
+            aria-haspopup="listbox"
+            :aria-label="'تصفية حسب النوع: ' + filterLabel()">
+        <span class="hr-atf__btn-body min-w-0 flex-1">
+            <span class="hr-atf__btn-kicker">نوع السجل</span>
+            <span class="hr-atf__btn-value truncate" x-text="filterLabel()"></span>
+        </span>
+        <i data-lucide="chevron-down"
+           class="hr-atf__chevron-icon w-4 h-4 shrink-0"
+           :class="filterOpen && 'is-open'"
+           aria-hidden="true"></i>
     </button>
     <div x-show="filterOpen"
          x-cloak
          class="hr-atf__menu"
          role="listbox"
-         @keydown.escape.window="filterOpen = false">
-        {% if mode == 'archive' %}
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'all' && 'is-selected'" @click="setFilter('all')">كل الأنواع</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'hire' && 'is-selected'" @click="setFilter('hire')">توظيف</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'statement' && 'is-selected'" @click="setFilter('statement')">إفادة / إنذار</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'terminate' && 'is-selected'" @click="setFilter('terminate')">تصفية</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'reactivate' && 'is-selected'" @click="setFilter('reactivate')">إعادة تفعيل</button>
-        {% if can_view_salary %}
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'salary_adjust' && 'is-selected'" @click="setFilter('salary_adjust')">تعديل راتب</button>
-        {% endif %}
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'transfer' && 'is-selected'" @click="setFilter('transfer')">نقل</button>
-        {% else %}
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'all' && 'is-selected'" @click="setFilter('all')">كل الأنواع</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'statement' && 'is-selected'" @click="setFilter('statement')">إفادة</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'warning' && 'is-selected'" @click="setFilter('warning')">إنذار</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'final_warning' && 'is-selected'" @click="setFilter('final_warning')">إنذار نهائي</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'acknowledgment' && 'is-selected'" @click="setFilter('acknowledgment')">إقرار</button>
-        <button type="button" role="option" class="hr-atf__option" :class="filter === 'other' && 'is-selected'" @click="setFilter('other')">أخرى</button>
-        {% endif %}
+         aria-label="خيارات نوع السجل">
+        <template x-for="opt in filterOptionsList" :key="opt.value">
+            <button type="button"
+                    role="option"
+                    class="hr-atf__option"
+                    :class="filter === opt.value && 'is-selected'"
+                    :aria-selected="filter === opt.value ? 'true' : 'false'"
+                    @click.stop="setFilter(opt.value)">
+                <span class="truncate" x-text="opt.label"></span>
+                <span class="hr-atf__count"
+                      :class="opt.count === 0 && 'is-zero'"
+                      x-text="opt.count"></span>
+            </button>
+        </template>
     </div>
 </div>
