@@ -1538,10 +1538,17 @@ body.hr-app .hr-main table.hr-table-fit td {
     white-space: nowrap;
 }
 
-/* صف إجمالي الراتب */
-body.hr-app .hr-main table.hr-salary-components-table tbody tr.hr-salary-total-row td {
-    background: rgba(59, 130, 246, 0.08) !important;
-    border-top: 2px solid rgba(59, 130, 246, 0.25);
+/* شبكة مكوّنات الراتب — 3 بنود بالصف، القيمة تحت البند */
+body.hr-app .hr-salary-grid__item {
+    background: var(--hr-table-glass-row);
+    border-color: var(--hr-table-glass-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.hr-app .hr-salary-total-card {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.25);
 }
 
 /* جدول المخصصات — زر الملاحظات/التفاصيل لا يُقصّ */

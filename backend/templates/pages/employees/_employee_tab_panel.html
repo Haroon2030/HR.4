@@ -41,64 +41,54 @@
 
                 {# ── مكوّنات الراتب ── #}
                 <div class="space-y-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="layers" class="w-4 h-4 text-slate-600"></i>
-                            <h3 class="text-sm font-bold text-slate-800">مكوّنات الراتب الشهري</h3>
-                        </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-slate-600"></i>
+                        <h3 class="text-sm font-bold text-slate-800 m-0">مكوّنات الراتب الشهري</h3>
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold {% if employee.sponsorship_id %}bg-sky-100 text-sky-800{% else %}bg-amber-100 text-amber-900{% endif %}">
                             <i data-lucide="wallet" class="w-3 h-3"></i>
                             {{ employee.payroll_salary_mode_label }}
                         </span>
                     </div>
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                        <table class="w-full text-sm hr-salary-components-table">
-                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-4 py-2.5 text-right font-bold">البند</th>
-                                    <th class="px-4 py-2.5 text-left font-bold w-36 min-w-[8rem]" dir="ltr">المبلغ (ر.س)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-700">الراتب الأساسي</td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.basic_salary|floatformat:2 }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-700">بدل السكن</td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.housing_allowance|floatformat:2 }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-700">بدل النقل</td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.transport_allowance|floatformat:2 }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-700">بدل إضافي</td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.other_allowance|floatformat:2 }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-700">
-                                        بدل التغذية
-                                        <span class="block text-[10px] font-normal text-slate-400 mt-0.5">لا يُحتسب ضمن مكافأة نهاية الخدمة</span>
-                                    </td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.meal_allowance|floatformat:2 }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-700">نسبة خصم التأمينات (%)</td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.insurance_deduction_rate|floatformat:2 }}</td>
-                                </tr>
-                                <tr class="hr-salary-total-row">
-                                    <td class="px-4 py-3 text-primary-800 font-bold">إجمالي الراتب</td>
-                                    <td class="px-4 py-3 text-primary-800 font-black text-base text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.total_salary|floatformat:2 }}</td>
-                                </tr>
-                                {% if employee.sponsorship_id %}
-                                <tr>
-                                    <td class="px-4 py-2.5 text-slate-600">أساس مكافأة نهاية الخدمة (بدون تغذية)</td>
-                                    <td class="px-4 py-2.5 text-slate-800 font-bold text-left font-mono whitespace-nowrap" dir="ltr">{{ employee.salary_for_end_of_service|floatformat:2 }}</td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+                    <div class="hr-salary-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">الراتب الأساسي</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.basic_salary|floatformat:2 }}</div>
+                        </div>
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">بدل السكن</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.housing_allowance|floatformat:2 }}</div>
+                        </div>
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">بدل النقل</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.transport_allowance|floatformat:2 }}</div>
+                        </div>
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">بدل إضافي</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.other_allowance|floatformat:2 }}</div>
+                        </div>
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">
+                                بدل التغذية
+                                <span class="block text-[10px] font-normal text-slate-400 mt-0.5">لا يُحتسب ضمن مكافأة نهاية الخدمة</span>
+                            </div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.meal_allowance|floatformat:2 }}</div>
+                        </div>
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">نسبة خصم التأمينات (%)</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.insurance_deduction_rate|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div class="hr-salary-total-card rounded-lg border border-primary-200 bg-primary-50/60 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-primary-800">إجمالي الراتب (ر.س)</div>
+                            <div class="text-base font-black text-primary-800 font-mono" dir="ltr">{{ employee.total_salary|floatformat:2 }}</div>
+                        </div>
+                        {% if employee.sponsorship_id %}
+                        <div class="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">أساس مكافأة نهاية الخدمة (بدون تغذية)</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.salary_for_end_of_service|floatformat:2 }}</div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
