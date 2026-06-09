@@ -336,4 +336,29 @@
         document.addEventListener('alpine:init', register);
         register();
     };
+
+    /** صفحة النماذج: التسجيل هنا قبل Alpine (defer) — extra_js كان يتأخر */
+    (function autoRegisterHrFormsFromDom() {
+        var urlEl = document.getElementById('hr-forms-search-url');
+        if (!urlEl) return;
+        var totalEl = document.getElementById('hr-forms-employee-total');
+        var searchUrl = '';
+        try {
+            searchUrl = JSON.parse(urlEl.textContent || '""');
+        } catch (e) {
+            searchUrl = '';
+        }
+        var employeeTotal = 0;
+        if (totalEl) {
+            try {
+                employeeTotal = JSON.parse(totalEl.textContent || '0') || 0;
+            } catch (e2) {
+                employeeTotal = 0;
+            }
+        }
+        window.registerHrFormsApp({
+            searchUrl: searchUrl,
+            employeeTotal: employeeTotal,
+        });
+    })();
 })();

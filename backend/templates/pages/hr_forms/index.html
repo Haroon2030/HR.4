@@ -217,20 +217,5 @@
 </div>
 
 {{ employee_search_url|json_script:"hr-forms-search-url" }}
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function () {
-    'use strict';
-    var searchUrlEl = document.getElementById('hr-forms-search-url');
-    var searchUrl = searchUrlEl ? JSON.parse(searchUrlEl.textContent) : '';
-    if (typeof window.registerHrFormsApp === 'function') {
-        window.registerHrFormsApp({
-            searchUrl: searchUrl,
-            employeeTotal: {{ employee_total|default:0 }},
-        });
-    }
-})();
-</script>
+{{ employee_total|default:0|json_script:"hr-forms-employee-total" }}
 {% endblock %}
