@@ -103,8 +103,10 @@ def _payroll_list_querystring(
     month=None,
     salary_mode=None,
     sponsorship_ids=None,
+    payroll_view=None,
     page=None,
     open_run_id=None,
+    alloc_page=None,
 ):
     """سلسلة استعلام لشاشة المسير الموحّدة."""
     pairs: list[tuple[str, object]] = []
@@ -116,8 +118,12 @@ def _payroll_list_querystring(
     if salary_mode:
         pairs.append(('salary_mode', salary_mode))
     append_multi_param(pairs, 'sponsorship_id', sponsorship_ids)
+    if payroll_view == 'detailed':
+        pairs.append(('payroll_view', 'detailed'))
     if page:
         pairs.append(('page', page))
+    if alloc_page:
+        pairs.append(('alloc_page', alloc_page))
     if open_run_id:
         pairs.append(('open_run', open_run_id))
     return urlencode(pairs, doseq=True) if pairs else ''
@@ -190,6 +196,7 @@ def _store_payroll_list_filters(request, filters: dict) -> None:
         'month': filters['month'],
         'salary_mode': filters['salary_mode'],
         'sponsorship_ids': filters['sponsorship_ids'],
+        'payroll_view': filters.get('payroll_view', 'standard'),
     }
     request.session.modified = True
 
@@ -394,6 +401,8 @@ def _merge_stored_payroll_filters(filters: dict, stored: dict) -> dict:
         filters['year'] = stored['year']
     if stored.get('month'):
         filters['month'] = stored['month']
+    if stored.get('payroll_view'):
+        filters['payroll_view'] = stored['payroll_view']
     return filters
 
 
@@ -488,6 +497,8 @@ def _parse_payroll_form(request, user_branches):
             salary_mode = s
             break
     sponsorship_ids = parse_multi_filter_ids(request, 'sponsorship_id')
+    view_raw = (src.get('payroll_view') or '').strip()
+    payroll_view = 'detailed' if view_raw == 'detailed' else 'standard'
 
     year = month = None
     try:
@@ -504,6 +515,7 @@ def _parse_payroll_form(request, user_branches):
         'month': month,
         'salary_mode': salary_mode,
         'sponsorship_ids': sponsorship_ids,
+        'payroll_view': payroll_view,
         'ready': False,
     }
     return _recompute_payroll_ready(_default_payroll_period(filters))
@@ -694,6 +706,7 @@ def _redirect_payroll_list(request, filters, *, open_run_id=None):
         month=filters['month'],
         salary_mode=filters['salary_mode'] or None,
         sponsorship_ids=filters['sponsorship_ids'],
+        payroll_view=filters.get('payroll_view'),
         open_run_id=open_run_id,
     )
     url = reverse('web:list_payroll_runs')
@@ -779,6 +792,10 @@ def list_payroll_runs(request):
                         f'تم بناء {len(runs_built)} مسير تفصيلي '
                         f'({total_rows} موظف منقول).',
                     )
+                    filters['payroll_view'] = 'detailed'
+                    return _redirect_payroll_list(
+                        request, filters, open_run_id=runs_built[0].pk,
+                    )
         return _redirect_payroll_list(request, filters)
 
     if request.method == 'GET' and filters['ready']:
@@ -815,7 +832,16 @@ def list_payroll_runs(request):
 
         has_payroll_lines = any(run.lines.all() for run in payroll_runs)
 
-        detailed_runs = list(_detailed_runs_for_filters(filters, request.user, user_branches))
+    active_payroll_view = filters.get('payroll_view', 'standard')
+    detailed_runs = []
+    detailed_totals = {}
+    detailed_run_count = 0
+    if filters['ready'] and active_payroll_view == 'detailed':
+        detailed_runs = list(
+            _detailed_runs_for_filters(filters, request.user, user_branches),
+        )
+        detailed_run_count = len(detailed_runs)
+        detailed_totals = _period_run_totals(detailed_runs)
         if detailed_runs:
             from apps.payroll.models import PayrollAllocationLine
             alloc_qs = PayrollAllocationLine.objects.filter(
@@ -829,6 +855,11 @@ def list_payroll_runs(request):
                 request.GET.get('alloc_page') or 1,
             )
             allocation_lines = allocation_page_obj.object_list
+            has_payroll_lines = bool(allocation_lines)
+    elif filters['ready']:
+        detailed_run_count = _detailed_runs_for_filters(
+            filters, request.user, user_branches,
+        ).count()
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
@@ -860,6 +891,12 @@ def list_payroll_runs(request):
         salary_mode=PayrollRun.SalaryMode.CASH,
         sponsorship_ids=None,
     )
+    tab_qs_detailed = _payroll_list_querystring(
+        **tab_qs_base,
+        salary_mode=active_mode,
+        sponsorship_ids=filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None,
+        payroll_view='detailed',
+    )
     modal_runs = period_runs if period_runs else payroll_runs
     if open_run_id and not any(r.pk == open_run_id for r in modal_runs):
         open_run_id = None
@@ -874,6 +911,7 @@ def list_payroll_runs(request):
         month=filters['month'],
         salary_mode=filters['salary_mode'] or None,
         sponsorship_ids=filters['sponsorship_ids'],
+        payroll_view=active_payroll_view if active_payroll_view == 'detailed' else None,
     )
     export_unified_qs = _payroll_list_querystring(
         year=filters['year'],
@@ -931,6 +969,10 @@ def list_payroll_runs(request):
         'active_salary_mode': active_mode,
         'tab_qs_transfer': tab_qs_transfer,
         'tab_qs_cash': tab_qs_cash,
+        'tab_qs_detailed': tab_qs_detailed,
+        'active_payroll_view': active_payroll_view,
+        'detailed_totals': detailed_totals,
+        'detailed_run_count': detailed_run_count,
         'modal_runs': modal_runs,
     })
 

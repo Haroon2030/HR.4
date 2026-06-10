@@ -13,3 +13,6 @@
 {% if filter_month %}
 <input type="hidden" name="month" value="{{ filter_month }}">
 {% endif %}
+{% if active_payroll_view == 'detailed' %}
+<input type="hidden" name="payroll_view" value="detailed">
+{% endif %}
