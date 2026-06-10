@@ -805,8 +805,6 @@ def list_payroll_runs(request):
         payroll_runs = list(
             runs_qs.prefetch_related(line_prefetch).order_by('branch__name', 'sponsorship__company_name'),
         )
-        if open_run_id and not any(r.pk == open_run_id for r in payroll_runs):
-            open_run_id = None
 
         grand_totals = runs_qs.aggregate(
             total_earnings=Sum('total_earnings'),
@@ -863,6 +861,8 @@ def list_payroll_runs(request):
         sponsorship_ids=None,
     )
     modal_runs = period_runs if period_runs else payroll_runs
+    if open_run_id and not any(r.pk == open_run_id for r in modal_runs):
+        open_run_id = None
     for run in modal_runs:
         run.open_list_url = _payroll_run_open_url(run)
     for run in period_runs:

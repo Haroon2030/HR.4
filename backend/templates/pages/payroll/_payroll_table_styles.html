@@ -727,6 +727,36 @@
         background: #fafafa;
     }
 
+    /* نافذة عرض المسودة — فوق كل طبقات الصفحة (ليست hr-glass-modal--ledger الصغيرة) */
+    body.hr-app .hr-glass-modal--payroll-run {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: min(96vw, 72rem);
+        max-height: min(92vh, 56rem);
+        min-height: 16rem;
+    }
+
+    body.hr-app .hr-glass-modal--payroll-run .hr-glass-modal__body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    body.hr-app .hr-glass-modal--payroll-run .hr-glass-modal__content {
+        max-height: none;
+        overflow: visible;
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+
+    body.hr-app .hr-payroll-run-modal-overlay {
+        -webkit-overflow-scrolling: touch;
+    }
+
     .hr-payroll-row-actions__btn--export {
         color: #065f46;
         border-color: #a7f3d0;

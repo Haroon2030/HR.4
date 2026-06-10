@@ -1,12 +1,13 @@
 {% load custom_tags %}
+<template x-teleport="body">
 <div x-show="modalRunId !== null"
      x-cloak
-     class="hr-glass-modal-overlay fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4"
+     class="hr-glass-modal-overlay hr-payroll-run-modal-overlay fixed inset-0 z-[10050] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
      @click.self="closeModal()"
      role="dialog"
      aria-modal="true"
      aria-label="تفاصيل المسير">
-    <div class="hr-glass-modal hr-glass-modal--ledger relative w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl"
+    <div class="hr-glass-modal hr-glass-modal--payroll-run relative w-full my-auto flex flex-col shadow-2xl"
          @click.stop>
         {% for run in modal_runs %}
         <div x-show="modalRunId === {{ run.id }}"
@@ -60,5 +61,11 @@
             </div>
         </div>
         {% endfor %}
+        <div x-show="modalRunId !== null && !modalRunIds.includes(modalRunId)"
+             x-cloak
+             class="p-8 text-center text-slate-500 text-sm">
+            تعذّر تحميل تفاصيل المسير — أغلق ثم اضغط عرض مرة أخرى.
+        </div>
     </div>
 </div>
+</template>

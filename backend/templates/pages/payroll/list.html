@@ -9,13 +9,18 @@
 <div class="hr-payroll-page space-y-4" dir="rtl"
      x-data="{
         modalRunId: {% if open_run_id %}{{ open_run_id }}{% else %}null{% endif %},
+        modalRunIds: [{% for run in modal_runs %}{{ run.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
         openModal(id) {
             this.modalRunId = id;
+            document.body.classList.add('overflow-hidden');
             this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
         },
-        closeModal() { this.modalRunId = null; }
+        closeModal() {
+            this.modalRunId = null;
+            document.body.classList.remove('overflow-hidden');
+        }
      }"
-     x-init="if (modalRunId) { $nextTick(function () { if (window.lucide) lucide.createIcons(); }); }"
+     x-init="if (modalRunId) { document.body.classList.add('overflow-hidden'); $nextTick(function () { if (window.lucide) lucide.createIcons(); }); }"
      @keydown.escape.window="closeModal()">
 
     <header class="hr-payroll-page__header flex flex-wrap items-start justify-between gap-3">
