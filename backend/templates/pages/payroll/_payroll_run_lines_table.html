@@ -1,0 +1,35 @@
+{% load custom_tags %}
+<div class="overflow-x-auto">
+    <table class="payroll-tbl">
+        <thead>
+            <tr>
+                <th class="text-right">الموظف</th>
+                <th class="col-num">الإجمالي</th>
+                <th class="col-num th-deduct">غياب</th>
+                <th class="col-num th-deduct">إجازة بدون راتب</th>
+                <th class="col-num th-deduct">قسط سلفة</th>
+                <th class="col-num th-deduct">مخالفات</th>
+                <th class="col-num th-deduct">تأمينات</th>
+                <th class="col-num th-earn">استحقاقات</th>
+                <th class="col-num th-deduct">خصومات</th>
+                <th class="col-num th-net">الصافي</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% with run_lines=run.lines.all %}
+            {% include "pages/payroll/_payroll_run_lines_rows.html" %}
+            {% endwith %}
+        </tbody>
+        {% if run.employees_count %}
+        <tfoot>
+            <tr>
+                <td class="text-right font-bold text-slate-900">إجمالي المسير</td>
+                <td class="col-num" colspan="6"></td>
+                <td class="col-num td-earn">{{ run.total_earnings|format_sar:"earn" }}</td>
+                <td class="col-num td-deduct">{{ run.total_deductions|format_sar:"deduct" }}</td>
+                <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
