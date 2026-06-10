@@ -148,6 +148,14 @@ def _effective_sponsorship_ids(filters) -> list[int]:
     return list(ids)
 
 
+def _resolved_branch_ids(filters, user_branches) -> list[int]:
+    """فروع المسير — None في الفلتر = جميع الفروع المتاحة للمستخدم."""
+    ids = filters.get('branch_ids')
+    if ids:
+        return list(dict.fromkeys(ids))
+    return list(user_branches.values_list('id', flat=True))
+
+
 def _default_payroll_period(filters: dict) -> dict:
     """توحيد السنة/الشهر مع القيم الافتراضية في الواجهة."""
     today = date.today()
@@ -160,7 +168,7 @@ def _default_payroll_period(filters: dict) -> dict:
 
 def _recompute_payroll_ready(filters: dict) -> dict:
     ready = bool(
-        filters.get('branch_ids') and filters.get('year') and filters.get('month')
+        filters.get('year') and filters.get('month')
         and filters.get('salary_mode') in PayrollRun.SalaryMode.values
     )
     if ready and filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
@@ -172,8 +180,9 @@ def _recompute_payroll_ready(filters: dict) -> dict:
 def _store_payroll_list_filters(request, filters: dict) -> None:
     if not filters.get('ready'):
         return
+    branch_ids = filters.get('branch_ids')
     request.session[_PAYROLL_LIST_SESSION_KEY] = {
-        'branch_ids': list(filters['branch_ids']),
+        'branch_ids': list(branch_ids) if branch_ids else None,
         'year': filters['year'],
         'month': filters['month'],
         'salary_mode': filters['salary_mode'],
@@ -300,8 +309,9 @@ def _infer_payroll_filters_from_drafts(filters: dict, user, user_branches) -> di
 
 
 def _merge_stored_payroll_filters(filters: dict, stored: dict) -> dict:
-    if stored.get('branch_ids') and not filters.get('branch_ids'):
-        filters['branch_ids'] = list(stored['branch_ids'])
+    if 'branch_ids' in stored and not filters.get('branch_ids'):
+        stored_branches = stored['branch_ids']
+        filters['branch_ids'] = list(stored_branches) if stored_branches else None
     if stored.get('salary_mode') and not filters.get('salary_mode'):
         filters['salary_mode'] = stored['salary_mode']
     if 'sponsorship_ids' in stored and filters.get('sponsorship_ids') is None:
@@ -411,10 +421,10 @@ def _parse_payroll_form(request, user_branches):
     return _recompute_payroll_ready(_default_payroll_period(filters))
 
 
-def _validate_payroll_build(filters):
+def _validate_payroll_build(filters, user_branches):
     """التحقق من صحة معايير البناء. يُرجع رسالة خطأ أو None."""
-    if not filters['branch_ids']:
-        return 'يرجى اختيار فرع واحد على الأقل.'
+    if not _resolved_branch_ids(filters, user_branches):
+        return 'لا توجد فروع متاحة لحسابك.'
     y, m = filters['year'], filters['month']
     if not y or not m or not (2020 <= y <= 2100 and 1 <= m <= 12):
         return 'يرجى تحديد السنة والشهر.'
@@ -431,11 +441,11 @@ def _validate_payroll_build(filters):
     return None
 
 
-def _build_payroll_runs(request, filters):
+def _build_payroll_runs(request, filters, user_branches):
     """بناء مسير لكل فرع. يُرجع (runs_built, errors)."""
     from django.db import transaction
 
-    branch_ids = list(dict.fromkeys(filters['branch_ids']))
+    branch_ids = _resolved_branch_ids(filters, user_branches)
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
         return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
@@ -472,8 +482,9 @@ def _build_payroll_runs(request, filters):
 
 def _payroll_runs_for_filters(filters, user, user_branches):
     """مسيرات عادية مطابقة للمعايير."""
+    branch_ids = _resolved_branch_ids(filters, user_branches)
     qs = PayrollRun.objects.filter(
-        branch_id__in=filters['branch_ids'],
+        branch_id__in=branch_ids,
         period_year=filters['year'],
         period_month=filters['month'],
         salary_mode=filters['salary_mode'],
@@ -492,8 +503,9 @@ def _payroll_runs_for_filters(filters, user, user_branches):
 
 def _detailed_runs_for_filters(filters, user, user_branches):
     """مسيرات تفصيلية (نقل) للشركات المرتبطة بالفروع المختارة."""
+    branch_ids = _resolved_branch_ids(filters, user_branches)
     company_ids = Branch.objects.filter(
-        id__in=filters['branch_ids'],
+        id__in=branch_ids,
     ).values_list('company_id', flat=True).distinct()
     qs = PayrollRun.objects.filter(
         company_id__in=company_ids,
@@ -514,10 +526,10 @@ def _detailed_runs_for_filters(filters, user, user_branches):
     return qs.order_by('company__name')
 
 
-def _build_detailed_payroll_runs(request, filters):
+def _build_detailed_payroll_runs(request, filters, user_branches):
     from django.db import transaction
 
-    branch_ids = list(dict.fromkeys(filters['branch_ids']))
+    branch_ids = _resolved_branch_ids(filters, user_branches)
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
         return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
@@ -601,7 +613,7 @@ def list_payroll_runs(request):
         if not user_can_manage_payroll(request.user):
             messages.error(request, 'ليس لديك صلاحية إدارة المسير.')
         else:
-            err = _validate_payroll_build(filters)
+            err = _validate_payroll_build(filters, user_branches)
             if err:
                 messages.error(request, err)
             elif payroll_action == 'lock':
@@ -616,7 +628,7 @@ def list_payroll_runs(request):
                         f'تم الإغلاق النهائي لـ {locked} مسير وربط بنود الخصم.',
                     )
             elif payroll_action == 'save' or build_kind == 'standard':
-                runs_built, build_errors = _build_payroll_runs(request, filters)
+                runs_built, build_errors = _build_payroll_runs(request, filters, user_branches)
                 for e in build_errors:
                     messages.error(request, e)
                 if runs_built:
@@ -640,7 +652,7 @@ def list_payroll_runs(request):
                         request, filters, open_run_id=runs_built[0].pk,
                     )
             elif build_kind == 'detailed':
-                runs_built, build_errors = _build_detailed_payroll_runs(request, filters)
+                runs_built, build_errors = _build_detailed_payroll_runs(request, filters, user_branches)
                 for e in build_errors:
                     messages.error(request, e)
                 if runs_built:
@@ -752,7 +764,8 @@ def list_payroll_runs(request):
         'current_month': today.month,
         'years_range': range(today.year - 2, today.year + 1),
         'months_range': range(1, 13),
-        'filter_branch_ids': filters['branch_ids'],
+        'filter_branch_ids': filters['branch_ids'] or [],
+        'all_branches_selected': not filters.get('branch_ids'),
         'filter_year': filters['year'],
         'filter_month': filters['month'],
         'filter_salary_mode': filters['salary_mode'],

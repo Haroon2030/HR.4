@@ -88,7 +88,7 @@
                     </div>
                     <div class="hr-payroll-filter-field hr-payroll-filter-field--wide">
                         <label class="hr-payroll-filter-label">الفروع</label>
-                        {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="hr-payroll-filter-input" select_id="payrollBranch" aria_label="الفروع" no_all=True placeholder="— اختر الفروع —" require_selection=True count_unit="فروع" %}
+                        {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="hr-payroll-filter-input" select_id="payrollBranch" aria_label="الفروع" all_label="جميع الفروع" placeholder="— اختر الفروع —" count_unit="فروع" %}
                     </div>
                     {% if active_salary_mode == 'transfer' %}
                     <div class="hr-payroll-filter-field hr-payroll-filter-field--wide" id="payrollSponsorshipWrap">
@@ -135,28 +135,6 @@
             </form>
         </section>
 
-        {# ── إحصائيات سريعة ── #}
-        {% if show_table and grand_totals %}
-        <div class="hr-payroll-stats-grid">
-            <div class="hr-payroll-stat">
-                <span class="hr-payroll-stat__label">مسيرات</span>
-                <span class="hr-payroll-stat__value">{{ runs_count }}</span>
-            </div>
-            <div class="hr-payroll-stat">
-                <span class="hr-payroll-stat__label">موظفون</span>
-                <span class="hr-payroll-stat__value">{{ grand_totals.employees_count|default:0 }}</span>
-            </div>
-            <div class="hr-payroll-stat hr-payroll-stat--earn">
-                <span class="hr-payroll-stat__label">الاستحقاقات</span>
-                <span class="hr-payroll-stat__value">{{ grand_totals.total_earnings|default:0|format_sar:"earn" }}</span>
-            </div>
-            <div class="hr-payroll-stat hr-payroll-stat--net">
-                <span class="hr-payroll-stat__label">الصافي</span>
-                <span class="hr-payroll-stat__value">{{ grand_totals.total_net|default:0|format_sar:"net" }}</span>
-            </div>
-        </div>
-        {% endif %}
-
         {# ── حفظ / إغلاق / تصدير ── #}
         {% if show_table %}
         <section class="hr-payroll-panel hr-payroll-panel--actions" aria-label="حفظ وإغلاق المسير">
@@ -194,9 +172,10 @@
                     {% endif %}
                     {% if can_export %}
                     <a href="{% url 'web:export_payroll_list_excel' %}?{{ filter_qs }}"
-                       class="hr-payroll-action-btn hr-payroll-action-btn--export">
+                       class="hr-payroll-action-btn hr-payroll-action-btn--export"
+                       title="ملف Excel واحد يضم كل الفروع{% if active_salary_mode == 'transfer' %} وشركات الكفالة{% endif %} المحددة">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                        <span>تصدير Excel</span>
+                        <span>تصدير Excel — ملف واحد</span>
                     </a>
                     {% else %}
                     <span class="hr-payroll-action-btn hr-payroll-action-btn--export hr-payroll-action-btn--disabled" aria-disabled="true">
@@ -219,6 +198,7 @@
                 </h2>
                 <p class="text-[11px] text-slate-500 m-0">
                     مرتبة حسب الفرع{% if active_salary_mode == 'transfer' %} والكفالة{% endif %} — المسودة أولاً
+                    {% if all_branches_selected %}<span class="text-primary-700 font-semibold">· جميع الفروع</span>{% endif %}
                 </p>
             </div>
             <div class="overflow-x-auto">
@@ -299,14 +279,14 @@
                 {% else %}
                 <div class="hr-payroll-empty py-12 text-center">
                     <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
-                    {% if not filter_branch_ids %}
-                    <p class="font-semibold text-slate-700 m-0">لا مسيرات لـ {{ filter_month }}/{{ filter_year }} — {% if active_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}</p>
-                    <p class="text-sm text-slate-500 mt-2 m-0">اختر الفروع واضغط <strong>بناء المسير</strong> أو <strong>عرض المسودة</strong>.</p>
-                    {% elif not show_table and active_salary_mode == 'transfer' and not filter_sponsorship_ids %}
+                    {% if not show_table and active_salary_mode == 'transfer' and not filter_sponsorship_ids %}
                     <p class="font-semibold text-slate-700 m-0">اختر شركة الكفالة أو «جميع الشركات» ثم اضغط عرض أو بناء</p>
-                    {% else %}
+                    {% elif show_table %}
                     <p class="font-semibold text-slate-700 m-0">لا مسيرات لهذه المعايير</p>
                     <p class="text-sm text-slate-500 mt-2 m-0">اضغط <strong>② بناء المسير</strong> لإنشاء مسودة جديدة.</p>
+                    {% else %}
+                    <p class="font-semibold text-slate-700 m-0">لا مسيرات لـ {{ filter_month }}/{{ filter_year }} — {% if active_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}</p>
+                    <p class="text-sm text-slate-500 mt-2 m-0">اختر <strong>جميع الفروع</strong> أو فروعاً محددة ثم اضغط <strong>بناء المسير</strong> أو <strong>عرض المسودة</strong>.</p>
                     {% endif %}
                 </div>
                 {% endif %}
