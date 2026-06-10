@@ -127,9 +127,14 @@ def employees_queryset_for_branch_payroll(
     company_id = branch.company_id
     transfers = transfers_in_period(company_id, year, month)
 
+    period_start, period_end = calendar_period_bounds(year, month)
     base_qs = Employee.objects.filter(
         branch=branch,
         status__in=[Employee.Status.ACTIVE, Employee.Status.LEAVE],
+    ).filter(
+        Q(hire_date__isnull=True) | Q(hire_date__lte=period_end),
+    ).filter(
+        Q(end_date__isnull=True) | Q(end_date__gte=period_start),
     )
     if salary_mode == PayrollRun.SalaryMode.CASH:
         base_qs = base_qs.filter(sponsorship__isnull=True)

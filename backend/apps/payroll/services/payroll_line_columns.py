@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from apps.core.salary_month import calendar_period_bounds
 from apps.payroll.models import PayrollRun
+from apps.payroll.services.period_eligibility import period_from_line_breakdown, prorate_amount
 
 # (مفتاح الحقل، عنوان العمود، لون الترويسة، النوع: text | money | days)
 # الترتيب من اليمين لليسار (عمود 1 = أقصى اليمين في Excel RTL)
@@ -63,20 +63,23 @@ def _q(value) -> Decimal:
     return Decimal(value or 0).quantize(Decimal('0.01'))
 
 
-def _worked_days(line) -> Decimal:
-    month_days = Decimal(line.month_days or 30)
+def _payable_worked_days(line, run) -> Decimal:
+    period = period_from_line_breakdown(line, run)
+    base = period['payable_base_days']
     absent = Decimal(line.absence_days or 0) + Decimal(line.unpaid_leave_days or 0)
-    worked = month_days - absent
+    worked = base - absent
     if worked < 0:
         worked = Decimal('0')
     return worked
 
 
-def _prorate(line, amount) -> Decimal:
-    month_days = Decimal(line.month_days or 30)
-    if month_days <= 0:
-        return Decimal('0')
-    return _q(Decimal(amount or 0) * _worked_days(line) / month_days)
+def _worked_days(line, run) -> Decimal:
+    return _payable_worked_days(line, run)
+
+
+def _prorate(line, run, amount) -> Decimal:
+    period = period_from_line_breakdown(line, run)
+    return prorate_amount(amount, _payable_worked_days(line, run), period['month_days'])
 
 
 def _company_name(line, run) -> str:
@@ -119,21 +122,19 @@ def resolve_cell_value(line, run, key: str):
     if key == 'company':
         return _company_name(line, run)
     if key == 'period_start':
-        start, _end = calendar_period_bounds(run.period_year, run.period_month)
-        return start.isoformat()
+        return period_from_line_breakdown(line, run)['period_start'].isoformat()
     if key == 'period_end':
-        _start, end = calendar_period_bounds(run.period_year, run.period_month)
-        return end.isoformat()
+        return period_from_line_breakdown(line, run)['period_end'].isoformat()
     if key == 'worked_days':
-        return _worked_days(line)
+        return _worked_days(line, run)
     if key == 'basic_salary':
         return line.basic_salary
     if key == 'earned_basic':
-        return _prorate(line, line.basic_salary)
+        return _prorate(line, run, line.basic_salary)
     if key == 'housing_allowance':
         return line.housing_allowance
     if key == 'earned_housing':
-        return _prorate(line, line.housing_allowance)
+        return _prorate(line, run, line.housing_allowance)
     if key == 'transport_allowance':
         return line.transport_allowance
     if key == 'fixed_other_allowance':

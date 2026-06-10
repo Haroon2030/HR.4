@@ -174,8 +174,18 @@ def _compute_employee_payroll_snapshot(
     pen_by_emp=None,
 ) -> dict:
     """حساب snapshot راتب موظف لشهر — يُستخدم في المسير العادي والتفصيلي."""
+    from apps.payroll.services.period_eligibility import employee_payroll_period, prorate_amount
+
     period_start, period_end = calendar_period_bounds(year, month)
     month_days = salary_month_days(year, month)
+    pay_period = employee_payroll_period(
+        period_year=year,
+        period_month=month,
+        hire_date=getattr(emp, 'hire_date', None),
+        end_date=getattr(emp, 'end_date', None),
+    )
+    payable_base_days = pay_period['payable_base_days']
+    month_days_dec = pay_period['month_days']
 
     if abs_by_emp is None:
         if run is None:
@@ -189,7 +199,7 @@ def _compute_employee_payroll_snapshot(
     emp_installments = inst_by_emp.get(emp.id, [])
     emp_penalties = pen_by_emp.get(emp.id, [])
 
-    gross = (
+    gross_full = (
         Decimal(emp.basic_salary or 0)
         + Decimal(emp.housing_allowance or 0)
         + Decimal(emp.transport_allowance or 0)
@@ -197,11 +207,12 @@ def _compute_employee_payroll_snapshot(
         + Decimal(emp.cash_amount or 0)
         + Decimal(emp.meal_allowance or 0)
     )
-    daily_rate = daily_rate_from_total(gross)
+    gross = prorate_amount(gross_full, payable_base_days, month_days_dec)
+    daily_rate = daily_rate_from_total(gross_full)
 
     absence_deduction = _q(
         sum(
-            (deduction_for_days(gross, a.days) for a in emp_absences),
+            (deduction_for_days(gross_full, a.days) for a in emp_absences),
             Decimal('0'),
         )
     )
@@ -215,7 +226,7 @@ def _compute_employee_payroll_snapshot(
         sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
     )
     rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
-    insurance_deduction = _q(gross * rate / Decimal('100'))
+    insurance_deduction = _q(gross * rate / Decimal('100'))  # على الراتب المستحق وليس الكامل
     total_deductions = _q(
         absence_deduction + unpaid_leave_deduction + loan_deduction
         + penalty_deduction + insurance_deduction
@@ -239,12 +250,19 @@ def _compute_employee_payroll_snapshot(
         'total_deductions': total_deductions,
         'net_salary': net_salary,
         'breakdown': {
+            'period': {
+                'start': pay_period['period_start'].isoformat(),
+                'end': pay_period['period_end'].isoformat(),
+                'payable_base_days': str(payable_base_days),
+                'month_days': str(month_days_dec),
+                'gross_full': str(gross_full),
+            },
             'absences': [
                 {
                     'id': a.id,
                     'date': a.absence_date.isoformat(),
                     'days': a.days,
-                    'amount': str(deduction_for_days(gross, a.days)),
+                    'amount': str(deduction_for_days(gross_full, a.days)),
                 }
                 for a in emp_absences
             ],

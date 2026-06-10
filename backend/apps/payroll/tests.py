@@ -23,6 +23,8 @@ from apps.payroll.services.engine import (
     lock_payroll_run,
     unlock_payroll_run,
 )
+from apps.payroll.services.payroll_line_columns import resolve_cell_value
+from apps.payroll.services.period_eligibility import employee_payroll_period
 from apps.payroll.services.transfer_payroll import (
     build_payroll_detailed_run,
     transfers_in_period,
@@ -296,6 +298,65 @@ class PayrollEngineTests(TestCase):
         self.assertFalse(old_row.bears_salary)
         self.assertEqual(new_row.net_amount, line.net_salary)
         self.assertTrue(new_row.bears_salary)
+
+    def test_mid_month_hire_prorates_gross_and_export_period(self):
+        """مباشرة منتصف الشهر: فترة فعلية + راتب نسبي وليس شهراً كاملاً."""
+        haroon = Employee.objects.create(
+            name='هارون',
+            branch=self.branch,
+            sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE,
+            hire_date=date(2026, 7, 20),
+            basic_salary=Decimal('3000'),
+            housing_allowance=Decimal('1000'),
+            transport_allowance=Decimal('500'),
+            other_allowance=Decimal('0'),
+            cash_amount=Decimal('0'),
+            insurance_deduction_rate=Decimal('10'),
+        )
+        period = employee_payroll_period(
+            period_year=2026,
+            period_month=7,
+            hire_date=haroon.hire_date,
+        )
+        self.assertEqual(period['period_start'], date(2026, 7, 20))
+        self.assertEqual(period['period_end'], date(2026, 7, 31))
+        self.assertEqual(period['payable_base_days'], Decimal('12'))
+
+        run = build_payroll_run(
+            self.branch, 2026, 7, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        line = run.lines.get(employee=haroon)
+        expected_gross = (Decimal('4500') * Decimal('12') / Decimal('30')).quantize(Decimal('0.01'))
+        self.assertEqual(line.gross_salary, expected_gross)
+        self.assertEqual(line.insurance_deduction, (expected_gross * Decimal('0.10')).quantize(Decimal('0.01')))
+        self.assertEqual(resolve_cell_value(line, run, 'period_start'), '2026-07-20')
+        self.assertEqual(resolve_cell_value(line, run, 'period_end'), '2026-07-31')
+        self.assertEqual(resolve_cell_value(line, run, 'worked_days'), Decimal('12'))
+
+    def test_future_hire_excluded_from_payroll_run(self):
+        Employee.objects.create(
+            name='موظف مستقبلي',
+            branch=self.branch,
+            sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE,
+            hire_date=date(2026, 8, 1),
+            basic_salary=Decimal('3000'),
+            housing_allowance=Decimal('0'),
+            transport_allowance=Decimal('0'),
+            other_allowance=Decimal('0'),
+            cash_amount=Decimal('0'),
+            insurance_deduction_rate=Decimal('0'),
+        )
+        run = build_payroll_run(
+            self.branch, 2026, 7, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        self.assertEqual(run.lines.count(), 1)
+        self.assertEqual(run.lines.get().employee_id, self.employee_transfer.id)
 
     def test_transfers_in_period_parses_statement(self):
         import json
