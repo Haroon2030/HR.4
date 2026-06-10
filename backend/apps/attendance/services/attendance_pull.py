@@ -49,8 +49,8 @@ class DevicePullResult:
     device_id: int
     device_name: str
     device_address: str
-    device_ip: str = ''
     ok: bool
+    device_ip: str = ''
     error: str = ''
     serial_number: str = ''
     firmware: str = ''
