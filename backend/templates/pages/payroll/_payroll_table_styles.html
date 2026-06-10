@@ -482,10 +482,15 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 0.5rem;
+        gap: 0.65rem;
         padding: 0.75rem 1rem;
         border-bottom: 1px solid #e2e8f0;
         background: #fafafa;
+    }
+
+    .hr-payroll-panel__head .hr-payroll-panel__title-wrap {
+        flex: 1 1 auto;
+        min-width: 12rem;
     }
 
     .hr-payroll-panel__title {
@@ -706,6 +711,32 @@
     .hr-payroll-runs-tbl__row--highlight {
         background: #eff6ff !important;
         box-shadow: inset 3px 0 0 #2563eb;
+    }
+
+    .hr-payroll-runs-tbl__row--unified {
+        background: #eff6ff !important;
+        box-shadow: inset 3px 0 0 #2563eb;
+    }
+
+    .hr-payroll-runs-tbl__row--unified td {
+        border-bottom-width: 2px;
+        border-bottom-color: #bfdbfe;
+    }
+
+    .hr-payroll-runs-tbl__row--detail {
+        background: #fafafa;
+    }
+
+    .hr-payroll-row-actions__btn--export {
+        color: #065f46;
+        border-color: #a7f3d0;
+        background: #ecfdf5;
+    }
+
+    .hr-payroll-row-actions__btn--export:hover {
+        background: #d1fae5;
+        border-color: #6ee7b7;
+        color: #047857;
     }
 
     .hr-payroll-status {

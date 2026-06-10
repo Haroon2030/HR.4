@@ -241,6 +241,24 @@ def _payroll_mode_run_counts(filters: dict, user, user_branches, *, branch_ids=N
     return counts
 
 
+def _period_run_totals(runs: list) -> dict:
+    from decimal import Decimal
+    return {
+        'runs_count': len(runs),
+        'employees_count': sum(int(r.employees_count or 0) for r in runs),
+        'total_earnings': sum(Decimal(r.total_earnings or 0) for r in runs),
+        'total_deductions': sum(Decimal(r.total_deductions or 0) for r in runs),
+        'total_net': sum(Decimal(r.total_net or 0) for r in runs),
+    }
+
+
+def _runs_for_unified_export(filters: dict, user, user_branches):
+    """كل مسيرات الشهر/النوع في ملف تصدير واحد — بغض النظر عن فلتر فرع العرض."""
+    export_filters = dict(filters)
+    export_filters['branch_ids'] = None
+    return list(_payroll_runs_for_filters(export_filters, user, user_branches))
+
+
 def _payroll_run_open_url(run: PayrollRun) -> str:
     pairs: list[tuple[str, object]] = [
         ('year', run.period_year),
@@ -723,6 +741,9 @@ def list_payroll_runs(request):
         filters, request.user, user_branches, active_mode,
         branch_ids=filters['branch_ids'] or None,
     )
+    period_totals = _period_run_totals(period_runs)
+    if period_runs:
+        has_payroll_lines = any(run.lines.all() for run in period_runs)
     mode_run_counts = _payroll_mode_run_counts(
         filters, request.user, user_branches,
         branch_ids=filters['branch_ids'] or None,
@@ -742,7 +763,7 @@ def list_payroll_runs(request):
         salary_mode=PayrollRun.SalaryMode.CASH,
         sponsorship_ids=None,
     )
-    modal_runs = payroll_runs if payroll_runs else period_runs
+    modal_runs = period_runs if period_runs else payroll_runs
     for run in modal_runs:
         run.open_list_url = _payroll_run_open_url(run)
     for run in period_runs:
@@ -754,6 +775,15 @@ def list_payroll_runs(request):
         month=filters['month'],
         salary_mode=filters['salary_mode'] or None,
         sponsorship_ids=filters['sponsorship_ids'],
+    )
+    export_unified_qs = _payroll_list_querystring(
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=active_mode,
+        sponsorship_ids=filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None,
+    )
+    show_unified_run_row = (
+        not filters.get('branch_ids') and len(period_runs) > 1
     )
 
     return render(request, 'pages/payroll/list.html', {
@@ -781,7 +811,12 @@ def list_payroll_runs(request):
         'can_build': user_can_manage_payroll(request.user),
         'has_draft_runs': has_draft_runs,
         'has_payroll_lines': has_payroll_lines,
-        'can_export': filters['ready'] and has_payroll_lines,
+        'can_export': bool(
+            filters.get('year') and filters.get('month') and filters.get('salary_mode') and has_payroll_lines
+        ),
+        'period_totals': period_totals,
+        'export_unified_qs': export_unified_qs,
+        'show_unified_run_row': show_unified_run_row,
         'saved_drafts_count': saved_drafts_count,
         'detailed_runs': detailed_runs,
         'allocation_lines': allocation_lines,
@@ -981,11 +1016,11 @@ def export_payroll_list_excel(request):
     )
     if redirect_response is not None:
         return redirect_response
-    if not filters['ready']:
-        messages.error(request, 'يرجى اختيار معايير المسير أولاً.')
+    if not filters.get('year') or not filters.get('month') or not filters.get('salary_mode'):
+        messages.error(request, 'يرجى اختيار السنة والشهر ونوع الراتب أولاً.')
         return redirect('web:list_payroll_runs')
 
-    runs = list(_payroll_runs_for_filters(filters, request.user, user_branches))
+    runs = _runs_for_unified_export(filters, request.user, user_branches)
     if not runs:
         messages.error(request, 'لا يوجد مسير للتصدير — ابنِ المسير أولاً.')
         return _redirect_payroll_list(request, filters)

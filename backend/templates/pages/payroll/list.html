@@ -171,9 +171,9 @@
                     <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--lock hr-payroll-action-btn--disabled">④ إغلاق</button>
                     {% endif %}
                     {% if can_export %}
-                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ filter_qs }}"
+                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
                        class="hr-payroll-action-btn hr-payroll-action-btn--export"
-                       title="ملف Excel واحد يضم كل الفروع{% if active_salary_mode == 'transfer' %} وشركات الكفالة{% endif %} المحددة">
+                       title="ملف Excel واحد يضم كل الفروع{% if active_salary_mode == 'transfer' %} وشركات الكفالة{% endif %} — بدون تقسيم حسب الفرع">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                         <span>تصدير Excel — ملف واحد</span>
                     </a>
@@ -191,17 +191,31 @@
         {# ── جدول المسودات والمسيرات ── #}
         <section class="hr-payroll-panel hr-payroll-panel--table" aria-label="جدول المسيرات">
             <div class="hr-payroll-panel__head">
+                <div class="hr-payroll-panel__title-wrap">
                 <h2 class="hr-payroll-panel__title">
                     <i data-lucide="table-2" class="w-4 h-4"></i>
                     المسودات والمسيرات
                     <span class="text-slate-400 font-normal">({{ period_runs|length }})</span>
                 </h2>
                 <p class="text-[11px] text-slate-500 m-0">
+                    {% if show_unified_run_row %}
+                    <span class="text-primary-700 font-semibold">مسير موحّد — جميع الفروع ({{ period_totals.runs_count }})</span>
+                    · التصدير يُنتج <strong>ملف Excel واحد</strong> لكل الموظفين
+                    {% else %}
                     مرتبة حسب الفرع{% if active_salary_mode == 'transfer' %} والكفالة{% endif %} — المسودة أولاً
-                    {% if all_branches_selected %}<span class="text-primary-700 font-semibold">· جميع الفروع</span>{% endif %}
+                    {% endif %}
                 </p>
+                </div>
+                {% if can_export %}
+                <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
+                   class="hr-payroll-action-btn hr-payroll-action-btn--export shrink-0"
+                   title="تصدير كل الفروع في ملف واحد">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                    <span>تصدير ملف واحد</span>
+                </a>
+                {% endif %}
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto"{% if show_unified_run_row %} x-data="{ showBranchDetail: false }"{% endif %}>
                 {% if period_runs %}
                 <table class="payroll-tbl hr-payroll-runs-tbl">
                     <thead>
@@ -221,10 +235,48 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% if show_unified_run_row %}
+                        <tr class="hr-payroll-runs-tbl__row--unified">
+                            <td class="text-center text-slate-400 font-mono text-xs">1</td>
+                            <td class="font-bold text-primary-900">
+                                جميع الفروع
+                                <span class="block text-[10px] font-semibold text-slate-500 mt-0.5">{{ period_totals.runs_count }} مسير · ملف تصدير واحد</span>
+                            </td>
+                            {% if active_salary_mode == 'transfer' %}
+                            <td class="text-slate-600 text-xs">{% if filter_sponsorship_ids %}محدد{% else %}جميع الشركات{% endif %}</td>
+                            {% endif %}
+                            <td class="text-center text-xs text-slate-600">{{ filter_month }}/{{ filter_year }}</td>
+                            <td class="col-num font-bold">{{ period_totals.employees_count }}</td>
+                            <td class="col-num td-earn font-bold">{{ period_totals.total_earnings|format_sar:"earn" }}</td>
+                            <td class="col-num td-deduct font-bold">{{ period_totals.total_deductions|format_sar:"deduct" }}</td>
+                            <td class="col-num td-net font-bold">{{ period_totals.total_net|format_sar:"net" }}</td>
+                            <td class="text-center">
+                                <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="hr-payroll-row-actions">
+                                    {% if can_export %}
+                                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
+                                       class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
+                                       title="تصدير ملف Excel واحد">
+                                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                    </a>
+                                    {% endif %}
+                                    <button type="button"
+                                            class="hr-payroll-row-actions__btn"
+                                            title="تفصيل الفروع"
+                                            @click="showBranchDetail = !showBranchDetail">
+                                        <i data-lucide="list" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
                         {% for run in period_runs %}
-                        <tr class="{% if open_run_id == run.id %}hr-payroll-runs-tbl__row--highlight{% endif %}">
-                            <td class="text-center text-slate-400 font-mono text-xs">{{ forloop.counter }}</td>
-                            <td class="font-bold text-slate-900">{{ run.branch.name }}</td>
+                        <tr class="{% if show_unified_run_row %}hr-payroll-runs-tbl__row--detail{% endif %}{% if open_run_id == run.id %} hr-payroll-runs-tbl__row--highlight{% endif %}"
+                            {% if show_unified_run_row %}x-show="showBranchDetail" x-cloak{% endif %}>
+                            <td class="text-center text-slate-400 font-mono text-xs">{% if show_unified_run_row %}{{ forloop.counter }}{% else %}{{ forloop.counter }}{% endif %}</td>
+                            <td class="font-bold text-slate-900">{% if show_unified_run_row %}↳ {% endif %}{{ run.branch.name }}</td>
                             {% if active_salary_mode == 'transfer' %}
                             <td class="text-slate-700 text-sm">{{ run.sponsorship.company_name|default:"—" }}</td>
                             {% endif %}
@@ -244,20 +296,10 @@
                                 <div class="hr-payroll-row-actions">
                                     <button type="button"
                                             class="hr-payroll-row-actions__btn"
-                                            title="عرض التفاصيل"
+                                            title="عرض تفاصيل الفرع"
                                             @click="openModal({{ run.id }})">
                                         <i data-lucide="eye" class="w-4 h-4"></i>
                                     </button>
-                                    <a href="{{ run.open_list_url }}"
-                                       class="hr-payroll-row-actions__btn"
-                                       title="تحميل في الفلاتر">
-                                        <i data-lucide="filter" class="w-4 h-4"></i>
-                                    </a>
-                                    <a href="{% url 'web:view_payroll_run' run.id %}"
-                                       class="hr-payroll-row-actions__btn"
-                                       title="صفحة المسير">
-                                        <i data-lucide="external-link" class="w-4 h-4"></i>
-                                    </a>
                                 </div>
                             </td>
                         </tr>
