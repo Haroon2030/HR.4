@@ -57,6 +57,7 @@ from apps.setup.models import Sponsorship
 from apps.payroll.services.engine import (
     build_payroll_run,
     build_consolidated_payroll_run,
+    delete_draft_payroll_run,
     lock_payroll_run,
     unlock_payroll_run,
 )
@@ -245,6 +246,34 @@ def _consolidated_runs_qs(filters: dict, user, user_branches, branch_ids):
 def _prefer_consolidated_runs(filters: dict, branch_ids) -> bool:
     """مسودة واحدة عند عدم تحديد فرع أو عند اختيار أكثر من فرع."""
     return len(branch_ids) > 1 or not filters.get('branch_ids')
+
+
+def _user_may_access_payroll_run(user, run: PayrollRun, user_branches) -> bool:
+    if user.is_superuser:
+        return True
+    if run.run_kind in (PayrollRun.RunKind.CONSOLIDATED, PayrollRun.RunKind.DETAILED):
+        allowed = user_branches.values_list('company_id', flat=True).distinct()
+        return run.company_id in allowed
+    return run.branch_id and run.branch in user_branches
+
+
+def _prune_empty_consolidated_drafts(filters: dict, user, user_branches, salary_mode: str) -> int:
+    """إزالة مسودات موحّدة فارغة (بدون موظفين) من العرض."""
+    branch_ids = list(_resolved_branch_ids(filters, user_branches))
+    if not _prefer_consolidated_runs(filters, branch_ids):
+        return 0
+    mode_filters = dict(filters)
+    mode_filters['salary_mode'] = salary_mode
+    qs = _consolidated_runs_qs(mode_filters, user, user_branches, branch_ids)
+    empty_ids = list(
+        qs.filter(
+            status=PayrollRun.Status.DRAFT,
+            employees_count=0,
+        ).values_list('id', flat=True),
+    )
+    if empty_ids:
+        PayrollRun.objects.filter(id__in=empty_ids).delete()
+    return len(empty_ids)
 
 
 def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=None):
@@ -606,13 +635,13 @@ def _build_payroll_runs(request, filters, user_branches):
                 if use_consolidated:
                     for company_branches in _branches_by_company(branches):
                         try:
-                            runs_built.append(
-                                build_consolidated_payroll_run(
-                                    company_branches, filters['year'], filters['month'], request.user,
-                                    salary_mode=filters['salary_mode'],
-                                    sponsorship_id=sponsorship_id,
-                                )
+                            built = build_consolidated_payroll_run(
+                                company_branches, filters['year'], filters['month'], request.user,
+                                salary_mode=filters['salary_mode'],
+                                sponsorship_id=sponsorship_id,
                             )
+                            if built:
+                                runs_built.append(built)
                         except ValueError as e:
                             sp_label = f' / كفالة #{sponsorship_id}' if sponsorship_id else ''
                             company_label = company_branches[0].company.name
@@ -971,6 +1000,8 @@ def list_payroll_runs(request):
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
     saved_drafts_count = _count_saved_draft_runs(filters, request.user, user_branches)
     active_mode = filters.get('salary_mode') or PayrollRun.SalaryMode.TRANSFER
+    if filters['ready']:
+        _prune_empty_consolidated_drafts(filters, request.user, user_branches, active_mode)
     period_runs_all = _period_payroll_runs(
         filters, request.user, user_branches, active_mode,
         branch_ids=filters['branch_ids'] or None,
@@ -1114,6 +1145,46 @@ def list_payroll_runs(request):
         ),
         'modal_runs': modal_runs,
     })
+
+
+def _filters_from_session_or_run(request, run: PayrollRun) -> dict:
+    """استعادة فلاتر القائمة بعد حذف مسودة."""
+    stored = request.session.get(_PAYROLL_LIST_SESSION_KEY) or {}
+    filters = {
+        'branch_ids': stored.get('branch_ids'),
+        'year': stored.get('year') or run.period_year,
+        'month': stored.get('month') or run.period_month,
+        'salary_mode': stored.get('salary_mode') or run.salary_mode,
+        'sponsorship_ids': stored.get('sponsorship_ids'),
+        'payroll_view': stored.get('payroll_view', 'standard'),
+    }
+    return _recompute_payroll_ready(filters)
+
+
+@login_required
+@permission_required('payroll.manage')
+def delete_payroll_draft_run(request, run_id):
+    """حذف مسودة مسير من قائمة المسيرات."""
+    if request.method != 'POST':
+        raise Http404()
+
+    run = get_object_or_404(
+        PayrollRun.objects.select_related('branch', 'company', 'sponsorship'),
+        id=run_id,
+    )
+    user_branches = _user_branches(request.user)
+    if not _user_may_access_payroll_run(request.user, run, user_branches):
+        raise Http404()
+
+    filters = _filters_from_session_or_run(request, run)
+    try:
+        delete_draft_payroll_run(run)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, 'تم حذف المسودة.')
+
+    return _redirect_payroll_list(request, filters)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

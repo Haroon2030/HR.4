@@ -248,6 +248,7 @@ urlpatterns = [
     path('payroll/export/', payroll_views.export_payroll_list_excel, name='export_payroll_list_excel'),    # تصدير المسير الموحّد
     path('payroll/create/', payroll_views.create_payroll_run, name='create_payroll_run'),                    # إنشاء/بناء مسير
     path('payroll/<int:run_id>/', payroll_views.view_payroll_run, name='view_payroll_run'),                  # عرض تفاصيل المسير
+    path('payroll/<int:run_id>/delete/', payroll_views.delete_payroll_draft_run, name='delete_payroll_draft_run'),  # حذف مسودة
     path('payroll/<int:run_id>/rebuild/', payroll_views.rebuild_payroll_run, name='rebuild_payroll_run'),     # إعادة بناء
     path('payroll/<int:run_id>/lock/', payroll_views.lock_payroll_run_view, name='lock_payroll_run'),         # ترحيل (قفل)
     path('payroll/<int:run_id>/unlock/', payroll_views.unlock_payroll_run_view, name='unlock_payroll_run'),   # إلغاء ترحيل (سوبر يوزر فقط)

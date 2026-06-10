@@ -554,7 +554,18 @@ def build_consolidated_payroll_run(
         salary_mode=salary_mode,
         sponsorship_id=sponsorship_id,
     )
+    if run.employees_count == 0:
+        run.delete()
+        return None
     return run
+
+
+@transaction.atomic
+def delete_draft_payroll_run(run: PayrollRun) -> None:
+    """حذف مسودة مسير (مع أسطرها) — لا يُستخدم للمسير المُغلق."""
+    if run.status != PayrollRun.Status.DRAFT:
+        raise ValueError('المسير مُغلق ولا يمكن حذفه.')
+    run.delete()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
