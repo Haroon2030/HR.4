@@ -3,7 +3,7 @@ from datetime import datetime, time
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -294,55 +294,10 @@ def attendance_records_export(request):
         device_id__in=filter_biometric_devices_for_user(request.user).values('pk'),
     ).order_by(*PUNCH_LIST_ORDERING)[:50000]
 
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
-    from openpyxl.utils import get_column_letter
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'سجلات الحضور'
-    ws.sheet_view.rightToLeft = True
-
-    headers = [
-        'معرف السجل ZK', 'التاريخ', 'الوقت', 'الجهاز', 'IP',
-        'رقم المستخدم', 'الاسم على الجهاز', 'موظف HR', 'الرقم الوظيفي',
-        'نوع الحركة', 'رمز الحركة', 'طريقة التحقق', 'رمز التحقق',
-        'دفعة المزامنة',
-    ]
-    header_fill = PatternFill('solid', fgColor='1E40AF')
-    for col, h in enumerate(headers, 1):
-        c = ws.cell(row=1, column=col, value=h)
-        c.fill = header_fill
-        c.font = Font(bold=True, color='FFFFFF')
-        c.alignment = Alignment(horizontal='center')
-
-    for row_idx, p in enumerate(qs, 2):
-        local = timezone.localtime(p.punched_at)
-        ws.append([
-            p.device_record_uid or '',
-            local.strftime('%Y-%m-%d'),
-            local.strftime('%H:%M:%S'),
-            p.device.name,
-            p.device.ip_address,
-            p.device_user_id,
-            p.device_user_name or '',
-            p.employee.name if p.employee else 'غير مربوط',
-            p.employee.employee_number if p.employee else '',
-            p.get_punch_type_display(),
-            p.punch_type,
-            p.verify_mode_label or '—',
-            p.verify_mode if p.verify_mode is not None else '',
-            p.sync_batch,
-        ])
-
-    for col in range(1, len(headers) + 1):
-        ws.column_dimensions[get_column_letter(col)].width = 14
-
-    stamp = timezone.localtime().strftime('%Y%m%d_%H%M%S')
-    filename = f'attendance_records_{stamp}.xlsx'
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    from apps.attendance.selectors.punch_export import (
+        punches_to_table_rows,
+        punch_table_http_response,
     )
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    wb.save(response)
-    return response
+
+    table = punches_to_table_rows(qs)
+    return punch_table_http_response(table, filename_prefix='attendance_records')

@@ -49,6 +49,7 @@ class DevicePullResult:
     device_id: int
     device_name: str
     device_address: str
+    device_ip: str = ''
     ok: bool
     error: str = ''
     serial_number: str = ''
@@ -210,44 +211,18 @@ def export_punches_excel(
         ws_summary.cell(row=i, column=1, value=label).font = Font(bold=True, name='Arial')
         ws_summary.cell(row=i, column=2, value=val)
 
+    from apps.attendance.selectors.punch_export import (
+        enriched_punches_to_table_rows,
+        write_punch_table_sheet,
+    )
+
     ws = wb.create_sheet('سجلات الحضور')
-    ws.sheet_view.rightToLeft = True
-    columns = [
-        'م', 'التاريخ', 'الوقت', 'رقم المستخدم', 'الاسم على الجهاز',
-        'الموظف HR', 'الرقم الوظيفي', 'نوع الحركة', 'طريقة التحقق',
-        'معرف السجل', 'الجهاز',
-    ]
-    for col, title in enumerate(columns, 1):
-        cell = ws.cell(row=1, column=col, value=title)
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal='center', vertical='center')
-        cell.border = border
-
-    for idx, p in enumerate(result.punches, 1):
-        local = timezone.localtime(p.punched_at)
-        row_data = [
-            idx,
-            local.strftime('%Y-%m-%d'),
-            local.strftime('%H:%M:%S'),
-            p.device_user_id,
-            p.device_user_name or '—',
-            p.employee_name or 'غير مربوط',
-            p.employee_number or '—',
-            p.punch_type_label,
-            p.verify_mode_label,
-            p.device_record_uid or '',
-            result.device_name,
-        ]
-        for col, val in enumerate(row_data, 1):
-            c = ws.cell(row=idx + 1, column=col, value=val)
-            c.border = border
-            c.alignment = Alignment(horizontal='center' if col != 5 else 'right')
-
-    for col in range(1, len(columns) + 1):
-        ws.column_dimensions[get_column_letter(col)].width = 16
-    ws.column_dimensions['E'].width = 22
-    ws.column_dimensions['F'].width = 22
+    punch_table = enriched_punches_to_table_rows(
+        result.punches,
+        device_name=result.device_name,
+        device_ip=result.device_ip,
+    )
+    write_punch_table_sheet(ws, punch_table)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_path)
@@ -272,6 +247,7 @@ def pull_device_attendance(
         device_id=device.id,
         device_name=device.name,
         device_address=device.address_label,
+        device_ip=device.ip_address or '',
         ok=False,
         date_from=date_from,
         date_to=date_to,

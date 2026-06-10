@@ -188,7 +188,9 @@ def attendance_report_export(request):
     wb = Workbook()
     header_fill = PatternFill('solid', fgColor='1E40AF')
 
-    def _write_sheet(ws, table: dict, title: str) -> None:
+    from apps.attendance.selectors.punch_export import write_punch_table_sheet
+
+    def _write_daily_sheet(ws, table: dict, title: str) -> None:
         ws.title = title
         ws.sheet_view.rightToLeft = True
         for col, h in enumerate(table['columns'], 1):
@@ -203,9 +205,9 @@ def attendance_report_export(request):
             ws.column_dimensions[get_column_letter(col)].width = 14
 
     ws_daily = wb.active
-    _write_sheet(ws_daily, daily_table, 'يومي')
+    _write_daily_sheet(ws_daily, daily_table, 'يومي')
     ws_detail = wb.create_sheet('تفصيلي')
-    _write_sheet(ws_detail, punch_table, 'تفصيلي')
+    write_punch_table_sheet(ws_detail, punch_table)
 
     stamp = timezone.localtime().strftime('%Y%m%d_%H%M%S')
     filename = f'attendance_report_{stamp}.xlsx'

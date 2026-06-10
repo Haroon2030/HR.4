@@ -232,17 +232,18 @@
                 <thead>
                     <tr>
                         <th class="text-center w-10">#</th>
-                        <th>date</th>
-                        <th>time</th>
-                        <th>ZK</th>
-                        <th dir="ltr">user</th>
-                        <th>device_name</th>
-                        <th>HR</th>
-                        <th>type</th>
-                        <th class="text-center" title="raw status">St</th>
-                        <th>verify</th>
-                        <th class="text-center" title="verify mode">Vm</th>
-                        <th>device</th>
+                        <th>التاريخ</th>
+                        <th>الوقت</th>
+                        <th>معرف ZK</th>
+                        <th dir="ltr">رقم المستخدم</th>
+                        <th>الاسم على الجهاز</th>
+                        <th>موظف HR</th>
+                        <th dir="ltr">الرقم الوظيفي</th>
+                        <th>نوع الحركة</th>
+                        <th class="text-center" title="حالة الجهاز الخام">St</th>
+                        <th>التحقق</th>
+                        <th class="text-center" title="رمز التحقق">Vm</th>
+                        <th>الجهاز</th>
                         <th dir="ltr">IP</th>
                     </tr>
                 </thead>
@@ -255,8 +256,9 @@
                         <td class="zk-mono text-slate-500">{{ p.device_record_uid|default:"—" }}</td>
                         <td class="zk-mono" dir="ltr">{{ p.device_user_id }}</td>
                         <td>{{ p.device_user_name|default:"—" }}</td>
-                        <td>{% if p.employee %}<span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>{% else %}<span class="zk-pill zk-pill-warn">—</span>{% endif %}</td>
-                        <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">IN</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">OUT</span>{% else %}<span class="zk-pill zk-pill-muted">—</span>{% endif %}</td>
+                        <td>{% if p.employee %}<span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>{% else %}<span class="zk-pill zk-pill-warn">غير مربوط</span>{% endif %}</td>
+                        <td class="zk-mono text-xs" dir="ltr">{{ p.employee.employee_number|default:"—" }}</td>
+                        <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">دخول</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">خروج</span>{% else %}<span class="zk-pill zk-pill-muted">{{ p.get_punch_type_display }}</span>{% endif %}</td>
                         <td class="text-center zk-mono text-slate-500">{{ p.raw_status|default:"—" }}</td>
                         <td class="text-xs">{{ p.verify_mode_label|default:"—" }}</td>
                         <td class="text-center zk-mono text-slate-500">{{ p.verify_mode|default:"—" }}</td>
@@ -264,7 +266,7 @@
                         <td class="zk-mono" dir="ltr">{{ p.device.ip_address }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="13" class="px-4 py-10 text-center text-slate-500 zk-mono text-xs">NO_ROWS · run SYNC pull</td></tr>
+                    <tr><td colspan="14" class="px-4 py-10 text-center text-slate-500 text-sm">لا سجلات — نفّذ السحب من الجهاز أو غيّر الفلتر</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -283,7 +285,7 @@
         {% endif %}
 
         <p class="zk-rec-legend m-0">
-            <kbd>ZK</kbd> uid · <kbd>St</kbd> 0=in 1=out (device) · <kbd>Vm</kbd> verify mode · <kbd>type</kbd> inferred IN/OUT
+            نفس أعمدة التصدير: معرف ZK · St (0=دخول / 1=خروج على الجهاز) · Vm رمز التحقق
         </p>
     </section>
 </div>
