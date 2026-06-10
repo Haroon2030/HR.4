@@ -86,16 +86,66 @@ def transfers_in_period(company_id: int, year: int, month: int) -> dict[int, Tra
     return result
 
 
-def _employee_matches_salary_mode(emp: Employee, salary_mode: str, sponsorship_id: int | None) -> bool:
+def _employee_matches_salary_mode(
+    emp: Employee,
+    salary_mode: str,
+    sponsorship_scope_ids: list[int] | None = None,
+) -> bool:
     if salary_mode == PayrollRun.SalaryMode.CASH:
         return emp.sponsorship_id is None
     if salary_mode == PayrollRun.SalaryMode.TRANSFER:
         if emp.sponsorship_id is None:
             return False
-        if sponsorship_id:
-            return emp.sponsorship_id == sponsorship_id
+        if sponsorship_scope_ids is not None:
+            return emp.sponsorship_id in sponsorship_scope_ids
         return True
     return False
+
+
+def _purge_other_detailed_draft_runs(
+    *,
+    company_id: int,
+    year: int,
+    month: int,
+    salary_mode: str,
+    keep_pk: int,
+) -> None:
+    """مسودة تفصيلية واحدة لكل شركة/فترة — حذف المسودات القديمة المجزّأة."""
+    PayrollRun.objects.filter(
+        company_id=company_id,
+        period_year=year,
+        period_month=month,
+        salary_mode=salary_mode,
+        run_kind=PayrollRun.RunKind.DETAILED,
+        status=PayrollRun.Status.DRAFT,
+    ).exclude(pk=keep_pk).delete()
+
+
+def consolidate_detailed_draft_runs(
+    *,
+    company_ids,
+    year: int,
+    month: int,
+    salary_mode: str,
+) -> None:
+    """الإبقاء على مسودة تفصيلية واحدة لكل شركة — حذف أي مسودات مكررة."""
+    for company_id in company_ids:
+        drafts = list(
+            PayrollRun.objects.filter(
+                company_id=company_id,
+                period_year=year,
+                period_month=month,
+                salary_mode=salary_mode,
+                run_kind=PayrollRun.RunKind.DETAILED,
+                status=PayrollRun.Status.DRAFT,
+            ).order_by('-updated_at', '-id'),
+        )
+        if len(drafts) <= 1:
+            continue
+        keeper = next((r for r in drafts if r.sponsorship_id is None), drafts[0])
+        PayrollRun.objects.filter(
+            pk__in=[r.pk for r in drafts if r.pk != keeper.pk],
+        ).delete()
 
 
 def _days_before_transfer(period_start: date, transfer_date: date) -> Decimal:
@@ -236,12 +286,20 @@ def build_payroll_detailed_run(
     *,
     salary_mode: str,
     sponsorship_id: int | None = None,
+    sponsorship_scope_ids: list[int] | None = None,
 ) -> PayrollRun:
-    """مسير تفصيلي على مستوى الشركة — توزيع تحمّل الفروع للمنقولين."""
+    """مسير تفصيلي موحّد على مستوى الشركة — توزيع تحمّل الفروع للمنقولين."""
     if salary_mode == PayrollRun.SalaryMode.CASH:
-        sponsorship_id = None
-    elif salary_mode == PayrollRun.SalaryMode.TRANSFER and not sponsorship_id:
-        raise ValueError('يرجى اختيار شركة الكفالة لمسير التحويل التفصيلي.')
+        scope_ids = None
+    else:
+        if sponsorship_scope_ids is not None:
+            scope_ids = list(sponsorship_scope_ids)
+        elif sponsorship_id:
+            scope_ids = [sponsorship_id]
+        else:
+            scope_ids = None
+        if scope_ids is not None and not scope_ids:
+            raise ValueError('لا توجد شركات كفالة ضمن نطاق المسير التفصيلي.')
 
     run, _ = PayrollRun.objects.get_or_create(
         company=company,
@@ -250,7 +308,7 @@ def build_payroll_detailed_run(
         period_month=month,
         salary_mode=salary_mode,
         run_kind=PayrollRun.RunKind.DETAILED,
-        sponsorship_id=sponsorship_id,
+        sponsorship_id=None,
         defaults={
             'created_by': user,
             'status': PayrollRun.Status.DRAFT,
@@ -260,6 +318,13 @@ def build_payroll_detailed_run(
         raise ValueError('المسير التفصيلي مُغلق ولا يمكن إعادة بنائه.')
 
     PayrollRun.acquire_row_lock(run.pk)
+    _purge_other_detailed_draft_runs(
+        company_id=company.id,
+        year=year,
+        month=month,
+        salary_mode=salary_mode,
+        keep_pk=run.pk,
+    )
     PayrollAllocationLine.all_objects.filter(run=run).delete()
 
     transfers = transfers_in_period(company.id, year, month)
@@ -268,13 +333,23 @@ def build_payroll_detailed_run(
 
     for emp_id, evt in transfers.items():
         emp = Employee.objects.filter(pk=emp_id).select_related('branch').first()
-        if not emp or not _employee_matches_salary_mode(emp, salary_mode, sponsorship_id):
+        if not emp or not _employee_matches_salary_mode(emp, salary_mode, scope_ids):
             continue
 
-        net = _standard_line_net(emp, company.id, year, month, salary_mode, sponsorship_id)
+        lookup_sponsorship_id = (
+            emp.sponsorship_id
+            if salary_mode == PayrollRun.SalaryMode.TRANSFER
+            else None
+        )
+        net = _standard_line_net(
+            emp, company.id, year, month, salary_mode, lookup_sponsorship_id,
+        )
         if net is None:
             from apps.payroll.services.engine import _compute_employee_payroll_snapshot
 
+            snap_sponsorship_id = (
+                scope_ids[0] if scope_ids and len(scope_ids) == 1 else emp.sponsorship_id
+            )
             snap_run = PayrollRun.objects.filter(
                 branch_id=evt.to_branch_id or emp.branch_id,
                 period_year=year,
@@ -293,7 +368,7 @@ def build_payroll_detailed_run(
                         run_kind=PayrollRun.RunKind.STANDARD,
                         defaults={
                             'company': company,
-                            'sponsorship_id': sponsorship_id,
+                            'sponsorship_id': snap_sponsorship_id,
                             'status': PayrollRun.Status.DRAFT,
                         },
                     )
@@ -354,35 +429,25 @@ def build_detailed_runs_for_branches(
     user,
     *,
     salary_mode: str,
-    sponsorship_id: int | None = None,
-    sponsorship_ids: list[int] | None = None,
+    sponsorship_scope_ids: list[int] | None = None,
 ) -> list[PayrollRun]:
-    """مسير تفصيلي لكل شركة (ومنشأة كفالة عند التحويل)."""
+    """مسودة تفصيلية موحّدة واحدة لكل شركة ضمن الفروع المحددة."""
     companies = {}
     for br in branches:
         if br.company_id:
             companies[br.company_id] = br.company
-    if salary_mode == PayrollRun.SalaryMode.CASH:
-        sp_loop = [None]
-    elif sponsorship_ids is not None:
-        sp_loop = sponsorship_ids
-    elif sponsorship_id:
-        sp_loop = [sponsorship_id]
-    else:
-        from apps.setup.models import Sponsorship
-        sp_loop = list(
-            Sponsorship.objects.filter(is_deleted=False, is_active=True)
-            .values_list('id', flat=True),
-        )
 
     built = []
     for company in companies.values():
-        for sp_id in sp_loop:
-            built.append(
-                build_payroll_detailed_run(
-                    company, year, month, user,
-                    salary_mode=salary_mode,
-                    sponsorship_id=sp_id,
-                )
+        built.append(
+            build_payroll_detailed_run(
+                company, year, month, user,
+                salary_mode=salary_mode,
+                sponsorship_scope_ids=(
+                    sponsorship_scope_ids
+                    if salary_mode == PayrollRun.SalaryMode.TRANSFER
+                    else None
+                ),
             )
+        )
     return built

@@ -27,7 +27,9 @@ from apps.payroll.services.engine import (
 from apps.payroll.services.payroll_line_columns import resolve_cell_value
 from apps.payroll.services.period_eligibility import employee_payroll_period
 from apps.payroll.services.transfer_payroll import (
+    build_detailed_runs_for_branches,
     build_payroll_detailed_run,
+    consolidate_detailed_draft_runs,
     transfers_in_period,
 )
 
@@ -376,10 +378,15 @@ class PayrollEngineTests(TestCase):
             salary_mode=PayrollRun.SalaryMode.TRANSFER,
             sponsorship_id=self.sponsorship.id,
         )
-        rows = list(detailed.allocation_lines.order_by('branch__name'))
+        rows = list(
+            detailed.allocation_lines.order_by(
+                'bears_salary', 'days_in_branch', 'id',
+            ),
+        )
         self.assertEqual(len(rows), 2)
-        old_row = next(r for r in rows if r.branch_id == self.branch.id)
-        new_row = next(r for r in rows if r.branch_id == branch_b.id)
+        old_row, new_row = rows[0], rows[1]
+        self.assertEqual(old_row.branch_id, self.branch.id)
+        self.assertEqual(new_row.branch_id, branch_b.id)
         self.assertEqual(old_row.net_amount, Decimal('0'))
         self.assertFalse(old_row.bears_salary)
         self.assertEqual(new_row.net_amount, line.net_salary)
@@ -509,6 +516,144 @@ class PayrollEngineTests(TestCase):
         run.refresh_from_db()
         self.assertIsNone(abs_rec.applied_to_payroll_id)
         self.assertEqual(run.status, PayrollRun.Status.DRAFT)
+
+    def test_unified_detailed_run_single_draft_for_multiple_branches(self):
+        import json
+
+        branch_b = Branch.objects.create(
+            name='Branch B', code='TST02', company=self.company,
+        )
+        sponsorship_b = Sponsorship.objects.create(
+            code='SP02', company_name='كفالة ثانية',
+        )
+        self.employee.branch = branch_b
+        self.employee.save(update_fields=['branch'])
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TRANSFER,
+            title='نقل',
+            statement_date=date(2026, 6, 15),
+            content=json.dumps({
+                'branch_changed': True,
+                'branch_from': 'Branch A',
+                'branch_to': 'Branch B',
+                'branch_from_id': self.branch.id,
+                'branch_to_id': branch_b.id,
+            }, ensure_ascii=False),
+        )
+        PayrollRun.objects.create(
+            company=self.company,
+            period_year=2026,
+            period_month=6,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            run_kind=PayrollRun.RunKind.DETAILED,
+            sponsorship_id=self.sponsorship.id,
+            status=PayrollRun.Status.DRAFT,
+            created_by=self.user,
+        )
+
+        runs = build_detailed_runs_for_branches(
+            [self.branch, branch_b],
+            2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_scope_ids=[self.sponsorship.id, sponsorship_b.id],
+        )
+        self.assertEqual(len(runs), 1)
+        unified = runs[0]
+        self.assertIsNone(unified.sponsorship_id)
+        self.assertEqual(
+            PayrollRun.objects.filter(
+                company=self.company,
+                period_year=2026,
+                period_month=6,
+                run_kind=PayrollRun.RunKind.DETAILED,
+                salary_mode=PayrollRun.SalaryMode.TRANSFER,
+                status=PayrollRun.Status.DRAFT,
+            ).count(),
+            1,
+        )
+
+    def test_consolidate_detailed_draft_runs_keeps_single_unified_draft(self):
+        unified = PayrollRun.objects.create(
+            company=self.company,
+            period_year=2026,
+            period_month=6,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+            run_kind=PayrollRun.RunKind.DETAILED,
+            status=PayrollRun.Status.DRAFT,
+            created_by=self.user,
+        )
+        PayrollRun.objects.create(
+            company=self.company,
+            period_year=2026,
+            period_month=6,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+            run_kind=PayrollRun.RunKind.DETAILED,
+            sponsorship_id=self.sponsorship.id,
+            status=PayrollRun.Status.DRAFT,
+            created_by=self.user,
+        )
+        consolidate_detailed_draft_runs(
+            company_ids=[self.company.id],
+            year=2026,
+            month=6,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+        )
+        remaining = PayrollRun.objects.filter(
+            company=self.company,
+            period_year=2026,
+            period_month=6,
+            run_kind=PayrollRun.RunKind.DETAILED,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+            status=PayrollRun.Status.DRAFT,
+        )
+        self.assertEqual(remaining.count(), 1)
+        self.assertEqual(remaining.get().pk, unified.pk)
+
+    def test_rebuild_detailed_replaces_allocation_lines_without_duplicate_runs(self):
+        import json
+
+        branch_b = Branch.objects.create(
+            name='Branch B', code='TST02', company=self.company,
+        )
+        self.employee.branch = branch_b
+        self.employee.save(update_fields=['branch'])
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TRANSFER,
+            title='نقل',
+            statement_date=date(2026, 6, 15),
+            content=json.dumps({
+                'branch_changed': True,
+                'branch_from': 'Branch A',
+                'branch_to': 'Branch B',
+                'branch_from_id': self.branch.id,
+                'branch_to_id': branch_b.id,
+            }, ensure_ascii=False),
+        )
+        first = build_payroll_detailed_run(
+            self.company, 2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        first_pk = first.pk
+        second = build_payroll_detailed_run(
+            self.company, 2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        self.assertEqual(second.pk, first_pk)
+        self.assertEqual(
+            PayrollRun.objects.filter(
+                company=self.company,
+                period_year=2026,
+                period_month=6,
+                run_kind=PayrollRun.RunKind.DETAILED,
+                status=PayrollRun.Status.DRAFT,
+            ).count(),
+            1,
+        )
+        self.assertEqual(second.allocation_lines.count(), 2)
 
 
 class PayrollListViewTabTests(TestCase):

@@ -60,7 +60,10 @@ from apps.payroll.services.engine import (
     lock_payroll_run,
     unlock_payroll_run,
 )
-from apps.payroll.services.transfer_payroll import build_detailed_runs_for_branches
+from apps.payroll.services.transfer_payroll import (
+    build_detailed_runs_for_branches,
+    consolidate_detailed_draft_runs,
+)
 
 
 def _user_branches(user):
@@ -657,7 +660,7 @@ def _payroll_runs_for_filters(filters, user, user_branches):
 
 
 def _detailed_runs_for_filters(filters, user, user_branches):
-    """مسيرات تفصيلية (نقل) للشركات المرتبطة بالفروع المختارة."""
+    """مسيرات تفصيلية موحّدة للشركات المرتبطة بالفروع المختارة."""
     branch_ids = _resolved_branch_ids(filters, user_branches)
     company_ids = Branch.objects.filter(
         id__in=branch_ids,
@@ -672,13 +675,16 @@ def _detailed_runs_for_filters(filters, user, user_branches):
     if not user.is_superuser:
         allowed = user_branches.values_list('company_id', flat=True).distinct()
         qs = qs.filter(company_id__in=allowed)
+    unified_qs = qs.filter(sponsorship__isnull=True)
+    if unified_qs.exists():
+        return unified_qs.order_by('period_year', 'period_month', 'company__name')
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
         sp_ids = filters.get('sponsorship_ids')
         if sp_ids is not None:
             qs = qs.filter(sponsorship_id__in=sp_ids)
     else:
         qs = qs.filter(sponsorship__isnull=True)
-    return qs.order_by('company__name')
+    return qs.order_by('period_year', 'period_month', 'company__name')
 
 
 def _build_detailed_payroll_runs(request, filters, user_branches):
@@ -687,7 +693,21 @@ def _build_detailed_payroll_runs(request, filters, user_branches):
     branch_ids = _resolved_branch_ids(filters, user_branches)
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
-        return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
+        return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.'], False
+
+    company_ids = list(
+        Branch.objects.filter(id__in=branch_ids)
+        .values_list('company_id', flat=True)
+        .distinct(),
+    )
+    had_detailed_draft = PayrollRun.objects.filter(
+        company_id__in=company_ids,
+        period_year=filters['year'],
+        period_month=filters['month'],
+        salary_mode=filters['salary_mode'],
+        run_kind=PayrollRun.RunKind.DETAILED,
+        status=PayrollRun.Status.DRAFT,
+    ).exists()
 
     runs_built = []
     errors = []
@@ -699,7 +719,7 @@ def _build_detailed_payroll_runs(request, filters, user_branches):
                 filters['month'],
                 request.user,
                 salary_mode=filters['salary_mode'],
-                sponsorship_ids=(
+                sponsorship_scope_ids=(
                     _effective_sponsorship_ids(filters)
                     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER
                     else None
@@ -707,7 +727,7 @@ def _build_detailed_payroll_runs(request, filters, user_branches):
             )
     except ValueError as e:
         errors.append(str(e))
-    return runs_built, errors
+    return runs_built, errors, had_detailed_draft
 
 
 def _lock_payroll_runs_for_filters(request, filters, user, user_branches):
@@ -789,21 +809,38 @@ def list_payroll_runs(request):
                         f'تم الإغلاق النهائي لـ {locked} مسير وربط بنود الخصم.',
                     )
             elif payroll_action == 'save' or build_kind == 'standard':
+                had_standard_draft = bool(
+                    _draft_runs_for_period(filters, request.user, user_branches),
+                )
                 runs_built, build_errors = _build_payroll_runs(request, filters, user_branches)
                 for e in build_errors:
                     messages.error(request, e)
                 if runs_built:
+                    total_emp = sum(r.employees_count for r in runs_built)
                     if payroll_action == 'save':
+                        verb = 'إعادة حفظ' if had_standard_draft else 'حفظ'
                         messages.success(
                             request,
-                            f'تم حفظ المسير كمسودة ({sum(r.employees_count for r in runs_built)} موظف).',
+                            f'تم {verb} المسير كمسودة ({total_emp} موظف).',
                         )
                     else:
                         mode_label = dict(PayrollRun.SalaryMode.choices).get(
                             filters['salary_mode'], filters['salary_mode'],
                         )
-                        total_emp = sum(r.employees_count for r in runs_built)
-                        if any(r.run_kind == PayrollRun.RunKind.CONSOLIDATED for r in runs_built):
+                        if had_standard_draft:
+                            if any(r.run_kind == PayrollRun.RunKind.CONSOLIDATED for r in runs_built):
+                                messages.success(
+                                    request,
+                                    f'تم إعادة بناء المسير الموحّد {mode_label} '
+                                    f'واستبدال المسودة السابقة ({total_emp} موظف).',
+                                )
+                            else:
+                                messages.success(
+                                    request,
+                                    f'تم إعادة بناء المسير {mode_label} '
+                                    f'واستبدال المسودة السابقة ({total_emp} موظف).',
+                                )
+                        elif any(r.run_kind == PayrollRun.RunKind.CONSOLIDATED for r in runs_built):
                             messages.success(
                                 request,
                                 f'تم بناء مسير موحّد {mode_label} '
@@ -820,16 +857,31 @@ def list_payroll_runs(request):
                         request, filters, open_run_id=runs_built[0].pk,
                     )
             elif build_kind == 'detailed':
-                runs_built, build_errors = _build_detailed_payroll_runs(request, filters, user_branches)
+                runs_built, build_errors, had_detailed_draft = _build_detailed_payroll_runs(
+                    request, filters, user_branches,
+                )
                 for e in build_errors:
                     messages.error(request, e)
                 if runs_built:
                     total_rows = sum(r.employees_count for r in runs_built)
-                    messages.success(
-                        request,
-                        f'تم بناء {len(runs_built)} مسير تفصيلي '
-                        f'({total_rows} موظف منقول).',
-                    )
+                    if had_detailed_draft:
+                        messages.success(
+                            request,
+                            f'تم إعادة بناء المسير التفصيلي واستبدال المسودة السابقة '
+                            f'({total_rows} موظف منقول).',
+                        )
+                    elif len(runs_built) == 1:
+                        messages.success(
+                            request,
+                            f'تم بناء مسير تفصيلي موحّد '
+                            f'({total_rows} موظف منقول — مسودة واحدة لكل الفروع).',
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f'تم بناء {len(runs_built)} مسير تفصيلي '
+                            f'({total_rows} موظف منقول).',
+                        )
                     filters['payroll_view'] = 'detailed'
                     return _redirect_payroll_list(
                         request, filters, open_run_id=runs_built[0].pk,
@@ -874,9 +926,25 @@ def list_payroll_runs(request):
     detailed_runs = []
     detailed_totals = {}
     detailed_run_count = 0
+    has_detailed_draft = False
     if filters['ready'] and active_payroll_view == 'detailed':
+        branch_ids_for_detailed = _resolved_branch_ids(filters, user_branches)
+        company_ids_for_detailed = list(
+            Branch.objects.filter(id__in=branch_ids_for_detailed)
+            .values_list('company_id', flat=True)
+            .distinct(),
+        )
+        consolidate_detailed_draft_runs(
+            company_ids=company_ids_for_detailed,
+            year=filters['year'],
+            month=filters['month'],
+            salary_mode=filters['salary_mode'],
+        )
         detailed_runs = list(
             _detailed_runs_for_filters(filters, request.user, user_branches),
+        )
+        has_detailed_draft = any(
+            r.status == PayrollRun.Status.DRAFT for r in detailed_runs
         )
         detailed_run_count = len(detailed_runs)
         detailed_totals = _period_run_totals(detailed_runs)
@@ -886,7 +954,13 @@ def list_payroll_runs(request):
                 run__in=detailed_runs,
             ).select_related(
                 'employee', 'branch', 'from_branch', 'run', 'run__company',
-            ).order_by('employee__name', 'branch__name')
+            ).order_by(
+                'employee__name',
+                'bears_salary',
+                'days_in_branch',
+                'transfer_date',
+                'id',
+            )
             from django.core.paginator import Paginator
             alloc_paginator = Paginator(alloc_qs, 50)
             allocation_page_obj = alloc_paginator.get_page(
@@ -1011,6 +1085,10 @@ def list_payroll_runs(request):
         'active_payroll_view': active_payroll_view,
         'detailed_totals': detailed_totals,
         'detailed_run_count': detailed_run_count,
+        'has_detailed_draft': has_detailed_draft,
+        'prefer_unified_detailed': _prefer_consolidated_runs(
+            filters, _resolved_branch_ids(filters, user_branches),
+        ),
         'modal_runs': modal_runs,
     })
 
@@ -1054,7 +1132,13 @@ def view_payroll_run(request, run_id):
 
         alloc_qs = run.allocation_lines.select_related(
             'employee', 'branch', 'from_branch',
-        ).order_by('employee__name', 'branch__name')
+        ).order_by(
+            'employee__name',
+            'bears_salary',
+            'days_in_branch',
+            'transfer_date',
+            'id',
+        )
         paginator = Paginator(
             alloc_qs,
             per_page=clamp_page_size(request.GET.get('per_page'), default=50, maximum=200),
@@ -1118,7 +1202,9 @@ def rebuild_payroll_run(request, run_id):
             build_payroll_detailed_run(
                 run.company, run.period_year, run.period_month, request.user,
                 salary_mode=run.salary_mode,
-                sponsorship_id=run.sponsorship_id,
+                sponsorship_scope_ids=(
+                    [run.sponsorship_id] if run.sponsorship_id else None
+                ),
             )
         elif run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
             branches = list(

@@ -148,12 +148,14 @@
                             </button>
                             {% if can_build %}
                             <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="standard"
-                                    class="hr-payroll-action-btn hr-payroll-action-btn--build">
-                                <i data-lucide="play" class="w-4 h-4"></i>
-                                <span>② بناء المسير</span>
+                                    class="hr-payroll-action-btn hr-payroll-action-btn--build"
+                                    title="{% if has_draft_runs %}إعادة بناء المسير واستبدال المسودة الحالية{% else %}بناء مسير جديد{% endif %}"
+                                    {% if has_draft_runs %}onclick="return confirm('سيتم استبدال المسودة الحالية بأحدث البيانات. هل تريد إعادة البناء؟');"{% endif %}>
+                                <i data-lucide="{% if has_draft_runs %}refresh-cw{% else %}play{% endif %}" class="w-4 h-4"></i>
+                                <span>② {% if has_draft_runs %}إعادة بناء المسير{% else %}بناء المسير{% endif %}</span>
                             </button>
                             {% else %}
-                            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--build hr-payroll-action-btn--disabled">② بناء المسير</button>
+                            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--build hr-payroll-action-btn--disabled">② {% if has_draft_runs %}إعادة بناء المسير{% else %}بناء المسير{% endif %}</button>
                             {% endif %}
                         </div>
                     </div>

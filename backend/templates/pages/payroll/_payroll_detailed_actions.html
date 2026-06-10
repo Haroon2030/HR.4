@@ -4,7 +4,7 @@
             <i data-lucide="git-branch" class="w-4 h-4"></i>
             إجراءات المسير التفصيلي
         </span>
-        <span class="hr-payroll-actions-unified__hint">① عرض ← ② بناء — توزيع تحمّل الفروع للمنقولين</span>
+        <span class="hr-payroll-actions-unified__hint">① عرض ← ② {% if has_detailed_draft %}إعادة بناء{% else %}بناء{% endif %} — توزيع تحمّل الفروع للمنقولين</span>
     </div>
     <div class="hr-payroll-actions-unified__grid hr-payroll-actions-unified__grid--single">
         <div class="hr-payroll-actions-unified__group">
@@ -20,12 +20,13 @@
                 {% if can_build %}
                 <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
                         class="hr-payroll-action-btn hr-payroll-action-btn--detailed"
-                        title="بناء مسير تفصيلي لموظفي النقل بين الفروع">
-                    <i data-lucide="play" class="w-4 h-4"></i>
-                    <span>② بناء المسير التفصيلي</span>
+                        title="{% if has_detailed_draft %}إعادة بناء المسير التفصيلي واستبدال المسودة الحالية{% else %}بناء مسير تفصيلي لموظفي النقل بين الفروع{% endif %}"
+                        {% if has_detailed_draft %}onclick="return confirm('سيتم استبدال المسودة التفصيلية الحالية بأحدث البيانات. هل تريد إعادة البناء؟');"{% endif %}>
+                    <i data-lucide="{% if has_detailed_draft %}refresh-cw{% else %}play{% endif %}" class="w-4 h-4"></i>
+                    <span>② {% if has_detailed_draft %}إعادة بناء المسير التفصيلي{% else %}بناء المسير التفصيلي{% endif %}</span>
                 </button>
                 {% else %}
-                <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">② بناء المسير التفصيلي</button>
+                <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">② {% if has_detailed_draft %}إعادة بناء المسير التفصيلي{% else %}بناء المسير التفصيلي{% endif %}</button>
                 {% endif %}
             </div>
         </div>
