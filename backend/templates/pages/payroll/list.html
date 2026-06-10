@@ -6,378 +6,381 @@
 {% block content %}
 {% include "pages/payroll/_payroll_table_styles.html" %}
 
-<div class="space-y-4" dir="rtl">
-    <h1 class="text-2xl font-bold text-slate-900">مسير الرواتب الشهري</h1>
+<div class="hr-payroll-page space-y-4" dir="rtl"
+     x-data="{
+        modalRunId: {% if open_run_id %}{{ open_run_id }}{% else %}null{% endif %},
+        openModal(id) {
+            this.modalRunId = id;
+            this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
+        },
+        closeModal() { this.modalRunId = null; }
+     }"
+     x-init="if (modalRunId) { $nextTick(function () { if (window.lucide) lucide.createIcons(); }); }"
+     @keydown.escape.window="closeModal()">
 
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
-        <form method="GET" action="{% url 'web:list_payroll_runs' %}" id="payrollFilterForm"
-              class="payroll-filter-form space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            <div id="payrollSponsorshipWrap">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">شركة الكفالة</label>
-                {% include "components/filter_multiselect.html" with name="sponsorship_id" items=sponsorships selected_ids=filter_sponsorship_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollSponsorship" aria_label="شركة الكفالة" all_label="جميع الشركات" placeholder="— اختر شركة الكفالة —" count_unit="شركات" %}
+    <header class="hr-payroll-page__header flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 m-0">مسير الرواتب الشهري</h1>
+            <p class="text-xs text-slate-500 mt-1 m-0">
+                إدارة مسودات التحويل والنقدي — بناء، مراجعة، حفظ، وإغلاق نهائي
+            </p>
+        </div>
+        {% if filter_year and filter_month %}
+        <div class="hr-payroll-page__period-badge">
+            <i data-lucide="calendar" class="w-4 h-4"></i>
+            <span>{{ filter_month }}/{{ filter_year }}</span>
+        </div>
+        {% endif %}
+    </header>
+
+    {# ── تبويب النقدي / التحويل ── #}
+    {% include "components/page_tabs_start.html" with wrapper_class="hr-glass-panel hr-page-tabs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" aria_label="نوع مسير الراتب" %}
+        <a href="?{{ tab_qs_transfer }}"
+           role="tab"
+           class="hr-tab-btn hr-tab-btn--indigo{% if active_salary_mode == 'transfer' %} is-active{% endif %}">
+            <i data-lucide="landmark" class="w-4 h-4"></i>
+            <span>تحويل بنكي</span>
+            {% if mode_run_counts.transfer %}
+            <span class="hr-payroll-tab-count">{{ mode_run_counts.transfer }}</span>
+            {% endif %}
+        </a>
+        <a href="?{{ tab_qs_cash }}"
+           role="tab"
+           class="hr-tab-btn hr-tab-btn--amber{% if active_salary_mode == 'cash' %} is-active{% endif %}">
+            <i data-lucide="banknote" class="w-4 h-4"></i>
+            <span>نقدي</span>
+            {% if mode_run_counts.cash %}
+            <span class="hr-payroll-tab-count">{{ mode_run_counts.cash }}</span>
+            {% endif %}
+        </a>
+    {% include "components/page_tabs_body_start.html" with body_class="p-0" %}
+
+    <div class="hr-payroll-workspace p-4 space-y-4">
+        {# ── شريط المعايير ── #}
+        <section class="hr-payroll-panel" aria-label="معايير المسير">
+            <div class="hr-payroll-panel__head">
+                <h2 class="hr-payroll-panel__title">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    معايير العرض والبناء
+                </h2>
+                <span class="hr-payroll-panel__mode">
+                    {% if active_salary_mode == 'cash' %}صرف نقدي{% else %}تحويل بنكي{% endif %}
+                </span>
             </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">الفروع</label>
-                {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollBranch" aria_label="الفروع" no_all=True placeholder="— اختر الفروع —" require_selection=True count_unit="فروع" %}
+            <form method="GET" action="{% url 'web:list_payroll_runs' %}" id="payrollFilterForm" class="hr-payroll-panel__body space-y-4">
+                <input type="hidden" name="salary_mode" value="{{ active_salary_mode }}">
+                <div class="hr-payroll-filters-grid">
+                    <div class="hr-payroll-filter-field">
+                        <label class="hr-payroll-filter-label">السنة</label>
+                        <select name="year" required class="hr-payroll-filter-input">
+                            {% for y in years_range %}
+                            <option value="{{ y }}" {% if filter_year == y %}selected{% elif not filter_year and y == current_year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="hr-payroll-filter-field">
+                        <label class="hr-payroll-filter-label">الشهر</label>
+                        <select name="month" required class="hr-payroll-filter-input">
+                            {% for m in months_range %}
+                            <option value="{{ m }}" {% if filter_month == m %}selected{% elif not filter_month and m == current_month %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="hr-payroll-filter-field hr-payroll-filter-field--wide">
+                        <label class="hr-payroll-filter-label">الفروع</label>
+                        {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="hr-payroll-filter-input" select_id="payrollBranch" aria_label="الفروع" no_all=True placeholder="— اختر الفروع —" require_selection=True count_unit="فروع" %}
+                    </div>
+                    {% if active_salary_mode == 'transfer' %}
+                    <div class="hr-payroll-filter-field hr-payroll-filter-field--wide" id="payrollSponsorshipWrap">
+                        <label class="hr-payroll-filter-label">شركة الكفالة</label>
+                        {% include "components/filter_multiselect.html" with name="sponsorship_id" items=sponsorships selected_ids=filter_sponsorship_ids field_class="hr-payroll-filter-input" select_id="payrollSponsorship" aria_label="شركة الكفالة" all_label="جميع الشركات" placeholder="— اختر شركة الكفالة —" count_unit="شركات" %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="hr-payroll-actions-row">
+                    <div class="hr-payroll-actions-row__label">
+                        <span class="font-bold text-slate-700 text-xs">إجراءات المسير</span>
+                        <span class="text-[11px] text-slate-500">1 عرض ← 2 بناء ← 3 حفظ ← 4 إغلاق</span>
+                    </div>
+                    <div class="hr-payroll-actions-row__buttons hr-payroll-actions-row__buttons--build">
+                        <button type="submit"
+                                class="hr-payroll-action-btn hr-payroll-action-btn--view"
+                                title="عرض المسودة المحفوظة دون إعادة البناء">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>① عرض المسودة</span>
+                        </button>
+                        {% if can_build %}
+                        <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="standard"
+                                class="hr-payroll-action-btn hr-payroll-action-btn--build">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                            <span>② بناء المسير</span>
+                        </button>
+                        <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
+                                class="hr-payroll-action-btn hr-payroll-action-btn--detailed"
+                                title="توزيع تحمّل الفروع للمنقولين">
+                            <i data-lucide="git-branch" class="w-4 h-4"></i>
+                            <span>مسير تفصيلي</span>
+                        </button>
+                        {% else %}
+                        <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--build hr-payroll-action-btn--disabled">② بناء المسير</button>
+                        <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">مسير تفصيلي</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+            <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm" hx-boost="false" class="hidden" aria-hidden="true">
+                {% csrf_token %}
+                <input type="hidden" name="salary_mode" value="{{ active_salary_mode }}">
+            </form>
+        </section>
+
+        {# ── إحصائيات سريعة ── #}
+        {% if show_table and grand_totals %}
+        <div class="hr-payroll-stats-grid">
+            <div class="hr-payroll-stat">
+                <span class="hr-payroll-stat__label">مسيرات</span>
+                <span class="hr-payroll-stat__value">{{ runs_count }}</span>
             </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">نوع الراتب</label>
-                {% include "components/filter_multiselect.html" with name="salary_mode" items=salary_mode_filter_items selected_ids=filter_salary_mode_ids field_class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" select_id="payrollSalaryMode" aria_label="نوع الراتب" no_all=True single=True placeholder="— اختر النوع —" require_selection=True %}
+            <div class="hr-payroll-stat">
+                <span class="hr-payroll-stat__label">موظفون</span>
+                <span class="hr-payroll-stat__value">{{ grand_totals.employees_count|default:0 }}</span>
             </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">السنة</label>
-                <select name="year" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    {% for y in years_range %}
-                    <option value="{{ y }}" {% if filter_year == y %}selected{% elif not filter_year and y == current_year %}selected{% endif %}>{{ y }}</option>
-                    {% endfor %}
-                </select>
+            <div class="hr-payroll-stat hr-payroll-stat--earn">
+                <span class="hr-payroll-stat__label">الاستحقاقات</span>
+                <span class="hr-payroll-stat__value">{{ grand_totals.total_earnings|default:0|format_sar:"earn" }}</span>
             </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">الشهر</label>
-                <select name="month" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                    {% for m in months_range %}
-                    <option value="{{ m }}" {% if filter_month == m %}selected{% elif not filter_month and m == current_month %}selected{% endif %}>{{ m }}</option>
-                    {% endfor %}
-                </select>
+            <div class="hr-payroll-stat hr-payroll-stat--net">
+                <span class="hr-payroll-stat__label">الصافي</span>
+                <span class="hr-payroll-stat__value">{{ grand_totals.total_net|default:0|format_sar:"net" }}</span>
             </div>
-            </div>
-            <div class="hr-payroll-build-actions" role="group" aria-label="عرض وبناء المسير">
-                <p class="hr-payroll-build-actions__hint m-0">بعد اختيار المعايير</p>
-                <div class="hr-payroll-build-actions__group hr-payroll-build-actions__group--triple">
-                    <button type="submit"
-                        class="hr-payroll-build-btn hr-payroll-build-btn--view"
-                        title="عرض المسودة المحفوظة دون إعادة البناء">
-                        <i data-lucide="eye" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
-                        <span>عرض المسودة</span>
-                    </button>
+        </div>
+        {% endif %}
+
+        {# ── حفظ / إغلاق / تصدير ── #}
+        {% if show_table %}
+        <section class="hr-payroll-panel hr-payroll-panel--actions" aria-label="حفظ وإغلاق المسير">
+            <div class="hr-payroll-actions-row">
+                <div class="hr-payroll-actions-row__label">
+                    <span class="font-bold text-slate-700 text-xs">بعد مراجعة الجدول</span>
+                </div>
+                <div class="hr-payroll-actions-row__buttons">
                     {% if can_build %}
-                    <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="standard"
-                        class="hr-payroll-build-btn hr-payroll-build-btn--primary">
-                        <i data-lucide="play" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
-                        <span>بناء المسير</span>
-                    </button>
-                    <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
-                        class="hr-payroll-build-btn hr-payroll-build-btn--detailed"
-                        title="توزيع تحمّل الفروع للموظفين المنقولين">
-                        <i data-lucide="git-branch" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
-                        <span>مسير تفصيلي</span>
-                    </button>
+                    <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
+                          onsubmit="return confirm('سيتم تحديث المسودة بأحدث البيانات. هل تريد الحفظ؟');">
+                        {% csrf_token %}
+                        {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                        <button type="submit" name="payroll_action" value="save"
+                                class="hr-payroll-action-btn hr-payroll-action-btn--save"
+                                {% if not has_payroll_lines %}disabled title="لا توجد أسطر للحفظ"{% endif %}>
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span>③ حفظ المسودة</span>
+                        </button>
+                    </form>
+                    <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
+                          onsubmit="return confirm('بمجرد الإغلاق النهائي لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
+                        {% csrf_token %}
+                        {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                        <button type="submit" name="payroll_action" value="lock"
+                                class="hr-payroll-action-btn hr-payroll-action-btn--lock"
+                                {% if not has_draft_runs %}disabled title="المسير مُغلق مسبقاً"{% endif %}>
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                            <span>④ الإغلاق النهائي</span>
+                        </button>
+                    </form>
                     {% else %}
-                    <button type="button" disabled
-                        class="hr-payroll-build-btn hr-payroll-build-btn--primary hr-payroll-build-btn--disabled">
-                        <i data-lucide="play" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
-                        <span>بناء المسير</span>
-                    </button>
-                    <button type="button" disabled
-                        class="hr-payroll-build-btn hr-payroll-build-btn--detailed hr-payroll-build-btn--disabled">
-                        <i data-lucide="git-branch" class="hr-payroll-build-btn__icon" aria-hidden="true"></i>
-                        <span>مسير تفصيلي</span>
-                    </button>
+                    <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--save hr-payroll-action-btn--disabled">③ حفظ</button>
+                    <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--lock hr-payroll-action-btn--disabled">④ إغلاق</button>
+                    {% endif %}
+                    {% if can_export %}
+                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ filter_qs }}"
+                       class="hr-payroll-action-btn hr-payroll-action-btn--export">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>تصدير Excel</span>
+                    </a>
+                    {% else %}
+                    <span class="hr-payroll-action-btn hr-payroll-action-btn--export hr-payroll-action-btn--disabled" aria-disabled="true">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>تصدير Excel</span>
+                    </span>
                     {% endif %}
                 </div>
             </div>
-        </form>
-        <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm"
-              hx-boost="false" class="hidden" aria-hidden="true">
-            {% csrf_token %}
-        </form>
-    </div>
-
-    {% if not show_table %}
-    <div class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-600">
-        <i data-lucide="table-2" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
-        {% if saved_drafts_count and not filter_branch_ids %}
-        <p class="font-semibold m-0">توجد {{ saved_drafts_count }} مسودة محفوظة لشهر {{ filter_month }}/{{ filter_year }}</p>
-        <p class="text-sm mt-2 m-0">اختر <strong>الفروع</strong> و<strong>نوع الراتب</strong> لعرضها، أو أعد فتح الصفحة بعد البناء.</p>
-        {% elif not filter_salary_mode %}
-        <p class="font-semibold m-0">اختر <strong>نوع الراتب</strong> ثم اضغط <strong>عرض المسودة</strong></p>
-        <p class="text-sm mt-2 m-0">أو اضغط <strong>بناء المسير</strong> لإنشاء مسودة جديدة.</p>
-        {% elif not filter_branch_ids %}
-        <p class="font-semibold m-0">لعرض جدول المسير الموحّد</p>
-        <p class="text-sm mt-2 m-0">اختر <strong>الفروع</strong> و<strong>نوع الراتب</strong>
-            {% if filter_salary_mode == 'transfer' %} و<strong>شركة الكفالة</strong>{% endif %}
-            ، ثم اضغط <strong>عرض المسودة</strong> أو <strong>بناء المسير</strong>.</p>
-        {% else %}
-        <p class="font-semibold m-0">لا توجد أسطر مسير لهذه المعايير</p>
-        <p class="text-sm mt-2 m-0">اضغط <strong>بناء المسير</strong> لإنشاء أو تحديث المسير، أو غيّر الفلاتر.</p>
+        </section>
         {% endif %}
-    </div>
-    {% endif %}
 
-    {% if show_table %}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <div class="hr-payroll-run-actions" role="group" aria-label="إجراءات المسير">
-            <p class="hr-payroll-run-actions__hint m-0">بعد مراجعة الجدول</p>
-            <div class="hr-payroll-run-actions__group">
-                {% if can_build %}
-                <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
-                      onsubmit="return confirm('سيتم تحديث المسودة بأحدث البيانات. هل تريد الحفظ؟');">
-                    {% csrf_token %}
-                    {% include "pages/payroll/_payroll_filter_hidden.html" %}
-                    <button type="submit" name="payroll_action" value="save"
-                            class="hr-payroll-run-btn hr-payroll-run-btn--save"
-                            {% if not has_payroll_lines %}disabled title="لا توجد أسطر للحفظ"{% endif %}>
-                        <i data-lucide="save" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
-                        <span>حفظ</span>
-                    </button>
-                </form>
-                <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
-                      onsubmit="return confirm('بمجرد الإغلاق النهائي لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
-                    {% csrf_token %}
-                    {% include "pages/payroll/_payroll_filter_hidden.html" %}
-                    <button type="submit" name="payroll_action" value="lock"
-                            class="hr-payroll-run-btn hr-payroll-run-btn--lock"
-                            {% if not has_draft_runs %}disabled title="المسير مُغلق مسبقاً"{% endif %}>
-                        <i data-lucide="lock" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
-                        <span>الإغلاق النهائي</span>
-                    </button>
-                </form>
-                {% else %}
-                <button type="button" disabled class="hr-payroll-run-btn hr-payroll-run-btn--save hr-payroll-run-btn--disabled">
-                    <i data-lucide="save" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
-                    <span>حفظ</span>
-                </button>
-                <button type="button" disabled class="hr-payroll-run-btn hr-payroll-run-btn--lock hr-payroll-run-btn--disabled">
-                    <i data-lucide="lock" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
-                    <span>الإغلاق النهائي</span>
-                </button>
-                {% endif %}
-                {% if can_export %}
-                <a href="{% url 'web:export_payroll_list_excel' %}?{{ filter_qs }}"
-                   class="hr-payroll-run-btn hr-payroll-run-btn--export">
-                    <i data-lucide="file-spreadsheet" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
-                    <span>تصدير إلى Excel</span>
-                </a>
-                {% else %}
-                <span class="hr-payroll-run-btn hr-payroll-run-btn--export hr-payroll-run-btn--disabled" aria-disabled="true">
-                    <i data-lucide="file-spreadsheet" class="hr-payroll-run-btn__icon" aria-hidden="true"></i>
-                    <span>تصدير إلى Excel</span>
-                </span>
-                {% endif %}
+        {# ── جدول المسودات والمسيرات ── #}
+        <section class="hr-payroll-panel hr-payroll-panel--table" aria-label="جدول المسيرات">
+            <div class="hr-payroll-panel__head">
+                <h2 class="hr-payroll-panel__title">
+                    <i data-lucide="table-2" class="w-4 h-4"></i>
+                    المسودات والمسيرات
+                    <span class="text-slate-400 font-normal">({{ period_runs|length }})</span>
+                </h2>
+                <p class="text-[11px] text-slate-500 m-0">
+                    مرتبة حسب الفرع{% if active_salary_mode == 'transfer' %} والكفالة{% endif %} — المسودة أولاً
+                </p>
             </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="bg-white p-4 rounded-xl border border-slate-200">
-            <p class="text-xs font-semibold text-slate-500">عدد الفروع / المسيرات</p>
-            <p class="text-2xl font-bold text-slate-900 mt-1">{{ runs_count }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200">
-            <p class="text-xs font-semibold text-slate-500">عدد الموظفين</p>
-            <p class="text-2xl font-bold text-slate-900 mt-1">{{ grand_totals.employees_count|default:0 }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-emerald-200">
-            <p class="text-xs font-semibold text-emerald-700">إجمالي الاستحقاقات</p>
-            <p class="mt-1 text-lg font-bold text-emerald-800">{{ grand_totals.total_earnings|default:0|format_sar:"earn" }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-primary-200">
-            <p class="text-xs font-semibold text-primary-700">الصافي الكلي</p>
-            <p class="mt-1 text-lg font-bold text-primary-900">{{ grand_totals.total_net|default:0|format_sar:"net" }}</p>
-        </div>
-    </div>
-
-    <div class="payroll-lines-card">
-        <div class="payroll-lines-hd flex flex-wrap items-center justify-between gap-2">
-            <h3>
-                <i data-lucide="layers" class="w-4 h-4 inline-block ml-1"></i>
-                المسيرات المحفوظة
-                <span class="text-slate-500 font-normal text-sm">({{ runs_count }})</span>
-            </h3>
-            <p class="text-xs text-slate-500 m-0">
-                {% if filter_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}
-                — {{ filter_month }}/{{ filter_year }}
-                · اضغط الصف أو زر العين لعرض التفاصيل
-            </p>
-        </div>
-
-        <div class="hr-payroll-runs-accordion p-3 space-y-2"
-             x-data="{
-                modalRunId: {% if open_run_id %}{{ open_run_id }}{% else %}null{% endif %},
-                openModal(id) {
-                    this.modalRunId = id;
-                    this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
-                },
-                closeModal() { this.modalRunId = null; }
-             }"
-             x-init="if (modalRunId) { $nextTick(function () { if (window.lucide) lucide.createIcons(); }); }"
-             @keydown.escape.window="closeModal()">
-            {% for run in payroll_runs %}
-            <div class="hr-payroll-run-row border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                <div class="hr-payroll-run-row__head">
-                    <button type="button"
-                            class="hr-payroll-run-row__main-btn"
-                            :class="{ 'is-active': modalRunId === {{ run.id }} }"
-                            @click="openModal({{ run.id }})"
-                            :aria-expanded="modalRunId === {{ run.id }}">
-                        <span class="hr-payroll-run-row__main min-w-0 flex-1">
-                            <span class="hr-payroll-run-row__title">{{ run.branch.name }}</span>
-                            <span class="hr-payroll-run-row__meta">
-                                {% if run.sponsorship %}{{ run.sponsorship.company_name }} · {% endif %}
-                                {{ run.get_salary_mode_display }}
-                                · {{ run.period_label }}
-                            </span>
-                        </span>
-                        <span class="hr-payroll-run-row__stats hidden sm:flex">
-                            <span class="hr-payroll-run-row__stat">
-                                <span class="lbl">موظفون</span>
-                                <span class="val">{{ run.employees_count }}</span>
-                            </span>
-                            <span class="hr-payroll-run-row__stat">
-                                <span class="lbl">الصافي</span>
-                                <span class="val text-primary-800">{{ run.total_net|format_sar:"net" }}</span>
-                            </span>
-                        </span>
-                        <span class="hr-payroll-run-row__badges shrink-0">
-                            {% if run.status == 'draft' %}
-                            <span class="px-2 py-0.5 text-xs font-bold rounded bg-amber-100 text-amber-800">مسودة</span>
-                            {% elif run.status == 'locked' %}
-                            <span class="px-2 py-0.5 text-xs font-bold rounded bg-emerald-100 text-emerald-800">مُغلق</span>
+            <div class="overflow-x-auto">
+                {% if period_runs %}
+                <table class="payroll-tbl hr-payroll-runs-tbl">
+                    <thead>
+                        <tr>
+                            <th class="text-center w-10">#</th>
+                            <th class="text-right">الفرع</th>
+                            {% if active_salary_mode == 'transfer' %}
+                            <th class="text-right">شركة الكفالة</th>
                             {% endif %}
-                        </span>
-                    </button>
-                    <button type="button"
-                            class="hr-payroll-run-row__view"
-                            title="عرض تفاصيل المسير"
-                            aria-label="عرض تفاصيل مسير {{ run.branch.name }}"
-                            @click.stop="openModal({{ run.id }})">
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-            {% empty %}
-            <div class="py-10 text-center font-semibold text-slate-500">
-                لا مسيرات محفوظة لهذه المعايير — اضغط <strong>بناء المسير</strong> أو <strong>حفظ</strong>.
-            </div>
-            {% endfor %}
-
-            <div x-show="modalRunId !== null"
-                 x-cloak
-                 class="hr-glass-modal-overlay fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4"
-                 @click.self="closeModal()"
-                 role="dialog"
-                 aria-modal="true"
-                 aria-label="تفاصيل المسير">
-                <div class="hr-glass-modal hr-glass-modal--ledger relative w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl"
-                     @click.stop>
-                    {% for run in payroll_runs %}
-                    <div x-show="modalRunId === {{ run.id }}"
-                         x-cloak
-                         class="flex flex-col min-h-0 flex-1 max-h-[92vh]">
-                        <div class="hr-glass-modal__head px-4 py-3 flex items-start justify-between gap-3 shrink-0 border-b border-slate-200">
-                            <div class="min-w-0">
-                                <p class="text-xs font-bold text-primary-700 m-0 mb-1">تفاصيل المسير</p>
-                                <h3 class="text-lg font-bold text-slate-900 m-0 truncate">{{ run.branch.name }}</h3>
-                                <p class="text-xs text-slate-500 mt-1 m-0">
-                                    {% if run.sponsorship %}{{ run.sponsorship.company_name }} · {% endif %}
-                                    {{ run.get_salary_mode_display }} · {{ run.period_label }}
-                                </p>
-                            </div>
-                            <button type="button"
-                                    class="hr-glass-modal__close shrink-0"
-                                    @click="closeModal()"
-                                    aria-label="إغلاق">
-                                <i data-lucide="x" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                        <div class="px-4 py-2 bg-slate-50 border-b border-slate-100 shrink-0">
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
-                                <span><strong class="text-slate-800">{{ run.employees_count }}</strong> موظف</span>
-                                <span>استحقاقات <strong class="text-emerald-700">{{ run.total_earnings|format_sar:"earn" }}</strong></span>
-                                <span>خصومات <strong class="text-rose-700">{{ run.total_deductions|format_sar:"deduct" }}</strong></span>
-                                <span>الصافي <strong class="text-primary-800">{{ run.total_net|format_sar:"net" }}</strong></span>
+                            <th class="text-center">الفترة</th>
+                            <th class="col-num">موظفون</th>
+                            <th class="col-num th-earn">الاستحقاقات</th>
+                            <th class="col-num th-deduct">الخصومات</th>
+                            <th class="col-num th-net">الصافي</th>
+                            <th class="text-center">الحالة</th>
+                            <th class="text-center w-28">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for run in period_runs %}
+                        <tr class="{% if open_run_id == run.id %}hr-payroll-runs-tbl__row--highlight{% endif %}">
+                            <td class="text-center text-slate-400 font-mono text-xs">{{ forloop.counter }}</td>
+                            <td class="font-bold text-slate-900">{{ run.branch.name }}</td>
+                            {% if active_salary_mode == 'transfer' %}
+                            <td class="text-slate-700 text-sm">{{ run.sponsorship.company_name|default:"—" }}</td>
+                            {% endif %}
+                            <td class="text-center text-xs text-slate-600">{{ run.period_label }}</td>
+                            <td class="col-num">{{ run.employees_count }}</td>
+                            <td class="col-num td-earn">{{ run.total_earnings|format_sar:"earn" }}</td>
+                            <td class="col-num td-deduct">{{ run.total_deductions|format_sar:"deduct" }}</td>
+                            <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
+                            <td class="text-center">
                                 {% if run.status == 'draft' %}
-                                <span class="px-2 py-0.5 text-xs font-bold rounded bg-amber-100 text-amber-800">مسودة</span>
+                                <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
                                 {% elif run.status == 'locked' %}
-                                <span class="px-2 py-0.5 text-xs font-bold rounded bg-emerald-100 text-emerald-800">مُغلق</span>
+                                <span class="hr-payroll-status hr-payroll-status--locked">مُغلق</span>
                                 {% endif %}
-                            </div>
-                        </div>
-                        <div class="hr-glass-modal__body hr-glass-modal__content overflow-y-auto flex-1 min-h-0 p-3 sm:p-4">
-                            {% include "pages/payroll/_payroll_run_lines_table.html" %}
-                        </div>
-                        <div class="hr-glass-modal__foot px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0 border-t border-slate-200">
-                            <a href="{% url 'web:view_payroll_run' run.id %}"
-                               class="inline-flex items-center gap-1.5 text-sm font-bold text-primary-700 hover:text-primary-900">
-                                <i data-lucide="external-link" class="w-4 h-4"></i>
-                                فتح صفحة المسير الكاملة
-                            </a>
-                            <button type="button"
-                                    class="px-4 py-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg"
-                                    @click="closeModal()">
-                                إغلاق
-                            </button>
-                        </div>
-                    </div>
-                    {% endfor %}
+                            </td>
+                            <td class="text-center">
+                                <div class="hr-payroll-row-actions">
+                                    <button type="button"
+                                            class="hr-payroll-row-actions__btn"
+                                            title="عرض التفاصيل"
+                                            @click="openModal({{ run.id }})">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                    <a href="{{ run.open_list_url }}"
+                                       class="hr-payroll-row-actions__btn"
+                                       title="تحميل في الفلاتر">
+                                        <i data-lucide="filter" class="w-4 h-4"></i>
+                                    </a>
+                                    <a href="{% url 'web:view_payroll_run' run.id %}"
+                                       class="hr-payroll-row-actions__btn"
+                                       title="صفحة المسير">
+                                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if show_table and grand_totals.total_net %}
+                    <tfoot>
+                        <tr>
+                            <td colspan="{% if active_salary_mode == 'transfer' %}4{% else %}3{% endif %}" class="text-left font-bold text-slate-700">الإجمالي (المحدد)</td>
+                            <td class="col-num font-bold">{{ grand_totals.employees_count|default:0 }}</td>
+                            <td class="col-num td-earn font-bold">{{ grand_totals.total_earnings|default:0|format_sar:"earn" }}</td>
+                            <td class="col-num td-deduct font-bold">{{ grand_totals.total_deductions|default:0|format_sar:"deduct" }}</td>
+                            <td class="col-num td-net font-bold">{{ grand_totals.total_net|default:0|format_sar:"net" }}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+                {% else %}
+                <div class="hr-payroll-empty py-12 text-center">
+                    <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
+                    {% if not filter_branch_ids %}
+                    <p class="font-semibold text-slate-700 m-0">لا مسيرات لـ {{ filter_month }}/{{ filter_year }} — {% if active_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}</p>
+                    <p class="text-sm text-slate-500 mt-2 m-0">اختر الفروع واضغط <strong>بناء المسير</strong> أو <strong>عرض المسودة</strong>.</p>
+                    {% elif not show_table and active_salary_mode == 'transfer' and not filter_sponsorship_ids %}
+                    <p class="font-semibold text-slate-700 m-0">اختر شركة الكفالة أو «جميع الشركات» ثم اضغط عرض أو بناء</p>
+                    {% else %}
+                    <p class="font-semibold text-slate-700 m-0">لا مسيرات لهذه المعايير</p>
+                    <p class="text-sm text-slate-500 mt-2 m-0">اضغط <strong>② بناء المسير</strong> لإنشاء مسودة جديدة.</p>
+                    {% endif %}
                 </div>
+                {% endif %}
             </div>
-        </div>
-    </div>
+        </section>
 
-    {% if show_table and allocation_lines %}
-    <div class="payroll-lines-card border-indigo-200">
-        <div class="payroll-lines-hd flex flex-wrap items-center justify-between gap-2">
-            <h3 class="m-0 text-indigo-900">
-                <i data-lucide="git-branch" class="w-4 h-4 inline-block ml-1"></i>
-                المسير التفصيلي — تحمّل الفروع (نقل)
-            </h3>
-            <p class="text-xs text-slate-500 m-0">الفرع الجديد يتحمل الراتب كاملاً</p>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="payroll-tbl">
-                <thead>
-                    <tr>
-                        <th class="text-right">الموظف</th>
-                        <th class="text-right">الفرع</th>
-                        <th class="text-center">تاريخ النقل</th>
-                        <th class="col-num">أيام</th>
-                        <th class="col-num th-net">المبلغ</th>
-                        <th class="text-center">يتحمل</th>
-                        <th class="text-center">مسير</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in allocation_lines %}
-                    <tr>
-                        <td class="font-bold text-slate-900">{{ row.employee.name }}</td>
-                        <td>{{ row.branch.name }}</td>
-                        <td class="text-center text-sm">{{ row.transfer_date|default:"—" }}</td>
-                        <td class="col-num">{{ row.days_in_branch }}</td>
-                        <td class="col-num td-net">{{ row.net_amount|format_sar:"net" }}</td>
-                        <td class="text-center">{% if row.bears_salary %}<span class="text-emerald-700 text-xs font-semibold">نعم</span>{% else %}—{% endif %}</td>
-                        <td class="text-center">
-                            <a href="{% url 'web:view_payroll_run' row.run.id %}" class="text-indigo-600 hover:text-indigo-800" title="عرض المسير التفصيلي">
-                                <i data-lucide="eye" class="w-4 h-4 inline-block"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% if allocation_page_obj and allocation_page_obj.has_other_pages %}
-        <div class="p-4 border-t border-slate-100 flex items-center justify-center gap-1 text-sm">
-            {% if allocation_page_obj.has_previous %}
-            <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.previous_page_number }}"
-               class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">السابق</a>
+        {# ── المسير التفصيلي ── #}
+        {% if show_table and allocation_lines %}
+        <section class="hr-payroll-panel hr-payroll-panel--detailed">
+            <div class="hr-payroll-panel__head">
+                <h2 class="hr-payroll-panel__title text-indigo-900">
+                    <i data-lucide="git-branch" class="w-4 h-4"></i>
+                    المسير التفصيلي — تحمّل الفروع
+                </h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="payroll-tbl">
+                    <thead>
+                        <tr>
+                            <th class="text-right">الموظف</th>
+                            <th class="text-right">الفرع</th>
+                            <th class="text-center">تاريخ النقل</th>
+                            <th class="col-num">أيام</th>
+                            <th class="col-num th-net">المبلغ</th>
+                            <th class="text-center">يتحمل</th>
+                            <th class="text-center">مسير</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in allocation_lines %}
+                        <tr>
+                            <td class="font-bold text-slate-900">{{ row.employee.name }}</td>
+                            <td>{{ row.branch.name }}</td>
+                            <td class="text-center text-sm">{{ row.transfer_date|default:"—" }}</td>
+                            <td class="col-num">{{ row.days_in_branch }}</td>
+                            <td class="col-num td-net">{{ row.net_amount|format_sar:"net" }}</td>
+                            <td class="text-center">{% if row.bears_salary %}<span class="text-emerald-700 text-xs font-semibold">نعم</span>{% else %}—{% endif %}</td>
+                            <td class="text-center">
+                                <a href="{% url 'web:view_payroll_run' row.run.id %}" class="text-indigo-600 hover:text-indigo-800">
+                                    <i data-lucide="eye" class="w-4 h-4 inline-block"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if allocation_page_obj and allocation_page_obj.has_other_pages %}
+            <div class="p-4 border-t border-slate-100 flex items-center justify-center gap-1 text-sm">
+                {% if allocation_page_obj.has_previous %}
+                <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.previous_page_number }}"
+                   class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">السابق</a>
+                {% endif %}
+                <span class="px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold">{{ allocation_page_obj.number }}</span>
+                {% if allocation_page_obj.has_next %}
+                <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.next_page_number }}"
+                   class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">التالي</a>
+                {% endif %}
+            </div>
             {% endif %}
-            <span class="px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold">{{ allocation_page_obj.number }}</span>
-            {% if allocation_page_obj.has_next %}
-            <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.next_page_number }}"
-               class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">التالي</a>
-            {% endif %}
+        </section>
+        {% elif show_table and can_build %}
+        <div class="hr-payroll-hint hr-payroll-hint--indigo">
+            <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+            <span>لا يوجد مسير تفصيلي. استخدم <strong>مسير تفصيلي</strong> عند وجود موظفين منقولين بين الفروع.</span>
         </div>
         {% endif %}
     </div>
-    {% elif show_table and can_build %}
-    <div class="bg-indigo-50 border border-dashed border-indigo-200 rounded-xl p-4 text-sm text-indigo-900 text-center">
-        لا يوجد مسير تفصيلي لهذا الشهر. اضغط <strong>مسير تفصيلي</strong> بعد بناء المسير العادي (إن وُجد موظفون منقولون).
-    </div>
-    {% endif %}
-    {% endif %}
+
+    {% include "components/page_tabs_end.html" %}
+
+    {% include "pages/payroll/_payroll_run_modal.html" with modal_runs=modal_runs %}
 </div>
+
 <script>
 (function () {
     function initPayrollPage(root) {
@@ -385,15 +388,15 @@
         if (window.lucide) lucide.createIcons();
         if (window.hrInitFilterMultiselects) window.hrInitFilterMultiselects(scope);
 
-        var filterForm = scope.querySelector ? scope.querySelector('#payrollFilterForm') : null;
-        var createForm = scope.querySelector ? scope.querySelector('#payrollCreateForm') : null;
+        var filterForm = scope.querySelector('#payrollFilterForm');
+        var createForm = scope.querySelector('#payrollCreateForm');
         if (!filterForm || filterForm.dataset.payrollBound === '1') return;
         filterForm.dataset.payrollBound = '1';
 
         function syncCreateFormHiddenFields() {
             if (!createForm || !filterForm) return;
             createForm.querySelectorAll('[data-payroll-sync]').forEach(function (el) { el.remove(); });
-            ['branch_id', 'sponsorship_id', 'salary_mode', 'year', 'month'].forEach(function (name) {
+            ['branch_id', 'sponsorship_id', 'year', 'month'].forEach(function (name) {
                 var src = filterForm.querySelector('[name="' + name + '"]');
                 if (!src) return;
                 if (src.multiple) {
@@ -419,33 +422,10 @@
 
         filterForm.addEventListener('change', syncCreateFormHiddenFields);
         filterForm.addEventListener('submit', syncCreateFormHiddenFields);
-        createForm.addEventListener('submit', syncCreateFormHiddenFields);
-        syncCreateFormHiddenFields();
-
-        var sponsorshipWrap = scope.querySelector('#payrollSponsorshipWrap');
-        var sponsorshipSel = scope.querySelector('#payrollSponsorship');
-        var salaryModeSel = filterForm.querySelector('#payrollSalaryMode') || filterForm.querySelector('select[name="salary_mode"]');
-        function getSalaryModeValue() {
-            if (!salaryModeSel) return '';
-            var opts = salaryModeSel.selectedOptions;
-            if (opts && opts.length) return opts[0].value || '';
-            return salaryModeSel.value || '';
+        if (createForm) {
+            createForm.addEventListener('submit', syncCreateFormHiddenFields);
+            syncCreateFormHiddenFields();
         }
-        function syncSponsorshipField() {
-            var isCash = getSalaryModeValue() === 'cash';
-            if (!sponsorshipWrap) return;
-            sponsorshipWrap.style.display = isCash ? 'none' : '';
-            if (sponsorshipSel) {
-                sponsorshipSel.disabled = isCash;
-                if (isCash) {
-                    Array.from(sponsorshipSel.options).forEach(function (o) { o.selected = false; });
-                    sponsorshipSel.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            }
-        }
-
-        if (salaryModeSel) salaryModeSel.addEventListener('change', syncSponsorshipField);
-        syncSponsorshipField();
     }
 
     window.hrInitPayrollPage = initPayrollPage;

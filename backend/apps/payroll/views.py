@@ -200,6 +200,51 @@ def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=Non
     return list(qs.select_related('branch', 'sponsorship').order_by('-updated_at'))
 
 
+def _period_payroll_runs(filters: dict, user, user_branches, salary_mode: str, *, branch_ids=None):
+    """كل مسيرات STANDARD لشهر ونوع راتب — مرتبة للجدول."""
+    year, month = filters.get('year'), filters.get('month')
+    if not year or not month or salary_mode not in PayrollRun.SalaryMode.values:
+        return []
+    qs = PayrollRun.objects.filter(
+        period_year=year,
+        period_month=month,
+        run_kind=PayrollRun.RunKind.STANDARD,
+        salary_mode=salary_mode,
+    ).select_related('branch', 'sponsorship')
+    if not user.is_superuser:
+        qs = qs.filter(branch__in=user_branches)
+    if branch_ids:
+        qs = qs.filter(branch_id__in=branch_ids)
+    line_prefetch = Prefetch(
+        'lines',
+        queryset=PayrollLine.objects.select_related('employee').order_by('employee__name'),
+    )
+    return list(
+        qs.prefetch_related(line_prefetch)
+        .order_by('status', 'branch__name', 'sponsorship__company_name', 'id'),
+    )
+
+
+def _payroll_mode_run_counts(filters: dict, user, user_branches, *, branch_ids=None) -> dict[str, int]:
+    counts = {}
+    for mode in PayrollRun.SalaryMode.values:
+        counts[mode] = len(_period_payroll_runs(filters, user, user_branches, mode, branch_ids=branch_ids))
+    return counts
+
+
+def _payroll_run_open_url(run: PayrollRun) -> str:
+    pairs: list[tuple[str, object]] = [
+        ('year', run.period_year),
+        ('month', run.period_month),
+        ('salary_mode', run.salary_mode),
+        ('branch_id', run.branch_id),
+        ('open_run', run.pk),
+    ]
+    if run.sponsorship_id:
+        pairs.append(('sponsorship_id', run.sponsorship_id))
+    return f"{reverse('web:list_payroll_runs')}?{urlencode(pairs)}"
+
+
 def _apply_draft_run_to_filters(filters: dict, run: PayrollRun) -> dict:
     if run.branch_id and not filters.get('branch_ids'):
         filters['branch_ids'] = [run.branch_id]
@@ -292,6 +337,8 @@ def _restore_payroll_list_filters(request, filters: dict, user, user_branches):
         filters = _merge_stored_payroll_filters(filters, stored)
 
     filters = _infer_payroll_filters_from_drafts(filters, user, user_branches)
+    if not filters.get('salary_mode'):
+        filters['salary_mode'] = PayrollRun.SalaryMode.TRANSFER
     filters = _recompute_payroll_ready(filters)
 
     redirect_response = None
@@ -659,6 +706,36 @@ def list_payroll_runs(request):
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
     saved_drafts_count = _count_saved_draft_runs(filters, request.user, user_branches)
+    active_mode = filters.get('salary_mode') or PayrollRun.SalaryMode.TRANSFER
+    period_runs = _period_payroll_runs(
+        filters, request.user, user_branches, active_mode,
+        branch_ids=filters['branch_ids'] or None,
+    )
+    mode_run_counts = _payroll_mode_run_counts(
+        filters, request.user, user_branches,
+        branch_ids=filters['branch_ids'] or None,
+    )
+    tab_qs_base = {
+        'year': filters['year'],
+        'month': filters['month'],
+        'branch_ids': filters['branch_ids'] or None,
+    }
+    tab_qs_transfer = _payroll_list_querystring(
+        **tab_qs_base,
+        salary_mode=PayrollRun.SalaryMode.TRANSFER,
+        sponsorship_ids=filters['sponsorship_ids'],
+    )
+    tab_qs_cash = _payroll_list_querystring(
+        **tab_qs_base,
+        salary_mode=PayrollRun.SalaryMode.CASH,
+        sponsorship_ids=None,
+    )
+    modal_runs = payroll_runs if payroll_runs else period_runs
+    for run in modal_runs:
+        run.open_list_url = _payroll_run_open_url(run)
+    for run in period_runs:
+        if not getattr(run, 'open_list_url', None):
+            run.open_list_url = _payroll_run_open_url(run)
     filter_qs = _payroll_list_querystring(
         branch_ids=filters['branch_ids'] if filters['ready'] else None,
         year=filters['year'],
@@ -696,6 +773,12 @@ def list_payroll_runs(request):
         'detailed_runs': detailed_runs,
         'allocation_lines': allocation_lines,
         'allocation_page_obj': allocation_page_obj,
+        'period_runs': period_runs,
+        'mode_run_counts': mode_run_counts,
+        'active_salary_mode': active_mode,
+        'tab_qs_transfer': tab_qs_transfer,
+        'tab_qs_cash': tab_qs_cash,
+        'modal_runs': modal_runs,
     })
 
 
