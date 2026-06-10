@@ -165,6 +165,14 @@ def _resolved_branch_ids(filters, user_branches) -> list[int]:
     return list(user_branches.values_list('id', flat=True))
 
 
+def _branches_by_company(branches) -> list[list]:
+    """تجميع الفروع حسب الشركة — مسير موحّد لكل شركة."""
+    groups: dict[int, list] = {}
+    for branch in branches:
+        groups.setdefault(branch.company_id, []).append(branch)
+    return [groups[company_id] for company_id in sorted(groups)]
+
+
 def _default_payroll_period(filters: dict) -> dict:
     """توحيد السنة/الشهر مع القيم الافتراضية في الواجهة."""
     today = date.today()
@@ -190,12 +198,15 @@ def _store_payroll_list_filters(request, filters: dict) -> None:
     if not filters.get('ready'):
         return
     branch_ids = filters.get('branch_ids')
+    sponsorship_ids = filters['sponsorship_ids']
+    if filters['salary_mode'] == PayrollRun.SalaryMode.CASH:
+        sponsorship_ids = None
     request.session[_PAYROLL_LIST_SESSION_KEY] = {
         'branch_ids': list(branch_ids) if branch_ids else None,
         'year': filters['year'],
         'month': filters['month'],
         'salary_mode': filters['salary_mode'],
-        'sponsorship_ids': filters['sponsorship_ids'],
+        'sponsorship_ids': sponsorship_ids,
         'payroll_view': filters.get('payroll_view', 'standard'),
     }
     request.session.modified = True
@@ -395,8 +406,14 @@ def _merge_stored_payroll_filters(filters: dict, stored: dict) -> dict:
         filters['branch_ids'] = list(stored_branches) if stored_branches else None
     if stored.get('salary_mode') and not filters.get('salary_mode'):
         filters['salary_mode'] = stored['salary_mode']
-    if 'sponsorship_ids' in stored and filters.get('sponsorship_ids') is None:
+    if (
+        filters.get('salary_mode') != PayrollRun.SalaryMode.CASH
+        and 'sponsorship_ids' in stored
+        and filters.get('sponsorship_ids') is None
+    ):
         filters['sponsorship_ids'] = stored['sponsorship_ids']
+    if filters.get('salary_mode') == PayrollRun.SalaryMode.CASH:
+        filters['sponsorship_ids'] = None
     if stored.get('year'):
         filters['year'] = stored['year']
     if stored.get('month'):
@@ -509,6 +526,8 @@ def _parse_payroll_form(request, user_branches):
     except ValueError:
         pass
 
+    if salary_mode == PayrollRun.SalaryMode.CASH:
+        sponsorship_ids = None
     filters = {
         'branch_ids': branch_ids,
         'year': year,
@@ -557,23 +576,25 @@ def _build_payroll_runs(request, filters, user_branches):
     )
     runs_built = []
     errors = []
-    use_consolidated = len(branches) > 1
+    use_consolidated = _prefer_consolidated_runs(filters, branch_ids)
     try:
         with transaction.atomic():
             for sponsorship_id in sponsorship_ids:
                 if use_consolidated:
-                    try:
-                        runs_built.append(
-                            build_consolidated_payroll_run(
-                                branches, filters['year'], filters['month'], request.user,
-                                salary_mode=filters['salary_mode'],
-                                sponsorship_id=sponsorship_id,
+                    for company_branches in _branches_by_company(branches):
+                        try:
+                            runs_built.append(
+                                build_consolidated_payroll_run(
+                                    company_branches, filters['year'], filters['month'], request.user,
+                                    salary_mode=filters['salary_mode'],
+                                    sponsorship_id=sponsorship_id,
+                                )
                             )
-                        )
-                    except ValueError as e:
-                        sp_label = f' / كفالة #{sponsorship_id}' if sponsorship_id else ''
-                        errors.append(f'مسير موحّد{sp_label}: {e}')
-                        raise
+                        except ValueError as e:
+                            sp_label = f' / كفالة #{sponsorship_id}' if sponsorship_id else ''
+                            company_label = company_branches[0].company.name
+                            errors.append(f'{company_label} — مسير موحّد{sp_label}: {e}')
+                            raise
                 else:
                     for branch in branches:
                         try:

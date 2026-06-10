@@ -265,6 +265,47 @@ class PayrollEngineTests(TestCase):
             0,
         )
 
+    def test_consolidated_cash_run_single_draft_for_multiple_branches(self):
+        branch_b = Branch.objects.create(name='Branch B Cash', code='TSC02', company=self.company)
+        cash_defaults = dict(
+            sponsorship=None,
+            status=Employee.Status.ACTIVE,
+            hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('2500'),
+            housing_allowance=Decimal('0'),
+            transport_allowance=Decimal('0'),
+            other_allowance=Decimal('0'),
+            cash_amount=Decimal('0'),
+            insurance_deduction_rate=Decimal('0'),
+        )
+        Employee.objects.create(name='نقدي ب', branch=branch_b, **cash_defaults)
+        build_payroll_run(
+            self.branch, 2026, 8, self.user,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+        )
+        build_payroll_run(
+            branch_b, 2026, 8, self.user,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+        )
+        run = build_consolidated_payroll_run(
+            [self.branch, branch_b], 2026, 8, self.user,
+            salary_mode=PayrollRun.SalaryMode.CASH,
+        )
+        self.assertEqual(run.run_kind, PayrollRun.RunKind.CONSOLIDATED)
+        self.assertEqual(run.salary_mode, PayrollRun.SalaryMode.CASH)
+        self.assertIsNone(run.sponsorship_id)
+        self.assertEqual(run.employees_count, 2)
+        self.assertEqual(
+            PayrollRun.objects.filter(
+                period_year=2026,
+                period_month=8,
+                salary_mode=PayrollRun.SalaryMode.CASH,
+                run_kind=PayrollRun.RunKind.STANDARD,
+                status=PayrollRun.Status.DRAFT,
+            ).count(),
+            0,
+        )
+
     def test_lock_twice_raises(self):
         run = build_payroll_run(
             self.branch, 2026, 3, self.user,
