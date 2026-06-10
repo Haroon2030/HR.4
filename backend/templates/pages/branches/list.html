@@ -490,6 +490,7 @@
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">اسم الشركة</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">السجل التجاري</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الرمز</th>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">الحالة</th>
                                 <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
@@ -504,6 +505,9 @@
                                         <i data-lucide="file-text" class="w-4 h-4 text-primary-600"></i>
                                         <span class="text-xs font-medium text-slate-900">{{ sponsor.company_name }}</span>
                                     </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="text-xs font-mono text-slate-700" dir="ltr">{{ sponsor.commercial_registration|default:"—" }}</span>
                                 </td>
                                 <td class="px-3 py-2">
                                     <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ sponsor.code }}</span>
@@ -523,7 +527,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">
                                     <i data-lucide="file-text" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
                                     <p>لا بيانات</p>
                                 </td>

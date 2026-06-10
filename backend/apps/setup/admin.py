@@ -29,9 +29,9 @@ class ProfessionAdmin(admin.ModelAdmin):
 
 @admin.register(Sponsorship)
 class SponsorshipAdmin(admin.ModelAdmin):
-    list_display = ('code', 'company_name', 'is_active', 'created_at')
+    list_display = ('code', 'company_name', 'commercial_registration', 'is_active', 'created_at')
     list_filter = ('is_active',)
-    search_fields = ('code', 'company_name')
+    search_fields = ('code', 'company_name', 'commercial_registration')
 
 
 @admin.register(Insurance)

@@ -64,7 +64,7 @@ class ProfessionForm(forms.ModelForm):
 class SponsorshipForm(forms.ModelForm):
     class Meta:
         model = Sponsorship
-        fields = ['code', 'company_name']
+        fields = ['code', 'company_name', 'commercial_registration']
 
     def clean_code(self):
         return _validate_unique_code(Sponsorship, self.cleaned_data.get('code'), self.instance)

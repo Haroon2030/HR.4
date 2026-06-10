@@ -68,6 +68,12 @@ class Sponsorship(BaseModel):
     """الكفالات"""
     code = models.CharField("رقم الكفالة", max_length=20, unique=True)
     company_name = models.CharField("اسم الشركة", max_length=200)
+    commercial_registration = models.CharField(
+        "السجل التجاري",
+        max_length=20,
+        blank=True,
+        default='',
+    )
     is_active = models.BooleanField("نشط", default=True)
 
     history = HistoricalRecords(table_name='core_historicalsponsorship')
