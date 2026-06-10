@@ -72,32 +72,32 @@
                     {% if active_salary_mode == 'cash' %}صرف نقدي{% else %}تحويل بنكي{% endif %}
                 </span>
             </div>
-            <form method="GET" action="{% url 'web:list_payroll_runs' %}" id="payrollFilterForm" class="hr-payroll-panel__body space-y-4">
+            <form method="GET" action="{% url 'web:list_payroll_runs' %}" id="payrollFilterForm" class="hr-payroll-panel__body">
                 <input type="hidden" name="salary_mode" value="{{ active_salary_mode }}">
-                <div class="hr-payroll-filters-grid">
-                    <div class="hr-payroll-filter-field">
-                        <label class="hr-payroll-filter-label">السنة</label>
-                        <select name="year" required class="hr-payroll-filter-input">
+                <div class="hr-payroll-filters-grid{% if active_salary_mode == 'transfer' %} hr-payroll-filters-grid--transfer{% endif %}">
+                    <div class="hr-payroll-filter-field hr-payroll-filter-field--year">
+                        <label class="hr-payroll-filter-label" for="payrollFilterYear">السنة</label>
+                        <select name="year" id="payrollFilterYear" required class="hr-payroll-filter-input">
                             {% for y in years_range %}
                             <option value="{{ y }}" {% if filter_year == y %}selected{% elif not filter_year and y == current_year %}selected{% endif %}>{{ y }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="hr-payroll-filter-field">
-                        <label class="hr-payroll-filter-label">الشهر</label>
-                        <select name="month" required class="hr-payroll-filter-input">
+                    <div class="hr-payroll-filter-field hr-payroll-filter-field--month">
+                        <label class="hr-payroll-filter-label" for="payrollFilterMonth">الشهر</label>
+                        <select name="month" id="payrollFilterMonth" required class="hr-payroll-filter-input">
                             {% for m in months_range %}
                             <option value="{{ m }}" {% if filter_month == m %}selected{% elif not filter_month and m == current_month %}selected{% endif %}>{{ m }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="hr-payroll-filter-field hr-payroll-filter-field--wide">
-                        <label class="hr-payroll-filter-label">الفروع</label>
+                    <div class="hr-payroll-filter-field hr-payroll-filter-field--branches">
+                        <label class="hr-payroll-filter-label" for="payrollBranch">الفروع</label>
                         {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="hr-payroll-filter-input" select_id="payrollBranch" aria_label="الفروع" all_label="جميع الفروع" placeholder="— اختر الفروع —" count_unit="فروع" %}
                     </div>
                     {% if active_salary_mode == 'transfer' %}
-                    <div class="hr-payroll-filter-field hr-payroll-filter-field--wide" id="payrollSponsorshipWrap">
-                        <label class="hr-payroll-filter-label">شركة الكفالة</label>
+                    <div class="hr-payroll-filter-field hr-payroll-filter-field--sponsorship" id="payrollSponsorshipWrap">
+                        <label class="hr-payroll-filter-label" for="payrollSponsorship">شركة الكفالة</label>
                         {% include "components/filter_multiselect.html" with name="sponsorship_id" items=sponsorships selected_ids=filter_sponsorship_ids field_class="hr-payroll-filter-input" select_id="payrollSponsorship" aria_label="شركة الكفالة" all_label="جميع الشركات" placeholder="— اختر شركة الكفالة —" count_unit="شركات" %}
                     </div>
                     {% endif %}
