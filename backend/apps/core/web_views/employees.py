@@ -86,7 +86,7 @@ def _save_employee_from_form(request, form):
     return employee
 
 
-def _employee_edit_page_context(employee, *, form=None, is_create=False, user=None):
+def _employee_edit_page_context(employee, *, form=None, is_create=False, user=None, requested_tab=None):
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
     from apps.employees.services.contract_rules import saudi_nationality_ids
     from apps.core.employee_tab_permissions import enrich_employee_page_context
@@ -109,9 +109,17 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False, user=No
         'administrations': _administrations_qs(),
     }
     if user is not None:
-        enrich_employee_page_context(user, ctx, edit_form=True)
+        enrich_employee_page_context(user, ctx, requested_tab=requested_tab, edit_form=True)
         ctx['can_edit_salary'] = user_can_edit_salary(user)
     return ctx
+
+
+def _employee_edit_redirect(employee_id, *, tab: str | None = None):
+    url = reverse('web:edit_employee', kwargs={'employee_id': employee_id})
+    tab = (tab or '').strip()
+    if tab:
+        return redirect(f'{url}?tab={tab}')
+    return redirect(url)
 
 
 @login_required
@@ -377,19 +385,24 @@ def edit_employee(request, employee_id):
                         form.cleaned_data[field_name] = getattr(employee, field_name)
             employee = _save_employee_from_form(request, form)
             messages.success(request, f'تم حفظ بيانات الموظف "{employee.name}"')
-            return redirect('web:edit_employee', employee_id=employee.id)
+            return_tab = (request.POST.get('return_tab') or request.GET.get('tab') or '').strip()
+            return _employee_edit_redirect(employee.id, tab=return_tab)
         for field, errors in form.errors.items():
             messages.error(request, f'{field}: {errors[0]}')
+        return_tab = (request.POST.get('return_tab') or request.GET.get('tab') or '').strip()
         return render(
             request,
             'pages/employees/edit.html',
-            _employee_edit_page_context(employee, form=form, user=request.user),
+            _employee_edit_page_context(
+                employee, form=form, user=request.user, requested_tab=return_tab or None,
+            ),
         )
 
+    requested_tab = (request.GET.get('tab') or '').strip() or None
     return render(
         request,
         'pages/employees/edit.html',
-        _employee_edit_page_context(employee, user=request.user),
+        _employee_edit_page_context(employee, user=request.user, requested_tab=requested_tab),
     )
 
 
