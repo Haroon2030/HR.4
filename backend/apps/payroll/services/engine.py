@@ -416,6 +416,147 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     return run
 
 
+def _purge_standard_draft_runs(*, branch_ids, year, month, salary_mode, sponsorship_id):
+    """حذف مسودات STANDARD القديمة بعد بناء مسير موحّد."""
+    PayrollRun.objects.filter(
+        branch_id__in=branch_ids,
+        period_year=year,
+        period_month=month,
+        salary_mode=salary_mode,
+        sponsorship_id=sponsorship_id,
+        run_kind=PayrollRun.RunKind.STANDARD,
+        status=PayrollRun.Status.DRAFT,
+    ).delete()
+
+
+@transaction.atomic
+def build_consolidated_payroll_run(
+    branches, year: int, month: int, user=None, *, salary_mode=None, sponsorship_id=None,
+):
+    """
+    يبني أو يُعيد بناء مسير DRAFT موحّد لعدة فروع من نفس الشركة.
+    مسودة واحدة (branch=null) تجمع موظفي كل الفروع المحددة.
+    """
+    branches = list(branches)
+    if not branches:
+        raise ValueError('لا توجد فروع.')
+    company_ids = {b.company_id for b in branches}
+    if len(company_ids) != 1:
+        raise ValueError('المسير الموحّد يتطلب فروعاً من نفس الشركة.')
+    company = branches[0].company
+    branch_ids = [b.id for b in branches]
+
+    if salary_mode is None:
+        salary_mode = PayrollRun.SalaryMode.TRANSFER
+    if salary_mode not in PayrollRun.SalaryMode.values:
+        raise ValueError('نوع الراتب غير صالح.')
+    if salary_mode == PayrollRun.SalaryMode.CASH:
+        sponsorship_id = None
+    elif salary_mode == PayrollRun.SalaryMode.TRANSFER and not sponsorship_id:
+        raise ValueError('يرجى اختيار شركة الكفالة لمسير التحويل.')
+
+    lookup = {
+        'branch': None,
+        'company': company,
+        'period_year': year,
+        'period_month': month,
+        'salary_mode': salary_mode,
+        'run_kind': PayrollRun.RunKind.CONSOLIDATED,
+        'sponsorship_id': sponsorship_id,
+    }
+    run, _ = PayrollRun.objects.get_or_create(
+        **lookup,
+        defaults={
+            'created_by': user,
+            'status': PayrollRun.Status.DRAFT,
+        },
+    )
+
+    if run.status == PayrollRun.Status.LOCKED:
+        raise ValueError('المسير مُغلق ولا يمكن إعادة بنائه. أعد فتحه أولاً.')
+
+    PayrollRun.acquire_row_lock(run.pk)
+    PayrollLine.all_objects.filter(run=run).delete()
+
+    period_start, period_end = calendar_period_bounds(year, month)
+
+    from apps.payroll.services.transfer_payroll import (
+        transfer_breakdown_for_employee,
+        transfers_in_period,
+    )
+    company_transfers = transfers_in_period(company.id, year, month)
+
+    employees = []
+    seen_emp_ids = set()
+    for branch in branches:
+        for emp in _employees_for_payroll_run(
+            branch, salary_mode, sponsorship_id=sponsorship_id, year=year, month=month,
+        ).order_by('name').distinct():
+            if emp.id not in seen_emp_ids:
+                seen_emp_ids.add(emp.id)
+                employees.append(emp)
+
+    employee_ids = [e.id for e in employees]
+    abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, locked_emp_ids = _bulk_payroll_deductions(
+        employee_ids, run, period_start, period_end, year, month,
+    )
+
+    lines_to_create = []
+    for emp in employees:
+        if emp.id in locked_emp_ids:
+            continue
+
+        snap = _compute_employee_payroll_snapshot(
+            emp, year, month, run=run,
+            abs_by_emp=abs_by_emp,
+            leaves_by_emp=leaves_by_emp,
+            inst_by_emp=inst_by_emp,
+            pen_by_emp=pen_by_emp,
+        )
+        breakdown = dict(snap['breakdown'])
+        transfer_info = transfer_breakdown_for_employee(company_transfers.get(emp.id))
+        if transfer_info:
+            breakdown['transfer'] = transfer_info
+
+        lines_to_create.append(PayrollLine(
+            run=run,
+            employee=emp,
+            basic_salary=emp.basic_salary or 0,
+            housing_allowance=emp.housing_allowance or 0,
+            transport_allowance=emp.transport_allowance or 0,
+            other_allowance=emp.other_allowance or 0,
+            cash_amount=emp.cash_amount or 0,
+            meal_allowance=emp.meal_allowance or 0,
+            month_days=snap['month_days'],
+            daily_rate=snap['daily_rate'],
+            absence_days=snap['absence_days'],
+            absence_deduction=snap['absence_deduction'],
+            unpaid_leave_days=snap['unpaid_leave_days'],
+            unpaid_leave_deduction=snap['unpaid_leave_deduction'],
+            loan_deduction=snap['loan_deduction'],
+            penalty_deduction=snap['penalty_deduction'],
+            insurance_deduction=snap['insurance_deduction'],
+            gross_salary=snap['gross_salary'],
+            total_earnings=snap['total_earnings'],
+            total_deductions=snap['total_deductions'],
+            net_salary=snap['net_salary'],
+            breakdown=breakdown,
+        ))
+
+    if lines_to_create:
+        PayrollLine.objects.bulk_create(lines_to_create, batch_size=500)
+
+    run.recompute_totals()
+    _purge_standard_draft_runs(
+        branch_ids=branch_ids,
+        year=year,
+        month=month,
+        salary_mode=salary_mode,
+        sponsorship_id=sponsorship_id,
+    )
+    return run
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 2. ترحيل المسير (قفل) — ربط البنود ومنع التعديل
 # ══════════════════════════════════════════════════════════════════════════════

@@ -198,7 +198,10 @@
                     <span class="text-slate-400 font-normal">({{ period_runs|length }})</span>
                 </h2>
                 <p class="text-[11px] text-slate-500 m-0">
-                    {% if show_unified_run_row %}
+                    {% if has_consolidated_run %}
+                    <span class="text-primary-700 font-semibold">مسودة موحّدة — جميع الفروع</span>
+                    · التصدير يُنتج <strong>ملف Excel واحد</strong>
+                    {% elif show_unified_run_row %}
                     <span class="text-primary-700 font-semibold">مسير موحّد — جميع الفروع ({{ period_totals.runs_count }})</span>
                     · التصدير يُنتج <strong>ملف Excel واحد</strong> لكل الموظفين
                     {% else %}
@@ -276,7 +279,15 @@
                         <tr class="{% if show_unified_run_row %}hr-payroll-runs-tbl__row--detail{% endif %}{% if open_run_id == run.id %} hr-payroll-runs-tbl__row--highlight{% endif %}"
                             {% if show_unified_run_row %}x-show="showBranchDetail" x-cloak{% endif %}>
                             <td class="text-center text-slate-400 font-mono text-xs">{% if show_unified_run_row %}{{ forloop.counter }}{% else %}{{ forloop.counter }}{% endif %}</td>
-                            <td class="font-bold text-slate-900">{% if show_unified_run_row %}↳ {% endif %}{{ run.branch.name }}</td>
+                            <td class="font-bold {% if run.run_kind == 'consolidated' %}text-primary-900{% else %}text-slate-900{% endif %}">
+                                {% if show_unified_run_row %}↳ {% endif %}
+                                {% if run.run_kind == 'consolidated' %}
+                                جميع الفروع
+                                <span class="block text-[10px] font-semibold text-slate-500 mt-0.5">مسودة موحّدة · ملف تصدير واحد</span>
+                                {% else %}
+                                {{ run.branch.name }}
+                                {% endif %}
+                            </td>
                             {% if active_salary_mode == 'transfer' %}
                             <td class="text-slate-700 text-sm">{{ run.sponsorship.company_name|default:"—" }}</td>
                             {% endif %}

@@ -20,6 +20,7 @@ from apps.employees.models import (
 from apps.payroll.models import PayrollAllocationLine, PayrollRun
 from apps.payroll.services.engine import (
     build_payroll_run,
+    build_consolidated_payroll_run,
     lock_payroll_run,
     unlock_payroll_run,
 )
@@ -219,6 +220,50 @@ class PayrollEngineTests(TestCase):
         self.assertNotEqual(run_cash.id, run_transfer.id)
         self.assertEqual(run_cash.employees_count, 1)
         self.assertEqual(run_transfer.employees_count, 1)
+
+    def test_consolidated_run_single_draft_for_multiple_branches(self):
+        branch_b = Branch.objects.create(name='Branch B', code='TST02', company=self.company)
+        Employee.objects.create(
+            name='موظف فرع ب', branch=branch_b, sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE, hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('2000'), housing_allowance=Decimal('0'),
+            transport_allowance=Decimal('0'), other_allowance=Decimal('0'),
+            cash_amount=Decimal('0'), insurance_deduction_rate=Decimal('0'),
+        )
+        build_payroll_run(
+            self.branch, 2026, 7, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        build_payroll_run(
+            branch_b, 2026, 7, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        self.assertEqual(
+            PayrollRun.objects.filter(
+                period_year=2026, period_month=7,
+                run_kind=PayrollRun.RunKind.STANDARD,
+                salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            ).count(),
+            2,
+        )
+        run = build_consolidated_payroll_run(
+            [self.branch, branch_b], 2026, 7, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        self.assertEqual(run.run_kind, PayrollRun.RunKind.CONSOLIDATED)
+        self.assertIsNone(run.branch_id)
+        self.assertEqual(run.employees_count, 2)
+        self.assertEqual(
+            PayrollRun.objects.filter(
+                period_year=2026, period_month=7,
+                run_kind=PayrollRun.RunKind.STANDARD,
+                status=PayrollRun.Status.DRAFT,
+            ).count(),
+            0,
+        )
 
     def test_lock_twice_raises(self):
         run = build_payroll_run(

@@ -15,7 +15,7 @@
             <div class="hr-glass-modal__head px-4 py-3 flex items-start justify-between gap-3 shrink-0 border-b border-slate-200">
                 <div class="min-w-0">
                     <p class="text-xs font-bold text-primary-700 m-0 mb-1">تفاصيل المسير</p>
-                    <h3 class="text-lg font-bold text-slate-900 m-0 truncate">{{ run.branch.name }}</h3>
+                    <h3 class="text-lg font-bold text-slate-900 m-0 truncate">{% if run.run_kind == 'consolidated' %}جميع الفروع{% else %}{{ run.branch.name }}{% endif %}</h3>
                     <p class="text-xs text-slate-500 mt-1 m-0">
                         {% if run.sponsorship %}{{ run.sponsorship.company_name }} · {% endif %}
                         {{ run.get_salary_mode_display }} · {{ run.period_label }}

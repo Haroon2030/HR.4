@@ -51,6 +51,7 @@ class PayrollRun(BaseModel):
 
     class RunKind(models.TextChoices):
         STANDARD = 'standard', 'مسير'                    # مسير فرع — راتب الموظفين الحاليين
+        CONSOLIDATED = 'consolidated', 'مسير موحّد'      # مسودة/مسير واحد لعدة فروع
         DETAILED = 'detailed', 'مسير تفصيلي'             # توزيع تحمّل الفروع عند النقل
 
     # ── العلاقات ──
@@ -121,12 +122,20 @@ class PayrollRun(BaseModel):
                 condition=models.Q(run_kind='detailed'),
                 name='payroll_uniq_detailed_run',
             ),
+            models.UniqueConstraint(
+                fields=['company', 'period_year', 'period_month', 'salary_mode', 'sponsorship'],
+                condition=models.Q(run_kind='consolidated'),
+                name='payroll_uniq_consolidated_run',
+            ),
         ]
 
     def __str__(self):
         if self.run_kind == self.RunKind.DETAILED:
             label = self.company.name if self.company_id else 'شركة'
             return f"{label} — تفصيلي {self.period_year}/{self.period_month:02d}"
+        if self.run_kind == self.RunKind.CONSOLIDATED:
+            label = self.company.name if self.company_id else 'شركة'
+            return f"{label} — موحّد {self.period_year}/{self.period_month:02d}"
         return f"{self.branch.name} — {self.period_year}/{self.period_month:02d}"
 
     @property
