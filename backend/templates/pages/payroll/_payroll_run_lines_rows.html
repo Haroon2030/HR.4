@@ -1,0 +1,31 @@
+{% load custom_tags %}
+{% for line in run_lines %}
+<tr>
+    <td class="font-bold text-slate-900">
+        <a href="{% url 'web:view_employee' line.employee.id %}" class="text-primary-700 hover:underline">{{ line.employee.name }}</a>
+    </td>
+    <td class="col-num">{{ line.gross_salary|format_sar:"gross" }}</td>
+    <td class="col-num td-deduct">
+        {% if line.absence_deduction %}{{ line.absence_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+    </td>
+    <td class="col-num td-deduct">
+        {% if line.unpaid_leave_deduction %}{{ line.unpaid_leave_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+    </td>
+    <td class="col-num td-deduct">
+        {% if line.loan_deduction %}{{ line.loan_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+    </td>
+    <td class="col-num td-deduct">
+        {% if line.penalty_deduction %}{{ line.penalty_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+    </td>
+    <td class="col-num td-deduct">
+        {% if line.insurance_deduction %}{{ line.insurance_deduction|format_sar:"deduct" }}{% else %}<span class="pay-money pay-money--empty">—</span>{% endif %}
+    </td>
+    <td class="col-num td-earn">{{ line.total_earnings|format_sar:"earn" }}</td>
+    <td class="col-num td-deduct">{{ line.total_deductions|format_sar:"deduct" }}</td>
+    <td class="col-num td-net">{{ line.net_salary|format_sar:"net" }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="10" class="py-8 text-center font-semibold text-slate-500">لا موظفين في هذا المسير</td>
+</tr>
+{% endfor %}

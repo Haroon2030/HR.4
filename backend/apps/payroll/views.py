@@ -26,7 +26,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 from django.http import HttpResponse, Http404
-from django.db.models import Sum, Count
+from django.db.models import Prefetch, Sum, Count
 
 from apps.core.decorators import any_permission_required, permission_required
 from apps.core.salary_access import user_can_manage_payroll
@@ -101,6 +101,7 @@ def _payroll_list_querystring(
     salary_mode=None,
     sponsorship_ids=None,
     page=None,
+    open_run_id=None,
 ):
     """سلسلة استعلام لشاشة المسير الموحّدة."""
     pairs: list[tuple[str, object]] = []
@@ -114,7 +115,19 @@ def _payroll_list_querystring(
     append_multi_param(pairs, 'sponsorship_id', sponsorship_ids)
     if page:
         pairs.append(('page', page))
+    if open_run_id:
+        pairs.append(('open_run', open_run_id))
     return urlencode(pairs, doseq=True) if pairs else ''
+
+
+def _parse_open_run_id(request) -> int | None:
+    raw = (request.GET.get('open_run') or '').strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
 
 
 def _active_sponsorship_ids() -> list[int]:
@@ -504,7 +517,7 @@ def _lock_payroll_runs_for_filters(request, filters, user, user_branches):
     return locked, errors
 
 
-def _redirect_payroll_list(request, filters):
+def _redirect_payroll_list(request, filters, *, open_run_id=None):
     _store_payroll_list_filters(request, filters)
     qs = _payroll_list_querystring(
         branch_ids=filters['branch_ids'],
@@ -512,6 +525,7 @@ def _redirect_payroll_list(request, filters):
         month=filters['month'],
         salary_mode=filters['salary_mode'] or None,
         sponsorship_ids=filters['sponsorship_ids'],
+        open_run_id=open_run_id,
     )
     url = reverse('web:list_payroll_runs')
     return redirect(f'{url}?{qs}' if qs else url)
@@ -572,8 +586,12 @@ def list_payroll_runs(request):
                         messages.success(
                             request,
                             f'تم بناء {len(runs_built)} مسير {mode_label} '
-                            f'({total_emp} موظف في الجدول أدناه).',
+                            f'({total_emp} موظف — افتح الصف لعرض التفاصيل).',
                         )
+                if runs_built:
+                    return _redirect_payroll_list(
+                        request, filters, open_run_id=runs_built[0].pk,
+                    )
             elif build_kind == 'detailed':
                 runs_built, build_errors = _build_detailed_payroll_runs(request, filters)
                 for e in build_errors:
@@ -590,8 +608,8 @@ def list_payroll_runs(request):
     if request.method == 'GET' and filters['ready']:
         _store_payroll_list_filters(request, filters)
 
-    lines = []
-    page_obj = None
+    payroll_runs = []
+    open_run_id = _parse_open_run_id(request)
     grand_totals = {}
     runs_count = 0
     has_draft_runs = False
@@ -604,9 +622,15 @@ def list_payroll_runs(request):
         runs_qs = _payroll_runs_for_filters(filters, request.user, user_branches)
         runs_count = runs_qs.count()
         has_draft_runs = runs_qs.filter(status=PayrollRun.Status.DRAFT).exists()
-        lines_qs = PayrollLine.objects.filter(run__in=runs_qs).select_related(
-            'employee', 'run', 'run__branch',
-        ).order_by('run__branch__name', 'employee__name')
+        line_prefetch = Prefetch(
+            'lines',
+            queryset=PayrollLine.objects.select_related('employee').order_by('employee__name'),
+        )
+        payroll_runs = list(
+            runs_qs.prefetch_related(line_prefetch).order_by('branch__name', 'sponsorship__company_name'),
+        )
+        if open_run_id and not any(r.pk == open_run_id for r in payroll_runs):
+            open_run_id = None
 
         grand_totals = runs_qs.aggregate(
             total_earnings=Sum('total_earnings'),
@@ -615,11 +639,7 @@ def list_payroll_runs(request):
             employees_count=Sum('employees_count'),
         )
 
-        from django.core.paginator import Paginator
-        paginator = Paginator(lines_qs, 50)
-        page_obj = paginator.get_page(request.GET.get('page') or 1)
-        lines = page_obj.object_list
-        has_payroll_lines = lines_qs.exists()
+        has_payroll_lines = any(run.lines.all() for run in payroll_runs)
 
         detailed_runs = list(_detailed_runs_for_filters(filters, request.user, user_branches))
         if detailed_runs:
@@ -663,8 +683,8 @@ def list_payroll_runs(request):
         'salary_mode_filter_items': SALARY_MODE_FILTER_ITEMS,
         'filter_sponsorship_ids': filters['sponsorship_ids'] or [],
         'filter_qs': filter_qs,
-        'lines': lines,
-        'page_obj': page_obj,
+        'payroll_runs': payroll_runs,
+        'open_run_id': open_run_id,
         'grand_totals': grand_totals,
         'runs_count': runs_count,
         'show_table': filters['ready'],
