@@ -102,96 +102,98 @@
                     </div>
                     {% endif %}
                 </div>
-
-                <div class="hr-payroll-actions-row">
-                    <div class="hr-payroll-actions-row__label">
-                        <span class="font-bold text-slate-700 text-xs">إجراءات المسير</span>
-                        <span class="text-[11px] text-slate-500">1 عرض ← 2 بناء ← 3 حفظ ← 4 إغلاق</span>
-                    </div>
-                    <div class="hr-payroll-actions-row__buttons hr-payroll-actions-row__buttons--build">
-                        <button type="submit"
-                                class="hr-payroll-action-btn hr-payroll-action-btn--view"
-                                title="عرض المسودة المحفوظة دون إعادة البناء">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                            <span>① عرض المسودة</span>
-                        </button>
-                        {% if can_build %}
-                        <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="standard"
-                                class="hr-payroll-action-btn hr-payroll-action-btn--build">
-                            <i data-lucide="play" class="w-4 h-4"></i>
-                            <span>② بناء المسير</span>
-                        </button>
-                        <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
-                                class="hr-payroll-action-btn hr-payroll-action-btn--detailed"
-                                title="توزيع تحمّل الفروع للمنقولين">
-                            <i data-lucide="git-branch" class="w-4 h-4"></i>
-                            <span>مسير تفصيلي</span>
-                        </button>
-                        {% else %}
-                        <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--build hr-payroll-action-btn--disabled">② بناء المسير</button>
-                        <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">مسير تفصيلي</button>
-                        {% endif %}
-                    </div>
-                </div>
             </form>
             <form method="POST" action="{% url 'web:list_payroll_runs' %}" id="payrollCreateForm" hx-boost="false" class="hidden" aria-hidden="true">
                 {% csrf_token %}
                 <input type="hidden" name="salary_mode" value="{{ active_salary_mode }}">
             </form>
-        </section>
 
-        {# ── حفظ / إغلاق / تصدير ── #}
-        {% if show_table %}
-        <section class="hr-payroll-panel hr-payroll-panel--actions" aria-label="حفظ وإغلاق المسير">
-            <div class="hr-payroll-actions-row">
-                <div class="hr-payroll-actions-row__label">
-                    <span class="font-bold text-slate-700 text-xs">بعد مراجعة الجدول</span>
-                </div>
-                <div class="hr-payroll-actions-row__buttons">
-                    {% if can_build %}
-                    <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
-                          onsubmit="return confirm('سيتم تحديث المسودة بأحدث البيانات. هل تريد الحفظ؟');">
-                        {% csrf_token %}
-                        {% include "pages/payroll/_payroll_filter_hidden.html" %}
-                        <button type="submit" name="payroll_action" value="save"
-                                class="hr-payroll-action-btn hr-payroll-action-btn--save"
-                                {% if not has_payroll_lines %}disabled title="لا توجد أسطر للحفظ"{% endif %}>
-                            <i data-lucide="save" class="w-4 h-4"></i>
-                            <span>③ حفظ المسودة</span>
-                        </button>
-                    </form>
-                    <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
-                          onsubmit="return confirm('بمجرد الإغلاق النهائي لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
-                        {% csrf_token %}
-                        {% include "pages/payroll/_payroll_filter_hidden.html" %}
-                        <button type="submit" name="payroll_action" value="lock"
-                                class="hr-payroll-action-btn hr-payroll-action-btn--lock"
-                                {% if not has_draft_runs %}disabled title="المسير مُغلق مسبقاً"{% endif %}>
-                            <i data-lucide="lock" class="w-4 h-4"></i>
-                            <span>④ الإغلاق النهائي</span>
-                        </button>
-                    </form>
-                    {% else %}
-                    <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--save hr-payroll-action-btn--disabled">③ حفظ</button>
-                    <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--lock hr-payroll-action-btn--disabled">④ إغلاق</button>
-                    {% endif %}
-                    {% if can_export %}
-                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
-                       class="hr-payroll-action-btn hr-payroll-action-btn--export"
-                       title="ملف Excel واحد يضم كل الفروع{% if active_salary_mode == 'transfer' %} وشركات الكفالة{% endif %} — بدون تقسيم حسب الفرع">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                        <span>تصدير Excel — ملف واحد</span>
-                    </a>
-                    {% else %}
-                    <span class="hr-payroll-action-btn hr-payroll-action-btn--export hr-payroll-action-btn--disabled" aria-disabled="true">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                        <span>تصدير Excel</span>
+            <div class="hr-payroll-actions-unified" aria-label="إجراءات المسير">
+                <div class="hr-payroll-actions-unified__head">
+                    <span class="hr-payroll-actions-unified__title">
+                        <i data-lucide="workflow" class="w-4 h-4"></i>
+                        إجراءات المسير
                     </span>
-                    {% endif %}
+                    <span class="hr-payroll-actions-unified__hint">① عرض ← ② بناء ← ③ حفظ ← ④ إغلاق</span>
+                </div>
+                <div class="hr-payroll-actions-unified__grid">
+                    <div class="hr-payroll-actions-unified__group">
+                        <span class="hr-payroll-actions-unified__group-label">التحضير والبناء</span>
+                        <div class="hr-payroll-actions-unified__buttons">
+                            <button type="submit"
+                                    form="payrollFilterForm"
+                                    class="hr-payroll-action-btn hr-payroll-action-btn--view"
+                                    title="عرض المسودة المحفوظة دون إعادة البناء">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                <span>① عرض المسودة</span>
+                            </button>
+                            {% if can_build %}
+                            <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="standard"
+                                    class="hr-payroll-action-btn hr-payroll-action-btn--build">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                <span>② بناء المسير</span>
+                            </button>
+                            <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
+                                    class="hr-payroll-action-btn hr-payroll-action-btn--detailed"
+                                    title="توزيع تحمّل الفروع للمنقولين">
+                                <i data-lucide="git-branch" class="w-4 h-4"></i>
+                                <span>مسير تفصيلي</span>
+                            </button>
+                            {% else %}
+                            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--build hr-payroll-action-btn--disabled">② بناء المسير</button>
+                            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">مسير تفصيلي</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="hr-payroll-actions-unified__group">
+                        <span class="hr-payroll-actions-unified__group-label">الحفظ والإغلاق والتصدير</span>
+                        <div class="hr-payroll-actions-unified__buttons">
+                            {% if can_build %}
+                            <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
+                                  onsubmit="return confirm('سيتم تحديث المسودة بأحدث البيانات. هل تريد الحفظ؟');">
+                                {% csrf_token %}
+                                {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                                <button type="submit" name="payroll_action" value="save"
+                                        class="hr-payroll-action-btn hr-payroll-action-btn--save"
+                                        {% if not show_table or not has_payroll_lines %}disabled title="{% if not show_table %}اعرض أو ابنِ المسير أولاً{% else %}لا توجد أسطر للحفظ{% endif %}"{% endif %}>
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                    <span>③ حفظ المسودة</span>
+                                </button>
+                            </form>
+                            <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
+                                  onsubmit="return confirm('بمجرد الإغلاق النهائي لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
+                                {% csrf_token %}
+                                {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                                <button type="submit" name="payroll_action" value="lock"
+                                        class="hr-payroll-action-btn hr-payroll-action-btn--lock"
+                                        {% if not show_table or not has_draft_runs %}disabled title="{% if not show_table %}اعرض أو ابنِ المسير أولاً{% else %}المسير مُغلق مسبقاً{% endif %}"{% endif %}>
+                                    <i data-lucide="lock" class="w-4 h-4"></i>
+                                    <span>④ الإغلاق النهائي</span>
+                                </button>
+                            </form>
+                            {% else %}
+                            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--save hr-payroll-action-btn--disabled">③ حفظ المسودة</button>
+                            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--lock hr-payroll-action-btn--disabled">④ الإغلاق النهائي</button>
+                            {% endif %}
+                            {% if can_export and show_table %}
+                            <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
+                               class="hr-payroll-action-btn hr-payroll-action-btn--export"
+                               title="ملف Excel واحد يضم كل الفروع{% if active_salary_mode == 'transfer' %} وشركات الكفالة{% endif %}">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                <span>تصدير Excel</span>
+                            </a>
+                            {% else %}
+                            <span class="hr-payroll-action-btn hr-payroll-action-btn--export hr-payroll-action-btn--disabled" aria-disabled="true"
+                                  title="{% if not show_table %}اعرض أو ابنِ المسير أولاً{% else %}لا يوجد مسير للتصدير{% endif %}">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                <span>تصدير Excel</span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
-        {% endif %}
 
         {# ── جدول المسودات والمسيرات ── #}
         <section class="hr-payroll-panel hr-payroll-panel--table" aria-label="جدول المسيرات">
