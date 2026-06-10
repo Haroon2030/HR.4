@@ -6,12 +6,17 @@ from io import BytesIO
 
 from django.utils import timezone
 
+from dataclasses import dataclass
+
 from apps.payroll.services.payroll_line_columns import (
     HEADER_FILL_COLORS,
     MONEY_SUM_KEYS,
     PAYROLL_LINE_COLUMNS,
+    build_ephemeral_payroll_line,
+    lookup_source_payroll_line,
     payroll_lines_select_related,
     resolve_cell_value,
+    resolve_detailed_allocation_cell_value,
 )
 
 PAYROLL_EXPORT_COLUMNS = PAYROLL_LINE_COLUMNS
@@ -57,8 +62,9 @@ def _money(val) -> float:
     return float(val)
 
 
-def _write_payroll_sheet(ws, line_pairs, *, meta_note: str):
+def _write_payroll_sheet(ws, line_pairs, *, meta_note: str, resolve_value=None):
     """يكتب ترويسة وصفوف وإجماليات على ورقة واحدة. line_pairs: [(run, line), ...]."""
+    get_cell_value = resolve_value or resolve_cell_value
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
 
@@ -90,7 +96,7 @@ def _write_payroll_sheet(ws, line_pairs, *, meta_note: str):
     for i, (run, line) in enumerate(line_pairs):
         r = data_start + i
         for col_idx, (key, _label, _color, col_type) in enumerate(PAYROLL_EXPORT_COLUMNS, start=1):
-            raw = resolve_cell_value(line, run, key)
+            raw = get_cell_value(line, run, key)
             if col_type == 'text':
                 val = raw if raw not in (None, '') else None
             elif col_type == 'days':
@@ -188,9 +194,92 @@ def build_payroll_runs_workbook(runs):
     return wb
 
 
+@dataclass
+class DetailedPayrollExportRow:
+    alloc_line: object
+    payroll_line: object
+
+
+def detailed_allocation_lines_for_run(run):
+    return run.allocation_lines.select_related(
+        'employee',
+        'employee__branch',
+        'employee__branch__company',
+        'employee__bank',
+        'employee__sponsorship',
+        'branch',
+        'from_branch',
+    ).order_by(
+        'employee__name',
+        'bears_salary',
+        'days_in_branch',
+        'transfer_date',
+        'id',
+    )
+
+
+def _payroll_line_for_allocation(alloc_line, run, *, cache: dict):
+    emp_id = alloc_line.employee_id
+    if emp_id not in cache:
+        source = lookup_source_payroll_line(alloc_line, run)
+        cache[emp_id] = source or build_ephemeral_payroll_line(alloc_line.employee, run)
+    return cache[emp_id]
+
+
+def detailed_payroll_export_pairs(run):
+    """صف لكل سطر توزيع فرع — بأعمدة كشف الرواتب."""
+    cache = {}
+    pairs = []
+    for alloc_line in detailed_allocation_lines_for_run(run):
+        payroll_line = _payroll_line_for_allocation(alloc_line, run, cache=cache)
+        export_row = DetailedPayrollExportRow(
+            alloc_line=alloc_line,
+            payroll_line=payroll_line,
+        )
+        pairs.append((run, export_row))
+    return pairs
+
+
+def _resolve_detailed_export_row(export_row: DetailedPayrollExportRow, run, key: str):
+    return resolve_detailed_allocation_cell_value(
+        export_row.alloc_line,
+        run,
+        key,
+        export_row.payroll_line,
+    )
+
+
+def build_payroll_detailed_run_workbook(run):
+    """Workbook تفصيلي بأعمدة كشف الرواتب — صف لكل فرع في توزيع النقل."""
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'كشف الرواتب'[:31]
+    ws.sheet_view.rightToLeft = True
+
+    company_name = run.company.name if run.company_id else 'شركة'
+    meta_note = (
+        f'{company_name} — {run.period_label} — مسير تفصيلي — '
+        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
+    )
+    _write_payroll_sheet(
+        ws,
+        detailed_payroll_export_pairs(run),
+        meta_note=meta_note,
+        resolve_value=_resolve_detailed_export_row,
+    )
+    return wb
+
+
 def payroll_run_excel_filename(run) -> str:
     branch = run.branch_id or 'run'
     return f'payroll_{branch}_{run.period_year}_{run.period_month:02d}.xlsx'
+
+
+def payroll_detailed_run_excel_filename(run) -> str:
+    company = (run.company.name if run.company_id else 'detailed').replace(' ', '_')[:40]
+    return f'payroll_detailed_{company}_{run.period_year}_{run.period_month:02d}.xlsx'
 
 
 def payroll_runs_excel_filename(*, year: int, month: int, salary_mode: str) -> str:

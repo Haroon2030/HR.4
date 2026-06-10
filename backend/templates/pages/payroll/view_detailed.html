@@ -15,7 +15,15 @@
                 · {% if run.salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}
             </p>
         </div>
-        <a href="{% url 'web:list_payroll_runs' %}" class="text-sm text-primary-600 hover:underline">← العودة للمسير</a>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'web:export_payroll_run_excel' run.id %}"
+               class="hr-glass-btn hr-glass-btn--emerald text-sm"
+               title="تصدير كشف الرواتب التفصيلي Excel">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                <span>تصدير Excel</span>
+            </a>
+            <a href="{% url 'web:list_payroll_runs' %}" class="text-sm text-primary-600 hover:underline">← العودة للمسير</a>
+        </div>
     </div>
 
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">

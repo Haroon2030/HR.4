@@ -1436,7 +1436,9 @@ def export_payroll_run_excel(request, run_id):
     """تصدير المسير إلى Excel ملوّن (.xlsx)."""
     try:
         from apps.payroll.services.export_excel import (
+            build_payroll_detailed_run_workbook,
             build_payroll_run_workbook,
+            payroll_detailed_run_excel_filename,
             payroll_run_excel_filename,
             workbook_to_response,
         )
@@ -1453,5 +1455,10 @@ def export_payroll_run_excel(request, run_id):
     if not _user_may_access_payroll_run(request.user, run, user_branches):
         raise Http404()
 
-    wb = build_payroll_run_workbook(run)
-    return workbook_to_response(wb, payroll_run_excel_filename(run))
+    if run.run_kind == PayrollRun.RunKind.DETAILED:
+        wb = build_payroll_detailed_run_workbook(run)
+        filename = payroll_detailed_run_excel_filename(run)
+    else:
+        wb = build_payroll_run_workbook(run)
+        filename = payroll_run_excel_filename(run)
+    return workbook_to_response(wb, filename)

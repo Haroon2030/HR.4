@@ -169,3 +169,78 @@ def resolve_cell_value(line, run, key: str):
     if key == 'payment':
         return run.get_salary_mode_display()
     return ''
+
+
+def _column_type(key: str) -> str:
+    for col_key, _label, _color, col_type in PAYROLL_LINE_COLUMNS:
+        if col_key == key:
+            return col_type
+    return 'text'
+
+
+def lookup_source_payroll_line(alloc_line, run: PayrollRun):
+    """سطر مسير عادي/موحّد لنفس الموظف والفترة — مصدر بيانات الراتب للتصدير التفصيلي."""
+    from apps.payroll.models import PayrollLine
+
+    qs = PayrollLine.objects.filter(
+        employee_id=alloc_line.employee_id,
+        run__period_year=run.period_year,
+        run__period_month=run.period_month,
+        run__salary_mode=run.salary_mode,
+        run__run_kind__in=(
+            PayrollRun.RunKind.STANDARD,
+            PayrollRun.RunKind.CONSOLIDATED,
+        ),
+    )
+    emp = alloc_line.employee
+    if run.salary_mode == PayrollRun.SalaryMode.TRANSFER and emp.sponsorship_id:
+        qs = qs.filter(run__sponsorship_id=emp.sponsorship_id)
+    return payroll_lines_select_related(qs).order_by('-run__pk').first()
+
+
+def build_ephemeral_payroll_line(emp, run: PayrollRun):
+    """سطر مسير غير محفوظ من snapshot — عند غياب مسير عادي للموظف."""
+    from apps.payroll.models import PayrollLine
+    from apps.payroll.services.engine import _compute_employee_payroll_snapshot
+
+    snap = _compute_employee_payroll_snapshot(
+        emp, run.period_year, run.period_month, run=run,
+    )
+    return PayrollLine(
+        run=run,
+        employee=emp,
+        basic_salary=emp.basic_salary or 0,
+        housing_allowance=emp.housing_allowance or 0,
+        transport_allowance=emp.transport_allowance or 0,
+        other_allowance=emp.other_allowance or 0,
+        cash_amount=emp.cash_amount or 0,
+        meal_allowance=emp.meal_allowance or 0,
+        month_days=snap['month_days'],
+        daily_rate=snap['daily_rate'],
+        absence_days=snap['absence_days'],
+        absence_deduction=snap['absence_deduction'],
+        unpaid_leave_days=snap['unpaid_leave_days'],
+        unpaid_leave_deduction=snap['unpaid_leave_deduction'],
+        loan_deduction=snap['loan_deduction'],
+        penalty_deduction=snap['penalty_deduction'],
+        insurance_deduction=snap['insurance_deduction'],
+        gross_salary=snap['gross_salary'],
+        total_earnings=snap['total_earnings'],
+        total_deductions=snap['total_deductions'],
+        net_salary=snap['net_salary'],
+        breakdown=snap.get('breakdown', {}),
+    )
+
+
+def resolve_detailed_allocation_cell_value(alloc_line, run: PayrollRun, key: str, payroll_line):
+    """
+    أعمدة كشف الرواتب مع بيانات المسير التفصيلي:
+    الفرع وأيام التواجد من سطر التوزيع؛ المبالغ كاملة للفرع المتحمّل وصفر للفرع السابق.
+    """
+    if key == 'branch':
+        return alloc_line.branch.name
+    if key == 'worked_days':
+        return alloc_line.days_in_branch
+    if not alloc_line.bears_salary and _column_type(key) == 'money':
+        return Decimal('0')
+    return resolve_cell_value(payroll_line, run, key)

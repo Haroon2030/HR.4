@@ -655,6 +655,65 @@ class PayrollEngineTests(TestCase):
         )
         self.assertEqual(second.allocation_lines.count(), 2)
 
+    def test_detailed_export_workbook_uses_payroll_columns_with_allocation_rows(self):
+        import json
+
+        from apps.payroll.services.export_excel import build_payroll_detailed_run_workbook
+        from apps.payroll.services.payroll_line_columns import PAYROLL_LINE_COLUMNS
+
+        branch_b = Branch.objects.create(
+            name='Branch B', code='TST02', company=self.company,
+        )
+        self.employee.branch = branch_b
+        self.employee.save(update_fields=['branch'])
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TRANSFER,
+            title='نقل',
+            statement_date=date(2026, 6, 15),
+            content=json.dumps({
+                'branch_changed': True,
+                'branch_from': 'Branch A',
+                'branch_to': 'Branch B',
+                'branch_from_id': self.branch.id,
+                'branch_to_id': branch_b.id,
+            }, ensure_ascii=False),
+        )
+        run = build_payroll_detailed_run(
+            self.company, 2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        wb = build_payroll_detailed_run_workbook(run)
+        ws = wb.active
+        headers = [
+            ws.cell(row=1, column=col).value
+            for col in range(1, len(PAYROLL_LINE_COLUMNS) + 1)
+        ]
+        self.assertEqual(
+            headers,
+            [label for _key, label, _color, _ctype in PAYROLL_LINE_COLUMNS],
+        )
+        self.assertEqual(ws.max_row, 1 + run.allocation_lines.count() + 1)
+
+        branch_col = next(
+            idx for idx, (key, *_rest) in enumerate(PAYROLL_LINE_COLUMNS, start=1)
+            if key == 'branch'
+        )
+        net_col = next(
+            idx for idx, (key, *_rest) in enumerate(PAYROLL_LINE_COLUMNS, start=1)
+            if key == 'net_salary'
+        )
+        rows = list(run.allocation_lines.order_by('bears_salary', 'days_in_branch', 'id'))
+        old_row, new_row = rows[0], rows[1]
+        self.assertEqual(ws.cell(row=2, column=branch_col).value, old_row.branch.name)
+        self.assertEqual(float(ws.cell(row=2, column=net_col).value), 0.0)
+        self.assertEqual(ws.cell(row=3, column=branch_col).value, new_row.branch.name)
+        self.assertEqual(
+            Decimal(str(ws.cell(row=3, column=net_col).value)),
+            new_row.net_amount,
+        )
+
 
 class PayrollListViewTabTests(TestCase):
     """تبويب المسير التفصيلي لا يُستبدل بقيمة الجلسة المحفوظة."""

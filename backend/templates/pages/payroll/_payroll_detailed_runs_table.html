@@ -48,7 +48,7 @@
                             </a>
                             <a href="{% url 'web:export_payroll_run_excel' run.id %}"
                                class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
-                               title="تصدير Excel">
+                               title="تصدير كشف الرواتب التفصيلي Excel">
                                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                             </a>
                             {% if run.status == 'draft' and can_build %}
