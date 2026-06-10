@@ -111,6 +111,7 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False, user=No
     if user is not None:
         enrich_employee_page_context(user, ctx, requested_tab=requested_tab, edit_form=True)
         ctx['can_edit_salary'] = user_can_edit_salary(user)
+        ctx['employee_edit_client_tabs'] = True
     return ctx
 
 

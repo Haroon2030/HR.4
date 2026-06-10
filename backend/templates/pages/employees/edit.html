@@ -15,7 +15,7 @@
 
     <form method="post" enctype="multipart/form-data" class="space-y-4">
         {% csrf_token %}
-        <input type="hidden" name="return_tab" value="{{ default_employee_tab }}">
+        <input type="hidden" name="return_tab" :value="activeTab">
 
         {% if form and form.errors %}
         <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">
@@ -82,7 +82,7 @@
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-800">الشركة</label>
-                        <select name="sponsorship" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="sponsorship" x-model="sponsorshipId" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                             <option value="">-- اختر --</option>
                             {% for s in sponsorships %}<option value="{{ s.id }}" {% if employee.sponsorship_id == s.id %}selected{% endif %}>{{ s.company_name }}</option>{% endfor %}
                         </select>
@@ -455,6 +455,7 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('employeeEditForm', () => ({
             activeTab: '{% firstof default_employee_tab "main" %}',
+            sponsorshipId: '{% if employee.sponsorship_id %}{{ employee.sponsorship_id }}{% endif %}',
             saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             salaryBasic: parseFloat('{{ employee.basic_salary|input_decimal|default:"0" }}') || 0,
             salaryHousing: parseFloat('{{ employee.housing_allowance|input_decimal|default:"0" }}') || 0,
@@ -471,18 +472,26 @@
                     + this.salaryNum(this.salaryTransport) + this.salaryNum(this.salaryOther)
                     + this.salaryNum(this.salaryMeal);
             },
+            switchTab(key) {
+                this.activeTab = key;
+                try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', key);
+                    window.history.replaceState({}, '', url);
+                } catch (_e) { /* ignore */ }
+            },
             payrollMode() {
-                const el = document.querySelector('[name=sponsorship]');
-                return el && el.value ? 'transfer' : 'cash';
+                return String(this.sponsorshipId || '').trim() ? 'transfer' : 'cash';
             },
             payrollModeLabel() {
-                if (this.payrollMode() === 'transfer') {
-                    const el = document.querySelector('[name=sponsorship]');
-                    const opt = el && el.selectedOptions && el.selectedOptions[0];
-                    const text = opt ? opt.text.trim() : '';
-                    return text ? ('تحويل بنكي كامل - ' + text) : 'تحويل بنكي كامل';
+                if (this.payrollMode() !== 'transfer') {
+                    return 'صرف نقدي كامل';
                 }
-                return 'صرف نقدي كامل';
+                const el = document.querySelector('[name=sponsorship]');
+                const sid = String(this.sponsorshipId || '').trim();
+                const opt = el && sid ? el.querySelector('option[value="' + sid + '"]') : null;
+                const text = opt ? opt.text.trim() : '';
+                return text ? ('تحويل بنكي كامل - ' + text) : 'تحويل بنكي كامل';
             },
             getNationalityId() {
                 const el = document.querySelector('[name=nationality]');

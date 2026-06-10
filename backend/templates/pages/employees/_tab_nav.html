@@ -1,10 +1,24 @@
-{% comment %}أزرار تبويبات ملف الموظف — تنقّل عبر الخادم (تحميل التبويب النشط فقط){% endcomment %}
+{% comment %}
+  صفحة العرض: تنقّل عبر الخادم (تحميل التبويب النشط فقط).
+  نموذج التعديل: تنقّل عبر Alpine دون إعادة تحميل (يحفظ التغييرات غير المحفوظة).
+{% endcomment %}
 {% for tab in employee_tab_nav %}
 {% if tab.visible %}
+{% if employee_edit_client_tabs %}
+<button type="button"
+        role="tab"
+        @click="switchTab('{{ tab.key }}')"
+        class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}"
+        :class="activeTab === '{{ tab.key }}' && 'is-active'"
+        :aria-selected="activeTab === '{{ tab.key }}' ? 'true' : 'false'">
+    {{ tab.label }}
+</button>
+{% else %}
 <a href="?tab={{ tab.key }}#employee-tab-panel"
    role="tab"
    class="hr-tab-btn{% if tab.key == 'accruals' %} hr-tab-btn--emerald{% elif tab.key == 'termination' %} hr-tab-btn--rose{% endif %}{% if default_employee_tab == tab.key %} is-active{% endif %}">
     {{ tab.label }}
 </a>
+{% endif %}
 {% endif %}
 {% endfor %}
