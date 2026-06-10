@@ -900,10 +900,6 @@ def list_payroll_runs(request):
     runs_count = 0
     has_draft_runs = False
     has_payroll_lines = False
-    allocation_lines = []
-    allocation_page_obj = None
-    allocation_total_count = 0
-    alloc_start_index = 1
     detailed_runs = []
     detailed_runs_all = []
     detailed_runs_page_obj = None
@@ -965,27 +961,7 @@ def list_payroll_runs(request):
         )
         detailed_run_count = detailed_runs_total_count
         detailed_totals = _period_run_totals(detailed_runs_all)
-        if detailed_runs_all:
-            from apps.payroll.models import PayrollAllocationLine
-            alloc_qs = PayrollAllocationLine.objects.filter(
-                run__in=detailed_runs_all,
-            ).select_related(
-                'employee', 'branch', 'from_branch', 'run', 'run__company',
-            ).order_by(
-                'employee__name',
-                'bears_salary',
-                'days_in_branch',
-                'transfer_date',
-                'id',
-            )
-            alloc_paginator = Paginator(alloc_qs, 6)
-            allocation_page_obj = alloc_paginator.get_page(
-                request.GET.get('alloc_page') or 1,
-            )
-            allocation_lines = allocation_page_obj.object_list
-            allocation_total_count = alloc_paginator.count
-            alloc_start_index = allocation_page_obj.start_index()
-            has_payroll_lines = bool(allocation_lines)
+        has_payroll_lines = any(int(r.employees_count or 0) > 0 for r in detailed_runs_all)
     elif filters['ready']:
         detailed_run_count = _detailed_runs_for_filters(
             filters, request.user, user_branches,
@@ -1046,9 +1022,6 @@ def list_payroll_runs(request):
             active_runs_page = detailed_runs_page_obj.number
     elif period_runs_page_obj.number > 1:
         active_runs_page = period_runs_page_obj.number
-    active_alloc_page = None
-    if allocation_page_obj and allocation_page_obj.number > 1:
-        active_alloc_page = allocation_page_obj.number
     filter_qs = _payroll_list_querystring(
         branch_ids=filters['branch_ids'] if filters['ready'] else None,
         year=filters['year'],
@@ -1057,7 +1030,6 @@ def list_payroll_runs(request):
         sponsorship_ids=filters['sponsorship_ids'],
         payroll_view=active_payroll_view if active_payroll_view == 'detailed' else None,
         runs_page=active_runs_page,
-        alloc_page=active_alloc_page,
     )
     export_unified_qs = _payroll_list_querystring(
         year=filters['year'],
@@ -1081,15 +1053,6 @@ def list_payroll_runs(request):
         salary_mode=filters['salary_mode'] or None,
         sponsorship_ids=filters['sponsorship_ids'],
         payroll_view=active_payroll_view if active_payroll_view == 'detailed' else None,
-    )
-    alloc_page_base_qs = _payroll_list_querystring(
-        branch_ids=filters['branch_ids'] if filters['ready'] else None,
-        year=filters['year'],
-        month=filters['month'],
-        salary_mode=filters['salary_mode'] or None,
-        sponsorship_ids=filters['sponsorship_ids'],
-        payroll_view='detailed',
-        runs_page=active_runs_page,
     )
     period_runs_total_count = len(period_runs_all)
 
@@ -1131,11 +1094,6 @@ def list_payroll_runs(request):
         'detailed_runs_page_obj': detailed_runs_page_obj,
         'detailed_runs_start_index': detailed_runs_start_index,
         'detailed_runs_total_count': detailed_runs_total_count,
-        'allocation_lines': allocation_lines,
-        'allocation_page_obj': allocation_page_obj,
-        'allocation_total_count': allocation_total_count,
-        'alloc_start_index': alloc_start_index,
-        'alloc_page_base_qs': alloc_page_base_qs,
         'period_runs': period_runs,
         'period_runs_all': period_runs_all,
         'period_runs_page_obj': period_runs_page_obj,

@@ -23,16 +23,3 @@
     </div>
     {% include "pages/payroll/_payroll_detailed_runs_table.html" %}
 </section>
-
-{% if show_table and allocation_lines %}
-<section class="hr-payroll-panel hr-payroll-panel--table hr-payroll-panel--detailed" aria-label="توزيع التحمّل حسب الموظف">
-    <div class="hr-payroll-panel__head">
-        <h2 class="hr-payroll-panel__title text-indigo-900">
-            <i data-lucide="users" class="w-4 h-4"></i>
-            تفاصيل التوزيع — الموظفون المنقولون
-            <span class="hr-payroll-runs-datatable__count-badge">{{ allocation_total_count }}</span>
-        </h2>
-    </div>
-    {% include "pages/payroll/_payroll_allocation_table.html" %}
-</section>
-{% endif %}
