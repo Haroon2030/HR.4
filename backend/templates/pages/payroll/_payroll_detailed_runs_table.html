@@ -46,6 +46,24 @@
                                title="عرض تفاصيل التوزيع">
                                 <i data-lucide="eye" class="w-4 h-4"></i>
                             </a>
+                            <a href="{% url 'web:export_payroll_run_excel' run.id %}"
+                               class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
+                               title="تصدير Excel">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            </a>
+                            {% if run.status == 'draft' and can_build %}
+                            <form method="POST"
+                                  action="{% url 'web:delete_payroll_draft_run' run.id %}"
+                                  class="inline"
+                                  onsubmit="return confirm('حذف هذه المسودة التفصيلية نهائياً؟');">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--danger"
+                                        title="حذف المسودة">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

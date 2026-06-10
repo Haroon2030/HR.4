@@ -1156,7 +1156,9 @@ def _filters_from_session_or_run(request, run: PayrollRun) -> dict:
         'month': stored.get('month') or run.period_month,
         'salary_mode': stored.get('salary_mode') or run.salary_mode,
         'sponsorship_ids': stored.get('sponsorship_ids'),
-        'payroll_view': stored.get('payroll_view', 'standard'),
+        'payroll_view': stored.get('payroll_view') or (
+            'detailed' if run.run_kind == PayrollRun.RunKind.DETAILED else 'standard'
+        ),
     }
     return _recompute_payroll_ready(filters)
 
@@ -1448,12 +1450,7 @@ def export_payroll_run_excel(request, run_id):
     )
 
     user_branches = _user_branches(request.user)
-    if run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
-        if not request.user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            if run.company_id not in allowed:
-                raise Http404()
-    elif not request.user.is_superuser and run.branch not in user_branches:
+    if not _user_may_access_payroll_run(request.user, run, user_branches):
         raise Http404()
 
     wb = build_payroll_run_workbook(run)
