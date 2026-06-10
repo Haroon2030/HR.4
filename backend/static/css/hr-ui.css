@@ -3803,6 +3803,73 @@ body.hr-app .hr-page-card .hr-footer {
     -webkit-backdrop-filter: none !important;
 }
 
+.hr-app-footer {
+    padding: 0.45rem 0.75rem;
+}
+
+.hr-app-footer__inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+
+.hr-app-footer__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    direction: rtl;
+}
+
+.hr-app-footer__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    direction: rtl;
+}
+
+.hr-app-footer__icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.hr-app-footer__label {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #475569;
+    line-height: 1.2;
+}
+
+.hr-app-footer__tel {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, "Cascadia Code", "Segoe UI", monospace;
+    color: #1d4ed8;
+    background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 9999px;
+    text-decoration: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.hr-app-footer__tel:hover {
+    color: #1e40af;
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+
+
 body.hr-app .hr-sidebar-panel {
     border-radius: 1rem;
     box-shadow:

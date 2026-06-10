@@ -2,11 +2,26 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from functools import lru_cache
 
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 
 from apps.setup.models import Nationality
+
+# نسب خصم التأمينات (GOSI) للموظف السعودي
+SAUDI_GOSI_EMPLOYEE_RATES: tuple[Decimal, ...] = (
+    Decimal('10.75'),
+    Decimal('10.25'),
+    Decimal('9.75'),
+)
+
+SAUDI_GOSI_EMPLOYEE_RATE_CHOICES: tuple[tuple[str, str], ...] = (
+    ('10.75', '10.75%'),
+    ('10.25', '10.25%'),
+    ('9.75', '9.75%'),
+)
 
 
 class ContractType:
@@ -24,6 +39,32 @@ def _add_years(d: date, years: int) -> date:
         return d.replace(year=d.year + years)
     except ValueError:
         return d.replace(year=d.year + years, day=28)
+
+
+def normalize_insurance_rate(rate) -> Decimal | None:
+    if rate is None or rate == '':
+        return None
+    return Decimal(str(rate)).quantize(Decimal('0.01'))
+
+
+def is_valid_saudi_insurance_rate(rate) -> bool:
+    normalized = normalize_insurance_rate(rate)
+    return normalized in SAUDI_GOSI_EMPLOYEE_RATES if normalized is not None else False
+
+
+def validate_insurance_deduction_rate_for_nationality(rate, nationality) -> None:
+    """السعودي: قائمة GOSI الثابتة. غير السعودي: 0–100%."""
+    if is_saudi_nationality(nationality):
+        if not is_valid_saudi_insurance_rate(rate):
+            raise ValidationError(
+                'نسبة خصم التأمين للسعودي يجب اختيارها من: 10.75، 10.25، 9.75.'
+            )
+        return
+    normalized = normalize_insurance_rate(rate)
+    if normalized is None:
+        return
+    if normalized < 0 or normalized > 100:
+        raise ValidationError('نسبة التأمين يجب أن تكون بين 0 و 100.')
 
 
 def is_saudi_nationality(nationality) -> bool:

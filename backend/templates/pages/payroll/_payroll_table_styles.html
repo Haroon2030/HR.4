@@ -604,6 +604,23 @@
         background: #fff;
     }
 
+    /* قوائم الفروع والكفالة — موحّدة في كل تبويبات المسير (تحويل / نقدي / تفصيلي) */
+    .hr-payroll-page .hr-payroll-filter-field .hr-ms {
+        width: 25vw;
+        max-width: 100%;
+        min-width: 10rem;
+    }
+
+    .hr-payroll-page .hr-payroll-filter-field .hr-ms__panel--open {
+        min-width: 0;
+        max-width: 25vw;
+    }
+
+    .hr-payroll-page .hr-payroll-filter-field .hr-ms__row {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
     .hr-payroll-actions-unified {
         margin: 0 1rem 1rem;
         padding: 0.85rem 1rem;
@@ -802,30 +819,291 @@
         color: #0f172a;
     }
 
-    .hr-payroll-runs-tbl thead th {
-        background: #f8fafc;
+    /* ── جدول المسودات والمسيرات (datatable) ── */
+    .hr-payroll-runs-datatable {
+        --hr-runs-row-h: 2.75rem;
+        --hr-runs-rows: 6;
+    }
+
+    .hr-payroll-runs-datatable__count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.35rem;
+        height: 1.35rem;
+        padding: 0 0.4rem;
+        margin-inline-start: 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #1e40af;
+        background: #dbeafe;
+        border: 1px solid #93c5fd;
+        border-radius: 9999px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .hr-payroll-runs-datatable__viewport {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .hr-payroll-runs-datatable__table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.8125rem;
+    }
+
+    .hr-payroll-runs-datatable__table thead th {
         position: sticky;
         top: 0;
-        z-index: 1;
+        z-index: 2;
+        padding: 0.6rem 0.7rem;
+        font-size: 0.625rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #cbd5e1;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border-bottom: 1px solid #334155;
+        white-space: nowrap;
     }
 
-    .hr-payroll-runs-tbl__row--highlight {
+    .hr-payroll-runs-datatable__table thead th.th-earn {
+        background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
+        color: #6ee7b7;
+    }
+
+    .hr-payroll-runs-datatable__table thead th.th-deduct {
+        background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+        color: #fca5a5;
+    }
+
+    .hr-payroll-runs-datatable__table thead th.th-net {
+        background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
+        color: #93c5fd;
+    }
+
+    .hr-payroll-runs-datatable__th-index {
+        width: 2.75rem;
+        text-align: center;
+    }
+
+    .hr-payroll-runs-datatable__th-actions {
+        width: 5.5rem;
+    }
+
+    .hr-payroll-runs-datatable__table tbody td {
+        height: var(--hr-runs-row-h);
+        padding: 0.45rem 0.7rem;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+        background: #fff;
+    }
+
+    .hr-payroll-runs-datatable__table tbody tr:nth-child(even):not(.hr-payroll-runs-datatable__row--placeholder) td {
+        background: #f8fafc;
+    }
+
+    .hr-payroll-runs-datatable__row--placeholder td {
+        background: #fafbfc !important;
+        border-bottom-color: #f1f5f9;
+        pointer-events: none;
+    }
+
+    .hr-payroll-runs-datatable__row:hover:not(.hr-payroll-runs-datatable__row--placeholder) td {
+        background: #f1f5f9 !important;
+    }
+
+    .hr-payroll-runs-datatable__index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.65rem;
+        height: 1.65rem;
+        padding: 0 0.35rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        font-family: ui-monospace, "Cascadia Code", "Segoe UI", monospace;
+        color: #475569;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.45rem;
+    }
+
+    .hr-payroll-runs-datatable__index--sigma {
+        color: #1d4ed8;
+        background: #dbeafe;
+        border-color: #93c5fd;
+        font-size: 0.8rem;
+    }
+
+    .hr-payroll-runs-datatable__branch-name {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.25;
+    }
+
+    .hr-payroll-runs-datatable__branch-meta {
+        display: block;
+        margin-top: 0.1rem;
+        font-size: 0.625rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .hr-payroll-runs-datatable__branch-prefix {
+        color: #94a3b8;
+        margin-inline-end: 0.2rem;
+    }
+
+    .hr-payroll-runs-datatable__sponsor {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .hr-payroll-runs-datatable__period {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .hr-payroll-runs-datatable__count {
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .hr-payroll-runs-datatable__row--unified td {
+        background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%) !important;
+        border-bottom: 2px solid #bfdbfe;
+        box-shadow: inset 3px 0 0 #2563eb;
+    }
+
+    .hr-payroll-runs-datatable__row--detail td {
+        background: #fafafa !important;
+    }
+
+    .hr-payroll-runs-datatable__row--highlight td {
         background: #eff6ff !important;
         box-shadow: inset 3px 0 0 #2563eb;
     }
 
-    .hr-payroll-runs-tbl__row--unified {
-        background: #eff6ff !important;
-        box-shadow: inset 3px 0 0 #2563eb;
+    .hr-payroll-runs-datatable__foot td {
+        background: #f8fafc !important;
+        border-top: 2px solid #cbd5e1;
+        font-weight: 800;
     }
 
-    .hr-payroll-runs-tbl__row--unified td {
-        border-bottom-width: 2px;
-        border-bottom-color: #bfdbfe;
+    .hr-payroll-runs-datatable__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding: 0.65rem 1rem;
+        border-top: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
     }
 
-    .hr-payroll-runs-tbl__row--detail {
-        background: #fafafa;
+    .hr-payroll-runs-datatable__footer-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.75rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .hr-payroll-runs-datatable__footer-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.55rem;
+        font-weight: 800;
+        color: #334155;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 9999px;
+    }
+
+    .hr-payroll-runs-datatable__pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+
+    .hr-payroll-runs-datatable__pager-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        color: #475569;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+
+    .hr-payroll-runs-datatable__pager-btn:hover:not(.hr-payroll-runs-datatable__pager-btn--disabled) {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+    }
+
+    .hr-payroll-runs-datatable__pager-btn--disabled {
+        opacity: 0.45;
+        cursor: default;
+        pointer-events: none;
+    }
+
+    .hr-payroll-runs-datatable__pager-nums {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    .hr-payroll-runs-datatable__pager-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.75rem;
+        height: 1.75rem;
+        padding: 0 0.35rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #475569;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.45rem;
+        text-decoration: none;
+        transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+
+    .hr-payroll-runs-datatable__pager-num:hover:not(.is-active) {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+
+    .hr-payroll-runs-datatable__pager-num.is-active {
+        color: #fff;
+        background: #2563eb;
+        border-color: #1d4ed8;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+    }
+
+    .hr-payroll-panel--table .hr-payroll-panel__head {
+        background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
     }
 
     /* نافذة عرض المسودة — فوق كل طبقات الصفحة (ليست hr-glass-modal--ledger الصغيرة) */

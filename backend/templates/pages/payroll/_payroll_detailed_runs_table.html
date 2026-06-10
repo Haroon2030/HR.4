@@ -1,0 +1,81 @@
+{% load custom_tags %}
+<div class="hr-payroll-runs-datatable">
+    {% if detailed_runs_all %}
+    <div class="hr-payroll-runs-datatable__viewport">
+        <table class="hr-payroll-runs-datatable__table payroll-tbl">
+            <thead>
+                <tr>
+                    <th class="hr-payroll-runs-datatable__th-index" scope="col">#</th>
+                    <th class="text-right" scope="col">الشركة</th>
+                    {% if active_salary_mode == 'transfer' %}
+                    <th class="text-right" scope="col">شركة الكفالة</th>
+                    {% endif %}
+                    <th class="text-center" scope="col">الفترة</th>
+                    <th class="col-num" scope="col">موظفون منقولون</th>
+                    <th class="col-num th-net" scope="col">الصافي على الفروع</th>
+                    <th class="text-center" scope="col">الحالة</th>
+                    <th class="text-center hr-payroll-runs-datatable__th-actions" scope="col">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in detailed_runs %}
+                <tr class="hr-payroll-runs-datatable__row{% if open_run_id == run.id %} hr-payroll-runs-datatable__row--highlight{% endif %}">
+                    <td class="text-center">
+                        <span class="hr-payroll-runs-datatable__index">{{ detailed_runs_start_index|add:forloop.counter0 }}</span>
+                    </td>
+                    <td>
+                        <span class="hr-payroll-runs-datatable__branch-name">{{ run.company.name }}</span>
+                    </td>
+                    {% if active_salary_mode == 'transfer' %}
+                    <td class="hr-payroll-runs-datatable__sponsor">{{ run.sponsorship.company_name|default:"—" }}</td>
+                    {% endif %}
+                    <td class="text-center hr-payroll-runs-datatable__period">{{ run.period_label }}</td>
+                    <td class="col-num hr-payroll-runs-datatable__count">{{ run.employees_count }}</td>
+                    <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
+                    <td class="text-center">
+                        {% if run.status == 'draft' %}
+                        <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
+                        {% elif run.status == 'locked' %}
+                        <span class="hr-payroll-status hr-payroll-status--locked">مُغلق</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="hr-payroll-row-actions">
+                            <a href="{% url 'web:view_payroll_run' run.id %}"
+                               class="hr-payroll-row-actions__btn"
+                               title="عرض تفاصيل التوزيع">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% with visible_rows=detailed_runs|length %}
+                {% if visible_rows < 6 %}
+                    {% for i in "123456"|make_list %}
+                        {% if forloop.counter > visible_rows %}
+                        <tr class="hr-payroll-runs-datatable__row hr-payroll-runs-datatable__row--placeholder" aria-hidden="true">
+                            <td colspan="{% if active_salary_mode == 'transfer' %}8{% else %}7{% endif %}">&nbsp;</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+            </tbody>
+        </table>
+    </div>
+    {% include "pages/payroll/_payroll_datatable_pager.html" with page_obj=detailed_runs_page_obj start_index=detailed_runs_start_index total_count=detailed_runs_total_count count_label="مسير تفصيلي" page_param="runs_page" base_qs=runs_page_base_qs pager_aria_label="ترقيم صفحات المسيرات التفصيلية" %}
+    {% else %}
+    <div class="hr-payroll-empty py-12 text-center">
+        <i data-lucide="git-branch" class="w-10 h-10 text-indigo-300 mx-auto mb-3"></i>
+        {% if not show_table and active_salary_mode == 'transfer' and not filter_sponsorship_ids %}
+        <p class="font-semibold text-slate-700 m-0">اختر شركة الكفالة أو «جميع الشركات» ثم اضغط عرض أو بناء</p>
+        {% elif show_table %}
+        <p class="font-semibold text-slate-700 m-0">لا يوجد مسير تفصيلي لهذه المعايير</p>
+        <p class="text-sm text-slate-500 mt-2 m-0">اضغط <strong>② بناء المسير التفصيلي</strong> عند وجود موظفين منقولين بين الفروع.</p>
+        {% else %}
+        <p class="font-semibold text-slate-700 m-0">حدّد الفترة والفروع ثم اضغط <strong>عرض</strong> أو <strong>بناء المسير التفصيلي</strong>.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

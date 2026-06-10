@@ -180,14 +180,6 @@ class EmployeeForm(forms.ModelForm):
             raise ValidationError('لا يمكنك اختيار فرع خارج نطاق صلاحياتك.')
         return branch
 
-    def clean_insurance_deduction_rate(self):
-        rate = self.cleaned_data.get('insurance_deduction_rate')
-        if rate is None:
-            return rate
-        if rate < 0 or rate > 100:
-            raise ValidationError('نسبة التأمين يجب أن تكون بين 0 و 100.')
-        return rate
-
     def clean(self):
         cleaned = super().clean()
         instance = self.instance
@@ -201,11 +193,20 @@ class EmployeeForm(forms.ModelForm):
         from apps.employees.services.contract_rules import (
             sync_employee_contract,
             validate_contract_fields,
+            validate_insurance_deduction_rate_for_nationality,
         )
 
         nationality = cleaned.get('nationality') or (
             instance.nationality if instance and instance.pk else None
         )
+        if 'insurance_deduction_rate' in self.fields:
+            try:
+                validate_insurance_deduction_rate_for_nationality(
+                    cleaned.get('insurance_deduction_rate'),
+                    nationality,
+                )
+            except ValidationError as exc:
+                self.add_error('insurance_deduction_rate', exc)
         hire_date = cleaned.get('hire_date') or (
             instance.hire_date if instance and instance.pk else None
         )
@@ -419,6 +420,8 @@ class EmploymentRequestEditForm(forms.ModelForm):
             self.fields['account_type'].widget = forms.Select(
                 choices=[('', '-- اختر --')] + list(SalaryAccountType.choices),
             )
+        if 'nationality' in self.fields:
+            self.fields['nationality'].widget.attrs['@change'] = 'onNationalityChange()'
 
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة
@@ -460,6 +463,22 @@ class EmploymentRequestEditForm(forms.ModelForm):
         )
         normalize_salary_payment_fields(cleaned, instance)
         validate_salary_payment_fields(self, cleaned, instance)
+
+        nationality = cleaned.get('nationality') or (
+            instance.nationality if instance and instance.pk else None
+        )
+        if 'insurance_deduction_rate' in self.fields:
+            from apps.employees.services.contract_rules import (
+                validate_insurance_deduction_rate_for_nationality,
+            )
+            try:
+                validate_insurance_deduction_rate_for_nationality(
+                    cleaned.get('insurance_deduction_rate'),
+                    nationality,
+                )
+            except ValidationError as exc:
+                self.add_error('insurance_deduction_rate', exc)
+
         return cleaned
 
 

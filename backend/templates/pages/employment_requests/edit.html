@@ -3,9 +3,27 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4" x-data="{
     activeTab: 'main',
+    insuranceRate: parseFloat('{{ emp_req.insurance_deduction_rate|default:"0" }}') || 0,
+    saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
     hasSponsorship() {
         const el = document.querySelector('[name=sponsorship]');
         return !!(el && el.value);
+    },
+    getNationalityId() {
+        const el = document.querySelector('[name=nationality]');
+        return el && el.value ? parseInt(el.value, 10) : null;
+    },
+    isSaudi() {
+        const id = this.getNationalityId();
+        return id && this.saudiIds.includes(id);
+    },
+    saudiInsuranceRates: [10.75, 10.25, 9.75],
+    onNationalityChange() {
+        if (!this.isSaudi()) return;
+        const rate = parseFloat(this.insuranceRate);
+        if (!this.saudiInsuranceRates.includes(rate)) {
+            this.insuranceRate = '';
+        }
     }
 }">
     <!-- Header -->
@@ -106,7 +124,12 @@
                     {% include "pages/employment_requests/_field.html" with field=form.transport_allowance %}
                     {% include "pages/employment_requests/_field.html" with field=form.other_allowance %}
                     {% include "pages/employment_requests/_field.html" with field=form.meal_allowance %}
-                    {% include "pages/employment_requests/_field.html" with field=form.insurance_deduction_rate %}
+                    <div>
+                        {% include "components/insurance_deduction_rate_field.html" with rate=emp_req.insurance_deduction_rate can_edit=True %}
+                        {% for err in form.insurance_deduction_rate.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ err }}</p>
+                        {% endfor %}
+                    </div>
                 </div>
                 <div x-show="hasSponsorship()" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="empReqBankFields">
                     {% include "pages/employment_requests/_field.html" with field=form.bank %}

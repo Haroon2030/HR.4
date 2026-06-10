@@ -159,13 +159,34 @@
 
         function positionPanel() {
             const rect = btn.getBoundingClientRect();
+            const panelVw = parseFloat(select.dataset.panelVw || '');
+            const panelVh = parseFloat(select.dataset.panelVh || '');
             panel.style.position = 'fixed';
             panel.style.top = Math.round(rect.bottom + 2) + 'px';
-            panel.style.left = Math.round(rect.left) + 'px';
-            panel.style.width = Math.round(rect.width) + 'px';
-            panel.style.right = 'auto';
             panel.style.zIndex = '9999';
             panel.classList.add('hr-ms__panel--open');
+
+            if (panelVw > 0) {
+                const widthPx = Math.round(window.innerWidth * panelVw / 100);
+                panel.style.width = widthPx + 'px';
+                panel.style.left = 'auto';
+                panel.style.right = Math.max(8, Math.round(window.innerWidth - rect.right)) + 'px';
+            } else {
+                panel.style.width = Math.round(rect.width) + 'px';
+                panel.style.left = Math.round(rect.left) + 'px';
+                panel.style.right = 'auto';
+            }
+
+            if (panelVh > 0) {
+                const heightPx = Math.round(window.innerHeight * panelVh / 100);
+                panel.style.maxHeight = heightPx + 'px';
+                panel.style.height = heightPx + 'px';
+                panel.style.overflowY = 'auto';
+            } else {
+                panel.style.maxHeight = '';
+                panel.style.height = '';
+                panel.style.overflowY = '';
+            }
         }
 
         panel._hrMsWrap = wrap;
@@ -179,6 +200,9 @@
             panel.style.left = '';
             panel.style.right = '';
             panel.style.width = '';
+            panel.style.maxHeight = '';
+            panel.style.height = '';
+            panel.style.overflowY = '';
             panel.style.zIndex = '';
             if (panel.parentNode !== wrap) {
                 wrap.insertBefore(panel, select);
@@ -197,6 +221,9 @@
                 p.style.left = '';
                 p.style.right = '';
                 p.style.width = '';
+                p.style.maxHeight = '';
+                p.style.height = '';
+                p.style.overflowY = '';
                 p.style.zIndex = '';
                 if (p._hrMsWrap && p.parentNode === document.body) {
                     p._hrMsWrap.insertBefore(p, p._hrMsSelect);

@@ -106,12 +106,12 @@
                     </div>
                     <div class="hr-payroll-filter-field hr-payroll-filter-field--branches">
                         <label class="hr-payroll-filter-label" for="payrollBranch">الفروع</label>
-                        {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="hr-payroll-filter-input" select_id="payrollBranch" aria_label="الفروع" all_label="جميع الفروع" placeholder="— اختر الفروع —" count_unit="فروع" %}
+                        {% include "components/filter_multiselect.html" with name="branch_id" items=branches selected_ids=filter_branch_ids field_class="hr-payroll-filter-input" select_id="payrollBranch" aria_label="الفروع" all_label="جميع الفروع" placeholder="— اختر الفروع —" count_unit="فروع" panel_vw=25 %}
                     </div>
                     {% if active_salary_mode == 'transfer' %}
                     <div class="hr-payroll-filter-field hr-payroll-filter-field--sponsorship" id="payrollSponsorshipWrap">
                         <label class="hr-payroll-filter-label" for="payrollSponsorship">شركة الكفالة</label>
-                        {% include "components/filter_multiselect.html" with name="sponsorship_id" items=sponsorships selected_ids=filter_sponsorship_ids field_class="hr-payroll-filter-input" select_id="payrollSponsorship" aria_label="شركة الكفالة" all_label="جميع الشركات" placeholder="— اختر شركة الكفالة —" count_unit="شركات" %}
+                        {% include "components/filter_multiselect.html" with name="sponsorship_id" items=sponsorships selected_ids=filter_sponsorship_ids field_class="hr-payroll-filter-input" select_id="payrollSponsorship" aria_label="شركة الكفالة" all_label="جميع الشركات" placeholder="— اختر شركة الكفالة —" count_unit="شركات" panel_vw=25 %}
                     </div>
                     {% endif %}
                 </div>
@@ -220,7 +220,7 @@
                 <h2 class="hr-payroll-panel__title">
                     <i data-lucide="table-2" class="w-4 h-4"></i>
                     المسودات والمسيرات
-                    <span class="text-slate-400 font-normal">({{ period_runs|length }})</span>
+                    <span class="hr-payroll-runs-datatable__count-badge">{{ period_runs_total_count }}</span>
                 </h2>
                 <p class="text-[11px] text-slate-500 m-0">
                     {% if has_consolidated_run %}
@@ -243,132 +243,7 @@
                 </a>
                 {% endif %}
             </div>
-            <div class="overflow-x-auto"{% if show_unified_run_row %} x-data="{ showBranchDetail: false }"{% endif %}>
-                {% if period_runs %}
-                <table class="payroll-tbl hr-payroll-runs-tbl">
-                    <thead>
-                        <tr>
-                            <th class="text-center w-10">#</th>
-                            <th class="text-right">الفرع</th>
-                            {% if active_salary_mode == 'transfer' %}
-                            <th class="text-right">شركة الكفالة</th>
-                            {% endif %}
-                            <th class="text-center">الفترة</th>
-                            <th class="col-num">موظفون</th>
-                            <th class="col-num th-earn">الاستحقاقات</th>
-                            <th class="col-num th-deduct">الخصومات</th>
-                            <th class="col-num th-net">الصافي</th>
-                            <th class="text-center">الحالة</th>
-                            <th class="text-center w-28">إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if show_unified_run_row %}
-                        <tr class="hr-payroll-runs-tbl__row--unified">
-                            <td class="text-center text-slate-400 font-mono text-xs">1</td>
-                            <td class="font-bold text-primary-900">
-                                جميع الفروع
-                                <span class="block text-[10px] font-semibold text-slate-500 mt-0.5">{{ period_totals.runs_count }} مسير · ملف تصدير واحد</span>
-                            </td>
-                            {% if active_salary_mode == 'transfer' %}
-                            <td class="text-slate-600 text-xs">{% if filter_sponsorship_ids %}محدد{% else %}جميع الشركات{% endif %}</td>
-                            {% endif %}
-                            <td class="text-center text-xs text-slate-600">{{ filter_month }}/{{ filter_year }}</td>
-                            <td class="col-num font-bold">{{ period_totals.employees_count }}</td>
-                            <td class="col-num td-earn font-bold">{{ period_totals.total_earnings|format_sar:"earn" }}</td>
-                            <td class="col-num td-deduct font-bold">{{ period_totals.total_deductions|format_sar:"deduct" }}</td>
-                            <td class="col-num td-net font-bold">{{ period_totals.total_net|format_sar:"net" }}</td>
-                            <td class="text-center">
-                                <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
-                            </td>
-                            <td class="text-center">
-                                <div class="hr-payroll-row-actions">
-                                    {% if can_export %}
-                                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
-                                       class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
-                                       title="تصدير ملف Excel واحد">
-                                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                    </a>
-                                    {% endif %}
-                                    <button type="button"
-                                            class="hr-payroll-row-actions__btn"
-                                            title="تفصيل الفروع"
-                                            @click="showBranchDetail = !showBranchDetail">
-                                        <i data-lucide="list" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% for run in period_runs %}
-                        <tr class="{% if show_unified_run_row %}hr-payroll-runs-tbl__row--detail{% endif %}{% if open_run_id == run.id %} hr-payroll-runs-tbl__row--highlight{% endif %}"
-                            {% if show_unified_run_row %}x-show="showBranchDetail" x-cloak{% endif %}>
-                            <td class="text-center text-slate-400 font-mono text-xs">{% if show_unified_run_row %}{{ forloop.counter }}{% else %}{{ forloop.counter }}{% endif %}</td>
-                            <td class="font-bold {% if run.run_kind == 'consolidated' %}text-primary-900{% else %}text-slate-900{% endif %}">
-                                {% if show_unified_run_row %}↳ {% endif %}
-                                {% if run.run_kind == 'consolidated' %}
-                                جميع الفروع
-                                <span class="block text-[10px] font-semibold text-slate-500 mt-0.5">مسودة موحّدة · ملف تصدير واحد</span>
-                                {% else %}
-                                {{ run.branch.name }}
-                                {% endif %}
-                            </td>
-                            {% if active_salary_mode == 'transfer' %}
-                            <td class="text-slate-700 text-sm">{{ run.sponsorship.company_name|default:"—" }}</td>
-                            {% endif %}
-                            <td class="text-center text-xs text-slate-600">{{ run.period_label }}</td>
-                            <td class="col-num">{{ run.employees_count }}</td>
-                            <td class="col-num td-earn">{{ run.total_earnings|format_sar:"earn" }}</td>
-                            <td class="col-num td-deduct">{{ run.total_deductions|format_sar:"deduct" }}</td>
-                            <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
-                            <td class="text-center">
-                                {% if run.status == 'draft' %}
-                                <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
-                                {% elif run.status == 'locked' %}
-                                <span class="hr-payroll-status hr-payroll-status--locked">مُغلق</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="hr-payroll-row-actions">
-                                    <button type="button"
-                                            class="hr-payroll-row-actions__btn"
-                                            title="عرض تفاصيل الفرع"
-                                            @click="openModal({{ run.id }})">
-                                        <i data-lucide="eye" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    {% if show_table and grand_totals.total_net %}
-                    <tfoot>
-                        <tr>
-                            <td colspan="{% if active_salary_mode == 'transfer' %}4{% else %}3{% endif %}" class="text-left font-bold text-slate-700">الإجمالي (المحدد)</td>
-                            <td class="col-num font-bold">{{ grand_totals.employees_count|default:0 }}</td>
-                            <td class="col-num td-earn font-bold">{{ grand_totals.total_earnings|default:0|format_sar:"earn" }}</td>
-                            <td class="col-num td-deduct font-bold">{{ grand_totals.total_deductions|default:0|format_sar:"deduct" }}</td>
-                            <td class="col-num td-net font-bold">{{ grand_totals.total_net|default:0|format_sar:"net" }}</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                    {% endif %}
-                </table>
-                {% else %}
-                <div class="hr-payroll-empty py-12 text-center">
-                    <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
-                    {% if not show_table and active_salary_mode == 'transfer' and not filter_sponsorship_ids %}
-                    <p class="font-semibold text-slate-700 m-0">اختر شركة الكفالة أو «جميع الشركات» ثم اضغط عرض أو بناء</p>
-                    {% elif show_table %}
-                    <p class="font-semibold text-slate-700 m-0">لا مسيرات لهذه المعايير</p>
-                    <p class="text-sm text-slate-500 mt-2 m-0">اضغط <strong>② بناء المسير</strong> لإنشاء مسودة جديدة.</p>
-                    {% else %}
-                    <p class="font-semibold text-slate-700 m-0">لا مسيرات لـ {{ filter_month }}/{{ filter_year }} — {% if active_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}</p>
-                    <p class="text-sm text-slate-500 mt-2 m-0">اختر <strong>جميع الفروع</strong> أو فروعاً محددة ثم اضغط <strong>بناء المسير</strong> أو <strong>عرض المسودة</strong>.</p>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
+            {% include "pages/payroll/_payroll_runs_table.html" %}
         </section>
         {% endif %}
     </div>

@@ -110,6 +110,7 @@ def _payroll_list_querystring(
     page=None,
     open_run_id=None,
     alloc_page=None,
+    runs_page=None,
 ):
     """سلسلة استعلام لشاشة المسير الموحّدة."""
     pairs: list[tuple[str, object]] = []
@@ -127,6 +128,8 @@ def _payroll_list_querystring(
         pairs.append(('page', page))
     if alloc_page:
         pairs.append(('alloc_page', alloc_page))
+    if runs_page:
+        pairs.append(('runs_page', runs_page))
     if open_run_id:
         pairs.append(('open_run', open_run_id))
     return urlencode(pairs, doseq=True) if pairs else ''
@@ -899,7 +902,13 @@ def list_payroll_runs(request):
     has_payroll_lines = False
     allocation_lines = []
     allocation_page_obj = None
+    allocation_total_count = 0
+    alloc_start_index = 1
     detailed_runs = []
+    detailed_runs_all = []
+    detailed_runs_page_obj = None
+    detailed_runs_start_index = 1
+    detailed_runs_total_count = 0
 
     if filters['ready']:
         runs_qs = _payroll_runs_for_filters(filters, request.user, user_branches)
@@ -940,18 +949,26 @@ def list_payroll_runs(request):
             month=filters['month'],
             salary_mode=filters['salary_mode'],
         )
-        detailed_runs = list(
+        detailed_runs_all = list(
             _detailed_runs_for_filters(filters, request.user, user_branches),
         )
-        has_detailed_draft = any(
-            r.status == PayrollRun.Status.DRAFT for r in detailed_runs
+        from django.core.paginator import Paginator
+        detailed_runs_paginator = Paginator(detailed_runs_all, 6)
+        detailed_runs_page_obj = detailed_runs_paginator.get_page(
+            request.GET.get('runs_page') or 1,
         )
-        detailed_run_count = len(detailed_runs)
-        detailed_totals = _period_run_totals(detailed_runs)
-        if detailed_runs:
+        detailed_runs = list(detailed_runs_page_obj.object_list)
+        detailed_runs_start_index = detailed_runs_page_obj.start_index()
+        detailed_runs_total_count = len(detailed_runs_all)
+        has_detailed_draft = any(
+            r.status == PayrollRun.Status.DRAFT for r in detailed_runs_all
+        )
+        detailed_run_count = detailed_runs_total_count
+        detailed_totals = _period_run_totals(detailed_runs_all)
+        if detailed_runs_all:
             from apps.payroll.models import PayrollAllocationLine
             alloc_qs = PayrollAllocationLine.objects.filter(
-                run__in=detailed_runs,
+                run__in=detailed_runs_all,
             ).select_related(
                 'employee', 'branch', 'from_branch', 'run', 'run__company',
             ).order_by(
@@ -961,12 +978,13 @@ def list_payroll_runs(request):
                 'transfer_date',
                 'id',
             )
-            from django.core.paginator import Paginator
-            alloc_paginator = Paginator(alloc_qs, 50)
+            alloc_paginator = Paginator(alloc_qs, 6)
             allocation_page_obj = alloc_paginator.get_page(
                 request.GET.get('alloc_page') or 1,
             )
             allocation_lines = allocation_page_obj.object_list
+            allocation_total_count = alloc_paginator.count
+            alloc_start_index = allocation_page_obj.start_index()
             has_payroll_lines = bool(allocation_lines)
     elif filters['ready']:
         detailed_run_count = _detailed_runs_for_filters(
@@ -977,13 +995,18 @@ def list_payroll_runs(request):
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
     saved_drafts_count = _count_saved_draft_runs(filters, request.user, user_branches)
     active_mode = filters.get('salary_mode') or PayrollRun.SalaryMode.TRANSFER
-    period_runs = _period_payroll_runs(
+    period_runs_all = _period_payroll_runs(
         filters, request.user, user_branches, active_mode,
         branch_ids=filters['branch_ids'] or None,
     )
-    period_totals = _period_run_totals(period_runs)
-    if period_runs:
-        has_payroll_lines = any(run.lines.all() for run in period_runs)
+    period_totals = _period_run_totals(period_runs_all)
+    if period_runs_all:
+        has_payroll_lines = any(run.lines.all() for run in period_runs_all)
+    from django.core.paginator import Paginator
+    runs_paginator = Paginator(period_runs_all, 6)
+    period_runs_page_obj = runs_paginator.get_page(request.GET.get('runs_page') or 1)
+    period_runs = list(period_runs_page_obj.object_list)
+    runs_start_index = period_runs_page_obj.start_index()
     mode_run_counts = _payroll_mode_run_counts(
         filters, request.user, user_branches,
         branch_ids=filters['branch_ids'] or None,
@@ -1009,14 +1032,23 @@ def list_payroll_runs(request):
         sponsorship_ids=filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None,
         payroll_view='detailed',
     )
-    modal_runs = period_runs if period_runs else payroll_runs
+    modal_runs = period_runs_all if period_runs_all else payroll_runs
     if open_run_id and not any(r.pk == open_run_id for r in modal_runs):
         open_run_id = None
     for run in modal_runs:
         run.open_list_url = _payroll_run_open_url(run)
-    for run in period_runs:
+    for run in period_runs_all:
         if not getattr(run, 'open_list_url', None):
             run.open_list_url = _payroll_run_open_url(run)
+    active_runs_page = None
+    if active_payroll_view == 'detailed':
+        if detailed_runs_page_obj and detailed_runs_page_obj.number > 1:
+            active_runs_page = detailed_runs_page_obj.number
+    elif period_runs_page_obj.number > 1:
+        active_runs_page = period_runs_page_obj.number
+    active_alloc_page = None
+    if allocation_page_obj and allocation_page_obj.number > 1:
+        active_alloc_page = allocation_page_obj.number
     filter_qs = _payroll_list_querystring(
         branch_ids=filters['branch_ids'] if filters['ready'] else None,
         year=filters['year'],
@@ -1024,6 +1056,8 @@ def list_payroll_runs(request):
         salary_mode=filters['salary_mode'] or None,
         sponsorship_ids=filters['sponsorship_ids'],
         payroll_view=active_payroll_view if active_payroll_view == 'detailed' else None,
+        runs_page=active_runs_page,
+        alloc_page=active_alloc_page,
     )
     export_unified_qs = _payroll_list_querystring(
         year=filters['year'],
@@ -1032,13 +1066,32 @@ def list_payroll_runs(request):
         sponsorship_ids=filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None,
     )
     has_consolidated_run = any(
-        r.run_kind == PayrollRun.RunKind.CONSOLIDATED for r in period_runs
+        r.run_kind == PayrollRun.RunKind.CONSOLIDATED for r in period_runs_all
     )
     show_unified_run_row = (
         not has_consolidated_run
         and not filters.get('branch_ids')
-        and len(period_runs) > 1
+        and len(period_runs_all) > 1
+        and period_runs_page_obj.number == 1
     )
+    runs_page_base_qs = _payroll_list_querystring(
+        branch_ids=filters['branch_ids'] if filters['ready'] else None,
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'] or None,
+        sponsorship_ids=filters['sponsorship_ids'],
+        payroll_view=active_payroll_view if active_payroll_view == 'detailed' else None,
+    )
+    alloc_page_base_qs = _payroll_list_querystring(
+        branch_ids=filters['branch_ids'] if filters['ready'] else None,
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'] or None,
+        sponsorship_ids=filters['sponsorship_ids'],
+        payroll_view='detailed',
+        runs_page=active_runs_page,
+    )
+    period_runs_total_count = len(period_runs_all)
 
     return render(request, 'pages/payroll/list.html', {
         'branches': user_branches,
@@ -1074,9 +1127,21 @@ def list_payroll_runs(request):
         'has_consolidated_run': has_consolidated_run,
         'saved_drafts_count': saved_drafts_count,
         'detailed_runs': detailed_runs,
+        'detailed_runs_all': detailed_runs_all,
+        'detailed_runs_page_obj': detailed_runs_page_obj,
+        'detailed_runs_start_index': detailed_runs_start_index,
+        'detailed_runs_total_count': detailed_runs_total_count,
         'allocation_lines': allocation_lines,
         'allocation_page_obj': allocation_page_obj,
+        'allocation_total_count': allocation_total_count,
+        'alloc_start_index': alloc_start_index,
+        'alloc_page_base_qs': alloc_page_base_qs,
         'period_runs': period_runs,
+        'period_runs_all': period_runs_all,
+        'period_runs_page_obj': period_runs_page_obj,
+        'period_runs_total_count': period_runs_total_count,
+        'runs_start_index': runs_start_index,
+        'runs_page_base_qs': runs_page_base_qs,
         'mode_run_counts': mode_run_counts,
         'active_salary_mode': active_mode,
         'tab_qs_transfer': tab_qs_transfer,

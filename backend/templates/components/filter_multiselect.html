@@ -9,6 +9,8 @@
         {% if require_selection %}data-require-selection="1"{% endif %}
         {% if single %}data-single="1"{% endif %}
         {% if count_unit %}data-count-unit="{{ count_unit }}"{% endif %}
+        {% if panel_vw %}data-panel-vw="{{ panel_vw }}"{% endif %}
+        {% if panel_vh %}data-panel-vh="{{ panel_vh }}"{% endif %}
         {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}>
     {% for item in items %}
     <option value="{{ item.pk }}"
@@ -17,4 +19,4 @@
     </option>
     {% endfor %}
 </select>
-<script defer src="/static/js/hr-multiselect.js?v=20260605-single"></script>
+<script defer src="/static/js/hr-multiselect.js?v=20260610-panel25w"></script>

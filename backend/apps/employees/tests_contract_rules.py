@@ -3,14 +3,20 @@ from datetime import date
 from django.test import TestCase
 
 from apps.employees.models import Employee
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+
 from apps.employees.services.contract_rules import (
     ContractType,
     compute_contract_expiry,
     fourth_year_start,
     is_saudi_nationality,
+    is_valid_saudi_insurance_rate,
     should_auto_unlimited,
     sync_employee_contract,
     validate_contract_fields,
+    validate_insurance_deduction_rate_for_nationality,
 )
 from apps.setup.models import Nationality
 
@@ -24,6 +30,15 @@ class ContractRulesTests(TestCase):
         self.assertTrue(is_saudi_nationality(self.saudi))
         self.assertFalse(is_saudi_nationality(self.foreign))
         self.assertFalse(is_saudi_nationality(None))
+
+    def test_saudi_insurance_rates_whitelist(self):
+        self.assertTrue(is_valid_saudi_insurance_rate(Decimal('10.75')))
+        self.assertTrue(is_valid_saudi_insurance_rate('10.25'))
+        self.assertFalse(is_valid_saudi_insurance_rate(Decimal('10')))
+        validate_insurance_deduction_rate_for_nationality(Decimal('9.75'), self.saudi)
+        with self.assertRaises(ValidationError):
+            validate_insurance_deduction_rate_for_nationality(Decimal('10'), self.saudi)
+        validate_insurance_deduction_rate_for_nationality(Decimal('15'), self.foreign)
 
     def test_fourth_year_start(self):
         self.assertEqual(fourth_year_start(date(2020, 3, 15)), date(2023, 3, 15))

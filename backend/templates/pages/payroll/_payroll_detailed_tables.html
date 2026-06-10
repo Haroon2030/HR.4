@@ -10,10 +10,10 @@
             <h2 class="hr-payroll-panel__title text-indigo-900">
                 <i data-lucide="table-2" class="w-4 h-4"></i>
                 المسيرات التفصيلية
-                <span class="text-slate-400 font-normal">({{ detailed_runs|length }})</span>
+                <span class="hr-payroll-runs-datatable__count-badge">{{ detailed_runs_total_count }}</span>
             </h2>
             <p class="text-[11px] text-slate-500 m-0">
-                {% if prefer_unified_detailed and detailed_runs|length <= 1 %}
+                {% if prefer_unified_detailed and detailed_runs_total_count <= 1 %}
                 <span class="text-primary-700 font-semibold">مسودة موحّدة — جميع الفروع</span>
                 ·
                 {% endif %}
@@ -21,132 +21,18 @@
             </p>
         </div>
     </div>
-    <div class="overflow-x-auto">
-        {% if detailed_runs %}
-        <table class="payroll-tbl hr-payroll-runs-tbl">
-            <thead>
-                <tr>
-                    <th class="text-center w-10">#</th>
-                    <th class="text-right">الشركة</th>
-                    {% if active_salary_mode == 'transfer' %}
-                    <th class="text-right">شركة الكفالة</th>
-                    {% endif %}
-                    <th class="text-center">الفترة</th>
-                    <th class="col-num">موظفون منقولون</th>
-                    <th class="col-num th-net">الصافي على الفروع</th>
-                    <th class="text-center">الحالة</th>
-                    <th class="text-center w-28">إجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for run in detailed_runs %}
-                <tr class="{% if open_run_id == run.id %} hr-payroll-runs-tbl__row--highlight{% endif %}">
-                    <td class="text-center text-slate-400 font-mono text-xs">{{ forloop.counter }}</td>
-                    <td class="font-bold text-slate-900">{{ run.company.name }}</td>
-                    {% if active_salary_mode == 'transfer' %}
-                    <td class="text-slate-700 text-sm">{{ run.sponsorship.company_name|default:"—" }}</td>
-                    {% endif %}
-                    <td class="text-center text-xs text-slate-600">{{ run.period_label }}</td>
-                    <td class="col-num">{{ run.employees_count }}</td>
-                    <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
-                    <td class="text-center">
-                        {% if run.status == 'draft' %}
-                        <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
-                        {% elif run.status == 'locked' %}
-                        <span class="hr-payroll-status hr-payroll-status--locked">مُغلق</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <div class="hr-payroll-row-actions">
-                            <a href="{% url 'web:view_payroll_run' run.id %}"
-                               class="hr-payroll-row-actions__btn"
-                               title="عرض تفاصيل التوزيع">
-                                <i data-lucide="eye" class="w-4 h-4"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            {% if detailed_totals.total_net %}
-            <tfoot>
-                <tr>
-                    <td colspan="{% if active_salary_mode == 'transfer' %}4{% else %}3{% endif %}" class="text-left font-bold text-slate-700">الإجمالي</td>
-                    <td class="col-num font-bold">{{ detailed_totals.employees_count|default:0 }}</td>
-                    <td class="col-num td-net font-bold">{{ detailed_totals.total_net|default:0|format_sar:"net" }}</td>
-                    <td colspan="2"></td>
-                </tr>
-            </tfoot>
-            {% endif %}
-        </table>
-        {% else %}
-        <div class="hr-payroll-empty py-12 text-center">
-            <i data-lucide="git-branch" class="w-10 h-10 text-indigo-300 mx-auto mb-3"></i>
-            {% if not show_table and active_salary_mode == 'transfer' and not filter_sponsorship_ids %}
-            <p class="font-semibold text-slate-700 m-0">اختر شركة الكفالة أو «جميع الشركات» ثم اضغط عرض أو بناء</p>
-            {% elif show_table %}
-            <p class="font-semibold text-slate-700 m-0">لا يوجد مسير تفصيلي لهذه المعايير</p>
-            <p class="text-sm text-slate-500 mt-2 m-0">اضغط <strong>② بناء المسير التفصيلي</strong> عند وجود موظفين منقولين بين الفروع.</p>
-            {% else %}
-            <p class="font-semibold text-slate-700 m-0">حدّد الفترة والفروع ثم اضغط <strong>عرض</strong> أو <strong>بناء المسير التفصيلي</strong>.</p>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
+    {% include "pages/payroll/_payroll_detailed_runs_table.html" %}
 </section>
 
 {% if show_table and allocation_lines %}
-<section class="hr-payroll-panel hr-payroll-panel--detailed" aria-label="توزيع التحمّل حسب الموظف">
+<section class="hr-payroll-panel hr-payroll-panel--table hr-payroll-panel--detailed" aria-label="توزيع التحمّل حسب الموظف">
     <div class="hr-payroll-panel__head">
         <h2 class="hr-payroll-panel__title text-indigo-900">
             <i data-lucide="users" class="w-4 h-4"></i>
             تفاصيل التوزيع — الموظفون المنقولون
+            <span class="hr-payroll-runs-datatable__count-badge">{{ allocation_total_count }}</span>
         </h2>
     </div>
-    <div class="overflow-x-auto">
-        <table class="payroll-tbl">
-            <thead>
-                <tr>
-                    <th class="text-right">الموظف</th>
-                    <th class="text-right">الفرع</th>
-                    <th class="text-center">تاريخ النقل</th>
-                    <th class="col-num">أيام</th>
-                    <th class="col-num th-net">المبلغ</th>
-                    <th class="text-center">يتحمل</th>
-                    <th class="text-center">مسير</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in allocation_lines %}
-                <tr>
-                    <td class="font-bold text-slate-900">{{ row.employee.name }}</td>
-                    <td>{{ row.branch.name }}</td>
-                    <td class="text-center text-sm">{{ row.transfer_date|default:"—" }}</td>
-                    <td class="col-num">{{ row.days_in_branch }}</td>
-                    <td class="col-num td-net">{{ row.net_amount|format_sar:"net" }}</td>
-                    <td class="text-center">{% if row.bears_salary %}<span class="text-emerald-700 text-xs font-semibold">نعم</span>{% else %}—{% endif %}</td>
-                    <td class="text-center">
-                        <a href="{% url 'web:view_payroll_run' row.run.id %}" class="text-indigo-600 hover:text-indigo-800">
-                            <i data-lucide="eye" class="w-4 h-4 inline-block"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% if allocation_page_obj and allocation_page_obj.has_other_pages %}
-    <div class="p-4 border-t border-slate-100 flex items-center justify-center gap-1 text-sm">
-        {% if allocation_page_obj.has_previous %}
-        <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.previous_page_number }}"
-           class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">السابق</a>
-        {% endif %}
-        <span class="px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold">{{ allocation_page_obj.number }}</span>
-        {% if allocation_page_obj.has_next %}
-        <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}alloc_page={{ allocation_page_obj.next_page_number }}"
-           class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">التالي</a>
-        {% endif %}
-    </div>
-    {% endif %}
+    {% include "pages/payroll/_payroll_allocation_table.html" %}
 </section>
 {% endif %}

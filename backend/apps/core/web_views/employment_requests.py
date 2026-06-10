@@ -281,10 +281,13 @@ def edit_employment_request(request, request_id):
     # عرض الحقول الناقصة كتنبيه
     missing = svc.validate_employee_data_complete(emp_req)
 
+    from apps.employees.services.contract_rules import saudi_nationality_ids
+
     return render(request, 'pages/employment_requests/edit.html', {
         'form': form,
         'emp_req': emp_req,
         'missing_fields': missing,
         'title': f'تعديل بيانات الموظف — {emp_req.name}',
+        'saudi_nationality_ids': saudi_nationality_ids(),
     })
 
