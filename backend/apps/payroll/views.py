@@ -400,7 +400,12 @@ def _infer_payroll_filters_from_drafts(filters: dict, user, user_branches) -> di
     return filters
 
 
-def _merge_stored_payroll_filters(filters: dict, stored: dict) -> dict:
+def _merge_stored_payroll_filters(
+    filters: dict,
+    stored: dict,
+    *,
+    restore_payroll_view: bool = True,
+) -> dict:
     if 'branch_ids' in stored and not filters.get('branch_ids'):
         stored_branches = stored['branch_ids']
         filters['branch_ids'] = list(stored_branches) if stored_branches else None
@@ -418,7 +423,7 @@ def _merge_stored_payroll_filters(filters: dict, stored: dict) -> dict:
         filters['year'] = stored['year']
     if stored.get('month'):
         filters['month'] = stored['month']
-    if stored.get('payroll_view'):
+    if restore_payroll_view and stored.get('payroll_view'):
         filters['payroll_view'] = stored['payroll_view']
     return filters
 
@@ -442,9 +447,21 @@ def _restore_payroll_list_filters(request, filters: dict, user, user_branches):
     if request.method != 'GET':
         return _recompute_payroll_ready(filters), None
 
+    explicit_detailed_view = (
+        request.method == 'GET'
+        and (request.GET.get('payroll_view') or '').strip() == 'detailed'
+    )
+    restore_payroll_view = not explicit_detailed_view
+    if request.method == 'GET' and (request.GET.get('salary_mode') or '').strip():
+        restore_payroll_view = False
+
     stored = request.session.get(_PAYROLL_LIST_SESSION_KEY)
     if stored:
-        filters = _merge_stored_payroll_filters(filters, stored)
+        filters = _merge_stored_payroll_filters(
+            filters,
+            stored,
+            restore_payroll_view=restore_payroll_view,
+        )
 
     filters = _infer_payroll_filters_from_drafts(filters, user, user_branches)
     if not filters.get('salary_mode'):

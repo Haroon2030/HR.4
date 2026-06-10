@@ -509,3 +509,67 @@ class PayrollEngineTests(TestCase):
         run.refresh_from_db()
         self.assertIsNone(abs_rec.applied_to_payroll_id)
         self.assertEqual(run.status, PayrollRun.Status.DRAFT)
+
+
+class PayrollListViewTabTests(TestCase):
+    """تبويب المسير التفصيلي لا يُستبدل بقيمة الجلسة المحفوظة."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name='Tab Test Co')
+        self.branch = Branch.objects.create(
+            name='Tab Branch', code='TAB01', company=self.company,
+        )
+        self.user = User.objects.create_user(
+            username='payroll_tab_tester',
+            password='test-pass-123',
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.login(username='payroll_tab_tester', password='test-pass-123')
+
+    def _seed_session(self, payroll_view: str) -> None:
+        session = self.client.session
+        session['hr_payroll_list_filters'] = {
+            'branch_ids': [self.branch.id],
+            'year': 2026,
+            'month': 6,
+            'salary_mode': PayrollRun.SalaryMode.CASH,
+            'sponsorship_ids': None,
+            'payroll_view': payroll_view,
+        }
+        session.save()
+
+    def test_detailed_tab_query_overrides_session_standard_view(self):
+        from django.urls import reverse
+
+        self._seed_session('standard')
+        response = self.client.get(
+            reverse('web:list_payroll_runs'),
+            {
+                'branch_id': self.branch.id,
+                'year': 2026,
+                'month': 6,
+                'salary_mode': PayrollRun.SalaryMode.CASH,
+                'payroll_view': 'detailed',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'معايير المسير التفصيلي')
+        self.assertContains(response, 'hr-tab-btn--purple is-active')
+
+    def test_cash_tab_query_resets_session_detailed_view(self):
+        from django.urls import reverse
+
+        self._seed_session('detailed')
+        response = self.client.get(
+            reverse('web:list_payroll_runs'),
+            {
+                'branch_id': self.branch.id,
+                'year': 2026,
+                'month': 6,
+                'salary_mode': PayrollRun.SalaryMode.CASH,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'معايير المسير التفصيلي')
+        self.assertContains(response, 'hr-tab-btn--amber is-active')
