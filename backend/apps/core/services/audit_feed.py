@@ -56,7 +56,9 @@ def _history_event(
     link: str,
 ) -> AuditEvent:
     verb = HISTORY_VERB_AR.get(h.history_type, h.history_type or '—')
-    operation_ar, details, detail_lines = summarize_history_changes(h, entity_label=source_label)
+    operation_ar, details, detail_lines = summarize_history_changes(
+        h, entity_label=source_label, lightweight=True,
+    )
     return AuditEvent(
         when=h.history_date,
         source_key=source_key,

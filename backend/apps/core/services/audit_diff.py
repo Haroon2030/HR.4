@@ -211,9 +211,11 @@ def summarize_history_changes(
     history_row,
     *,
     entity_label: str | None = None,
+    lightweight: bool = False,
 ) -> tuple[str, str, list[AuditChangeLine]]:
     """
     يُرجع (operation_ar, details نص مختصر, detail_lines للعرض المنظم).
+    lightweight=True يتخطى prev_record لتفادي N+1 في لوحات القائمة.
     """
     model_label = _model_label_ar(history_row, entity_label)
     hist_type = getattr(history_row, 'history_type', '') or ''
@@ -223,6 +225,9 @@ def summarize_history_changes(
 
     if hist_type == '-':
         return f'حذف {model_label}', 'حذف السجل من النظام', []
+
+    if lightweight:
+        return f'تعديل {model_label}', 'تعديل حقول السجل', []
 
     prev = getattr(history_row, 'prev_record', None)
     if prev is None:

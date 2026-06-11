@@ -1,0 +1,20 @@
+<nav aria-label="مسار التنقل" class="mb-4">
+    <ol class="flex flex-wrap items-center gap-1 text-sm text-slate-500">
+        {% for item in items %}
+        <li class="inline-flex items-center gap-1">
+            {% if not forloop.first %}<span class="text-slate-300 mx-0.5" aria-hidden="true">/</span>{% endif %}
+            {% if item.url %}
+            <a href="{{ item.url }}" class="inline-flex items-center gap-1 hover:text-primary-600 transition-colors">
+                {% if item.icon %}<i data-lucide="{{ item.icon }}" class="w-3.5 h-3.5"></i>{% endif %}
+                <span>{{ item.label }}</span>
+            </a>
+            {% else %}
+            <span class="inline-flex items-center gap-1 text-slate-800 font-semibold" aria-current="page">
+                {% if item.icon %}<i data-lucide="{{ item.icon }}" class="w-3.5 h-3.5"></i>{% endif %}
+                <span>{{ item.label }}</span>
+            </span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>

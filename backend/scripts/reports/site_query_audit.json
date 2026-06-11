@@ -1,0 +1,387 @@
+{
+  "summary": {
+    "total_routes": 319,
+    "tested_ok": 103,
+    "skipped": 212,
+    "failed": 13,
+    "warning": 1,
+    "critical": 0,
+    "dup_heavy": 5
+  },
+  "top_queries": [
+    {
+      "name": "payroll:list:detailed",
+      "path": "/payroll/?year=2026&month=6&salary_mode=transfer&payroll_view=detailed",
+      "queries": 30,
+      "status": 200,
+      "ms": 103
+    },
+    {
+      "name": "payroll:list:transfer",
+      "path": "/payroll/?year=2026&month=6&salary_mode=transfer",
+      "queries": 28,
+      "status": 200,
+      "ms": 226
+    },
+    {
+      "name": "web:edit_employee",
+      "path": "/employees/1/edit/",
+      "queries": 25,
+      "status": 200,
+      "ms": 66
+    },
+    {
+      "name": "web:list_branches",
+      "path": "/branches/",
+      "queries": 24,
+      "status": 200,
+      "ms": 118
+    },
+    {
+      "name": "user-roles",
+      "path": "/api/v1/users/roles/",
+      "queries": 20,
+      "status": 200,
+      "ms": 32
+    },
+    {
+      "name": "web:create_employee_full",
+      "path": "/employees/create/",
+      "queries": 20,
+      "status": 200,
+      "ms": 65
+    },
+    {
+      "name": "web:dashboard",
+      "path": "/",
+      "queries": 20,
+      "status": 200,
+      "ms": 67
+    },
+    {
+      "name": "web:attendance_report",
+      "path": "/attendance/report/",
+      "queries": 19,
+      "status": 200,
+      "ms": 65
+    },
+    {
+      "name": "web:view_branch",
+      "path": "/branches/4/",
+      "queries": 18,
+      "status": 200,
+      "ms": 34
+    },
+    {
+      "name": "web:biometric_devices",
+      "path": "/attendance/devices/",
+      "queries": 17,
+      "status": 200,
+      "ms": 45
+    },
+    {
+      "name": "web:attendance_records",
+      "path": "/attendance/records/",
+      "queries": 16,
+      "status": 200,
+      "ms": 51
+    },
+    {
+      "name": "web:manage_user_permissions",
+      "path": "/users/1/permissions/",
+      "queries": 16,
+      "status": 200,
+      "ms": 41
+    },
+    {
+      "name": "attendance:report",
+      "path": "/attendance/report/?year=2026&month=6",
+      "queries": 16,
+      "status": 200,
+      "ms": 77
+    },
+    {
+      "name": "web:list_pending_actions",
+      "path": "/pending-actions/",
+      "queries": 15,
+      "status": 200,
+      "ms": 41
+    },
+    {
+      "name": "web:view_employee",
+      "path": "/employees/1/",
+      "queries": 15,
+      "status": 200,
+      "ms": 111
+    },
+    {
+      "name": "web:audit_history",
+      "path": "/audit/history/",
+      "queries": 13,
+      "status": 200,
+      "ms": 61
+    },
+    {
+      "name": "web:edit_user",
+      "path": "/users/1/edit/",
+      "queries": 13,
+      "status": 200,
+      "ms": 28
+    },
+    {
+      "name": "web:list_employment_requests",
+      "path": "/employment-requests/",
+      "queries": 13,
+      "status": 200,
+      "ms": 101
+    },
+    {
+      "name": "web:view_role",
+      "path": "/roles/5/",
+      "queries": 13,
+      "status": 200,
+      "ms": 21
+    },
+    {
+      "name": "swagger-ui",
+      "path": "/api/docs/",
+      "queries": 12,
+      "status": 200,
+      "ms": 88
+    },
+    {
+      "name": "web:add_employee",
+      "path": "/employees/add/",
+      "queries": 12,
+      "status": 200,
+      "ms": 50
+    },
+    {
+      "name": "web:edit_role",
+      "path": "/roles/5/edit/",
+      "queries": 12,
+      "status": 200,
+      "ms": 35
+    },
+    {
+      "name": "web:list_users",
+      "path": "/users/",
+      "queries": 12,
+      "status": 200,
+      "ms": 40
+    },
+    {
+      "name": "web:manage_role_permissions",
+      "path": "/roles/5/permissions/",
+      "queries": 12,
+      "status": 200,
+      "ms": 34
+    },
+    {
+      "name": "web:pending_action_detail",
+      "path": "/pending-actions/1/",
+      "queries": 12,
+      "status": 200,
+      "ms": 36
+    }
+  ],
+  "critical": [],
+  "warning": [
+    {
+      "name": "payroll:list:detailed",
+      "path": "/payroll/?year=2026&month=6&salary_mode=transfer&payroll_view=detailed",
+      "queries": 30,
+      "dups": [
+        [
+          8,
+          "SELECT \"core_branch\".\"id\" AS \"id\" FROM \"core_branch\" WHERE (NOT \"core_branch\".\"is_deleted\" AND \"core_branch\".\"is_active\" AND NOT \"core_branch\".\"is_deleted\") ORDER BY \"core_branch\".\"name\" ASC"
+        ],
+        [
+          3,
+          "SELECT COUNT(*) AS \"__count\" FROM \"payroll_payrollrun\" WHERE (NOT \"payroll_payrollrun\".\"is_deleted\" AND \"payroll_payrollrun\".\"period_month\" = 6 AND \"payroll_payrollrun\".\"period_year\" = 2026 AND \"payro"
+        ],
+        [
+          3,
+          "SELECT 1 AS \"a\" FROM \"payroll_payrollrun\" WHERE (NOT \"payroll_payrollrun\".\"is_deleted\" AND \"payroll_payrollrun\".\"company_id\" IN (SELECT DISTINCT U0.\"company_id\" AS \"company_id\" FROM \"core_branch\" U0 W"
+        ],
+        [
+          3,
+          "SELECT \"payroll_payrollrun\".\"id\", \"payroll_payrollrun\".\"created_at\", \"payroll_payrollrun\".\"updated_at\", \"payroll_payrollrun\".\"is_deleted\", \"payroll_payrollrun\".\"deleted_at\", \"payroll_payrollrun\".\"comp"
+        ]
+      ]
+    }
+  ],
+  "dup_heavy": [
+    {
+      "name": "user-roles",
+      "path": "/api/v1/users/roles/",
+      "queries": 20,
+      "dups": [
+        [
+          7,
+          "SELECT COUNT(*) AS \"__count\" FROM \"core_permission\" INNER JOIN \"core_role_permissions\" ON (\"core_permission\".\"id\" = \"core_role_permissions\".\"permission_id\") WHERE (NOT \"core_permission\".\"is_deleted\" A"
+        ]
+      ]
+    },
+    {
+      "name": "web:edit_employee",
+      "path": "/employees/1/edit/",
+      "queries": 25,
+      "dups": [
+        [
+          13,
+          "SELECT \"auth_user\".\"id\", \"auth_user\".\"password\", \"auth_user\".\"last_login\", \"auth_user\".\"is_superuser\", \"auth_user\".\"username\", \"auth_user\".\"first_name\", \"auth_user\".\"last_name\", \"auth_user\".\"email\", \""
+        ]
+      ]
+    },
+    {
+      "name": "web:view_role",
+      "path": "/roles/5/",
+      "queries": 13,
+      "dups": [
+        [
+          3,
+          "SELECT \"core_userprofile\".\"id\", \"core_userprofile\".\"created_at\", \"core_userprofile\".\"updated_at\", \"core_userprofile\".\"is_deleted\", \"core_userprofile\".\"deleted_at\", \"core_userprofile\".\"user_id\", \"core_"
+        ]
+      ]
+    },
+    {
+      "name": "payroll:list:transfer",
+      "path": "/payroll/?year=2026&month=6&salary_mode=transfer",
+      "queries": 28,
+      "dups": [
+        [
+          7,
+          "SELECT \"core_branch\".\"id\" AS \"id\" FROM \"core_branch\" WHERE (NOT \"core_branch\".\"is_deleted\" AND \"core_branch\".\"is_active\" AND NOT \"core_branch\".\"is_deleted\") ORDER BY \"core_branch\".\"name\" ASC"
+        ],
+        [
+          3,
+          "SELECT COUNT(*) AS \"__count\" FROM \"payroll_payrollrun\" WHERE (NOT \"payroll_payrollrun\".\"is_deleted\" AND \"payroll_payrollrun\".\"period_month\" = 6 AND \"payroll_payrollrun\".\"period_year\" = 2026 AND \"payro"
+        ],
+        [
+          3,
+          "SELECT 1 AS \"a\" FROM \"payroll_payrollrun\" WHERE (NOT \"payroll_payrollrun\".\"is_deleted\" AND \"payroll_payrollrun\".\"company_id\" IN (SELECT DISTINCT U0.\"company_id\" AS \"company_id\" FROM \"core_branch\" U0 W"
+        ]
+      ]
+    },
+    {
+      "name": "payroll:list:detailed",
+      "path": "/payroll/?year=2026&month=6&salary_mode=transfer&payroll_view=detailed",
+      "queries": 30,
+      "dups": [
+        [
+          8,
+          "SELECT \"core_branch\".\"id\" AS \"id\" FROM \"core_branch\" WHERE (NOT \"core_branch\".\"is_deleted\" AND \"core_branch\".\"is_active\" AND NOT \"core_branch\".\"is_deleted\") ORDER BY \"core_branch\".\"name\" ASC"
+        ],
+        [
+          3,
+          "SELECT COUNT(*) AS \"__count\" FROM \"payroll_payrollrun\" WHERE (NOT \"payroll_payrollrun\".\"is_deleted\" AND \"payroll_payrollrun\".\"period_month\" = 6 AND \"payroll_payrollrun\".\"period_year\" = 2026 AND \"payro"
+        ],
+        [
+          3,
+          "SELECT 1 AS \"a\" FROM \"payroll_payrollrun\" WHERE (NOT \"payroll_payrollrun\".\"is_deleted\" AND \"payroll_payrollrun\".\"company_id\" IN (SELECT DISTINCT U0.\"company_id\" AS \"company_id\" FROM \"core_branch\" U0 W"
+        ],
+        [
+          3,
+          "SELECT \"payroll_payrollrun\".\"id\", \"payroll_payrollrun\".\"created_at\", \"payroll_payrollrun\".\"updated_at\", \"payroll_payrollrun\".\"is_deleted\", \"payroll_payrollrun\".\"deleted_at\", \"payroll_payrollrun\".\"comp"
+        ]
+      ]
+    }
+  ],
+  "failed": [
+    {
+      "name": "attendance-agent-devices",
+      "path": "/api/v1/attendance/agent/devices/",
+      "status": 403,
+      "error": "",
+      "skip": ""
+    },
+    {
+      "name": "branch-detail",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'branch-detail' with no arguments not found. 2 pattern(s) tried: ['api/v1/branches/(?P<pk>[^/.]+)\\\\.(?P<form",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "branch-employees",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'branch-employees' with no arguments not found. 2 pattern(s) tried: ['api/v1/branches/(?P<pk>[^/.]+)/employe",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "company-detail",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'company-detail' with no arguments not found. 2 pattern(s) tried: ['api/v1/companies/(?P<pk>[^/.]+)\\\\.(?P<fo",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "role-add-permission",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'role-add-permission' with no arguments not found. 2 pattern(s) tried: ['api/v1/roles/(?P<pk>[^/.]+)/add_per",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "role-assign-permissions",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'role-assign-permissions' with no arguments not found. 2 pattern(s) tried: ['api/v1/roles/(?P<pk>[^/.]+)/ass",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "role-detail",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'role-detail' with no arguments not found. 2 pattern(s) tried: ['api/v1/roles/(?P<pk>[^/.]+)\\\\.(?P<format>[a",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "role-remove-permission",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'role-remove-permission' with no arguments not found. 2 pattern(s) tried: ['api/v1/roles/(?P<pk>[^/.]+)/remo",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "user-assign-role",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'user-assign-role' with no arguments not found. 2 pattern(s) tried: ['api/v1/users/(?P<pk>[^/.]+)/assign_rol",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "user-detail",
+      "path": "",
+      "status": 0,
+      "error": "Reverse for 'user-detail' with no arguments not found. 2 pattern(s) tried: ['api/v1/users/(?P<pk>[^/.]+)\\\\.(?P<format>[a",
+      "skip": "reverse-failed"
+    },
+    {
+      "name": "web:attendance_records_reclassify",
+      "path": "/attendance/records/reclassify/",
+      "status": 405,
+      "error": "",
+      "skip": ""
+    },
+    {
+      "name": "web:biometric_device_generate_agent_key",
+      "path": "/attendance/devices/1/agent-key/",
+      "status": 405,
+      "error": "",
+      "skip": ""
+    },
+    {
+      "name": "web:biometric_device_test",
+      "path": "/attendance/devices/1/test/",
+      "status": 405,
+      "error": "",
+      "skip": ""
+    }
+  ],
+  "static_n_plus_one": [
+    "apps\\employees\\management\\commands\\notify_document_expiry.py:114"
+  ]
+}

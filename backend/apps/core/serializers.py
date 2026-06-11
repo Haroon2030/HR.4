@@ -90,10 +90,37 @@ class RoleListSerializer(serializers.ModelSerializer):
         ]
     
     def get_permissions_count(self, obj):
+        if hasattr(obj, '_permissions_count'):
+            return obj._permissions_count
         return obj.permissions.count()
     
     def get_users_count(self, obj):
+        if hasattr(obj, '_users_count'):
+            return obj._users_count
         return obj.users.count()
+
+
+class UserProfileListSerializer(serializers.ModelSerializer):
+    """ملف مستخدم مختصر لقائمة API — بدون صلاحيات أو فروع كاملة."""
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    full_name = serializers.SerializerMethodField()
+    role_name = serializers.CharField(source='role.name', read_only=True)
+    role_type = serializers.CharField(source='role.role_type', read_only=True)
+    branch_name = serializers.CharField(source='branch.name', read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
+            'role', 'role_name', 'role_type', 'branch', 'branch_name',
+            'phone', 'department', 'position',
+        ]
+
+    def get_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -130,7 +157,26 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_accessible_branches(self, obj):
         """الفروع التي يمكن للمستخدم الوصول إليها"""
         branches = obj.get_accessible_branches()
+        if hasattr(branches, 'model'):
+            branches = list(branches)
         return BranchListSerializer(branches, many=True).data
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    """Serializer مختصر لقائمة المستخدمين."""
+    profile = UserProfileListSerializer(read_only=True)
+    role_name = serializers.CharField(source='profile.role.name', read_only=True)
+    role_type = serializers.CharField(source='profile.role.role_type', read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_active', 'is_staff', 'is_superuser',
+            'date_joined', 'last_login',
+            'profile', 'role_name', 'role_type',
+        ]
+        read_only_fields = fields
 
 
 class UserSerializer(serializers.ModelSerializer):

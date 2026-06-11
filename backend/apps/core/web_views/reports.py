@@ -874,8 +874,9 @@ def multi_report_detail(request):
             })
             
     if not selected_reports:
-        raise Http404("لا توجد تقارير محددة لعرضها")
-        
+        messages.info(request, 'اختر تقاريراً لعرضها من صفحة التقارير.')
+        return redirect('web:reports_index')
+
     return render(request, 'pages/reports/multi_detail.html', {
         'reports_data': selected_reports,
         'reports_count': len(selected_reports)

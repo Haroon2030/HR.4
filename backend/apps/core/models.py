@@ -344,16 +344,27 @@ class UserProfile(BaseModel):
     def __str__(self):
         return f"ملف {self.user.username}"
     
+    def _active_permission_codes(self, relation_name: str) -> set[str]:
+        cache = getattr(self, '_prefetched_objects_cache', {})
+        if relation_name in cache:
+            return {p.code for p in cache[relation_name] if p.is_active}
+        manager = getattr(self, relation_name)
+        return set(manager.filter(is_active=True).values_list('code', flat=True))
+
     def get_permissions(self):
         """صلاحيات فعلية للمستخدم = (صلاحيات الدور ∪ extra) − denied"""
         if not self.role:
-            extra = set(self.extra_permissions.filter(is_active=True).values_list('code', flat=True)) if self.pk else set()
-            denied = set(self.denied_permissions.filter(is_active=True).values_list('code', flat=True)) if self.pk else set()
+            extra = self._active_permission_codes('extra_permissions') if self.pk else set()
+            denied = self._active_permission_codes('denied_permissions') if self.pk else set()
             return list(extra - denied)
-        role_perms = set(self.role.permissions.filter(is_active=True).values_list('code', flat=True))
+        role_cache = getattr(self.role, '_prefetched_objects_cache', {})
+        if 'permissions' in role_cache:
+            role_perms = {p.code for p in role_cache['permissions'] if p.is_active}
+        else:
+            role_perms = set(self.role.permissions.filter(is_active=True).values_list('code', flat=True))
         if self.pk:
-            extra = set(self.extra_permissions.filter(is_active=True).values_list('code', flat=True))
-            denied = set(self.denied_permissions.filter(is_active=True).values_list('code', flat=True))
+            extra = self._active_permission_codes('extra_permissions')
+            denied = self._active_permission_codes('denied_permissions')
         else:
             extra, denied = set(), set()
         return list((role_perms | extra) - denied)
@@ -396,13 +407,16 @@ class UserProfile(BaseModel):
         from apps.core.services.access_control import (
             filter_branches_queryset,
             get_accessible_branch_ids,
+            get_all_active_branches_list,
         )
 
-        qs = Branch.objects.filter(is_deleted=False)
         branch_ids = get_accessible_branch_ids(self.user)
         if branch_ids is None:
-            return qs
-        return filter_branches_queryset(self.user, qs)
+            return get_all_active_branches_list()
+        return filter_branches_queryset(
+            self.user,
+            Branch.objects.filter(is_deleted=False, is_active=True),
+        )
     
     def can_access_branch(self, branch):
         """هل يمكن للمستخدم الوصول لهذا الفرع؟"""

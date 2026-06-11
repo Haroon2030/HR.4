@@ -698,12 +698,16 @@ def lock_payroll_run(run: PayrollRun, user):
                 ):
                     loans_to_mark_paid.append(loan)
 
-    for line in line_list:
-        if EmployeeLedger.objects.filter(
-            employee_id=line.employee_id,
+    existing_ledger_employee_ids = set(
+        EmployeeLedger.objects.filter(
             payroll_run=run,
             transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
-        ).exists():
+            employee_id__in=employee_ids,
+        ).values_list('employee_id', flat=True),
+    )
+
+    for line in line_list:
+        if line.employee_id in existing_ledger_employee_ids:
             continue
 
         sid = transaction.savepoint()

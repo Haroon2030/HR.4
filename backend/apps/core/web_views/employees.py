@@ -90,23 +90,48 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False, user=No
     from apps.setup.models import Nationality, Profession, Sponsorship, Insurance, InsuranceClass
     from apps.employees.services.contract_rules import saudi_nationality_ids
     from apps.core.employee_tab_permissions import enrich_employee_page_context
+    from apps.core.services.setup_cache import get_cached_list
 
     ctx = {
         'employee': form.instance if form is not None else employee,
         'form': form,
         'is_create': is_create,
         'saudi_nationality_ids': saudi_nationality_ids(),
-        'nationalities': Nationality.objects.filter(is_active=True),
-        'professions': Profession.objects.filter(is_active=True),
-        'sponsorships': Sponsorship.objects.filter(is_active=True),
-        'branches': Branch.objects.filter(is_active=True),
-        'departments': Department.objects.all(),
-        'cost_centers': CostCenter.objects.all(),
-        'insurances': Insurance.objects.filter(is_active=True),
-        'insurance_classes': InsuranceClass.objects.filter(is_active=True),
-        'buildings': _buildings_qs(),
-        'banks': _banks_qs(),
-        'administrations': _administrations_qs(),
+        'nationalities': get_cached_list(
+            'nationalities',
+            lambda: list(Nationality.objects.filter(is_active=True).order_by('name')),
+        ),
+        'professions': get_cached_list(
+            'professions',
+            lambda: list(Profession.objects.filter(is_active=True).order_by('name')),
+        ),
+        'sponsorships': get_cached_list(
+            'sponsorships',
+            lambda: list(Sponsorship.objects.filter(is_active=True).order_by('company_name')),
+        ),
+        'branches': get_cached_list(
+            'active_branches',
+            lambda: list(Branch.objects.filter(is_active=True, is_deleted=False).order_by('name')),
+        ),
+        'departments': get_cached_list(
+            'departments_all',
+            lambda: list(Department.objects.select_related('branch').order_by('name')),
+        ),
+        'cost_centers': get_cached_list(
+            'cost_centers_all',
+            lambda: list(CostCenter.objects.select_related('branch').order_by('name')),
+        ),
+        'insurances': get_cached_list(
+            'insurances',
+            lambda: list(Insurance.objects.filter(is_active=True).order_by('insurance_type')),
+        ),
+        'insurance_classes': get_cached_list(
+            'insurance_classes',
+            lambda: list(InsuranceClass.objects.filter(is_active=True).order_by('class_type')),
+        ),
+        'buildings': get_cached_list('buildings', _buildings_qs),
+        'banks': get_cached_list('banks', _banks_qs),
+        'administrations': get_cached_list('administrations', _administrations_qs),
     }
     if user is not None:
         enrich_employee_page_context(user, ctx, requested_tab=requested_tab, edit_form=True)

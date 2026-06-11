@@ -23,6 +23,7 @@ def invalidate_setup_cache(*names: str) -> None:
         for n in (
             'nationalities', 'professions', 'sponsorships', 'insurances',
             'insurance_classes', 'buildings', 'banks', 'administrations',
+            'active_branches', 'departments_all', 'cost_centers_all',
         ):
             cache.delete(_key(n))
 

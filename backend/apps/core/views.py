@@ -27,6 +27,7 @@ from .serializers import (
     RoleSerializer,
     RoleListSerializer,
     UserSerializer,
+    UserListSerializer,
     UserProfileSerializer,
     BranchSerializer,
     BranchListSerializer,
@@ -132,7 +133,12 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     }
 
     def get_queryset(self):
-        return assignable_roles_queryset(self.request.user)
+        from django.db.models import Count
+
+        return assignable_roles_queryset(self.request.user).annotate(
+            _permissions_count=Count('permissions', distinct=True),
+            _users_count=Count('users', distinct=True),
+        )
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -227,7 +233,16 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
 
 class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     """ViewSet للمستخدمين"""
-    queryset = User.objects.select_related('profile', 'profile__role').all()
+    queryset = User.objects.select_related(
+        'profile', 'profile__role', 'profile__branch',
+    ).prefetch_related(
+        'profile__role__permissions',
+        'profile__extra_permissions',
+        'profile__denied_permissions',
+        'profile__assigned_branches',
+        'managed_branches',
+        'managed_administrations',
+    ).all()
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['is_active', 'is_staff', 'is_superuser']
@@ -246,7 +261,18 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     }
 
     def get_queryset(self):
-        return filter_users_queryset(self.request.user, super().get_queryset())
+        if self.action == 'list':
+            base = User.objects.select_related(
+                'profile', 'profile__role', 'profile__branch',
+            ).all()
+        else:
+            base = super().get_queryset()
+        return filter_users_queryset(self.request.user, base)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserListSerializer
+        return UserSerializer
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

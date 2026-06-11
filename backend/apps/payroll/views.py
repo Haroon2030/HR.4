@@ -68,36 +68,16 @@ from apps.payroll.services.transfer_payroll import (
 
 
 def _user_branches(user):
-    """
-    جلب الفروع المتاحة للمستخدم.
-    
-    القواعد:
-      - superuser / admin / hr_manager → كل الفروع النشطة
-      - غيرهم → فرعه الشخصي + الفروع التي يديرها + المُسندة إليه
-    """
-    from apps.core.models import Role
-    if user.is_superuser:
-        return Branch.objects.filter(is_active=True).order_by('name')
+    """الفروع المتاحة للمستخدم — يعتمد على access_control مع تخزين مؤقت لكل طلب."""
+    from apps.core.services.access_control import get_accessible_branch_ids
 
-    profile = getattr(user, 'profile', None)
-    # الأدمن ومدير الموارد يرون كل الفروع
-    if profile and profile.role and profile.role.role_type in (
-        Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER,
-    ):
-        return Branch.objects.filter(is_active=True).order_by('name')
-
-    # باقي المستخدمين: تجميع فروعهم المتاحة
-    from django.db.models import Q
-    branch_ids = set()
-    if profile:
-        if profile.branch_id:
-            branch_ids.add(profile.branch_id)           # فرعه الشخصي
-        branch_ids.update(profile.assigned_branches.values_list('id', flat=True))  # المُعيّنة
-    branch_ids.update(user.managed_branches.values_list('id', flat=True))           # التي يديرها
-
-    if branch_ids:
-        return Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name')
-    return Branch.objects.none()
+    branch_ids = get_accessible_branch_ids(user)
+    qs = Branch.objects.filter(is_active=True, is_deleted=False)
+    if branch_ids is None:
+        return qs.order_by('name')
+    if not branch_ids:
+        return Branch.objects.none()
+    return qs.filter(id__in=branch_ids).order_by('name')
 
 
 def _payroll_list_querystring(
@@ -791,6 +771,13 @@ def _build_detailed_payroll_runs(request, filters, user_branches):
         status=PayrollRun.Status.DRAFT,
     ).exists()
 
+    consolidate_detailed_draft_runs(
+        company_ids=company_ids,
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'],
+    )
+
     runs_built = []
     errors = []
     try:
@@ -1021,17 +1008,6 @@ def list_payroll_runs(request):
     has_detailed_draft = False
     if filters['ready'] and active_payroll_view == 'detailed':
         branch_ids_for_detailed = _resolved_branch_ids(filters, user_branches)
-        company_ids_for_detailed = list(
-            Branch.objects.filter(id__in=branch_ids_for_detailed)
-            .values_list('company_id', flat=True)
-            .distinct(),
-        )
-        consolidate_detailed_draft_runs(
-            company_ids=company_ids_for_detailed,
-            year=filters['year'],
-            month=filters['month'],
-            salary_mode=filters['salary_mode'],
-        )
         detailed_runs_all = list(
             _detailed_runs_for_filters(filters, request.user, user_branches),
         )

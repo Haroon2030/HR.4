@@ -12,6 +12,8 @@ from apps.core.models import Branch, Role
 
 User = get_user_model()
 
+_MISSING = object()
+
 ROLE_RANK = {
     Role.RoleType.EMPLOYEE: 10,
     Role.RoleType.SPECIALIST: 20,
@@ -81,10 +83,17 @@ def get_accessible_branch_ids(user) -> set[int] | None:
     None → unrestricted branch access (superuser, admin, HR manager).
     Otherwise a set of branch primary keys.
     """
+    cached = getattr(user, '_accessible_branch_ids_cache', _MISSING)
+    if cached is not _MISSING:
+        return cached
+
     if user.is_superuser:
-        return None
+        result = None
+        user._accessible_branch_ids_cache = result
+        return result
 
     if has_company_wide_branch_access(user):
+        user._accessible_branch_ids_cache = None
         return None
 
     profile = getattr(user, 'profile', None)
@@ -92,6 +101,7 @@ def get_accessible_branch_ids(user) -> set[int] | None:
         Role.RoleType.ADMIN,
         Role.RoleType.HR_MANAGER,
     ):
+        user._accessible_branch_ids_cache = None
         return None
 
     ids: set[int] = set(
@@ -115,7 +125,25 @@ def get_accessible_branch_ids(user) -> set[int] | None:
         ids.update(
             profile.assigned_branches.filter(is_deleted=False).values_list('id', flat=True)
         )
+    user._accessible_branch_ids_cache = ids
     return ids
+
+
+def get_all_active_branches_queryset() -> QuerySet:
+    return Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
+
+
+def get_all_active_branches_list() -> list[Branch]:
+    """قائمة الفروع النشطة — مُخزّنة مؤقتاً لتجنب تكرار الاستعلام في نفس الطلب."""
+    from django.core.cache import cache
+
+    key = 'hr:branches:active_list_v1'
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    data = list(get_all_active_branches_queryset())
+    cache.set(key, data, 300)
+    return data
 
 
 def filter_branches_queryset(user, queryset: QuerySet) -> QuerySet:
