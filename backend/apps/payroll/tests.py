@@ -66,6 +66,7 @@ class PayrollEngineTests(TestCase):
         self.employee = self.employee_transfer
 
     def test_build_computes_gross_and_insurance(self):
+        """خصم التأمينات = 10% من (أساسي + سكن) المستحق وليس من إجمالي الراتب."""
         run = build_payroll_run(
             self.branch, 2026, 3, self.user,
             salary_mode=PayrollRun.SalaryMode.TRANSFER,
@@ -73,7 +74,7 @@ class PayrollEngineTests(TestCase):
         )
         line = run.lines.get(employee=self.employee)
         self.assertEqual(line.gross_salary, Decimal('4500.00'))
-        self.assertEqual(line.insurance_deduction, Decimal('450.00'))
+        self.assertEqual(line.insurance_deduction, Decimal('400.00'))
         self.assertGreater(line.net_salary, Decimal('0'))
 
     def test_build_uses_standard_30_day_month(self):
@@ -424,7 +425,11 @@ class PayrollEngineTests(TestCase):
         line = run.lines.get(employee=haroon)
         expected_gross = (Decimal('4500') * Decimal('12') / Decimal('30')).quantize(Decimal('0.01'))
         self.assertEqual(line.gross_salary, expected_gross)
-        self.assertEqual(line.insurance_deduction, (expected_gross * Decimal('0.10')).quantize(Decimal('0.01')))
+        expected_insurance_base = (Decimal('4000') * Decimal('12') / Decimal('30')).quantize(Decimal('0.01'))
+        self.assertEqual(
+            line.insurance_deduction,
+            (expected_insurance_base * Decimal('0.10')).quantize(Decimal('0.01')),
+        )
         self.assertEqual(resolve_cell_value(line, run, 'period_start'), '2026-07-20')
         self.assertEqual(resolve_cell_value(line, run, 'period_end'), '2026-07-31')
         self.assertEqual(resolve_cell_value(line, run, 'worked_days'), Decimal('12'))

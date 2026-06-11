@@ -12,7 +12,7 @@
      - يحسب خصم الإجازات بدون راتب من EmployeeLeave
      - يحسب قسط السلفة من LoanInstallment
      - يحسب المخالفات من EmployeeStatement (نوع PENALTY)
-     - يحسب خصم التأمينات = إجمالي × نسبة التأمين / 100
+     - يحسب خصم التأمينات = (أساسي + سكن) المستحق × نسبة التأمين / 100
      - يُحفظ كل شيء في PayrollLine
 
 2. lock_payroll_run(run, user)
@@ -199,15 +199,22 @@ def _compute_employee_payroll_snapshot(
     emp_installments = inst_by_emp.get(emp.id, [])
     emp_penalties = pen_by_emp.get(emp.id, [])
 
+    basic_full = Decimal(emp.basic_salary or 0)
+    housing_full = Decimal(emp.housing_allowance or 0)
     gross_full = (
-        Decimal(emp.basic_salary or 0)
-        + Decimal(emp.housing_allowance or 0)
+        basic_full
+        + housing_full
         + Decimal(emp.transport_allowance or 0)
         + Decimal(emp.other_allowance or 0)
         + Decimal(emp.cash_amount or 0)
         + Decimal(emp.meal_allowance or 0)
     )
     gross = prorate_amount(gross_full, payable_base_days, month_days_dec)
+    insurance_base = prorate_amount(
+        basic_full + housing_full,
+        payable_base_days,
+        month_days_dec,
+    )
     daily_rate = daily_rate_from_total(gross_full)
 
     absence_deduction = _q(
@@ -226,7 +233,7 @@ def _compute_employee_payroll_snapshot(
         sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
     )
     rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
-    insurance_deduction = _q(gross * rate / Decimal('100'))  # على الراتب المستحق وليس الكامل
+    insurance_deduction = _q(insurance_base * rate / Decimal('100'))
     total_deductions = _q(
         absence_deduction + unpaid_leave_deduction + loan_deduction
         + penalty_deduction + insurance_deduction
