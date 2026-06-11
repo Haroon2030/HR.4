@@ -400,7 +400,8 @@ class PayrollEngineTests(TestCase):
             sponsorship_id=self.sponsorship.id,
         )
         line = run_new.lines.get()
-        self.assertEqual(line.net_salary, Decimal('4050.00'))
+        # صافي = 4500 إجمالي − 400 تأمينات (10% من أساسي+سكن فقط)
+        self.assertEqual(line.net_salary, Decimal('4100.00'))
         self.assertIn('transfer', line.breakdown)
         self.assertEqual(line.breakdown['transfer']['rule'], 'full_salary_new_branch')
 

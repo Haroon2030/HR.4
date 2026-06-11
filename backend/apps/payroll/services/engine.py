@@ -70,13 +70,7 @@ def _acquire_payroll_run(*, defaults: dict | None = None, **lookup) -> tuple[Pay
     if run:
         if run.is_deleted:
             run.restore()
-        update_fields = []
-        for field, value in defaults.items():
-            if getattr(run, field) != value:
-                setattr(run, field, value)
-                update_fields.append(field)
-        if update_fields:
-            run.save(update_fields=update_fields)
+        # defaults للإنشاء فقط — لا تُغيّر حالة مسير موجود (مثلاً LOCKED)
         return run, False
     try:
         return PayrollRun.objects.create(**lookup, **defaults), True
