@@ -180,7 +180,7 @@
                                 {% include "pages/payroll/_payroll_filter_hidden.html" %}
                                 <button type="submit" name="payroll_action" value="lock"
                                         class="hr-payroll-action-btn hr-payroll-action-btn--lock"
-                                        {% if not show_table or not has_draft_runs %}disabled title="{% if not show_table %}اعرض أو ابنِ المسير أولاً{% else %}المسير مُغلق مسبقاً{% endif %}"{% endif %}>
+                                        {% if not show_table or not has_draft_runs or financial_audit and not financial_audit.ready_to_lock %}disabled title="{% if financial_audit and not financial_audit.ready_to_lock %}يوجد أخطاء في تقرير التحقق المالي{% elif not show_table %}اعرض أو ابنِ المسير أولاً{% else %}المسير مُغلق مسبقاً{% endif %}"{% endif %}>
                                     <i data-lucide="lock" class="w-4 h-4"></i>
                                     <span>④ الإغلاق النهائي</span>
                                 </button>
@@ -209,6 +209,10 @@
             </div>
             {% endif %}
         </section>
+
+        {% if show_table and has_draft_runs and financial_audit %}
+        {% include "pages/payroll/_payroll_financial_audit.html" %}
+        {% endif %}
 
         {% if active_payroll_view == 'detailed' %}
         {% include "pages/payroll/_payroll_detailed_tables.html" %}

@@ -38,7 +38,9 @@
                 </form>
                 <form method="POST" action="{% url 'web:lock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('بمجرد الترحيل لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
                     {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg">
+                    <button type="submit"
+                            class="inline-flex items-center gap-1 px-3 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            {% if financial_audit and not financial_audit.ready_to_lock %}disabled title="يوجد أخطاء في تقرير التحقق المالي"{% endif %}>
                         <i data-lucide="lock" class="w-4 h-4"></i> ترحيل وإغلاق
                     </button>
                 </form>
@@ -52,6 +54,12 @@
             {% endif %}
         </div>
     </div>
+
+    {% if financial_audit %}
+    <div class="hr-payroll-audit hr-payroll-audit--embedded">
+        {% include "pages/payroll/_payroll_financial_audit.html" %}
+    </div>
+    {% endif %}
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-white p-4 rounded-xl border border-slate-200">

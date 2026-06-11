@@ -763,6 +763,14 @@ def _build_detailed_payroll_runs(request, filters, user_branches):
     return runs_built, errors, had_detailed_draft
 
 
+def _financial_audit_for_list(filters, user, user_branches, *, payroll_view: str, period_runs, detailed_runs):
+    from apps.payroll.services.financial_audit import audit_payroll_runs
+
+    if payroll_view == 'detailed':
+        return audit_payroll_runs(detailed_runs)
+    return audit_payroll_runs(period_runs)
+
+
 def _lock_payroll_runs_for_filters(request, filters, user, user_branches):
     """ترحيل كل مسيرات STANDARD المطابقة للفلاتر. يُرجع (locked_count, errors)."""
     runs = list(_payroll_runs_for_filters(filters, user, user_branches))
@@ -831,16 +839,38 @@ def list_payroll_runs(request):
             if err:
                 messages.error(request, err)
             elif payroll_action == 'lock':
-                locked, lock_errors = _lock_payroll_runs_for_filters(
-                    request, filters, request.user, user_branches,
-                )
-                for e in lock_errors:
-                    messages.error(request, e)
-                if locked:
-                    messages.success(
+                runs_to_audit = [
+                    r for r in _payroll_runs_for_filters(filters, request.user, user_branches)
+                    if r.status == PayrollRun.Status.DRAFT
+                ]
+                from apps.payroll.services.financial_audit import audit_payroll_runs
+                audit = audit_payroll_runs(runs_to_audit)
+                if not audit.ready_to_lock:
+                    messages.error(
                         request,
-                        f'تم الإغلاق النهائي لـ {locked} مسير وربط بنود الخصم.',
+                        'تعذّر الإغلاق النهائي: تقرير التحقق المالي يحتوي على أخطاء. '
+                        'راجع التقرير ثم أعد بناء المسودة.',
                     )
+                    shown = 0
+                    for check in audit.checks:
+                        if check.level != 'error':
+                            continue
+                        label = check.employee_name or check.run_label or check.title
+                        messages.error(request, f'{label}: {check.detail}')
+                        shown += 1
+                        if shown >= 5:
+                            break
+                else:
+                    locked, lock_errors = _lock_payroll_runs_for_filters(
+                        request, filters, request.user, user_branches,
+                    )
+                    for e in lock_errors:
+                        messages.error(request, e)
+                    if locked:
+                        messages.success(
+                            request,
+                            f'تم الإغلاق النهائي لـ {locked} مسير وربط بنود الخصم.',
+                        )
             elif payroll_action == 'save' or build_kind == 'standard':
                 had_standard_draft = bool(
                     _draft_runs_for_period(filters, request.user, user_branches),
@@ -1087,6 +1117,16 @@ def list_payroll_runs(request):
         payroll_view=active_payroll_view if active_payroll_view == 'detailed' else None,
     )
     period_runs_total_count = len(period_runs_all)
+    financial_audit = None
+    if filters['ready'] and has_draft_runs:
+        financial_audit = _financial_audit_for_list(
+            filters,
+            request.user,
+            user_branches,
+            payroll_view=active_payroll_view,
+            period_runs=period_runs_all,
+            detailed_runs=detailed_runs_all,
+        )
 
     return render(request, 'pages/payroll/list.html', {
         'branches': user_branches,
@@ -1145,6 +1185,7 @@ def list_payroll_runs(request):
             filters, _resolved_branch_ids(filters, user_branches),
         ),
         'modal_runs': modal_runs,
+        'financial_audit': financial_audit,
     })
 
 
@@ -1241,11 +1282,18 @@ def view_payroll_run(request, run_id):
             per_page=clamp_page_size(request.GET.get('per_page'), default=50, maximum=200),
         )
         page_obj = paginator.get_page(request.GET.get('page') or 1)
+        from apps.payroll.services.financial_audit import audit_payroll_runs
+        financial_audit = (
+            audit_payroll_runs([run])
+            if run.status == PayrollRun.Status.DRAFT
+            else None
+        )
         return render(request, 'pages/payroll/view_detailed.html', {
             'run': run,
             'allocation_lines': page_obj.object_list,
             'page_obj': page_obj,
             'lines_total': paginator.count,
+            'financial_audit': financial_audit,
         })
 
     if run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
@@ -1265,11 +1313,18 @@ def view_payroll_run(request, run_id):
         per_page=clamp_page_size(request.GET.get('per_page'), default=50, maximum=200),
     )
     page_obj = paginator.get_page(request.GET.get('page') or 1)
+    from apps.payroll.services.financial_audit import audit_payroll_runs
+    financial_audit = (
+        audit_payroll_runs([run])
+        if run.status == PayrollRun.Status.DRAFT
+        else None
+    )
     return render(request, 'pages/payroll/view.html', {
         'run': run,
         'lines': page_obj.object_list,
         'page_obj': page_obj,
         'lines_total': paginator.count,
+        'financial_audit': financial_audit,
     })
 
 
@@ -1344,6 +1399,18 @@ def lock_payroll_run_view(request, run_id):
                 raise Http404()
     elif not request.user.is_superuser and run.branch not in user_branches:
         raise Http404()
+    from apps.payroll.services.financial_audit import audit_payroll_runs
+    audit = audit_payroll_runs([run])
+    if not audit.ready_to_lock:
+        messages.error(
+            request,
+            'تعذّر الترحيل: تقرير التحقق المالي يحتوي على أخطاء.',
+        )
+        for check in audit.checks:
+            if check.level == 'error':
+                messages.error(request, f'{check.title}: {check.detail}')
+                break
+        return redirect('web:view_payroll_run', run_id=run.id)
     try:
         lock_payroll_run(run, request.user)
         messages.success(request, 'تم ترحيل المسير وتحديث جميع البنود.')

@@ -1,0 +1,103 @@
+{% load custom_tags %}
+{# تقرير التحقق المالي قبل الإغلاق النهائي #}
+<section class="hr-payroll-audit" aria-label="تقرير التحقق المالي">
+    <div class="hr-payroll-audit__head">
+        <div class="hr-payroll-audit__title-wrap">
+            <h2 class="hr-payroll-audit__title">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                تقرير التحقق المالي
+            </h2>
+            <p class="hr-payroll-audit__subtitle m-0">فحص تلقائي قبل الإغلاق النهائي — معادلات الراتب، التأمينات، والإجماليات</p>
+        </div>
+        <span class="hr-payroll-audit__status hr-payroll-audit__status--{{ financial_audit.status_level }}">
+            {{ financial_audit.status_label }}
+        </span>
+    </div>
+
+    <div class="hr-payroll-audit__summary">
+        <div class="hr-payroll-audit__stat">
+            <span class="hr-payroll-audit__stat-label">مسودات</span>
+            <span class="hr-payroll-audit__stat-value">{{ financial_audit.runs_count }}</span>
+        </div>
+        <div class="hr-payroll-audit__stat">
+            <span class="hr-payroll-audit__stat-label">موظفون</span>
+            <span class="hr-payroll-audit__stat-value">{{ financial_audit.employees_count }}</span>
+        </div>
+        <div class="hr-payroll-audit__stat hr-payroll-audit__stat--earn">
+            <span class="hr-payroll-audit__stat-label">الاستحقاقات</span>
+            <span class="hr-payroll-audit__stat-value">{{ financial_audit.total_earnings|format_sar:"earn" }}</span>
+        </div>
+        <div class="hr-payroll-audit__stat hr-payroll-audit__stat--deduct">
+            <span class="hr-payroll-audit__stat-label">الخصومات</span>
+            <span class="hr-payroll-audit__stat-value">{{ financial_audit.total_deductions|format_sar:"deduct" }}</span>
+        </div>
+        <div class="hr-payroll-audit__stat hr-payroll-audit__stat--net">
+            <span class="hr-payroll-audit__stat-label">الصافي</span>
+            <span class="hr-payroll-audit__stat-value">{{ financial_audit.total_net|format_sar:"net" }}</span>
+        </div>
+        <div class="hr-payroll-audit__stat">
+            <span class="hr-payroll-audit__stat-label">فحوصات</span>
+            <span class="hr-payroll-audit__stat-value">
+                <span class="text-emerald-700">{{ financial_audit.ok_count }}</span>
+                {% if financial_audit.warn_count %}
+                · <span class="text-amber-700">{{ financial_audit.warn_count }}</span>
+                {% endif %}
+                {% if financial_audit.error_count %}
+                · <span class="text-rose-700">{{ financial_audit.error_count }}</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+  {% if financial_audit.checks %}
+    <div class="hr-payroll-audit__viewport">
+        <table class="hr-payroll-audit__table">
+            <thead>
+                <tr>
+                    <th scope="col">الحالة</th>
+                    <th scope="col">الفحص</th>
+                    <th scope="col">المسير / الموظف</th>
+                    <th scope="col">التفاصيل التقنية</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for check in financial_audit.checks %}
+                <tr class="hr-payroll-audit__row hr-payroll-audit__row--{{ check.level }}">
+                    <td>
+                        {% if check.level == 'ok' %}
+                        <span class="hr-payroll-audit__badge hr-payroll-audit__badge--ok">مطابق</span>
+                        {% elif check.level == 'warn' %}
+                        <span class="hr-payroll-audit__badge hr-payroll-audit__badge--warn">تنبيه</span>
+                        {% else %}
+                        <span class="hr-payroll-audit__badge hr-payroll-audit__badge--error">خطأ</span>
+                        {% endif %}
+                    </td>
+                    <td class="hr-payroll-audit__check-title">{{ check.title }}</td>
+                    <td class="hr-payroll-audit__context">
+                        {% if check.run_label %}<div>{{ check.run_label }}</div>{% endif %}
+                        {% if check.employee_name %}<div class="hr-payroll-audit__employee">{{ check.employee_name }}</div>{% endif %}
+                        {% if not check.run_label and not check.employee_name %}—{% endif %}
+                    </td>
+                    <td class="hr-payroll-audit__detail">{{ check.detail }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="hr-payroll-audit__foot">
+        <p class="m-0">
+            <strong>قواعد التحقق:</strong>
+            الصافي = الاستحقاقات − الخصومات ·
+            التأمينات = النسبة × (الأساسي + السكن) ·
+            إجماليات المسير = مجموع الأسطر
+        </p>
+        {% if not financial_audit.ready_to_lock %}
+        <p class="hr-payroll-audit__block-msg m-0">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            الإغلاق النهائي معطّل حتى تُصلَح الأخطاء أو تُعاد بناء المسودة.
+        </p>
+        {% endif %}
+    </div>
+</section>

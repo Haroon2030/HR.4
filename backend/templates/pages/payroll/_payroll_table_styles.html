@@ -1215,6 +1215,216 @@
         color: #3730a3;
     }
 
+    /* ── تقرير التحقق المالي ── */
+    .hr-payroll-audit {
+        margin: 0 1rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .hr-payroll-audit--embedded {
+        margin: 0;
+    }
+
+    .hr-payroll-audit__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+    }
+
+    .hr-payroll-audit__title {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .hr-payroll-audit__subtitle {
+        font-size: 0.7rem;
+        color: #64748b;
+        margin-top: 0.2rem;
+    }
+
+    .hr-payroll-audit__status {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .hr-payroll-audit__status--ok {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #6ee7b7;
+    }
+
+    .hr-payroll-audit__status--warn {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fcd34d;
+    }
+
+    .hr-payroll-audit__status--error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
+    .hr-payroll-audit__summary {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fafafa;
+    }
+
+    .hr-payroll-audit__stat {
+        text-align: center;
+        padding: 0.45rem 0.35rem;
+        border-radius: 0.5rem;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .hr-payroll-audit__stat-label {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 0.15rem;
+    }
+
+    .hr-payroll-audit__stat-value {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #0f172a;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .hr-payroll-audit__stat--earn .hr-payroll-audit__stat-value { color: #047857; }
+    .hr-payroll-audit__stat--deduct .hr-payroll-audit__stat-value { color: #b91c1c; }
+    .hr-payroll-audit__stat--net .hr-payroll-audit__stat-value { color: #1d4ed8; }
+
+    .hr-payroll-audit__viewport {
+        overflow-x: auto;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .hr-payroll-audit__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.75rem;
+    }
+
+    .hr-payroll-audit__table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        text-align: right;
+        padding: 0.5rem 0.65rem;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .hr-payroll-audit__table td {
+        padding: 0.45rem 0.65rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: top;
+        text-align: right;
+    }
+
+    .hr-payroll-audit__row--error { background: #fff5f5; }
+    .hr-payroll-audit__row--warn { background: #fffbeb; }
+
+    .hr-payroll-audit__badge {
+        display: inline-block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 0.12rem 0.45rem;
+        border-radius: 999px;
+    }
+
+    .hr-payroll-audit__badge--ok { background: #d1fae5; color: #065f46; }
+    .hr-payroll-audit__badge--warn { background: #fef3c7; color: #92400e; }
+    .hr-payroll-audit__badge--error { background: #fee2e2; color: #991b1b; }
+
+    .hr-payroll-audit__check-title {
+        font-weight: 600;
+        color: #1e293b;
+        white-space: nowrap;
+    }
+
+    .hr-payroll-audit__context {
+        font-size: 0.68rem;
+        color: #475569;
+        min-width: 8rem;
+    }
+
+    .hr-payroll-audit__employee {
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+
+    .hr-payroll-audit__detail {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.68rem;
+        color: #334155;
+        line-height: 1.45;
+    }
+
+    .hr-payroll-audit__foot {
+        padding: 0.65rem 1rem;
+        font-size: 0.68rem;
+        color: #64748b;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .hr-payroll-audit__block-msg {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #b91c1c;
+        font-weight: 600;
+    }
+
+    @media (max-width: 1023px) {
+        .hr-payroll-audit__summary {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 639px) {
+        .hr-payroll-audit {
+            margin-inline: 0.75rem;
+        }
+        .hr-payroll-audit__summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media (max-width: 639px) {
         .hr-payroll-actions-unified {
             margin-inline: 0.75rem;

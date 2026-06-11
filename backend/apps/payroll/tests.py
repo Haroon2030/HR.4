@@ -751,6 +751,62 @@ class PayrollEngineTests(TestCase):
         )
 
 
+class PayrollFinancialAuditTests(TestCase):
+    """تقرير التحقق المالي قبل الإغلاق."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name='Audit Co')
+        self.branch = Branch.objects.create(name='Audit Branch', code='AUD01', company=self.company)
+        self.user = User.objects.create_user(username='audit_tester', password='test-pass-123')
+        self.sponsorship = Sponsorship.objects.create(code='AUDSP', company_name='كفالة تدقيق')
+        self.employee = Employee.objects.create(
+            name='موظف تدقيق',
+            branch=self.branch,
+            sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE,
+            hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('3000'),
+            housing_allowance=Decimal('1000'),
+            transport_allowance=Decimal('500'),
+            insurance_deduction_rate=Decimal('10'),
+        )
+
+    def test_audit_passes_valid_standard_run(self):
+        from apps.payroll.services.financial_audit import audit_payroll_runs
+
+        run = build_payroll_run(
+            self.branch, 2026, 5, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        audit = audit_payroll_runs([run])
+        self.assertTrue(audit.ready_to_lock)
+        self.assertEqual(audit.error_count, 0)
+        self.assertGreater(audit.ok_count, 0)
+
+    def test_audit_fails_when_insurance_manually_tampered(self):
+        from apps.payroll.services.financial_audit import audit_payroll_runs
+
+        run = build_payroll_run(
+            self.branch, 2026, 5, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        line = run.lines.get()
+        line.insurance_deduction = Decimal('999.00')
+        line.total_deductions = (
+            line.absence_deduction + line.unpaid_leave_deduction + line.loan_deduction
+            + line.penalty_deduction + line.insurance_deduction + line.other_deduction
+        )
+        line.net_salary = line.total_earnings - line.total_deductions
+        line.save()
+        run.recompute_totals()
+
+        audit = audit_payroll_runs([run])
+        self.assertFalse(audit.ready_to_lock)
+        self.assertTrue(any(c.code == 'insurance_base' for c in audit.checks if c.level == 'error'))
+
+
 class PayrollListViewTabTests(TestCase):
     """تبويب المسير التفصيلي لا يُستبدل بقيمة الجلسة المحفوظة."""
 
