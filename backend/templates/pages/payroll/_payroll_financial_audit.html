@@ -1,6 +1,7 @@
 {% load custom_tags %}
 {# تقرير التحقق المالي قبل الإغلاق النهائي #}
-<section class="hr-payroll-audit" aria-label="تقرير التحقق المالي">
+<section class="hr-payroll-audit{% if in_modal %} hr-payroll-audit--in-modal{% endif %}" aria-label="تقرير التحقق المالي">
+    {% if not in_modal %}
     <div class="hr-payroll-audit__head">
         <div class="hr-payroll-audit__title-wrap">
             <h2 class="hr-payroll-audit__title">
@@ -13,6 +14,7 @@
             {{ financial_audit.status_label }}
         </span>
     </div>
+    {% endif %}
 
     <div class="hr-payroll-audit__summary">
         <div class="hr-payroll-audit__stat">

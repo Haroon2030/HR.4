@@ -28,6 +28,9 @@
                 {% else %}
                 <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">② {% if has_detailed_draft %}إعادة بناء المسير التفصيلي{% else %}بناء المسير التفصيلي{% endif %}</button>
                 {% endif %}
+                {% if show_table and has_draft_runs and financial_audit %}
+                {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
+                {% endif %}
             </div>
         </div>
     </div>

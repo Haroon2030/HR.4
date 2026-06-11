@@ -6,7 +6,20 @@
 {% block content %}
 {% include "pages/payroll/_payroll_table_styles.html" %}
 
-<div class="space-y-4 max-w-7xl mx-auto" dir="rtl">
+<div class="space-y-4 max-w-7xl mx-auto" dir="rtl"
+     x-data="{
+        auditModalOpen: false,
+        openAuditModal() {
+            this.auditModalOpen = true;
+            document.body.classList.add('overflow-hidden');
+            this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
+        },
+        closeAuditModal() {
+            this.auditModalOpen = false;
+            document.body.classList.remove('overflow-hidden');
+        }
+     }"
+     @keydown.escape.window="if (auditModalOpen) closeAuditModal()">
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -36,6 +49,9 @@
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i> إعادة بناء
                     </button>
                 </form>
+                {% if financial_audit %}
+                {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
+                {% endif %}
                 <form method="POST" action="{% url 'web:lock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('بمجرد الترحيل لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
                     {% csrf_token %}
                     <button type="submit"
@@ -54,12 +70,6 @@
             {% endif %}
         </div>
     </div>
-
-    {% if financial_audit %}
-    <div class="hr-payroll-audit hr-payroll-audit--embedded">
-        {% include "pages/payroll/_payroll_financial_audit.html" %}
-    </div>
-    {% endif %}
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-white p-4 rounded-xl border border-slate-200">
@@ -171,5 +181,9 @@
         </div>
         {% endif %}
     </div>
+
+    {% if financial_audit %}
+    {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_body=True %}
+    {% endif %}
 </div>
 {% endblock %}

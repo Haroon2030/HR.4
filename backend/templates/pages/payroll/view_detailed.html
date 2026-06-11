@@ -6,7 +6,20 @@
 {% block content %}
 {% include "pages/payroll/_payroll_table_styles.html" %}
 
-<div class="space-y-4" dir="rtl">
+<div class="space-y-4" dir="rtl"
+     x-data="{
+        auditModalOpen: false,
+        openAuditModal() {
+            this.auditModalOpen = true;
+            document.body.classList.add('overflow-hidden');
+            this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
+        },
+        closeAuditModal() {
+            this.auditModalOpen = false;
+            document.body.classList.remove('overflow-hidden');
+        }
+     }"
+     @keydown.escape.window="if (auditModalOpen) closeAuditModal()">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">مسير تفصيلي — توزيع الفروع</h1>
@@ -16,6 +29,9 @@
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            {% if financial_audit %}
+            {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
+            {% endif %}
             <a href="{% url 'web:export_payroll_run_excel' run.id %}"
                class="hr-glass-btn hr-glass-btn--emerald text-sm"
                title="تصدير كشف الرواتب التفصيلي Excel">
@@ -29,12 +45,6 @@
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
         <strong>قاعدة النقل:</strong> عند النقل في منتصف الشهر يتحمل <strong>الفرع الجديد الراتب كاملاً</strong>؛ الفرع السابق لا يُحمّل مبلغاً.
     </div>
-
-    {% if financial_audit %}
-    <div class="hr-payroll-audit hr-payroll-audit--embedded">
-        {% include "pages/payroll/_payroll_financial_audit.html" %}
-    </div>
-    {% endif %}
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div class="bg-white p-4 rounded-xl border border-slate-200">
@@ -101,5 +111,9 @@
         </div>
         {% endif %}
     </div>
+
+    {% if financial_audit %}
+    {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_body=True %}
+    {% endif %}
 </div>
 {% endblock %}

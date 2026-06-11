@@ -10,6 +10,7 @@
      x-data="{
         modalRunId: {% if open_run_id %}{{ open_run_id }}{% else %}null{% endif %},
         modalRunIds: [{% for run in modal_runs %}{{ run.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+        auditModalOpen: false,
         openModal(id) {
             this.modalRunId = id;
             document.body.classList.add('overflow-hidden');
@@ -17,11 +18,20 @@
         },
         closeModal() {
             this.modalRunId = null;
-            document.body.classList.remove('overflow-hidden');
+            if (!this.auditModalOpen) document.body.classList.remove('overflow-hidden');
+        },
+        openAuditModal() {
+            this.auditModalOpen = true;
+            document.body.classList.add('overflow-hidden');
+            this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
+        },
+        closeAuditModal() {
+            this.auditModalOpen = false;
+            if (!this.modalRunId) document.body.classList.remove('overflow-hidden');
         }
      }"
      x-init="if (modalRunId) { document.body.classList.add('overflow-hidden'); $nextTick(function () { if (window.lucide) lucide.createIcons(); }); }"
-     @keydown.escape.window="closeModal()">
+     @keydown.escape.window="if (auditModalOpen) closeAuditModal(); else closeModal()">
 
     <header class="hr-payroll-page__header flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -174,6 +184,9 @@
                                     <span>③ حفظ المسودة</span>
                                 </button>
                             </form>
+                            {% if show_table and has_draft_runs and financial_audit %}
+                            {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
+                            {% endif %}
                             <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents"
                                   onsubmit="return confirm('بمجرد الإغلاق النهائي لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
                                 {% csrf_token %}
@@ -209,10 +222,6 @@
             </div>
             {% endif %}
         </section>
-
-        {% if show_table and has_draft_runs and financial_audit %}
-        {% include "pages/payroll/_payroll_financial_audit.html" %}
-        {% endif %}
 
         {% if active_payroll_view == 'detailed' %}
         {% include "pages/payroll/_payroll_detailed_tables.html" %}
@@ -259,6 +268,9 @@
     {% include "components/page_tabs_end.html" %}
 
     {% include "pages/payroll/_payroll_run_modal.html" with modal_runs=modal_runs %}
+    {% if show_table and has_draft_runs and financial_audit %}
+    {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_body=True %}
+    {% endif %}
 </div>
 
 <script>

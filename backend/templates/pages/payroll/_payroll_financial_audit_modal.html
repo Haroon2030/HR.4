@@ -1,0 +1,56 @@
+{% load custom_tags %}
+{# زر + نافذة منبثقة لتقرير التحقق المالي #}
+{% if financial_audit %}
+{% if audit_modal_trigger %}
+<button type="button"
+        class="hr-payroll-action-btn hr-payroll-action-btn--audit hr-payroll-action-btn--audit-{{ financial_audit.status_level }}"
+        @click="openAuditModal()"
+        title="فحص تلقائي قبل الإغلاق النهائي — معادلات الراتب، التأمينات، والإجماليات">
+    <i data-lucide="shield-check" class="w-4 h-4"></i>
+    <span>تقرير التحقق المالي</span>
+    <span class="hr-payroll-audit-trigger__pill hr-payroll-audit-trigger__pill--{{ financial_audit.status_level }}">{{ financial_audit.status_label }}</span>
+</button>
+{% endif %}
+
+{% if audit_modal_body %}
+<template x-teleport="body">
+    <div x-show="auditModalOpen"
+         x-cloak
+         class="hr-glass-modal-overlay hr-payroll-audit-modal-overlay fixed inset-0 z-[10040] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
+         @click.self="closeAuditModal()"
+         role="dialog"
+         aria-modal="true"
+         aria-label="تقرير التحقق المالي">
+        <div class="hr-glass-modal hr-glass-modal--payroll-audit relative w-full my-auto flex flex-col shadow-2xl"
+             @click.stop>
+            <div class="hr-glass-modal__head px-4 py-3 flex items-start justify-between gap-3 shrink-0 border-b border-slate-200">
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-teal-700 m-0 mb-1">فحص قبل الإغلاق النهائي</p>
+                    <h3 class="text-lg font-bold text-slate-900 m-0">تقرير التحقق المالي</h3>
+                    <p class="text-xs text-slate-500 mt-1 m-0">معادلات الراتب، التأمينات، والإجماليات</p>
+                </div>
+                <button type="button"
+                        class="hr-glass-modal__close shrink-0"
+                        @click="closeAuditModal()"
+                        aria-label="إغلاق">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="hr-glass-modal__body hr-payroll-audit-modal__body overflow-y-auto flex-1 min-h-0 p-0">
+                {% include "pages/payroll/_payroll_financial_audit.html" with in_modal=True %}
+            </div>
+            <div class="hr-glass-modal__foot px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0 border-t border-slate-200">
+                <span class="hr-payroll-audit__status hr-payroll-audit__status--{{ financial_audit.status_level }}">
+                    {{ financial_audit.status_label }}
+                </span>
+                <button type="button"
+                        class="px-4 py-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                        @click="closeAuditModal()">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endif %}
+{% endif %}
