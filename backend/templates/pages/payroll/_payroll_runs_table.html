@@ -103,32 +103,7 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
-                        <div class="hr-payroll-row-actions">
-                            <button type="button"
-                                    class="hr-payroll-row-actions__btn"
-                                    title="عرض تفاصيل الفرع"
-                                    @click="openModal({{ run.id }})">
-                                <i data-lucide="eye" class="w-4 h-4"></i>
-                            </button>
-                            <a href="{% url 'web:export_payroll_run_excel' run.id %}"
-                               class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
-                               title="تصدير Excel">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                            </a>
-                            {% if run.status == 'draft' and can_build %}
-                            <form method="POST"
-                                  action="{% url 'web:delete_payroll_draft_run' run.id %}"
-                                  class="inline"
-                                  onsubmit="return confirm('حذف هذه المسودة نهائياً؟');">
-                                {% csrf_token %}
-                                <button type="submit"
-                                        class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--danger"
-                                        title="حذف المسودة">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </form>
-                            {% endif %}
-                        </div>
+                        {% include "pages/payroll/_payroll_run_row_actions.html" with delete_confirm="حذف هذه المسودة نهائياً؟" %}
                     </td>
                 </tr>
                 {% endfor %}

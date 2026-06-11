@@ -1,0 +1,21 @@
+{# عرض · تعديل (مسودة) · حذف (مسودة) · تصدير — بدون زر إضافة #}
+{% url 'web:view_payroll_run' run.id as act_view %}
+{% if can_export %}
+{% url 'web:export_payroll_run_excel' run.id as act_export %}
+{% endif %}
+<div class="hr-tbl-actions hr-payroll-row-actions">
+    {% if run.status == 'draft' and can_build %}
+    {% url 'web:delete_payroll_draft_run' run.id as act_del %}
+    {% if can_export %}
+    {% include "components/table_actions.html" with view_url=act_view view_title="عرض المسير" edit_url=act_view edit_title="مراجعة المسودة" delete_url=act_del delete_confirm=delete_confirm delete_title="حذف المسودة" file_url=act_export file_title="تصدير Excel" %}
+    {% else %}
+    {% include "components/table_actions.html" with view_url=act_view view_title="عرض المسير" edit_url=act_view edit_title="مراجعة المسودة" delete_url=act_del delete_confirm=delete_confirm delete_title="حذف المسودة" %}
+    {% endif %}
+    {% else %}
+    {% if can_export %}
+    {% include "components/table_actions.html" with view_url=act_view view_title="عرض المسير" file_url=act_export file_title="تصدير Excel" %}
+    {% else %}
+    {% include "components/table_actions.html" with view_url=act_view view_title="عرض المسير" %}
+    {% endif %}
+    {% endif %}
+</div>
