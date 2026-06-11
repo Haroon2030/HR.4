@@ -163,12 +163,15 @@ def _unpaid_leave_days_in_period(leave, period_start, period_end):
 # 1. بناء المسير
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _employees_for_payroll_run(branch, salary_mode, *, sponsorship_id=None, year=None, month=None):
+def _employees_for_payroll_run(
+    branch, salary_mode, *, sponsorship_id=None, year=None, month=None, transfers=None,
+):
     """موظفون مسير الفرع — مع قاعدة النقل (راتب كامل للفرع الجديد)."""
     if year is not None and month is not None:
         from apps.payroll.services.transfer_payroll import employees_queryset_for_branch_payroll
         return employees_queryset_for_branch_payroll(
             branch, salary_mode, sponsorship_id=sponsorship_id, year=year, month=month,
+            transfers=transfers,
         )
     from apps.employees.models import Employee
 
@@ -519,6 +522,7 @@ def build_consolidated_payroll_run(
     for branch in branches:
         for emp in _employees_for_payroll_run(
             branch, salary_mode, sponsorship_id=sponsorship_id, year=year, month=month,
+            transfers=company_transfers,
         ).order_by('name').distinct():
             if emp.id not in seen_emp_ids:
                 seen_emp_ids.add(emp.id)

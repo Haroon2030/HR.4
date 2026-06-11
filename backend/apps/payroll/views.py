@@ -307,16 +307,47 @@ def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=Non
     return list(qs.select_related('branch', 'sponsorship').order_by('-updated_at'))
 
 
+def _payroll_line_prefetch():
+    return Prefetch(
+        'lines',
+        queryset=PayrollLine.objects.select_related('employee').order_by('employee__name'),
+    )
+
+
+def _period_payroll_run_count(
+    filters: dict, user, user_branches, salary_mode: str, *, branch_ids=None,
+) -> int:
+    """عدد مسيرات الشهر ونوع الراتب — بدون تحميل الأسطر."""
+    year, month = filters.get('year'), filters.get('month')
+    if not year or not month or salary_mode not in PayrollRun.SalaryMode.values:
+        return 0
+    resolved = branch_ids if branch_ids is not None else list(_resolved_branch_ids(filters, user_branches))
+    if _prefer_consolidated_runs(filters, resolved):
+        mode_filters = dict(filters)
+        mode_filters['salary_mode'] = salary_mode
+        qs = _consolidated_runs_qs(mode_filters, user, user_branches, resolved)
+        if qs.exists():
+            return qs.count()
+    qs = PayrollRun.objects.filter(
+        period_year=year,
+        period_month=month,
+        run_kind=PayrollRun.RunKind.STANDARD,
+        salary_mode=salary_mode,
+    )
+    if not user.is_superuser:
+        qs = qs.filter(branch__in=user_branches)
+    if branch_ids:
+        qs = qs.filter(branch_id__in=branch_ids)
+    return qs.count()
+
+
 def _period_payroll_runs(filters: dict, user, user_branches, salary_mode: str, *, branch_ids=None):
     """مسيرات الشهر ونوع الراتب — موحّدة أو حسب الفرع."""
     year, month = filters.get('year'), filters.get('month')
     if not year or not month or salary_mode not in PayrollRun.SalaryMode.values:
         return []
     resolved = branch_ids if branch_ids is not None else list(_resolved_branch_ids(filters, user_branches))
-    line_prefetch = Prefetch(
-        'lines',
-        queryset=PayrollLine.objects.select_related('employee').order_by('employee__name'),
-    )
+    line_prefetch = _payroll_line_prefetch()
     if _prefer_consolidated_runs(filters, resolved):
         mode_filters = dict(filters)
         mode_filters['salary_mode'] = salary_mode
@@ -344,10 +375,28 @@ def _period_payroll_runs(filters: dict, user, user_branches, salary_mode: str, *
 
 
 def _payroll_mode_run_counts(filters: dict, user, user_branches, *, branch_ids=None) -> dict[str, int]:
-    counts = {}
-    for mode in PayrollRun.SalaryMode.values:
-        counts[mode] = len(_period_payroll_runs(filters, user, user_branches, mode, branch_ids=branch_ids))
-    return counts
+    return {
+        mode: _period_payroll_run_count(
+            filters, user, user_branches, mode, branch_ids=branch_ids,
+        )
+        for mode in PayrollRun.SalaryMode.values
+    }
+
+
+def _modal_runs_for_list(period_runs, open_run_id):
+    """مسيرات النافذة المنبثقة — الصفحة الحالية + المسير المفتوح إن وُجد."""
+    modal_runs = list(period_runs)
+    if not open_run_id or any(r.pk == open_run_id for r in modal_runs):
+        return modal_runs
+    extra = (
+        PayrollRun.objects.filter(pk=open_run_id)
+        .select_related('branch', 'sponsorship', 'company')
+        .prefetch_related(_payroll_line_prefetch())
+        .first()
+    )
+    if extra:
+        return [extra, *modal_runs]
+    return modal_runs
 
 
 def _period_run_totals(runs: list) -> dict:
@@ -954,7 +1003,6 @@ def list_payroll_runs(request):
     if request.method == 'GET' and filters['ready']:
         _store_payroll_list_filters(request, filters)
 
-    payroll_runs = []
     open_run_id = _parse_open_run_id(request)
     grand_totals = {}
     runs_count = 0
@@ -965,27 +1013,6 @@ def list_payroll_runs(request):
     detailed_runs_page_obj = None
     detailed_runs_start_index = 1
     detailed_runs_total_count = 0
-
-    if filters['ready']:
-        runs_qs = _payroll_runs_for_filters(filters, request.user, user_branches)
-        runs_count = runs_qs.count()
-        has_draft_runs = runs_qs.filter(status=PayrollRun.Status.DRAFT).exists()
-        line_prefetch = Prefetch(
-            'lines',
-            queryset=PayrollLine.objects.select_related('employee').order_by('employee__name'),
-        )
-        payroll_runs = list(
-            runs_qs.prefetch_related(line_prefetch).order_by('branch__name', 'sponsorship__company_name'),
-        )
-
-        grand_totals = runs_qs.aggregate(
-            total_earnings=Sum('total_earnings'),
-            total_deductions=Sum('total_deductions'),
-            total_net=Sum('total_net'),
-            employees_count=Sum('employees_count'),
-        )
-
-        has_payroll_lines = any(run.lines.all() for run in payroll_runs)
 
     active_payroll_view = filters.get('payroll_view', 'standard')
     detailed_runs = []
@@ -1038,8 +1065,19 @@ def list_payroll_runs(request):
         branch_ids=filters['branch_ids'] or None,
     )
     period_totals = _period_run_totals(period_runs_all)
-    if period_runs_all:
-        has_payroll_lines = any(run.lines.all() for run in period_runs_all)
+    if filters['ready']:
+        if active_payroll_view == 'detailed':
+            has_draft_runs = has_detailed_draft
+        else:
+            has_draft_runs = any(r.status == PayrollRun.Status.DRAFT for r in period_runs_all)
+            has_payroll_lines = any(int(r.employees_count or 0) > 0 for r in period_runs_all)
+            runs_count = period_totals['runs_count']
+            grand_totals = {
+                'total_earnings': period_totals['total_earnings'],
+                'total_deductions': period_totals['total_deductions'],
+                'total_net': period_totals['total_net'],
+                'employees_count': period_totals['employees_count'],
+            }
     from django.core.paginator import Paginator
     runs_paginator = Paginator(period_runs_all, 6)
     period_runs_page_obj = runs_paginator.get_page(request.GET.get('runs_page') or 1)
@@ -1070,14 +1108,11 @@ def list_payroll_runs(request):
         sponsorship_ids=filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None,
         payroll_view='detailed',
     )
-    modal_runs = period_runs_all if period_runs_all else payroll_runs
+    modal_runs = _modal_runs_for_list(period_runs, open_run_id)
     if open_run_id and not any(r.pk == open_run_id for r in modal_runs):
         open_run_id = None
     for run in modal_runs:
         run.open_list_url = _payroll_run_open_url(run)
-    for run in period_runs_all:
-        if not getattr(run, 'open_list_url', None):
-            run.open_list_url = _payroll_run_open_url(run)
     active_runs_page = None
     if active_payroll_view == 'detailed':
         if detailed_runs_page_obj and detailed_runs_page_obj.number > 1:
@@ -1149,7 +1184,7 @@ def list_payroll_runs(request):
             and filters.get('sponsorship_ids') is None
         ),
         'filter_qs': filter_qs,
-        'payroll_runs': payroll_runs,
+        'payroll_runs': period_runs_all,
         'open_run_id': open_run_id,
         'grand_totals': grand_totals,
         'runs_count': runs_count,

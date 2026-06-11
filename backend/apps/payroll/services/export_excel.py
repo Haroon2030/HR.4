@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from dataclasses import dataclass
 
+from apps.payroll.models import PayrollLine
 from apps.payroll.services.payroll_line_columns import (
     HEADER_FILL_COLORS,
     MONEY_SUM_KEYS,
@@ -143,12 +144,15 @@ def _write_payroll_sheet(ws, line_pairs, *, meta_note: str, resolve_value=None):
 
 
 def _payroll_line_pairs_for_runs(runs):
-    pairs = []
-    for run in runs:
-        qs = payroll_lines_select_related(run.lines).order_by('run__branch__name', 'employee__name')
-        for line in qs:
-            pairs.append((run, line))
-    return pairs
+    if not runs:
+        return []
+    run_ids = [run.id for run in runs]
+    lines = payroll_lines_select_related(
+        PayrollLine.objects.filter(run_id__in=run_ids),
+    ).select_related('run', 'run__branch', 'run__sponsorship').order_by(
+        'run__branch__name', 'employee__name',
+    )
+    return [(line.run, line) for line in lines]
 
 
 def build_payroll_run_workbook(run):

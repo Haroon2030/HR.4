@@ -167,6 +167,7 @@ def employees_queryset_for_branch_payroll(
     sponsorship_id: int | None,
     year: int,
     month: int,
+    transfers=None,
 ):
     """
     موظفون يدخلون مسير الفرع:
@@ -175,7 +176,8 @@ def employees_queryset_for_branch_payroll(
     - استبعاد المنقولين من الفرع خلال الشهر (حتى لو تأخر تحديث الفرع)
     """
     company_id = branch.company_id
-    transfers = transfers_in_period(company_id, year, month)
+    if transfers is None:
+        transfers = transfers_in_period(company_id, year, month)
 
     period_start, period_end = calendar_period_bounds(year, month)
     base_qs = Employee.objects.filter(

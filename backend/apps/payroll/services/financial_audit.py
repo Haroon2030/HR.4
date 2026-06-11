@@ -103,9 +103,19 @@ def _expected_insurance(emp, year: int, month: int) -> Decimal:
     return _q(insurance_base * rate / Decimal('100'))
 
 
+def _lines_for_run(run: PayrollRun) -> list:
+    prefetched = getattr(run, '_prefetched_objects_cache', {}).get('lines')
+    if prefetched is not None:
+        return sorted(
+            prefetched,
+            key=lambda line: (line.employee.name if line.employee_id else ''),
+        )
+    return list(payroll_lines_select_related(run.lines).order_by('employee__name'))
+
+
 def _audit_standard_run(audit: PayrollFinancialAudit, run: PayrollRun) -> None:
     label = _run_label(run)
-    lines = list(payroll_lines_select_related(run.lines).order_by('employee__name'))
+    lines = _lines_for_run(run)
 
     if not lines:
         _add_check(audit, AuditCheck(
