@@ -268,6 +268,36 @@ class PayrollEngineTests(TestCase):
             0,
         )
 
+    def test_consolidated_run_rebuild_after_soft_deleted_empty_draft(self):
+        """بعد حذف مسودة موحّدة فارغة (soft) يجب إعادة البناء دون تعارض unique."""
+        branch_b = Branch.objects.create(name='Branch C', code='TST03', company=self.company)
+        Employee.objects.create(
+            name='موظف فرع ج', branch=branch_b, sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE, hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('2000'), housing_allowance=Decimal('0'),
+            transport_allowance=Decimal('0'), other_allowance=Decimal('0'),
+            cash_amount=Decimal('0'), insurance_deduction_rate=Decimal('0'),
+        )
+        first = build_consolidated_payroll_run(
+            [self.branch, branch_b], 2026, 9, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        first_pk = first.pk
+        first.delete()
+        self.assertTrue(PayrollRun.all_objects.filter(pk=first_pk, is_deleted=True).exists())
+        self.assertFalse(PayrollRun.objects.filter(pk=first_pk).exists())
+
+        second = build_consolidated_payroll_run(
+            [self.branch, branch_b], 2026, 9, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        self.assertIsNotNone(second)
+        self.assertEqual(second.pk, first_pk)
+        self.assertFalse(second.is_deleted)
+        self.assertEqual(second.employees_count, 2)
+
     def test_consolidated_cash_run_single_draft_for_multiple_branches(self):
         branch_b = Branch.objects.create(name='Branch B Cash', code='TSC02', company=self.company)
         cash_defaults = dict(

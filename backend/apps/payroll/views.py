@@ -272,7 +272,8 @@ def _prune_empty_consolidated_drafts(filters: dict, user, user_branches, salary_
         ).values_list('id', flat=True),
     )
     if empty_ids:
-        PayrollRun.objects.filter(id__in=empty_ids).delete()
+        for run in PayrollRun.objects.filter(id__in=empty_ids):
+            run.hard_delete()
     return len(empty_ids)
 
 

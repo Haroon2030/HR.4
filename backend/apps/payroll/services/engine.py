@@ -45,6 +45,7 @@ from apps.core.salary_month import (
     deduction_for_days,
     salary_month_days,
 )
+from django.db import IntegrityError
 from django.db.models import Q
 from django.utils import timezone
 
@@ -57,6 +58,35 @@ from apps.employees.models import (
 def _q(v):
     """تقريب القيمة لرقمين عشريين (لمنع أخطاء الكسور)."""
     return Decimal(v or 0).quantize(Decimal('0.01'))
+
+
+def _acquire_payroll_run(*, defaults: dict | None = None, **lookup) -> tuple[PayrollRun, bool]:
+    """
+    جلب مسير موجود (بما فيه المحذوف وهمياً) أو إنشاء جديد.
+    يمنع تعارض unique constraint بعد soft delete.
+    """
+    defaults = defaults or {}
+    run = PayrollRun.all_objects.filter(**lookup).first()
+    if run:
+        if run.is_deleted:
+            run.restore()
+        update_fields = []
+        for field, value in defaults.items():
+            if getattr(run, field) != value:
+                setattr(run, field, value)
+                update_fields.append(field)
+        if update_fields:
+            run.save(update_fields=update_fields)
+        return run, False
+    try:
+        return PayrollRun.objects.create(**lookup, **defaults), True
+    except IntegrityError:
+        run = PayrollRun.all_objects.filter(**lookup).first()
+        if run is None:
+            raise
+        if run.is_deleted:
+            run.restore()
+        return run, False
 
 
 def _applied_filter(run):
@@ -312,7 +342,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         raise ValueError('يرجى اختيار شركة الكفالة لمسير التحويل.')
 
     # ── جلب أو إنشاء المسير ──
-    run, _ = PayrollRun.objects.get_or_create(
+    run, _ = _acquire_payroll_run(
         branch=branch,
         period_year=year,
         period_month=month,
@@ -462,17 +492,14 @@ def build_consolidated_payroll_run(
     elif salary_mode == PayrollRun.SalaryMode.TRANSFER and not sponsorship_id:
         raise ValueError('يرجى اختيار شركة الكفالة لمسير التحويل.')
 
-    lookup = {
-        'branch': None,
-        'company': company,
-        'period_year': year,
-        'period_month': month,
-        'salary_mode': salary_mode,
-        'run_kind': PayrollRun.RunKind.CONSOLIDATED,
-        'sponsorship_id': sponsorship_id,
-    }
-    run, _ = PayrollRun.objects.get_or_create(
-        **lookup,
+    run, _ = _acquire_payroll_run(
+        branch=None,
+        company=company,
+        period_year=year,
+        period_month=month,
+        salary_mode=salary_mode,
+        run_kind=PayrollRun.RunKind.CONSOLIDATED,
+        sponsorship_id=sponsorship_id,
         defaults={
             'created_by': user,
             'status': PayrollRun.Status.DRAFT,
@@ -562,17 +589,17 @@ def build_consolidated_payroll_run(
         sponsorship_id=sponsorship_id,
     )
     if run.employees_count == 0:
-        run.delete()
+        run.hard_delete()
         return None
     return run
 
 
 @transaction.atomic
 def delete_draft_payroll_run(run: PayrollRun) -> None:
-    """حذف مسودة مسير (مع أسطرها) — لا يُستخدم للمسير المُغلق."""
+    """حذف فعلي لمسودة مسير — يحرّر قيد التفرد لإعادة البناء."""
     if run.status != PayrollRun.Status.DRAFT:
         raise ValueError('المسير مُغلق ولا يمكن حذفه.')
-    run.delete()
+    run.hard_delete()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
