@@ -1,4 +1,4 @@
-{% load custom_tags %}
+{% load custom_tags payroll_tags %}
 {# جدول المسيرات التفصيلية — نفس تصميم المسودات والمسيرات #}
 <div class="hr-payroll-runs-datatable">
     {% if detailed_runs_all %}
@@ -37,7 +37,7 @@
                         </div>
                     </td>
                     {% if active_salary_mode == 'transfer' %}
-                    <td class="hr-payroll-runs-datatable__sponsor">{{ run.sponsorship.company_name|default:"—" }}</td>
+                    <td class="hr-payroll-runs-datatable__sponsor">{% payroll_sponsorship_scope_label run all_sponsorships_selected filter_sponsorship_ids %}</td>
                     {% endif %}
                     <td class="text-center hr-payroll-runs-datatable__period">{{ run.period_label }}</td>
                     <td class="col-num hr-payroll-runs-datatable__count">{{ run.employees_count }}</td>

@@ -1144,6 +1144,10 @@ def list_payroll_runs(request):
         'filter_salary_mode_ids': [filters['salary_mode']] if filters.get('salary_mode') else [],
         'salary_mode_filter_items': SALARY_MODE_FILTER_ITEMS,
         'filter_sponsorship_ids': filters['sponsorship_ids'] or [],
+        'all_sponsorships_selected': (
+            filters.get('salary_mode') == PayrollRun.SalaryMode.TRANSFER
+            and filters.get('sponsorship_ids') is None
+        ),
         'filter_qs': filter_qs,
         'payroll_runs': payroll_runs,
         'open_run_id': open_run_id,
