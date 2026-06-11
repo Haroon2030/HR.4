@@ -4,12 +4,12 @@
     <span><strong>قاعدة النقل:</strong> عند النقل في منتصف الشهر يتحمل <strong>الفرع الجديد الراتب كاملاً</strong>؛ الفرع السابق لا يُحمّل مبلغاً.</span>
 </div>
 
-<section class="hr-payroll-panel hr-payroll-panel--table hr-payroll-panel--detailed" aria-label="جدول المسيرات التفصيلية">
+<section class="hr-payroll-panel hr-payroll-panel--table" aria-label="جدول المسيرات التفصيلية">
     <div class="hr-payroll-panel__head">
         <div class="hr-payroll-panel__title-wrap">
-            <h2 class="hr-payroll-panel__title text-indigo-900">
+            <h2 class="hr-payroll-panel__title">
                 <i data-lucide="table-2" class="w-4 h-4"></i>
-                المسيرات التفصيلية
+                المسودات والمسيرات
                 <span class="hr-payroll-runs-datatable__count-badge">{{ detailed_runs_total_count }}</span>
             </h2>
             <p class="text-[11px] text-slate-500 m-0">
@@ -17,7 +17,8 @@
                 <span class="text-primary-700 font-semibold">مسودة موحّدة — جميع الفروع</span>
                 ·
                 {% endif %}
-                توزيع تحمّل الفروع — {% if active_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}
+                <span class="text-primary-700 font-semibold">مسير تفصيلي</span>
+                · توزيع تحمّل الفروع — {% if active_salary_mode == 'cash' %}نقدي{% else %}تحويل{% endif %}
             </p>
         </div>
     </div>
