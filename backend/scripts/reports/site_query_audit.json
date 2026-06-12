@@ -14,175 +14,175 @@
       "path": "/branches/",
       "queries": 24,
       "status": 200,
-      "ms": 57
+      "ms": 35
     },
     {
       "name": "web:create_employee_full",
       "path": "/employees/create/",
       "queries": 20,
       "status": 200,
-      "ms": 35
+      "ms": 30
     },
     {
       "name": "web:dashboard",
       "path": "/",
       "queries": 20,
       "status": 200,
-      "ms": 69
+      "ms": 25
     },
     {
       "name": "payroll:list:transfer",
       "path": "/payroll/?year=2026&month=6&salary_mode=transfer",
       "queries": 20,
       "status": 200,
-      "ms": 51
+      "ms": 31
     },
     {
       "name": "web:attendance_report",
       "path": "/attendance/report/",
       "queries": 19,
       "status": 200,
-      "ms": 51
+      "ms": 26
     },
     {
       "name": "web:view_branch",
       "path": "/branches/4/",
       "queries": 18,
       "status": 200,
-      "ms": 57
+      "ms": 18
     },
     {
       "name": "web:biometric_devices",
       "path": "/attendance/devices/",
       "queries": 17,
       "status": 200,
-      "ms": 68
+      "ms": 26
     },
     {
       "name": "web:attendance_records",
       "path": "/attendance/records/",
       "queries": 16,
       "status": 200,
-      "ms": 37
+      "ms": 27
     },
     {
       "name": "web:manage_user_permissions",
       "path": "/users/1/permissions/",
       "queries": 16,
       "status": 200,
-      "ms": 60
+      "ms": 19
     },
     {
       "name": "payroll:list:detailed",
       "path": "/payroll/?year=2026&month=6&salary_mode=transfer&payroll_view=detailed",
       "queries": 16,
       "status": 200,
-      "ms": 80
+      "ms": 50
     },
     {
       "name": "attendance:report",
       "path": "/attendance/report/?year=2026&month=6",
       "queries": 16,
       "status": 200,
-      "ms": 25
+      "ms": 21
     },
     {
       "name": "web:list_pending_actions",
       "path": "/pending-actions/",
       "queries": 15,
       "status": 200,
-      "ms": 72
+      "ms": 23
     },
     {
       "name": "web:view_employee",
       "path": "/employees/1/",
       "queries": 15,
       "status": 200,
-      "ms": 138
+      "ms": 31
     },
     {
       "name": "web:audit_history",
       "path": "/audit/history/",
       "queries": 13,
       "status": 200,
-      "ms": 36
+      "ms": 29
     },
     {
       "name": "web:edit_user",
       "path": "/users/1/edit/",
       "queries": 13,
       "status": 200,
-      "ms": 17
+      "ms": 11
     },
     {
       "name": "web:list_employment_requests",
       "path": "/employment-requests/",
       "queries": 13,
       "status": 200,
-      "ms": 95
+      "ms": 19
     },
     {
       "name": "web:view_payroll_run",
       "path": "/payroll/1/",
       "queries": 13,
       "status": 200,
-      "ms": 38
+      "ms": 25
     },
     {
       "name": "web:view_role",
       "path": "/roles/5/",
       "queries": 13,
       "status": 200,
-      "ms": 38
+      "ms": 10
     },
     {
       "name": "swagger-ui",
       "path": "/api/docs/",
       "queries": 12,
       "status": 200,
-      "ms": 110
+      "ms": 24
     },
     {
       "name": "web:add_employee",
       "path": "/employees/add/",
       "queries": 12,
       "status": 200,
-      "ms": 64
+      "ms": 17
     },
     {
       "name": "web:edit_role",
       "path": "/roles/5/edit/",
       "queries": 12,
       "status": 200,
-      "ms": 20
+      "ms": 18
     },
     {
       "name": "web:list_users",
       "path": "/users/",
       "queries": 12,
       "status": 200,
-      "ms": 74
+      "ms": 20
     },
     {
       "name": "web:manage_role_permissions",
       "path": "/roles/5/permissions/",
       "queries": 12,
       "status": 200,
-      "ms": 20
+      "ms": 21
     },
     {
       "name": "web:pending_action_detail",
       "path": "/pending-actions/1/",
       "queries": 12,
       "status": 200,
-      "ms": 65
+      "ms": 16
     },
     {
       "name": "web:edit_employee",
       "path": "/employees/1/edit/",
       "queries": 11,
       "status": 200,
-      "ms": 74
+      "ms": 23
     }
   ],
   "critical": [],
