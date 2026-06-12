@@ -21,30 +21,38 @@
         orgTabUrl: '{{ org_tab_url }}',
         tabLoading: true,
         loadingLabel: 'جاري التحميل',
-        loadOrgTab(tab) {
+        _orgTabAbort: null,
+        _orgTabSeq: 0,
+        async loadOrgTab(tab) {
             if (!this.orgTabs.includes(tab)) return;
+            const seq = ++this._orgTabSeq;
+            if (this._orgTabAbort) this._orgTabAbort.abort();
+            this._orgTabAbort = new AbortController();
+            const signal = this._orgTabAbort.signal;
             this.loadingLabel = 'جاري تحميل ' + (this.orgTabLabels[tab] || 'البيانات');
             this.tabLoading = true;
-            const finish = () => {
-                this.tabLoading = false;
-                if (window.lucide) lucide.createIcons();
-            };
-            const req = htmx.ajax('GET', this.orgTabUrl + '?tab=' + encodeURIComponent(tab), {
-                target: '#org-tab-content',
-                swap: 'innerHTML',
-                indicator: '#org-tab-noop-indicator'
-            });
-            if (req && typeof req.then === 'function') {
-                req.then(finish).catch(finish);
-            } else {
-                const onDone = (e) => {
-                    if (e.detail?.target?.id !== 'org-tab-content') return;
-                    document.body.removeEventListener('htmx:afterSwap', onDone);
-                    document.body.removeEventListener('htmx:responseError', onDone);
-                    finish();
-                };
-                document.body.addEventListener('htmx:afterSwap', onDone);
-                document.body.addEventListener('htmx:responseError', onDone);
+            try {
+                const res = await fetch(this.orgTabUrl + '?tab=' + encodeURIComponent(tab), {
+                    method: 'GET',
+                    signal,
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'text/html',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                if (!res.ok) throw new Error('tab request failed: ' + res.status);
+                const html = await res.text();
+                if (seq !== this._orgTabSeq) return;
+                const el = document.getElementById('org-tab-content');
+                if (el) el.innerHTML = html;
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error(err);
+            } finally {
+                if (seq === this._orgTabSeq) {
+                    this.tabLoading = false;
+                    if (window.lucide) lucide.createIcons();
+                }
             }
         }
      }"
@@ -66,7 +74,6 @@
             if (prev !== undefined && prev !== val) {
                 loadOrgTab(val);
             }
-            if (window.lucide) lucide.createIcons();
         });
      ">
     <div class="flex items-center justify-between">
@@ -81,7 +88,6 @@
         {% include "components/org_structure_tabs.html" %}
 
         <div id="org-tab-panel" class="relative min-h-[12rem]">
-            <span id="org-tab-noop-indicator" class="hidden" aria-hidden="true"></span>
             <div id="org-tab-content"
                  class="transition-opacity duration-200"
                  :class="tabLoading ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"></div>
