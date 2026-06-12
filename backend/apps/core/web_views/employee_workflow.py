@@ -562,50 +562,6 @@ def clear_employee_custody(request, employee_id):
 @login_required
 @permission_required('employees.edit')
 @employee_branch_access_required
-def add_employee_job_offer(request, employee_id):
-    """طلب إصدار عرض وظيفي / خطاب تعريف (ينتظر دورة الموافقات)."""
-    from apps.employees.models import Employee
-    from apps.core.forms import JobOfferForm
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
-
-    employee = get_object_or_404(Employee, id=employee_id)
-    if employee.status == Employee.Status.TERMINATED:
-        messages.error(request, 'لا يمكن إصدار عرض وظيفي لموظف منتهي الخدمة.')
-        return redirect('web:view_employee', employee_id=employee.id)
-    if request.method != 'POST':
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    files = request.FILES.copy()
-    renamed = apply_uploaded_file_rename(request, 'document')
-    if renamed is not None:
-        files['document'] = renamed
-
-    form = JobOfferForm(request.POST, files)
-    if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    cd = form.cleaned_data
-    create_pending_action(
-        action_type='job_offer',
-        employee=employee,
-        payload={
-            'addressed_to': cd['addressed_to'],
-            'purpose': cd.get('purpose', ''),
-            'issued_at': cd['issued_at'].isoformat(),
-            'notes': cd.get('notes', ''),
-        },
-        attachment=files.get('document') or None,
-        requested_by=request.user,
-    )
-    messages.success(request, 'تم إرسال طلب العرض الوظيفي إلى مدير الإدارة/الفرع للموافقة.')
-    return redirect('web:view_employee', employee_id=employee.id)
-
-
-@login_required
-@permission_required('employees.edit')
-@employee_branch_access_required
 def add_employee_business_trip(request, employee_id):
     """طلب رحلة عمل (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee

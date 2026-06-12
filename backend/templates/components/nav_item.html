@@ -1,7 +1,8 @@
 {% with current_url=request.resolver_match.url_name %}
 <a
-    href="{% url url %}"
-    class="hr-nav-link {% if path_prefix and path_prefix in request.path %}is-active{% elif current_url == url or current_url == related_url %}is-active{% endif %}"
+    href="{% if external_href %}{{ external_href }}{% else %}{% url url %}{% endif %}"
+    class="hr-nav-link {% if not external_href %}{% if path_prefix and path_prefix in request.path %}is-active{% elif current_url == url or current_url == related_url %}is-active{% endif %}{% endif %}"
+    {% if external_href %}target="_blank" rel="noopener noreferrer"{% endif %}
 >
     <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="{{ icon }}" class="w-4 h-4"></i></span>
     {% if force_show_label %}

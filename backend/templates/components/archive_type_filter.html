@@ -1,11 +1,13 @@
-{# داخل نطاق archivePager — filterOpen, filterLabel(), filterOptionsList, setFilter() #}
-<div class="hr-atf shrink-0 min-w-[11.5rem] w-full sm:w-[12.5rem]"
+{# داخل نطاق archivePager — toggleFilter(), filterLabel(), filterOptionsList, setFilter() #}
+<div class="hr-atf hr-atf--25x20 shrink-0"
+     x-ref="atfRoot"
      :class="filterOpen && 'is-open'"
-     @click.outside="filterOpen = false"
-     @keydown.escape.window="filterOpen = false">
+     @click.window="onFilterOutsideClick($event)"
+     @keydown.escape.window="filterOpen && closeFilterMenu()">
     <button type="button"
+            x-ref="atfBtn"
             class="hr-atf__btn w-full text-sm bg-white text-right flex items-center justify-between gap-2"
-            @click.stop="filterOpen = !filterOpen; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
+            @click.stop="toggleFilter()"
             :aria-expanded="filterOpen ? 'true' : 'false'"
             aria-haspopup="listbox"
             :aria-label="'تصفية حسب النوع: ' + filterLabel()">
@@ -18,23 +20,28 @@
            :class="filterOpen && 'is-open'"
            aria-hidden="true"></i>
     </button>
-    <div x-show="filterOpen"
-         x-cloak
-         class="hr-atf__menu"
-         role="listbox"
-         aria-label="خيارات نوع السجل">
-        <template x-for="opt in filterOptionsList" :key="opt.value">
-            <button type="button"
-                    role="option"
-                    class="hr-atf__option"
-                    :class="filter === opt.value && 'is-selected'"
-                    :aria-selected="filter === opt.value ? 'true' : 'false'"
-                    @click.stop="setFilter(opt.value)">
-                <span class="truncate" x-text="opt.label"></span>
-                <span class="hr-atf__count"
-                      :class="opt.count === 0 && 'is-zero'"
-                      x-text="opt.count"></span>
-            </button>
-        </template>
-    </div>
+    <template x-teleport="body">
+        <div x-show="filterOpen"
+             x-ref="atfMenu"
+             class="hr-atf__menu hr-atf__menu--compact hr-atf__menu--fixed"
+             :style="filterMenuStyle"
+             role="listbox"
+             :aria-label="'خيارات نوع السجل — ' + filterLabel()"
+             @click.stop
+             @wheel.stop>
+            <template x-for="opt in filterOptionsList" :key="opt.value">
+                <button type="button"
+                        role="option"
+                        class="hr-atf__option"
+                        :class="filter === opt.value && 'is-selected'"
+                        :aria-selected="filter === opt.value ? 'true' : 'false'"
+                        @click.stop="setFilter(opt.value)">
+                    <span class="truncate" x-text="opt.label"></span>
+                    <span class="hr-atf__count"
+                          :class="opt.count === 0 && 'is-zero'"
+                          x-text="opt.count"></span>
+                </button>
+            </template>
+        </div>
+    </template>
 </div>

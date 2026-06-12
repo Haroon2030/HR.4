@@ -454,7 +454,6 @@ class PendingAction(BaseModel):
         REACTIVATE = 'reactivate', 'إعادة تنشيط'
         CUSTODY_RECEIVE = 'custody_receive', 'استلام عهدة'
         CUSTODY_CLEAR = 'custody_clear', 'تصفية عهدة'
-        JOB_OFFER = 'job_offer', 'عرض وظيفي'
         BUSINESS_TRIP = 'business_trip', 'رحلة عمل'
         LOAN_REQUEST = 'loan_request', 'تقديم سلفة'
         ABSENCE = 'absence', 'تسجيل غياب'

@@ -73,6 +73,7 @@
 {% include "components/nav_section.html" with label="التقارير والنماذج" always_show=always_show %}
 {% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" force_show_label=always_show %}{% endif %}
 {% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" force_show_label=always_show %}{% endif %}
+{% include "components/nav_item.html" with external_href="https://forms.gle/Uw2nuffzNa4ZgfZX9" icon="file-badge" label="العروض الوظيفية" force_show_label=always_show %}
 {% endif %}
 
 {% if user|has_permission:'branches.view' or user|has_permission:'users.view' or user|is_general_manager %}

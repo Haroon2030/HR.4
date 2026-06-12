@@ -66,6 +66,13 @@ def from_json(value):
 
 
 @register.filter
+def archive_row_type(statement):
+    """نوع صف الأرشيف (يفصل انتهاء العقد / نهاية الخدمة عن التصفية العادية)."""
+    from apps.employees.selectors.employee_archive import archive_statement_row_type
+    return archive_statement_row_type(statement)
+
+
+@register.filter
 def format_archive_text(value):
     """
     يقوم بتحويل النصوص العادية (التي تحتوي على فواصل مثل ─── أو ═══)

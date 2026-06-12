@@ -1014,6 +1014,45 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
     z-index: 25;
 }
 
+/* مقاس مضغوط: عرض 25ch × ارتفاع 2.5rem (≈40px) */
+body.hr-app .hr-atf--25x20 {
+    width: 25ch;
+    min-width: 11.5rem;
+    max-width: 25ch;
+}
+
+body.hr-app .hr-atf--25x20 .hr-atf__btn {
+    min-height: 2.5rem;
+    height: 2.5rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+body.hr-app .hr-atf--25x20 .hr-atf__btn-body {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+body.hr-app .hr-atf--25x20 .hr-atf__btn-kicker {
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}
+
+body.hr-app .hr-atf--25x20 .hr-atf__btn-kicker::after {
+    content: ':';
+    margin-inline-start: 0.1rem;
+}
+
+body.hr-app .hr-atf--25x20 .hr-atf__btn-value {
+    font-size: 0.75rem;
+}
+
+body.hr-app .hr-page-card:has(.hr-atf.is-open),
+body.hr-app .hr-page-card__body:has(.hr-atf.is-open) {
+    overflow: visible !important;
+}
+
 .hr-atf__btn {
     min-height: 2.375rem;
     padding: 0.35rem 0.65rem;
@@ -1070,14 +1109,20 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
 
 .hr-atf__menu {
     position: absolute;
-    top: calc(100% + 4px);
+    top: 100%;
+    margin-top: 4px;
     right: 0;
     left: 0;
     z-index: 10060;
+    width: 100%;
     min-width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     max-height: min(18rem, 52vh);
     overflow-x: hidden;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     background: #fff;
     border: 1px solid #cbd5e1;
     border-radius: 0.5rem;
@@ -1085,6 +1130,34 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
     padding: 0.25rem 0;
     direction: rtl;
     text-align: right;
+}
+
+/* طبقة عائمة — تتجاوز overflow:hidden للصفحة وتُمرَّر داخلياً */
+.hr-atf__menu--fixed {
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: auto;
+    margin-top: 0;
+    overflow-y: auto;
+}
+
+body.hr-app .hr-atf__menu--compact {
+    padding: 0.15rem 0;
+}
+
+body.hr-app .hr-atf__menu--compact .hr-atf__option {
+    min-height: 2.5rem;
+    height: 2.5rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+body.hr-app .hr-atf__menu--compact .hr-atf__count {
+    font-size: 0.625rem;
+    min-width: 1.15rem;
+    padding: 0.05rem 0.3rem;
 }
 
 .hr-atf__option {
@@ -1146,8 +1219,11 @@ body.hr-app .hr-main select.hr-archive-filter-select option {
 
 /* صفوف أرشيف/إفادات الموظف — إخفاء التصفية (يتجاوز display الافتراضي للجداول) */
 body.hr-app tr.archive-row.is-filtered-out,
-body.hr-app tr.archive-empty.is-filtered-out {
+body.hr-app tr.archive-row[hidden],
+body.hr-app tr.archive-empty.is-filtered-out,
+body.hr-app tr.archive-empty[hidden] {
     display: none !important;
+    visibility: collapse !important;
 }
 
 /* ── تبويبات زجاجية موحّدة (كل الموقع) ──
@@ -2684,6 +2760,26 @@ body.hr-app .border-blue-200.bg-blue-50 {
 .hr-glass-modal__close:hover {
     background: rgba(255, 255, 255, 0.95);
     color: #000000;
+}
+
+.hr-glass-modal__close--sm {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.375rem;
+}
+
+body.hr-app .hr-glass-modal--compact {
+    max-width: 20rem;
+    border-radius: 0.75rem;
+}
+
+body.hr-app .hr-glass-modal__body--compact {
+    max-height: min(16rem, 50vh);
+    font-size: 0.6875rem;
+}
+
+body.hr-app .hr-glass-modal__body--compact > .mt-2 {
+    margin-top: 0;
 }
 
 .hr-glass-modal__chip {
@@ -4798,6 +4894,10 @@ body.hr-app .hr-app-main {
     align-items: center;
     justify-content: center;
     padding: 1.25rem;
+    pointer-events: none;
+}
+
+.hr-glass-loading[aria-busy="true"] {
     pointer-events: auto;
 }
 

@@ -162,6 +162,10 @@ def load_employee_view_context(
     if need('fingerprint') or request_get.get('fp_from') or request_get.get('fp_to'):
         ctx.update(_load_fingerprint_tab(employee, request_get))
 
+    if need('archive'):
+        from apps.employees.selectors.employee_archive import load_employee_archive_extras
+        ctx.update(load_employee_archive_extras(employee=employee, user=user))
+
     return ctx
 
 

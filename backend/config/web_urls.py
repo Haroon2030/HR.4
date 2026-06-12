@@ -73,7 +73,6 @@ urlpatterns = [
     path('employees/<int:employee_id>/salary/export/', web_views.export_employee_salary_excel, name='export_employee_salary_excel'),  # تصدير Excel
     path('employees/<int:employee_id>/custody/receive/', web_views.receive_employee_custody, name='receive_employee_custody'),  # استلام عهدة
     path('employees/<int:employee_id>/custody/clear/', web_views.clear_employee_custody, name='clear_employee_custody'),        # تصفية عهدة
-    path('employees/<int:employee_id>/job-offer/add/', web_views.add_employee_job_offer, name='add_employee_job_offer'),        # عرض وظيفي
     path('employees/<int:employee_id>/loan/add/', web_views.add_employee_loan, name='add_employee_loan'),                      # سلفة
     path('employees/<int:employee_id>/absence/add/', web_views.add_employee_absence, name='add_employee_absence'),              # تسجيل غياب
     path('employees/<int:employee_id>/contract-end/', web_views.contract_end_employee, name='contract_end_employee'),          # انتهاء عقد (EOSB)

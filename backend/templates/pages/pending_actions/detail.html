@@ -71,11 +71,6 @@
                         <div><dt class="text-slate-400 text-xs">رقم العهدة</dt><dd class="text-slate-800 font-medium">{{ p.custody_id }}</dd></div>
                         <div><dt class="text-slate-400 text-xs">تاريخ الإعادة</dt><dd class="text-slate-800 font-medium">{{ p.returned_at }}</dd></div>
                         {% if p.return_notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات الإعادة</dt><dd class="text-slate-700">{{ p.return_notes }}</dd></div>{% endif %}
-                    {% elif action.action_type == 'job_offer' %}
-                        <div><dt class="text-slate-400 text-xs">الجهة الموجَّه إليها</dt><dd class="text-slate-800 font-medium">{{ p.addressed_to }}</dd></div>
-                        <div><dt class="text-slate-400 text-xs">تاريخ الإصدار</dt><dd class="text-slate-800 font-medium">{{ p.issued_at }}</dd></div>
-                        {% if p.purpose %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">الغرض</dt><dd class="text-slate-700">{{ p.purpose }}</dd></div>{% endif %}
-                        {% if p.notes %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">ملاحظات</dt><dd class="text-slate-700">{{ p.notes }}</dd></div>{% endif %}
                     {% elif action.action_type == 'business_trip' %}
                         <div><dt class="text-slate-400 text-xs">الوجهة</dt><dd class="text-slate-800 font-medium">{{ p.destination }}</dd></div>
                         <div><dt class="text-slate-400 text-xs">التكلفة التقديرية</dt><dd class="text-slate-800 font-medium">{{ p.estimated_cost|default:"—" }}</dd></div>

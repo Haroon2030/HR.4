@@ -16,7 +16,6 @@
   ├── TRANSFER        → نقل الموظف لفرع/قسم آخر
   ├── CUSTODY_RECEIVE → تسجيل استلام عهدة
   ├── CUSTODY_CLEAR   → تصفية عهدة مُستلمة
-  ├── JOB_OFFER       → إصدار عرض وظيفي / خطاب تعريف
   ├── BUSINESS_TRIP   → تسجيل رحلة عمل
   ├── LOAN_REQUEST    → إنشاء سلفة + أقساط شهرية
   └── ABSENCE         → تسجيل غياب + حساب الخصم
@@ -297,7 +296,6 @@ EXECUTORS = {
     'transfer': _execute_transfer,
     'custody_receive': None,  # ملحقة أدناه بعد التعريف
     'custody_clear': None,
-    'job_offer': None,
     'business_trip': None,
 }
 
@@ -353,25 +351,6 @@ def _execute_custody_clear(action, executor):
         custody.return_document = action.attachment
     custody.save(update_fields=['status', 'returned_at', 'return_notes', 'return_document'])
     return f'تم تصفية عهدة "{custody.item_name}" من الموظف {employee.name}'
-
-
-@transaction.atomic
-def _execute_job_offer(action, executor):
-    from apps.employees.models import EmployeeJobOffer
-    p = action.payload
-    employee = action.employee
-    serial = p.get('serial_number') or _build_form_serial_local('EL', employee.id)
-    offer = EmployeeJobOffer.objects.create(
-        employee=employee,
-        serial_number=serial,
-        addressed_to=p['addressed_to'],
-        purpose=p.get('purpose', ''),
-        issued_at=_to_date(p['issued_at']),
-        notes=p.get('notes', ''),
-        document=action.attachment or None,
-        created_by=action.requested_by,
-    )
-    return f'تم إصدار عرض وظيفي إلى {offer.addressed_to} للموظف {employee.name}'
 
 
 @transaction.atomic
@@ -453,7 +432,6 @@ def _execute_absence(action, executor):
 
 EXECUTORS['custody_receive'] = _execute_custody_receive
 EXECUTORS['custody_clear'] = _execute_custody_clear
-EXECUTORS['job_offer'] = _execute_job_offer
 EXECUTORS['business_trip'] = _execute_business_trip
 EXECUTORS['loan_request'] = _execute_loan_request
 EXECUTORS['absence'] = _execute_absence

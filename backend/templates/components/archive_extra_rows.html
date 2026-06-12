@@ -1,0 +1,38 @@
+{# صفوف الأرشيف من الإضافة السريعة — archive_extra_rows #}
+{% for row in archive_extra_rows %}
+<tr class="archive-row hover:bg-slate-50 transition-colors" x-show="archiveRowVisible($el)"
+    data-type="{{ row.row_type }}"
+    data-ts="{{ row.sort_at|date:'c' }}"
+    data-text="{{ row.search_text|truncatechars:160|escapejs }}">
+    <td class="px-3 py-2 align-top">
+        <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
+            <span>{{ row.event_date|date:"Y-m-d" }}</span>
+            <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
+            <span class="text-slate-500">{{ row.event_time|date:"H:i" }}</span>
+        </div>
+    </td>
+    <td class="px-3 py-2 align-top">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] {{ row.badge_class }}">
+            <i data-lucide="{{ row.badge_icon }}" class="w-3 h-3"></i> {{ row.badge_label }}
+        </span>
+    </td>
+    <td class="px-3 py-2 align-top">
+        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+            <span class="text-slate-800 font-medium text-xs truncate">{{ row.title }}</span>
+            {% if row.detail %}
+            {% include "components/archive_row_detail_btn.html" with title=row.title content=row.detail modal_uid=row.row_id %}
+            {% endif %}
+        </div>
+        {% if row.document_url %}
+        <div class="mt-1">{% include "components/media_preview_btn.html" with url=row.document_url title=row.title label="عرض المرفق" %}</div>
+        {% endif %}
+    </td>
+    <td class="px-3 py-2 align-top text-slate-600 text-xs">
+        <i data-lucide="user" class="w-3 h-3 inline-block"></i>
+        {{ row.executor_name }}
+    </td>
+    <td class="px-3 py-2 align-top">
+        <span class="px-2 py-0.5 rounded text-[11px] {{ row.status_class }}">{{ row.status_label }}</span>
+    </td>
+</tr>
+{% endfor %}

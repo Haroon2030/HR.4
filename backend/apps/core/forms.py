@@ -379,20 +379,6 @@ class CustodyClearForm(forms.Form):
     return_notes = forms.CharField(required=False)
 
 
-class JobOfferForm(forms.Form):
-    """إصدار عرض وظيفي / خطاب تعريف."""
-    addressed_to = forms.CharField(error_messages={'required': 'الجهة الموجَّه إليها مطلوبة'})
-    purpose = forms.CharField(required=False)
-    issued_at = forms.DateField(error_messages={'invalid': 'تاريخ الإصدار غير صحيح', 'required': 'تاريخ الإصدار مطلوب'})
-    notes = forms.CharField(required=False)
-
-    def clean_addressed_to(self):
-        v = (self.cleaned_data.get('addressed_to') or '').strip()
-        if not v:
-            raise ValidationError('الجهة الموجَّه إليها مطلوبة')
-        return v
-
-
 class BusinessTripForm(HRForm):
     """تسجيل رحلة عمل."""
     destination = forms.CharField(error_messages={'required': 'الوجهة مطلوبة'})
