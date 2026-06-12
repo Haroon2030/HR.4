@@ -301,6 +301,34 @@
             </header>
         </div>
 
+        <!-- Mobile Sidebar (خارج hr-app-body لتفادي تعارض position: relative) -->
+        <aside
+            x-show="mobileMenuOpen"
+            @click.away="mobileMenuOpen = false"
+            x-transition:enter="transition-transform ease-out duration-300"
+            x-transition:enter-start="translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transition-transform ease-in duration-200"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="translate-x-full"
+            class="hr-sidebar hr-sidebar--expanded md:hidden flex flex-col hr-sidebar--mobile-drawer"
+            style="display: none;"
+        >
+            <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
+                <div class="hr-sidebar-mobile-head shrink-0">
+                    {% include "components/app_org_bar.html" with always_show=True %}
+                    <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn" title="إغلاق">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <nav class="hr-nav flex-1 min-h-0"
+                     x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
+                    {% include "components/sidebar_nav.html" with always_show=True %}
+                </nav>
+                {% include "components/sidebar_panel_footer.html" with allow_collapse=False always_show=True %}
+            </div>
+        </aside>
+
         <div class="hr-app-body flex flex-1 min-h-0 min-w-0 overflow-hidden">
             <!-- Desktop Sidebar -->
             <aside
@@ -314,34 +342,6 @@
                         {% include "components/sidebar_nav.html" with always_show=False %}
                     </nav>
                     {% include "components/sidebar_panel_footer.html" with allow_collapse=True %}
-                </div>
-            </aside>
-
-            <!-- Mobile Sidebar -->
-            <aside
-                x-show="mobileMenuOpen"
-                @click.away="mobileMenuOpen = false"
-                x-transition:enter="transition-transform ease-out duration-300"
-                x-transition:enter-start="translate-x-full"
-                x-transition:enter-end="translate-x-0"
-                x-transition:leave="transition-transform ease-in duration-200"
-                x-transition:leave-start="translate-x-0"
-                x-transition:leave-end="translate-x-full"
-                class="hr-sidebar hr-sidebar--expanded md:hidden fixed right-0 bottom-0 flex flex-col z-40 hr-sidebar--mobile-drawer"
-                style="display: none;"
-            >
-                <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
-                    <div class="hr-sidebar-mobile-head shrink-0">
-                        {% include "components/app_org_bar.html" with always_show=True %}
-                        <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn" title="إغلاق">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    <nav class="hr-nav flex-1 min-h-0"
-                         x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %} }">
-                        {% include "components/sidebar_nav.html" with always_show=True %}
-                    </nav>
-                    {% include "components/sidebar_panel_footer.html" with allow_collapse=False always_show=True %}
                 </div>
             </aside>
 
@@ -432,9 +432,23 @@
             });
         }
 
+        function hrSyncChromeHeight() {
+            var chrome = document.querySelector('.hr-app-chrome');
+            if (!chrome) return;
+            document.documentElement.style.setProperty('--hr-chrome-height', chrome.getBoundingClientRect().height + 'px');
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             hrDisableBoostOnForms();
             hrScheduleLucide();
+            hrSyncChromeHeight();
+
+            var chromeForResize = document.querySelector('.hr-app-chrome');
+            if (chromeForResize && typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(hrSyncChromeHeight).observe(chromeForResize);
+            } else {
+                window.addEventListener('resize', hrSyncChromeHeight);
+            }
 
             var topbar = document.querySelector('.hr-topbar');
             var main = document.querySelector('.hr-main');

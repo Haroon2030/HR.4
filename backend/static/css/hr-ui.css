@@ -3426,9 +3426,22 @@ body.hr-app .hr-sidebar {
     max-height: 100%;
 }
 
-body.hr-app .hr-sidebar--mobile-drawer {
-    top: var(--hr-chrome-height, 7.5rem);
-    padding-top: 0.35rem;
+@media (max-width: 767px) {
+    body.hr-app .hr-sidebar--mobile-drawer {
+        position: fixed !important;
+        inset-inline-end: 0;
+        inset-block-end: 0;
+        inset-block-start: var(--hr-chrome-height, 4.3rem);
+        inset-inline-start: auto;
+        z-index: 40;
+        padding: 0;
+        margin: 0;
+        width: 16.25rem;
+        max-width: min(16.25rem, 88vw);
+        height: calc(100dvh - var(--hr-chrome-height, 4.3rem));
+        max-height: calc(100dvh - var(--hr-chrome-height, 4.3rem));
+        align-self: auto;
+    }
 }
 
 body.hr-app .hr-sidebar-panel {
@@ -3737,7 +3750,8 @@ body.hr-app .hr-sidebar-panel .hr-nav-sub {
 }
 
 body.hr-app .hr-sidebar.hr-sidebar--expanded.md\:hidden .hr-sidebar-panel {
-    border-radius: 0.85rem 0 0 0.85rem;
+    border-radius: 0 0 0 0.85rem;
+    border-top: none;
 }
 
 body.hr-app .hr-app-main {
