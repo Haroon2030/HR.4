@@ -94,36 +94,7 @@
 
                 {# ── بيانات الصرف ── #}
                 {% if employee.sponsorship_id %}
-                <div class="w-fit max-w-full space-y-2">
-                    <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1.5 m-0">
-                        <i data-lucide="landmark" class="w-3.5 h-3.5 text-sky-600"></i>
-                        بيانات التحويل البنكي
-                    </h3>
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg w-fit max-w-full">
-                        <table class="text-sm hr-table-fit">
-                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-3 py-2 text-right font-bold">البند</th>
-                                    <th class="px-3 py-2 text-right font-bold">القيمة</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr>
-                                    <td class="px-3 py-2 text-slate-600 font-bold whitespace-nowrap">البنك</td>
-                                    <td class="px-3 py-2 text-slate-800 font-bold whitespace-nowrap">{{ employee.bank.name|default:"—" }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-3 py-2 text-slate-600 font-bold whitespace-nowrap">رقم الآيبان</td>
-                                    <td class="px-3 py-2 text-slate-800 font-bold font-mono whitespace-nowrap" dir="ltr">{{ employee.iban|default:"—" }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-3 py-2 text-slate-600 font-bold whitespace-nowrap">طبيعة الحساب</td>
-                                    <td class="px-3 py-2 text-slate-800 font-bold whitespace-nowrap" dir="ltr">{% if employee.account_type %}{{ employee.get_account_type_display }}{% else %}—{% endif %}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                {% include "components/bank_transfer_panel.html" with employee=employee editable=False %}
                 {% else %}
                 <div class="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
                     <div class="flex items-center gap-2 mb-1">
