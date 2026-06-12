@@ -4961,7 +4961,8 @@ body.hr-app .hr-app-main {
 }
 
 .hr-htmx-indicator__spinner,
-.hr-org-tab-spinner {
+.hr-org-tab-spinner,
+.hr-glass-loading-spinner {
     width: 1.25rem;
     height: 1.25rem;
     border: 2px solid #cbd5e1;

@@ -1,5 +1,6 @@
-{# نافذة تحميل زجاجية — يتطلب Alpine: tabLoading (boolean)، loadingLabel (نص) #}
-<div x-show="tabLoading"
+{# نافذة تحميل زجاجية عامة — Alpine store: glassLoader #}
+<div x-data
+     x-show="$store.glassLoader.visible"
      style="display: none;"
      x-transition:enter="transition ease-out duration-200"
      x-transition:enter-start="opacity-0"
@@ -10,18 +11,18 @@
      class="hr-glass-loading"
      role="status"
      aria-live="polite"
-     :aria-busy="tabLoading ? 'true' : 'false'">
+     :aria-busy="$store.glassLoader.visible ? 'true' : 'false'">
     <div class="hr-glass-loading__veil" aria-hidden="true"></div>
     <div class="hr-glass-loading__card">
         <div class="hr-glass-loading__ring" aria-hidden="true">
-            <span class="hr-org-tab-spinner"></span>
+            <span class="hr-glass-loading-spinner"></span>
         </div>
         <p class="hr-glass-loading__title">
-            <span x-text="loadingLabel">جاري التحميل</span>
+            <span x-text="$store.glassLoader.label">جاري التحميل</span>
             <span class="hr-glass-loading__dots" aria-hidden="true">
                 <span></span><span></span><span></span>
             </span>
         </p>
-        <p class="hr-glass-loading__hint">لحظة واحدة — يتم تجهيز البيانات</p>
+        <p class="hr-glass-loading__hint" x-text="$store.glassLoader.hint">لحظة واحدة — يتم تجهيز البيانات</p>
     </div>
 </div>

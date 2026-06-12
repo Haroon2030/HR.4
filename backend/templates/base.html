@@ -178,6 +178,7 @@
     <script defer src="/static/js/htmx.min.js"></script>
     <script defer src="/static/js/hr-employee-smart-search.js?v=20260610-2"></script>
     <script defer src="/static/js/alpine.min.js"></script>
+    <script defer src="/static/js/hr-glass-loader.js?v=20260612"></script>
     <script defer src="/static/js/lucide.min.js"></script>
     
     <style>
@@ -204,7 +205,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260612-glass-loading-fix" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260612-glass-global" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -377,6 +378,7 @@
     </div>
     
     {% include "components/glass_media_viewer.html" %}
+    {% include "components/glass_loading_popup.html" %}
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="fixed bottom-4 left-4 z-50 space-y-2"></div>

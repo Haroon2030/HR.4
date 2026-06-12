@@ -2,6 +2,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4"
+     data-hr-tab-lazy
      x-data="{
         activeTab: '{{ active_tab|default:'branches' }}',
         orgTabs: ['branches','cost_centers','departments','administrations','nationalities','professions','sponsorships','insurances','insurance_classes','buildings','banks'],
@@ -19,41 +20,14 @@
             banks: 'البنوك',
         },
         orgTabUrl: '{{ org_tab_url }}',
-        tabLoading: true,
-        loadingLabel: 'جاري التحميل',
-        _orgTabAbort: null,
-        _orgTabSeq: 0,
-        async loadOrgTab(tab) {
+        loadOrgTab(tab) {
             if (!this.orgTabs.includes(tab)) return;
-            const seq = ++this._orgTabSeq;
-            if (this._orgTabAbort) this._orgTabAbort.abort();
-            this._orgTabAbort = new AbortController();
-            const signal = this._orgTabAbort.signal;
-            this.loadingLabel = 'جاري تحميل ' + (this.orgTabLabels[tab] || 'البيانات');
-            this.tabLoading = true;
-            try {
-                const res = await fetch(this.orgTabUrl + '?tab=' + encodeURIComponent(tab), {
-                    method: 'GET',
-                    signal,
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'text/html',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
-                if (!res.ok) throw new Error('tab request failed: ' + res.status);
-                const html = await res.text();
-                if (seq !== this._orgTabSeq) return;
-                const el = document.getElementById('org-tab-content');
-                if (el) el.innerHTML = html;
-            } catch (err) {
-                if (err.name !== 'AbortError') console.error(err);
-            } finally {
-                if (seq === this._orgTabSeq) {
-                    this.tabLoading = false;
-                    if (window.lucide) lucide.createIcons();
-                }
-            }
+            const label = 'جاري تحميل ' + (this.orgTabLabels[tab] || 'البيانات');
+            Alpine.store('glassLoader').fetchHtml(
+                this.orgTabUrl + '?tab=' + encodeURIComponent(tab),
+                'org-tab-content',
+                label
+            );
         }
      }"
      x-init="
@@ -82,15 +56,13 @@
         </div>
     </div>
 
-    {% include "components/glass_loading_popup.html" %}
-
     <div class="hr-tabs hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
         {% include "components/org_structure_tabs.html" %}
 
         <div id="org-tab-panel" class="relative min-h-[12rem]">
             <div id="org-tab-content"
                  class="transition-opacity duration-200"
-                 :class="tabLoading ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"></div>
+                 :class="$store.glassLoader.visible ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"></div>
         </div>
     </div>
 </div>
