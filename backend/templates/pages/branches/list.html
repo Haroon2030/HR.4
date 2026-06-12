@@ -23,11 +23,15 @@
         loadOrgTab(tab) {
             if (!this.orgTabs.includes(tab)) return;
             const label = 'جاري تحميل ' + (this.orgTabLabels[tab] || 'البيانات');
-            Alpine.store('glassLoader').fetchHtml(
-                this.orgTabUrl + '?tab=' + encodeURIComponent(tab),
-                'org-tab-content',
-                label
-            );
+            const url = this.orgTabUrl + '?tab=' + encodeURIComponent(tab);
+            if (window.hrGlassLoader) {
+                window.hrGlassLoader.fetchHtml(url, 'org-tab-content', label);
+                return;
+            }
+            const store = window.Alpine && Alpine.store('glassLoader');
+            if (store) {
+                store.fetchHtml(url, 'org-tab-content', label);
+            }
         }
      }"
      x-init="

@@ -1,69 +1,24 @@
 /**
  * نافذة تحميل زجاجية عامة — لكل تبويبات الموقع وطلبات HTMX الجزئية.
+ * يجب تحميل هذا الملف قبل alpine.min.js
  */
 (function () {
     'use strict';
 
+    var tabBound = false;
+    var htmxBound = false;
+
     function hrTabLabel(el) {
         if (!el) return 'القسم';
-        var textEl = el.querySelector('.hr-nav-text, .hr-tab-btn span, span:not(.hr-payroll-tab-count):not(.hr-glass-loading__dots span)');
+        var textEl = el.querySelector('.hr-nav-text, .hr-tab-btn > span, .hr-tab > span, span:not(.hr-payroll-tab-count):not(.hr-tab-badge):not(.hr-glass-loading__dots span)');
         var raw = (textEl ? textEl.textContent : el.textContent) || '';
-        return raw.replace(/\s+/g, ' ').trim().split(/\d/)[0].trim() || 'القسم';
+        return raw.replace(/\s+/g, ' ').trim().replace(/\s*\d+\s*$/, '').trim() || 'القسم';
     }
 
-    function hrBindTabGlassLoader() {
-        document.addEventListener('click', function (e) {
-            if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-            if (!window.Alpine || !Alpine.store('glassLoader')) return;
+    function hrDefineGlassLoaderStore() {
+        if (!window.Alpine || typeof Alpine.store !== 'function') return false;
+        if (Alpine.store('glassLoader')) return true;
 
-            var tab = e.target.closest(
-                '[role="tablist"] [role="tab"], [role="tablist"] .hr-tab-btn, .hr-tabs__bar .hr-tab, .hr-page-tabs__bar .hr-tab-btn'
-            );
-            if (!tab || tab.getAttribute('data-hr-tab-skip-loader') !== null) return;
-
-            var store = Alpine.store('glassLoader');
-            var label = hrTabLabel(tab);
-
-            if (tab.tagName === 'A' && tab.href) {
-                try {
-                    var url = new URL(tab.href, window.location.href);
-                    if (url.origin === window.location.origin) {
-                        store.show('جاري تحميل ' + label);
-                    }
-                } catch (err) { /* ignore */ }
-                return;
-            }
-
-            if (tab.closest('[data-hr-tab-lazy]')) {
-                return;
-            }
-
-            if (tab.tagName === 'BUTTON' || tab.getAttribute('role') === 'tab') {
-                store.show('جاري تحميل ' + label);
-                store.scheduleHide(200);
-            }
-        }, true);
-    }
-
-    function hrBindHtmxGlassLoader() {
-        if (!document.body) return;
-
-        document.body.addEventListener('htmx:beforeRequest', function (evt) {
-            var target = evt.detail && evt.detail.target;
-            if (!target || target.id === 'notif-dropdown-content') return;
-            if (!window.Alpine || !Alpine.store('glassLoader')) return;
-            Alpine.store('glassLoader').show('جاري التحميل');
-        });
-
-        document.body.addEventListener('htmx:afterRequest', function (evt) {
-            var target = evt.detail && evt.detail.target;
-            if (!target || target.id === 'notif-dropdown-content') return;
-            if (!window.Alpine || !Alpine.store('glassLoader')) return;
-            Alpine.store('glassLoader').hide();
-        });
-    }
-
-    document.addEventListener('alpine:init', function () {
         Alpine.store('glassLoader', {
             visible: false,
             label: 'جاري التحميل',
@@ -89,7 +44,7 @@
                 clearTimeout(this._hideTimer);
                 this._hideTimer = setTimeout(function () {
                     self.hide();
-                }, ms || 200);
+                }, ms || 220);
             },
 
             fetchHtml: function (url, targetId, label, hint) {
@@ -128,9 +83,106 @@
             },
         });
 
+        return true;
+    }
+
+    function hrBindTabGlassLoader() {
+        if (tabBound) return;
+        tabBound = true;
+
+        document.addEventListener('click', function (e) {
+            if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            if (!window.Alpine || !Alpine.store('glassLoader')) return;
+
+            var tab = e.target.closest(
+                '[role="tablist"] [role="tab"], [role="tablist"] .hr-tab-btn, .hr-tabs__bar .hr-tab, .hr-page-tabs__bar .hr-tab-btn'
+            );
+            if (!tab || tab.getAttribute('data-hr-tab-skip-loader') !== null) return;
+
+            var store = Alpine.store('glassLoader');
+            var label = hrTabLabel(tab);
+
+            if (tab.tagName === 'A' && tab.href) {
+                try {
+                    var url = new URL(tab.href, window.location.href);
+                    if (url.origin === window.location.origin) {
+                        store.show('جاري تحميل ' + label);
+                    }
+                } catch (err) { /* ignore */ }
+                return;
+            }
+
+            if (tab.closest('[data-hr-tab-lazy]')) {
+                return;
+            }
+
+            if (tab.tagName === 'BUTTON' || tab.getAttribute('role') === 'tab') {
+                store.show('جاري تحميل ' + label);
+                store.scheduleHide(220);
+            }
+        }, true);
+    }
+
+    function hrBindHtmxGlassLoader() {
+        if (htmxBound || !document.body) return;
+        htmxBound = true;
+
+        document.body.addEventListener('htmx:beforeRequest', function (evt) {
+            var target = evt.detail && evt.detail.target;
+            if (!target || target.id === 'notif-dropdown-content') return;
+            if (!window.Alpine || !Alpine.store('glassLoader')) return;
+            Alpine.store('glassLoader').show('جاري التحميل');
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function (evt) {
+            var target = evt.detail && evt.detail.target;
+            if (!target || target.id === 'notif-dropdown-content') return;
+            if (!window.Alpine || !Alpine.store('glassLoader')) return;
+            Alpine.store('glassLoader').hide();
+        });
+    }
+
+    function hrInitGlassLoader() {
+        hrDefineGlassLoaderStore();
         hrBindTabGlassLoader();
         hrBindHtmxGlassLoader();
-    });
+    }
+
+    document.addEventListener('alpine:init', hrInitGlassLoader);
+
+    window.hrGlassLoader = {
+        show: function (label, hint) {
+            hrDefineGlassLoaderStore();
+            var store = window.Alpine && Alpine.store('glassLoader');
+            if (store) store.show(label, hint);
+        },
+        hide: function () {
+            var store = window.Alpine && Alpine.store('glassLoader');
+            if (store) store.hide();
+        },
+        scheduleHide: function (ms) {
+            var store = window.Alpine && Alpine.store('glassLoader');
+            if (store) store.scheduleHide(ms);
+        },
+        fetchHtml: function (url, targetId, label, hint) {
+            hrDefineGlassLoaderStore();
+            var store = window.Alpine && Alpine.store('glassLoader');
+            if (store) return store.fetchHtml(url, targetId, label, hint);
+            return fetch(url, {
+                credentials: 'same-origin',
+                headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('tab request failed');
+                    return r.text();
+                })
+                .then(function (html) {
+                    var el = document.getElementById(targetId);
+                    if (el) el.innerHTML = html;
+                    if (window.lucide) lucide.createIcons();
+                });
+        },
+    };
 
     window.addEventListener('pageshow', function () {
         if (window.Alpine && Alpine.store('glassLoader')) {

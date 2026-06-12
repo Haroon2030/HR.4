@@ -473,12 +473,22 @@
                     + this.salaryNum(this.salaryMeal);
             },
             switchTab(key) {
+                const labels = {
+                    main: 'البيانات', contract: 'العقد', salary: 'الراتب', leaves: 'الإجازات',
+                    schedule: 'الدوام', warnings: 'الإنذارات', docs: 'المستندات', archive: 'الأرشيف',
+                };
+                const store = window.Alpine && Alpine.store('glassLoader');
+                if (store) {
+                    store.show('جاري تحميل ' + (labels[key] || 'القسم'));
+                    store.scheduleHide(240);
+                }
                 this.activeTab = key;
                 try {
                     const url = new URL(window.location.href);
                     url.searchParams.set('tab', key);
                     window.history.replaceState({}, '', url);
                 } catch (_e) { /* ignore */ }
+                this.$nextTick(function () { if (window.lucide) lucide.createIcons(); });
             },
             payrollMode() {
                 return String(this.sponsorshipId || '').trim() ? 'transfer' : 'cash';
