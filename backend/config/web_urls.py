@@ -130,6 +130,7 @@ urlpatterns = [
     # 7. الفروع
     # ══════════════════════════════════════════════════════════════
     path('branches/', web_views.list_branches, name='list_branches'),
+    path('branches/tab/', web_views.org_structure_tab, name='org_structure_tab'),
     path('branches/add/', web_views.add_branch, name='add_branch'),
     path('branches/<int:branch_id>/', web_views.view_branch, name='view_branch'),
     path('branches/<int:branch_id>/edit/', web_views.edit_branch, name='edit_branch'),

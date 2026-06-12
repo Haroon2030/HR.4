@@ -16,89 +16,32 @@ from apps.core.models import Branch, Company
 
 
 from apps.core.decorators import permission_required
-from apps.core.permission_policy import org_structure_permissions
-from apps.core.services.access_control import filter_branches_queryset, get_accessible_branch_ids
-
-ORG_STRUCTURE_TAB_KEYS = frozenset({
-    'branches', 'cost_centers', 'departments', 'administrations',
-    'nationalities', 'professions', 'sponsorships', 'insurances',
-    'insurance_classes', 'buildings', 'banks',
-})
+from apps.core.services.org_structure import (
+    ORG_STRUCTURE_TAB_KEYS,
+    get_org_tab_context,
+    resolve_org_tab,
+)
+from apps.core.services.access_control import get_accessible_branch_ids
 
 
 @login_required
 @permission_required('branches.view')
 def list_branches(request):
-    """قائمة الفروع — شاشة التهيئة: كل التبويبات في صفحة واحدة (بدون إعادة تحميل عند التبديل)."""
-    from apps.cost_centers.models import CostCenter
-    from apps.departments.models import Department
-    from apps.setup.models import (
-        Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
-        Building, Bank, Administration,
-    )
-    from apps.core.services.setup_cache import get_cached_list
-
-    requested = (request.GET.get('tab') or '').strip()
-    active_tab = requested if requested in ORG_STRUCTURE_TAB_KEYS else 'branches'
-    branch_ids = get_accessible_branch_ids(request.user)
-
-    branches = list(filter_branches_queryset(
-        request.user,
-        Branch.objects.select_related('company', 'manager').all(),
-    ))
-    cost_centers_qs = CostCenter.objects.select_related('branch').order_by('branch__name', 'name')
-    if branch_ids is not None:
-        cost_centers_qs = cost_centers_qs.filter(branch_id__in=branch_ids)
-    cost_centers = list(cost_centers_qs)
-    departments_qs = Department.objects.select_related(
-        'branch', 'cost_center', 'manager',
-    ).order_by('branch__name', 'name')
-    if branch_ids is not None:
-        departments_qs = departments_qs.filter(branch_id__in=branch_ids)
-    departments = list(departments_qs)
-
-    setup_lists = {
-        'nationalities': get_cached_list(
-            'nationalities', lambda: Nationality.objects.all(),
-        ),
-        'professions': get_cached_list(
-            'professions', lambda: Profession.objects.all(),
-        ),
-        'sponsorships': get_cached_list(
-            'sponsorships', lambda: Sponsorship.objects.all(),
-        ),
-        'insurances': get_cached_list(
-            'insurances', lambda: Insurance.objects.all(),
-        ),
-        'insurance_classes': get_cached_list(
-            'insurance_classes', lambda: InsuranceClass.objects.all(),
-        ),
-        'buildings': get_cached_list(
-            'buildings',
-            lambda: Building.objects.filter(is_deleted=False).order_by('name'),
-        ),
-        'banks': get_cached_list(
-            'banks',
-            lambda: Bank.objects.filter(is_deleted=False).order_by('name'),
-        ),
-        'administrations': get_cached_list(
-            'administrations',
-            lambda: list(
-                Administration.objects.filter(is_deleted=False)
-                .select_related('manager')
-                .order_by('code', 'name'),
-            ),
-        ),
-    }
-
+    """شاشة الهيكل التنظيمي — الهيكل والتبويبات فقط؛ المحتوى يُحمَّل عند الطلب."""
+    active_tab = resolve_org_tab(request.GET.get('tab'))
     return render(request, 'pages/branches/list.html', {
-        'branches': branches,
-        'cost_centers': cost_centers,
-        'departments': departments,
         'active_tab': active_tab,
-        'org_perms': org_structure_permissions(request.user),
-        **setup_lists,
+        'org_tab_url': reverse('web:org_structure_tab'),
     })
+
+
+@login_required
+@permission_required('branches.view')
+def org_structure_tab(request):
+    """جزء HTML لتبويب واحد (HTMX)."""
+    tab = resolve_org_tab(request.GET.get('tab'))
+    ctx = get_org_tab_context(request.user, tab)
+    return render(request, 'pages/branches/_org_structure_tab.html', ctx)
 
 @login_required
 @permission_required('branches.view')
