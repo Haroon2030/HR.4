@@ -2522,6 +2522,37 @@ body.hr-app .hover\:bg-rose-700:hover {
     background: rgba(190, 18, 60, 0.92) !important;
 }
 
+/* ── زر داكن (ملف الموظف — إضافة سريعة / تصدير / تعديل) ── */
+body.hr-app .hr-btn-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #0f172a;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    font-size: 0.875rem;
+    font-weight: 600 !important;
+    line-height: 1.25;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+}
+
+body.hr-app .hr-btn-dark:hover {
+    background: #1e293b !important;
+    border-color: #1e293b;
+    color: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.22);
+}
+
+body.hr-app .hr-btn-dark svg {
+    stroke: #ffffff !important;
+    color: #ffffff !important;
+}
+
 /* ── أزرار الطلبات السريعة (نوافذ منبثقة) ── */
 body.hr-app .hr-quick-btn {
     display: inline-flex;
