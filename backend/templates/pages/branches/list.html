@@ -5,16 +5,32 @@
      x-data="{
         activeTab: '{{ active_tab|default:'branches' }}',
         orgTabs: ['branches','cost_centers','departments','administrations','nationalities','professions','sponsorships','insurances','insurance_classes','buildings','banks'],
+        orgTabLabels: {
+            branches: 'الفروع',
+            cost_centers: 'مراكز التكلفة',
+            departments: 'الأقسام',
+            administrations: 'الإدارات',
+            nationalities: 'الجنسيات',
+            professions: 'المهن',
+            sponsorships: 'الكفالات',
+            insurances: 'التأمينات',
+            insurance_classes: 'فئات التأمين',
+            buildings: 'السكن',
+            banks: 'البنوك',
+        },
         orgTabUrl: '{{ org_tab_url }}',
         tabLoading: true,
+        loadingLabel: 'جاري التحميل',
         loadOrgTab(tab) {
             if (!this.orgTabs.includes(tab)) return;
+            this.loadingLabel = 'جاري تحميل ' + (this.orgTabLabels[tab] || 'البيانات');
             this.tabLoading = true;
             htmx.ajax('GET', this.orgTabUrl + '?tab=' + encodeURIComponent(tab), {
                 target: '#org-tab-content',
                 swap: 'innerHTML',
                 indicator: '#org-tab-noop-indicator'
             });
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
         }
      }"
      x-init="
@@ -38,6 +54,8 @@
             if (window.lucide) lucide.createIcons();
         });
      ">
+    {% include "components/glass_loading_popup.html" with show_expr="tabLoading" label_expr="loadingLabel" %}
+
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">إدارة الهيكل التنظيمي</h1>
@@ -49,13 +67,9 @@
 
         <div id="org-tab-panel" class="relative min-h-[12rem]">
             <span id="org-tab-noop-indicator" class="hidden" aria-hidden="true"></span>
-            <div x-show="tabLoading"
-                 x-cloak
-                 class="absolute inset-0 z-10 flex items-center justify-center bg-white/85 text-slate-400">
-                <span class="hr-org-tab-spinner" aria-hidden="true"></span>
-                <span class="ms-2 text-sm">جاري التحميل...</span>
-            </div>
             <div id="org-tab-content"
+                 class="transition-opacity duration-200"
+                 :class="tabLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'"
                  @htmx:after-swap.window="if ($event.detail.target?.id === 'org-tab-content') { tabLoading = false; if (window.lucide) lucide.createIcons(); }"
                  @htmx:response-error.window="if ($event.detail.target?.id === 'org-tab-content') tabLoading = false"
                  @htmx:send-error.window="if ($event.detail.target?.id === 'org-tab-content') tabLoading = false"></div>
