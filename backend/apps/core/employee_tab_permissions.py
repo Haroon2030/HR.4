@@ -85,9 +85,10 @@ def resolve_default_employee_tab(
     requested: str | None = None,
     *,
     allowed_keys: tuple[str, ...] | None = None,
+    visible: dict[str, bool] | None = None,
 ) -> str:
     """أول تبويب مسموح — أو المطلوب إن كان مسموحاً."""
-    visible = employee_tab_visibility(user)
+    visible = visible if visible is not None else employee_tab_visibility(user)
     keys = allowed_keys or TAB_KEYS
     if requested and requested in keys and visible.get(requested):
         return requested
@@ -97,8 +98,13 @@ def resolve_default_employee_tab(
     return 'main'
 
 
-def employee_tab_nav_for_user(user, *, keys: tuple[str, ...] | None = None) -> list[dict]:
-    visible = employee_tab_visibility(user)
+def employee_tab_nav_for_user(
+    user,
+    *,
+    keys: tuple[str, ...] | None = None,
+    visible: dict[str, bool] | None = None,
+) -> list[dict]:
+    visible = visible if visible is not None else employee_tab_visibility(user)
     tabs = EMPLOYEE_TABS
     if keys is not None:
         allowed = frozenset(keys)
@@ -118,14 +124,19 @@ def enrich_employee_page_context(
 ) -> dict:
     from django.conf import settings
 
-    context['tab_visible'] = employee_tab_visibility(user)
+    tab_visible = employee_tab_visibility(user)
+    context['tab_visible'] = tab_visible
     context['can_view_salary'] = user_can_view_salary(user)
     context['can_edit_salary'] = user_can_edit_salary(user)
     context['hr_notification_email'] = (
         getattr(settings, 'HR_NOTIFICATION_EMAIL', '') or ''
     )
     nav_keys = EDIT_FORM_TAB_KEYS if edit_form else None
-    context['employee_tab_nav'] = employee_tab_nav_for_user(user, keys=nav_keys)
+    context['employee_tab_nav'] = employee_tab_nav_for_user(
+        user, keys=nav_keys, visible=tab_visible,
+    )
     allowed = tuple(nav_keys) if nav_keys else TAB_KEYS
-    context['default_employee_tab'] = resolve_default_employee_tab(user, requested_tab, allowed_keys=allowed)
+    context['default_employee_tab'] = resolve_default_employee_tab(
+        user, requested_tab, allowed_keys=allowed, visible=tab_visible,
+    )
     return context

@@ -60,21 +60,37 @@ def _any_perm(user, *codes: str) -> bool:
 
 def org_structure_permissions(user) -> dict[str, bool]:
     """أزرار الكتابة في شاشة تهيئة النظام (الفروع + بيانات النظام)."""
+    if _is_super_or_admin(user):
+        return {
+            'branch_write': True,
+            'branch_edit': True,
+            'branch_delete': True,
+            'cost_center_write': True,
+            'cost_center_edit': True,
+            'cost_center_delete': True,
+            'department_write': True,
+            'department_edit': True,
+            'department_delete': True,
+            'system_data_add': True,
+            'system_data_edit': True,
+            'system_data_delete': True,
+        }
+    perms = get_user_permissions(user)
+
+    def _has(*codes: str) -> bool:
+        return any(c in perms for c in codes)
+
     return {
-        'branch_write': _any_perm(
-            user, 'branches.add', 'branches.edit', 'branches.manage',
-        ),
-        'branch_edit': _any_perm(user, 'branches.edit', 'branches.manage'),
-        'branch_delete': _any_perm(user, 'branches.delete', 'branches.manage'),
-        'cost_center_write': _any_perm(user, 'cost_centers.add', 'cost_centers.edit'),
-        'cost_center_edit': _any_perm(user, 'cost_centers.edit'),
-        'cost_center_delete': _any_perm(user, 'cost_centers.delete'),
-        'department_write': _any_perm(
-            user, 'departments.add', 'departments.edit', 'departments.manage',
-        ),
-        'department_edit': _any_perm(user, 'departments.edit', 'departments.manage'),
-        'department_delete': _any_perm(user, 'departments.delete', 'departments.manage'),
-        'system_data_add': _any_perm(user, 'system_data.add'),
-        'system_data_edit': _any_perm(user, 'system_data.edit'),
-        'system_data_delete': _any_perm(user, 'system_data.delete'),
+        'branch_write': _has('branches.add', 'branches.edit', 'branches.manage'),
+        'branch_edit': _has('branches.edit', 'branches.manage'),
+        'branch_delete': _has('branches.delete', 'branches.manage'),
+        'cost_center_write': _has('cost_centers.add', 'cost_centers.edit'),
+        'cost_center_edit': _has('cost_centers.edit'),
+        'cost_center_delete': _has('cost_centers.delete'),
+        'department_write': _has('departments.add', 'departments.edit', 'departments.manage'),
+        'department_edit': _has('departments.edit', 'departments.manage'),
+        'department_delete': _has('departments.delete', 'departments.manage'),
+        'system_data_add': _has('system_data.add'),
+        'system_data_edit': _has('system_data.edit'),
+        'system_data_delete': _has('system_data.delete'),
     }

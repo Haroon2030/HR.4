@@ -20,6 +20,7 @@
   - إنشاء/تعديل/ترحيل: payroll.manage أو payroll.process
   - إلغاء ترحيل: payroll.manage + superuser فقط
 """
+from dataclasses import dataclass, field
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -78,6 +79,56 @@ def _user_branches(user):
     if not branch_ids:
         return Branch.objects.none()
     return qs.filter(id__in=branch_ids).order_by('name')
+
+
+@dataclass
+class PayrollBranchScope:
+    """فروع المسير — تُحمَّل مرة واحدة لكل طلب لتجنب تكرار استعلامات الفروع."""
+    branches: list
+    _all_branch_ids: list[int] = field(default_factory=list, repr=False)
+    _all_branch_id_set: set[int] = field(default_factory=set, repr=False)
+    _allowed_company_ids: list[int] = field(default_factory=list, repr=False)
+
+    def __post_init__(self):
+        self._all_branch_ids = [b.id for b in self.branches]
+        self._all_branch_id_set = set(self._all_branch_ids)
+        self._allowed_company_ids = list({
+            b.company_id for b in self.branches if b.company_id
+        })
+
+    @property
+    def all_branch_ids(self) -> list[int]:
+        return self._all_branch_ids
+
+    @property
+    def all_branch_id_set(self) -> set[int]:
+        return self._all_branch_id_set
+
+    @property
+    def allowed_company_ids(self) -> list[int]:
+        return self._allowed_company_ids
+
+    def resolved_branch_ids(self, filters: dict) -> list[int]:
+        ids = filters.get('branch_ids')
+        if ids:
+            return list(dict.fromkeys(ids))
+        return self._all_branch_ids
+
+    def company_ids_for(self, branch_ids: list[int]) -> list[int]:
+        id_set = set(branch_ids)
+        return list({
+            b.company_id for b in self.branches
+            if b.id in id_set and b.company_id
+        })
+
+
+def _payroll_branch_scope(user) -> PayrollBranchScope:
+    cached = getattr(user, '_payroll_branch_scope_cache', None)
+    if cached is not None:
+        return cached
+    scope = PayrollBranchScope(branches=list(_user_branches(user)))
+    user._payroll_branch_scope_cache = scope
+    return scope
 
 
 def _payroll_list_querystring(
@@ -144,12 +195,9 @@ def _effective_sponsorship_ids(filters) -> list[int]:
     return list(ids)
 
 
-def _resolved_branch_ids(filters, user_branches) -> list[int]:
+def _resolved_branch_ids(filters, scope: PayrollBranchScope) -> list[int]:
     """فروع المسير — None في الفلتر = جميع الفروع المتاحة للمستخدم."""
-    ids = filters.get('branch_ids')
-    if ids:
-        return list(dict.fromkeys(ids))
-    return list(user_branches.values_list('id', flat=True))
+    return scope.resolved_branch_ids(filters)
 
 
 def _branches_by_company(branches) -> list[list]:
@@ -199,11 +247,9 @@ def _store_payroll_list_filters(request, filters: dict) -> None:
     request.session.modified = True
 
 
-def _consolidated_runs_qs(filters: dict, user, user_branches, branch_ids):
+def _consolidated_runs_qs(filters: dict, user, scope: PayrollBranchScope, branch_ids):
     """مسيرات موحّدة لشركات الفروع المحددة."""
-    company_ids = Branch.objects.filter(
-        id__in=branch_ids,
-    ).values_list('company_id', flat=True).distinct()
+    company_ids = scope.company_ids_for(branch_ids)
     qs = PayrollRun.objects.filter(
         run_kind=PayrollRun.RunKind.CONSOLIDATED,
         period_year=filters['year'],
@@ -212,8 +258,7 @@ def _consolidated_runs_qs(filters: dict, user, user_branches, branch_ids):
         company_id__in=company_ids,
     ).select_related('company', 'sponsorship')
     if not user.is_superuser:
-        allowed = user_branches.values_list('company_id', flat=True).distinct()
-        qs = qs.filter(company_id__in=allowed)
+        qs = qs.filter(company_id__in=scope.allowed_company_ids)
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
         sp_ids = filters.get('sponsorship_ids')
         if sp_ids is not None:
@@ -228,23 +273,22 @@ def _prefer_consolidated_runs(filters: dict, branch_ids) -> bool:
     return len(branch_ids) > 1 or not filters.get('branch_ids')
 
 
-def _user_may_access_payroll_run(user, run: PayrollRun, user_branches) -> bool:
+def _user_may_access_payroll_run(user, run: PayrollRun, scope: PayrollBranchScope) -> bool:
     if user.is_superuser:
         return True
     if run.run_kind in (PayrollRun.RunKind.CONSOLIDATED, PayrollRun.RunKind.DETAILED):
-        allowed = user_branches.values_list('company_id', flat=True).distinct()
-        return run.company_id in allowed
-    return run.branch_id and run.branch in user_branches
+        return run.company_id in scope.allowed_company_ids
+    return bool(run.branch_id and run.branch_id in scope.all_branch_id_set)
 
 
-def _prune_empty_consolidated_drafts(filters: dict, user, user_branches, salary_mode: str) -> int:
+def _prune_empty_consolidated_drafts(filters: dict, user, scope: PayrollBranchScope, salary_mode: str) -> int:
     """إزالة مسودات موحّدة فارغة (بدون موظفين) من العرض."""
-    branch_ids = list(_resolved_branch_ids(filters, user_branches))
+    branch_ids = _resolved_branch_ids(filters, scope)
     if not _prefer_consolidated_runs(filters, branch_ids):
         return 0
     mode_filters = dict(filters)
     mode_filters['salary_mode'] = salary_mode
-    qs = _consolidated_runs_qs(mode_filters, user, user_branches, branch_ids)
+    qs = _consolidated_runs_qs(mode_filters, user, scope, branch_ids)
     empty_ids = list(
         qs.filter(
             status=PayrollRun.Status.DRAFT,
@@ -257,12 +301,12 @@ def _prune_empty_consolidated_drafts(filters: dict, user, user_branches, salary_
     return len(empty_ids)
 
 
-def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=None):
+def _draft_runs_for_period(filters: dict, user, scope: PayrollBranchScope, *, branch_ids=None):
     """مسودات لشهر محدد (موحّدة أو STANDARD حسب الفلاتر)."""
     year, month = filters.get('year'), filters.get('month')
     if not year or not month:
         return []
-    resolved = branch_ids or list(_resolved_branch_ids(filters, user_branches))
+    resolved = branch_ids or _resolved_branch_ids(filters, scope)
     if _prefer_consolidated_runs(filters, resolved):
         qs = PayrollRun.objects.filter(
             period_year=year,
@@ -271,8 +315,7 @@ def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=Non
             status=PayrollRun.Status.DRAFT,
         )
         if not user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            qs = qs.filter(company_id__in=allowed)
+            qs = qs.filter(company_id__in=scope.allowed_company_ids)
         return list(qs.select_related('company', 'sponsorship').order_by('-updated_at'))
     qs = PayrollRun.objects.filter(
         period_year=year,
@@ -281,7 +324,7 @@ def _draft_runs_for_period(filters: dict, user, user_branches, *, branch_ids=Non
         status=PayrollRun.Status.DRAFT,
     )
     if not user.is_superuser:
-        qs = qs.filter(branch__in=user_branches)
+        qs = qs.filter(branch_id__in=scope.all_branch_ids)
     if branch_ids:
         qs = qs.filter(branch_id__in=branch_ids)
     return list(qs.select_related('branch', 'sponsorship').order_by('-updated_at'))
@@ -295,19 +338,20 @@ def _payroll_line_prefetch():
 
 
 def _period_payroll_run_count(
-    filters: dict, user, user_branches, salary_mode: str, *, branch_ids=None,
+    filters: dict, user, scope: PayrollBranchScope, salary_mode: str, *, branch_ids=None,
 ) -> int:
     """عدد مسيرات الشهر ونوع الراتب — بدون تحميل الأسطر."""
     year, month = filters.get('year'), filters.get('month')
     if not year or not month or salary_mode not in PayrollRun.SalaryMode.values:
         return 0
-    resolved = branch_ids if branch_ids is not None else list(_resolved_branch_ids(filters, user_branches))
+    resolved = branch_ids if branch_ids is not None else _resolved_branch_ids(filters, scope)
     if _prefer_consolidated_runs(filters, resolved):
         mode_filters = dict(filters)
         mode_filters['salary_mode'] = salary_mode
-        qs = _consolidated_runs_qs(mode_filters, user, user_branches, resolved)
-        if qs.exists():
-            return qs.count()
+        qs = _consolidated_runs_qs(mode_filters, user, scope, resolved)
+        count = qs.count()
+        if count:
+            return count
     qs = PayrollRun.objects.filter(
         period_year=year,
         period_month=month,
@@ -315,23 +359,23 @@ def _period_payroll_run_count(
         salary_mode=salary_mode,
     )
     if not user.is_superuser:
-        qs = qs.filter(branch__in=user_branches)
+        qs = qs.filter(branch_id__in=scope.all_branch_ids)
     if branch_ids:
         qs = qs.filter(branch_id__in=branch_ids)
     return qs.count()
 
 
-def _period_payroll_runs(filters: dict, user, user_branches, salary_mode: str, *, branch_ids=None):
+def _period_payroll_runs(filters: dict, user, scope: PayrollBranchScope, salary_mode: str, *, branch_ids=None):
     """مسيرات الشهر ونوع الراتب — موحّدة أو حسب الفرع."""
     year, month = filters.get('year'), filters.get('month')
     if not year or not month or salary_mode not in PayrollRun.SalaryMode.values:
         return []
-    resolved = branch_ids if branch_ids is not None else list(_resolved_branch_ids(filters, user_branches))
+    resolved = branch_ids if branch_ids is not None else _resolved_branch_ids(filters, scope)
     line_prefetch = _payroll_line_prefetch()
     if _prefer_consolidated_runs(filters, resolved):
         mode_filters = dict(filters)
         mode_filters['salary_mode'] = salary_mode
-        qs = _consolidated_runs_qs(mode_filters, user, user_branches, resolved)
+        qs = _consolidated_runs_qs(mode_filters, user, scope, resolved)
         consolidated = list(
             qs.prefetch_related(line_prefetch)
             .order_by('status', 'sponsorship__company_name', 'id'),
@@ -345,7 +389,7 @@ def _period_payroll_runs(filters: dict, user, user_branches, salary_mode: str, *
         salary_mode=salary_mode,
     ).select_related('branch', 'sponsorship')
     if not user.is_superuser:
-        qs = qs.filter(branch__in=user_branches)
+        qs = qs.filter(branch_id__in=scope.all_branch_ids)
     if branch_ids:
         qs = qs.filter(branch_id__in=branch_ids)
     return list(
@@ -354,10 +398,10 @@ def _period_payroll_runs(filters: dict, user, user_branches, salary_mode: str, *
     )
 
 
-def _payroll_mode_run_counts(filters: dict, user, user_branches, *, branch_ids=None) -> dict[str, int]:
+def _payroll_mode_run_counts(filters: dict, user, scope: PayrollBranchScope, *, branch_ids=None) -> dict[str, int]:
     return {
         mode: _period_payroll_run_count(
-            filters, user, user_branches, mode, branch_ids=branch_ids,
+            filters, user, scope, mode, branch_ids=branch_ids,
         )
         for mode in PayrollRun.SalaryMode.values
     }
@@ -390,11 +434,11 @@ def _period_run_totals(runs: list) -> dict:
     }
 
 
-def _runs_for_unified_export(filters: dict, user, user_branches):
+def _runs_for_unified_export(filters: dict, user, scope: PayrollBranchScope):
     """كل مسيرات الشهر/النوع في ملف تصدير واحد — بغض النظر عن فلتر فرع العرض."""
     export_filters = dict(filters)
     export_filters['branch_ids'] = None
-    return list(_payroll_runs_for_filters(export_filters, user, user_branches))
+    return list(_payroll_runs_for_filters(export_filters, user, scope))
 
 
 def _payroll_run_open_url(run: PayrollRun) -> str:
@@ -425,7 +469,7 @@ def _apply_draft_run_to_filters(filters: dict, run: PayrollRun) -> dict:
     return filters
 
 
-def _infer_payroll_filters_from_drafts(filters: dict, user, user_branches) -> dict:
+def _infer_payroll_filters_from_drafts(filters: dict, user, scope: PayrollBranchScope) -> dict:
     """استنتاج الفروع/النوع/الكفالة من مسودات محفوظة لنفس الشهر."""
     if filters.get('salary_mode'):
         return filters
@@ -435,7 +479,7 @@ def _infer_payroll_filters_from_drafts(filters: dict, user, user_branches) -> di
         return filters
 
     branch_ids = filters.get('branch_ids') or None
-    runs = _draft_runs_for_period(filters, user, user_branches, branch_ids=branch_ids)
+    runs = _draft_runs_for_period(filters, user, scope, branch_ids=branch_ids)
     if not runs:
         return filters
 
@@ -506,7 +550,7 @@ def _payroll_filters_missing_from_query(request, filters: dict) -> bool:
     return False
 
 
-def _restore_payroll_list_filters(request, filters: dict, user, user_branches):
+def _restore_payroll_list_filters(request, filters: dict, user, scope: PayrollBranchScope):
     """استعادة آخر فلاتر أو مسودات محفوظة عند فتح الصفحة."""
     filters = _default_payroll_period(filters)
     if request.method != 'GET':
@@ -528,7 +572,7 @@ def _restore_payroll_list_filters(request, filters: dict, user, user_branches):
             restore_payroll_view=restore_payroll_view,
         )
 
-    filters = _infer_payroll_filters_from_drafts(filters, user, user_branches)
+    filters = _infer_payroll_filters_from_drafts(filters, user, scope)
     if not filters.get('salary_mode'):
         filters['salary_mode'] = PayrollRun.SalaryMode.TRANSFER
     filters = _recompute_payroll_ready(filters)
@@ -539,11 +583,11 @@ def _restore_payroll_list_filters(request, filters: dict, user, user_branches):
     return filters, redirect_response
 
 
-def _count_saved_draft_runs(filters: dict, user, user_branches) -> int:
+def _count_saved_draft_runs(filters: dict, user, scope: PayrollBranchScope) -> int:
     year, month = filters.get('year'), filters.get('month')
     if not year or not month:
         return 0
-    branch_ids = list(_resolved_branch_ids(filters, user_branches))
+    branch_ids = _resolved_branch_ids(filters, scope)
     if _prefer_consolidated_runs(filters, branch_ids):
         qs = PayrollRun.objects.filter(
             period_year=year,
@@ -552,8 +596,7 @@ def _count_saved_draft_runs(filters: dict, user, user_branches) -> int:
             status=PayrollRun.Status.DRAFT,
         )
         if not user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            qs = qs.filter(company_id__in=allowed)
+            qs = qs.filter(company_id__in=scope.allowed_company_ids)
         return qs.count()
     qs = PayrollRun.objects.filter(
         period_year=year,
@@ -562,15 +605,15 @@ def _count_saved_draft_runs(filters: dict, user, user_branches) -> int:
         status=PayrollRun.Status.DRAFT,
     )
     if not user.is_superuser:
-        qs = qs.filter(branch__in=user_branches)
+        qs = qs.filter(branch_id__in=scope.all_branch_ids)
     if filters.get('branch_ids'):
         qs = qs.filter(branch_id__in=filters['branch_ids'])
     return qs.count()
 
 
-def _parse_payroll_form(request, user_branches):
+def _parse_payroll_form(request, scope: PayrollBranchScope):
     """قراءة معايير المسير من GET أو POST."""
-    accessible = None if request.user.is_superuser else list(user_branches.values_list('id', flat=True))
+    accessible = None if request.user.is_superuser else scope.all_branch_ids
     use_post = request.method == 'POST'
     branch_ids = parse_multi_filter_ids(
         request, 'branch_id', accessible_ids=accessible,
@@ -622,9 +665,9 @@ def _parse_payroll_form(request, user_branches):
     return _recompute_payroll_ready(_default_payroll_period(filters))
 
 
-def _validate_payroll_build(filters, user_branches):
+def _validate_payroll_build(filters, scope: PayrollBranchScope):
     """التحقق من صحة معايير البناء. يُرجع رسالة خطأ أو None."""
-    if not _resolved_branch_ids(filters, user_branches):
+    if not _resolved_branch_ids(filters, scope):
         return 'لا توجد فروع متاحة لحسابك.'
     y, m = filters['year'], filters['month']
     if not y or not m or not (2020 <= y <= 2100 and 1 <= m <= 12):
@@ -642,11 +685,11 @@ def _validate_payroll_build(filters, user_branches):
     return None
 
 
-def _build_payroll_runs(request, filters, user_branches):
+def _build_payroll_runs(request, filters, scope: PayrollBranchScope):
     """بناء مسير موحّد (عدة فروع) أو مسير لكل فرع (فرع واحد)."""
     from django.db import transaction
 
-    branch_ids = _resolved_branch_ids(filters, user_branches)
+    branch_ids = _resolved_branch_ids(filters, scope)
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
         return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.']
@@ -696,11 +739,11 @@ def _build_payroll_runs(request, filters, user_branches):
     return runs_built, errors
 
 
-def _payroll_runs_for_filters(filters, user, user_branches):
+def _payroll_runs_for_filters(filters, user, scope: PayrollBranchScope):
     """مسيرات مطابقة للمعايير — موحّدة أو حسب الفرع."""
-    branch_ids = list(_resolved_branch_ids(filters, user_branches))
+    branch_ids = _resolved_branch_ids(filters, scope)
     if _prefer_consolidated_runs(filters, branch_ids):
-        qs = _consolidated_runs_qs(filters, user, user_branches, branch_ids)
+        qs = _consolidated_runs_qs(filters, user, scope, branch_ids)
         if qs.exists():
             return qs.order_by('sponsorship__company_name')
     qs = PayrollRun.objects.filter(
@@ -711,7 +754,7 @@ def _payroll_runs_for_filters(filters, user, user_branches):
         run_kind=PayrollRun.RunKind.STANDARD,
     ).select_related('branch', 'sponsorship')
     if not user.is_superuser:
-        qs = qs.filter(branch__in=user_branches)
+        qs = qs.filter(branch_id__in=scope.all_branch_ids)
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
         sp_ids = filters.get('sponsorship_ids')
         if sp_ids is not None:
@@ -721,12 +764,10 @@ def _payroll_runs_for_filters(filters, user, user_branches):
     return qs.order_by('branch__name')
 
 
-def _detailed_runs_for_filters(filters, user, user_branches):
+def _detailed_runs_for_filters(filters, user, scope: PayrollBranchScope):
     """مسيرات تفصيلية موحّدة للشركات المرتبطة بالفروع المختارة."""
-    branch_ids = _resolved_branch_ids(filters, user_branches)
-    company_ids = Branch.objects.filter(
-        id__in=branch_ids,
-    ).values_list('company_id', flat=True).distinct()
+    branch_ids = _resolved_branch_ids(filters, scope)
+    company_ids = scope.company_ids_for(branch_ids)
     qs = PayrollRun.objects.filter(
         company_id__in=company_ids,
         period_year=filters['year'],
@@ -735,24 +776,23 @@ def _detailed_runs_for_filters(filters, user, user_branches):
         run_kind=PayrollRun.RunKind.DETAILED,
     ).select_related('company', 'sponsorship')
     if not user.is_superuser:
-        allowed = user_branches.values_list('company_id', flat=True).distinct()
-        qs = qs.filter(company_id__in=allowed)
-    unified_qs = qs.filter(sponsorship__isnull=True)
-    if unified_qs.exists():
-        return unified_qs.order_by('period_year', 'period_month', 'company__name')
+        qs = qs.filter(company_id__in=scope.allowed_company_ids)
+    runs = list(qs.order_by('period_year', 'period_month', 'company__name'))
+    unified = [r for r in runs if r.sponsorship_id is None]
+    if unified:
+        return unified
     if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
         sp_ids = filters.get('sponsorship_ids')
         if sp_ids is not None:
-            qs = qs.filter(sponsorship_id__in=sp_ids)
-    else:
-        qs = qs.filter(sponsorship__isnull=True)
-    return qs.order_by('period_year', 'period_month', 'company__name')
+            sp_set = set(sp_ids)
+            return [r for r in runs if r.sponsorship_id in sp_set]
+    return [r for r in runs if r.sponsorship_id is None]
 
 
-def _build_detailed_payroll_runs(request, filters, user_branches):
+def _build_detailed_payroll_runs(request, filters, scope: PayrollBranchScope):
     from django.db import transaction
 
-    branch_ids = _resolved_branch_ids(filters, user_branches)
+    branch_ids = _resolved_branch_ids(filters, scope)
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
     if len(branches) != len(branch_ids):
         return [], ['أحد الفروع المختارة غير صالح أو غير متاح لحسابك.'], False
@@ -799,7 +839,7 @@ def _build_detailed_payroll_runs(request, filters, user_branches):
     return runs_built, errors, had_detailed_draft
 
 
-def _financial_audit_for_list(filters, user, user_branches, *, payroll_view: str, period_runs, detailed_runs):
+def _financial_audit_for_list(filters, user, scope: PayrollBranchScope, *, payroll_view: str, period_runs, detailed_runs):
     from apps.payroll.services.financial_audit import audit_payroll_runs
 
     if payroll_view == 'detailed':
@@ -807,9 +847,9 @@ def _financial_audit_for_list(filters, user, user_branches, *, payroll_view: str
     return audit_payroll_runs(period_runs)
 
 
-def _lock_payroll_runs_for_filters(request, filters, user, user_branches):
+def _lock_payroll_runs_for_filters(request, filters, user, scope: PayrollBranchScope):
     """ترحيل كل مسيرات STANDARD المطابقة للفلاتر. يُرجع (locked_count, errors)."""
-    runs = list(_payroll_runs_for_filters(filters, user, user_branches))
+    runs = list(_payroll_runs_for_filters(filters, user, scope))
     locked = 0
     errors = []
     skipped = 0
@@ -856,10 +896,10 @@ def _redirect_payroll_list(request, filters, *, open_run_id=None):
 @permission_required('payroll.view')
 def list_payroll_runs(request):
     """بناء مسيرات لعدة فروع وعرض كل أسطر الموظفين في جدول واحد."""
-    user_branches = _user_branches(request.user)
-    filters = _parse_payroll_form(request, user_branches)
+    scope = _payroll_branch_scope(request.user)
+    filters = _parse_payroll_form(request, scope)
     filters, redirect_response = _restore_payroll_list_filters(
-        request, filters, request.user, user_branches,
+        request, filters, request.user, scope,
     )
     if redirect_response is not None:
         return redirect_response
@@ -871,12 +911,12 @@ def list_payroll_runs(request):
         if not user_can_manage_payroll(request.user):
             messages.error(request, 'ليس لديك صلاحية إدارة المسير.')
         else:
-            err = _validate_payroll_build(filters, user_branches)
+            err = _validate_payroll_build(filters, scope)
             if err:
                 messages.error(request, err)
             elif payroll_action == 'lock':
                 runs_to_audit = [
-                    r for r in _payroll_runs_for_filters(filters, request.user, user_branches)
+                    r for r in _payroll_runs_for_filters(filters, request.user, scope)
                     if r.status == PayrollRun.Status.DRAFT
                 ]
                 from apps.payroll.services.financial_audit import audit_payroll_runs
@@ -898,7 +938,7 @@ def list_payroll_runs(request):
                             break
                 else:
                     locked, lock_errors = _lock_payroll_runs_for_filters(
-                        request, filters, request.user, user_branches,
+                        request, filters, request.user, scope,
                     )
                     for e in lock_errors:
                         messages.error(request, e)
@@ -909,9 +949,9 @@ def list_payroll_runs(request):
                         )
             elif payroll_action == 'save' or build_kind == 'standard':
                 had_standard_draft = bool(
-                    _draft_runs_for_period(filters, request.user, user_branches),
+                    _draft_runs_for_period(filters, request.user, scope),
                 )
-                runs_built, build_errors = _build_payroll_runs(request, filters, user_branches)
+                runs_built, build_errors = _build_payroll_runs(request, filters, scope)
                 for e in build_errors:
                     messages.error(request, e)
                 if runs_built:
@@ -957,7 +997,7 @@ def list_payroll_runs(request):
                     )
             elif build_kind == 'detailed':
                 runs_built, build_errors, had_detailed_draft = _build_detailed_payroll_runs(
-                    request, filters, user_branches,
+                    request, filters, scope,
                 )
                 for e in build_errors:
                     messages.error(request, e)
@@ -1007,9 +1047,8 @@ def list_payroll_runs(request):
     detailed_run_count = 0
     has_detailed_draft = False
     if filters['ready'] and active_payroll_view == 'detailed':
-        branch_ids_for_detailed = _resolved_branch_ids(filters, user_branches)
         detailed_runs_all = list(
-            _detailed_runs_for_filters(filters, request.user, user_branches),
+            _detailed_runs_for_filters(filters, request.user, scope),
         )
         from django.core.paginator import Paginator
         detailed_runs_paginator = Paginator(detailed_runs_all, 6)
@@ -1026,21 +1065,25 @@ def list_payroll_runs(request):
         detailed_totals = _period_run_totals(detailed_runs_all)
         has_payroll_lines = any(int(r.employees_count or 0) > 0 for r in detailed_runs_all)
     elif filters['ready']:
-        detailed_run_count = _detailed_runs_for_filters(
-            filters, request.user, user_branches,
-        ).count()
+        detailed_run_count = len(_detailed_runs_for_filters(
+            filters, request.user, scope,
+        ))
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
-    saved_drafts_count = _count_saved_draft_runs(filters, request.user, user_branches)
+    saved_drafts_count = _count_saved_draft_runs(filters, request.user, scope)
     active_mode = filters.get('salary_mode') or PayrollRun.SalaryMode.TRANSFER
-    if filters['ready']:
-        _prune_empty_consolidated_drafts(filters, request.user, user_branches, active_mode)
-    period_runs_all = _period_payroll_runs(
-        filters, request.user, user_branches, active_mode,
-        branch_ids=filters['branch_ids'] or None,
-    )
-    period_totals = _period_run_totals(period_runs_all)
+    if filters['ready'] and active_payroll_view != 'detailed':
+        _prune_empty_consolidated_drafts(filters, request.user, scope, active_mode)
+    if active_payroll_view == 'detailed':
+        period_runs_all = []
+        period_totals = _period_run_totals(period_runs_all)
+    else:
+        period_runs_all = _period_payroll_runs(
+            filters, request.user, scope, active_mode,
+            branch_ids=filters['branch_ids'] or None,
+        )
+        period_totals = _period_run_totals(period_runs_all)
     if filters['ready']:
         if active_payroll_view == 'detailed':
             has_draft_runs = has_detailed_draft
@@ -1060,7 +1103,7 @@ def list_payroll_runs(request):
     period_runs = list(period_runs_page_obj.object_list)
     runs_start_index = period_runs_page_obj.start_index()
     mode_run_counts = _payroll_mode_run_counts(
-        filters, request.user, user_branches,
+        filters, request.user, scope,
         branch_ids=filters['branch_ids'] or None,
     )
     tab_qs_base = {
@@ -1084,7 +1127,8 @@ def list_payroll_runs(request):
         sponsorship_ids=filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None,
         payroll_view='detailed',
     )
-    modal_runs = _modal_runs_for_list(period_runs, open_run_id)
+    modal_source = detailed_runs if active_payroll_view == 'detailed' else period_runs
+    modal_runs = _modal_runs_for_list(modal_source, open_run_id)
     if open_run_id and not any(r.pk == open_run_id for r in modal_runs):
         open_run_id = None
     for run in modal_runs:
@@ -1133,14 +1177,14 @@ def list_payroll_runs(request):
         financial_audit = _financial_audit_for_list(
             filters,
             request.user,
-            user_branches,
+            scope,
             payroll_view=active_payroll_view,
             period_runs=period_runs_all,
             detailed_runs=detailed_runs_all,
         )
 
     return render(request, 'pages/payroll/list.html', {
-        'branches': user_branches,
+        'branches': scope.branches,
         'sponsorships': sponsorships,
         'SALARY_MODE_CHOICES': PayrollRun.SalaryMode.choices,
         'current_year': today.year,
@@ -1197,7 +1241,7 @@ def list_payroll_runs(request):
         'detailed_run_count': detailed_run_count,
         'has_detailed_draft': has_detailed_draft,
         'prefer_unified_detailed': _prefer_consolidated_runs(
-            filters, _resolved_branch_ids(filters, user_branches),
+            filters, _resolved_branch_ids(filters, scope),
         ),
         'modal_runs': modal_runs,
         'financial_audit': financial_audit,
@@ -1231,8 +1275,8 @@ def delete_payroll_draft_run(request, run_id):
         PayrollRun.objects.select_related('branch', 'company', 'sponsorship'),
         id=run_id,
     )
-    user_branches = _user_branches(request.user)
-    if not _user_may_access_payroll_run(request.user, run, user_branches):
+    scope = _payroll_branch_scope(request.user)
+    if not _user_may_access_payroll_run(request.user, run, scope):
         raise Http404()
 
     filters = _filters_from_session_or_run(request, run)
@@ -1273,11 +1317,10 @@ def view_payroll_run(request, run_id):
         ),
         id=run_id,
     )
-    user_branches = _user_branches(request.user)
+    scope = _payroll_branch_scope(request.user)
     if run.run_kind == PayrollRun.RunKind.DETAILED:
         if not request.user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            if run.company_id not in allowed:
+            if run.company_id not in scope.allowed_company_ids:
                 raise Http404()
         from django.core.paginator import Paginator
         from apps.core.utils.pagination import clamp_page_size
@@ -1313,10 +1356,9 @@ def view_payroll_run(request, run_id):
 
     if run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
         if not request.user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            if run.company_id not in allowed:
+            if run.company_id not in scope.allowed_company_ids:
                 raise Http404()
-    elif not request.user.is_superuser and run.branch not in user_branches:
+    elif not request.user.is_superuser and run.branch_id not in scope.all_branch_id_set:
         raise Http404()
 
     from django.core.paginator import Paginator
@@ -1355,13 +1397,12 @@ def rebuild_payroll_run(request, run_id):
         return redirect('web:view_payroll_run', run_id=run_id)
 
     run = get_object_or_404(PayrollRun, id=run_id)
-    user_branches = _user_branches(request.user)
+    scope = _payroll_branch_scope(request.user)
     if run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
         if not request.user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            if run.company_id not in allowed:
+            if run.company_id not in scope.allowed_company_ids:
                 raise Http404()
-    elif not request.user.is_superuser and run.branch not in user_branches:
+    elif not request.user.is_superuser and run.branch_id not in scope.all_branch_id_set:
         raise Http404()
     try:
         if run.run_kind == PayrollRun.RunKind.DETAILED:
@@ -1374,8 +1415,9 @@ def rebuild_payroll_run(request, run_id):
                 ),
             )
         elif run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
-            branches = list(
-                user_branches.filter(company_id=run.company_id, is_active=True).order_by('name'),
+            branches = sorted(
+                (b for b in scope.branches if b.company_id == run.company_id and b.is_active),
+                key=lambda b: b.name,
             )
             build_consolidated_payroll_run(
                 branches, run.period_year, run.period_month, request.user,
@@ -1406,13 +1448,12 @@ def lock_payroll_run_view(request, run_id):
         return redirect('web:view_payroll_run', run_id=run_id)
 
     run = get_object_or_404(PayrollRun, id=run_id)
-    user_branches = _user_branches(request.user)
+    scope = _payroll_branch_scope(request.user)
     if run.run_kind == PayrollRun.RunKind.CONSOLIDATED:
         if not request.user.is_superuser:
-            allowed = user_branches.values_list('company_id', flat=True).distinct()
-            if run.company_id not in allowed:
+            if run.company_id not in scope.allowed_company_ids:
                 raise Http404()
-    elif not request.user.is_superuser and run.branch not in user_branches:
+    elif not request.user.is_superuser and run.branch_id not in scope.all_branch_id_set:
         raise Http404()
     from apps.payroll.services.financial_audit import audit_payroll_runs
     audit = audit_payroll_runs([run])
@@ -1483,10 +1524,10 @@ def export_payroll_list_excel(request):
         messages.error(request, 'مكتبة openpyxl غير مثبتة.')
         return redirect('web:list_payroll_runs')
 
-    user_branches = _user_branches(request.user)
-    filters = _parse_payroll_form(request, user_branches)
+    scope = _payroll_branch_scope(request.user)
+    filters = _parse_payroll_form(request, scope)
     filters, redirect_response = _restore_payroll_list_filters(
-        request, filters, request.user, user_branches,
+        request, filters, request.user, scope,
     )
     if redirect_response is not None:
         return redirect_response
@@ -1494,7 +1535,7 @@ def export_payroll_list_excel(request):
         messages.error(request, 'يرجى اختيار السنة والشهر ونوع الراتب أولاً.')
         return redirect('web:list_payroll_runs')
 
-    runs = _runs_for_unified_export(filters, request.user, user_branches)
+    runs = _runs_for_unified_export(filters, request.user, scope)
     if not runs:
         messages.error(request, 'لا يوجد مسير للتصدير — ابنِ المسير أولاً.')
         return _redirect_payroll_list(request, filters)
@@ -1534,8 +1575,8 @@ def export_payroll_run_excel(request, run_id):
         id=run_id,
     )
 
-    user_branches = _user_branches(request.user)
-    if not _user_may_access_payroll_run(request.user, run, user_branches):
+    scope = _payroll_branch_scope(request.user)
+    if not _user_may_access_payroll_run(request.user, run, scope):
         raise Http404()
 
     if run.run_kind == PayrollRun.RunKind.DETAILED:

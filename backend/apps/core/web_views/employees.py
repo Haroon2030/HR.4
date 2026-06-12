@@ -383,13 +383,23 @@ def save_employee_biometric_settings(request, employee_id):
 @employee_branch_access_required
 def edit_employee(request, employee_id):
     """تعديل ملف موظف - يكمل الأخصائي بقية الحقول"""
-    from apps.employees.models import Employee
+    from django.db.models import Prefetch
+    from apps.employees.models import Employee, EmployeeStatement
     from apps.employees.forms import EmployeeForm
 
     employee = get_object_or_404(
         Employee.objects.select_related(
             'branch', 'department', 'administration', 'cost_center', 'nationality',
             'profession', 'sponsorship', 'insurance', 'insurance_class', 'bank',
+            'employment_request', 'employment_request__requested_by',
+            'employment_request__reviewed_by',
+        ).prefetch_related(
+            Prefetch(
+                'statements_log',
+                queryset=EmployeeStatement.objects.select_related('created_by').order_by(
+                    '-statement_date', '-id',
+                ),
+            ),
         ),
         id=employee_id,
     )

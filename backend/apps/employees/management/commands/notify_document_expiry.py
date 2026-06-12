@@ -84,12 +84,29 @@ class Command(BaseCommand):
         sent = 0
         skipped = 0
 
+        row_prefixes: list[tuple] = []
+        prefix_set: set[str] = set()
         for row in rows:
             prefix = document_expiry_dedupe_prefix(
                 employee_id=row.employee_id,
                 document_code=row.document_code,
                 expiry_date=row.expiry_date,
             )
+            row_prefixes.append((row, prefix))
+            prefix_set.add(prefix)
+
+        recent_user_prefixes: set[tuple[int, str]] = set()
+        if cooldown_h > 0 and hr_users and prefix_set:
+            hr_user_ids = [u.pk for u in hr_users]
+            for recipient_id, message in Notification.objects.filter(
+                recipient_id__in=hr_user_ids,
+                created_at__gte=cutoff,
+            ).values_list('recipient_id', 'message'):
+                for prefix in prefix_set:
+                    if message.startswith(prefix):
+                        recent_user_prefixes.add((recipient_id, prefix))
+
+        for row, prefix in row_prefixes:
             title = f'{row.document_label} — ينتهي خلال {row.days_until} يوماً'
             if len(title) > 200:
                 title = title[:197] + '...'
@@ -112,11 +129,7 @@ class Command(BaseCommand):
                 continue
 
             for user in hr_users:
-                if cooldown_h > 0 and Notification.objects.filter(
-                    recipient=user,
-                    message__startswith=prefix,
-                    created_at__gte=cutoff,
-                ).exists():
+                if cooldown_h > 0 and (user.pk, prefix) in recent_user_prefixes:
                     skipped += 1
                     continue
                 notify(

@@ -46,11 +46,13 @@ def list_branches(request):
         request.user,
         Branch.objects.select_related('company', 'manager').all(),
     ))
-    cost_centers_qs = CostCenter.objects.select_related('branch').all()
+    cost_centers_qs = CostCenter.objects.select_related('branch').order_by('branch__name', 'name')
     if branch_ids is not None:
         cost_centers_qs = cost_centers_qs.filter(branch_id__in=branch_ids)
     cost_centers = list(cost_centers_qs)
-    departments_qs = Department.objects.select_related('branch', 'cost_center', 'manager').all()
+    departments_qs = Department.objects.select_related(
+        'branch', 'cost_center', 'manager',
+    ).order_by('branch__name', 'name')
     if branch_ids is not None:
         departments_qs = departments_qs.filter(branch_id__in=branch_ids)
     departments = list(departments_qs)

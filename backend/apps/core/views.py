@@ -323,7 +323,12 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def roles(self, request):
         """الحصول على قائمة الأدوار المتاحة"""
-        roles = assignable_roles_queryset(request.user)
+        from django.db.models import Count
+
+        roles = assignable_roles_queryset(request.user).annotate(
+            _permissions_count=Count('permissions', distinct=True),
+            _users_count=Count('users', distinct=True),
+        )
         return Response(RoleListSerializer(roles, many=True).data)
 
     @action(
