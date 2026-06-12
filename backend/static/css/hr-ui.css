@@ -4793,12 +4793,12 @@ body.hr-app .hr-app-main {
 .hr-glass-loading {
     position: fixed;
     inset: 0;
-    z-index: 80;
-    display: flex;
+    z-index: 200;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     padding: 1.25rem;
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 .hr-glass-loading__veil {
@@ -4812,7 +4812,7 @@ body.hr-app .hr-app-main {
 
 .hr-glass-loading__card {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -4820,11 +4820,11 @@ body.hr-app .hr-app-main {
     min-width: min(18rem, 88vw);
     padding: 1.35rem 1.65rem 1.25rem;
     border-radius: 1.15rem;
-    border: 1px solid rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.88);
     background: linear-gradient(
         145deg,
-        rgba(255, 255, 255, 0.82) 0%,
-        rgba(248, 250, 252, 0.68) 100%
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(248, 250, 252, 0.92) 100%
     );
     box-shadow:
         0 4px 6px rgba(15, 23, 42, 0.04),
@@ -4883,17 +4883,19 @@ body.hr-app .hr-app-main {
 
 .hr-glass-loading__title {
     margin: 0;
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
     letter-spacing: -0.01em;
+    text-align: center;
+    line-height: 1.4;
 }
 
 .hr-glass-loading__hint {
     margin: 0;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 600 !important;
+    color: #475569 !important;
     text-align: center;
     line-height: 1.45;
 }

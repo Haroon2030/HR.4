@@ -54,13 +54,13 @@
             if (window.lucide) lucide.createIcons();
         });
      ">
-    {% include "components/glass_loading_popup.html" with show_expr="tabLoading" label_expr="loadingLabel" %}
-
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">إدارة الهيكل التنظيمي</h1>
         </div>
     </div>
+
+    {% include "components/glass_loading_popup.html" %}
 
     <div class="hr-tabs hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
         {% include "components/org_structure_tabs.html" %}
@@ -69,7 +69,7 @@
             <span id="org-tab-noop-indicator" class="hidden" aria-hidden="true"></span>
             <div id="org-tab-content"
                  class="transition-opacity duration-200"
-                 :class="tabLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'"
+                 :class="tabLoading ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"
                  @htmx:after-swap.window="if ($event.detail.target?.id === 'org-tab-content') { tabLoading = false; if (window.lucide) lucide.createIcons(); }"
                  @htmx:response-error.window="if ($event.detail.target?.id === 'org-tab-content') tabLoading = false"
                  @htmx:send-error.window="if ($event.detail.target?.id === 'org-tab-content') tabLoading = false"></div>
