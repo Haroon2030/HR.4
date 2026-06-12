@@ -190,9 +190,12 @@
         ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; border: 2px solid #f1f5f9; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
-        /* HTMX loading indicator */
-        .htmx-request .htmx-indicator { display: inline-flex; }
-        .htmx-indicator { display: none; }
+        /* HTMX loading indicator — لا يُعرض تلقائياً مع كل طلب (يُربط عبر hx-indicator فقط) */
+        .htmx-indicator { display: none !important; }
+        .htmx-request > .htmx-indicator,
+        [hx-indicator].htmx-request > .htmx-indicator {
+            display: inline-flex !important;
+        }
         #hr-page-inner.htmx-swapping { opacity: 0.55; transition: opacity 0.12s ease; }
         
         /* Transitions */
@@ -348,7 +351,7 @@
             <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
                 <main class="hr-main hr-scroll-hide flex-1 min-h-0 relative" style="direction:ltr;">
                     <div class="hr-page-card">
-                        <div id="hr-htmx-indicator" class="hr-htmx-indicator htmx-indicator" aria-hidden="true">
+                        <div id="hr-htmx-indicator" class="hr-htmx-indicator" aria-hidden="true" hidden>
                             <span class="hr-htmx-indicator__spinner"></span>
                         </div>
                         <div class="hr-page-card__body hr-scroll-hover">
@@ -439,6 +442,9 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            if (window.htmx && htmx.config) {
+                htmx.config.includeIndicatorStyles = false;
+            }
             hrDisableBoostOnForms();
             hrScheduleLucide();
             hrSyncChromeHeight();
