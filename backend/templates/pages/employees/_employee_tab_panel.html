@@ -194,8 +194,8 @@
 
                     <!-- Timeline Table -->
                     <div class="border border-slate-200 rounded-lg overflow-hidden">
-                        <div class="overflow-y-auto" style="max-height: 60vh;">
-                            <table class="w-full text-sm">
+                        <div class="overflow-x-auto overflow-y-auto" style="max-height: 60vh;">
+                            <table class="w-full text-sm hr-archive-table">
                                 <thead class="bg-slate-100 text-slate-600 sticky top-0 z-10">
                                     <tr class="border-b border-slate-200">
                                         <th class="px-3 py-2 text-right font-semibold w-32">التاريخ والوقت</th>
@@ -366,8 +366,8 @@
 
                 <!-- Timeline Table -->
                 <div class="border border-slate-200 rounded-lg overflow-hidden">
-                    <div class="overflow-y-auto" style="max-height: 60vh;">
-                        <table class="w-full text-sm">
+                    <div class="overflow-x-auto overflow-y-auto" style="max-height: 60vh;">
+                        <table class="w-full text-sm hr-archive-table">
                             <thead class="bg-slate-100 text-slate-600 sticky top-0 z-10">
                                 <tr class="border-b border-slate-200">
                                     <th class="px-3 py-2 text-right font-semibold w-32">التاريخ والوقت</th>
@@ -411,22 +411,21 @@
                                         {% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top">
-                                        <div class="text-slate-800 font-medium flex items-center gap-2">
+                                        <div class="hr-archive-cell-title text-slate-800 font-medium text-xs">
                                             <span>{{ st.title }}</span>
                                             {% if st.serial_number %}
-                                            <span class="font-mono text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded">{{ st.serial_number }}</span>
+                                            <span class="shrink-0 font-mono text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded">{{ st.serial_number }}</span>
                                             {% endif %}
                                             {% if st.email_sent_at %}
-                                            <span class="inline-flex items-center gap-0.5 text-emerald-600" title="أُرسل بالبريد في {{ st.email_sent_at|date:'Y-m-d H:i' }}">
+                                            <span class="shrink-0 inline-flex items-center gap-0.5 text-emerald-600" title="أُرسل بالبريد في {{ st.email_sent_at|date:'Y-m-d H:i' }}">
                                                 <i data-lucide="mail-check" class="w-3.5 h-3.5"></i>
                                             </span>
                                             {% elif st.email_error %}
-                                            <span class="inline-flex items-center gap-0.5 text-red-600" title="فشل الإرسال: {{ st.email_error }}">
+                                            <span class="shrink-0 inline-flex items-center gap-0.5 text-red-600" title="فشل الإرسال: {{ st.email_error }}">
                                                 <i data-lucide="mail-x" class="w-3.5 h-3.5"></i>
                                             </span>
                                             {% endif %}
                                         </div>
-                                        {% if st.content %}<div class="text-slate-500 text-xs mt-0.5 line-clamp-2">{{ st.content }}</div>{% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top text-center">
                                         {% if st.document %}
@@ -800,8 +799,8 @@
 
                 <!-- Timeline -->
                 <div class="border border-slate-200 rounded-lg overflow-hidden">
-                    <div class="overflow-y-auto" style="max-height: 60vh;">
-                        <table class="w-full text-sm">
+                    <div class="overflow-x-auto overflow-y-auto" style="max-height: 60vh;">
+                        <table class="w-full text-sm hr-archive-table">
                             <thead class="bg-slate-100 text-slate-600 sticky top-0 z-10">
                                 <tr class="border-b border-slate-200">
                                     <th class="px-3 py-2 text-right font-semibold w-32">التاريخ والوقت</th>
@@ -829,10 +828,12 @@
                                         </span>
                                     </td>
                                     <td class="px-3 py-2 align-top">
-                                        <div class="text-slate-800 font-medium">إنشاء طلب توظيف للموظف</div>
-                                        {% if employee.employment_request.review_notes %}
-                                        <div class="text-slate-500 text-xs mt-0.5">{{ employee.employment_request.review_notes }}</div>
-                                        {% endif %}
+                                        <div class="hr-archive-cell-title text-slate-800 font-medium text-xs">
+                                            <span>إنشاء طلب توظيف للموظف</span>
+                                            {% if employee.employment_request.review_notes %}
+                                            <span class="text-slate-500">— {{ employee.employment_request.review_notes }}</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td class="px-3 py-2 align-top text-slate-600 text-xs">
                                         <i data-lucide="user" class="w-3 h-3 inline-block"></i>
@@ -928,8 +929,8 @@
                                         {% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top">
-                                        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-                                            <span class="text-slate-800 font-medium text-xs truncate">{{ st.title }}</span>
+                                        <div class="hr-archive-cell-title">
+                                            <span class="text-slate-800 font-medium text-xs">{{ st.title }}</span>
                                             {% if st.statement_type == 'transfer' and st.content %}
                                                 {% with td=st.content|from_json %}
                                                 {% if td %}
@@ -943,20 +944,16 @@
                                                 {% include "components/archive_row_detail_btn.html" with title=st.title content=st.content modal_uid=st.id %}
                                                 {% endif %}
                                             {% endif %}
-                                        </div>
-
-                                        {% if st.statement_type == 'terminate' %}
-                                        <div class="mt-1">
-                                            <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}" target="_blank" class="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-800 font-semibold">
+                                            {% if st.statement_type == 'terminate' %}
+                                            <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}" target="_blank" rel="noopener" class="shrink-0 inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-800 font-semibold">
                                                 <i data-lucide="file-text" class="w-3 h-3"></i>
-                                                ملف التسوية PDF
+                                                PDF
                                             </a>
+                                            {% endif %}
+                                            {% if st.document %}
+                                            <span class="shrink-0">{% include "components/media_preview_btn.html" with url=st.document.url title=st.title label="مرفق" %}</span>
+                                            {% endif %}
                                         </div>
-                                        {% endif %}
-
-                                        {% if st.document %}
-                                        <div class="mt-1">{% include "components/media_preview_btn.html" with url=st.document.url title=st.title label="عرض المرفق" %}</div>
-                                        {% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top text-slate-600 text-xs">
                                         <i data-lucide="user" class="w-3 h-3 inline-block"></i>

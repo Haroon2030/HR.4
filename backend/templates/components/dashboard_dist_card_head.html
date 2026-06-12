@@ -1,0 +1,18 @@
+{# رأس بطاقة التوزيع — icon, title, subtitle, total #}
+<div class="hr-dist-card__head">
+    <div class="hr-dist-card__title-wrap">
+        <span class="hr-dist-card__icon" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+        </span>
+        <div>
+            <h3 class="hr-dist-card__title">{{ title }}</h3>
+            <p class="hr-dist-card__subtitle">{{ subtitle }}</p>
+        </div>
+    </div>
+    {% if total %}
+    <span class="hr-dist-card__total">
+        <span class="hr-dist-card__total-value">{{ total }}</span>
+        <span class="hr-dist-card__total-label">إجمالي</span>
+    </span>
+    {% endif %}
+</div>

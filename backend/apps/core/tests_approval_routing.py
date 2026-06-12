@@ -77,3 +77,16 @@ class ApprovalRoutingTests(TestCase):
         decision = resolve_first_approver(action)
         self.assertEqual(decision.stage_label, 'المدير المالي')
         self.assertEqual(first_stage_tab_label(self.admin_manager), 'المدير المالي')
+
+    def test_stage_label_strips_technical_role_code(self):
+        from apps.core.models import UserProfile
+
+        role = Role.objects.create(
+            name='BRANCH_MANAGER — مدير الفرع',
+            role_type=Role.RoleType.MANAGER,
+        )
+        UserProfile.objects.filter(user=self.branch_manager).update(role=role)
+        action = self._build_action(with_admin=False)
+        decision = resolve_first_approver(action)
+        self.assertEqual(decision.stage_label, 'مدير الفرع')
+        self.assertEqual(approver_display_label(self.branch_manager), 'مدير الفرع')

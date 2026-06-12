@@ -196,6 +196,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',              # user في كل قالب
                 'django.contrib.messages.context_processors.messages',      # messages في كل قالب
                 'apps.core.context_processors.sidebar_context',             # عدّادات sidebar (مخزّنة مؤقتاً)
+                'apps.core.context_processors.app_info',                    # عن النظام (شركة / دعم / مطوّر)
             ],
         },
     },
@@ -366,6 +367,17 @@ AGENT_GLOBAL_KEY_LIST_DEVICES = env.bool('AGENT_GLOBAL_KEY_LIST_DEVICES', defaul
 AGENT_GLOBAL_KEY_ALLOW_INGEST = env.bool('AGENT_GLOBAL_KEY_ALLOW_INGEST', default=False)
 # توقيع HMAC لطلبات ingest — افتراضياً معطّل في التطوير
 ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=False)
+
+# ── عن النظام (قائمة المعلومات في الشريط العلوي) ──
+HR_APP_DEVELOPER = env('HR_APP_DEVELOPER', default='شركة الحلول التقنية')
+HR_SUPPORT_PHONE = env('HR_SUPPORT_PHONE', default='+966531847156')
+HR_APP_DESCRIPTION = env(
+    'HR_APP_DESCRIPTION',
+    default=(
+        'نظام متكامل لإدارة الموارد البشرية: الموظفين، الرواتب، الحضور والانصراف، '
+        'طلبات العمليات، التقارير والنماذج الرسمية — ضمن دورة موافقات واضحة.'
+    ),
+)
 
 # نوع المفتاح التلقائي للنماذج
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

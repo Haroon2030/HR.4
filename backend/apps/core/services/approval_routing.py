@@ -44,17 +44,16 @@ def _profile_and_role(user):
 
 
 def approver_display_label(user) -> str:
-    """اسم الدور المعتمد للعرض (تبويب الموافقة الأولى وحالة الطلب)."""
+    """اسم الدور المعتمد للعرض (تبويب الموافقة الأولى وحالة الطلب) — عربي فقط."""
+    from apps.core.role_catalog import arabic_role_label
+
     if not user:
         return 'غير محدد'
     _profile, role = _profile_and_role(user)
-    if role and (role.name or '').strip():
-        return role.name.strip()
     if role:
-        label = role.get_role_type_display() or ''
-        if '(' in label:
-            label = label.split('(')[0].strip()
-        return label or 'غير محدد'
+        label = arabic_role_label(role_type=role.role_type, name=getattr(role, 'name', None))
+        if label and label != '—':
+            return label
     full = user.get_full_name() if hasattr(user, 'get_full_name') else ''
     return (full or getattr(user, 'username', '') or 'غير محدد').strip()
 

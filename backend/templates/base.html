@@ -206,7 +206,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260612-glass-global" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260614-dashboard-hero" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -271,15 +271,11 @@
                                 </div>
                             </div>
                         </div>
-                        {% if user|has_permission:'branches.view' %}
-                        <a href="{% url 'web:list_branches' %}" class="hr-topbar-icon-btn" title="تهيئة النظام">
-                            <i data-lucide="settings" class="w-5 h-5"></i>
-                        </a>
-                        {% endif %}
+                        {% include "components/topbar_app_info.html" %}
                         <div class="relative" x-data="{ accountOpen: false }" @click.outside="accountOpen = false">
                             <button type="button" @click.stop="accountOpen = !accountOpen"
                                     class="hr-topbar-user" :aria-expanded="accountOpen ? 'true' : 'false'">
-                                <span class="hr-topbar-user__avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</span>
+                                <span class="hr-topbar-user__avatar" aria-hidden="true"><i data-lucide="user-cog" class="w-4 h-4"></i></span>
                                 <i data-lucide="chevron-down" class="hr-topbar-user__chevron w-4 h-4 hidden sm:block"></i>
                             </button>
                             <div x-show="accountOpen" x-cloak x-transition dir="rtl"

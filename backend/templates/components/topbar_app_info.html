@@ -1,0 +1,64 @@
+{% load custom_tags %}
+{# قائمة «عن النظام» — يتطلب hr_app_info من context processor #}
+<div class="relative" x-data="{ infoOpen: false }" @click.outside="infoOpen = false">
+    <button type="button"
+            @click.stop="infoOpen = !infoOpen"
+            class="hr-topbar-icon-btn"
+            title="عن النظام والدعم"
+            :aria-expanded="infoOpen ? 'true' : 'false'">
+        <i data-lucide="info" class="w-5 h-5"></i>
+    </button>
+    <div x-show="infoOpen" x-cloak x-transition dir="rtl"
+         class="hr-topbar-info-panel absolute left-0 top-full mt-2 z-50 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden"
+         style="display: none;">
+        <div class="hr-topbar-info-panel__head px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+            <div class="flex items-center gap-2.5 min-w-0">
+                {% if hr_app_info.company_logo_url %}
+                <img src="{{ hr_app_info.company_logo_url }}" alt="" class="w-9 h-9 rounded-lg object-contain bg-white border border-slate-200 shrink-0">
+                {% else %}
+                <span class="hr-topbar-info-panel__icon shrink-0" aria-hidden="true">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                </span>
+                {% endif %}
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-900 truncate">نظام الموارد البشرية</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">معلومات النظام والدعم</p>
+                </div>
+            </div>
+        </div>
+        <div class="px-4 py-3 space-y-3 text-xs text-slate-600 leading-relaxed">
+            {% if hr_app_info.description %}
+            <p class="text-slate-700">{{ hr_app_info.description }}</p>
+            {% endif %}
+            <dl class="space-y-2">
+                {% if hr_app_info.developer %}
+                <div class="flex items-start gap-2">
+                    <dt class="shrink-0 text-slate-400 font-semibold min-w-[4.5rem]">الشركة</dt>
+                    <dd class="text-slate-800 font-medium">{{ hr_app_info.developer }}</dd>
+                </div>
+                {% endif %}
+                {% if hr_app_info.support_phone %}
+                <div class="flex items-start gap-2">
+                    <dt class="shrink-0 text-slate-400 font-semibold min-w-[4.5rem]">الدعم</dt>
+                    <dd>
+                        <a href="tel:{{ hr_app_info.support_phone }}" dir="ltr"
+                           class="inline-flex items-center gap-1.5 font-bold text-primary-700 hover:text-primary-800">
+                            <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                            {{ hr_app_info.support_phone }}
+                        </a>
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        {% if user|has_permission:'branches.view' %}
+        <div class="px-4 py-2.5 border-t border-slate-100 bg-slate-50/60">
+            <a href="{% url 'web:list_branches' %}"
+               class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 hover:text-primary-700">
+                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                تهيئة النظام
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>

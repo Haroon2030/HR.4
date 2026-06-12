@@ -1,0 +1,16 @@
+{# صف توزيع — label, count, percent, color, icon #}
+<div class="hr-dist-card__item hr-dist-card__item--{{ color }}">
+    <span class="hr-dist-card__item-icon"><i data-lucide="{{ icon }}" class="w-3.5 h-3.5"></i></span>
+    <div class="hr-dist-card__item-body">
+        <div class="hr-dist-card__item-top">
+            <span class="hr-dist-card__item-label">{{ label }}</span>
+            <span class="hr-dist-card__item-meta">
+                <strong>{{ count }}</strong>
+                <span>{{ percent }}%</span>
+            </span>
+        </div>
+        <div class="hr-dist-card__bar hr-dist-card__bar--{{ color }}">
+            <span class="hr-dist-card__bar-fill hr-dist-card__bar-fill--{{ color }}" style="width: {{ percent }}%"></span>
+        </div>
+    </div>
+</div>

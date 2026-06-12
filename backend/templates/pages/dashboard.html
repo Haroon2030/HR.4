@@ -8,37 +8,22 @@
 <div class="space-y-6">
 
     <!-- ═══ Welcome Header ═══ -->
-    <div class="hr-hero p-6 md:p-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <span class="hr-badge">لوحة التحكم</span>
-                <p class="text-slate-500 text-sm mt-3">مرحباً بك،</p>
-                <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{{ request.user.get_full_name|default:request.user.username }}</h2>
-                <p class="text-slate-600 text-sm mt-2">
-                    {% if request.user.profile.role %}<span class="font-semibold text-slate-800">{{ request.user.profile.role.name }}</span> • {% endif %}
-                    {% now "l، j F Y" %}
-                </p>
-            </div>
-            <div class="hidden md:flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 text-primary-600 shrink-0">
-                <i data-lucide="sparkles" class="h-7 w-7"></i>
-            </div>
-        </div>
-    </div>
+    {% include "components/dashboard_hero.html" %}
 
     {% if show_overview %}
     <!-- ═══ KPI Stats Cards ═══ -->
     <div class="hr-stat-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {% url 'web:list_employees' as list_employees_url %}
-        {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='primary' icon='users' href=list_employees_url %}
-        {% include 'components/kpi_stat_card.html' with label='على رأس العمل' value=stats.employees_active theme='emerald' icon='user-check' %}
-        {% include 'components/kpi_stat_card.html' with label='في إجازة' value=stats.employees_leave theme='amber' icon='palmtree' %}
-        {% include 'components/kpi_stat_card.html' with label='موقوفون' value=stats.employees_suspended theme='rose' icon='user-x' %}
+        {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='mono' icon='users' href=list_employees_url %}
+        {% include 'components/kpi_stat_card.html' with label='على رأس العمل' value=stats.employees_active theme='mono' icon='user-check' %}
+        {% include 'components/kpi_stat_card.html' with label='في إجازة' value=stats.employees_leave theme='mono' icon='palmtree' %}
+        {% include 'components/kpi_stat_card.html' with label='موقوفون' value=stats.employees_suspended theme='mono' icon='user-x' %}
         {% url 'web:list_employment_requests' as employment_requests_url %}
-        {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='indigo' icon='file-plus' href=employment_requests_url %}
+        {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='mono' icon='file-plus' href=employment_requests_url %}
         {% url 'web:list_pending_actions' as pending_actions_url %}
-        {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='purple' icon='clipboard-list' href=pending_actions_url %}
-        {% include 'components/kpi_stat_card.html' with label='منتهية العقود' value=stats.employees_terminated theme='slate' icon='user-minus' %}
-        {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='orange' icon='calculator' %}
+        {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='mono' icon='clipboard-list' href=pending_actions_url %}
+        {% include 'components/kpi_stat_card.html' with label='منتهية العقود' value=stats.employees_terminated theme='mono' icon='user-minus' %}
+        {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='mono' icon='calculator' %}
     </div>
     {% endif %}
 
@@ -139,125 +124,16 @@
         <!-- Charts (Admin/Manager View) -->
 
             <!-- توزيع حالة الموظفين -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-slate-800">توزيع حالة الموظفين</h3>
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-slate-400"></i>
-                </div>
-                {% with total=stats.employees_total %}
-                {% if total %}
-                <div class="space-y-3">
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium">على رأس العمل</span>
-                            <span class="text-slate-800 font-bold">{{ stats.employees_active }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-emerald-500 rounded-full" style="width: {% widthratio stats.employees_active total 100 %}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium">في إجازة</span>
-                            <span class="text-slate-800 font-bold">{{ stats.employees_leave }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-amber-500 rounded-full" style="width: {% widthratio stats.employees_leave total 100 %}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium">موقوفون</span>
-                            <span class="text-slate-800 font-bold">{{ stats.employees_suspended }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-rose-500 rounded-full" style="width: {% widthratio stats.employees_suspended total 100 %}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium">منتهي الخدمة</span>
-                            <span class="text-slate-800 font-bold">{{ stats.employees_terminated }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-slate-400 rounded-full" style="width: {% widthratio stats.employees_terminated total 100 %}%"></div>
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <p class="text-sm text-slate-400 text-center py-6">لا بيانات</p>
-                {% endif %}
-                {% endwith %}
-            </div>
+            {% include "components/dashboard_status_distribution.html" %}
 
             <!-- توزيع حسب الفرع -->
-            {% if branch_distribution %}
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-slate-800">الموظفون حسب الفرع</h3>
-                    <i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i>
-                </div>
-                <div class="space-y-3">
-                    {% for b in branch_distribution %}
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium truncate">{{ b.branch__name|default:"بدون فرع" }}</span>
-                            <span class="text-slate-800 font-bold">{{ b.c }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-l from-primary-500 to-indigo-500 rounded-full" style="width: {% widthratio b.c max_branch 100 %}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
+            {% include "components/dashboard_branch_distribution.html" %}
 
             <!-- توزيع حسب الجنس -->
-            {% if gender_distribution %}
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-slate-800">الموظفون حسب الجنس</h3>
-                    <i data-lucide="users" class="w-4 h-4 text-slate-400"></i>
-                </div>
-                <div class="space-y-3">
-                    {% for g in gender_distribution %}
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium truncate">{% if g.gender == 'male' %}ذكر{% elif g.gender == 'female' %}أنثى{% else %}غير محدد{% endif %}</span>
-                            <span class="text-slate-800 font-bold">{{ g.c }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full {% if g.gender == 'female' %}bg-pink-500{% else %}bg-blue-500{% endif %} rounded-full" style="width: {% widthratio g.c max_gender 100 %}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
+            {% include "components/dashboard_gender_distribution.html" %}
 
             <!-- توزيع حسب الجنسية -->
-            {% if nationality_distribution %}
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-slate-800">الموظفون حسب الجنسية</h3>
-                    <i data-lucide="globe" class="w-4 h-4 text-slate-400"></i>
-                </div>
-                <div class="space-y-3">
-                    {% for n in nationality_distribution %}
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-600 font-medium truncate">{{ n.nationality__name|default:"بدون جنسية" }}</span>
-                            <span class="text-slate-800 font-bold">{{ n.c }}</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-l from-emerald-500 to-teal-500 rounded-full" style="width: {% widthratio n.c max_nationality 100 %}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
+            {% include "components/dashboard_nationality_distribution.html" %}
 
         {% endif %}
     </div>

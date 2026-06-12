@@ -1,0 +1,27 @@
+{% load custom_tags %}
+{# توزيع الموظفين حسب الجنس — يتطلب gender_distribution, stats #}
+<div class="hr-dist-card">
+    {% include "components/dashboard_dist_card_head.html" with icon="users" title="الموظفون حسب الجنس" subtitle="توزيع القوى العاملة حسب الجنس" total=stats.employees_total %}
+
+    {% if gender_distribution and stats.employees_total %}
+    <div class="hr-dist-card__grid">
+        {% for g in gender_distribution %}
+        {% with color=g.gender|gender_dist_color %}
+        {% widthratio g.c stats.employees_total 100 as pct %}
+        {% if g.gender == 'male' %}
+            {% include "components/dashboard_dist_card_row.html" with label="ذكر" count=g.c percent=pct color=color icon="mars" %}
+        {% elif g.gender == 'female' %}
+            {% include "components/dashboard_dist_card_row.html" with label="أنثى" count=g.c percent=pct color=color icon="venus" %}
+        {% else %}
+            {% include "components/dashboard_dist_card_row.html" with label="غير محدد" count=g.c percent=pct color=color icon="user" %}
+        {% endif %}
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="hr-dist-card__empty">
+        <i data-lucide="users" class="w-8 h-8"></i>
+        <p>لا بيانات جنس للعرض</p>
+    </div>
+    {% endif %}
+</div>

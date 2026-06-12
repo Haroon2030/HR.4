@@ -1,0 +1,21 @@
+{% load custom_tags %}
+{# توزيع الموظفين حسب الجنسية — يتطلب nationality_distribution, stats #}
+<div class="hr-dist-card">
+    {% include "components/dashboard_dist_card_head.html" with icon="globe" title="الموظفون حسب الجنسية" subtitle="أبرز الجنسيات في المنشأة" total=stats.employees_total %}
+
+    {% if nationality_distribution and stats.employees_total %}
+    <div class="hr-dist-card__grid">
+        {% for n in nationality_distribution %}
+        {% with color=forloop.counter0|dist_palette_color %}
+        {% widthratio n.c stats.employees_total 100 as pct %}
+        {% include "components/dashboard_dist_card_row.html" with label=n.nationality__name|default:"بدون جنسية" count=n.c percent=pct color=color icon="flag" %}
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="hr-dist-card__empty">
+        <i data-lucide="globe" class="w-8 h-8"></i>
+        <p>لا بيانات جنسيات للعرض</p>
+    </div>
+    {% endif %}
+</div>

@@ -41,3 +41,13 @@ def approval_inbox(request):
         'pending_for_me_count': data.get('pending_for_me_count', 0),
         'unread_notifications_count': data.get('unread_notifications_count', 0),
     }
+
+
+def app_info(request):
+    """معلومات الشركة والمطوّر والدعم — قائمة «عن النظام» في الشريط العلوي."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return {}
+    from apps.core.services.app_info import get_app_info
+
+    return {'hr_app_info': get_app_info()}

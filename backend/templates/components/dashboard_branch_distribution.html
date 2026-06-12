@@ -1,0 +1,21 @@
+{% load custom_tags %}
+{# توزيع الموظفين حسب الفرع — يتطلب branch_distribution, stats #}
+<div class="hr-dist-card">
+    {% include "components/dashboard_dist_card_head.html" with icon="building-2" title="الموظفون حسب الفرع" subtitle="أعلى الفروع من حيث عدد الموظفين" total=stats.employees_total %}
+
+    {% if branch_distribution and stats.employees_total %}
+    <div class="hr-dist-card__grid">
+        {% for b in branch_distribution %}
+        {% with color=forloop.counter0|dist_palette_color %}
+        {% widthratio b.c stats.employees_total 100 as pct %}
+        {% include "components/dashboard_dist_card_row.html" with label=b.branch__name|default:"بدون فرع" count=b.c percent=pct color=color icon="building-2" %}
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="hr-dist-card__empty">
+        <i data-lucide="building-2" class="w-8 h-8"></i>
+        <p>لا بيانات فروع للعرض</p>
+    </div>
+    {% endif %}
+</div>

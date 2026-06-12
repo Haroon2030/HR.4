@@ -19,6 +19,27 @@ _ROLE_BADGE_CLASS = {
     'employee': 'bg-slate-100 text-slate-700',
 }
 
+_DIST_PALETTE = ('active', 'leave', 'suspended', 'terminated', 'active', 'leave')
+
+
+@register.filter
+def dist_palette_color(index):
+    """لون عنصر توزيع دوري (لوحة التحكم) — نفس ألوان حالة الموظف."""
+    try:
+        return _DIST_PALETTE[int(index) % len(_DIST_PALETTE)]
+    except (TypeError, ValueError):
+        return _DIST_PALETTE[0]
+
+
+@register.filter
+def gender_dist_color(gender):
+    """لون شريط توزيع الجنس — موحّد مع ألوان حالة الموظف."""
+    if gender == 'female':
+        return 'terminated'
+    if gender == 'male':
+        return 'leave'
+    return 'suspended'
+
 
 @register.filter
 def input_decimal(value):

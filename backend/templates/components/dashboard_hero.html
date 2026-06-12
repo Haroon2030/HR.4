@@ -1,0 +1,30 @@
+{% load custom_tags %}
+<div class="hr-hero">
+    <span class="hr-hero__glow" aria-hidden="true"></span>
+    <span class="hr-hero__glow hr-hero__glow--secondary" aria-hidden="true"></span>
+    <div class="hr-hero__inner">
+        <div class="hr-hero__main min-w-0">
+            <span class="hr-hero__badge">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                لوحة التحكم
+            </span>
+            <p class="hr-hero__greeting">مرحباً بك،</p>
+            <h2 class="hr-hero__name">{{ request.user.get_full_name|default:request.user.username }}</h2>
+            <div class="hr-hero__meta">
+                {% if request.user.profile.role %}
+                <span class="hr-hero__role-chip">
+                    <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                    {{ request.user.profile.role|role_arabic_name }}
+                </span>
+                {% endif %}
+                <span class="hr-hero__date">
+                    <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                    {% now "l، j F Y" %}
+                </span>
+            </div>
+        </div>
+        <span class="hr-hero__avatar" aria-hidden="true">
+            <i data-lucide="user" class="w-7 h-7"></i>
+        </span>
+    </div>
+</div>

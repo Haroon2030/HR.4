@@ -1,5 +1,5 @@
 {% load custom_tags %}
-{% with display_name=user.get_full_name|default:user.username role_name=user.profile.role.name|default:"مستخدم" email=user.email|default:"" %}
+{% with display_name=user.get_full_name|default:user.username role_name=user.profile.role|role_arabic_name|default:"مستخدم" email=user.email|default:"" %}
 <div class="hr-sidebar-panel__foot shrink-0">
     {% if user|has_permission:'operations.view' or user|has_permission:'employees.edit' %}
     <a href="{% url 'web:list_pending_actions' %}"
@@ -13,9 +13,8 @@
 
     <div class="hr-sidebar-account">
         <div class="hr-sidebar-account__inner" {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-            <span class="hr-sidebar-account__avatar" aria-hidden="true">{{ display_name|slice:":1"|upper }}</span>
+            <span class="hr-sidebar-account__avatar" aria-hidden="true"><i data-lucide="user" class="w-4 h-4"></i></span>
             <div class="hr-sidebar-account__meta min-w-0">
-                <p class="hr-sidebar-account__label">الحساب</p>
                 <p class="hr-sidebar-account__name truncate" title="{{ display_name }}">{{ display_name }}</p>
                 {% if email %}
                 <p class="hr-sidebar-account__email truncate" title="{{ email }}">{{ email }}</p>
@@ -23,11 +22,10 @@
                 <p class="hr-sidebar-account__email truncate" title="{{ role_name }}">{{ role_name }}</p>
                 {% endif %}
             </div>
-            <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-45 shrink-0" aria-hidden="true"></i>
         </div>
         {% if allow_collapse and not always_show %}
         <div class="hr-sidebar-account__collapsed" x-show="!sidebarOpen" x-cloak>
-            <span class="hr-sidebar-account__avatar" title="{{ display_name }}">{{ display_name|slice:":1"|upper }}</span>
+            <span class="hr-sidebar-account__avatar" title="{{ display_name }}"><i data-lucide="user" class="w-4 h-4"></i></span>
         </div>
         {% endif %}
     </div>

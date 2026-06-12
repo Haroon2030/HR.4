@@ -21,11 +21,11 @@
     </div>
     <p class="hr-approval-track__caption">
         {% if status == 'pending_branch' or status == 'pending' %}
-            <span class="text-primary-700">بانتظار {{ first_stage_label|default:"الموافقة الأولى" }}</span>
+            <span class="text-red-700">بانتظار {{ first_stage_label|default:"الموافقة الأولى" }}</span>
         {% elif status == 'pending_gm' %}
-            <span class="text-amber-700">بانتظار {{ gm_label|default:"مدير الموارد" }}</span>
+            <span class="text-red-700">بانتظار {{ gm_label|default:"مدير الموارد" }}</span>
         {% elif status == 'pending_officer' %}
-            <span class="text-indigo-700">بانتظار {{ officer_label|default:"الأخصائي" }}{% if track.assigned_officer %} — {{ track.assigned_officer.get_full_name|default:track.assigned_officer.username }}{% endif %}</span>
+            <span class="text-red-700">بانتظار {{ officer_label|default:"الأخصائي" }}{% if track.assigned_officer %} — {{ track.assigned_officer.get_full_name|default:track.assigned_officer.username }}{% endif %}</span>
         {% elif status == 'returned' %}
             <span class="text-rose-700">مُرتجَع للتعديل</span>
         {% elif status == 'approved' %}

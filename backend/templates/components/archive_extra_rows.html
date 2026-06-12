@@ -17,15 +17,15 @@
         </span>
     </td>
     <td class="px-3 py-2 align-top">
-        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-            <span class="text-slate-800 font-medium text-xs truncate">{{ row.title }}</span>
+        <div class="hr-archive-cell-title">
+            <span class="text-slate-800 font-medium text-xs">{{ row.title }}</span>
             {% if row.detail %}
             {% include "components/archive_row_detail_btn.html" with title=row.title content=row.detail modal_uid=row.row_id %}
             {% endif %}
+            {% if row.document_url %}
+            <span class="shrink-0">{% include "components/media_preview_btn.html" with url=row.document_url title=row.title label="مرفق" %}</span>
+            {% endif %}
         </div>
-        {% if row.document_url %}
-        <div class="mt-1">{% include "components/media_preview_btn.html" with url=row.document_url title=row.title label="عرض المرفق" %}</div>
-        {% endif %}
     </td>
     <td class="px-3 py-2 align-top text-slate-600 text-xs">
         <i data-lucide="user" class="w-3 h-3 inline-block"></i>
