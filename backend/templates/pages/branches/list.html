@@ -25,12 +25,27 @@
             if (!this.orgTabs.includes(tab)) return;
             this.loadingLabel = 'جاري تحميل ' + (this.orgTabLabels[tab] || 'البيانات');
             this.tabLoading = true;
-            htmx.ajax('GET', this.orgTabUrl + '?tab=' + encodeURIComponent(tab), {
+            const finish = () => {
+                this.tabLoading = false;
+                if (window.lucide) lucide.createIcons();
+            };
+            const req = htmx.ajax('GET', this.orgTabUrl + '?tab=' + encodeURIComponent(tab), {
                 target: '#org-tab-content',
                 swap: 'innerHTML',
                 indicator: '#org-tab-noop-indicator'
             });
-            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+            if (req && typeof req.then === 'function') {
+                req.then(finish).catch(finish);
+            } else {
+                const onDone = (e) => {
+                    if (e.detail?.target?.id !== 'org-tab-content') return;
+                    document.body.removeEventListener('htmx:afterSwap', onDone);
+                    document.body.removeEventListener('htmx:responseError', onDone);
+                    finish();
+                };
+                document.body.addEventListener('htmx:afterSwap', onDone);
+                document.body.addEventListener('htmx:responseError', onDone);
+            }
         }
      }"
      x-init="
@@ -69,10 +84,7 @@
             <span id="org-tab-noop-indicator" class="hidden" aria-hidden="true"></span>
             <div id="org-tab-content"
                  class="transition-opacity duration-200"
-                 :class="tabLoading ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"
-                 @htmx:after-swap.window="if ($event.detail.target?.id === 'org-tab-content') { tabLoading = false; if (window.lucide) lucide.createIcons(); }"
-                 @htmx:response-error.window="if ($event.detail.target?.id === 'org-tab-content') tabLoading = false"
-                 @htmx:send-error.window="if ($event.detail.target?.id === 'org-tab-content') tabLoading = false"></div>
+                 :class="tabLoading ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"></div>
         </div>
     </div>
 </div>
