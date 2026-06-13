@@ -5166,10 +5166,10 @@ body.hr-app .hr-app-main {
 }
 
 .hr-stat-card--mono .hr-stat-card__icon {
-    background: #0f172a;
-    color: #ffffff !important;
-    border: 1px solid #0f172a;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+    background: #eef2ff;
+    color: #4f46e5 !important;
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
 }
 
 .hr-stat-card--mono .hr-stat-card__label {
@@ -5194,7 +5194,7 @@ body.hr-app .hr-app-main {
 
 .hr-stat-card--mono:hover .hr-stat-card__icon,
 .hr-stat-card--mono:focus-visible .hr-stat-card__icon {
-    background: #1e293b;
+    background: #e0e7ff;
 }
 
 .hr-stat-card--orange .hr-stat-card__blob { background: #ffedd5; }
