@@ -218,7 +218,7 @@
                     {% if employee.status != 'terminated' %}
                         {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
                         <button type="button" @click="$dispatch('open-schedule-modal', { add: true })"
-                                class="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-1.5">
+                                class="hr-btn-dark hr-btn-dark--sm">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             إضافة شهر
                         </button>
@@ -233,7 +233,7 @@
                         {% if employee.status != 'terminated' %}
                             {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' or request.user.profile.role.role_type == 'hr_manager' %}
                             <button type="button" @click="$dispatch('open-schedule-modal', { add: true })"
-                                    class="px-4 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1.5">
+                                    class="hr-btn-dark hr-btn-dark--sm">
                                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                                 إنشاء جدول دوام
                             </button>
