@@ -72,6 +72,12 @@
     --hr-search-icon-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(219, 234, 254, 0.9) 100%);
     --hr-search-icon-border: rgba(96, 165, 250, 0.55);
     --hr-search-icon-color: rgb(29 78 216);
+    /* لوحة التحكم — خلفية أيقونات موحّدة */
+    --hr-dash-icon-bg: #eef2ff;
+    --hr-dash-icon-fg: #4f46e5;
+    --hr-dash-icon-border: #e0e7ff;
+    --hr-dash-icon-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
+    --hr-dash-icon-bg-hover: #e0e7ff;
 }
 
 /* خلفية زجاجية بيضاء للتطبيق */
@@ -5166,10 +5172,10 @@ body.hr-app .hr-app-main {
 }
 
 .hr-stat-card--mono .hr-stat-card__icon {
-    background: #eef2ff;
-    color: #4f46e5 !important;
-    border: 1px solid #e0e7ff;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
+    background: var(--hr-dash-icon-bg);
+    color: var(--hr-dash-icon-fg) !important;
+    border: 1px solid var(--hr-dash-icon-border);
+    box-shadow: var(--hr-dash-icon-shadow);
 }
 
 .hr-stat-card--mono .hr-stat-card__label {
@@ -5194,7 +5200,7 @@ body.hr-app .hr-app-main {
 
 .hr-stat-card--mono:hover .hr-stat-card__icon,
 .hr-stat-card--mono:focus-visible .hr-stat-card__icon {
-    background: #e0e7ff;
+    background: var(--hr-dash-icon-bg-hover);
 }
 
 .hr-stat-card--orange .hr-stat-card__blob { background: #ffedd5; }
@@ -5279,16 +5285,18 @@ body.hr-app .hr-app-main {
     gap: 0.35rem;
     padding: 0.3rem 0.65rem;
     border-radius: 999px;
-    background: #0f172a;
-    color: #ffffff !important;
+    background: var(--hr-dash-icon-bg);
+    border: 1px solid var(--hr-dash-icon-border);
+    color: var(--hr-dash-icon-fg) !important;
+    box-shadow: var(--hr-dash-icon-shadow);
     font-size: 0.68rem;
     font-weight: 700 !important;
     line-height: 1;
 }
 
 .hr-hero__badge svg {
-    stroke: #ffffff !important;
-    color: #ffffff !important;
+    stroke: currentColor !important;
+    color: currentColor !important;
 }
 
 .hr-hero__greeting {
@@ -5358,15 +5366,16 @@ body.hr-app .hr-app-main {
     width: 3.25rem;
     height: 3.25rem;
     border-radius: 1rem;
-    background: #0f172a;
-    color: #ffffff !important;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.2);
+    background: var(--hr-dash-icon-bg);
+    border: 1px solid var(--hr-dash-icon-border);
+    color: var(--hr-dash-icon-fg) !important;
+    box-shadow: var(--hr-dash-icon-shadow);
     flex-shrink: 0;
 }
 
 .hr-hero__avatar svg {
-    stroke: #ffffff !important;
-    color: #ffffff !important;
+    stroke: currentColor !important;
+    color: currentColor !important;
 }
 
 @media (min-width: 768px) {
@@ -5409,15 +5418,16 @@ body.hr-app .hr-app-main {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.65rem;
-    background: #0f172a;
-    color: #ffffff !important;
+    background: var(--hr-dash-icon-bg);
+    border: 1px solid var(--hr-dash-icon-border);
+    color: var(--hr-dash-icon-fg) !important;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+    box-shadow: var(--hr-dash-icon-shadow);
 }
 
 .hr-dist-card__icon svg {
-    stroke: #ffffff !important;
-    color: #ffffff !important;
+    stroke: currentColor !important;
+    color: currentColor !important;
 }
 
 .hr-dist-card__title {
@@ -5443,8 +5453,10 @@ body.hr-app .hr-app-main {
     min-width: 3.25rem;
     padding: 0.35rem 0.55rem;
     border-radius: 0.75rem;
-    background: #0f172a;
-    color: #ffffff !important;
+    background: var(--hr-dash-icon-bg);
+    border: 1px solid var(--hr-dash-icon-border);
+    color: var(--hr-dash-icon-fg) !important;
+    box-shadow: var(--hr-dash-icon-shadow);
     flex-shrink: 0;
 }
 
@@ -5452,14 +5464,14 @@ body.hr-app .hr-app-main {
     font-size: 1.05rem;
     font-weight: 800 !important;
     line-height: 1.1;
-    color: #ffffff !important;
+    color: #4338ca !important;
 }
 
 .hr-dist-card__total-label {
     font-size: 0.58rem;
     font-weight: 700 !important;
-    opacity: 0.9;
-    color: #ffffff !important;
+    opacity: 0.85;
+    color: var(--hr-dash-icon-fg) !important;
 }
 
 .hr-dist-card__stack {
@@ -5513,35 +5525,17 @@ body.hr-app .hr-app-main {
     width: 1.75rem;
     height: 1.75rem;
     border-radius: 0.5rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    color: #0f172a !important;
+    background: var(--hr-dash-icon-bg);
+    border: 1px solid var(--hr-dash-icon-border);
+    color: var(--hr-dash-icon-fg) !important;
     flex-shrink: 0;
     margin-top: 0.1rem;
+    box-shadow: var(--hr-dash-icon-shadow);
 }
 
-.hr-dist-card__item--active .hr-dist-card__item-icon {
-    background: #ecfdf5;
-    border-color: #a7f3d0;
-    color: #059669 !important;
-}
-
-.hr-dist-card__item--leave .hr-dist-card__item-icon {
-    background: #f0f9ff;
-    border-color: #bae6fd;
-    color: #0284c7 !important;
-}
-
-.hr-dist-card__item--suspended .hr-dist-card__item-icon {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #d97706 !important;
-}
-
-.hr-dist-card__item--terminated .hr-dist-card__item-icon {
-    background: #fff1f2;
-    border-color: #fecdd3;
-    color: #e11d48 !important;
+.hr-dist-card__item-icon svg {
+    stroke: currentColor !important;
+    color: currentColor !important;
 }
 
 .hr-dist-card__item-body {
