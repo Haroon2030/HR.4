@@ -256,7 +256,7 @@
                                     class="hr-topbar-icon-btn relative" title="الإشعارات">
                                 <i data-lucide="bell" class="w-5 h-5"></i>
                                 {% if unread_notifications_count %}
-                                <span class="hr-topbar-icon-btn__dot"></span>
+                                <span class="hr-topbar-icon-btn__badge" aria-label="{{ unread_notifications_count }} إشعار غير مقروء">{% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}</span>
                                 {% endif %}
                             </button>
                             <div x-show="open" x-cloak x-transition
