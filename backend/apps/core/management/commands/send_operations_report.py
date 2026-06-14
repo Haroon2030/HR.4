@@ -64,17 +64,24 @@ class Command(BaseCommand):
                 self.stdout.write('تم الإرسال مسبقاً اليوم في هذه الساعة — تخطي.')
                 return
 
-        from apps.core.services.operations_report_data import collect_operations_report_rows
+        from apps.core.services.operations_report_data import collect_operations_report
 
         report_date = now.date()
-        pending, completed = collect_operations_report_rows(
+        bundle = collect_operations_report(
             report_date=report_date,
             include_pending=solo.include_pending,
             include_completed=solo.include_completed,
         )
+        completed_total = sum(len(s.completed_rows) for s in bundle.sections) + len(bundle.employment_completed)
+        pending_total = sum(len(s.pending_rows) for s in bundle.sections) + len(bundle.employment_pending)
         self.stdout.write(
-            f'تقرير {report_date}: معلّقة={len(pending)} | مُنجزة={len(completed)} → {target_email}'
+            f'تقرير {report_date}: معلّقة={pending_total} | مُنجزة={completed_total} → {target_email}'
         )
+        for section in bundle.sections:
+            if section.completed_rows or section.pending_rows:
+                self.stdout.write(
+                    f'  - {section.title}: اليوم={len(section.completed_rows)} معلّق={len(section.pending_rows)}'
+                )
 
         if dry_run:
             self.stdout.write(self.style.SUCCESS('dry-run — لم يُرسل بريد.'))

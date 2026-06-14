@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils import timezone
 
-from apps.core.services.operations_report_data import collect_operations_report_rows
+from apps.core.services.operations_report_data import collect_operations_report
 from apps.core.services.operations_report_pdf import build_operations_report_pdf
 from apps.setup.models import OperationsReportSettings
 
@@ -36,7 +36,7 @@ def build_and_send_operations_report(
         logger.info('تخطي تقرير العمليات: الإرسال التلقائي غير مفعّل.')
         return False
 
-    pending, completed = collect_operations_report_rows(
+    bundle = collect_operations_report(
         report_date=report_date,
         include_pending=settings_obj.include_pending,
         include_completed=settings_obj.include_completed,
@@ -44,22 +44,30 @@ def build_and_send_operations_report(
 
     pdf_bytes = build_operations_report_pdf(
         report_date=report_date,
-        pending_rows=pending,
-        completed_rows=completed,
+        bundle=bundle,
         include_pending=settings_obj.include_pending,
         include_completed=settings_obj.include_completed,
     )
 
-    subject = f'تقرير العمليات — {report_date.isoformat()}'
+    completed_total = sum(len(s.completed_rows) for s in bundle.sections) + len(bundle.employment_completed)
+    pending_total = sum(len(s.pending_rows) for s in bundle.sections) + len(bundle.employment_pending)
+
+    subject = f'تقرير العمليات اليومي — {report_date.isoformat()}'
     body_lines = [
-        'مرفق تقرير العمليات اليومي (PDF).',
+        'مرفق تقرير العمليات اليومي (PDF) — أقسام: سلف، إجازات، تنقلات، تصفيات، غيابات، إضافات، تعديلات راتب.',
         '',
         f'تاريخ التقرير: {report_date.isoformat()}',
-        f'عمليات معلّقة: {len(pending)}',
-        f'عمليات مُنجزة (اليوم): {len(completed)}',
+        f'إجمالي عمليات اليوم: {completed_total}',
+        f'إجمالي المعلّق: {pending_total}',
         '',
-        '— نظام الموارد البشرية',
+        '— تفصيل اليوم —',
     ]
+    for section in bundle.sections:
+        if section.completed_rows:
+            body_lines.append(f'  • {section.title}: {len(section.completed_rows)}')
+    if bundle.employment_completed:
+        body_lines.append(f'  • توظيف: {len(bundle.employment_completed)}')
+    body_lines.extend(['', '— نظام الموارد البشرية'])
     msg = EmailMessage(
         subject=subject,
         body='\n'.join(body_lines),

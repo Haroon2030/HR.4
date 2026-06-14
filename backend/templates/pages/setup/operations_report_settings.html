@@ -21,8 +21,8 @@
             <p class="m-0 font-bold">كيف يعمل؟</p>
             <ul class="mt-2 mb-0 ps-4 space-y-1">
                 <li>يُرسل التقرير تلقائياً عند الساعة المحددة (افتراضي 12:00) بتوقيت السيرفر.</li>
-                <li>يتضمن قسم <strong>المعلّق</strong> (طلبات العمليات + طلبات التوظيف غير المكتملة).</li>
-                <li>يتضمن قسم <strong>المُنجز</strong> للعمليات التي نُفِّذت في يوم التقرير.</li>
+                <li>يتضمن أقساماً يومية منظمة: <strong>السلف</strong>، <strong>الإجازات</strong>، <strong>التنقلات</strong>، <strong>التصفيات</strong>، <strong>الغيابات</strong>، <strong>الإضافات</strong>، <strong>تعديلات الراتب</strong>.</li>
+                <li>كل قسم في جدول مستقل مع ملخص أعداد في أعلى التقرير.</li>
                 <li>يتطلب ضبط SMTP في <code dir="ltr">.env</code> (EMAIL_HOST وغيرها).</li>
             </ul>
             {% if settings_obj.last_sent_at %}
