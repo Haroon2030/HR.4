@@ -5,12 +5,10 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import Branch, PendingAction
-from apps.employees.models import EmployeeLeave, EmploymentRequest
-from apps.payroll.models import PayrollLine
+from apps.employees.models import Employee, EmployeeLeave, EmploymentRequest
 
 
 @dataclass(frozen=True)
@@ -38,8 +36,6 @@ class OperationsReportSection:
 class OperationsReportBundle:
     report_date: date
     sections: list[OperationsReportSection]
-    employment_pending: list[OperationsReportRow] = field(default_factory=list)
-    employment_completed: list[OperationsReportRow] = field(default_factory=list)
 
 
 SECTION_SPECS: tuple[tuple[str, str, tuple[int, int, int], tuple[str, ...]], ...] = (
@@ -57,7 +53,7 @@ SECTION_SPECS: tuple[tuple[str, str, tuple[int, int, int], tuple[str, ...]], ...
         ),
     ),
     ('absences', 'الغيابات', (249, 115, 22), (PendingAction.ActionType.ABSENCE,)),
-    ('additions', 'الإضافات', (14, 165, 233), ()),
+    ('additions', 'إضافة موظفين جدد', (14, 165, 233), ()),
     ('salary_adjustments', 'تعديلات الراتب', (217, 119, 6), (PendingAction.ActionType.SALARY_ADJUST,)),
 )
 
@@ -180,37 +176,32 @@ def _employment_row(req: EmploymentRequest, *, completed: bool) -> OperationsRep
     )
 
 
-def _payroll_addition_rows(report_date: date) -> list[OperationsReportRow]:
-    lines = (
-        PayrollLine.objects.filter(is_deleted=False, updated_at__date=report_date)
-        .filter(Q(bonus__gt=0) | Q(overtime__gt=0) | Q(other_addition__gt=0))
-        .select_related('employee', 'run', 'run__branch')
-        .order_by('-updated_at')
+def _new_employee_row(employee: Employee) -> OperationsReportRow:
+    when = employee.created_at
+    emp_no = (employee.employee_number or '').strip() or '—'
+    hire = employee.hire_date.isoformat() if employee.hire_date else '—'
+    profession = employee.profession.name if employee.profession_id else '—'
+    salary = _money(employee.total_salary) if employee.total_salary else '—'
+    details = f'رقم {emp_no} — مباشرة {hire} — {profession}'
+    return OperationsReportRow(
+        ref=f'EM-{employee.pk}',
+        employee_name=employee.name,
+        branch_name=employee.branch.name if employee.branch_id else '—',
+        details=details,
+        amount_label=f'{salary} ر.س' if salary != '—' else '—',
+        status_label=employee.get_status_display(),
+        date_label=_fmt_dt(when),
+        sort_key=(when or timezone.now(), employee.pk),
     )
-    rows: list[OperationsReportRow] = []
-    for line in lines:
-        parts: list[str] = []
-        if line.bonus and line.bonus > 0:
-            parts.append(f'مكافأة {_money(line.bonus)}')
-        if line.overtime and line.overtime > 0:
-            parts.append(f'إضافي {_money(line.overtime)}')
-        if line.other_addition and line.other_addition > 0:
-            parts.append(f'أخرى {_money(line.other_addition)}')
-        total = (line.bonus or 0) + (line.overtime or 0) + (line.other_addition or 0)
-        period = f'{line.run.period_year}/{line.run.period_month:02d}' if line.run_id else '—'
-        rows.append(
-            OperationsReportRow(
-                ref=f'PR-{line.pk}',
-                employee_name=line.employee.name if line.employee_id else '—',
-                branch_name=line.run.branch.name if line.run_id and line.run.branch_id else '—',
-                details=f'مسير {period} — {" | ".join(parts)}',
-                amount_label=f'{_money(total)} ر.س',
-                status_label='مُسجّل',
-                date_label=_fmt_dt(line.updated_at),
-                sort_key=(line.updated_at or timezone.now(), line.pk),
-            )
-        )
-    return rows
+
+
+def _new_employee_rows(report_date: date) -> list[OperationsReportRow]:
+    employees = (
+        Employee.objects.filter(is_deleted=False, created_at__date=report_date)
+        .select_related('branch', 'profession')
+        .order_by('-created_at')
+    )
+    return [_new_employee_row(emp) for emp in employees]
 
 
 def _pending_actions_qs():
@@ -243,18 +234,6 @@ def _pending_employment_qs():
     )
 
 
-def _completed_employment_qs(report_date: date):
-    return (
-        EmploymentRequest.objects.filter(
-            is_deleted=False,
-            status=EmploymentRequest.Status.APPROVED,
-            officer_reviewed_at__date=report_date,
-        )
-        .select_related('branch')
-        .order_by('-officer_reviewed_at')
-    )
-
-
 def collect_operations_report(
     *,
     report_date: date | None = None,
@@ -271,7 +250,11 @@ def collect_operations_report(
 
         if key == 'additions':
             if include_completed:
-                completed_rows = _payroll_addition_rows(report_date)
+                completed_rows = _new_employee_rows(report_date)
+            if include_pending:
+                pending_rows = [
+                    _employment_row(r, completed=False) for r in _pending_employment_qs()
+                ]
         else:
             type_set = set(action_types)
             if include_completed:
@@ -299,18 +282,9 @@ def collect_operations_report(
             )
         )
 
-    employment_pending: list[OperationsReportRow] = []
-    employment_completed: list[OperationsReportRow] = []
-    if include_pending:
-        employment_pending = [_employment_row(r, completed=False) for r in _pending_employment_qs()]
-    if include_completed:
-        employment_completed = [_employment_row(r, completed=True) for r in _completed_employment_qs(report_date)]
-
     return OperationsReportBundle(
         report_date=report_date,
         sections=sections,
-        employment_pending=employment_pending,
-        employment_completed=employment_completed,
     )
 
 
@@ -331,8 +305,6 @@ def collect_operations_report_rows(
     for section in bundle.sections:
         pending.extend(section.pending_rows)
         completed.extend(section.completed_rows)
-    pending.extend(bundle.employment_pending)
-    completed.extend(bundle.employment_completed)
     pending.sort(key=lambda r: r.sort_key, reverse=True)
     completed.sort(key=lambda r: r.sort_key, reverse=True)
     return pending, completed

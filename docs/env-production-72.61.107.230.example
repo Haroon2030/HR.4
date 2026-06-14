@@ -88,5 +88,5 @@ DOCUMENT_EXPIRY_EMAIL_RECIPIENTS=admin@alrsheed.net
 
 # ─── تقرير العمليات PDF (يومي — cron + إعدادات من لوحة النظام) ─────────────
 OPERATIONS_REPORT_CRON=true
-OPERATIONS_REPORT_CRON_SCHEDULE=0 * * * *
+OPERATIONS_REPORT_CRON_SCHEDULE=* * * * *
 # البريد المستلم + ساعة الإرسال + التفعيل: /setup/operations-report/

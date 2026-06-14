@@ -71,9 +71,7 @@ class _ReportPDF(_ArabicPDF):
         self.set_font('NotoArabic', '', 10)
         self.set_text_color(203, 213, 225)
         completed_total = sum(len(s.completed_rows) for s in bundle.sections)
-        completed_total += len(bundle.employment_completed)
         pending_total = sum(len(s.pending_rows) for s in bundle.sections)
-        pending_total += len(bundle.employment_pending)
         meta = (
             f'تاريخ التقرير: {report_date.isoformat()}   '
             f'عمليات اليوم: {completed_total}   '
@@ -90,8 +88,6 @@ class _ReportPDF(_ArabicPDF):
         box_h = 14
         gap = 3
         boxes = [(s.title, len(s.completed_rows), len(s.pending_rows), s.accent_rgb) for s in bundle.sections]
-        if bundle.employment_completed or bundle.employment_pending:
-            boxes.append(('توظيف', len(bundle.employment_completed), len(bundle.employment_pending), (100, 116, 139)))
         count = len(boxes)
         if not count:
             return
@@ -186,26 +182,6 @@ class _ReportPDF(_ArabicPDF):
         self.ln(3)
         return start_index + len(rows)
 
-    def _draw_employment_section(
-        self,
-        title: str,
-        rows: list[OperationsReportRow],
-        accent: tuple[int, int, int],
-    ) -> None:
-        if not rows:
-            return
-        if self.get_y() > self.h - 35:
-            self.add_page()
-        self.set_fill_color(*accent)
-        self.set_font('NotoArabic', '', 11)
-        self.set_text_color(255, 255, 255)
-        self.cell(self.TABLE_W, 8, _shape_ar(f'{title} ({len(rows)})'), border=0, fill=True, ln=True)
-        self.set_text_color(0, 0, 0)
-        self.ln(1)
-        self._draw_table_header()
-        self._draw_rows(rows)
-        self.ln(3)
-
 
 def build_operations_report_pdf(
     *,
@@ -239,15 +215,8 @@ def build_operations_report_pdf(
         for section in bundle.sections:
             pdf._draw_section(section, mode='completed')
 
-        if bundle.employment_completed:
-            pdf._draw_employment_section(
-                'طلبات التوظيف — اليوم',
-                bundle.employment_completed,
-                (51, 65, 85),
-            )
-
     if include_pending:
-        has_pending = any(s.pending_rows for s in bundle.sections) or bundle.employment_pending
+        has_pending = any(s.pending_rows for s in bundle.sections)
         if has_pending:
             if pdf.get_y() > pdf.h - 40:
                 pdf.add_page()
@@ -258,12 +227,6 @@ def build_operations_report_pdf(
             pdf.ln(1)
             for section in bundle.sections:
                 pdf._draw_section(section, mode='pending')
-            if bundle.employment_pending:
-                pdf._draw_employment_section(
-                    'طلبات التوظيف — معلّق',
-                    bundle.employment_pending,
-                    (180, 83, 9),
-                )
 
     out = pdf.output(dest='S')
     if isinstance(out, (bytes, bytearray)):

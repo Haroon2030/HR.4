@@ -6,6 +6,8 @@ Nationality, Profession, Sponsorship, Insurance, InsuranceClass, SystemSettings.
 الجداول الفعلية في DB ما زالت تحت أسماء `core_*` (للحفاظ على البيانات
 القديمة)، ويتم ذلك عبر `Meta.db_table`.
 """
+from datetime import time
+
 from django.db import models
 from django.conf import settings
 from simple_history.models import HistoricalRecords
@@ -33,10 +35,10 @@ class OperationsReportSettings(models.Model):
 
     recipient_email = models.EmailField('البريد المستلم', blank=True, default='')
     is_enabled = models.BooleanField('تفعيل الإرسال التلقائي', default=False)
-    send_hour = models.PositiveSmallIntegerField(
-        'ساعة الإرسال (24)',
-        default=12,
-        help_text='يُرسل التقرير يومياً عند هذه الساعة (توقيت السيرفر).',
+    send_time = models.TimeField(
+        'وقت الإرسال',
+        default=time(12, 0, 0),
+        help_text='يُرسل التقرير يومياً عند هذا الوقت (توقيت السيرفر).',
     )
     include_pending = models.BooleanField('تضمين العمليات المعلّقة', default=True)
     include_completed = models.BooleanField('تضمين العمليات المُنجزة (يوم التقرير)', default=True)

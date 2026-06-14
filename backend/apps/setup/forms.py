@@ -153,12 +153,25 @@ class AdministrationForm(forms.ModelForm):
 
 
 class OperationsReportSettingsForm(forms.ModelForm):
+    send_time = forms.TimeField(
+        label='وقت الإرسال',
+        input_formats=['%H:%M:%S', '%H:%M'],
+        widget=forms.TimeInput(
+            format='%H:%M:%S',
+            attrs={
+                'class': 'w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500',
+                'type': 'time',
+                'step': '1',
+            },
+        ),
+    )
+
     class Meta:
         model = OperationsReportSettings
         fields = (
             'recipient_email',
             'is_enabled',
-            'send_hour',
+            'send_time',
             'include_pending',
             'include_completed',
         )
@@ -168,21 +181,16 @@ class OperationsReportSettingsForm(forms.ModelForm):
                 'placeholder': 'reports@company.com',
                 'dir': 'ltr',
             }),
-            'send_hour': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500',
-                'min': 0,
-                'max': 23,
-            }),
             'is_enabled': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
             'include_pending': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
             'include_completed': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
         }
 
-    def clean_send_hour(self):
-        hour = self.cleaned_data.get('send_hour')
-        if hour is None or hour < 0 or hour > 23:
-            raise ValidationError('الساعة يجب أن تكون بين 0 و 23')
-        return hour
+    def clean_send_time(self):
+        value = self.cleaned_data.get('send_time')
+        if value is None:
+            raise ValidationError('حدّد وقت الإرسال.')
+        return value
 
     def clean(self):
         cleaned = super().clean()

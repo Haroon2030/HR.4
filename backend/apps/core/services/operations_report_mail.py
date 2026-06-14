@@ -49,12 +49,12 @@ def build_and_send_operations_report(
         include_completed=settings_obj.include_completed,
     )
 
-    completed_total = sum(len(s.completed_rows) for s in bundle.sections) + len(bundle.employment_completed)
-    pending_total = sum(len(s.pending_rows) for s in bundle.sections) + len(bundle.employment_pending)
+    completed_total = sum(len(s.completed_rows) for s in bundle.sections)
+    pending_total = sum(len(s.pending_rows) for s in bundle.sections)
 
     subject = f'تقرير العمليات اليومي — {report_date.isoformat()}'
     body_lines = [
-        'مرفق تقرير العمليات اليومي (PDF) — أقسام: سلف، إجازات، تنقلات، تصفيات، غيابات، إضافات، تعديلات راتب.',
+        'مرفق تقرير العمليات اليومي (PDF) — أقسام: سلف، إجازات، تنقلات، تصفيات، غيابات، موظفون جدد، تعديلات راتب.',
         '',
         f'تاريخ التقرير: {report_date.isoformat()}',
         f'إجمالي عمليات اليوم: {completed_total}',
@@ -65,8 +65,6 @@ def build_and_send_operations_report(
     for section in bundle.sections:
         if section.completed_rows:
             body_lines.append(f'  • {section.title}: {len(section.completed_rows)}')
-    if bundle.employment_completed:
-        body_lines.append(f'  • توظيف: {len(bundle.employment_completed)}')
     body_lines.extend(['', '— نظام الموارد البشرية'])
     msg = EmailMessage(
         subject=subject,

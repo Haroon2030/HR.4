@@ -20,8 +20,8 @@
         <div class="rounded-lg border border-sky-200 bg-sky-50/80 px-4 py-3 text-sm text-sky-900">
             <p class="m-0 font-bold">كيف يعمل؟</p>
             <ul class="mt-2 mb-0 ps-4 space-y-1">
-                <li>يُرسل التقرير تلقائياً عند الساعة المحددة (افتراضي 12:00) بتوقيت السيرفر.</li>
-                <li>يتضمن أقساماً يومية منظمة: <strong>السلف</strong>، <strong>الإجازات</strong>، <strong>التنقلات</strong>، <strong>التصفيات</strong>، <strong>الغيابات</strong>، <strong>الإضافات</strong>، <strong>تعديلات الراتب</strong>.</li>
+                <li>يُرسل التقرير تلقائياً عند الوقت المحدد (ساعة، دقيقة، ثانية) بتوقيت السيرفر.</li>
+                <li>يتضمن أقساماً يومية منظمة: <strong>السلف</strong>، <strong>الإجازات</strong>، <strong>التنقلات</strong>، <strong>التصفيات</strong>، <strong>الغيابات</strong>، <strong>إضافة موظفين جدد</strong>، <strong>تعديلات الراتب</strong>.</li>
                 <li>كل قسم في جدول مستقل مع ملخص أعداد في أعلى التقرير.</li>
                 <li>يتطلب ضبط SMTP في <code dir="ltr">.env</code> (EMAIL_HOST وغيرها).</li>
             </ul>
@@ -68,10 +68,10 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label for="id_send_hour" class="block text-sm font-semibold text-slate-700 mb-1">ساعة الإرسال (24)</label>
-                    {{ form.send_hour }}
-                    <p class="text-xs text-slate-500 mt-1">مثال: 12 = ظهراً، 0 = منتصف الليل</p>
-                    {% if form.send_hour.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.send_hour.errors.0 }}</p>{% endif %}
+                    <label for="id_send_time" class="block text-sm font-semibold text-slate-700 mb-1">وقت الإرسال</label>
+                    {{ form.send_time }}
+                    <p class="text-xs text-slate-500 mt-1">اختر الساعة والدقائق والثواني (24 ساعة). الإرسال التلقائي يطابق الساعة والدقيقة.</p>
+                    {% if form.send_time.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.send_time.errors.0 }}</p>{% endif %}
                 </div>
                 <div class="flex items-end pb-1">
                     <label class="inline-flex items-center gap-2 cursor-pointer">

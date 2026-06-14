@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.core.services.operations_report_mail import build_and_send_operations_report
+from apps.core.services.operations_report_schedule import format_send_time, send_time_matches_minute
 from apps.setup.models import OperationsReportSettings
 
 
@@ -52,16 +53,21 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('لا يوجد بريد مستلم — حدّده من صفحة إعدادات تقرير العمليات.'))
             return
 
-        if not force and solo.send_hour != now.hour:
+        if not force and not send_time_matches_minute(now, solo.send_time):
             self.stdout.write(
-                f'ليست ساعة الإرسال ({solo.send_hour}:00) — الآن {now.hour}:{now.minute:02d} — تخطي.'
+                f'ليس وقت الإرسال ({format_send_time(solo.send_time)}) — '
+                f'الآن {now.strftime("%H:%M:%S")} — تخطي.'
             )
             return
 
         if not force and solo.last_sent_at:
             last = timezone.localtime(solo.last_sent_at)
-            if last.date() == now.date() and last.hour == solo.send_hour:
-                self.stdout.write('تم الإرسال مسبقاً اليوم في هذه الساعة — تخطي.')
+            if (
+                last.date() == now.date()
+                and last.hour == now.hour
+                and last.minute == now.minute
+            ):
+                self.stdout.write('تم الإرسال مسبقاً اليوم في هذا الوقت — تخطي.')
                 return
 
         from apps.core.services.operations_report_data import collect_operations_report
@@ -72,8 +78,8 @@ class Command(BaseCommand):
             include_pending=solo.include_pending,
             include_completed=solo.include_completed,
         )
-        completed_total = sum(len(s.completed_rows) for s in bundle.sections) + len(bundle.employment_completed)
-        pending_total = sum(len(s.pending_rows) for s in bundle.sections) + len(bundle.employment_pending)
+        completed_total = sum(len(s.completed_rows) for s in bundle.sections)
+        pending_total = sum(len(s.pending_rows) for s in bundle.sections)
         self.stdout.write(
             f'تقرير {report_date}: معلّقة={pending_total} | مُنجزة={completed_total} → {target_email}'
         )
