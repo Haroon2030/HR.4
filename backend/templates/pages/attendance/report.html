@@ -23,17 +23,14 @@
             <h1>تقرير البصمة</h1>
         </div>
         <div class="hr-report-actions">
-            <a href="{% url 'web:attendance_report_export' %}?{{ querystring }}"
-               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-white rounded-lg"
-               style="background:#059669;">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                Excel
-            </a>
-            <a href="{% url 'web:attendance_records' %}?{{ querystring }}"
-               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50">
-                <i data-lucide="list" class="w-4 h-4"></i>
-                السجلات
-            </a>
+            {% url 'web:attendance_report_export' as report_export_url %}
+            {% with export_href=report_export_url|add:"?"|add:querystring %}
+            {% include "components/hr_btn.html" with href=export_href label="Excel" variant="success" icon="file-spreadsheet" %}
+            {% endwith %}
+            {% url 'web:attendance_records' as records_url %}
+            {% with records_href=records_url|add:"?"|add:querystring %}
+            {% include "components/hr_btn.html" with href=records_href label="السجلات" variant="soft-slate" icon="list" %}
+            {% endwith %}
         </div>
     </div>
 
@@ -92,8 +89,10 @@
                         <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
                         فلاتر
                     </button>
-                    <button type="submit" class="hr-filter-btn hr-filter-btn--primary">عرض</button>
-                    <a href="{% url 'web:attendance_report' %}" class="hr-filter-btn hr-filter-btn--ghost">مسح</a>
+                    <div class="hr-filter-form flex items-center gap-1">
+                        {% url 'web:attendance_report' as report_clear_url %}
+                        {% include "components/filter_actions.html" with clear_url=report_clear_url %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -190,13 +189,17 @@
             </table>
         </div>
         {% if daily_page.has_other_pages %}
-        <div class="hr-report-pager">
+        <div class="hr-report-pager hr-pagination__controls">
             {% if daily_page.has_previous %}
-            <a href="?{{ querystring }}&page={{ daily_page.previous_page_number }}">السابق</a>
+            <a href="?{{ querystring }}&page={{ daily_page.previous_page_number }}" class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">السابق</a>
+            {% else %}
+            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">السابق</span>
             {% endif %}
-            <span>صفحة {{ daily_page.number }} / {{ daily_page.paginator.num_pages }}</span>
+            <span class="hr-pagination__status">{{ daily_page.number }}/{{ daily_page.paginator.num_pages }}</span>
             {% if daily_page.has_next %}
-            <a href="?{{ querystring }}&page={{ daily_page.next_page_number }}">التالي</a>
+            <a href="?{{ querystring }}&page={{ daily_page.next_page_number }}" class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">التالي</a>
+            {% else %}
+            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">التالي</span>
             {% endif %}
         </div>
         {% endif %}
@@ -249,13 +252,17 @@
             </table>
         </div>
         {% if punches_page.has_other_pages %}
-        <div class="hr-report-pager">
+        <div class="hr-report-pager hr-pagination__controls">
             {% if punches_page.has_previous %}
-            <a href="?{{ querystring }}&punches_page={{ punches_page.previous_page_number }}">السابق</a>
+            <a href="?{{ querystring }}&punches_page={{ punches_page.previous_page_number }}" class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">السابق</a>
+            {% else %}
+            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">السابق</span>
             {% endif %}
-            <span>صفحة {{ punches_page.number }} / {{ punches_page.paginator.num_pages }}</span>
+            <span class="hr-pagination__status">{{ punches_page.number }}/{{ punches_page.paginator.num_pages }}</span>
             {% if punches_page.has_next %}
-            <a href="?{{ querystring }}&punches_page={{ punches_page.next_page_number }}">التالي</a>
+            <a href="?{{ querystring }}&punches_page={{ punches_page.next_page_number }}" class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">التالي</a>
+            {% else %}
+            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">التالي</span>
             {% endif %}
         </div>
         {% endif %}

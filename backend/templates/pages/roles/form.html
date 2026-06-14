@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-4">
@@ -90,18 +91,8 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <button type="button" @click="checkAll(true)"
-                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold"
-                            {% if is_admin_role %}disabled{% endif %}>
-                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
-                        تحديد الكل
-                    </button>
-                    <button type="button" @click="checkAll(false)"
-                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-semibold"
-                            {% if is_admin_role %}disabled{% endif %}>
-                        <i data-lucide="square" class="w-3.5 h-3.5"></i>
-                        إلغاء الكل
-                    </button>
+                    {% include "components/hr_btn.html" with label="تحديد الكل" type="button" variant="soft-emerald" icon="check" size="sm" x_click="checkAll(true)" disabled=is_admin_role %}
+                    {% include "components/hr_btn.html" with label="إلغاء الكل" type="button" variant="soft-slate" icon="x" size="sm" x_click="checkAll(false)" disabled=is_admin_role %}
                     <span class="text-slate-500 mr-2">
                         <span x-text="selectedCount()"></span> محددة
                     </span>
@@ -171,16 +162,12 @@
         </div>
         {% endif %}
 
-        <!-- Form Actions -->
-        <div class="flex items-center justify-end gap-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <a href="{% url 'web:list_roles' %}" class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                إلغاء
-            </a>
-            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                <i data-lucide="save" class="w-4 h-4"></i>
-                {% if role %}حفظ التعديلات{% else %}إنشاء الدور{% endif %}
-            </button>
-        </div>
+        {% url 'web:list_roles' as roles_cancel_url %}
+        {% if role %}
+        {% include "components/form_actions.html" with cancel_url=roles_cancel_url submit_label="حفظ التعديلات" %}
+        {% else %}
+        {% include "components/form_actions.html" with cancel_url=roles_cancel_url submit_label="إنشاء الدور" %}
+        {% endif %}
     </form>
 </div>
 

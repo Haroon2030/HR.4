@@ -27,7 +27,7 @@
             <!-- زر إضافة سريعة -->
             <div class="hr-dropdown" @click.outside="quickOpen = false">
                 <button type="button" @click="quickOpen = !quickOpen"
-                    class="hr-btn-dark">
+                    class="hr-btn hr-btn--primary">
                     <i data-lucide="zap" class="w-4 h-4"></i>
                     إضافة سريعة
                     <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="quickOpen ? 'rotate-180' : ''"></i>
@@ -81,15 +81,12 @@
             {% endif %}
 
             {% if can_view_salary %}
-            <a href="{% url 'web:export_employee_salary_excel' employee.id %}"
-               class="hr-btn-dark">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> تصدير Excel
-            </a>
+            {% url 'web:export_employee_salary_excel' employee.id as export_salary_href %}
+            {% include "components/hr_btn.html" with href=export_salary_href label="تصدير Excel" variant="glass-emerald" icon="file-spreadsheet" %}
             {% endif %}
 
-            <a href="{% url 'web:edit_employee' employee.id %}" class="hr-btn-dark">
-                <i data-lucide="pencil" class="w-4 h-4"></i> تعديل / إكمال البيانات
-            </a>
+            {% url 'web:edit_employee' employee.id as edit_employee_url %}
+            {% include "components/hr_btn.html" with href=edit_employee_url label="تعديل / إكمال البيانات" variant="glass-primary" icon="pencil" %}
         </div>
     </div>
 
@@ -167,8 +164,8 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--emerald">
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--success">
                         <i data-lucide="user-check" class="w-4 h-4"></i> تأكيد إعادة التفعيل
                     </button>
                 </div>
@@ -266,10 +263,10 @@
                 </div>
 
                 <div class="md:col-span-6 flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted hr-btn--sm">إلغاء</button>
                     <button type="submit"
-                            class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-save"
-                            :class="sendEmail ? 'hr-quick-btn-save--emerald' : 'hr-quick-btn-save--primary'">
+                            class="hr-btn hr-btn--sm"
+                            :class="sendEmail ? 'hr-btn--success' : 'hr-btn--primary'">
                         <i :data-lucide="sendEmail ? 'send' : 'save'" class="w-3.5 h-3.5"></i>
                         <span x-text="sendEmail ? 'حفظ + إرسال' : 'حفظ'"></span>
                     </button>
@@ -329,7 +326,7 @@
                             </button>
                         </template>
                         <button type="button" @click="addBox(); focusedBoxId = boxes[boxes.length - 1].id;"
-                                class="hr-btn-dark hr-btn-dark--sm">
+                                class="hr-btn hr-btn--dark hr-btn--sm">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             إضافة شهر
                         </button>
@@ -343,7 +340,7 @@
                     <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
                         <i data-lucide="calendar-plus" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
                         <p class="text-sm text-slate-500 mb-3">لا يوجد جدول — ابدأ بإضافة شهر</p>
-                        <button type="button" @click="addBox(); focusedBoxId = boxes[boxes.length - 1].id;" class="hr-btn-dark hr-btn-dark--sm">إضافة شهر</button>
+                        <button type="button" @click="addBox(); focusedBoxId = boxes[boxes.length - 1].id;" class="hr-btn hr-btn--dark hr-btn--sm">إضافة شهر</button>
                     </div>
                 </template>
 
@@ -387,10 +384,10 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white/95 backdrop-blur flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-100 -mx-4 px-4 pb-1">
-                    <button type="button" @click="closeScheduleModal()" class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="closeScheduleModal()" class="hr-btn hr-btn--muted hr-btn--sm">إلغاء</button>
                     <button type="submit"
-                            class="hr-quick-btn hr-quick-btn-sm hr-quick-btn-save"
-                            :class="sendEmail ? 'hr-quick-btn-save--emerald' : 'hr-quick-btn-save--primary'">
+                            class="hr-btn hr-btn--sm"
+                            :class="sendEmail ? 'hr-btn--success' : 'hr-btn--primary'">
                         <i :data-lucide="sendEmail ? 'send' : 'save'" class="w-3.5 h-3.5"></i>
                         <span x-text="sendEmail ? 'حفظ + إرسال' : 'حفظ الجدول'"></span>
                     </button>
@@ -437,7 +434,7 @@
                     </div>
                 </div>
                 <div class="flex justify-end mt-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إغلاق</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إغلاق</button>
                 </div>
             </div>
             {% else %}
@@ -495,9 +492,9 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" :disabled="!canSubmit"
-                            class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--primary"
+                            class="hr-btn hr-btn--primary"
                             :class="{ 'is-disabled': !canSubmit }">حفظ الإجازة</button>
                 </div>
             </form>
@@ -570,8 +567,8 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--danger">تأكيد التصفية</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--danger">تأكيد التصفية</button>
                 </div>
             </form>
         </div>
@@ -775,8 +772,8 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--danger">تأكيد انتهاء العقد</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--danger">تأكيد انتهاء العقد</button>
                 </div>
             </form>
         </div>
@@ -979,8 +976,8 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--danger">تأكيد التصفية</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--danger">تأكيد التصفية</button>
                 </div>
             </form>
         </div>
@@ -1099,9 +1096,9 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" :disabled="parseFloat(raise || 0) === 0"
-                            class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--emerald"
+                            class="hr-btn hr-btn--success"
                             :class="{ 'is-disabled': parseFloat(raise || 0) === 0 }">
                         <i data-lucide="save" class="w-4 h-4"></i> حفظ التعديل
                     </button>
@@ -1186,9 +1183,9 @@
                 </div>
 
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit"
-                            class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--indigo">
+                            class="hr-btn hr-btn--indigo">
                         <i data-lucide="move" class="w-4 h-4"></i> تأكيد النقل
                     </button>
                 </div>
@@ -1248,8 +1245,8 @@
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-emerald-50 file:border-0 file:text-emerald-700 file:rounded">
                 </div>
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--emerald">
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--success">
                         <i data-lucide="package-check" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1298,8 +1295,8 @@
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-rose-50 file:border-0 file:text-rose-700 file:rounded">
                 </div>
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--rose">
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--rose">
                         <i data-lucide="package-x" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1366,8 +1363,8 @@
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-amber-50 file:border-0 file:text-amber-700 file:rounded">
                 </div>
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--amber">
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--amber">
                         <i data-lucide="hand-coins" class="w-4 h-4"></i> إرسال للموافقة
                     </button>
                 </div>
@@ -1463,10 +1460,10 @@
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
                 </div>
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
-                    <button type="submit" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-save hr-quick-btn-save--orange" data-bwignore="true">
+                    <button type="submit" class="hr-btn hr-btn--orange" data-bwignore="true">
                         ✓ إرسال للموافقة
                     </button>
-                    <button type="button" @click="quickModal=null" class="hr-quick-btn hr-quick-btn-md hr-quick-btn-cancel">إلغاء</button>
+                    <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                 </div>
             </form>
         </div>

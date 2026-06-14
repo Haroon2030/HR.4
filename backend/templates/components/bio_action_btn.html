@@ -1,0 +1,8 @@
+{% load custom_tags %}
+<button type="{{ type|default:'button' }}"
+        class="hr-btn hr-btn--icon hr-btn--bio-{{ variant }}{% if extra_class %} {{ extra_class }}{% endif %}"
+        {% if title %}title="{{ title }}" aria-label="{{ title }}"{% endif %}
+        {% if disabled %}disabled{% endif %}
+        {% if x_click %}@click="{{ x_click }}"{% endif %}>
+    {% lucide_glyph icon 'hr-btn__icon' %}
+</button>

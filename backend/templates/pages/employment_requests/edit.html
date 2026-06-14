@@ -153,19 +153,12 @@
         {# ─── أزرار الإجراءات ──────────────────────────────────── #}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <a href="{% url 'web:list_employment_requests' %}"
-               class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg text-center">
+               class="hr-btn hr-btn--secondary">
                 إلغاء
             </a>
             <div class="flex flex-col sm:flex-row gap-2">
-                <button type="submit" name="action" value="save"
-                        class="px-5 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="w-4 h-4"></i> حفظ البيانات
-                </button>
-                <button type="submit" name="action" value="save_and_approve"
-                        onclick="return confirm('سيتم حفظ البيانات والموافقة النهائية وإضافة الموظف لقائمة العاملين. هل أنت متأكد؟');"
-                        class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg inline-flex items-center justify-center gap-2">
-                    <i data-lucide="check-check" class="w-4 h-4"></i> حفظ + موافقة نهائية
-                </button>
+                {% include "components/hr_btn.html" with label="حفظ البيانات" type="submit" variant="primary" icon="save" name="action" value="save" extra_class="justify-center" %}
+                {% include "components/hr_btn.html" with label="حفظ + موافقة نهائية" type="submit" variant="success" icon="check" name="action" value="save_and_approve" onclick="return confirm('سيتم حفظ البيانات والموافقة النهائية وإضافة الموظف لقائمة العاملين. هل أنت متأكد؟');" extra_class="justify-center" %}
             </div>
         </div>
     </form>

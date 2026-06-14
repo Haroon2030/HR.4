@@ -188,16 +188,7 @@
             </div>
 
             <div class="shrink-0 py-2 border-t border-slate-200 bg-slate-50">
-                <div class="zk-modal-actions">
-                    <button type="submit"
-                        class="py-1.5 rounded-md bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 border border-primary-700">
-                        <span x-text="form.device_id ? 'حفظ' : 'تسجيل'"></span>
-                    </button>
-                    <button type="button" @click="deviceModal = false"
-                        class="py-1.5 rounded-md border border-slate-300 bg-white text-xs text-slate-600 hover:bg-slate-100">
-                        إلغاء
-                    </button>
-                </div>
+                {% include "components/modal_actions.html" with submit_x_text="form.device_id ? 'حفظ' : 'تسجيل'" cancel_click="deviceModal = false" %}
             </div>
         </form>
     </div>

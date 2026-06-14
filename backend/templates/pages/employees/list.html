@@ -7,14 +7,10 @@
       action="{% url 'web:list_employees' %}"
       class="flex items-center gap-2 w-full sm:w-auto">
     {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
-    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
-        <i data-lucide="search" class="w-4 h-4"></i> بحث
-    </button>
+    {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
     {% if query %}
-    <a href="{% url 'web:list_employees' %}"
-       class="px-3 py-2 text-sm text-slate-600 hover:text-slate-800 inline-flex items-center gap-1" title="مسح البحث">
-        <i data-lucide="x" class="w-4 h-4"></i>
-    </a>
+    {% url 'web:list_employees' as clear_url %}
+    {% include "components/hr_btn.html" with href=clear_url label="" icon="x" variant="ghost" title="مسح البحث" extra_class="px-3" %}
     {% endif %}
 </form>
 {% endblock %}

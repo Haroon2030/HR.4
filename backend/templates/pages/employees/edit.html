@@ -442,12 +442,12 @@
         {% include "components/page_tabs_end.html" %}
 
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <a href="{% url 'web:list_employees' %}" class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">إلغاء</a>
-            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2">
-                <i data-lucide="save" class="w-4 h-4"></i> {% if is_create %}حفظ الموظف{% else %}حفظ التغييرات{% endif %}
-            </button>
-        </div>
+        {% url 'web:list_employees' as emp_cancel_url %}
+        {% if is_create %}
+        {% include "components/form_actions.html" with cancel_url=emp_cancel_url submit_label="حفظ الموظف" %}
+        {% else %}
+        {% include "components/form_actions.html" with cancel_url=emp_cancel_url submit_label="حفظ التغييرات" %}
+        {% endif %}
     </form>
 </div>
 

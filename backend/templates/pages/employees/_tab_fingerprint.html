@@ -5,7 +5,7 @@
     {% if not fp.linked %}
     <div class="p-6 rounded-xl border border-dashed border-amber-300 bg-amber-50 text-amber-900 text-sm">
         <p class="font-bold m-0">الموظف غير مربوط بجهاز البصمة</p>
-        <p class="mt-2 m-0">من <a href="{% url 'web:biometric_devices' %}" class="hr-glass-btn hr-glass-btn--primary inline-flex mt-2">أجهزة البصمة</a> اربط رقم المستخدم على الجهاز بهذا الموظف.</p>
+        <p class="mt-2 m-0">من {% url 'web:biometric_devices' as bio_devices_href %}{% include "components/hr_btn.html" with href=bio_devices_href label="أجهزة البصمة" variant="glass-primary" extra_class="inline-flex mt-2" %} اربط رقم المستخدم على الجهاز بهذا الموظف.</p>
     </div>
     {% else %}
 
@@ -63,10 +63,7 @@
                        value="{{ settings.late_grace_minutes|default:30 }}">
             </div>
             <div class="flex items-end">
-                <button type="submit" class="hr-glass-btn hr-glass-btn--primary w-full">
-                    <i data-lucide="save" class="w-4 h-4"></i>
-                    حفظ الإعدادات
-                </button>
+                {% include "components/hr_btn.html" with label="حفظ الإعدادات" type="submit" variant="glass-primary" icon="save" extra_class="w-full" %}
             </div>
         </div>
         {% if settings.expected_check_in %}
@@ -90,25 +87,19 @@
                    class="px-3 py-2 border border-slate-300/80 rounded-md bg-white/70 min-w-[10rem]">
         </div>
         <div class="flex flex-wrap gap-2 items-center">
-            <button type="submit" class="hr-glass-btn hr-glass-btn--primary">
-                <i data-lucide="filter" class="w-4 h-4"></i>
-                عرض
-            </button>
-            <button type="button" id="fp-refresh-btn" class="hr-glass-btn hr-glass-btn--sky">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                تحديث
-            </button>
+            {% include "components/hr_btn.html" with label="عرض" type="submit" variant="glass-primary" icon="filter" %}
+            {% include "components/hr_btn.html" with label="تحديث" type="button" variant="glass-sky" icon="refresh-cw" id="fp-refresh-btn" %}
             {% for en in fp.enrollments %}{% if forloop.first %}
             <a href="{% url 'web:attendance_records' %}?employee={{ employee.id }}&from={{ fp_date_from }}&to={{ fp_date_to }}&device={{ en.device_id }}&device_user={{ en.device_user_id }}"
-               class="hr-glass-btn hr-glass-btn--emerald">
-                <i data-lucide="external-link" class="w-4 h-4"></i>
-                سجلات الحضور
+               class="hr-btn hr-btn--glass-emerald">
+                <i data-lucide="external-link" class="hr-btn__icon"></i>
+                <span>سجلات الحضور</span>
             </a>
             {% endif %}{% empty %}
             <a href="{% url 'web:attendance_records' %}?employee={{ employee.id }}&from={{ fp_date_from }}&to={{ fp_date_to }}"
-               class="hr-glass-btn hr-glass-btn--emerald">
-                <i data-lucide="external-link" class="w-4 h-4"></i>
-                سجلات الحضور
+               class="hr-btn hr-btn--glass-emerald">
+                <i data-lucide="external-link" class="hr-btn__icon"></i>
+                <span>سجلات الحضور</span>
             </a>
             {% endfor %}
         </div>

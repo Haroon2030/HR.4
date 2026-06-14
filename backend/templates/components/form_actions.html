@@ -1,0 +1,8 @@
+<div class="flex flex-wrap items-center gap-2{% if align == 'end' %} justify-end{% endif %}{% if wrapper_class %} {{ wrapper_class }}{% else %} bg-white rounded-xl shadow-sm border border-slate-200 p-4{% endif %}">
+    {% if cancel_url %}
+        {% include "components/hr_btn.html" with label=cancel_label|default:"إلغاء" href=cancel_url variant="secondary" %}
+    {% elif cancel_click %}
+        {% include "components/hr_btn.html" with label=cancel_label|default:"إلغاء" type="button" variant="secondary" size="sm" x_click=cancel_click %}
+    {% endif %}
+    {% include "components/hr_btn.html" with label=submit_label type="submit" variant=submit_variant|default:"primary" icon=submit_icon|default:"save" size=submit_size %}
+</div>

@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Count, Q
 
-CACHE_PREFIX = 'hr:dashboard_overview:'
+CACHE_PREFIX = 'hr:dashboard_overview:v2:'
 OVERVIEW_VER_PREFIX = 'hr:dashboard_overview_ver:'
 DEFAULT_TTL = 120
 

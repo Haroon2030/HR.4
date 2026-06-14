@@ -1,0 +1,43 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+{% if controls_only %}
+<nav class="hr-pagination__nav" aria-label="{{ aria_label|default:'ترقيم الصفحات' }}">
+    <div class="hr-pagination__controls">
+        {% if page_obj.has_previous %}
+        <a href="?{% if filter_q %}q={{ filter_q|urlencode }}{% if base_qs %}&{{ base_qs }}{% endif %}{% elif base_qs %}{{ base_qs }}{% endif %}{% if filter_q or base_qs %}&{% endif %}{{ page_param|default:'page' }}={{ page_obj.previous_page_number }}"
+           class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">{{ prev_label|default:'السابق' }}</a>
+        {% else %}
+        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled" aria-disabled="true">{{ prev_label|default:'السابق' }}</span>
+        {% endif %}
+
+        {% if show_numbers|default:True %}
+        <div class="hr-pagination__nums">
+            {% for p in page_obj.paginator.page_range %}
+                {% if p == page_obj.number %}
+                <span class="hr-btn hr-btn--primary hr-btn--sm hr-pagination__num is-active" aria-current="page">{{ p }}</span>
+                {% else %}
+                <a href="?{% if filter_q %}q={{ filter_q|urlencode }}{% if base_qs %}&{{ base_qs }}{% endif %}{% elif base_qs %}{{ base_qs }}{% endif %}{% if filter_q or base_qs %}&{% endif %}{{ page_param|default:'page' }}={{ p }}"
+                   class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__num">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <span class="hr-pagination__status">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+        <a href="?{% if filter_q %}q={{ filter_q|urlencode }}{% if base_qs %}&{{ base_qs }}{% endif %}{% elif base_qs %}{{ base_qs }}{% endif %}{% if filter_q or base_qs %}&{% endif %}{{ page_param|default:'page' }}={{ page_obj.next_page_number }}"
+           class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">{{ next_label|default:'التالي' }}</a>
+        {% else %}
+        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled" aria-disabled="true">{{ next_label|default:'التالي' }}</span>
+        {% endif %}
+    </div>
+</nav>
+{% else %}
+<div class="hr-pagination{% if wrapper_class %} {{ wrapper_class }}{% endif %}">
+    {% if summary %}
+    <div class="hr-pagination__summary">{{ summary }}</div>
+    {% endif %}
+    {% include "components/hr_pagination.html" with page_obj=page_obj base_qs=base_qs filter_q=filter_q page_param=page_param show_numbers=show_numbers prev_label=prev_label next_label=next_label aria_label=aria_label controls_only=True %}
+</div>
+{% endif %}
+{% endif %}

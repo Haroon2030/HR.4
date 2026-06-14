@@ -50,13 +50,10 @@
                     </div>
                     <form method="get" class="flex items-center gap-2 w-full sm:w-auto">
                         {% include "components/search_field.html" with name="q" value=inbox_query placeholder="ابحث عن مهمة..." extra_class="flex-1 sm:w-64" aria_label="بحث في المهام" %}
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="search" class="w-4 h-4"></i> بحث
-                        </button>
+                        {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
                         {% if inbox_query %}
-                        <a href="{% url 'web:dashboard' %}" class="px-3 py-2 text-sm text-slate-600 hover:text-slate-800 inline-flex items-center gap-1">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </a>
+                        {% url 'web:dashboard' as dash_clear_url %}
+                        {% include "components/hr_btn.html" with href=dash_clear_url label="" icon="x" variant="ghost" extra_class="px-3" %}
                         {% endif %}
                     </form>
                 </div>
@@ -95,27 +92,13 @@
 
                 <!-- Pagination -->
                 {% if inbox_page.paginator.num_pages > 1 %}
-                <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                    <span>صفحة {{ inbox_page.number }} من {{ inbox_page.paginator.num_pages }} • إجمالي {{ inbox_total }}</span>
-                    <div class="flex items-center gap-1">
-                        {% if inbox_page.has_previous %}
-                        <a href="?{% if inbox_query %}q={{ inbox_query }}&{% endif %}page={{ inbox_page.previous_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
-                        {% else %}
-                        <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">السابق</span>
-                        {% endif %}
-                        {% for p in inbox_page.paginator.page_range %}
-                            {% if p == inbox_page.number %}
-                                <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg font-bold">{{ p }}</span>
-                            {% else %}
-                                <a href="?{% if inbox_query %}q={{ inbox_query }}&{% endif %}page={{ p }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">{{ p }}</a>
-                            {% endif %}
-                        {% endfor %}
-                        {% if inbox_page.has_next %}
-                        <a href="?{% if inbox_query %}q={{ inbox_query }}&{% endif %}page={{ inbox_page.next_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
-                        {% else %}
-                        <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">التالي</span>
-                        {% endif %}
-                    </div>
+                <div class="px-5 py-3 border-t border-slate-100 hr-pagination hr-pagination--bar">
+                    <div class="hr-pagination__summary">صفحة {{ inbox_page.number }} من {{ inbox_page.paginator.num_pages }} • إجمالي {{ inbox_total }}</div>
+                    {% if inbox_query %}
+                    {% include "components/hr_pagination.html" with page_obj=inbox_page controls_only=True filter_q=inbox_query %}
+                    {% else %}
+                    {% include "components/hr_pagination.html" with page_obj=inbox_page controls_only=True %}
+                    {% endif %}
                 </div>
                 {% endif %}
                 {% else %}

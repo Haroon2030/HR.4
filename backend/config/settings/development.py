@@ -14,7 +14,24 @@ SECRET_KEY = 'django-insecure-dev-key-change-in-production-!@#$%^&*()'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = env.list(
+    'ALLOWED_HOSTS',
+    default=['localhost', '127.0.0.1', '0.0.0.0'],
+)
+
+# Django 4+ يتحقق من Origin — يجب إدراج المنفذ والبروتوكول (localhost ≠ 127.0.0.1)
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[
+        'http://127.0.0.1:8000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8080',
+        'http://localhost:8080',
+    ],
+)
+
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Database - DATABASE_URL from .env (Neon Postgres) or fallback to SQLite

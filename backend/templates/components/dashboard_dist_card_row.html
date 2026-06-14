@@ -1,7 +1,8 @@
 {# صف توزيع — label, count, percent, color, icon #}
+{% load custom_tags %}
 <div class="hr-dist-card__item hr-dist-card__item--{{ color }}">
     <span class="hr-dist-card__item-icon" aria-hidden="true">
-        <i data-lucide="{{ icon }}" class="hr-dist-card__item-glyph"></i>
+        {% lucide_glyph icon 'hr-dist-card__item-glyph' %}
     </span>
     <div class="hr-dist-card__item-body">
         <div class="hr-dist-card__item-top">

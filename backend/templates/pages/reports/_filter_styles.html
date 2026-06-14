@@ -1,179 +1,152 @@
-<style>
-    .hr-reports-filter-tbl {
-        border-collapse: separate;
-        border-spacing: 0;
-        min-width: 52rem;
-    }
-    .hr-reports-filter-tbl thead th {
-        padding: 0.65rem 0.75rem;
-        text-align: right;
-        font-size: 0.7rem;
-        font-weight: 800;
-        color: #475569;
-        background: rgba(241, 245, 249, 0.95);
-        border-bottom: 1px solid #e2e8f0;
-        white-space: nowrap;
-    }
-    .hr-reports-filter-scroll {
-        overflow-x: auto;
-        overflow-y: visible;
-    }
-    .hr-reports-filter-tbl thead th.hr-reports-filter-col-report,
-    .hr-reports-filter-tbl tbody td.hr-reports-filter-col-report {
-        min-width: 16rem;
-        width: 24%;
-    }
-    .hr-reports-filter-col-report .hr-ms,
-    .hr-reports-filter-col-report .hr-ss {
-        display: none !important;
-    }
-    .hr-reports-filter-tbl tbody td {
-        padding: 0.65rem 0.75rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-        background: #fff;
-        overflow: visible;
-        position: relative;
-    }
-    .hr-reports-filter-field {
-        display: block;
-        width: 100%;
-        min-width: 7rem;
-        box-sizing: border-box;
-        padding: 0.45rem 0.55rem;
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: #0f172a;
-        border: 1px solid #cbd5e1;
-        border-radius: 0.375rem;
-        background: rgba(255, 255, 255, 0.9);
-        min-height: 2.125rem;
-    }
-    .hr-reports-filter-field:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
-    }
-
-    /* قائمة التقرير — hr-rpt-picker */
-    .hr-rpt-picker {
-        position: relative;
-        width: 100%;
-        min-width: 14rem;
-    }
-    .hr-rpt-picker__trigger {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-        width: 100%;
-        text-align: right;
-        cursor: pointer;
-    }
-    .hr-rpt-picker__label {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        color: #0f172a;
-        font-weight: 600;
-    }
-    .hr-rpt-picker__label.is-placeholder {
-        color: #64748b;
-        font-weight: 600;
-    }
-    .hr-rpt-picker__chevron {
-        flex-shrink: 0;
-        width: 0;
-        height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 6px solid #64748b;
-        margin-inline-start: 0.25rem;
-    }
-    .hr-rpt-picker__menu {
-        max-height: min(70vh, 20rem);
-        overflow-x: hidden;
-        overflow-y: auto;
-        background: #fff;
-        border: 1px solid #cbd5e1;
-        border-radius: 0.5rem;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
-        direction: rtl;
-        text-align: right;
-        padding: 0.25rem 0;
-    }
-    .hr-rpt-picker__menu[hidden] {
-        display: none !important;
-    }
-    .hr-rpt-picker__group + .hr-rpt-picker__group {
-        border-top: 1px solid #e2e8f0;
-        margin-top: 0.2rem;
-        padding-top: 0.2rem;
-    }
-    .hr-rpt-picker__group-title {
-        padding: 0.35rem 0.75rem 0.2rem;
-        font-size: 0.6875rem;
-        font-weight: 800;
-        line-height: 1.35;
-        color: #64748b;
-        background: #f8fafc;
-    }
-    .hr-rpt-picker__option {
-        display: block;
-        width: 100%;
-        margin: 0;
-        padding: 0.45rem 0.75rem;
-        border: none;
-        background: #fff;
-        color: #0f172a;
-        font-size: 0.8125rem;
-        font-weight: 600;
-        line-height: 1.4;
-        text-align: right;
-        cursor: pointer;
-        box-sizing: border-box;
-    }
-    .hr-rpt-picker__option:hover {
-        background: #f1f5f9;
-    }
-    .hr-rpt-picker__option.is-selected {
-        background: #dbeafe;
-        color: #1e40af;
-        font-weight: 700;
-    }
-    .hr-rpt-picker__option:focus-visible {
-        outline: 2px solid #2563eb;
-        outline-offset: -2px;
-        background: #eff6ff;
-    }
-
-    .hr-reports-filter-form .hr-filter-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.45rem 0.85rem;
-        font-size: 0.8125rem;
-        font-weight: 700;
-        border-radius: 0.375rem;
-        border: 1px solid transparent;
-        text-decoration: none;
-        cursor: pointer;
-        white-space: nowrap;
-        min-height: 2.125rem;
-        box-sizing: border-box;
-    }
-    .hr-reports-filter-form .hr-filter-btn--primary {
-        background: #2563eb;
-        color: #fff;
-        border-color: #2563eb;
-    }
-    .hr-reports-filter-form .hr-filter-btn--primary:hover { background: #1d4ed8; }
-    .hr-reports-filter-form .hr-filter-btn--ghost {
-        background: #fff;
-        color: #475569;
-        border-color: #cbd5e1;
-    }
-    .hr-reports-filter-form .hr-filter-btn--ghost:hover { background: #f8fafc; }
-</style>
+<style>
+    .hr-reports-filter-tbl {
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 52rem;
+    }
+    .hr-reports-filter-tbl thead th {
+        padding: 0.65rem 0.75rem;
+        text-align: right;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #475569;
+        background: rgba(241, 245, 249, 0.95);
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .hr-reports-filter-scroll {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+    .hr-reports-filter-tbl thead th.hr-reports-filter-col-report,
+    .hr-reports-filter-tbl tbody td.hr-reports-filter-col-report {
+        min-width: 16rem;
+        width: 24%;
+    }
+    .hr-reports-filter-col-report .hr-ms,
+    .hr-reports-filter-col-report .hr-ss {
+        display: none !important;
+    }
+    .hr-reports-filter-tbl tbody td {
+        padding: 0.65rem 0.75rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fff;
+        overflow: visible;
+        position: relative;
+    }
+    .hr-reports-filter-field {
+        display: block;
+        width: 100%;
+        min-width: 7rem;
+        box-sizing: border-box;
+        padding: 0.45rem 0.55rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+        background: rgba(255, 255, 255, 0.9);
+        min-height: 2.125rem;
+    }
+    .hr-reports-filter-field:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    }
+
+    /* قائمة التقرير — hr-rpt-picker */
+    .hr-rpt-picker {
+        position: relative;
+        width: 100%;
+        min-width: 14rem;
+    }
+    .hr-rpt-picker__trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        width: 100%;
+        text-align: right;
+        cursor: pointer;
+    }
+    .hr-rpt-picker__label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #0f172a;
+        font-weight: 600;
+    }
+    .hr-rpt-picker__label.is-placeholder {
+        color: #64748b;
+        font-weight: 600;
+    }
+    .hr-rpt-picker__chevron {
+        flex-shrink: 0;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid #64748b;
+        margin-inline-start: 0.25rem;
+    }
+    .hr-rpt-picker__menu {
+        max-height: min(70vh, 20rem);
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+        direction: rtl;
+        text-align: right;
+        padding: 0.25rem 0;
+    }
+    .hr-rpt-picker__menu[hidden] {
+        display: none !important;
+    }
+    .hr-rpt-picker__group + .hr-rpt-picker__group {
+        border-top: 1px solid #e2e8f0;
+        margin-top: 0.2rem;
+        padding-top: 0.2rem;
+    }
+    .hr-rpt-picker__group-title {
+        padding: 0.35rem 0.75rem 0.2rem;
+        font-size: 0.6875rem;
+        font-weight: 800;
+        line-height: 1.35;
+        color: #64748b;
+        background: #f8fafc;
+    }
+    .hr-rpt-picker__option {
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 0.45rem 0.75rem;
+        border: none;
+        background: #fff;
+        color: #0f172a;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.4;
+        text-align: right;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+    .hr-rpt-picker__option:hover {
+        background: #f1f5f9;
+    }
+    .hr-rpt-picker__option.is-selected {
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: 700;
+    }
+    .hr-rpt-picker__option:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: -2px;
+        background: #eff6ff;
+    }
+
+    /* أزرار الفلتر — migrated to hr-btn via filter_actions.html */</style>

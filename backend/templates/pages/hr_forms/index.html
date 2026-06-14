@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 {% block title %}النماذج الرسمية{% endblock %}
 
 {% block content %}
@@ -198,9 +199,9 @@
                 <div class="mt-auto pt-3 border-t border-slate-100 flex gap-2">
                     <button type="button"
                             @click="openForm('{{ f.key }}', false)"
-                            class="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                        فتح النموذج
+                            class="hr-btn hr-btn--primary hr-btn--xs flex-1 justify-center">
+                        {% lucide_glyph 'eye' 'hr-btn__icon' %}
+                        <span>فتح النموذج</span>
                     </button>
                     <button type="button"
                             @click="openForm('{{ f.key }}', true)"

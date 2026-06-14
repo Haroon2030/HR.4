@@ -16,10 +16,7 @@
         </div>
         <div class="flex flex-wrap gap-2">
             {% if user|has_permission:'attendance.manage' %}
-            <button type="button" @click="openDeviceForm()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-semibold">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                إضافة جهاز
-            </button>
+            {% include "components/hr_btn.html" with label="إضافة جهاز" type="button" variant="primary" icon="plus" x_click="openDeviceForm()" %}
             {% endif %}
         </div>
     </div>
@@ -119,28 +116,26 @@
                             <div class="zk-bio-action-bar" dir="ltr">
                                 <button type="button"
                                     @click="generateAgentKey({{ d.pk }}, '{{ d.name|escapejs }}', {{ d.agent_api_key|yesno:'true,false' }}, '{{ d.ip_address }}', {{ d.port }})"
-                                    class="zk-bio-action-bar__btn zk-bio-action-bar__btn--key"
+                                    class="hr-btn hr-btn--icon hr-btn--bio-key"
                                     :disabled="loadingId === {{ d.pk }}"
                                     title="مفتاح وكيل"
                                     aria-label="مفتاح وكيل">
-                                    <i data-lucide="key-round" class="zk-bio-action-bar__ico"></i>
+                                    <i data-lucide="key-round" class="w-3 h-3"></i>
                                 </button>
                                 {% if d.ip_address|is_private_lan_ip %}
                                 <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="zk-bio-action-bar__form">
                                     {% csrf_token %}
-                                    <button type="submit" class="zk-bio-action-bar__btn zk-bio-action-bar__btn--sync" title="مزامنة (LAN)" aria-label="مزامنة">
-                                        <i data-lucide="refresh-cw" class="zk-bio-action-bar__ico"></i>
-                                    </button>
+                                    {% include "components/bio_action_btn.html" with type="submit" variant="sync" icon="refresh-cw" title="مزامنة (LAN)" %}
                                 </form>
                                 {% else %}
-                                <button type="button" @click="testDevice({{ d.pk }})" class="zk-bio-action-bar__btn zk-bio-action-bar__btn--test" :disabled="loadingId === {{ d.pk }}" title="اختبار" aria-label="اختبار">
-                                    <i data-lucide="activity" class="zk-bio-action-bar__ico"></i>
+                                <button type="button" @click="testDevice({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-test" :disabled="loadingId === {{ d.pk }}" title="اختبار" aria-label="اختبار">
+                                    <i data-lucide="activity" class="w-3 h-3"></i>
                                 </button>
-                                <button type="button" @click="syncUsers({{ d.pk }})" class="zk-bio-action-bar__btn zk-bio-action-bar__btn--users" :disabled="loadingId === {{ d.pk }}" title="المستخدمون" aria-label="المستخدمون">
-                                    <i data-lucide="users" class="zk-bio-action-bar__ico"></i>
+                                <button type="button" @click="syncUsers({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-users" :disabled="loadingId === {{ d.pk }}" title="المستخدمون" aria-label="المستخدمون">
+                                    <i data-lucide="users" class="w-3 h-3"></i>
                                 </button>
-                                <button type="button" @click="syncDevice({{ d.pk }})" class="zk-bio-action-bar__btn zk-bio-action-bar__btn--sync" :disabled="loadingId === {{ d.pk }}" title="مزامنة" aria-label="مزامنة">
-                                    <i data-lucide="download" class="zk-bio-action-bar__ico"></i>
+                                <button type="button" @click="syncDevice({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-sync" :disabled="loadingId === {{ d.pk }}" title="مزامنة" aria-label="مزامنة">
+                                    <i data-lucide="download" class="w-3 h-3"></i>
                                 </button>
                                 {% endif %}
                                 <button type="button" @click="openDeviceForm({
@@ -151,14 +146,14 @@
                                     comm_key: {{ d.comm_key }},
                                     branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
                                     is_active: {{ d.is_active|yesno:'true,false' }}
-                                })" title="تعديل" aria-label="تعديل" class="zk-bio-action-bar__btn zk-bio-action-bar__btn--edit">
-                                    <i data-lucide="pencil" class="zk-bio-action-bar__ico"></i>
+                                })" title="تعديل" aria-label="تعديل" class="hr-btn hr-btn--icon hr-btn--bio-edit">
+                                    <i data-lucide="pencil" class="w-3 h-3"></i>
                                 </button>
                                 {% url 'web:biometric_device_delete' d.pk as act_del %}
                                 {% if d.punch_count %}
-                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ سيُحذف "|add:d.punch_count|add:" سجل بصمة وكل الربط — لا يمكن التراجع." title="حذف الجهاز" extra_class="zk-bio-action-bar__btn zk-bio-action-bar__btn--delete" form_class="zk-bio-action-bar__form" %}
+                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ سيُحذف "|add:d.punch_count|add:" سجل بصمة وكل الربط — لا يمكن التراجع." title="حذف الجهاز" bio_btn=True form_class="zk-bio-action-bar__form" %}
                                 {% else %}
-                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ لا يمكن التراجع." title="حذف الجهاز" extra_class="zk-bio-action-bar__btn zk-bio-action-bar__btn--delete" form_class="zk-bio-action-bar__form" %}
+                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ لا يمكن التراجع." title="حذف الجهاز" bio_btn=True form_class="zk-bio-action-bar__form" %}
                                 {% endif %}
                             </div>
                         </td>
@@ -213,10 +208,9 @@
                     <option value="0" {% if device_user_filters.mapped_only == False %}selected{% endif %}>غير مربوط فقط</option>
                 </select>
             </div>
-            <div class="flex flex-wrap gap-2 justify-end">
-                <button type="submit" class="zk-bio-btn zk-bio-btn-primary">بحث</button>
-                <a href="{% url 'web:biometric_devices' %}#device-users-table"
-                   class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
+            <div class="flex flex-wrap gap-2 justify-end hr-filter-form">
+                {% url 'web:biometric_devices' as bio_clear_url %}
+                {% include "components/filter_actions.html" with clear_url=bio_clear_url|add:"#device-users-table" submit_label="بحث" %}
             </div>
         </form>
 
@@ -277,15 +271,19 @@
         </div>
 
         {% if device_users_page.has_other_pages %}
-        <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap justify-center gap-1">
+        <div class="px-4 py-3 border-t border-slate-100 hr-pagination flex flex-wrap justify-center">
             {% if device_users_page.has_previous %}
             <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.previous_page_number }}#device-users-table"
-               class="px-3 py-1 rounded border text-sm hover:bg-slate-50">السابق</a>
+               class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">السابق</a>
+            {% else %}
+            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">السابق</span>
             {% endif %}
-            <span class="px-3 py-1 text-sm text-slate-600">صفحة {{ device_users_page.number }} / {{ device_users_page.paginator.num_pages }}</span>
+            <span class="hr-pagination__status">{{ device_users_page.number }}/{{ device_users_page.paginator.num_pages }}</span>
             {% if device_users_page.has_next %}
             <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.next_page_number }}#device-users-table"
-               class="px-3 py-1 rounded border text-sm hover:bg-slate-50">التالي</a>
+               class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">التالي</a>
+            {% else %}
+            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">التالي</span>
             {% endif %}
         </div>
         {% endif %}

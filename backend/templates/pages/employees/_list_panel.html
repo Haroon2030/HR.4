@@ -52,30 +52,13 @@
     </div>
 
     {% if page_obj and page_obj.paginator.num_pages > 1 %}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3 mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs md:text-sm text-slate-600">
-        <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }} • إجمالي {{ total_count }} موظف</span>
-        <div class="flex items-center gap-1 flex-wrap">
-            {% if page_obj.has_previous %}
-                <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
-                   class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
-            {% else %}
-                <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">السابق</span>
-            {% endif %}
-            {% for p in page_obj.paginator.page_range %}
-                {% if p == page_obj.number %}
-                    <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg font-bold">{{ p }}</span>
-                {% else %}
-                    <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ p }}"
-                       class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">{{ p }}</a>
-                {% endif %}
-            {% endfor %}
-            {% if page_obj.has_next %}
-                <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
-                   class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
-            {% else %}
-                <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">التالي</span>
-            {% endif %}
-        </div>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3 mt-3 hr-pagination hr-pagination--bar">
+        <div class="hr-pagination__summary">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }} • إجمالي {{ total_count }} موظف</div>
+        {% if query %}
+        {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True filter_q=query %}
+        {% else %}
+        {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True %}
+        {% endif %}
     </div>
     {% endif %}
 </div>

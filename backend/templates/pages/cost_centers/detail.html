@@ -22,10 +22,8 @@
                 </div>
             </div>
         </div>
-        <a href="{% url 'web:edit_cost_center' cost_center.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-            <i data-lucide="pencil" class="w-4 h-4"></i>
-            تعديل
-        </a>
+        {% url 'web:edit_cost_center' cost_center.id as edit_cc_url %}
+        {% include "components/hr_btn.html" with href=edit_cc_url label="تعديل" icon="pencil" %}
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
@@ -61,7 +59,7 @@
         {% else %}
             <a href="{% url 'web:list_all_cost_centers' %}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm">العودة لقائمة مراكز التكلفة</a>
         {% endif %}
-        <a href="{% url 'web:edit_cost_center' cost_center.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm">تعديل</a>
+        {% include "components/hr_btn.html" with href=edit_cc_url label="تعديل" size="sm" %}
     </div>
 </div>
 {% endblock %}

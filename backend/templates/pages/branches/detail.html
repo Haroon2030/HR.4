@@ -18,10 +18,8 @@
                 <p class="text-slate-500 text-sm mt-1">{{ branch.company.name }}</p>
             </div>
         </div>
-        <a href="{% url 'web:edit_branch' branch.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-            <i data-lucide="pencil" class="w-4 h-4"></i>
-            تعديل الفرع
-        </a>
+        {% url 'web:edit_branch' branch.id as edit_branch_url %}
+        {% include "components/hr_btn.html" with href=edit_branch_url label="تعديل الفرع" icon="pencil" %}
     </div>
 
     <!-- Stats Cards -->
@@ -193,10 +191,8 @@
         <div x-show="activeTab === 'cost_centers'" class="fade-in" x-cloak>
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-900">مراكز التكلفة</h3>
-                <a href="{% url 'web:add_cost_center' branch.id %}" class="px-3 py-1.5 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة مركز تكلفة
-                </a>
+                {% url 'web:add_cost_center' branch.id as add_cc_branch_url %}
+                {% include "components/hr_btn.html" with href=add_cc_branch_url label="إضافة مركز تكلفة" icon="plus" size="sm" %}
             </div>
             
             {% if cost_centers %}
@@ -241,10 +237,7 @@
             <div class="px-6 py-12 text-center">
                 <i data-lucide="target" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
                 <p class="text-slate-500 mb-4">لا بيانات</p>
-                <a href="{% url 'web:add_cost_center' branch.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة مركز تكلفة
-                </a>
+                {% include "components/hr_btn.html" with href=add_cc_branch_url label="إضافة مركز تكلفة" icon="plus" %}
             </div>
             {% endif %}
         </div>
@@ -253,10 +246,8 @@
         <div x-show="activeTab === 'departments'" class="fade-in" x-cloak>
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-900">الأقسام</h3>
-                <a href="{% url 'web:add_department' branch.id %}" class="px-3 py-1.5 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة قسم
-                </a>
+                {% url 'web:add_department' branch.id as add_dept_branch_url %}
+                {% include "components/hr_btn.html" with href=add_dept_branch_url label="إضافة قسم" icon="plus" size="sm" %}
             </div>
             
             {% if departments %}
@@ -303,10 +294,7 @@
             <div class="px-6 py-12 text-center">
                 <i data-lucide="grid-3x3" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
                 <p class="text-slate-500 mb-4">لا بيانات</p>
-                <a href="{% url 'web:add_department' branch.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة قسم
-                </a>
+                {% include "components/hr_btn.html" with href=add_dept_branch_url label="إضافة قسم" icon="plus" %}
             </div>
             {% endif %}
         </div>

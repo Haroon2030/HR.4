@@ -33,21 +33,20 @@
             </p>
         </div>
         <div class="zk-rec-actions">
-            <a href="{% url 'web:attendance_report' %}{% if querystring %}?{{ querystring }}{% endif %}"
-               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-primary-800 border border-primary-200 bg-primary-50 rounded-lg hover:bg-primary-100">
-                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
-                تقرير
-            </a>
-            <a href="{% url 'web:attendance_records_export' %}?{{ querystring }}"
-               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                Excel
-            </a>
-            <a href="{% url 'web:biometric_devices' %}"
-               class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50">
-                <i data-lucide="settings" class="w-4 h-4"></i>
-                أجهزة
-            </a>
+            {% url 'web:attendance_report' as report_url %}
+            {% with report_href=report_url|add:"?"|add:querystring %}
+            {% if querystring %}
+            {% include "components/hr_btn.html" with href=report_href label="تقرير" variant="soft-primary" icon="bar-chart-2" %}
+            {% else %}
+            {% include "components/hr_btn.html" with href=report_url label="تقرير" variant="soft-primary" icon="bar-chart-2" %}
+            {% endif %}
+            {% endwith %}
+            {% url 'web:attendance_records_export' as export_url %}
+            {% with export_href=export_url|add:"?"|add:querystring %}
+            {% include "components/hr_btn.html" with href=export_href label="Excel" variant="success" icon="file-spreadsheet" %}
+            {% endwith %}
+            {% url 'web:biometric_devices' as devices_url %}
+            {% include "components/hr_btn.html" with href=devices_url label="أجهزة" variant="soft-slate" icon="settings" %}
         </div>
     </div>
 
@@ -84,7 +83,7 @@
                     </div>
                     <div class="fld fld--action">
                         <label class="zk-bio-lbl">&nbsp;</label>
-                        <button type="submit" id="attendance-pull-submit" class="zk-rec-btn-pull">
+                        <button type="submit" id="attendance-pull-submit" class="hr-btn hr-btn--primary hr-btn--xs zk-rec-btn-pull">
                             <i data-lucide="download-cloud" class="w-4 h-4"></i>
                             سحب
                         </button>
@@ -108,7 +107,7 @@
                         <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
                         {% endfor %}
                     </select>
-                    <button type="submit" class="zk-rec-skew-btn" title="ترتيب دخول/خروج"
+                    <button type="submit" class="hr-btn hr-btn--soft-emerald hr-btn--xs zk-rec-skew-btn" title="ترتيب دخول/خروج"
                             onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم؟');">
                         <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
                     </button>
@@ -196,9 +195,9 @@
                         <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم" class="zk-bio-field" autocomplete="off">
                     </div>
                     {% if filters.punch_type %}<input type="hidden" name="punch_type" value="{{ filters.punch_type }}">{% endif %}
-                    <div class="fld fld--actions fld--full">
-                        <button type="submit" class="zk-bio-btn zk-bio-btn-primary zk-rec-filter-submit">عرض</button>
-                        <a href="{% url 'web:attendance_records' %}" class="zk-bio-btn zk-bio-btn-ghost">مسح</a>
+                    <div class="fld fld--actions fld--full hr-filter-form">
+                        {% url 'web:attendance_records' as records_clear_url %}
+                        {% include "components/filter_actions.html" with clear_url=records_clear_url %}
                     </div>
                 </div>
             </form>
@@ -206,7 +205,7 @@
             <form id="zk-rec-reclassify-form" method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-reclassify-form">
                 {% csrf_token %}
                 <input type="hidden" name="device_id" id="zk-rec-reclassify-device" value="{{ filters.device_id|default:'' }}">
-                <button type="submit" class="zk-rec-reclassify-btn"
+                    <button type="submit" class="hr-btn hr-btn--soft-emerald hr-btn--xs zk-rec-reclassify-btn"
                         onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم لكل موظف؟');">
                     <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
                     ترتيب دخول/خروج
@@ -273,14 +272,8 @@
         </div>
 
         {% if page_obj.has_other_pages %}
-        <div class="px-4 py-2.5 border-t border-slate-100 flex flex-wrap justify-center gap-1">
-            {% if page_obj.has_previous %}
-            <a href="{% if querystring %}?{{ querystring }}&{% else %}?{% endif %}page={{ page_obj.previous_page_number }}" class="px-3 py-1 rounded border text-xs font-bold hover:bg-slate-50">prev</a>
-            {% endif %}
-            <span class="px-3 py-1 text-xs font-semibold text-slate-600 zk-mono">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
-            {% if page_obj.has_next %}
-            <a href="{% if querystring %}?{{ querystring }}&{% else %}?{% endif %}page={{ page_obj.next_page_number }}" class="px-3 py-1 rounded border text-xs font-bold hover:bg-slate-50">next</a>
-            {% endif %}
+        <div class="px-4 py-2.5 border-t border-slate-100 hr-pagination flex flex-wrap justify-center">
+            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True base_qs=querystring show_numbers=False prev_label="prev" next_label="next" %}
         </div>
         {% endif %}
 

@@ -28,18 +28,8 @@
         {# Toolbar #}
         <div class="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 text-xs">
-                <button type="button" @click="checkAll(true)"
-                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold"
-                        {% if is_admin_role %}disabled{% endif %}>
-                    <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
-                    تحديد الكل
-                </button>
-                <button type="button" @click="checkAll(false)"
-                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-semibold"
-                        {% if is_admin_role %}disabled{% endif %}>
-                    <i data-lucide="square" class="w-3.5 h-3.5"></i>
-                    إلغاء الكل
-                </button>
+                {% include "components/hr_btn.html" with label="تحديد الكل" type="button" variant="soft-emerald" icon="check" size="sm" x_click="checkAll(true)" disabled=is_admin_role %}
+                {% include "components/hr_btn.html" with label="إلغاء الكل" type="button" variant="soft-slate" icon="x" size="sm" x_click="checkAll(false)" disabled=is_admin_role %}
             </div>
             <div class="text-xs text-slate-500">
                 <span x-text="selectedCount()"></span> صلاحية محددة
@@ -115,15 +105,9 @@
         {# Actions #}
         {% if not is_admin_role and matrix %}
         <div class="mt-5 flex items-center justify-end gap-2">
-            <a href="{% url 'web:list_roles' %}"
-               class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
-                إلغاء
-            </a>
-            <button type="submit"
-                    class="inline-flex items-center gap-1.5 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-bold transition-colors">
-                <i data-lucide="save" class="w-4 h-4"></i>
-                حفظ الصلاحيات
-            </button>
+            {% url 'web:list_roles' as roles_list_url %}
+            {% include "components/hr_btn.html" with label="إلغاء" href=roles_list_url variant="secondary" %}
+            {% include "components/hr_btn.html" with label="حفظ الصلاحيات" type="submit" variant="primary" icon="save" %}
         </div>
         {% endif %}
     </form>

@@ -59,13 +59,11 @@
             <form method="get" class="flex items-center gap-2 w-full sm:w-auto">
                 <input type="hidden" name="tab" value="{{ tab }}">
                 {% include "components/search_field.html" with name="q" value=query placeholder="ابحث عن موظف، فرع، نوع، حالة..." extra_class="flex-1 sm:w-72" aria_label="بحث الطلبات" %}
-                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
-                    <i data-lucide="search" class="w-4 h-4"></i> بحث
-                </button>
+                {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
                 {% if query %}
-                <a href="?tab={{ tab }}" class="px-3 py-2 text-sm text-slate-600 hover:text-slate-800 inline-flex items-center gap-1" title="مسح">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </a>
+                {% with clear_href="?tab="|add:tab %}
+                {% include "components/hr_btn.html" with href=clear_href label="" icon="x" variant="ghost" title="مسح" extra_class="px-3" %}
+                {% endwith %}
                 {% endif %}
             </form>
         </div>
@@ -121,27 +119,13 @@
         </div>
 
         {% if page_obj and page_obj.paginator.num_pages > 1 %}
-        <div class="px-4 py-3 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-600">
-            <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }} • الإجمالي {{ total_rows }}</span>
-            <div class="flex items-center gap-1 flex-wrap">
-                {% if page_obj.has_previous %}
-                    <a href="?tab={{ tab }}{% if query %}&q={{ query }}{% endif %}&page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white">السابق</a>
-                {% else %}
-                    <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">السابق</span>
-                {% endif %}
-                {% for p in page_obj.paginator.page_range %}
-                    {% if p == page_obj.number %}
-                        <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg font-bold">{{ p }}</span>
-                    {% else %}
-                        <a href="?tab={{ tab }}{% if query %}&q={{ query }}{% endif %}&page={{ p }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white">{{ p }}</a>
-                    {% endif %}
-                {% endfor %}
-                {% if page_obj.has_next %}
-                    <a href="?tab={{ tab }}{% if query %}&q={{ query }}{% endif %}&page={{ page_obj.next_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white">التالي</a>
-                {% else %}
-                    <span class="px-3 py-1.5 border border-slate-100 text-slate-300 rounded-lg">التالي</span>
-                {% endif %}
-            </div>
+        <div class="px-4 py-3 border-t border-slate-100 bg-slate-50 hr-pagination hr-pagination--bar">
+            <div class="hr-pagination__summary">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }} • الإجمالي {{ total_rows }}</div>
+            {% if query %}
+            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True base_qs="tab="|add:tab|add:"&q="|add:query %}
+            {% else %}
+            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True base_qs="tab="|add:tab %}
+            {% endif %}
         </div>
         {% endif %}
     </div>

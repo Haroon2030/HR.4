@@ -23,10 +23,8 @@
                 </div>
             </div>
         </div>
-        <a href="{% url 'web:edit_department' department.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-            <i data-lucide="pencil" class="w-4 h-4"></i>
-            تعديل
-        </a>
+        {% url 'web:edit_department' department.id as edit_dept_url %}
+        {% include "components/hr_btn.html" with href=edit_dept_url label="تعديل" icon="pencil" %}
     </div>
 
     <!-- Info Card -->
@@ -76,7 +74,7 @@
                 العودة لقائمة الأقسام
             </a>
         {% endif %}
-        <a href="{% url 'web:edit_department' department.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm">تعديل القسم</a>
+        {% include "components/hr_btn.html" with href=edit_dept_url label="تعديل القسم" size="sm" %}
     </div>
 </div>
 {% endblock %}

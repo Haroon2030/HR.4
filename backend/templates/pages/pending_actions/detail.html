@@ -128,40 +128,32 @@
                     {% endif %}
                     <form method="POST" action="{% url 'web:resubmit_pending_action' action.id %}">
                         {% csrf_token %}
-                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> إعادة الإرسال
-                        </button>
+                        {% include "components/hr_btn.html" with label="إعادة الإرسال" type="submit" variant="primary" icon="refresh-cw" %}
                     </form>
                 {% endif %}
 
                 {% if can_act and current_stage == 'branch' %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
-                        <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="check" class="w-4 h-4"></i> موافقة كـ {{ first_decision.stage_label }}
-                        </button>
-                        <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
-                        </button>
+                        {% with approve_label="موافقة كـ "|add:first_decision.stage_label %}
+                        {% include "components/hr_btn.html" with label=approve_label type="button" variant="success" icon="check" x_click="panel='approve'" %}
+                        {% endwith %}
+                        {% include "components/hr_btn.html" with label="إرجاع للتعديل" type="button" variant="danger" icon="undo-2" x_click="panel='return'" %}
                     </div>
                     <form method="POST" action="{% url 'web:branch_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
                         {% csrf_token %}
                         <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
                         <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
                         <div class="flex justify-end gap-2">
-                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
-                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg">تأكيد الموافقة</button>
+                            {% include "components/hr_btn.html" with label="إلغاء" type="button" variant="secondary" size="sm" x_click="panel=null" %}
+                            {% include "components/hr_btn.html" with label="تأكيد الموافقة" type="submit" variant="success" %}
                         </div>
                     </form>
                 {% endif %}
 
                 {% if can_act and current_stage == 'gm' %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
-                        <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="user-cog" class="w-4 h-4"></i> موافقة وإسناد لموظف موارد
-                        </button>
-                        <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
-                        </button>
+                        {% include "components/hr_btn.html" with label="موافقة وإسناد لموظف موارد" type="button" variant="indigo" icon="user-cog" x_click="panel='approve'" %}
+                        {% include "components/hr_btn.html" with label="إرجاع للتعديل" type="button" variant="danger" icon="undo-2" x_click="panel='return'" %}
                     </div>
                     <form method="POST" action="{% url 'web:gm_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
                         {% csrf_token %}
@@ -175,28 +167,24 @@
                         <label class="block text-xs font-semibold text-slate-600 mt-2">ملاحظات (اختياري)</label>
                         <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
                         <div class="flex justify-end gap-2">
-                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
-                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">موافقة وإسناد</button>
+                            {% include "components/hr_btn.html" with label="إلغاء" type="button" variant="secondary" size="sm" x_click="panel=null" %}
+                            {% include "components/hr_btn.html" with label="موافقة وإسناد" type="submit" variant="indigo" %}
                         </div>
                     </form>
                 {% endif %}
 
                 {% if can_act and current_stage == 'officer' %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
-                        <button type="button" @click="panel='approve'" class="px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i> موافقة وتنفيذ نهائي
-                        </button>
-                        <button type="button" @click="panel='return'" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg inline-flex items-center gap-1">
-                            <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع للتعديل
-                        </button>
+                        {% include "components/hr_btn.html" with label="موافقة وتنفيذ نهائي" type="button" variant="purple" icon="check" x_click="panel='approve'" %}
+                        {% include "components/hr_btn.html" with label="إرجاع للتعديل" type="button" variant="danger" icon="undo-2" x_click="panel='return'" %}
                     </div>
                     <form method="POST" action="{% url 'web:officer_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
                         {% csrf_token %}
                         <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
                         <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
                         <div class="flex justify-end gap-2">
-                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
-                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg">أوافق وأنفّذ</button>
+                            {% include "components/hr_btn.html" with label="إلغاء" type="button" variant="secondary" size="sm" x_click="panel=null" %}
+                            {% include "components/hr_btn.html" with label="أوافق وأنفّذ" type="submit" variant="purple" %}
                         </div>
                     </form>
                 {% endif %}
@@ -207,8 +195,8 @@
                         <label class="block text-xs font-semibold text-slate-600">سبب الإرجاع <span class="text-red-500">*</span></label>
                         <textarea name="notes" required rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="اشرح ما يحتاج تعديل..."></textarea>
                         <div class="flex justify-end gap-2">
-                            <button type="button" @click="panel=null" class="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">إلغاء</button>
-                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg">إرجاع</button>
+                            {% include "components/hr_btn.html" with label="إلغاء" type="button" variant="secondary" size="sm" x_click="panel=null" %}
+                            {% include "components/hr_btn.html" with label="إرجاع" type="submit" variant="danger" %}
                         </div>
                     </form>
                 {% endif %}

@@ -24,10 +24,8 @@
         <div x-show="activeTab === 'users'" x-cloak>
             <div class="p-4">
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_user' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة مستخدم جديد
-                    </a>
+                    {% url 'web:add_user' as add_user_url %}
+                    {% include "components/hr_btn.html" with href=add_user_url label="إضافة مستخدم جديد" icon="plus" size="xs" %}
                 </div>
                 
                 <div class="overflow-x-auto">
@@ -110,14 +108,19 @@
                     </table>
                 </div>
                 {% if users_page and users_page.paginator.num_pages > 1 %}
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-                    <span>صفحة {{ users_page.number }} من {{ users_page.paginator.num_pages }} • إجمالي {{ users_total }} مستخدم</span>
-                    <div class="flex gap-1">
+                <div class="mt-4 hr-pagination hr-pagination--bar">
+                    <div class="hr-pagination__summary">صفحة {{ users_page.number }} من {{ users_page.paginator.num_pages }} • إجمالي {{ users_total }} مستخدم</div>
+                    <div class="hr-pagination__controls">
                         {% if users_page.has_previous %}
-                        <a href="?users_page={{ users_page.previous_page_number }}#users" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
+                        <a href="?users_page={{ users_page.previous_page_number }}#users" class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">السابق</a>
+                        {% else %}
+                        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">السابق</span>
                         {% endif %}
+                        <span class="hr-pagination__status">{{ users_page.number }}/{{ users_page.paginator.num_pages }}</span>
                         {% if users_page.has_next %}
-                        <a href="?users_page={{ users_page.next_page_number }}#users" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
+                        <a href="?users_page={{ users_page.next_page_number }}#users" class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">التالي</a>
+                        {% else %}
+                        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">التالي</span>
                         {% endif %}
                     </div>
                 </div>
@@ -136,10 +139,8 @@
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         <span class="hr-glass-back-btn__text">رجوع</span>
                     </button>
-                    <a href="{% url 'web:add_role' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة دور جديد
-                    </a>
+                    {% url 'web:add_role' as add_role_url %}
+                    {% include "components/hr_btn.html" with href=add_role_url label="إضافة دور جديد" icon="plus" size="xs" %}
                 </div>
 
                 <div class="overflow-x-auto">

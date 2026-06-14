@@ -19,9 +19,15 @@ _ROLE_BADGE_CLASS = {
     'employee': 'bg-slate-100 text-slate-700',
 }
 
+from apps.core.icon_glyphs import render_lucide_glyph
 from apps.employees.status_ui import employee_status_dist_palette, get_employee_status_ui
 
 _DIST_PALETTE = employee_status_dist_palette()
+
+
+@register.simple_tag
+def lucide_glyph(name, css_class=''):
+    return render_lucide_glyph(name, css_class)
 
 
 @register.inclusion_tag('components/employee_status_badge.html')

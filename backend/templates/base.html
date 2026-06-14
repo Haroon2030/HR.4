@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}نظام الموارد البشرية{% endblock %}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>م</text></svg>">
     
@@ -441,6 +442,20 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            function hrGetCsrfToken() {
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta && meta.content) return meta.content;
+                var input = document.querySelector('[name=csrfmiddlewaretoken]');
+                return input ? input.value : '';
+            }
+
+            document.body.addEventListener('htmx:configRequest', function (evt) {
+                var token = hrGetCsrfToken();
+                if (token) {
+                    evt.detail.headers['X-CSRFToken'] = token;
+                }
+            });
+
             if (window.htmx && htmx.config) {
                 htmx.config.includeIndicatorStyles = false;
             }

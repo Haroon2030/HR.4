@@ -86,13 +86,9 @@
         <!-- Form Actions -->
         <div class="flex items-center justify-end gap-2 px-5 py-4 border-t"
              style="border-color:var(--hr-glass-line);background:rgba(248,250,252,0.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
-            <a href="{% url 'web:list_employees' %}"
-               class="hr-glass-btn hr-glass-btn--slate px-4 py-2 text-sm">إلغاء</a>
-            <button type="submit"
-                    class="hr-glass-btn hr-glass-btn--primary px-4 py-2 text-sm flex items-center gap-2">
-                <i data-lucide="save" class="w-4 h-4"></i>
-                حفظ الموظف
-            </button>
+            {% url 'web:list_employees' as list_employees_href %}
+            {% include "components/hr_btn.html" with href=list_employees_href label="إلغاء" variant="glass-slate" extra_class="px-4 py-2 text-sm" %}
+            {% include "components/hr_btn.html" with label="حفظ الموظف" type="submit" variant="glass-primary" icon="save" extra_class="px-4 py-2 text-sm" %}
         </div>
     </form>
 </div>

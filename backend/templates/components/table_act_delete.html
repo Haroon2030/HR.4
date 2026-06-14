@@ -1,6 +1,7 @@
-<form method="POST" action="{{ url }}" class="{% if form_class %}{{ form_class }}{% else %}inline{% endif %}" onsubmit="return confirm('{{ confirm|escapejs }}');">
-    {% csrf_token %}
-    <button type="submit" class="hr-act hr-act--delete{% if extra_class %} {{ extra_class }}{% endif %}" title="{{ title|default:'حذف' }}" aria-label="{{ title|default:'حذف' }}">
-        <i data-lucide="trash-2" class="hr-act__icon"></i>
-    </button>
-</form>
+{% load custom_tags %}
+<form method="POST" action="{{ url }}" class="{% if form_class %}{{ form_class }}{% else %}inline{% endif %}" onsubmit="return confirm('{{ confirm|escapejs }}');">
+    {% csrf_token %}
+    <button type="submit" class="{% if bio_btn %}hr-btn hr-btn--icon hr-btn--bio-delete{% elif extra_class %}{{ extra_class }}{% else %}hr-act hr-act--delete{% endif %}" title="{{ title|default:'حذف' }}" aria-label="{{ title|default:'حذف' }}">
+        {% if bio_btn %}{% lucide_glyph 'trash-2' 'hr-btn__icon' %}{% else %}<i data-lucide="trash-2" class="hr-act__icon"></i>{% endif %}
+    </button>
+</form>

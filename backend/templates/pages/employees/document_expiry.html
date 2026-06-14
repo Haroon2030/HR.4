@@ -9,9 +9,7 @@
         <input type="number" name="days" value="{{ horizon }}" min="1" max="365"
             class="w-24 px-2 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
     </label>
-    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg inline-flex items-center gap-1">
-        <i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث
-    </button>
+    {% include "components/hr_btn.html" with label="تحديث" type="submit" variant="primary" icon="refresh-cw" %}
 </form>
 {% endblock %}
 

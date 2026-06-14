@@ -24,9 +24,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="window.print()" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-semibold transition inline-flex items-center gap-2 shadow-sm">
-                <i data-lucide="printer" class="w-4 h-4"></i> طباعة الحزمة
-            </button>
+            {% include "components/hr_btn.html" with label="طباعة الحزمة" type="button" variant="primary" icon="printer" onclick="window.print()" extra_class="shadow-sm" %}
         </div>
     </div>
 

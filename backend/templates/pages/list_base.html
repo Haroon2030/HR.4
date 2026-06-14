@@ -1,19 +1,18 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
-{% block content %}
-<div class="space-y-3 md:space-y-4">
+{% block content %}<div class="space-y-3 md:space-y-4">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div class="flex items-center gap-3">
             {% block list_back %}{% endblock %}
         </div>
         {% block list_actions %}
-        <a href="{% block add_url %}#{% endblock %}" class="px-3 py-2 md:px-4 md:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-sm md:text-base">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            {% block add_button_text %}إضافة{% endblock %}
+        <a href="{% block add_url %}#{% endblock %}" class="hr-btn hr-btn--primary w-full sm:w-auto justify-center">
+            {% lucide_glyph 'plus' 'hr-btn__icon' %}
+            <span>{% block add_button_text %}إضافة{% endblock %}</span>
         </a>
-        {% endblock %}
-    </div>
+        {% endblock %}    </div>
 
     {% block list_content %}
     <!-- Table Card -->

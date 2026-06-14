@@ -1,0 +1,28 @@
+{% load custom_tags %}
+{% with v=variant|default:'primary' s=size|default:'md' %}
+{% if href %}
+<a href="{{ href }}"
+   class="hr-btn hr-btn--{{ v }}{% if s == 'xs' %} hr-btn--xs{% elif s == 'sm' %} hr-btn--sm{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
+   {% if title %}title="{{ title }}"{% endif %}
+   {% if target %}target="{{ target }}"{% if target == '_blank' %} rel="noopener"{% endif %}{% endif %}>
+    {% if icon %}{% lucide_glyph icon 'hr-btn__icon' %}{% endif %}
+    {% if label %}<span>{{ label }}</span>{% endif %}
+</a>
+{% else %}
+<button type="{{ type|default:'button' }}"
+        class="hr-btn hr-btn--{{ v }}{% if s == 'xs' %} hr-btn--xs{% elif s == 'sm' %} hr-btn--sm{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
+        {% if disabled %}disabled{% endif %}
+        {% if title %}title="{{ title }}"{% endif %}
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if name %}name="{{ name }}"{% endif %}
+        {% if value %}value="{{ value }}"{% endif %}
+        {% if form %}form="{{ form }}"{% endif %}
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+        {% if x_click %}@click="{{ x_click }}"{% endif %}
+        {% if x_show %}x-show="{{ x_show }}"{% endif %}
+        {% if x_cloak %}x-cloak{% endif %}>
+    {% if icon %}{% lucide_glyph icon 'hr-btn__icon' %}{% endif %}
+    {% if x_text %}<span x-text="{{ x_text }}"></span>{% elif label %}<span>{{ label }}</span>{% endif %}
+</button>
+{% endif %}
+{% endwith %}

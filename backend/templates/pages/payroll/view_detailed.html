@@ -32,12 +32,8 @@
             {% if financial_audit %}
             {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
             {% endif %}
-            <a href="{% url 'web:export_payroll_run_excel' run.id %}"
-               class="hr-glass-btn hr-glass-btn--emerald text-sm"
-               title="تصدير كشف الرواتب التفصيلي Excel">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                <span>تصدير Excel</span>
-            </a>
+            {% url 'web:export_payroll_run_excel' run.id as payroll_export_href %}
+            {% include "components/hr_btn.html" with href=payroll_export_href label="تصدير Excel" variant="glass-emerald" icon="file-spreadsheet" extra_class="text-sm" title="تصدير كشف الرواتب التفصيلي Excel" %}
             <a href="{% url 'web:list_payroll_runs' %}" class="text-sm text-primary-600 hover:underline">← العودة للمسير</a>
         </div>
     </div>
@@ -100,14 +96,8 @@
             </table>
         </div>
         {% if page_obj and page_obj.has_other_pages %}
-        <div class="p-4 border-t border-slate-100 flex items-center justify-center gap-1 text-sm">
-            {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">السابق</a>
-            {% endif %}
-            <span class="px-3 py-1.5 rounded-md bg-primary-600 text-white font-semibold">{{ page_obj.number }}</span>
-            {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200">التالي</a>
-            {% endif %}
+        <div class="p-4 border-t border-slate-100 hr-pagination flex flex-wrap justify-center">
+            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True show_numbers=False %}
         </div>
         {% endif %}
     </div>

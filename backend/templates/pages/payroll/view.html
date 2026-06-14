@@ -36,18 +36,12 @@
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{% url 'web:export_payroll_run_excel' run.id %}"
-               class="hr-glass-btn hr-glass-btn--emerald text-sm"
-               title="تصدير مسير ملوّن إلى Excel">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                <span>تصدير Excel</span>
-            </a>
+            {% url 'web:export_payroll_run_excel' run.id as payroll_export_href %}
+            {% include "components/hr_btn.html" with href=payroll_export_href label="تصدير Excel" variant="glass-emerald" icon="file-spreadsheet" extra_class="text-sm" title="تصدير مسير ملوّن إلى Excel" %}
             {% if run.status == 'draft' %}
                 <form method="POST" action="{% url 'web:rebuild_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم إعادة بناء المسير. هل تريد المتابعة؟');">
                     {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 text-sm font-bold text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> إعادة بناء
-                    </button>
+                    {% include "components/hr_btn.html" with label="إعادة بناء" type="submit" variant="soft-slate" icon="refresh-cw" %}
                 </form>
                 {% if financial_audit %}
                 {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
@@ -55,17 +49,16 @@
                 <form method="POST" action="{% url 'web:lock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('بمجرد الترحيل لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
                     {% csrf_token %}
                     <button type="submit"
-                            class="inline-flex items-center gap-1 px-3 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="hr-btn hr-btn--success"
                             {% if financial_audit and not financial_audit.ready_to_lock %}disabled title="يوجد أخطاء في تقرير التحقق المالي"{% endif %}>
-                        <i data-lucide="lock" class="w-4 h-4"></i> ترحيل وإغلاق
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                        <span>ترحيل وإغلاق</span>
                     </button>
                 </form>
             {% elif run.status == 'locked' and request.user.is_superuser %}
                 <form method="POST" action="{% url 'web:unlock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم فك ربط البنود من هذا المسير. هل أنت متأكد؟');">
                     {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 text-sm font-bold text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50">
-                        <i data-lucide="unlock" class="w-4 h-4"></i> إعادة فتح
-                    </button>
+                    {% include "components/hr_btn.html" with label="إعادة فتح" type="submit" variant="soft-rose" icon="unlock" %}
                 </form>
             {% endif %}
         </div>
@@ -168,16 +161,9 @@
             </table>
         </div>
         {% if page_obj and page_obj.paginator.num_pages > 1 %}
-        <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-            <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
-            <div class="flex gap-1">
-                {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">السابق</a>
-                {% endif %}
-                {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">التالي</a>
-                {% endif %}
-            </div>
+        <div class="px-4 py-3 border-t border-slate-100 hr-pagination hr-pagination--bar">
+            <div class="hr-pagination__summary">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</div>
+            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True show_numbers=False %}
         </div>
         {% endif %}
     </div>

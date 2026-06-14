@@ -42,20 +42,20 @@
             <span class="text-sky-700 bg-sky-50 px-2 py-1 rounded" title="بيانات من الذاكرة المؤقتة">مخزّن مؤقتاً</span>
             {% endif %}
             {% if filter_querystring %}
-            <a href="?{{ filter_querystring }}&amp;refresh=1" class="text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 inline-flex items-center gap-1">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> تحديث
-            </a>
+            {% with refresh_href="?"|add:filter_querystring|add:"&refresh=1" %}
+            {% include "components/hr_btn.html" with href=refresh_href label="تحديث" variant="outline" icon="refresh-cw" size="sm" %}
+            {% endwith %}
             {% else %}
-            <a href="?refresh=1" class="text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 inline-flex items-center gap-1">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> تحديث
-            </a>
+            {% include "components/hr_btn.html" with href="?refresh=1" label="تحديث" variant="outline" icon="refresh-cw" size="sm" %}
             {% endif %}
             {% if user|has_permission:'reports.export' %}
-            <a href="{{ export_url }}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}"
-               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold text-white"
-               style="background:#059669;">
-                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Excel
-            </a>
+            {% if filter_querystring %}
+            {% with export_href=export_url|add:"?"|add:filter_querystring %}
+            {% include "components/hr_btn.html" with href=export_href label="Excel" variant="success" icon="file-spreadsheet" size="sm" %}
+            {% endwith %}
+            {% else %}
+            {% include "components/hr_btn.html" with href=export_url label="Excel" variant="success" icon="file-spreadsheet" size="sm" %}
+            {% endif %}
             {% endif %}
             <button onclick="window.print()" class="hr-btn-print px-3 py-1.5 gap-1">
                 <i data-lucide="printer" class="w-3.5 h-3.5"></i> طباعة

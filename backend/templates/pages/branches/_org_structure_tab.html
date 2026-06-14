@@ -4,10 +4,8 @@
             <div class="p-4">
                 {% if org_perms.branch_write %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_branch' %}" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة فرع جديد
-                    </a>
+                    {% url 'web:add_branch' as add_branch_url %}
+                    {% include "components/hr_btn.html" with href=add_branch_url label="إضافة فرع جديد" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 
@@ -78,11 +76,8 @@
             <div class="p-4">
                 {% if org_perms.cost_center_write %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_cost_center_global' %}"
-                        class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة مركز تكلفة
-                    </a>
+                    {% url 'web:add_cost_center_global' as add_cc_global_url %}
+                    {% include "components/hr_btn.html" with href=add_cc_global_url label="إضافة مركز تكلفة" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
 
@@ -157,11 +152,8 @@
             <div class="p-4">
                 {% if org_perms.department_write %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_department_global' %}"
-                        class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة قسم
-                    </a>
+                    {% url 'web:add_department_global' as add_dept_global_url %}
+                    {% include "components/hr_btn.html" with href=add_dept_global_url label="إضافة قسم" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
 
@@ -236,10 +228,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_administration' %}?tab=administrations" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة إدارة
-                    </a>
+                    {% url 'web:add_administration' as add_admin_url %}
+                    {% include "components/hr_btn.html" with href=add_admin_url|add:"?tab=administrations" label="إضافة إدارة" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 <div class="overflow-x-auto">
@@ -303,10 +293,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_nationality' %}?tab=nationalities" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة جنسية
-                    </a>
+                    {% url 'web:add_nationality' as add_nat_url %}
+                    {% include "components/hr_btn.html" with href=add_nat_url|add:"?tab=nationalities" label="إضافة جنسية" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 
@@ -363,10 +351,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_profession' %}?tab=professions" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة مهنة
-                    </a>
+                    {% url 'web:add_profession' as add_prof_url %}
+                    {% include "components/hr_btn.html" with href=add_prof_url|add:"?tab=professions" label="إضافة مهنة" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 
@@ -423,10 +409,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_sponsorship' %}?tab=sponsorships" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة كفالة
-                    </a>
+                    {% url 'web:add_sponsorship' as add_spon_url %}
+                    {% include "components/hr_btn.html" with href=add_spon_url|add:"?tab=sponsorships" label="إضافة كفالة" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 
@@ -487,10 +471,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_insurance' %}?tab=insurances" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة تأمين
-                    </a>
+                    {% url 'web:add_insurance' as add_ins_url %}
+                    {% include "components/hr_btn.html" with href=add_ins_url|add:"?tab=insurances" label="إضافة تأمين" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 
@@ -547,10 +529,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_insurance_class' %}?tab=insurance_classes" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة فئة تأمين
-                    </a>
+                    {% url 'web:add_insurance_class' as add_ins_class_url %}
+                    {% include "components/hr_btn.html" with href=add_ins_class_url|add:"?tab=insurance_classes" label="إضافة فئة تأمين" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
                 
@@ -607,10 +587,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_building' %}?tab=buildings" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة عمارة جديدة
-                    </a>
+                    {% url 'web:add_building' as add_building_url %}
+                    {% include "components/hr_btn.html" with href=add_building_url|add:"?tab=buildings" label="إضافة عمارة جديدة" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
 
@@ -665,10 +643,8 @@
             <div class="p-4">
                 {% if org_perms.system_data_add %}
                 <div class="flex justify-end mb-4">
-                    <a href="{% url 'web:add_bank' %}?tab=banks" class="px-4 py-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        إضافة بنك جديد
-                    </a>
+                    {% url 'web:add_bank' as add_bank_url %}
+                    {% include "components/hr_btn.html" with href=add_bank_url|add:"?tab=banks" label="إضافة بنك جديد" icon="plus" size="xs" %}
                 </div>
                 {% endif %}
 

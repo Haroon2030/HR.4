@@ -14,41 +14,41 @@
         {% endif %}
     </div>
     {% if page_obj.paginator.num_pages > 1 %}
-    <nav class="hr-payroll-runs-datatable__pager" aria-label="{{ pager_aria_label|default:'ترقيم الصفحات' }}">
+    <nav class="hr-payroll-runs-datatable__pager hr-pagination__controls" aria-label="{{ pager_aria_label|default:'ترقيم الصفحات' }}">
         {% if page_obj.has_previous %}
         <a href="?{% if base_qs %}{{ base_qs }}&{% endif %}{{ page_param }}={{ page_obj.previous_page_number }}"
-           class="hr-payroll-runs-datatable__pager-btn"
+           class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn"
            title="الصفحة السابقة">
-            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <i data-lucide="chevron-right" class="hr-btn__icon"></i>
             <span>السابق</span>
         </a>
         {% else %}
-        <span class="hr-payroll-runs-datatable__pager-btn hr-payroll-runs-datatable__pager-btn--disabled">
-            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">
+            <i data-lucide="chevron-right" class="hr-btn__icon"></i>
             <span>السابق</span>
         </span>
         {% endif %}
-        <div class="hr-payroll-runs-datatable__pager-nums">
+        <div class="hr-pagination__nums">
             {% for p in page_obj.paginator.page_range %}
                 {% if p == page_obj.number %}
-                <span class="hr-payroll-runs-datatable__pager-num is-active" aria-current="page">{{ p }}</span>
+                <span class="hr-btn hr-btn--primary hr-btn--sm hr-pagination__num is-active" aria-current="page">{{ p }}</span>
                 {% else %}
                 <a href="?{% if base_qs %}{{ base_qs }}&{% endif %}{{ page_param }}={{ p }}"
-                   class="hr-payroll-runs-datatable__pager-num">{{ p }}</a>
+                   class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__num">{{ p }}</a>
                 {% endif %}
             {% endfor %}
         </div>
         {% if page_obj.has_next %}
         <a href="?{% if base_qs %}{{ base_qs }}&{% endif %}{{ page_param }}={{ page_obj.next_page_number }}"
-           class="hr-payroll-runs-datatable__pager-btn"
+           class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn"
            title="الصفحة التالية">
             <span>التالي</span>
-            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <i data-lucide="chevron-left" class="hr-btn__icon"></i>
         </a>
         {% else %}
-        <span class="hr-payroll-runs-datatable__pager-btn hr-payroll-runs-datatable__pager-btn--disabled">
+        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">
             <span>التالي</span>
-            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <i data-lucide="chevron-left" class="hr-btn__icon"></i>
         </span>
         {% endif %}
     </nav>

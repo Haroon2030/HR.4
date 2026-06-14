@@ -1,0 +1,11 @@
+<div class="flex gap-3 pt-4{% if extra_class %} {{ extra_class }}{% endif %}">
+    {% include "components/hr_btn.html" with label="حفظ" type="submit" variant="primary" %}
+    {% url 'web:list_branches' as setup_cancel_base %}
+    {% if tab %}
+        {% include "components/hr_btn.html" with label="إلغاء" href=setup_cancel_base|add:"#"|add:tab variant="secondary" %}
+    {% elif default_tab %}
+        {% include "components/hr_btn.html" with label="إلغاء" href=setup_cancel_base|add:"#"|add:default_tab variant="secondary" %}
+    {% else %}
+        {% include "components/hr_btn.html" with label="إلغاء" href=setup_cancel_base variant="secondary" %}
+    {% endif %}
+</div>

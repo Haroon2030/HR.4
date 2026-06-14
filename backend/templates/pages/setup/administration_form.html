@@ -36,14 +36,7 @@
                 </select>
             </div>
 
-            <div class="flex gap-3 pt-4">
-                <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    حفظ
-                </button>
-                <a href="{% url 'web:list_branches' %}{% if tab %}#{{ tab }}{% endif %}" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-                    إلغاء
-                </a>
-            </div>
+            {% include "components/setup_form_actions.html" %}
         </form>
     </div>
 </div>
