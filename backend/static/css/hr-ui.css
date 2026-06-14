@@ -5562,11 +5562,56 @@ body.hr-app .hr-app-main {
     flex-shrink: 0;
     margin-top: 0.1rem;
     box-shadow: var(--hr-dash-icon-shadow);
+    overflow: visible;
 }
 
+.hr-dist-card__item-glyph,
 .hr-dist-card__item-icon svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+    min-width: 0.875rem;
+    min-height: 0.875rem;
+    display: block;
+    flex-shrink: 0;
     stroke: currentColor !important;
     color: currentColor !important;
+}
+
+.hr-dist-card__item-icon i[data-lucide] {
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+.hr-dist-card__item-icon svg * {
+    vector-effect: non-scaling-stroke;
+}
+
+.hr-dist-card__item--active .hr-dist-card__item-icon {
+    background: #d1fae5;
+    border-color: #a7f3d0;
+    color: #059669 !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+}
+
+.hr-dist-card__item--leave .hr-dist-card__item-icon {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1 !important;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.18);
+}
+
+.hr-dist-card__item--suspended .hr-dist-card__item-icon {
+    background: #fef3c7;
+    border-color: #fde68a;
+    color: #d97706 !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+}
+
+.hr-dist-card__item--terminated .hr-dist-card__item-icon {
+    background: #ffe4e6;
+    border-color: #fecdd3;
+    color: #e11d48 !important;
+    box-shadow: 0 4px 14px rgba(244, 63, 94, 0.15);
 }
 
 .hr-dist-card__item-body {

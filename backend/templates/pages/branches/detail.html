@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4" x-data="{ activeTab: 'employees' }">
@@ -170,13 +171,7 @@
                                 {% if employee.profession %}{{ employee.profession.name }}{% else %}—{% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                {% if employee.status == 'active' %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">نشط</span>
-                                {% elif employee.status == 'terminated' %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800 rounded-full">منتهي</span>
-                                {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded-full">{{ employee.get_status_display }}</span>
-                                {% endif %}
+                                {% employee_status_badge employee %}
                             </td>
                             <td class="px-6 py-4 text-left">
                                 <a href="{% url 'web:view_employee' employee.id %}" class="text-xs text-primary-600 hover:text-primary-800 font-medium">عرض الملف</a>

@@ -134,8 +134,11 @@ def _compute_dashboard_overview(user, accessible_branch_ids: list[int] | None) -
         ),
     }
 
+    from apps.employees.status_ui import build_employee_status_dashboard_rows
+
     return {
         'stats': stats,
+        'employee_status_rows': build_employee_status_dashboard_rows(stats),
         'branch_distribution': branch_distribution,
         'max_branch': max_branch,
         'gender_distribution': gender_distribution,

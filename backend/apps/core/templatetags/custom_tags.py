@@ -19,7 +19,18 @@ _ROLE_BADGE_CLASS = {
     'employee': 'bg-slate-100 text-slate-700',
 }
 
-_DIST_PALETTE = ('active', 'leave', 'suspended', 'terminated', 'active', 'leave')
+from apps.employees.status_ui import employee_status_dist_palette, get_employee_status_ui
+
+_DIST_PALETTE = employee_status_dist_palette()
+
+
+@register.inclusion_tag('components/employee_status_badge.html')
+def employee_status_badge(employee=None, status=None, size='sm'):
+    raw_status = status if status is not None else getattr(employee, 'status', '')
+    return {
+        'ui': get_employee_status_ui(raw_status),
+        'size': size,
+    }
 
 
 @register.filter

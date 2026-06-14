@@ -1,3 +1,4 @@
+{% load custom_tags %}
 <div id="employees-list-panel">
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
@@ -24,23 +25,7 @@
                         <td class="px-3 py-2 text-xs text-slate-500">{{ emp.branch.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ emp.department.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs">
-                            {% if emp.status == 'terminated' %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                                    <i data-lucide="user-x" class="w-3 h-3"></i> منتهي
-                                </span>
-                            {% elif emp.status == 'leave' %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
-                                    <i data-lucide="plane" class="w-3 h-3"></i> إجازة
-                                </span>
-                            {% elif emp.status == 'suspended' %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
-                                    <i data-lucide="pause" class="w-3 h-3"></i> موقوف
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                                    <i data-lucide="check-circle" class="w-3 h-3"></i> على رأس العمل
-                                </span>
-                            {% endif %}
+                            {% employee_status_badge emp %}
                         </td>
                         <td class="px-3 py-2 text-left">
                             {% url 'web:view_employee' emp.id as act_view %}

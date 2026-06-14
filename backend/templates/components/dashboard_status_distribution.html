@@ -1,21 +1,12 @@
-{# توزيع حالة الموظفين — يتطلب stats (employees_total, employees_active, ...) #}
+{# توزيع حالة الموظفين — يتطلب stats و employee_status_rows #}
 <div class="hr-dist-card">
     {% include "components/dashboard_dist_card_head.html" with icon="pie-chart" title="توزيع حالة الموظفين" subtitle="نظرة سريعة على وضع القوى العاملة" total=stats.employees_total %}
 
-    {% with total=stats.employees_total %}
-    {% if total %}
+    {% if stats.employees_total %}
     <div class="hr-dist-card__grid">
-        {% widthratio stats.employees_active total 100 as pct_active %}
-        {% include "components/dashboard_dist_card_row.html" with label="على رأس العمل" count=stats.employees_active percent=pct_active color="active" icon="user-check" %}
-
-        {% widthratio stats.employees_leave total 100 as pct_leave %}
-        {% include "components/dashboard_dist_card_row.html" with label="في إجازة" count=stats.employees_leave percent=pct_leave color="leave" icon="palmtree" %}
-
-        {% widthratio stats.employees_suspended total 100 as pct_suspended %}
-        {% include "components/dashboard_dist_card_row.html" with label="موقوفون" count=stats.employees_suspended percent=pct_suspended color="suspended" icon="user-x" %}
-
-        {% widthratio stats.employees_terminated total 100 as pct_terminated %}
-        {% include "components/dashboard_dist_card_row.html" with label="منتهي الخدمة" count=stats.employees_terminated percent=pct_terminated color="terminated" icon="user-minus" %}
+        {% for row in employee_status_rows %}
+        {% include "components/dashboard_dist_card_row.html" with label=row.label count=row.count percent=row.percent color=row.color icon=row.icon %}
+        {% endfor %}
     </div>
     {% else %}
     <div class="hr-dist-card__empty">
@@ -23,5 +14,4 @@
         <p>لا بيانات موظفين للعرض</p>
     </div>
     {% endif %}
-    {% endwith %}
 </div>

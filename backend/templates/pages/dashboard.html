@@ -15,14 +15,20 @@
     <div class="hr-stat-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {% url 'web:list_employees' as list_employees_url %}
         {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='mono' icon='users' href=list_employees_url %}
-        {% include 'components/kpi_stat_card.html' with label='على رأس العمل' value=stats.employees_active theme='mono' icon='user-check' %}
-        {% include 'components/kpi_stat_card.html' with label='في إجازة' value=stats.employees_leave theme='mono' icon='palmtree' %}
-        {% include 'components/kpi_stat_card.html' with label='موقوفون' value=stats.employees_suspended theme='mono' icon='user-x' %}
+        {% for row in employee_status_rows %}
+        {% if row.status != 'terminated' %}
+        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme='mono' icon=row.icon %}
+        {% endif %}
+        {% endfor %}
         {% url 'web:list_employment_requests' as employment_requests_url %}
         {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='mono' icon='file-plus' href=employment_requests_url %}
         {% url 'web:list_pending_actions' as pending_actions_url %}
         {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='mono' icon='clipboard-list' href=pending_actions_url %}
-        {% include 'components/kpi_stat_card.html' with label='منتهية العقود' value=stats.employees_terminated theme='mono' icon='user-minus' %}
+        {% for row in employee_status_rows %}
+        {% if row.status == 'terminated' %}
+        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme='mono' icon=row.icon %}
+        {% endif %}
+        {% endfor %}
         {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='mono' icon='calculator' %}
     </div>
     {% endif %}
