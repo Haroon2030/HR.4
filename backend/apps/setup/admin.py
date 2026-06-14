@@ -4,7 +4,19 @@ from django.contrib import admin
 from .models import (
     SystemSettings, Nationality, Profession,
     Sponsorship, Insurance, InsuranceClass, Building, Bank, Administration,
+    OperationsReportSettings,
 )
+
+
+@admin.register(OperationsReportSettings)
+class OperationsReportSettingsAdmin(admin.ModelAdmin):
+    list_display = ('recipient_email', 'is_enabled', 'send_hour', 'last_sent_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return not OperationsReportSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(SystemSettings)

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير العمليات المجدول{% endblock %}
+{% block page_title %}تقرير العمليات المجدول{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">تقرير العمليات المجدول</h1>
+            <p class="text-sm text-slate-500 mt-1">
+                إرسال PDF يومي بالعمليات المعلّقة والمُنجزة إلى بريد ثابت.
+            </p>
+        </div>
+        {% url 'web:list_branches' as branches_url %}
+        {% include 'components/glass_back_link.html' with back_url=branches_url show_label=True label='تهيئة النظام' aria_label='رجوع لتهيئة النظام' %}
+    </div>
+
+    <div class="hr-glass-panel rounded-xl p-5 space-y-4">
+        <div class="rounded-lg border border-sky-200 bg-sky-50/80 px-4 py-3 text-sm text-sky-900">
+            <p class="m-0 font-bold">كيف يعمل؟</p>
+            <ul class="mt-2 mb-0 ps-4 space-y-1">
+                <li>يُرسل التقرير تلقائياً عند الساعة المحددة (افتراضي 12:00) بتوقيت السيرفر.</li>
+                <li>يتضمن قسم <strong>المعلّق</strong> (طلبات العمليات + طلبات التوظيف غير المكتملة).</li>
+                <li>يتضمن قسم <strong>المُنجز</strong> للعمليات التي نُفِّذت في يوم التقرير.</li>
+                <li>يتطلب ضبط SMTP في <code dir="ltr">.env</code> (EMAIL_HOST وغيرها).</li>
+            </ul>
+            {% if settings_obj.last_sent_at %}
+            <p class="mt-2 mb-0 text-xs text-sky-800">
+                آخر إرسال: {{ settings_obj.last_sent_at|date:"Y-m-d H:i" }}
+            </p>
+            {% endif %}
+            <p class="mt-1 mb-0 text-xs text-sky-700">الوقت الحالي على السيرفر: {{ local_now|date:"Y-m-d H:i" }}</p>
+        </div>
+
+        {% if not email_delivery.smtp_ready %}
+        <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p class="m-0 font-bold">البريد غير مُفعّل للإرسال الفعلي</p>
+            <p class="mt-2 mb-0">
+                حالياً يستخدم النظام وضع التطوير (<code dir="ltr">console</code>) — الرسائل تُطبع في سجل السيرفر فقط ولا تصل لصندوق الوارد.
+            </p>
+            <p class="mt-2 mb-0 text-xs">
+                لإرسال حقيقي: أنشئ ملف <code dir="ltr">backend/.env</code> واضبط
+                <code dir="ltr">EMAIL_HOST</code>،
+                <code dir="ltr">EMAIL_HOST_USER</code>،
+                <code dir="ltr">EMAIL_HOST_PASSWORD</code>،
+                <code dir="ltr">DEFAULT_FROM_EMAIL</code>
+                (راجع <code dir="ltr">.env.example</code>) ثم أعد تشغيل السيرفر.
+            </p>
+        </div>
+        {% else %}
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+            <p class="m-0">
+                SMTP مفعّل: <code dir="ltr">{{ email_delivery.host }}</code>
+                — المرسل: <code dir="ltr">{{ email_delivery.from_email }}</code>
+            </p>
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label for="id_recipient_email" class="block text-sm font-semibold text-slate-700 mb-1">البريد المستلم *</label>
+                {{ form.recipient_email }}
+                {% if form.recipient_email.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.recipient_email.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="id_send_hour" class="block text-sm font-semibold text-slate-700 mb-1">ساعة الإرسال (24)</label>
+                    {{ form.send_hour }}
+                    <p class="text-xs text-slate-500 mt-1">مثال: 12 = ظهراً، 0 = منتصف الليل</p>
+                    {% if form.send_hour.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.send_hour.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="flex items-end pb-1">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        {{ form.is_enabled }}
+                        <span class="text-sm font-semibold text-slate-700">تفعيل الإرسال التلقائي</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    {{ form.include_pending }}
+                    <span class="text-sm text-slate-700">تضمين العمليات المعلّقة</span>
+                </label>
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    {{ form.include_completed }}
+                    <span class="text-sm text-slate-700">تضمين العمليات المُنجزة (يوم التقرير)</span>
+                </label>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                {{ form.non_field_errors.0 }}
+            </div>
+            {% endif %}
+
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/80">
+                {% include "components/hr_btn.html" with label="حفظ الإعدادات" type="submit" name="action" value="save" variant="primary" icon="save" %}
+            </div>
+        </form>
+
+        <form method="post" class="flex flex-wrap items-end gap-2 pt-2 border-t border-slate-200/80">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="test_send">
+            <div class="flex-1 min-w-[14rem]">
+                <label class="block text-xs font-semibold text-slate-600 mb-1">إرسال تجريبي إلى</label>
+                <input type="email" name="test_recipient" value="{{ form.recipient_email.value|default:'' }}"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" dir="ltr"
+                       placeholder="reports@company.com">
+            </div>
+            {% include "components/hr_btn.html" with label="إرسال تجربة الآن" type="submit" variant="glass-sky" icon="refresh-cw" %}
+        </form>
+    </div>
+</div>
+{% endblock %}

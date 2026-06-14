@@ -154,6 +154,7 @@ PY_AGENT
 CRON_NEEDED=false
 if [ "${BACKUP_ENABLED:-true}" = "true" ]; then CRON_NEEDED=true; fi
 if [ "${DOCUMENT_EXPIRY_CRON:-true}" = "true" ]; then CRON_NEEDED=true; fi
+if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then CRON_NEEDED=true; fi
 
 if [ "$CRON_NEEDED" = "true" ]; then
     mkdir -p /app/backups /app/logs
@@ -173,6 +174,10 @@ if [ "$CRON_NEEDED" = "true" ]; then
             fi
             echo "${DOC_SCHED} root cd /app && python manage.py notify_document_expiry --days ${DOC_DAYS}${DOC_EXTRA} >> /app/logs/document_expiry.log 2>&1"
         fi
+        if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then
+            OPS_SCHED="${OPERATIONS_REPORT_CRON_SCHEDULE:-0 * * * *}"
+            echo "${OPS_SCHED} root cd /app && python manage.py send_operations_report --send-email >> /app/logs/operations_report.log 2>&1"
+        fi
     } > /etc/cron.d/hr-backup
     chmod 0644 /etc/cron.d/hr-backup
     crontab /etc/cron.d/hr-backup
@@ -183,8 +188,11 @@ if [ "$CRON_NEEDED" = "true" ]; then
     if [ "${DOCUMENT_EXPIRY_CRON:-true}" = "true" ]; then
         echo "==> Document expiry cron: ${DOCUMENT_EXPIRY_CRON_SCHEDULE:-30 6 * * *} (--days ${DOCUMENT_EXPIRY_CRON_DAYS:-30})"
     fi
+    if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then
+        echo "==> Operations report cron: ${OPERATIONS_REPORT_CRON_SCHEDULE:-0 * * * *} (hour from DB settings)"
+    fi
 else
-    echo "==> Cron disabled (BACKUP_ENABLED=false and DOCUMENT_EXPIRY_CRON=false)"
+    echo "==> Cron disabled (BACKUP_ENABLED=false and DOCUMENT_EXPIRY_CRON=false and OPERATIONS_REPORT_CRON=false)"
 fi
 
 echo "==> Starting: $@"

@@ -28,6 +28,35 @@ class SystemSettings(models.Model):
         return self.key
 
 
+class OperationsReportSettings(models.Model):
+    """إعدادات تقرير العمليات اليومي (سجل واحد — pk=1)."""
+
+    recipient_email = models.EmailField('البريد المستلم', blank=True, default='')
+    is_enabled = models.BooleanField('تفعيل الإرسال التلقائي', default=False)
+    send_hour = models.PositiveSmallIntegerField(
+        'ساعة الإرسال (24)',
+        default=12,
+        help_text='يُرسل التقرير يومياً عند هذه الساعة (توقيت السيرفر).',
+    )
+    include_pending = models.BooleanField('تضمين العمليات المعلّقة', default=True)
+    include_completed = models.BooleanField('تضمين العمليات المُنجزة (يوم التقرير)', default=True)
+    last_sent_at = models.DateTimeField('آخر إرسال', null=True, blank=True)
+    updated_at = models.DateTimeField('آخر تحديث', auto_now=True)
+
+    class Meta:
+        db_table = 'setup_operationsreportsettings'
+        verbose_name = 'إعدادات تقرير العمليات'
+        verbose_name_plural = 'إعدادات تقرير العمليات'
+
+    def __str__(self):
+        return 'إعدادات تقرير العمليات'
+
+    @classmethod
+    def get_solo(cls) -> 'OperationsReportSettings':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class Nationality(BaseModel):
     """الجنسيات"""
     code = models.CharField("رقم الجنسية", max_length=20, unique=True)

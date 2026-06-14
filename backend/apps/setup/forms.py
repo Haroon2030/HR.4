@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 
 from apps.setup.models import (
     Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
-    Building, Bank, Administration,
+    Building, Bank, Administration, OperationsReportSettings,
 )
 
 
@@ -150,3 +150,42 @@ class AdministrationForm(forms.ModelForm):
 
     def clean_name(self):
         return _validate_required(self.cleaned_data.get('name'), 'اسم الإدارة')
+
+
+class OperationsReportSettingsForm(forms.ModelForm):
+    class Meta:
+        model = OperationsReportSettings
+        fields = (
+            'recipient_email',
+            'is_enabled',
+            'send_hour',
+            'include_pending',
+            'include_completed',
+        )
+        widgets = {
+            'recipient_email': forms.EmailInput(attrs={
+                'class': 'w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500',
+                'placeholder': 'reports@company.com',
+                'dir': 'ltr',
+            }),
+            'send_hour': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500',
+                'min': 0,
+                'max': 23,
+            }),
+            'is_enabled': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+            'include_pending': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+            'include_completed': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+        }
+
+    def clean_send_hour(self):
+        hour = self.cleaned_data.get('send_hour')
+        if hour is None or hour < 0 or hour > 23:
+            raise ValidationError('الساعة يجب أن تكون بين 0 و 23')
+        return hour
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('is_enabled') and not (cleaned.get('recipient_email') or '').strip():
+            raise ValidationError('يجب تحديد بريد مستلم عند تفعيل الإرسال التلقائي.')
+        return cleaned

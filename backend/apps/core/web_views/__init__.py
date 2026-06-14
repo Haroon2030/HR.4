@@ -14,6 +14,7 @@ from apps.core.web_views.users import *  # noqa: F401,F403
 from apps.core.web_views.cost_centers import *  # noqa: F401,F403
 from apps.core.web_views.departments import *  # noqa: F401,F403
 from apps.core.web_views.lookups import *  # noqa: F401,F403
+from apps.core.web_views.operations_report_settings import *  # noqa: F401,F403
 from apps.core.web_views.pending_actions import *  # noqa: F401,F403
 from apps.core.web_views.notifications import *  # noqa: F401,F403
 from apps.core.web_views.hr_forms import *  # noqa: F401,F403

@@ -196,6 +196,9 @@ urlpatterns = [
     path('setup/administration/add/', web_views.add_administration, name='add_administration'),
     path('setup/administration/<int:administration_id>/edit/', web_views.edit_administration, name='edit_administration'),
     path('setup/administration/<int:administration_id>/delete/', web_views.delete_administration, name='delete_administration'),
+
+    # ── إعدادات تقرير العمليات المجدول ──
+    path('setup/operations-report/', web_views.operations_report_settings, name='operations_report_settings'),
     
     # ══════════════════════════════════════════════════════════════
     # 9. إدارة المستخدمين
