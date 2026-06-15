@@ -391,58 +391,15 @@ def set_work_schedule(request, employee_id):
             messages.warning(request, f'تم حفظ {len(cleaned)} شهر — لكن لم يتم الإرسال (لا يوجد بريد).')
             return redirect('web:view_employee', employee_id=employee.id)
         try:
-            from django.template.loader import render_to_string
-            from django.core.mail import EmailMultiAlternatives
-            from django.conf import settings as dj_settings
-            import calendar as _cal
-            months_ar = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-                         'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-            week_days_ar = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
-            boxes_ctx = []
+            from apps.core.services.work_schedule_mail import send_work_schedule_email
+
             email_boxes = payload.get('boxes') if isinstance(payload.get('boxes'), list) else cleaned
-            for b in email_boxes:
-                year, month = b['year'], b['month']
-                total_days = _cal.monthrange(year, month)[1]
-                codes = b.get('day_codes') or {}
-                day_cells = []
-                for d in range(1, 32):
-                    if d > total_days:
-                        day_cells.append({'day': d, 'code': '', 'active': False, 'weekday': ''})
-                    else:
-                        wd = _cal.weekday(year, month, d)
-                        weekday = week_days_ar[(wd + 1) % 7]
-                        day_cells.append({
-                            'day': d,
-                            'code': codes.get(str(d), ''),
-                            'active': True,
-                            'weekday': weekday,
-                        })
-                shift_label = (b.get('shift_label') or '').strip()
-                boxes_ctx.append({
-                    'year': year,
-                    'month': month,
-                    'month_name': months_ar[month],
-                    'days': b['days'],
-                    'days_count': len(b['days']),
-                    'days_str': '، '.join(str(d) for d in b['days']),
-                    'day_cells': day_cells,
-                    'shift_title': shift_label or '—',
-                    'notes': b.get('notes') or '',
-                })
-            ctx = {'employee': employee, 'boxes': boxes_ctx}
-            html_body = render_to_string('emails/employee_schedule.html', ctx)
-            text_lines = [f'جدول الدوام — {employee.name}', '']
-            for b in boxes_ctx:
-                text_lines.append(f'{b["month_name"]} {b["year"]}: {b["days_count"]} يوم — {b["days_str"]}')
-            msg = EmailMultiAlternatives(
-                subject=f'جدول الدوام — {employee.name}',
-                body='\n'.join(text_lines),
-                from_email=dj_settings.DEFAULT_FROM_EMAIL,
-                to=recipients,
+            send_work_schedule_email(
+                employee=employee,
+                boxes_data=email_boxes,
+                recipients=recipients,
             )
-            msg.attach_alternative(html_body, 'text/html')
-            msg.send(fail_silently=False)
-            messages.success(request, f'تم حفظ الجدول وإرساله إلى: {", ".join(recipients)}')
+            messages.success(request, f'تم حفظ الجدول وإرساله رسمياً (PDF) إلى: {", ".join(recipients)}')
         except Exception as e:
             messages.error(request, f'تم حفظ الجدول لكن فشل الإرسال: {e}')
     else:

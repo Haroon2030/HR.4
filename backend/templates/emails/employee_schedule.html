@@ -2,69 +2,80 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>جدول الدوام</title>
+<title>جدول الدوام الرسمي</title>
 </head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:24px 0;">
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#1e293b;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 0;">
     <tr><td align="center">
-      <table width="720" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(15,23,42,.08);">
+      <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.08);max-width:96%;">
 
         <tr>
-          <td style="background:linear-gradient(135deg,#0f766e,#14b8a6);padding:18px 22px;color:#fff;">
-            <div style="font-size:18px;font-weight:700;">جدول الدوام الشهري</div>
-            <div style="font-size:13px;opacity:.92;margin-top:4px;">{{ employee.name }}</div>
+          <td style="background:linear-gradient(135deg,#0f766e,#14b8a6);padding:22px 26px;color:#fff;">
+            <div style="font-size:11px;opacity:.9;letter-spacing:1px;">{{ site_name }}</div>
+            <div style="font-size:22px;font-weight:800;margin-top:6px;">جدول الدوام الشهري — وثيقة رسمية</div>
           </td>
         </tr>
 
         <tr>
-          <td style="padding:20px 22px;font-size:14px;line-height:1.7;color:#334155;">
-            <p style="margin:0 0 8px;">السلام عليكم،</p>
-            <p style="margin:0 0 18px;">نُرفق لكم جدول الدوام للأشهر التالية:</p>
-
-            {% for box in boxes %}
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;">
-              <tr>
-                <td colspan="32" style="padding:12px 14px;background:linear-gradient(to left,#f0fdfa,#f0f9ff);font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid #cbd5e1;color:#0f172a;">
-                  جدول عملك لشهر {{ box.month_name }} {{ box.year }}
-                  <span style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-top:4px;">{{ box.shift_title }} — {{ box.days_count }} يوم دوام</span>
-                </td>
-              </tr>
-              <tr>
-                {% for cell in box.day_cells %}
-                <td style="padding:3px 0;font-size:9px;font-weight:700;text-align:center;border:1px solid #e2e8f0;{% if cell.active %}color:#0c4a6e;background:#f0f9ff;{% else %}color:#cbd5e1;background:#f8fafc;{% endif %}">{{ cell.weekday|default:"—" }}</td>
-                {% endfor %}
-                <td rowspan="2" style="width:90px;padding:8px;background:#f1f5f9;font-size:11px;font-weight:700;text-align:center;border-right:1px solid #cbd5e1;vertical-align:middle;">ملاحظات</td>
-              </tr>
-              <tr>
-                {% for cell in box.day_cells %}
-                <td style="padding:4px 0;font-size:10px;font-weight:700;text-align:center;border:1px solid #e2e8f0;{% if not cell.active %}background:#f1f5f9;color:#cbd5e1;{% else %}background:#e0f2fe;{% endif %}">{{ cell.day }}</td>
-                {% endfor %}
-              </tr>
-              <tr>
-                {% for cell in box.day_cells %}
-                <td style="padding:6px 2px;font-size:10px;font-weight:700;text-align:center;border:1px solid #e2e8f0;{% if not cell.active %}background:#f8fafc;color:#cbd5e1;{% elif cell.code|lower == 'a' %}color:#dc2626;{% elif cell.code|lower == 'off' %}color:#64748b;{% elif cell.code == '✓' or cell.code|lower == 'd' %}color:#047857;background:#ecfdf5;{% else %}color:#0f172a;{% endif %}">{% if cell.code == '✓' or cell.code|lower == 'd' %}✓{% else %}{{ cell.code|default:"—" }}{% endif %}</td>
-                {% endfor %}
-                <td style="padding:8px;font-size:10px;color:#475569;vertical-align:top;border:1px solid #e2e8f0;">{{ box.notes|default:"" }}</td>
-              </tr>
-              {% if box.days_str %}
-              <tr>
-                <td colspan="32" style="padding:8px 12px;background:#f8fafc;font-size:11px;color:#475569;border-top:1px solid #e2e8f0;">
-                  أيام الدوام: {{ box.days_str }}
-                </td>
-              </tr>
-              {% endif %}
-            </table>
-            {% endfor %}
-
-            <p style="margin:18px 0 0;color:#64748b;font-size:12px;">
-              في حال وجود أي استفسار، يُرجى التواصل مع إدارة الموارد البشرية.
+          <td style="padding:22px 26px 8px 26px;">
+            <p style="margin:0 0 8px;font-size:14px;font-weight:700;">الأخ / الأخت: {{ employee.name }} المحترم/ة</p>
+            <p style="margin:0;font-size:13px;line-height:1.85;color:#475569;">السلام عليكم ورحمة الله وبركاته،</p>
+            <p style="margin:10px 0 0;font-size:13.5px;line-height:1.9;color:#334155;">
+              نرفق لكم بيان جدول الدوام الشهري بصيغة <strong>PDF</strong> رسمية. يرجى الاطلاع على المرفق والالتزام بما ورد فيه.
             </p>
           </td>
         </tr>
 
         <tr>
-          <td style="background:#f8fafc;padding:12px 22px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
-            هذه رسالة تلقائية صادرة عن نظام HR Pro.
+          <td style="padding:8px 26px 16px 26px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+              <tr><td style="padding:14px 16px;">
+                <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:10px;">ملخص الأشهر المرسلة</div>
+                <table width="100%" cellpadding="6" cellspacing="0" style="font-size:13px;">
+                  <tr style="background:#eef2ff;">
+                    <th align="right" style="padding:8px;color:#475569;">الشهر</th>
+                    <th align="right" style="padding:8px;color:#475569;">الوردية</th>
+                    <th align="right" style="padding:8px;color:#475569;">أيام الدوام</th>
+                  </tr>
+                  {% for box in boxes %}
+                  <tr>
+                    <td style="padding:8px;font-weight:700;">{{ box.month_name }} {{ box.year }}</td>
+                    <td style="padding:8px;">{{ box.shift_title }}</td>
+                    <td style="padding:8px;">
+                      <span style="font-weight:800;color:#047857;">{{ box.days_count }}</span>
+                      {% if box.days_str %}
+                      <span style="display:block;font-size:11px;color:#64748b;margin-top:3px;">{{ box.days_str }}</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </table>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 26px 18px 26px;">
+            <div style="background:#ecfeff;border:1px dashed #06b6d4;border-radius:8px;padding:12px 14px;font-size:12px;color:#0e7490;line-height:1.7;">
+              📎 المرفق: ملف PDF يتضمن جدول الدوام التفصيلي لكل شهر (أيام الأسبوع، الأرقام، وحالات الدوام/الإجازة).
+              <br>تاريخ الإصدار: {{ issued_date|date:"Y-m-d" }}
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 26px 18px 26px;">
+            <p style="margin:0;font-size:13px;line-height:1.85;color:#475569;">في حال وجود أي استفسار، يُرجى التواصل مع إدارة الموارد البشرية.</p>
+            <p style="margin:14px 0 0;font-size:13px;color:#334155;">وتفضلوا بقبول فائق الاحترام والتقدير،</p>
+            <p style="margin:4px 0 0;font-size:13px;font-weight:800;color:#0f172a;">إدارة الموارد البشرية</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:#0f172a;color:#cbd5e1;padding:14px 24px;text-align:center;font-size:11px;line-height:1.6;">
+            هذه رسالة آلية صادرة من <b style="color:#fff;">{{ site_name }}</b><br>
+            للاستفسار يُرجى التواصل مع إدارة الموارد البشرية. — لا تردّ على هذه الرسالة.
           </td>
         </tr>
       </table>
