@@ -1,91 +1,132 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-4 hr-employee-create-page">
-    <!-- Header -->
-    <div class="hr-employee-header flex items-center gap-3">
-        {% url 'web:list_employees' as employees_list_url %}
-        {% include 'components/glass_back_link.html' with back_url=employees_list_url aria_label='رجوع لقائمة الموظفين' %}
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">إضافة موظف جديد</h1>
-            <p class="text-slate-500 text-xs">أدخل البيانات الأساسية للموظف</p>
+<div class="max-w-4xl mx-auto space-y-4 hr-employee-create-page">
+    <div class="hr-employee-create-page__header hr-employee-header flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            {% url 'web:list_employees' as employees_list_url %}
+            {% include 'components/glass_back_link.html' with back_url=employees_list_url aria_label='رجوع لقائمة الموظفين' %}
+            <div class="min-w-0">
+                <h1 class="text-2xl font-bold text-slate-900">إضافة موظف جديد</h1>
+                <p class="text-slate-500 text-sm mt-0.5">سجّل البيانات الأساسية ثم أكمل التفاصيل من صفحة التعديل</p>
+            </div>
+        </div>
+        <div class="hr-employee-create-page__steps" aria-hidden="true">
+            <span class="is-active">1</span>
+            <span class="hr-employee-create-page__steps-line"></span>
+            <span>2</span>
         </div>
     </div>
 
     <form method="post" enctype="multipart/form-data"
-          class="hr-glass-form hr-glass-panel rounded-xl overflow-hidden">
+          class="hr-glass-form hr-employee-create-form hr-glass-panel rounded-xl overflow-hidden">
         {% csrf_token %}
 
-        <div class="p-5 space-y-4">
-            <div class="hr-glass-field-table-wrap">
-                <div class="hr-field-grid hr-glass-field-table">
-                    <!-- الاسم -->
-                    <div class="hr-field-item hr-field-item--full">
-                        <label class="hr-field-lbl">الاسم <span class="text-red-500">*</span></label>
-                        <input type="text" name="name" required
-                               class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none"
+        <div class="hr-employee-create-form__intro">
+            <div class="hr-employee-create-form__intro-icon" aria-hidden="true">
+                {% lucide_glyph 'user-check' 'hr-employee-create-form__intro-glyph' %}
+            </div>
+            <div>
+                <p class="hr-employee-create-form__intro-title">بيانات التسجيل الأولية</p>
+                <p class="hr-employee-create-form__intro-text">الحقول المعلّمة بـ <span class="text-rose-600 font-bold">*</span> إلزامية. يمكن إضافة الراتب والمستندات وباقي البيانات لاحقاً.</p>
+            </div>
+        </div>
+
+        <div class="hr-employee-create-form__body space-y-4 p-5">
+
+            <section class="hr-employee-create-section">
+                <header class="hr-employee-create-section__head">
+                    <span class="hr-employee-create-section__icon hr-employee-create-section__icon--sky" aria-hidden="true">
+                        {% lucide_glyph 'user' '' %}
+                    </span>
+                    <div>
+                        <h2 class="hr-employee-create-section__title">البيانات الأساسية</h2>
+                        <p class="hr-employee-create-section__subtitle">الاسم والموقع الوظيفي داخل الفروع</p>
+                    </div>
+                </header>
+                <div class="hr-employee-create-section__grid">
+                    <div class="hr-employee-create-field hr-employee-create-field--full">
+                        <label class="hr-employee-create-field__label" for="id_create_name">
+                            الاسم <span class="text-rose-600">*</span>
+                        </label>
+                        <input type="text" id="id_create_name" name="name" required
+                               class="hr-glass-input hr-employee-create-field__input"
                                placeholder="اسم الموظف الكامل">
                     </div>
-
-                    <!-- الفرع -->
-                    <div class="hr-field-item">
-                        <label class="hr-field-lbl">الفرع</label>
-                        <select name="branch"
-                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
-                            <option value="">-- اختر --</option>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_branch">الفرع</label>
+                        <select id="id_create_branch" name="branch" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر الفرع —</option>
                             {% for b in branches %}
                             <option value="{{ b.id }}">{% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
-
-                    <!-- القسم -->
-                    <div class="hr-field-item">
-                        <label class="hr-field-lbl">القسم</label>
-                        <select name="department"
-                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
-                            <option value="">-- اختر --</option>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_department">القسم</label>
+                        <select id="id_create_department" name="department" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر القسم —</option>
                             {% for d in departments %}
                             <option value="{{ d.id }}">{% if d.code %}{{ d.code }}{% if d.name and d.code != d.name %} — {{ d.name }}{% endif %}{% else %}{{ d.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+            </section>
 
-                    <!-- الإدارة -->
-                    <div class="hr-field-item">
-                        <label class="hr-field-lbl">الإدارة</label>
-                        <select name="administration"
-                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
-                            <option value="">-- اختر --</option>
+            <section class="hr-employee-create-section">
+                <header class="hr-employee-create-section__head">
+                    <span class="hr-employee-create-section__icon hr-employee-create-section__icon--indigo" aria-hidden="true">
+                        {% lucide_glyph 'building-2' '' %}
+                    </span>
+                    <div>
+                        <h2 class="hr-employee-create-section__title">الهيكل التنظيمي</h2>
+                        <p class="hr-employee-create-section__subtitle">الإدارة ومركز التكلفة للتقارير والصلاحيات</p>
+                    </div>
+                </header>
+                <div class="hr-employee-create-section__grid">
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_administration">الإدارة</label>
+                        <select id="id_create_administration" name="administration" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر الإدارة —</option>
                             {% for a in administrations %}
                             <option value="{{ a.id }}">{% if a.code %}{{ a.code }}{% if a.name and a.code != a.name %} — {{ a.name }}{% endif %}{% else %}{{ a.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
-
-                    <!-- مركز التكلفة -->
-                    <div class="hr-field-item hr-field-item--full">
-                        <label class="hr-field-lbl">مركز التكلفة</label>
-                        <select name="cost_center"
-                                class="hr-glass-input w-full px-3 py-2 rounded-lg text-sm outline-none">
-                            <option value="">-- اختر --</option>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_cost_center">مركز التكلفة</label>
+                        <select id="id_create_cost_center" name="cost_center" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر مركز التكلفة —</option>
                             {% for c in cost_centers %}
                             <option value="{{ c.id }}">{% if c.code %}{{ c.code }}{% if c.name and c.code != c.name %} — {{ c.name }}{% endif %}{% else %}{{ c.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+            </section>
 
-                    <!-- مستند المباشرة -->
-                    <div class="hr-field-item hr-field-item--full">
+            <section class="hr-employee-create-section">
+                <header class="hr-employee-create-section__head">
+                    <span class="hr-employee-create-section__icon hr-employee-create-section__icon--amber" aria-hidden="true">
+                        {% lucide_glyph 'file-text' '' %}
+                    </span>
+                    <div>
+                        <h2 class="hr-employee-create-section__title">المستندات</h2>
+                        <p class="hr-employee-create-section__subtitle">ارفع مستند المباشرة إن وُجد — باقي المستندات لاحقاً</p>
+                    </div>
+                </header>
+                <div class="hr-employee-create-section__grid">
+                    <div class="hr-employee-create-field hr-employee-create-field--full">
                         {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' %}
                     </div>
                 </div>
-            </div>
+            </section>
+
         </div>
 
-        <!-- Form Actions -->
-        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t"
-             style="border-color:var(--hr-glass-line);background:rgba(248,250,252,0.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
+        <div class="hr-employee-create-form__footer">
             {% url 'web:list_employees' as list_employees_href %}
             {% include "components/hr_btn.html" with href=list_employees_href label="إلغاء" variant="glass-slate" extra_class="px-4 py-2 text-sm" %}
             {% include "components/hr_btn.html" with label="حفظ الموظف" type="submit" variant="glass-primary" icon="save" extra_class="px-4 py-2 text-sm" %}
@@ -94,6 +135,6 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+    document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
 </script>
 {% endblock %}

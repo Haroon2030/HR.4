@@ -460,12 +460,28 @@
             {% endif %}
 
             <!-- Docs -->
-            {% if tab_visible.docs and default_employee_tab == 'docs' %}            <div x-show="activeTab==='docs'" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display:none">
-                <div><div class="text-xs font-bold text-slate-500 mb-1">مستند المباشرة</div>{% if employee.commencement_document %}{% include "components/media_preview_btn.html" with url=employee.commencement_document.url title="مستند المباشرة" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">صورة الهوية</div>{% if employee.id_document %}{% include "components/media_preview_btn.html" with url=employee.id_document.url title="صورة الهوية" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">صورة جواز السفر</div>{% if employee.passport_document %}{% include "components/media_preview_btn.html" with url=employee.passport_document.url title="صورة جواز السفر" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">العقد</div>{% if employee.contract_document %}{% include "components/media_preview_btn.html" with url=employee.contract_document.url title="العقد" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">مستندات أخرى</div>{% if employee.other_documents %}{% include "components/media_preview_btn.html" with url=employee.other_documents.url title="مستندات أخرى" label="عرض الملف" btn_class="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 font-semibold" icon="file-text" icon_class="w-4 h-4" %}{% else %}<span class="text-slate-400 text-sm">—</span>{% endif %}</div>
+            {% if tab_visible.docs and default_employee_tab == 'docs' %}
+            <div x-show="activeTab==='docs'" class="hr-employee-docs" style="display:none">
+                <div class="hr-employee-docs__header">
+                    <div class="hr-employee-docs__header-text">
+                        <h3 class="hr-employee-docs__title">مستندات الموظف</h3>
+                        <p class="hr-employee-docs__subtitle">الملفات الرسمية المرتبطة بملف الموظف — اضغط معاينة للعرض أو ارفع من التعديل</p>
+                    </div>
+                    {% if employee %}
+                    <a href="{% url 'web:edit_employee' employee.id %}?tab=docs" class="hr-employee-docs__edit-link">
+                        <i data-lucide="folder-up" class="w-4 h-4" aria-hidden="true"></i>
+                        إدارة المستندات
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="hr-employee-docs__grid">
+                    {% include "components/document_status_row.html" with label="مستند المباشرة" file=employee.commencement_document employee=employee icon="file-text" theme="sky" %}
+                    {% include "components/document_status_row.html" with label="صورة الهوية" file=employee.id_document employee=employee icon="id-card" theme="emerald" %}
+                    {% include "components/document_status_row.html" with label="صورة جواز السفر" file=employee.passport_document employee=employee icon="plane" theme="indigo" %}
+                    {% include "components/document_status_row.html" with label="العقد" file=employee.contract_document employee=employee icon="file-signature" theme="amber" %}
+                    {% include "components/document_status_row.html" with label="مستندات أخرى" file=employee.other_documents employee=employee icon="files" theme="violet" %}
+                </div>
             </div>
             {% endif %}
 

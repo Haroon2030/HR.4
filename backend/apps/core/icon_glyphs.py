@@ -154,6 +154,43 @@ _GLYPH_PATHS: dict[str, str] = {
         '<path d="M8 17h2"/>'
         '<path d="M14 17h2"/>'
     ),
+    'file-text': (
+        '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>'
+        '<path d="M14 2v4a2 2 0 0 0 2 2h4"/>'
+        '<path d="M10 9H8"/>'
+        '<path d="M16 13H8"/>'
+        '<path d="M16 17H8"/>'
+    ),
+    'contact': (
+        '<path d="M16 2v2"/>'
+        '<path d="M7 22v-2"/>'
+        '<path d="M6 2v2"/>'
+        '<path d="M17 22v-2"/>'
+        '<path d="M20 7h2"/>'
+        '<path d="M2 7h2"/>'
+        '<path d="M22 17h-2"/>'
+        '<path d="M2 17h2"/>'
+        '<rect width="16" height="12" x="4" y="6" rx="2"/>'
+    ),
+    'id-card': (
+        '<rect width="20" height="16" x="2" y="4" rx="2"/>'
+        '<circle cx="8" cy="10" r="2"/>'
+        '<path d="M14 8h4"/>'
+        '<path d="M14 12h4"/>'
+        '<path d="M6 16h12"/>'
+    ),
+    'files': (
+        '<path d="M20 7h-3a2 2 0 0 1-2-2V2"/>'
+        '<path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/>'
+        '<path d="M3 7.6v12.8A2 2 0 0 0 5 22h9"/>'
+    ),
+    'file-signature': (
+        '<path d="M20 19.5v.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8.5L20 5.5"/>'
+        '<path d="M14 2v4a2 2 0 0 0 2 2h4"/>'
+        '<path d="m10 14-1.5 1.5"/>'
+        '<path d="M18 12v-1a2 2 0 0 0-4 0v1"/>'
+        '<path d="M8 21h12"/>'
+    ),
     'unlock': (
         '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>'
         '<path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
