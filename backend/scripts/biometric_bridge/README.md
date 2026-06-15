@@ -51,17 +51,31 @@ If `python` points to `C:\ZKBioTime\Python311\`, it is **not** compatible with t
 
 ## Web UI
 
-For devices on `192.168.x.x`, use **Request sync** in HR — the branch agent executes within ~5 minutes.
+For devices on `192.168.x.x`, use **Request sync** (مزامنة) in HR — the branch agent executes within ~5 minutes.
 
 Cloud server cannot connect to private LAN IPs directly.
+
+## Sync on request only (default)
+
+Set `SYNC_ON_REQUEST_ONLY=true` in `config.env` (default). The scheduled task still polls the server every 5 minutes, but **only checks for pending sync requests** — it does not pull from ZKTeco devices until someone clicks **مزامنة** in HR.
+
+Manual override from the branch PC:
+
+```cmd
+run_agent.bat --once --device 1
+run_agent.bat --once --force-sync
+```
+
+Legacy automatic pull for all devices every cycle: `SYNC_ON_REQUEST_ONLY=false`.
 
 ## Incremental sync (recommended)
 
 Set `INCREMENTAL=true` in `config.env` (default). The agent:
 
 1. Asks the server for the last saved punch time (`/api/v1/attendance/agent/sync-state/`).
-2. Uploads **only punches newer** than that time (60s buffer).
-3. Skips the HTTP upload entirely when there are no new punches.
+2. **First sync** (no punches on server yet): uploads full history up to 365 days.
+3. **Later syncs**: uploads **only punches newer** than that time (60s buffer).
+4. Skips the HTTP upload entirely when there are no new punches.
 
 The ZKTeco device still returns all logs over TCP (device limitation), but the server no longer receives the full history every 5 minutes.
 

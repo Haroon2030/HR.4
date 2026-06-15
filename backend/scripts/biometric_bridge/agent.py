@@ -66,6 +66,7 @@ class AgentSettings:
     poll_interval_sec: int
     timeout_sec: int
     incremental: bool
+    sync_on_request_only: bool = True
 
 
 @dataclass
@@ -107,6 +108,8 @@ def load_settings(path: Path) -> AgentSettings:
         poll_interval_sec=int(data.get('POLL_INTERVAL_SEC', '300')),
         timeout_sec=int(data.get('TIMEOUT_SEC', '20')),
         incremental=data.get('INCREMENTAL', 'true').lower() in ('1', 'true', 'yes'),
+        sync_on_request_only=data.get('SYNC_ON_REQUEST_ONLY', 'true').lower()
+        in ('1', 'true', 'yes'),
     )
 
 
@@ -425,11 +428,21 @@ def run_device_cycle(
             LOG.info('طلب سحب بفترة: %s → %s', date_from or '—', date_to or '—')
 
     watermark: datetime | None = None
-    if use_incremental:
+    if not (date_from or date_to):
         try:
             watermark = fetch_sync_watermark(settings, device.device_id)
         except Exception as exc:
-            LOG.warning('تعذّر جلب آخر بصمة من السيرفر — سحب بنافذة 93 يوماً: %s', exc)
+            LOG.warning('تعذّر جلب آخر بصمة من السيرفر — سحب كامل مؤقت: %s', exc)
+
+        if watermark is None:
+            use_incremental = False
+            LOG.info(
+                'أول مزامنة للجهاز — سحب كامل (حتى %s يوماً)',
+                MAX_PAST_DAYS_FULL_SYNC,
+            )
+        else:
+            use_incremental = True
+            LOG.info('مزامنة تزايدية — بعد آخر بصمة %s', watermark.isoformat())
 
     upload_punches, skipped_bounds = filter_punches_for_upload(
         punches,
@@ -565,8 +578,12 @@ def ack_pull_request(settings: AgentSettings, device_id: int) -> None:
         LOG.warning('تعذّر إغلاق طلب السحب لجهاز %s: HTTP %s', device_id, resp.status_code)
 
 
-def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool:
-    devices_to_run = list(devices)
+def run_all_cycles(
+    settings: AgentSettings,
+    devices: list[DeviceTarget],
+    *,
+    force_sync: bool = False,
+) -> bool:
     pull_requests: list[PullRequest] = []
     try:
         pull_requests = fetch_pull_requests(settings)
@@ -576,8 +593,17 @@ def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool
     pull_by_device = {r.device_id: r for r in pull_requests}
     pull_ids = list(pull_by_device.keys())
 
-    if pull_ids:
-        LOG.info('طلب سحب من الموقع — أجهزة: %s', pull_ids)
+    if force_sync:
+        devices_to_run = list(devices)
+        if pull_ids:
+            LOG.info('سحب يدوي — أجهزة: %s', [d.device_id for d in devices_to_run])
+    elif settings.sync_on_request_only:
+        if not pull_ids:
+            LOG.info(
+                'لا طلب مزامنة من الموقع — تخطي السحب '
+                '(اضغط «مزامنة» من أجهزة البصمة في HR)'
+            )
+            return True
         targeted: list[DeviceTarget] = []
         for did in pull_ids:
             try:
@@ -587,8 +613,25 @@ def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool
                     'طلب سحب لجهاز id=%s غير مضبوط في هذا الوكيل (devices.list / config.env)',
                     did,
                 )
-        if targeted:
-            devices_to_run = targeted
+        if not targeted:
+            LOG.warning('طلبات مزامنة موجودة لكن لا جهاز مطابق في هذا الوكيل')
+            return True
+        LOG.info('طلب مزامنة من الموقع — أجهزة: %s', [d.device_id for d in targeted])
+        devices_to_run = targeted
+    elif pull_ids:
+        LOG.info('طلب سحب من الموقع — أجهزة: %s', pull_ids)
+        targeted = []
+        for did in pull_ids:
+            try:
+                targeted.extend(filter_devices(devices, device_id=did))
+            except ValueError:
+                LOG.warning(
+                    'طلب سحب لجهاز id=%s غير مضبوط في هذا الوكيل (devices.list / config.env)',
+                    did,
+                )
+        devices_to_run = targeted if targeted else list(devices)
+    else:
+        devices_to_run = list(devices)
 
     ok = 0
     for device in devices_to_run:
@@ -739,6 +782,11 @@ def main() -> int:
         metavar='ID',
         help='مزامنة جهاز واحد فقط (مثال: 1 لسكاي مول، 2 للوحة)',
     )
+    parser.add_argument(
+        '--force-sync',
+        action='store_true',
+        help='سحب فوري لكل الأجهزة المضبوطة (يتجاوز SYNC_ON_REQUEST_ONLY)',
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -762,14 +810,16 @@ def main() -> int:
     for d in devices:
         LOG.info('  • id=%s %s:%s comm_key=%s', d.device_id, d.device_ip, d.device_port, d.comm_key)
 
+    force_sync = args.force_sync or args.device is not None
+
     if args.probe:
         return probe_devices(settings, devices)
 
     if args.once:
-        return 0 if run_all_cycles(settings, devices) else 1
+        return 0 if run_all_cycles(settings, devices, force_sync=force_sync) else 1
 
     while True:
-        run_all_cycles(settings, devices)
+        run_all_cycles(settings, devices, force_sync=force_sync)
         LOG.info('انتظار %s ثانية ...', settings.poll_interval_sec)
         time.sleep(settings.poll_interval_sec)
 

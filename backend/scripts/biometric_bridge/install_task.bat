@@ -45,6 +45,7 @@ if %errorLevel% neq 0 (
 
 echo.
 echo SUCCESS - task %TASK% every 5 minutes.
+echo Sync runs only when you click "مزامنة" in HR (SYNC_ON_REQUEST_ONLY).
 schtasks /Query /TN %TASK% /FO LIST | findstr /I "TaskName Status Next"
 echo Log file: %~dp0agent_scheduled.log
 echo.
