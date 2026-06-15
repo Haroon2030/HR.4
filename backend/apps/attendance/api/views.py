@@ -19,6 +19,7 @@ from apps.attendance.services.agent_pull_queue import (
     acknowledge_pull_request_after_ingest,
     list_pending_pull_requests,
 )
+from apps.attendance.middleware import ingest_body_unreadable
 from apps.attendance.services.ingest_signature import (
     extract_provided_signature,
     get_ingest_body,
@@ -162,6 +163,21 @@ class AgentIngestView(APIView):
 
     def post(self, request):
         _deny_global_key_ingest(request)
+        if ingest_body_unreadable(request):
+            msg = 'انقطع الاتصال قبل اكتمال استلام البيانات — أعد المحاولة.'
+            logger.warning('Agent ingest rejected: incomplete request body (client disconnected)')
+            log_ingest_attempt(
+                request=request,
+                device=getattr(request.user, 'device', None),
+                status=AttendanceIngestLog.Status.REJECTED_PAYLOAD,
+                signature_valid=None,
+                message=msg,
+            )
+            return Response(
+                {'success': False, 'message': msg, 'code': 'incomplete_body'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         principal = request.user
         raw_key = (
             principal.api_key_presented

@@ -322,3 +322,32 @@ class AttendanceAgentAPITests(TestCase):
             ).count(),
             1,
         )
+
+
+class AgentIngestMiddlewareTests(TestCase):
+    def test_middleware_flags_unreadable_body(self):
+        from unittest.mock import PropertyMock, patch
+
+        from django.http import HttpRequest, HttpResponse
+        from django.http.request import UnreadablePostError
+
+        from apps.attendance.middleware import AgentIngestBodyMiddleware, ingest_body_unreadable
+
+        request = HttpRequest()
+        request.method = 'POST'
+        request.path = '/api/v1/attendance/agent/ingest/'
+
+        def get_response(req):
+            self.assertTrue(ingest_body_unreadable(req))
+            self.assertEqual(req._ingest_raw_body, b'')
+            return HttpResponse('ok')
+
+        middleware = AgentIngestBodyMiddleware(get_response)
+        with patch.object(
+            type(request),
+            'body',
+            new_callable=PropertyMock,
+            side_effect=UnreadablePostError('Connection reset by peer'),
+        ):
+            response = middleware(request)
+        self.assertEqual(response.status_code, 200)
