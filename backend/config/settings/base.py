@@ -316,6 +316,7 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=False)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER or 'noreply@localhost')
+HR_NOTIFICATION_EMAIL = env('HR_NOTIFICATION_EMAIL', default='')
 EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', default=30)
 
 # اختيار الـ backend: إذا EMAIL_HOST مُعدّ نستخدم SMTP، وإلا نستخدم console (للتطوير المحلي)

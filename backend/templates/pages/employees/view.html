@@ -179,8 +179,8 @@
             <form method="post" action="{% url 'web:add_employee_statement' employee.id %}" enctype="multipart/form-data" class="px-4 py-3 grid grid-cols-1 md:grid-cols-6 gap-2.5"
                   x-data="{
                     sendEmail: false,
-                    empEmail: '{{ employee.email|default:'' }}',
-                    hrEmail: '',
+                    empEmail: '{{ employee.email|default:''|escapejs }}',
+                    hrEmail: '{{ hr_notification_email|default:request.user.email|default:''|escapejs }}',
                     stype: 'statement',
                     nextNum: '{{ next_statement_serial|default:'STM-2026-0001' }}'.split('-').pop(),
                     year: '{% now "Y" %}',

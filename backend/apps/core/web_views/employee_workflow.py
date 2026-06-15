@@ -399,7 +399,8 @@ def set_work_schedule(request, employee_id):
                          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
             week_days_ar = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
             boxes_ctx = []
-            for b in cleaned:
+            email_boxes = payload.get('boxes') if isinstance(payload.get('boxes'), list) else cleaned
+            for b in email_boxes:
                 year, month = b['year'], b['month']
                 total_days = _cal.monthrange(year, month)[1]
                 codes = b.get('day_codes') or {}
