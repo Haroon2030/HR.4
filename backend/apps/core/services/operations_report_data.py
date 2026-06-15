@@ -8,7 +8,9 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.core.models import Branch, PendingAction
+from apps.core.services.operations_report_profiles import RoleReportProfile, get_role_report_profile
 from apps.employees.models import Employee, EmployeeLeave, EmploymentRequest
+from apps.setup.models import Administration
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,8 @@ class OperationsReportSection:
 class OperationsReportBundle:
     report_date: date
     sections: list[OperationsReportSection]
+    report_title: str = 'تقرير العمليات اليومي'
+    role_key: str = ''
 
 
 SECTION_SPECS: tuple[tuple[str, str, tuple[int, int, int], tuple[str, ...]], ...] = (
@@ -195,12 +199,69 @@ def _new_employee_row(employee: Employee) -> OperationsReportRow:
     )
 
 
-def _new_employee_rows(report_date: date) -> list[OperationsReportRow]:
+def _administration_role(administration) -> str:
+    if not administration:
+        return ''
+    return (getattr(administration, 'report_recipient_role', None) or '').strip()
+
+
+def _employee_matches_scope(employee, profile: RoleReportProfile) -> bool:
+    if not profile.scoped:
+        return True
+    if not employee or not employee.administration_id:
+        return False
+    admin = getattr(employee, 'administration', None)
+    if admin is not None:
+        return _administration_role(admin) == profile.role_key
+    return Administration.objects.filter(
+        pk=employee.administration_id,
+        report_recipient_role=profile.role_key,
+    ).exists()
+
+
+def _administration_id_matches_scope(administration_id, profile: RoleReportProfile) -> bool:
+    if not profile.scoped:
+        return True
+    if not administration_id:
+        return False
+    return Administration.objects.filter(
+        pk=administration_id,
+        report_recipient_role=profile.role_key,
+    ).exists()
+
+
+def _action_matches_scope(action: PendingAction, profile: RoleReportProfile) -> bool:
+    if not profile.scoped:
+        return True
+    if action.employee_id and _employee_matches_scope(action.employee, profile):
+        return True
+    if action.administration_id:
+        admin = getattr(action, 'administration', None)
+        if admin is not None:
+            return _administration_role(admin) == profile.role_key
+        return _administration_id_matches_scope(action.administration_id, profile)
+    return False
+
+
+def _employment_matches_scope(req: EmploymentRequest, profile: RoleReportProfile) -> bool:
+    if not profile.scoped:
+        return True
+    if not req.administration_id:
+        return False
+    admin = getattr(req, 'administration', None)
+    if admin is not None:
+        return _administration_role(admin) == profile.role_key
+    return _administration_id_matches_scope(req.administration_id, profile)
+
+
+def _new_employee_rows(report_date: date, profile: RoleReportProfile) -> list[OperationsReportRow]:
     employees = (
         Employee.objects.filter(is_deleted=False, created_at__date=report_date)
-        .select_related('branch', 'profession')
+        .select_related('branch', 'profession', 'administration')
         .order_by('-created_at')
     )
+    if profile.scoped:
+        employees = employees.filter(administration__report_recipient_role=profile.role_key)
     return [_new_employee_row(emp) for emp in employees]
 
 
@@ -208,7 +269,7 @@ def _pending_actions_qs():
     return (
         PendingAction.objects.filter(is_deleted=False)
         .exclude(status=PendingAction.Status.APPROVED)
-        .select_related('employee', 'branch')
+        .select_related('employee__administration', 'administration', 'branch')
         .order_by('-requested_at')
     )
 
@@ -220,18 +281,35 @@ def _completed_actions_qs(report_date: date):
             status=PendingAction.Status.APPROVED,
             executed_at__date=report_date,
         )
-        .select_related('employee', 'branch')
+        .select_related('employee__administration', 'administration', 'branch')
         .order_by('-executed_at')
     )
 
 
-def _pending_employment_qs():
-    return (
+def _pending_employment_qs(profile: RoleReportProfile):
+    qs = (
         EmploymentRequest.objects.filter(is_deleted=False)
         .exclude(status__in=(EmploymentRequest.Status.APPROVED, EmploymentRequest.Status.REJECTED))
-        .select_related('branch')
+        .select_related('branch', 'administration')
         .order_by('-created_at')
     )
+    if profile.scoped:
+        qs = qs.filter(administration__report_recipient_role=profile.role_key)
+    return qs
+
+
+def bundle_has_content(
+    bundle: OperationsReportBundle,
+    *,
+    include_pending: bool = True,
+    include_completed: bool = True,
+) -> bool:
+    for section in bundle.sections:
+        if include_completed and section.completed_rows:
+            return True
+        if include_pending and section.pending_rows:
+            return True
+    return False
 
 
 def collect_operations_report(
@@ -239,21 +317,26 @@ def collect_operations_report(
     report_date: date | None = None,
     include_pending: bool = True,
     include_completed: bool = True,
+    role_key: str | None = None,
 ) -> OperationsReportBundle:
     report_date = report_date or timezone.localdate()
+    profile = get_role_report_profile(role_key)
     branch_cache: dict[int, str] = {}
 
     sections: list[OperationsReportSection] = []
     for key, title, accent, action_types in SECTION_SPECS:
+        if key not in profile.section_keys:
+            continue
+
         completed_rows: list[OperationsReportRow] = []
         pending_rows: list[OperationsReportRow] = []
 
         if key == 'additions':
             if include_completed:
-                completed_rows = _new_employee_rows(report_date)
+                completed_rows = _new_employee_rows(report_date, profile)
             if include_pending:
                 pending_rows = [
-                    _employment_row(r, completed=False) for r in _pending_employment_qs()
+                    _employment_row(r, completed=False) for r in _pending_employment_qs(profile)
                 ]
         else:
             type_set = set(action_types)
@@ -261,13 +344,13 @@ def collect_operations_report(
                 completed_rows = [
                     _action_row(a, completed=True, branch_cache=branch_cache)
                     for a in _completed_actions_qs(report_date)
-                    if a.action_type in type_set
+                    if a.action_type in type_set and _action_matches_scope(a, profile)
                 ]
             if include_pending:
                 pending_rows = [
                     _action_row(a, completed=False, branch_cache=branch_cache)
                     for a in _pending_actions_qs()
-                    if a.action_type in type_set
+                    if a.action_type in type_set and _action_matches_scope(a, profile)
                 ]
 
         completed_rows.sort(key=lambda r: r.sort_key, reverse=True)
@@ -285,6 +368,8 @@ def collect_operations_report(
     return OperationsReportBundle(
         report_date=report_date,
         sections=sections,
+        report_title=profile.title,
+        role_key=profile.role_key,
     )
 
 

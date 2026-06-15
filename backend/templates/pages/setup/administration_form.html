@@ -36,6 +36,24 @@
                 </select>
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">تقرير العمليات اليومي</label>
+                <select name="report_recipient_role"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    {% for value, label in form.fields.report_recipient_role.choices %}
+                    <option value="{{ value }}"
+                        {% if administration %}
+                            {% if administration.report_recipient_role == value %}selected{% endif %}
+                        {% elif form.report_recipient_role.value == value %}
+                            selected
+                        {% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-slate-500 mt-1">يربط موظفي هذه الإدارة بتقرير المدير المحدد في إعدادات التقرير.</p>
+            </div>
+
             {% include "components/setup_form_actions.html" %}
         </form>
     </div>

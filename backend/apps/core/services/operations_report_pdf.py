@@ -66,7 +66,7 @@ class _ReportPDF(_ArabicPDF):
         self.set_xy(self.MARGIN + 4, self.MARGIN + 4)
         self.set_font('NotoArabic', '', 18)
         self.set_text_color(255, 255, 255)
-        self.cell(0, 8, _shape_ar('تقرير العمليات اليومي'), ln=True)
+        self.cell(0, 8, _shape_ar(bundle.report_title), ln=True)
         self.set_x(self.MARGIN + 4)
         self.set_font('NotoArabic', '', 10)
         self.set_text_color(203, 213, 225)

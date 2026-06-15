@@ -14,6 +14,10 @@ from apps.core.services.email_delivery import (
 from apps.core.services.operations_report_mail import build_and_send_operations_report
 from apps.setup.forms import OperationsReportSettingsForm
 from apps.setup.models import OperationsReportSettings
+from apps.setup.operations_report_recipients import (
+    OPERATIONS_REPORT_RECIPIENT_ROLES,
+    ROLE_FIELD_PREFIX,
+)
 
 
 @login_required
@@ -26,17 +30,26 @@ def operations_report_settings(request):
         form = OperationsReportSettingsForm(request.POST, instance=settings_obj)
 
         if action == 'test_send':
-            test_email = (request.POST.get('test_recipient') or settings_obj.recipient_email or '').strip()
-            if not test_email:
-                messages.error(request, 'حدّد بريداً للاختبار أو احفظ بريداً مستلماً أولاً.')
+            test_email = (request.POST.get('test_recipient') or '').strip()
+            recipients = [test_email] if test_email else settings_obj.active_recipient_emails()
+            if not recipients:
+                messages.error(request, 'حدّد بريداً للاختبار أو احفظ مستلماً واحداً على الأقل في الجدول.')
                 return redirect(reverse('web:operations_report_settings'))
 
             try:
-                build_and_send_operations_report(
-                    recipient=test_email,
-                    settings_obj=settings_obj,
-                    force=True,
-                )
+                if test_email:
+                    build_and_send_operations_report(
+                        recipient=test_email,
+                        settings_obj=settings_obj,
+                        force=True,
+                    )
+                    sent_label = test_email
+                else:
+                    build_and_send_operations_report(
+                        settings_obj=settings_obj,
+                        force=True,
+                    )
+                    sent_label = '، '.join(recipients)
             except (SmtpNotConfiguredError, SmtpConnectionError) as exc:
                 messages.error(request, str(exc))
             except Exception as exc:
@@ -44,7 +57,7 @@ def operations_report_settings(request):
             else:
                 messages.success(
                     request,
-                    f'تم إرسال تقرير تجريبي فعلياً إلى {test_email} — تحقق من الوارد والـ Spam.',
+                    f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label} — تحقق من الوارد والـ Spam.',
                 )
             return redirect(reverse('web:operations_report_settings'))
 
@@ -58,9 +71,18 @@ def operations_report_settings(request):
         form = OperationsReportSettingsForm(instance=settings_obj)
 
     local_now = timezone.localtime()
+    recipient_rows = [
+        {
+            'key': key,
+            'label': label,
+            'field': form[f'{ROLE_FIELD_PREFIX}{key}'],
+        }
+        for key, label in OPERATIONS_REPORT_RECIPIENT_ROLES
+    ]
     return render(request, 'pages/setup/operations_report_settings.html', {
         'form': form,
         'settings_obj': settings_obj,
         'local_now': local_now,
         'email_delivery': email_delivery_status(),
+        'recipient_rows': recipient_rows,
     })

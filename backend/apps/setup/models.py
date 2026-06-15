@@ -13,6 +13,7 @@ from django.conf import settings
 from simple_history.models import HistoricalRecords
 
 from apps.core.models import BaseModel
+from apps.setup.operations_report_recipients import OPERATIONS_REPORT_RECIPIENT_ROLES
 
 
 class SystemSettings(models.Model):
@@ -33,7 +34,18 @@ class SystemSettings(models.Model):
 class OperationsReportSettings(models.Model):
     """إعدادات تقرير العمليات اليومي (سجل واحد — pk=1)."""
 
-    recipient_email = models.EmailField('البريد المستلم', blank=True, default='')
+    recipient_email = models.EmailField(
+        'البريد المستلم (قديم)',
+        blank=True,
+        default='',
+        help_text='للتوافق — يُزامَن من مدير النظام عند الحفظ.',
+    )
+    recipient_emails = models.JSONField(
+        'بريد المستلمين حسب الدور',
+        default=dict,
+        blank=True,
+        help_text='مفاتيح الأدوار: system_manager, hr_manager, ...',
+    )
     is_enabled = models.BooleanField('تفعيل الإرسال التلقائي', default=False)
     send_time = models.TimeField(
         'وقت الإرسال',
@@ -57,6 +69,29 @@ class OperationsReportSettings(models.Model):
     def get_solo(cls) -> 'OperationsReportSettings':
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    def recipient_emails_map(self) -> dict[str, str]:
+        stored = dict(self.recipient_emails or {})
+        if not any((v or '').strip() for v in stored.values()) and self.recipient_email:
+            stored.setdefault('system_manager', self.recipient_email)
+        return {
+            key: (stored.get(key) or '').strip()
+            for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
+        }
+
+    def active_recipient_emails(self) -> list[str]:
+        seen: set[str] = set()
+        emails: list[str] = []
+        for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES:
+            addr = self.recipient_emails_map().get(key, '')
+            if not addr:
+                continue
+            norm = addr.lower()
+            if norm in seen:
+                continue
+            seen.add(norm)
+            emails.append(addr)
+        return emails
 
 
 class Nationality(BaseModel):
@@ -225,6 +260,14 @@ class Bank(BaseModel):
 
 class Administration(BaseModel):
     """الإدارات — جدول تهيئة مركزي (رقم + اسم)."""
+
+    class ReportRecipientRole(models.TextChoices):
+        NONE = '', '— لا يربط بتقرير مدير'
+        OPERATIONS = 'operations_manager', 'مدير العمليات'
+        FINANCE = 'finance_manager', 'مدير الحسابات'
+        DATA = 'data_manager', 'مدير البيانات'
+        PROCUREMENT = 'procurement_manager', 'مدير المشتريات'
+
     code = models.CharField("رقم الإدارة", max_length=20, unique=True)
     name = models.CharField("اسم الإدارة", max_length=150)
     manager = models.ForeignKey(
@@ -234,6 +277,14 @@ class Administration(BaseModel):
         related_name="managed_administrations",
         null=True,
         blank=True,
+    )
+    report_recipient_role = models.CharField(
+        'تقرير العمليات اليومي',
+        max_length=32,
+        choices=ReportRecipientRole.choices,
+        blank=True,
+        default='',
+        help_text='يربط موظفي هذه الإدارة بتقرير المدير المحدد في إعدادات التقرير.',
     )
     is_active = models.BooleanField("نشط", default=True)
 
