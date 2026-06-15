@@ -103,30 +103,10 @@ except Exception:
 fi
 
 # ─── Ensure superuser exists (created ONCE on first deploy, never overwritten) ─
-# If 'admin' already exists, we leave it untouched. Password changes, role edits,
-# and email updates done via the UI are PRESERVED across redeploys.
-# To force a reset: delete the row in auth_user via Adminer, then redeploy.
-echo "==> Checking superuser '${DJANGO_SUPERUSER_USERNAME:-admin}'..."
-python manage.py shell <<PYEOF
-import os
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin')
-password = (os.environ.get('DJANGO_SUPERUSER_PASSWORD') or '').strip()
-email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
-
-if User.objects.filter(username=username).exists():
-    print(f"Superuser '{username}' already exists \u2014 leaving it untouched.")
-elif not password:
-    print(
-        "!! DJANGO_SUPERUSER_PASSWORD is not set \u2014 "
-        "skipping superuser creation. Set it in .env before first deploy."
-    )
-else:
-    User.objects.create_superuser(username=username, email=email, password=password)
-    print(f"Superuser '{username}' created.")
-PYEOF
+# If username already exists in PostgreSQL, password and profile are left untouched.
+# Set in Dokploy Environment — example: DJANGO_SUPERUSER_USERNAME=1
+echo "==> Bootstrap superuser (once) '${DJANGO_SUPERUSER_USERNAME:-admin}'..."
+python manage.py ensure_bootstrap_superuser || echo "!! ensure_bootstrap_superuser failed (non-fatal)"
 
 echo "==> Fixing swapped code/name records (idempotent)..."
 python manage.py fix_swapped_code_name || echo "!! fix_swapped_code_name failed (non-fatal)"

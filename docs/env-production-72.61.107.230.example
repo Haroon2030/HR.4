@@ -36,8 +36,10 @@ CORS_ALLOW_ALL_ORIGINS=False
 CORS_ALLOWED_ORIGINS=http://72.61.107.230:8082,http://72.61.107.230
 
 # ─── مدير النظام ─────────────────────────────────────────────────────────────
-DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_PASSWORD=change-me-strong-password
+# First-deploy bootstrap admin (created ONCE — redeploys never reset password)
+# Username/password live in Dokploy only; change password from HR UI after first login.
+DJANGO_SUPERUSER_USERNAME=1
+DJANGO_SUPERUSER_PASSWORD=change-me-on-first-deploy-only
 DJANGO_SUPERUSER_EMAIL=admin@alrsheed.net
 
 # ─── Cloudflare R2 ───────────────────────────────────────────────────────────
