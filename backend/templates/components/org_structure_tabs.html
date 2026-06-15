@@ -1,56 +1,56 @@
-{# شريط تبويبات الهيكل التنظيمي — يتطلب Alpine: activeTab #}
+{# شريط تبويبات الهيكل التنظيمي — يتطلب Alpine: activeTab + switchOrgTab #}
 <nav class="hr-tabs__bar" role="tablist" aria-label="أقسام الهيكل التنظيمي">
-    <button type="button" role="tab" @click="activeTab = 'branches'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('branches')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'branches' }"
         :aria-selected="activeTab === 'branches'">
         <i data-lucide="building-2" class="w-3.5 h-3.5"></i><span>الفروع</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'cost_centers'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('cost_centers')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'cost_centers' }"
         :aria-selected="activeTab === 'cost_centers'">
         <i data-lucide="target" class="w-3.5 h-3.5"></i><span>مراكز التكلفة</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'departments'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('departments')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'departments' }"
         :aria-selected="activeTab === 'departments'">
         <i data-lucide="folder" class="w-3.5 h-3.5"></i><span>الأقسام</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'administrations'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('administrations')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'administrations' }"
         :aria-selected="activeTab === 'administrations'">
         <i data-lucide="building" class="w-3.5 h-3.5"></i><span>الإدارات</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'nationalities'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('nationalities')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'nationalities' }"
         :aria-selected="activeTab === 'nationalities'">
         <i data-lucide="flag" class="w-3.5 h-3.5"></i><span>الجنسيات</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'professions'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('professions')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'professions' }"
         :aria-selected="activeTab === 'professions'">
         <i data-lucide="briefcase" class="w-3.5 h-3.5"></i><span>المهن</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'sponsorships'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('sponsorships')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'sponsorships' }"
         :aria-selected="activeTab === 'sponsorships'">
         <i data-lucide="file-text" class="w-3.5 h-3.5"></i><span>الكفالات</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'insurances'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('insurances')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'insurances' }"
         :aria-selected="activeTab === 'insurances'">
         <i data-lucide="shield" class="w-3.5 h-3.5"></i><span>التأمينات</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'insurance_classes'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('insurance_classes')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'insurance_classes' }"
         :aria-selected="activeTab === 'insurance_classes'">
         <i data-lucide="layers" class="w-3.5 h-3.5"></i><span>فئات التأمين</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'buildings'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('buildings')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'buildings' }"
         :aria-selected="activeTab === 'buildings'">
         <i data-lucide="home" class="w-3.5 h-3.5"></i><span>السكن</span>
     </button>
-    <button type="button" role="tab" @click="activeTab = 'banks'; lucide.createIcons()"
+    <button type="button" role="tab" @click="switchOrgTab('banks')"
         class="hr-tab hr-tab-btn" :class="{ 'hr-tab--active': activeTab === 'banks' }"
         :aria-selected="activeTab === 'banks'">
         <i data-lucide="landmark" class="w-3.5 h-3.5"></i><span>البنوك</span>

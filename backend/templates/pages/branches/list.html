@@ -32,6 +32,16 @@
             if (store) {
                 store.fetchHtml(url, 'org-tab-content', label);
             }
+        },
+        switchOrgTab(tab) {
+            if (!this.orgTabs.includes(tab)) return;
+            this.activeTab = tab;
+            const u = new URL(window.location.href);
+            u.searchParams.set('tab', tab);
+            u.hash = tab;
+            history.replaceState(null, '', u.pathname + u.search + u.hash);
+            this.loadOrgTab(tab);
+            if (window.lucide) lucide.createIcons();
         }
      }"
      x-init="
@@ -43,16 +53,6 @@
             activeTab = q;
         }
         loadOrgTab(activeTab);
-        $watch('activeTab', (val, prev) => {
-            if (!orgTabs.includes(val)) return;
-            const u = new URL(window.location.href);
-            u.searchParams.set('tab', val);
-            u.hash = val;
-            history.replaceState(null, '', u.pathname + u.search + u.hash);
-            if (prev !== undefined && prev !== val) {
-                loadOrgTab(val);
-            }
-        });
      ">
     <div class="flex items-center justify-between">
         <div>
