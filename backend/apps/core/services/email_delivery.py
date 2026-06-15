@@ -4,6 +4,14 @@ from __future__ import annotations
 from django.conf import settings
 
 
+class SmtpNotConfiguredError(Exception):
+    """SMTP غير مضبوط — لا يُرسل بريد حقيقي."""
+
+
+class SmtpConnectionError(Exception):
+    """فشل الاتصال أو المصادقة مع SMTP."""
+
+
 def email_delivery_mode() -> str:
     backend = (getattr(settings, 'EMAIL_BACKEND', '') or '').lower()
     if 'console' in backend:
@@ -36,3 +44,29 @@ def email_delivery_status() -> dict:
         'host': (getattr(settings, 'EMAIL_HOST', '') or '').strip(),
         'from_email': (getattr(settings, 'DEFAULT_FROM_EMAIL', '') or '').strip(),
     }
+
+
+def smtp_not_configured_message() -> str:
+    return (
+        'البريد غير مفعّل للإرسال الفعلي. '
+        'اضبط EMAIL_HOST و EMAIL_HOST_USER و EMAIL_HOST_PASSWORD و DEFAULT_FROM_EMAIL '
+        'في backend/.env (محلي) أو Environment في Dokploy (إنتاج) ثم أعد تشغيل السيرفر.'
+    )
+
+
+def ensure_smtp_ready(*, verify_connection: bool = False) -> None:
+    """يرفع خطأ واضح إذا لم يكن SMTP جاهزاً."""
+    if not is_real_smtp_delivery():
+        raise SmtpNotConfiguredError(smtp_not_configured_message())
+    if not verify_connection:
+        return
+    from django.core.mail import get_connection
+
+    try:
+        connection = get_connection()
+        connection.open()
+        connection.close()
+    except Exception as exc:
+        raise SmtpConnectionError(
+            f'تعذّر الاتصال بـ SMTP ({settings.EMAIL_HOST}): {exc}'
+        ) from exc

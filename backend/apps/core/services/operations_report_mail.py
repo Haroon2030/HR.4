@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils import timezone
 
+from apps.core.services.email_delivery import ensure_smtp_ready
 from apps.core.services.operations_report_data import collect_operations_report
 from apps.core.services.operations_report_pdf import build_operations_report_pdf
 from apps.setup.models import OperationsReportSettings
@@ -35,6 +36,8 @@ def build_and_send_operations_report(
     if settings_obj.is_enabled is False and not force and recipient is None:
         logger.info('تخطي تقرير العمليات: الإرسال التلقائي غير مفعّل.')
         return False
+
+    ensure_smtp_ready(verify_connection=True)
 
     bundle = collect_operations_report(
         report_date=report_date,
