@@ -113,6 +113,26 @@ def _user_accessible_branch_ids(user):
     return get_accessible_branch_ids(user)
 
 
+def get_active_employee_or_redirect(request, employee_id):
+    """
+    يجلب موظفاً نشطاً (غير محذوف) أو يُعيد توجيهاً لقائمة الموظفين مع رسالة.
+    يُرجع (employee, None) أو (None, HttpResponseRedirect).
+    """
+    from apps.employees.models import Employee
+
+    try:
+        return Employee.objects.get(pk=employee_id), None
+    except Employee.DoesNotExist:
+        pass
+
+    row = Employee.all_objects.filter(pk=employee_id).only('id', 'name', 'is_deleted').first()
+    if row and row.is_deleted:
+        messages.warning(request, f'ملف الموظف «{row.name}» محذوف ولا يمكن عرضه.')
+    else:
+        messages.error(request, 'الموظف غير موجود.')
+    return None, redirect('web:list_employees')
+
+
 def employee_branch_access_required(view_func):
     """
     Decorator: يمنع الوصول لملف الموظف ما لم يكن المستخدم:
@@ -138,7 +158,9 @@ def employee_branch_access_required(view_func):
         if employee_id is None:
             from django.http import Http404
             raise Http404('employee_id غير موجود في الرابط')
-        employee = get_object_or_404(Employee, id=employee_id)
+        employee, missing_resp = get_active_employee_or_redirect(request, employee_id)
+        if missing_resp is not None:
+            return missing_resp
         if (
             employee.administration_id
             and request.user.managed_administrations.filter(id=employee.administration_id).exists()
