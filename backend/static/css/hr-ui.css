@@ -7037,6 +7037,45 @@ body.hr-app .hr-employee-doc-card--violet .hr-employee-doc-card__icon { backgrou
 body.hr-app .hr-employee-doc-card--slate .hr-employee-doc-card__blob { background: #e2e8f0; }
 body.hr-app .hr-employee-doc-card--slate .hr-employee-doc-card__icon { background: #f8fafc; color: #475569; }
 
+/* ── Employee profile — single glass table ── */
+body.hr-app .hr-employee-profile-table .hr-field-lbl {
+    color: #64748b !important;
+    font-weight: 700 !important;
+    font-size: 0.68rem !important;
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-val {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-val.is-empty {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-val.is-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-val--badge {
+    display: flex;
+    align-items: center;
+    min-height: 1.35rem;
+    font-weight: 500 !important;
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-item {
+    min-height: 3.65rem;
+    transition: background 0.12s ease;
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-item:hover {
+    background: rgba(255, 255, 255, 0.88);
+}
+
 /* ── Employees list table ── */
 body.hr-app .hr-employees-table-wrap {
     border: 1px solid rgba(148, 163, 184, 0.35);

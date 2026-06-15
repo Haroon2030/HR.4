@@ -1,0 +1,10 @@
+{% comment %}
+  خلية داخل جدول ملف الموظف الموحّد.
+  {% include "components/profile_info_field.html" with label="الاسم" value=employee.name %}
+  full=True | mono=True | dir="ltr"
+{% endcomment %}
+<div class="hr-field-item{% if full %} hr-field-item--full{% endif %}">
+    <span class="hr-field-lbl">{{ label }}</span>
+    <span class="hr-field-val{% if not value %} is-empty{% endif %}{% if mono %} is-mono{% endif %}"
+          {% if dir %}dir="{{ dir }}"{% endif %}>{{ value|default:"—" }}</span>
+</div>

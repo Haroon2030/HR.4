@@ -1,0 +1,36 @@
+{% load custom_tags %}
+<div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
+    <div class="hr-field-grid hr-glass-field-table hr-employee-profile-table" role="table" aria-label="بيانات الموظف">
+        {% include "components/profile_info_field.html" with label="الاسم" value=employee.name %}
+        {% include "components/profile_info_field.html" with label="رقم الموظف" value=employee.employee_number mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="رقم الهوية" value=employee.id_number mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="الجنس" value=employee.get_gender_display %}
+        {% include "components/profile_info_field.html" with label="الجوال" value=employee.phone mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="البريد الإلكتروني" value=employee.email dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="الجنسية" value=employee.nationality.name %}
+        {% include "components/profile_info_field.html" with label="المهنة" value=employee.profession.name %}
+        {% include "components/profile_info_field.html" with label="الشركة" value=employee.sponsorship.company_name %}
+        {% include "components/profile_info_field.html" with label="الفرع" value=employee.branch.name %}
+        {% include "components/profile_info_field.html" with label="القسم" value=employee.department.name %}
+        <div class="hr-field-item">
+            <span class="hr-field-lbl">الإدارة</span>
+            <span class="hr-field-val{% if not employee.administration %} is-empty{% endif %}">
+                {% if employee.administration %}{{ employee.administration.code }} — {{ employee.administration.name }}{% else %}—{% endif %}
+            </span>
+        </div>
+        {% include "components/profile_info_field.html" with label="مركز التكلفة" value=employee.cost_center.name %}
+        {% include "components/profile_info_field.html" with label="تاريخ المباشرة" value=employee.hire_date mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="تاريخ التوقف" value=employee.end_date mono=True dir="ltr" %}
+        <div class="hr-field-item">
+            <span class="hr-field-lbl">الحالة</span>
+            <span class="hr-field-val hr-field-val--badge">{% employee_status_badge employee size='md' %}</span>
+        </div>
+        {% include "components/profile_info_field.html" with label="التأمين" value=employee.insurance.insurance_type %}
+        {% include "components/profile_info_field.html" with label="تاريخ انتهاء التأمين الطبي" value=employee.medical_insurance_expiry_date mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="فئة التأمين" value=employee.insurance_class.class_type %}
+        {% include "components/profile_info_field.html" with label="السكن" value=employee.housing.name %}
+        {% include "components/profile_info_field.html" with label="الكرت الصحي" value=employee.get_health_card_status_display %}
+        {% include "components/profile_info_field.html" with label="تاريخ انتهاء الكرت الصحي" value=employee.health_card_expiry mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="سبب الانتهاء" value=employee.end_reason full=True %}
+    </div>
+</div>

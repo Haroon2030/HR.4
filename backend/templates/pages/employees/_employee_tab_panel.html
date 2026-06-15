@@ -5,33 +5,8 @@
     {% include "components/page_tabs_body_start.html" with body_class="p-6" %}
 
             <!-- Main -->
-            {% if tab_visible.main and default_employee_tab == 'main' %}            <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
-            <div class="hr-field-grid hr-glass-field-table">
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الاسم</div><div class="text-sm text-slate-800">{{ employee.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الموظف</div><div class="text-sm text-slate-800">{{ employee.employee_number|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">رقم الهوية</div><div class="text-sm text-slate-800">{{ employee.id_number|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الجنس</div><div class="text-sm text-slate-800">{{ employee.get_gender_display|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الجوال</div><div class="text-sm text-slate-800">{{ employee.phone|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني</div><div class="text-sm text-slate-800">{{ employee.email|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الجنسية</div><div class="text-sm text-slate-800">{{ employee.nationality.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">المهنة</div><div class="text-sm text-slate-800">{{ employee.profession.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الشركة</div><div class="text-sm text-slate-800">{{ employee.sponsorship.company_name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الفرع</div><div class="text-sm text-slate-800">{{ employee.branch.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">القسم</div><div class="text-sm text-slate-800">{{ employee.department.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الإدارة</div><div class="text-sm text-slate-800">{% if employee.administration %}{{ employee.administration.code }} — {{ employee.administration.name }}{% else %}—{% endif %}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">مركز التكلفة</div><div class="text-sm text-slate-800">{{ employee.cost_center.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ المباشرة</div><div class="text-sm text-slate-800">{{ employee.hire_date|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ التوقف</div><div class="text-sm text-slate-800">{{ employee.end_date|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">التأمين</div><div class="text-sm text-slate-800">{{ employee.insurance.insurance_type|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء التأمين الطبي</div><div class="text-sm text-slate-800">{{ employee.medical_insurance_expiry_date|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">فئة التأمين</div><div class="text-sm text-slate-800">{{ employee.insurance_class.class_type|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">السكن</div><div class="text-sm text-slate-800">{{ employee.housing.name|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.get_health_card_status_display|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">تاريخ انتهاء الكرت الصحي</div><div class="text-sm text-slate-800">{{ employee.health_card_expiry|default:"—" }}</div></div>
-                <div><div class="text-xs font-bold text-slate-500 mb-1">الحالة</div><div class="text-sm text-slate-800">{{ employee.get_status_display|default:"—" }}</div></div>
-                <div class="hr-field-item--full"><div class="text-xs font-bold text-slate-500 mb-1">سبب الانتهاء</div><div class="text-sm text-slate-800">{{ employee.end_reason|default:"—" }}</div></div>
-            </div>
-            </div>
+            {% if tab_visible.main and default_employee_tab == 'main' %}
+            {% include "pages/employees/_tab_main.html" %}
             {% endif %}
 
             {% if tab_visible.fingerprint and default_employee_tab == 'fingerprint' %}{% include "pages/employees/_tab_fingerprint.html" %}{% endif %}
