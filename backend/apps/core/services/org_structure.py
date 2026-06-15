@@ -25,10 +25,7 @@ _CC_DEPARTMENTS = Count(
 )
 _DEPT_EMPLOYEES = Count(
     'employee_records',
-    filter=Q(
-        employee_records__is_deleted=False,
-        employee_records__user__is_active=True,
-    ),
+    filter=Q(employee_records__is_deleted=False),
     distinct=True,
 )
 
