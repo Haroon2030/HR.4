@@ -11,10 +11,10 @@ PORT=8082
 
 SECRET_KEY=change-me-long-random-secret
 
-# ─── قاعدة البيانات (Neon — pooler) ─────────────────────────────────────────
+# ─── قاعدة البيانات (Neon — pooler — eu-west-2 London، قريب من VPS باريس) ───
 # من console.neon.tech → Connect → Django → Connection pooling ON
 # إن فشل الاتصال: احذف &channel_binding=require من الرابط
-DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@ep-small-brook-api71buq-pooler.c-7.us-east-1.aws.neon.tech/hr?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@ep-morning-rice-ab19c977-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 DB_SSLMODE=require
 CONN_MAX_AGE=600
 MIGRATE_MAX_RETRIES=5
