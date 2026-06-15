@@ -48,33 +48,33 @@
             </form>
         </div>
         <div class="overflow-x-auto">
-            <table class="zk-bio-tbl">
+            <table class="zk-bio-tbl zk-bio-tbl--compact">
                 <thead>
                     <tr>
-                        <th class="text-right px-3 py-2 w-12">ID</th>
-                        <th class="text-right px-3 py-2">الجهاز</th>
-                        <th class="text-right px-3 py-2">IP:Port</th>
-                        <th class="text-right px-3 py-2">الفرع</th>
-                        <th class="text-right px-3 py-2">الحالة</th>
-                        <th class="text-right px-3 py-2">آخر مزامنة</th>
-                        <th class="text-right px-3 py-2">بصمات</th>
-                        <th class="text-right px-3 py-2">مفتاح وكيل</th>
+                        <th class="text-right w-12 zk-bio-col-mono">ID</th>
+                        <th class="text-right">الجهاز</th>
+                        <th class="text-right zk-bio-col-mono">IP:Port</th>
+                        <th class="text-right">الفرع</th>
+                        <th class="text-right">الحالة</th>
+                        <th class="text-right">آخر مزامنة</th>
+                        <th class="text-right">بصمات</th>
+                        <th class="text-right">مفتاح وكيل</th>
                         {% if user|has_permission:'attendance.manage' %}
-                        <th class="text-right px-3 py-2 zk-bio-tbl__actions-th">إجراء</th>
+                        <th class="text-right zk-bio-tbl__actions-th zk-bio-col-actions">إجراء</th>
                         {% endif %}
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for d in devices %}
                     <tr class="hover:bg-slate-50/80">
-                        <td class="px-4 py-3 font-mono text-xs text-slate-500" dir="ltr">{{ d.pk }}</td>
-                        <td class="px-4 py-3">
+                        <td class="zk-bio-col-mono text-slate-500" dir="ltr">{{ d.pk }}</td>
+                        <td>
                             <span class="font-medium text-slate-900">{{ d.name }}</span>
                             {% if not d.is_active %}<span class="mr-1 text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">معطّل</span>{% endif %}
                         </td>
-                        <td class="px-4 py-3 font-mono text-xs" dir="ltr">{{ d.address_label }}</td>
-                        <td class="px-4 py-3">{{ d.branch.name|default:"—" }}</td>
-                        <td class="px-4 py-3">
+                        <td class="zk-bio-col-mono" dir="ltr">{{ d.address_label }}</td>
+                        <td>{{ d.branch.name|default:"—" }}</td>
+                        <td>
                             {% if d.connection_status == 'online' %}
                             <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>متصل</span>
                             {% elif d.connection_status == 'error' %}
@@ -83,8 +83,8 @@
                             <span class="text-slate-500">غير معروف</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-slate-600">{{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}</td>
-                        <td class="px-4 py-3">
+                        <td class="text-slate-600">{{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td>
                             <div class="zk-bio-punch-cell" dir="ltr">
                                 <span class="zk-bio-punch-cell__count" title="سجلات في قاعدة HR">{{ d.punch_count }}</span>
                                 <span class="zk-bio-punch-cell__tag zk-bio-punch-cell__tag--db">HR DB</span>
@@ -102,7 +102,7 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="px-4 py-3">
+                        <td>
                             {% if d.agent_api_key %}
                             <span class="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                                 <i data-lucide="shield-check" class="w-3 h-3"></i> مُفعّل
@@ -112,7 +112,7 @@
                             {% endif %}
                         </td>
                         {% if user|has_permission:'attendance.manage' %}
-                        <td class="px-4 py-3 zk-bio-tbl__actions-td">
+                        <td class="zk-bio-tbl__actions-td zk-bio-col-actions">
                             <div class="zk-bio-action-bar" dir="ltr">
                                 <button type="button"
                                     @click="generateAgentKey({{ d.pk }}, '{{ d.name|escapejs }}', {{ d.agent_api_key|yesno:'true,false' }}, '{{ d.ip_address }}', {{ d.port }})"

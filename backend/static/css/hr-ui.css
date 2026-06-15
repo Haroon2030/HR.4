@@ -3158,13 +3158,20 @@ body.hr-app .hr-sidebar button.rounded-lg:hover {
     background: rgba(255, 255, 255, 0.95) !important;
 }
 
-/* عمود إحصاء البصمات — تخطيط تقني أفقي */
+/* عمود إحصاء البصمات — سطر واحد مضغوط */
 .hr-app .zk-bio-punch-cell {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.35rem;
-    max-width: 14rem;
+    gap: 0.3rem;
+    max-width: 12rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+
+.hr-app .zk-bio-punch-cell::-webkit-scrollbar {
+    height: 3px;
 }
 
 .hr-app .zk-bio-punch-cell__count {
@@ -3204,8 +3211,10 @@ body.hr-app .hr-sidebar button.rounded-lg:hover {
     color: #b91c1c;
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.25);
-    max-width: 100%;
-    white-space: normal;
+    max-width: 7.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .hr-app .zk-bio-punch-cell__tag--pull {
@@ -3217,6 +3226,40 @@ body.hr-app .hr-sidebar button.rounded-lg:hover {
 .hr-app .zk-bio-punch-cell__err-hint {
     font-weight: 500;
     opacity: 0.92;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 4.5rem;
+    display: inline-block;
+    vertical-align: bottom;
+}
+
+/* جدول أجهزة البصمة — صفوف مضغوطة (لا يتمدد مع عمود البصمات/الإجراءات) */
+.hr-app .zk-bio-tbl--compact th,
+.hr-app .zk-bio-tbl--compact td {
+    padding: 0.35rem 0.5rem !important;
+    line-height: 1.35;
+    vertical-align: middle !important;
+}
+
+.hr-app .zk-bio-tbl--compact thead th {
+    padding: 0.3rem 0.5rem !important;
+}
+
+.hr-app .zk-bio-tbl--compact .zk-bio-col-mono {
+    white-space: nowrap;
+    width: 1%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+}
+
+.hr-app .zk-bio-tbl--compact .zk-bio-col-actions {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.hr-app .zk-bio-tbl--compact .zk-bio-action-bar {
+    flex-wrap: nowrap;
 }
 
 /* شريط إجراءات أجهزة البصمة — سطر أفقي مضغوط (أيقونات فقط) */
