@@ -36,7 +36,7 @@
 
     <div class="hr-glass-panel rounded-xl p-5 space-y-4">
 
-        <form method="post" class="space-y-4">
+        <form method="post" id="operations-report-form" class="space-y-4">
 
             {% csrf_token %}
 
@@ -46,17 +46,17 @@
 
                 <p class="text-sm font-semibold text-slate-700 mb-2">مستلمو التقرير</p>
 
-                <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white/60">
+                <div class="hr-recipients-table-shell overflow-x-auto rounded-lg border border-slate-200 bg-white/60">
 
-                    <table class="w-full text-sm">
+                    <table class="hr-recipients-table w-full text-sm">
 
                         <thead>
 
-                            <tr class="bg-slate-50 border-b border-slate-200">
+                            <tr>
 
-                                <th scope="col" class="text-right px-4 py-2.5 font-semibold text-slate-700 w-[42%]">المسؤول</th>
+                                <th scope="col" class="hr-recipients-table__role text-right px-4 py-2.5 font-semibold text-slate-700 w-[38%]">المسؤول</th>
 
-                                <th scope="col" class="text-right px-4 py-2.5 font-semibold text-slate-700">البريد الإلكتروني</th>
+                                <th scope="col" class="hr-recipients-table__email text-right px-4 py-2.5 font-semibold text-slate-700">البريد الإلكتروني</th>
 
                             </tr>
 
@@ -66,19 +66,38 @@
 
                             {% for row in recipient_rows %}
 
-                            <tr class="border-b border-slate-100 last:border-b-0">
+                            <tr data-recipient-row="{{ row.key }}">
 
-                                <td class="px-4 py-2.5 font-medium text-slate-800 align-middle whitespace-nowrap">{{ row.label }}</td>
+                                <td class="hr-recipients-table__role px-4 py-2.5 font-medium text-slate-800 align-middle whitespace-nowrap">{{ row.label }}</td>
 
-                                <td class="px-4 py-2 align-middle">
+                                <td class="hr-recipients-table__email px-4 py-2 align-middle">
 
-                                    {{ row.field }}
+                                    <div class="hr-recipient-email-row flex items-center gap-2">
 
-                                    {% if row.field.errors %}
+                                        <button type="button"
+                                                class="hr-recipient-link-btn{% if row.saved_email %} is-linked{% endif %}"
+                                                data-role="{{ row.key }}"
+                                                title="{% if row.saved_email %}مربوط{% else %}ربط البريد{% endif %}"
+                                                aria-label="ربط البريد"
+                                                disabled>
+                                            <i data-lucide="{% if row.saved_email %}check{% else %}link-2{% endif %}"
+                                               class="hr-recipient-link-btn__icon"
+                                               aria-hidden="true"></i>
+                                        </button>
 
-                                    <p class="text-xs text-rose-600 mt-1">{{ row.field.errors.0 }}</p>
+                                        <div class="flex-1 min-w-0">
 
-                                    {% endif %}
+                                            {{ row.field }}
+
+                                            {% if row.field.errors %}
+
+                                            <p class="text-xs text-rose-600 mt-1">{{ row.field.errors.0 }}</p>
+
+                                            {% endif %}
+
+                                        </div>
+
+                                    </div>
 
                                 </td>
 
@@ -212,6 +231,220 @@
     </div>
 
 </div>
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+<script>
+
+(function () {
+
+    const LINK_URL = '{% url "web:operations_report_settings" %}';
+
+    function getCsrfToken() {
+
+        return document.querySelector('#operations-report-form [name=csrfmiddlewaretoken]')?.value || '';
+
+    }
+
+    function isValidEmail(value) {
+
+        const v = (value || '').trim();
+
+        return v.length > 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+    }
+
+    function setLinkIcon(btn, linked) {
+
+        const icon = btn.querySelector('.hr-recipient-link-btn__icon');
+
+        if (!icon) return;
+
+        icon.setAttribute('data-lucide', linked ? 'check' : 'link-2');
+
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+
+            window.lucide.createIcons();
+
+        }
+
+    }
+
+    function updateRecipientRow(row) {
+
+        const input = row.querySelector('.hr-recipient-email-input');
+
+        const btn = row.querySelector('.hr-recipient-link-btn');
+
+        if (!input || !btn) return;
+
+        const email = input.value.trim();
+
+        const saved = (input.dataset.savedEmail || '').trim();
+
+        const linked = input.dataset.linked === 'true' && email === saved && isValidEmail(email);
+
+        if (linked) {
+
+            btn.classList.add('is-linked');
+
+            btn.title = 'مربوط';
+
+            btn.setAttribute('aria-label', 'مربوط');
+
+            btn.disabled = true;
+
+            btn.classList.remove('is-loading');
+
+            setLinkIcon(btn, true);
+
+            return;
+
+        }
+
+        btn.classList.remove('is-linked');
+
+        btn.title = 'ربط البريد';
+
+        btn.setAttribute('aria-label', 'ربط البريد');
+
+        btn.disabled = !isValidEmail(email);
+
+        btn.classList.remove('is-loading');
+
+        setLinkIcon(btn, false);
+
+    }
+
+    function initRecipientRows() {
+
+        document.querySelectorAll('[data-recipient-row]').forEach(function (row) {
+
+            const input = row.querySelector('.hr-recipient-email-input');
+
+            if (!input) return;
+
+            input.addEventListener('input', function () {
+
+                const saved = (input.dataset.savedEmail || '').trim();
+
+                if (input.value.trim() !== saved) {
+
+                    input.dataset.linked = 'false';
+
+                }
+
+                updateRecipientRow(row);
+
+            });
+
+            updateRecipientRow(row);
+
+        });
+
+    }
+
+    async function linkRecipient(btn) {
+
+        const row = btn.closest('[data-recipient-row]');
+
+        const input = row?.querySelector('.hr-recipient-email-input');
+
+        if (!row || !input) return;
+
+        const email = input.value.trim();
+
+        const roleKey = btn.dataset.role || input.dataset.recipientRole;
+
+        if (!isValidEmail(email) || !roleKey) return;
+
+        btn.disabled = true;
+
+        btn.classList.add('is-loading');
+
+        try {
+
+            const body = new URLSearchParams({
+
+                csrfmiddlewaretoken: getCsrfToken(),
+
+                action: 'link_recipient',
+
+                role_key: roleKey,
+
+                email: email,
+
+            });
+
+            const response = await fetch(LINK_URL, {
+
+                method: 'POST',
+
+                headers: {
+
+                    'Content-Type': 'application/x-www-form-urlencoded',
+
+                    'X-Requested-With': 'XMLHttpRequest',
+
+                },
+
+                body: body.toString(),
+
+            });
+
+            const data = await response.json().catch(function () { return {}; });
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(data.message || 'تعذّر الربط.');
+
+            }
+
+            input.dataset.savedEmail = email;
+
+            input.dataset.linked = 'true';
+
+            updateRecipientRow(row);
+
+        } catch (err) {
+
+            btn.disabled = false;
+
+            btn.classList.remove('is-loading');
+
+            window.alert(err.message || 'تعذّر الربط.');
+
+        }
+
+    }
+
+    document.addEventListener('click', function (event) {
+
+        const btn = event.target.closest('.hr-recipient-link-btn');
+
+        if (!btn || btn.disabled || btn.classList.contains('is-linked')) return;
+
+        event.preventDefault();
+
+        linkRecipient(btn);
+
+    });
+
+    document.addEventListener('DOMContentLoaded', initRecipientRows);
+
+    if (document.readyState !== 'loading') {
+
+        initRecipientRows();
+
+    }
+
+})();
+
+</script>
 
 {% endblock %}
 

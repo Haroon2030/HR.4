@@ -1,6 +1,9 @@
 """إعدادات تقرير العمليات المجدول."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -27,6 +30,10 @@ def operations_report_settings(request):
 
     if request.method == 'POST':
         action = (request.POST.get('action') or 'save').strip()
+
+        if action == 'link_recipient':
+            return _link_recipient_ajax(request, settings_obj)
+
         form = OperationsReportSettingsForm(request.POST, instance=settings_obj)
 
         if action == 'test_send':
@@ -70,12 +77,14 @@ def operations_report_settings(request):
     else:
         form = OperationsReportSettingsForm(instance=settings_obj)
 
+    stored_emails = settings_obj.recipient_emails_map() if settings_obj.pk else {}
     local_now = timezone.localtime()
     recipient_rows = [
         {
             'key': key,
             'label': label,
             'field': form[f'{ROLE_FIELD_PREFIX}{key}'],
+            'saved_email': (stored_emails.get(key, '') or '').strip(),
         }
         for key, label in OPERATIONS_REPORT_RECIPIENT_ROLES
     ]
@@ -85,4 +94,36 @@ def operations_report_settings(request):
         'local_now': local_now,
         'email_delivery': email_delivery_status(),
         'recipient_rows': recipient_rows,
+    })
+
+
+def _link_recipient_ajax(request, settings_obj: OperationsReportSettings):
+    """ربط بريد مستلم لدور واحد دون حفظ بقية الإعدادات."""
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'message': 'طلب غير صالح.'}, status=400)
+
+    valid_keys = {key for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES}
+    role_key = (request.POST.get('role_key') or '').strip()
+    email = (request.POST.get('email') or '').strip()
+
+    if role_key not in valid_keys:
+        return JsonResponse({'success': False, 'message': 'دور غير معروف.'}, status=400)
+
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({'success': False, 'message': 'أدخل بريداً إلكترونياً صالحاً.'}, status=400)
+
+    emails = settings_obj.recipient_emails_map()
+    emails[role_key] = email
+    settings_obj.recipient_emails = emails
+    if role_key == 'system_manager':
+        settings_obj.recipient_email = email
+    settings_obj.save(update_fields=['recipient_emails', 'recipient_email'])
+
+    return JsonResponse({
+        'success': True,
+        'message': 'تم ربط البريد بنجاح.',
+        'role_key': role_key,
+        'email': email,
     })

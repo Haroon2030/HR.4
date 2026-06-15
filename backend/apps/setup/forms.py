@@ -189,13 +189,18 @@ class OperationsReportSettingsForm(forms.ModelForm):
         stored = self.instance.recipient_emails_map() if self.instance.pk else {}
         for key, label in OPERATIONS_REPORT_RECIPIENT_ROLES:
             field_name = f'{ROLE_FIELD_PREFIX}{key}'
+            saved_email = (stored.get(key, '') or '').strip() if self.instance.pk else ''
             self.fields[field_name] = forms.EmailField(
                 label=label,
                 required=False,
                 widget=forms.EmailInput(attrs={
-                    'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400 placeholder:font-normal',
+                    'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400 placeholder:font-normal hr-recipient-email-input',
                     'placeholder': 'ادخل البريد الالكتروني',
                     'dir': 'ltr',
+                    'data-recipient-role': key,
+                    'data-saved-email': saved_email,
+                    'data-linked': 'true' if saved_email else 'false',
+                    'autocomplete': 'email',
                 }),
             )
             if self.instance.pk and not self.data:

@@ -6432,3 +6432,86 @@ body.hr-app .hr-schedule-roster-modal {
 body.hr-app .hr-schedule-months-table tbody tr {
     cursor: pointer;
 }
+
+/* ── Operations report — recipients table ── */
+body.hr-app .hr-recipients-table-shell {
+    padding: 0.5rem;
+}
+
+body.hr-app .hr-recipients-table {
+    border-collapse: separate;
+    border-spacing: 0.5rem;
+    width: 100%;
+}
+
+body.hr-app .hr-recipients-table th,
+body.hr-app .hr-recipients-table td {
+    border: 1px solid #94a3b8;
+    border-radius: 0.375rem;
+    box-sizing: border-box;
+}
+
+body.hr-app .hr-recipients-table thead th {
+    background: #f8fafc;
+    font-weight: 600;
+}
+
+body.hr-app .hr-recipients-table__role {
+    background: #f8fafc;
+    border: 1px solid #64748b;
+    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.08);
+}
+
+body.hr-app .hr-recipients-table__email {
+    background: #fff;
+    border: 1px solid #94a3b8;
+}
+
+/* ── Operations report — recipient link before email ── */
+body.hr-app .hr-recipient-email-row {
+    min-width: 0;
+}
+
+body.hr-app .hr-recipient-link-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: 2px solid #cbd5e1;
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.hr-app .hr-recipient-link-btn:disabled:not(.is-linked) {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+body.hr-app .hr-recipient-link-btn:hover:not(:disabled):not(.is-linked) {
+    border-color: #94a3b8;
+    color: #475569;
+    background: #e2e8f0;
+}
+
+body.hr-app .hr-recipient-link-btn.is-linked {
+    border-color: #34d399;
+    background: #ecfdf5;
+    color: #059669;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.22);
+    cursor: default;
+}
+
+body.hr-app .hr-recipient-link-btn.is-loading {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+body.hr-app .hr-recipient-link-btn__icon {
+    width: 1.1rem;
+    height: 1.1rem;
+}
