@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from apps.attendance.services.zk_client import RawAttendanceRow
 
 INCREMENTAL_BUFFER = timedelta(seconds=60)
+INCREMENTAL_BUFFER_SECONDS = int(INCREMENTAL_BUFFER.total_seconds())
 
 
 @dataclass
@@ -43,21 +44,46 @@ def punch_fingerprint(device_user_id: int, punched_at: datetime) -> tuple[int, d
     return (device_user_id, punched_at.replace(microsecond=0))
 
 
-def load_device_punch_index(device_id: int) -> DevicePunchIndex:
+def get_device_punch_watermark(device_id: int) -> datetime | None:
+    """آخر وقت بصمة محفوظ للجهاز — يُستخدم للسحب التزايدي."""
+    from apps.attendance.models import AttendancePunch
+
+    return AttendancePunch.objects.filter(device_id=device_id).aggregate(m=Max('punched_at'))['m']
+
+
+def load_device_punch_index(
+    device_id: int,
+    *,
+    incremental: bool = False,
+) -> DevicePunchIndex:
+    """
+    فهرس سجلات الجهاز لمنع التكرار.
+
+    عند incremental=True يُحمَّل فقط نطاق ما بعد آخر بصمة (مع هامش) —
+    لا يُمسح تاريخ الجهاز بالكامل في كل ingest.
+    """
     from apps.attendance.models import AttendancePunch
 
     qs = AttendancePunch.objects.filter(device_id=device_id)
+    watermark = qs.aggregate(m=Max('punched_at'))['m']
+
+    if incremental and watermark is None:
+        return DevicePunchIndex(watermark=None)
+
+    index_qs = qs
+    if incremental and watermark is not None:
+        index_qs = qs.filter(punched_at__gte=watermark - INCREMENTAL_BUFFER)
+
     uids = {
         int(uid)
-        for uid in qs.filter(device_record_uid__isnull=False).values_list(
+        for uid in index_qs.filter(device_record_uid__isnull=False).values_list(
             'device_record_uid', flat=True,
         )
     }
     fingerprints: set[tuple[int, datetime]] = set()
-    for user_id, ts in qs.values_list('device_user_id', 'punched_at'):
+    for user_id, ts in index_qs.values_list('device_user_id', 'punched_at'):
         fingerprints.add(punch_fingerprint(int(user_id), ts))
 
-    watermark = qs.aggregate(m=Max('punched_at'))['m']
     return DevicePunchIndex(uids=uids, fingerprints=fingerprints, watermark=watermark)
 
 
@@ -128,7 +154,7 @@ def import_enriched_punches(
     from apps.attendance.selectors.biometric_devices import make_sync_batch_label
     from apps.attendance.services.labels import verify_mode_label as zk_verify_label
 
-    index = load_device_punch_index(device.id)
+    index = load_device_punch_index(device.id, incremental=incremental)
     new_punches, skipped_time, skipped_dup = partition_new_rows(
         punches, index, incremental=incremental,
     )
@@ -186,6 +212,7 @@ def import_enriched_punches(
         'skipped_time_filter': skipped_time,
         'punches_new': len(new_punches),
         'new_punches': new_punches,
+        'last_punch_at': get_device_punch_watermark(device.id),
     }
 
 
@@ -201,7 +228,7 @@ def import_raw_attendance_rows(
     from apps.attendance.selectors.biometric_devices import make_sync_batch_label
     from apps.attendance.services.labels import verify_mode_label
 
-    index = load_device_punch_index(device.id)
+    index = load_device_punch_index(device.id, incremental=incremental)
     new_rows, skipped_time, skipped_dup = partition_new_rows(
         rows, index, incremental=incremental,
     )
@@ -249,4 +276,5 @@ def import_raw_attendance_rows(
         'skipped': skipped_dup,
         'skipped_time_filter': skipped_time,
         'punches_new': len(new_rows),
+        'last_punch_at': get_device_punch_watermark(device.id),
     }

@@ -24,6 +24,7 @@ class AgentIngestResult:
     punches_received: int
     users_updated: int
     batch: str
+    last_punch_at: datetime | None = None
 
 
 AGENT_PUNCH_MAX_FUTURE_MINUTES = 10
@@ -154,4 +155,5 @@ def ingest_agent_payload(
         punches_received=len(punches),
         users_updated=users_updated,
         batch=outcome.get('batch', ''),
+        last_punch_at=outcome.get('last_punch_at'),
     )

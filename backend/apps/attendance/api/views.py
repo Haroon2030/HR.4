@@ -14,6 +14,10 @@ from apps.attendance.authentication import AgentAPIKeyAuthentication, Attendance
 from apps.attendance.models import AttendanceIngestLog, BiometricDevice
 from apps.attendance.services.agent_ingest import ingest_agent_payload
 from apps.attendance.services.ingest_audit import log_ingest_attempt
+from apps.attendance.services.punch_sync import (
+    INCREMENTAL_BUFFER_SECONDS,
+    get_device_punch_watermark,
+)
 from apps.attendance.services.agent_pull_queue import (
     acknowledge_pull_request,
     acknowledge_pull_request_after_ingest,
@@ -152,6 +156,32 @@ class AgentPullRequestsView(APIView):
         _assert_device_access(request, int(device_id))
         acknowledge_pull_request(int(device_id))
         return Response({'success': True, 'message': 'تم إغلاق طلب السحب'})
+
+
+class AgentSyncStateView(APIView):
+    """حالة السحب التزايدي — آخر بصمة محفوظة للجهاز (للوكيل قبل الرفع)."""
+
+    authentication_classes = [AgentAPIKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AgentRateThrottle]
+
+    def get(self, request):
+        device_id = request.query_params.get('device_id')
+        if device_id is None:
+            return Response(
+                {'success': False, 'message': 'device_id مطلوب'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        device = _assert_device_access(request, int(device_id))
+        watermark = get_device_punch_watermark(device.pk)
+        return Response({
+            'success': True,
+            'data': {
+                'device_id': device.pk,
+                'last_punch_at': watermark.isoformat() if watermark else None,
+                'incremental_buffer_seconds': INCREMENTAL_BUFFER_SECONDS,
+            },
+        })
 
 
 class AgentIngestView(APIView):
@@ -311,5 +341,8 @@ class AgentIngestView(APIView):
                 'users_updated': result.users_updated,
                 'batch': result.batch,
                 'pull_acknowledged': pull_acknowledged,
+                'last_punch_at': (
+                    result.last_punch_at.isoformat() if result.last_punch_at else None
+                ),
             },
         })

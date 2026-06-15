@@ -55,6 +55,18 @@ For devices on `192.168.x.x`, use **Request sync** in HR — the branch agent ex
 
 Cloud server cannot connect to private LAN IPs directly.
 
+## Incremental sync (recommended)
+
+Set `INCREMENTAL=true` in `config.env` (default). The agent:
+
+1. Asks the server for the last saved punch time (`/api/v1/attendance/agent/sync-state/`).
+2. Uploads **only punches newer** than that time (60s buffer).
+3. Skips the HTTP upload entirely when there are no new punches.
+
+The ZKTeco device still returns all logs over TCP (device limitation), but the server no longer receives the full history every 5 minutes.
+
+For a **date-range pull** from the HR web UI, the agent uses the requested `date_from` / `date_to` instead.
+
 ## Server-side health check (production)
 
 On the Docker server:

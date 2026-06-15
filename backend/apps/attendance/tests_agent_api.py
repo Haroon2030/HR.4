@@ -118,6 +118,70 @@ class AttendanceAgentAPITests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(len(r.json()['data']), 1)
 
+    def test_sync_state_returns_watermark(self):
+        ts = timezone.now().replace(microsecond=0)
+        AttendancePunch.objects.create(
+            device=self.device,
+            device_user_id=3,
+            punched_at=ts,
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        client = self._device_client()
+        r = client.get(
+            '/api/v1/attendance/agent/sync-state/',
+            {'device_id': self.device.pk},
+        )
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertTrue(body['success'])
+        self.assertEqual(body['data']['device_id'], self.device.pk)
+        self.assertIsNotNone(body['data']['last_punch_at'])
+
+    def test_sync_state_empty_device(self):
+        client = self._device_client()
+        r = client.get(
+            '/api/v1/attendance/agent/sync-state/',
+            {'device_id': self.device.pk},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNone(r.json()['data']['last_punch_at'])
+
+    def test_ingest_incremental_skips_old_punches(self):
+        from datetime import timedelta
+
+        client = self._device_client()
+        wm_ts = (timezone.now() - timedelta(hours=1)).replace(microsecond=0)
+        old_ts = (timezone.now() - timedelta(days=2)).replace(microsecond=0)
+        new_ts = timezone.now().replace(microsecond=0)
+        AttendancePunch.objects.create(
+            device=self.device,
+            device_user_id=1,
+            punched_at=wm_ts,
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        payload = {
+            'device_id': self.device.pk,
+            'incremental': True,
+            'punches': [
+                {
+                    'device_user_id': 1,
+                    'punched_at': old_ts.isoformat(),
+                    'punch_type': 'in',
+                },
+                {
+                    'device_user_id': 2,
+                    'punched_at': new_ts.isoformat(),
+                    'punch_type': 'in',
+                },
+            ],
+        }
+        r = self._signed_ingest_post(client, payload)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()['data']
+        self.assertEqual(data['imported'], 1)
+        self.assertGreaterEqual(data['skipped_time_filter'], 1)
+        self.assertEqual(AttendancePunch.objects.filter(device=self.device).count(), 2)
+
     def test_pull_requests_queue_and_ack(self):
         from apps.attendance.services.agent_pull_queue import (
             get_pull_request,

@@ -138,6 +138,57 @@ class BiometricMockTests(TestCase):
         self.assertEqual(second['imported'], 0)
         self.assertEqual(AttendancePunch.objects.filter(device=device).count(), 1)
 
+    def test_incremental_skips_older_than_watermark(self):
+        from datetime import timedelta
+
+        from apps.attendance.services.attendance_pull import EnrichedPunch
+        from apps.attendance.services.punch_sync import import_enriched_punches
+
+        device = BiometricDevice.objects.create(
+            name='incr-test', ip_address='10.0.0.11', port=4370,
+        )
+        wm_ts = (timezone.now() - timedelta(hours=1)).replace(microsecond=0)
+        old_ts = (timezone.now() - timedelta(days=1)).replace(microsecond=0)
+        new_ts = timezone.now().replace(microsecond=0)
+        AttendancePunch.objects.create(
+            device=device,
+            device_user_id=1,
+            punched_at=wm_ts,
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        outcome = import_enriched_punches(
+            device,
+            [
+                EnrichedPunch(
+                    device_user_id=1,
+                    device_user_name='a',
+                    punched_at=old_ts,
+                    punch_type='in',
+                    punch_type_label='دخول',
+                    verify_mode=1,
+                    verify_mode_label='بصمة',
+                    device_record_uid=None,
+                    raw_status=0,
+                ),
+                EnrichedPunch(
+                    device_user_id=2,
+                    device_user_name='b',
+                    punched_at=new_ts,
+                    punch_type='in',
+                    punch_type_label='دخول',
+                    verify_mode=1,
+                    verify_mode_label='بصمة',
+                    device_record_uid=None,
+                    raw_status=0,
+                ),
+            ],
+            dry_run=False,
+            incremental=True,
+        )
+        self.assertEqual(outcome['imported'], 1)
+        self.assertGreaterEqual(outcome['skipped_time_filter'], 1)
+        self.assertEqual(AttendancePunch.objects.filter(device=device).count(), 2)
+
 
 class LinkedEnrollmentDisplayTests(TestCase):
     """عرض بصمات الموظفين المربوطين حتى بدون employee_id على السجل."""

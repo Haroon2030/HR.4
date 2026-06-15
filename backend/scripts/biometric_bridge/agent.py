@@ -19,7 +19,7 @@ import logging
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 try:
@@ -48,6 +48,14 @@ PUNCH_STATUS = {
 MAX_PAST_DAYS_INCREMENTAL = 93
 MAX_PAST_DAYS_FULL_SYNC = 365
 MAX_FUTURE_MINUTES = 10
+WATERMARK_BUFFER_SECONDS = 60
+
+
+@dataclass
+class PullRequest:
+    device_id: int
+    date_from: date | None = None
+    date_to: date | None = None
 
 
 @dataclass
@@ -264,12 +272,36 @@ def filter_punches_for_upload(
     punches: list[dict],
     *,
     incremental: bool,
+    watermark: datetime | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> tuple[list[dict], int]:
-    """يستبعد البصمات خارج نافذة السيرفر (93 يوماً تدريجياً / 365 كاملاً)."""
+    """
+    يُبقي البصمات الجديدة فقط قبل الرفع للسيرفر.
+
+    - تزايدي + watermark: بعد آخر بصمة محفوظة (مع هامش 60 ثانية).
+    - طلب سحب بفترة: ضمن date_from/date_to فقط.
+    - أول مزامنة بدون watermark: آخر 93 يوماً كحد أقصى.
+    """
     now = datetime.now(timezone.utc)
     max_past = MAX_PAST_DAYS_INCREMENTAL if incremental else MAX_PAST_DAYS_FULL_SYNC
     cutoff = now - timedelta(days=max_past)
     future_limit = now + timedelta(minutes=MAX_FUTURE_MINUTES)
+
+    time_cut: datetime | None = None
+    if date_from or date_to:
+        if date_from:
+            start = datetime.combine(date_from, datetime.min.time(), tzinfo=timezone.utc)
+            time_cut = start if time_cut is None else max(time_cut, start)
+        if date_to:
+            end = datetime.combine(date_to, datetime.max.time(), tzinfo=timezone.utc)
+            future_limit = min(future_limit, end)
+    elif incremental and watermark is not None:
+        wm = watermark
+        if wm.tzinfo is None:
+            wm = wm.replace(tzinfo=timezone.utc)
+        time_cut = wm - timedelta(seconds=WATERMARK_BUFFER_SECONDS)
+
     kept: list[dict] = []
     skipped = 0
     for punch in punches:
@@ -279,6 +311,9 @@ def filter_punches_for_upload(
             skipped += 1
             continue
         if ts < cutoff or ts > future_limit:
+            skipped += 1
+            continue
+        if time_cut is not None and ts <= time_cut:
             skipped += 1
             continue
         kept.append(punch)
@@ -299,13 +334,16 @@ def push_to_server(
     device: DeviceTarget,
     punches: list[dict],
     users: list[dict],
+    *,
+    incremental: bool | None = None,
 ) -> dict:
     url = f'{settings.server_url}/api/v1/attendance/agent/ingest/'
     agent_suffix = device.label or str(device.device_id)
+    use_incremental = settings.incremental if incremental is None else incremental
     payload = {
         'device_id': device.device_id,
         'agent_id': f'{settings.agent_id}:{agent_suffix}',
-        'incremental': settings.incremental,
+        'incremental': use_incremental,
         'punches': punches,
         'users': users,
     }
@@ -355,7 +393,12 @@ def _device_title(device: DeviceTarget) -> str:
     return f'{name} ({device.device_ip}:{device.device_port})'
 
 
-def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
+def run_device_cycle(
+    settings: AgentSettings,
+    device: DeviceTarget,
+    *,
+    pull_request: PullRequest | None = None,
+) -> bool:
     LOG.info('── %s ──', _device_title(device))
     if not _tcp_reachable(device, timeout_sec=min(5, settings.timeout_sec)):
         LOG.error(
@@ -371,13 +414,33 @@ def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
         LOG.error('فشل السحب: %s', err)
         return False
 
+    use_incremental = settings.incremental
+    date_from = None
+    date_to = None
+    if pull_request and pull_request.device_id == device.device_id:
+        date_from = pull_request.date_from
+        date_to = pull_request.date_to
+        if date_from or date_to:
+            use_incremental = False
+            LOG.info('طلب سحب بفترة: %s → %s', date_from or '—', date_to or '—')
+
+    watermark: datetime | None = None
+    if use_incremental:
+        try:
+            watermark = fetch_sync_watermark(settings, device.device_id)
+        except Exception as exc:
+            LOG.warning('تعذّر جلب آخر بصمة من السيرفر — سحب بنافذة 93 يوماً: %s', exc)
+
     upload_punches, skipped_bounds = filter_punches_for_upload(
         punches,
-        incremental=settings.incremental,
+        incremental=use_incremental,
+        watermark=watermark,
+        date_from=date_from,
+        date_to=date_to,
     )
     if skipped_bounds:
         LOG.info(
-            'تصفية: %s سجل خارج النافذة الزمنية — يُرفع %s فقط',
+            'تصفية: %s سجل قديم/خارج النطاق — يُرفع %s فقط',
             skipped_bounds,
             len(upload_punches),
         )
@@ -387,8 +450,19 @@ def run_device_cycle(settings: AgentSettings, device: DeviceTarget) -> bool:
         len(users),
         len(upload_punches),
     )
+
+    if use_incremental and not upload_punches and not (date_from or date_to):
+        LOG.info('لا بصمات جديدة — تخطي الرفع (تزايدي)')
+        return True
+
     try:
-        result = push_to_server(settings, device, upload_punches, users)
+        result = push_to_server(
+            settings,
+            device,
+            upload_punches,
+            users,
+            incremental=use_incremental,
+        )
     except Exception as exc:
         LOG.error('فشل الرفع: %s', exc)
         return False
@@ -417,7 +491,29 @@ def filter_devices(
     return matched
 
 
-def fetch_pull_request_ids(settings: AgentSettings) -> list[int]:
+def fetch_sync_watermark(settings: AgentSettings, device_id: int) -> datetime | None:
+    """آخر بصمة محفوظة على السيرفر — للسحب التزايدي."""
+    url = f'{settings.server_url}/api/v1/attendance/agent/sync-state/'
+    resp = requests.get(
+        url,
+        headers={'X-Attendance-Agent-Key': settings.api_key},
+        params={'device_id': device_id},
+        timeout=30,
+    )
+    try:
+        body = resp.json()
+    except Exception:
+        body = {}
+    if resp.status_code >= 400:
+        msg = body.get('message', body.get('detail', resp.text[:200]))
+        raise RuntimeError(f'sync-state HTTP {resp.status_code}: {msg}')
+    raw = (body.get('data') or {}).get('last_punch_at')
+    if not raw:
+        return None
+    return _parse_punch_time(str(raw))
+
+
+def fetch_pull_requests(settings: AgentSettings) -> list[PullRequest]:
     """طلبات سحب أرسلها المستخدم من موقع HR."""
     url = f'{settings.server_url}/api/v1/attendance/agent/pull-requests/'
     resp = requests.get(
@@ -432,13 +528,26 @@ def fetch_pull_request_ids(settings: AgentSettings) -> list[int]:
     if resp.status_code >= 400:
         msg = body.get('message', body.get('detail', resp.text[:200]))
         raise RuntimeError(f'pull-requests HTTP {resp.status_code}: {msg}')
-    ids: list[int] = []
+    rows: list[PullRequest] = []
     for row in body.get('data') or []:
         try:
-            ids.append(int(row['device_id']))
+            device_id = int(row['device_id'])
         except (KeyError, TypeError, ValueError):
             continue
-    return ids
+        date_from = None
+        date_to = None
+        raw_from = row.get('date_from')
+        raw_to = row.get('date_to')
+        if raw_from:
+            date_from = date.fromisoformat(str(raw_from)[:10])
+        if raw_to:
+            date_to = date.fromisoformat(str(raw_to)[:10])
+        rows.append(PullRequest(device_id=device_id, date_from=date_from, date_to=date_to))
+    return rows
+
+
+def fetch_pull_request_ids(settings: AgentSettings) -> list[int]:
+    return [r.device_id for r in fetch_pull_requests(settings)]
 
 
 def ack_pull_request(settings: AgentSettings, device_id: int) -> None:
@@ -458,11 +567,14 @@ def ack_pull_request(settings: AgentSettings, device_id: int) -> None:
 
 def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool:
     devices_to_run = list(devices)
+    pull_requests: list[PullRequest] = []
     try:
-        pull_ids = fetch_pull_request_ids(settings)
+        pull_requests = fetch_pull_requests(settings)
     except Exception as exc:
         LOG.warning('تعذّر جلب طلبات السحب من الموقع: %s', exc)
-        pull_ids = []
+
+    pull_by_device = {r.device_id: r for r in pull_requests}
+    pull_ids = list(pull_by_device.keys())
 
     if pull_ids:
         LOG.info('طلب سحب من الموقع — أجهزة: %s', pull_ids)
@@ -480,9 +592,13 @@ def run_all_cycles(settings: AgentSettings, devices: list[DeviceTarget]) -> bool
 
     ok = 0
     for device in devices_to_run:
-        if run_device_cycle(settings, device):
+        if run_device_cycle(
+            settings,
+            device,
+            pull_request=pull_by_device.get(device.device_id),
+        ):
             ok += 1
-            if pull_ids and device.device_id in pull_ids:
+            if device.device_id in pull_ids:
                 ack_pull_request(settings, device.device_id)
     total = len(devices_to_run)
     LOG.info('النتيجة: %s/%s جهاز نجح', ok, total)
