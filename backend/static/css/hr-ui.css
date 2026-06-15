@@ -25,6 +25,12 @@
     --hr-glass-bg-strong: rgba(255, 255, 255, 0.94);
     --hr-glass-border: rgba(255, 255, 255, 1);
     --hr-glass-line: rgba(241, 245, 249, 0.95);
+    --hr-input-border: #cbd5e1;
+    --hr-input-border-focus: #3b82f6;
+    --hr-form-field-border: #e8edf3;
+    --hr-form-field-active-bg: linear-gradient(145deg, #eff6ff 0%, #f0f9ff 48%, #ffffff 100%);
+    --hr-form-field-active-ring: rgba(59, 130, 246, 0.28);
+    --hr-form-field-active-shadow: 0 4px 14px rgba(37, 99, 235, 0.14);
     --hr-page-bg: #ffffff;
     --hr-page-bg-soft: #fafbfc;
     --hr-table-glass-bg: rgba(248, 250, 252, 0.82);
@@ -3625,10 +3631,10 @@ body.hr-app .zk-modal-field {
     background: rgba(255, 255, 255, 0.62) !important;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--hr-glass-line) !important;
+    border: 1px solid var(--hr-input-border) !important;
     color: #000000;
     font-weight: 600;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
     transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
 }
 
@@ -3641,11 +3647,94 @@ body.hr-app .hr-glass-modal textarea:focus,
 body.hr-app .hr-glass-input:focus,
 body.hr-app .zk-modal-field:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.88) !important;
-    border-color: rgba(59, 130, 246, 0.55) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: var(--hr-input-border-focus) !important;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        0 0 0 3px rgba(59, 130, 246, 0.12);
+        inset 0 1px 2px rgba(15, 23, 42, 0.03),
+        0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+/* خانة حقل — مضغوطة، عصرية، تمييز الخانة النشطة */
+body.hr-app .hr-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.45rem 0.55rem 0.5rem;
+    border: 1px solid var(--hr-form-field-border);
+    border-radius: 0.625rem;
+    background: #f8fafc;
+    transition:
+        background 0.16s ease,
+        border-color 0.16s ease,
+        box-shadow 0.16s ease;
+}
+
+body.hr-app .hr-form-field:focus-within {
+    border-color: var(--hr-form-field-active-ring);
+    background: var(--hr-form-field-active-bg);
+    box-shadow:
+        0 0 0 1px var(--hr-form-field-active-ring),
+        var(--hr-form-field-active-shadow);
+}
+
+body.hr-app .hr-form-field label,
+body.hr-app .hr-form-field > .block.text-xs {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    transition: color 0.16s ease;
+}
+
+body.hr-app .hr-form-field:focus-within label,
+body.hr-app .hr-form-field:focus-within > .block.text-xs {
+    color: #2563eb;
+}
+
+body.hr-app .hr-form-field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+body.hr-app .hr-form-field select,
+body.hr-app .hr-form-field textarea {
+    width: 100%;
+    min-height: 2.125rem;
+    padding: 0.3125rem 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #0f172a;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0.4375rem;
+    box-shadow: none;
+    transition:
+        border-color 0.16s ease,
+        background 0.16s ease,
+        box-shadow 0.16s ease;
+}
+
+body.hr-app .hr-form-field textarea {
+    min-height: 4.5rem;
+    padding: 0.4375rem 0.5rem;
+    resize: vertical;
+}
+
+body.hr-app .hr-form-field input:focus,
+body.hr-app .hr-form-field select:focus,
+body.hr-app .hr-form-field textarea:focus {
+    outline: none;
+    background: #ffffff !important;
+    border-color: var(--hr-input-border-focus) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.14);
+}
+
+body.hr-app .hr-glass-form .hr-page-tabs__body > [class*="p-"] {
+    padding: 1rem 1.125rem;
+}
+
+body.hr-app .hr-glass-form .grid {
+    gap: 0.5rem;
 }
 
 body.hr-app .zk-modal-fieldset {

@@ -32,9 +32,9 @@ EMPLOYEE_TABS = (
 
 TAB_KEYS = tuple(t['key'] for t in EMPLOYEE_TABS)
 
-# تبويبات نموذج التعديل (أقل من صفحة العرض)
+# تبويبات نموذج التعديل — بيانات أساسية فقط (العمليات من شاشة العرض)
 EDIT_FORM_TAB_KEYS = frozenset({
-    'main', 'contract', 'salary', 'leaves', 'schedule', 'warnings', 'docs', 'archive',
+    'main', 'contract', 'salary', 'leaves', 'schedule', 'docs',
 })
 
 

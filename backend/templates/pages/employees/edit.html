@@ -39,140 +39,140 @@
             {% if tab_visible.main %}
             <div x-show="activeTab === 'main'" class="p-5"{% if default_employee_tab == 'main' or not default_employee_tab %} style="display:block"{% else %} x-cloak{% endif %}>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الاسم <span class="text-red-500">*</span></label>
-                        <input type="text" name="name" required value="{% if form %}{{ form.name.value|default:employee.name }}{% else %}{{ employee.name }}{% endif %}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        <input type="text" name="name" required value="{% if form %}{{ form.name.value|default:employee.name }}{% else %}{{ employee.name }}{% endif %}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الجنس</label>
-                        <select name="gender" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="gender">
                             <option value="male" {% if employee.gender == 'male' or not employee.gender %}selected{% endif %}>ذكر</option>
                             <option value="female" {% if employee.gender == 'female' %}selected{% endif %}>أنثى</option>
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">رقم الهوية</label>
-                        <input type="text" name="id_number" value="{{ employee.id_number }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="text" name="id_number" value="{{ employee.id_number }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">رقم الجوال</label>
-                        <input type="text" name="phone" value="{{ employee.phone }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="text" name="phone" value="{{ employee.phone }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الإيميل</label>
-                        <input type="email" name="email" value="{{ employee.email }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="email" name="email" value="{{ employee.email }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الرقم الوظيفي</label>
-                        <input type="text" name="employee_number" value="{{ employee.employee_number }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="text" name="employee_number" value="{{ employee.employee_number }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الجنسية</label>
-                        <select name="nationality" @change="onNationalityChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="nationality" @change="onNationalityChange()">
                             <option value="">-- اختر --</option>
                             {% for n in nationalities %}<option value="{{ n.id }}" {% if employee.nationality_id == n.id %}selected{% endif %}>{{ n.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">المهنة</label>
-                        <select name="profession" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="profession">
                             <option value="">-- اختر --</option>
                             {% for p in professions %}<option value="{{ p.id }}" {% if employee.profession_id == p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الشركة</label>
-                        <select name="sponsorship" x-model="sponsorshipId" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="sponsorship" x-model="sponsorshipId">
                             <option value="">-- اختر --</option>
                             {% for s in sponsorships %}<option value="{{ s.id }}" {% if employee.sponsorship_id == s.id %}selected{% endif %}>{{ s.company_name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الفرع</label>
-                        <select name="branch" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="branch">
                             <option value="">-- اختر --</option>
                             {% for b in branches %}<option value="{{ b.id }}" {% if employee.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">القسم</label>
-                        <select name="department" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="department">
                             <option value="">-- اختر --</option>
                             {% for d in departments %}<option value="{{ d.id }}" {% if employee.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الإدارة</label>
-                        <select name="administration" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="administration">
                             <option value="">-- اختر --</option>
                             {% for a in administrations %}
                             <option value="{{ a.id }}" {% if employee.administration_id == a.id %}selected{% endif %}>{% if a.code %}{{ a.code }}{% if a.name and a.code != a.name %} — {{ a.name }}{% endif %}{% else %}{{ a.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">مركز التكلفة</label>
-                        <select name="cost_center" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="cost_center">
                             <option value="">-- اختر --</option>
                             {% for c in cost_centers %}<option value="{{ c.id }}" {% if employee.cost_center_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">التأمين الطبي</label>
-                        <select name="insurance" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="insurance">
                             <option value="">-- اختر --</option>
                             {% for i in insurances %}<option value="{{ i.id }}" {% if employee.insurance_id == i.id %}selected{% endif %}>{{ i.insurance_type }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">فئة التأمين</label>
-                        <select name="insurance_class" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="insurance_class">
                             <option value="">-- اختر --</option>
                             {% for ic in insurance_classes %}<option value="{{ ic.id }}" {% if employee.insurance_class_id == ic.id %}selected{% endif %}>{{ ic.class_type }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">السكن</label>
-                        <select name="housing" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="housing">
                             <option value="">-- اختر --</option>
                             {% for bld in buildings %}<option value="{{ bld.id }}" {% if employee.housing_id == bld.id %}selected{% endif %}>{{ bld.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الكرت الصحي</label>
-                        <select name="health_card_status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="health_card_status">
                             <option value="not_available" {% if employee.health_card_status == 'not_available' or not employee.health_card_status %}selected{% endif %}>غير متوفر</option>
                             <option value="available" {% if employee.health_card_status == 'available' %}selected{% endif %}>متوفر</option>
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء الكرت الصحي</label>
-                        <input type="date" name="health_card_expiry" value="{{ employee.health_card_expiry|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="date" name="health_card_expiry" value="{{ employee.health_card_expiry|date:'Y-m-d' }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ المباشرة</label>
-                        <input type="date" name="hire_date" value="{{ employee.hire_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="date" name="hire_date" value="{{ employee.hire_date|date:'Y-m-d' }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ التوقف</label>
-                        <input type="date" name="end_date" value="{{ employee.end_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" title="يُعبَّأ تلقائياً عند التصفية أو إنهاء العقد، ويمكن تعديله يدوياً">
+                        <input type="date" name="end_date" value="{{ employee.end_date|date:'Y-m-d' }}" title="يُعبَّأ تلقائياً عند التصفية أو إنهاء العقد، ويمكن تعديله يدوياً">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء التأمين الطبي</label>
-                        <input type="date" name="medical_insurance_expiry_date" value="{{ employee.medical_insurance_expiry_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="date" name="medical_insurance_expiry_date" value="{{ employee.medical_insurance_expiry_date|date:'Y-m-d' }}">
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">حالة الموظف</label>
-                        <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <select name="status">
                             <option value="active" {% if employee.status == 'active' %}selected{% endif %}>على رأس العمل</option>
                             <option value="leave" {% if employee.status == 'leave' %}selected{% endif %}>في إجازة</option>
                             <option value="suspended" {% if employee.status == 'suspended' %}selected{% endif %}>موقوف</option>
                             <option value="terminated" {% if employee.status == 'terminated' %}selected{% endif %}>منتهي الخدمة</option>
                         </select>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">سبب الانتهاء</label>
-                        <input type="text" name="end_reason" value="{{ employee.end_reason }}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                        <input type="text" name="end_reason" value="{{ employee.end_reason }}">
                     </div>
                 </div>
             </div>
@@ -196,10 +196,9 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">نوع العقد</label>
-                        <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
-                                :disabled="isAutoUnlimited()"
+                        <select                                :disabled="isAutoUnlimited()"
                                 :name="isAutoUnlimited() ? '_contract_type_ui' : 'contract_type'"
                                 x-effect="if (isAutoUnlimited()) { $el.value = 'unlimited'; }">
                             <option value="">-- اختر --</option>
@@ -211,35 +210,35 @@
                         </template>
                     </div>
 
-                    <div class="space-y-1.5" x-show="isSaudi() && isFixedContract()" x-cloak>
+                    <div class="hr-form-field" x-show="isSaudi() && isFixedContract()" x-cloak>
                         <label class="block text-xs font-bold text-slate-800">مدة العقد (أشهر)</label>
                         <input type="number" name="contract_duration_months" min="1" max="12" step="1"
                                value="{{ employee.contract_duration_months|input_decimal|default:'' }}"
                                placeholder="1–12"
-                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+>
                         <p class="text-[10px] text-slate-500">حد أقصى 12 شهراً للسعودي</p>
                     </div>
 
-                    <div class="space-y-1.5" x-show="!isSaudi() && isFixedContract()" x-cloak>
+                    <div class="hr-form-field" x-show="!isSaudi() && isFixedContract()" x-cloak>
                         <label class="block text-xs font-bold text-slate-800">مدة العقد</label>
                         <input type="text" name="contract_duration_text" maxlength="100"
                                value="{{ employee.contract_duration_text|default:'' }}"
                                placeholder="مثال: سنتان / 24 شهر"
-                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+>
                     </div>
 
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ بداية العقد</label>
                         <input type="date" name="contract_start_date"
                                value="{{ employee.contract_start_date|date:'Y-m-d' }}"
-                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+>
                     </div>
 
-                    <div class="space-y-1.5" x-show="isFixedContract()" x-cloak>
+                    <div class="hr-form-field" x-show="isFixedContract()" x-cloak>
                         <label class="block text-xs font-bold text-slate-800">تاريخ نهاية العقد</label>
                         <input type="date" name="contract_expiry_date"
                                value="{{ employee.contract_expiry_date|date:'Y-m-d' }}"
-                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+>
                     </div>
                 </div>
             </div>
@@ -282,9 +281,9 @@
                     </div>
                 </div>
 
-                <div class="space-y-1.5">
+                <div class="hr-form-field">
                     <label class="block text-xs font-bold text-slate-800">أرشيف الإجازات</label>
-                    <textarea name="leaves_archive" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="سجل الإجازات السابقة (التواريخ، الأنواع، الملاحظات...)">{{ employee.leaves_archive }}</textarea>
+                    <textarea name="leaves_archive" rows="4" placeholder="سجل الإجازات السابقة (التواريخ، الأنواع، الملاحظات...)">{{ employee.leaves_archive }}</textarea>
                 </div>
             </div>
             {% endif %}
@@ -293,9 +292,9 @@
             {% if tab_visible.schedule %}
             <div x-show="activeTab === 'schedule'" class="p-5"{% if default_employee_tab == 'schedule' %} style="display:block"{% else %} x-cloak{% endif %}>
                 <div class="space-y-3">
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الحضور والانصراف الشهري</label>
-                        <textarea name="attendance_notes" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">{{ employee.attendance_notes }}</textarea>
+                        <textarea name="attendance_notes" rows="4">{{ employee.attendance_notes }}</textarea>
                     </div>
                     {% if not is_create %}
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
@@ -317,125 +316,30 @@
             </div>
             {% endif %}
 
-            <!-- Tab 5: الإفادات والإنذارات -->
-            {% if tab_visible.warnings %}
-            <div x-show="activeTab === 'warnings'" class="p-5"{% if default_employee_tab == 'warnings' %} style="display:block"{% else %} x-cloak{% endif %}>
-                {% if not is_create %}
-                <!-- أرشيف الإفادات -->
-                <div>
-                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i data-lucide="archive" class="w-4 h-4 text-slate-600"></i> أرشيف الإفادات والإنذارات
-                    </h3>
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                        <table class="w-full text-sm">
-                            <thead class="bg-slate-100 text-slate-600">
-                                <tr>
-                                    <th class="px-3 py-2 text-right font-semibold">#</th>
-                                    <th class="px-3 py-2 text-right font-semibold">النوع</th>
-                                    <th class="px-3 py-2 text-right font-semibold">التاريخ</th>
-                                    <th class="px-3 py-2 text-right font-semibold">العنوان</th>
-                                    <th class="px-3 py-2 text-right font-semibold">التفاصيل</th>
-                                    <th class="px-3 py-2 text-right font-semibold">مرفق</th>
-                                    <th class="px-3 py-2 text-right font-semibold">المستخدم</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                {% for st in employee.statements_log.all %}
-                                <tr class="hover:bg-slate-50">
-                                    <td class="px-3 py-2 text-slate-500">{{ forloop.counter }}</td>
-                                    <td class="px-3 py-2">
-                                        {% if st.statement_type == 'warning' or st.statement_type == 'final_warning' %}
-                                        <span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">{{ st.get_statement_type_display }}</span>
-                                        {% elif st.statement_type == 'acknowledgment' %}
-                                        <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">{{ st.get_statement_type_display }}</span>
-                                        {% else %}
-                                        <span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">{{ st.get_statement_type_display }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-3 py-2 text-slate-700">{{ st.statement_date|date:"Y-m-d" }}</td>
-                                    <td class="px-3 py-2 font-medium text-slate-800">{{ st.title }}</td>
-                                    <td class="px-3 py-2 text-slate-600 text-xs max-w-xs truncate" title="{{ st.content }}">{{ st.content|default:"—" }}</td>
-                                    <td class="px-3 py-2">
-                                        {% if st.document %}
-                                        {% include "components/media_preview_btn.html" with url=st.document.url title=st.title label="عرض" btn_class="text-primary-600 hover:text-primary-700 text-xs flex items-center gap-1 font-semibold" icon="eye" icon_class="w-4 h-4" %}
-                                        {% else %}
-                                        —
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-3 py-2 text-slate-500 text-xs">
-                                        {% if st.created_by %}
-                                        {{ st.created_by.get_full_name|default:st.created_by.username }}
-                                        {% else %}
-                                        —
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="7" class="px-3 py-6 text-center text-slate-400 text-sm">لا بيانات</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {% else %}
-                <div class="p-4 rounded-lg border border-slate-200 bg-slate-50 text-center text-slate-500 text-sm">
-                    احفظ بيانات الموظف أولاً ليتم عرض الإفادات والإنذارات.
-                </div>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- Tab 6: المستندات -->
+            <!-- Tab: المستندات -->
             {% if tab_visible.docs %}
             <div x-show="activeTab === 'docs'" class="p-5"{% if default_employee_tab == 'docs' %} style="display:block"{% else %} x-cloak{% endif %}>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         {% if employee.commencement_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.commencement_document.url title="مستند المباشرة" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
                         {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' existing_filename=employee.commencement_document.name|basename %}
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         {% if employee.id_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.id_document.url title="صورة الهوية" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
                         {% include 'components/file_upload.html' with name='id_document' label='صورة الهوية' accept='image/*,.pdf' existing_filename=employee.id_document.name|basename %}
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         {% if employee.passport_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.passport_document.url title="جواز السفر" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
                         {% include 'components/file_upload.html' with name='passport_document' label='جواز السفر' accept='image/*,.pdf' existing_filename=employee.passport_document.name|basename %}
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         {% if employee.contract_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.contract_document.url title="العقد" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
                         {% include 'components/file_upload.html' with name='contract_document' label='العقد' accept='image/*,.pdf' existing_filename=employee.contract_document.name|basename %}
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="hr-form-field">
                         {% if employee.other_documents %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.other_documents.url title="مستندات أخرى" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
                         {% include 'components/file_upload.html' with name='other_documents' label='مستندات أخرى' accept='image/*,.pdf' existing_filename=employee.other_documents.name|basename %}
                     </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Tab 7: أرشيف الحركة -->
-            {% if tab_visible.archive %}
-            <div x-show="activeTab === 'archive'" class="p-5"{% if default_employee_tab == 'archive' %} style="display:block"{% else %} x-cloak{% endif %}>
-                {% if employee.employment_request %}
-                <div class="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5"></i>
-                        <div class="flex-1 text-xs space-y-1">
-                            <p class="font-bold text-emerald-800">تمت الموافقة على طلب التوظيف</p>
-                            <p class="text-slate-600">مقدم الطلب: <span class="font-semibold">{{ employee.employment_request.requested_by.get_full_name|default:employee.employment_request.requested_by.username|default:"-" }}</span></p>
-                            <p class="text-slate-600">تاريخ الطلب: <span class="font-semibold">{{ employee.employment_request.created_at|date:"Y-m-d H:i" }}</span></p>
-                            <p class="text-slate-600">اعتمدها: <span class="font-semibold">{{ employee.employment_request.reviewed_by.get_full_name|default:employee.employment_request.reviewed_by.username|default:"-" }}</span></p>
-                            <p class="text-slate-600">تاريخ الاعتماد: <span class="font-semibold">{{ employee.employment_request.reviewed_at|date:"Y-m-d H:i" }}</span></p>
-                            {% if employee.employment_request.review_notes %}
-                            <p class="text-slate-600">ملاحظات: <span class="font-semibold">{{ employee.employment_request.review_notes }}</span></p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                <div class="p-4 bg-slate-50 rounded-lg text-center text-xs text-slate-500">
-                    <i data-lucide="info" class="w-4 h-4 inline-block ml-1"></i>
-                    سيظهر هنا أرشيف حركة الموظف (التنقلات بين الفروع، التغييرات في الراتب، إلخ)
                 </div>
             </div>
             {% endif %}
@@ -475,7 +379,7 @@
             switchTab(key) {
                 const labels = {
                     main: 'البيانات', contract: 'العقد', salary: 'الراتب', leaves: 'الإجازات',
-                    schedule: 'الدوام', warnings: 'الإنذارات', docs: 'المستندات', archive: 'الأرشيف',
+                    schedule: 'الدوام', docs: 'المستندات',
                 };
                 const store = window.Alpine && Alpine.store('glassLoader');
                 if (store) {
