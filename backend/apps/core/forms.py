@@ -59,8 +59,8 @@ class BranchForm(forms.ModelForm):
     is_active = forms.BooleanField(required=False)
     manager = forms.ModelChoiceField(
         queryset=User.objects.filter(is_active=True),
-        required=True,
-        error_messages={'required': 'يجب تحديد مدير للفرع'},
+        required=False,
+        empty_label='— بدون مدير (اختياري) —',
     )
 
     class Meta:

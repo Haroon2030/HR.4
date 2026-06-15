@@ -545,10 +545,13 @@ class BranchFormTests(TestCase):
         self.assertFalse(f.is_valid())
         self.assertIn('code', f.errors)
 
-    def test_manager_required(self):
-        f = BranchForm(data={'name': 'x', 'code': 'NEW'})
-        self.assertFalse(f.is_valid())
-        self.assertIn('manager', f.errors)
+    def test_manager_optional(self):
+        f = BranchForm(data={'name': 'x', 'code': 'NEW', 'is_active': '1'})
+        self.assertTrue(f.is_valid(), f.errors)
+        branch = f.save(commit=False)
+        branch.company = self.company
+        branch.save()
+        self.assertIsNone(branch.manager_id)
 
 
 class UserFormsTests(TestCase):
