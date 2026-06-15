@@ -21,7 +21,7 @@ from django.urls import reverse
 
 from apps.core.models import PendingAction, Role
 from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
-from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations
+from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations, can_delete_pending_action
 from apps.core.web_views._helpers import (
     _can_act_at_stage,
     _can_return_at_stage,
@@ -154,9 +154,10 @@ def _inbox_for_hire(user, qs):
     return qs.filter(f) if has_filter else qs.none()
 
 
-def _wrap_action(a):
+def _wrap_action(a, user):
     """تحويل PendingAction إلى DTO موحّد للعرض."""
     first = resolve_first_approver(a)
+    can_del = can_delete_pending_action(user, a)
     return SimpleNamespace(
         kind='action',
         id=a.id,
@@ -177,12 +178,17 @@ def _wrap_action(a):
         updated_at=a.updated_at,
         resubmit_count=a.resubmit_count or 0,
         detail_url=reverse('web:pending_action_detail', args=[a.id]),
+        delete_url=reverse('web:delete_pending_action', args=[a.id]) if can_del else '',
+        delete_confirm=f'حذف الطلب #{a.id} ({a.get_action_type_display()})؟ لا يمكن التراجع.',
     )
 
 
-def _wrap_hire(r):
+def _wrap_hire(r, user):
     """تحويل EmploymentRequest إلى DTO موحّد للعرض."""
+    from apps.core.services.workflow_access import can_delete_employment_request
+
     first = resolve_first_approver(r)
+    can_del = can_delete_employment_request(user, r)
     return SimpleNamespace(
         kind='hire',
         id=r.id,
@@ -203,6 +209,8 @@ def _wrap_hire(r):
         updated_at=r.updated_at,
         resubmit_count=0,
         detail_url=reverse('web:list_employment_requests'),
+        delete_url=reverse('web:delete_employment_request', args=[r.id]) if can_del else '',
+        delete_confirm=f'حذف طلب التوظيف «{r.name}»؟ لا يمكن التراجع.',
     )
 
 
@@ -246,8 +254,8 @@ def list_pending_actions(request):
 
     # ─ دمج وفرز موحّد (حد أقصى لتقليل استهلاك الذاكرة) ─────────
     _MERGE_LIMIT = 200
-    rows = [_wrap_action(a) for a in qs.order_by('-requested_at')[:_MERGE_LIMIT]]
-    rows += [_wrap_hire(r) for r in qs_hire.order_by('-created_at')[:_MERGE_LIMIT]]
+    rows = [_wrap_action(a, request.user) for a in qs.order_by('-requested_at')[:_MERGE_LIMIT]]
+    rows += [_wrap_hire(r, request.user) for r in qs_hire.order_by('-created_at')[:_MERGE_LIMIT]]
     rows_may_be_truncated = len(rows) >= _MERGE_LIMIT
     rows.sort(key=lambda x: x.updated_at or x.requested_at, reverse=True)
 
@@ -497,3 +505,24 @@ def approve_pending_action(request, action_id):
 def reject_pending_action(request, action_id):
     messages.info(request, 'تمّت ترقية النظام. لإرجاع الطلب استخدم زر "إرجاع للتعديل".')
     return redirect('web:pending_action_detail', action_id=action_id)
+
+
+@login_required
+def delete_pending_action(request, action_id):
+    """حذف ناعم لطلب عملية غير مُنفَّذ."""
+    if not can_view_operations(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض طلبات العمليات.')
+        return redirect('web:dashboard')
+
+    if request.method != 'POST':
+        return redirect('web:list_pending_actions')
+
+    action = get_object_or_404(_user_visible_actions(request.user), id=action_id)
+    if not can_delete_pending_action(request.user, action):
+        messages.error(request, 'لا تملك صلاحية حذف هذا الطلب أو أنه مُنفَّذ بالفعل.')
+        return redirect('web:list_pending_actions')
+
+    label = f'#{action.id} — {action.get_action_type_display()}'
+    action.delete()
+    messages.success(request, f'تم حذف الطلب {label}.')
+    return redirect('web:list_pending_actions')

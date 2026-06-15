@@ -103,7 +103,7 @@
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.requested_by.get_full_name|default:a.requested_by.username|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.updated_at|date:"Y-m-d H:i" }}</td>
                         <td class="px-3 py-2 text-left whitespace-nowrap">
-                            {% include "components/table_actions.html" with view_url=a.detail_url view_title="فتح الطلب" %}
+                            {% include "components/table_actions.html" with view_url=a.detail_url view_title="فتح الطلب" delete_url=a.delete_url delete_confirm=a.delete_confirm delete_title="حذف الطلب" %}
                         </td>
                     </tr>
                     {% empty %}

@@ -17,7 +17,7 @@ from apps.core.web_views._helpers import (
     _is_hr_officer,
 )
 from apps.core.models import PendingAction
-from apps.core.services.workflow_access import stage_permission_required
+from apps.core.services.workflow_access import stage_permission_required, can_delete_employment_request
 from apps.core.services import employment_requests as svc
 from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, user_can_first_approve, first_stage_tab_label
 
@@ -225,6 +225,30 @@ def reject_employment_request(request, request_id):
     except ValueError as e:
         messages.error(request, str(e))
     return redirect('web:list_employment_requests')
+
+
+@login_required
+def delete_employment_request(request, request_id):
+    """حذف ناعم لطلب توظيف غير مُعتمد."""
+    from apps.core.web_views.pending_actions import _user_visible_hire_requests
+    from apps.core.services.workflow_access import can_view_operations
+
+    if not can_view_operations(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض طلبات العمليات.')
+        return redirect('web:dashboard')
+
+    if request.method != 'POST':
+        return redirect('web:list_pending_actions')
+
+    emp_req = get_object_or_404(_user_visible_hire_requests(request.user), id=request_id)
+    if not can_delete_employment_request(request.user, emp_req):
+        messages.error(request, 'لا تملك صلاحية حذف هذا الطلب أو أنه مُعتمد بالفعل.')
+        return redirect('web:list_pending_actions')
+
+    name = emp_req.name
+    emp_req.delete()
+    messages.success(request, f'تم حذف طلب التوظيف «{name}».')
+    return redirect('web:list_pending_actions')
 
 
 # ─── تعديل بيانات الموظف على الطلب (قبل الموافقة النهائية) ──────────────

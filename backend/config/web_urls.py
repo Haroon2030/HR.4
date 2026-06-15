@@ -88,6 +88,7 @@ urlpatterns = [
     path('employment-requests/<int:request_id>/officer-approve/', web_views.officer_approve_employment_request, name='officer_approve_employment_request'),  # تنفيذ الأخصائي
     path('employment-requests/<int:request_id>/edit/', web_views.edit_employment_request, name='edit_employment_request'),                  # تعديل الطلب
     path('employment-requests/<int:request_id>/reject/', web_views.reject_employment_request, name='reject_employment_request'),            # رفض الطلب
+    path('employment-requests/<int:request_id>/delete/', web_views.delete_employment_request, name='delete_employment_request'),            # حذف الطلب
 
     # ══════════════════════════════════════════════════════════════
     # 4. الطلبات المعلّقة — دورة موافقات 4 مراحل
@@ -104,6 +105,7 @@ urlpatterns = [
     # روابط التوافق الخلفي (الأسماء القديمة — تُعيد التوجيه)
     path('pending-actions/<int:action_id>/approve/', web_views.approve_pending_action, name='approve_pending_action'),
     path('pending-actions/<int:action_id>/reject/', web_views.reject_pending_action, name='reject_pending_action'),
+    path('pending-actions/<int:action_id>/delete/', web_views.delete_pending_action, name='delete_pending_action'),
 
     # ══════════════════════════════════════════════════════════════
     # 5. الإشعارات
