@@ -11,12 +11,15 @@
     --login-text: #0f172a;
     --login-text-muted: #64748b;
     --login-glow: rgba(59, 130, 246, 0.45);
+    --login-font-weight: 700;
+    --login-font-weight-strong: 800;
 }
 
 body.login-body {
     margin: 0;
     min-height: 100vh;
     font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+    font-weight: var(--login-font-weight);
     color: var(--login-text);
     background:
         radial-gradient(ellipse 70% 50% at 50% 0%, rgba(239, 246, 255, 0.9), transparent 60%),
@@ -106,7 +109,7 @@ body.login-body {
     margin: 0 0 1rem;
     padding: 0.65rem 0.85rem;
     border-radius: 0.5rem;
-    font-weight: 600;
+    font-weight: var(--login-font-weight);
     font-size: 0.85rem;
     background: rgba(254, 242, 242, 0.9);
     border: 1px solid rgba(254, 202, 202, 0.9);
@@ -157,7 +160,7 @@ body.login-body {
     background: transparent;
     padding: 0.45rem 0;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: var(--login-font-weight);
     font-family: inherit;
     color: var(--login-text);
     text-align: right;
@@ -165,7 +168,7 @@ body.login-body {
 
 .login-line-field__row input::placeholder {
     color: #94a3b8;
-    font-weight: 500;
+    font-weight: var(--login-font-weight);
 }
 
 .login-line-field__row input:focus {
@@ -282,7 +285,7 @@ body.login-body {
 .login-stage__welcome-text {
     margin: 0 0 0.5rem;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: var(--login-font-weight);
     color: rgba(255, 255, 255, 0.92);
     line-height: 1.6;
 }
@@ -290,7 +293,7 @@ body.login-body {
 .login-stage__welcome-sub {
     margin: 1rem 0 0;
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: var(--login-font-weight);
     color: rgba(255, 255, 255, 0.72);
     line-height: 1.5;
 }
@@ -301,7 +304,7 @@ body.login-body {
     text-align: center;
     margin-top: 1.5rem;
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: var(--login-font-weight);
     color: var(--login-text-muted);
 }
 

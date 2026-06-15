@@ -18,11 +18,11 @@
     .payroll-tbl {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.8125rem;
+        font-size: var(--hr-table-body-size);
     }
     .payroll-tbl thead th {
         padding: 0.55rem 0.65rem;
-        font-size: 0.65rem;
+        font-size: var(--hr-table-head-size);
         font-weight: 700;
         color: #6b7280;
         text-transform: uppercase;
@@ -83,8 +83,8 @@
         letter-spacing: 0.02em;
     }
     .pay-money__cur {
-        font-size: 0.65rem;
-        font-weight: 600;
+        font-size: var(--hr-table-meta-size);
+        font-weight: var(--hr-font-weight);
         opacity: 0.85;
     }
     .pay-money--neutral {
@@ -113,19 +113,19 @@
     }
     .pay-money--net {
         color: #1d4ed8;
-        font-size: 0.875rem;
+        font-size: var(--hr-table-compact-size);
     }
     .pay-money--net .pay-money__cur {
         color: #3b82f6;
     }
     .pay-money--empty {
         color: #9ca3af;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
     }
     .pay-days {
         display: block;
-        font-size: 0.6rem;
-        font-weight: 600;
+        font-size: var(--hr-table-meta-size);
+        font-weight: var(--hr-font-weight);
         color: #9ca3af;
         margin-top: 0.1rem;
     }
@@ -143,7 +143,7 @@
 
     .hr-payroll-build-actions__hint {
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #64748b;
         flex: 1 1 auto;
         min-width: 8rem;
@@ -294,7 +294,7 @@
         display: block;
         margin-top: 0.15rem;
         font-size: 0.72rem;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #64748b;
         line-height: 1.3;
     }
@@ -344,7 +344,7 @@
 
     .hr-payroll-run-actions__hint {
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #64748b;
         flex: 1 1 auto;
         min-width: 8rem;
@@ -651,7 +651,7 @@
 
     .hr-payroll-actions-unified__hint {
         font-size: 0.6875rem;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #64748b;
     }
 
@@ -851,7 +851,7 @@
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        font-size: 0.8125rem;
+        font-size: var(--hr-table-body-size);
     }
 
     .hr-payroll-runs-datatable__table thead th {
@@ -859,7 +859,7 @@
         top: 0;
         z-index: 2;
         padding: 0.6rem 0.7rem;
-        font-size: 0.625rem;
+        font-size: var(--hr-table-head-size);
         font-weight: 800;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -922,7 +922,7 @@
         min-width: 1.65rem;
         height: 1.65rem;
         padding: 0 0.35rem;
-        font-size: 0.7rem;
+        font-size: var(--hr-table-meta-size);
         font-weight: 800;
         font-variant-numeric: tabular-nums;
         font-family: ui-monospace, "Cascadia Code", "Segoe UI", monospace;
@@ -936,12 +936,12 @@
         color: #1d4ed8;
         background: #dbeafe;
         border-color: #93c5fd;
-        font-size: 0.8rem;
+        font-size: var(--hr-table-emphasis-size);
     }
 
     .hr-payroll-runs-datatable__branch-name {
         display: block;
-        font-size: 0.8125rem;
+        font-size: var(--hr-table-body-size);
         font-weight: 800;
         color: #0f172a;
         line-height: 1.25;
@@ -950,8 +950,8 @@
     .hr-payroll-runs-datatable__branch-meta {
         display: block;
         margin-top: 0.1rem;
-        font-size: 0.625rem;
-        font-weight: 600;
+        font-size: var(--hr-table-meta-size);
+        font-weight: var(--hr-font-weight);
         color: #64748b;
     }
 
@@ -961,13 +961,13 @@
     }
 
     .hr-payroll-runs-datatable__sponsor {
-        font-size: 0.75rem;
-        font-weight: 600;
+        font-size: var(--hr-table-compact-size);
+        font-weight: var(--hr-font-weight);
         color: #475569;
     }
 
     .hr-payroll-runs-datatable__period {
-        font-size: 0.7rem;
+        font-size: var(--hr-table-meta-size);
         font-weight: 700;
         color: #64748b;
         font-variant-numeric: tabular-nums;
@@ -1016,7 +1016,7 @@
         align-items: center;
         gap: 0.5rem 0.75rem;
         font-size: 0.6875rem;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #64748b;
     }
 
@@ -1376,7 +1376,7 @@
     .hr-payroll-audit__stat-label {
         display: block;
         font-size: 0.62rem;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #64748b;
         margin-bottom: 0.15rem;
     }
@@ -1402,7 +1402,7 @@
     .hr-payroll-audit__table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.75rem;
+        font-size: var(--hr-table-compact-size);
     }
 
     .hr-payroll-audit__table th {
@@ -1441,7 +1441,7 @@
     .hr-payroll-audit__badge--error { background: #fee2e2; color: #991b1b; }
 
     .hr-payroll-audit__check-title {
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
         color: #1e293b;
         white-space: nowrap;
     }
@@ -1454,7 +1454,7 @@
 
     .hr-payroll-audit__employee {
         color: #1d4ed8;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
     }
 
     .hr-payroll-audit__detail {
@@ -1482,7 +1482,7 @@
         align-items: center;
         gap: 0.35rem;
         color: #b91c1c;
-        font-weight: 600;
+        font-weight: var(--hr-font-weight);
     }
 
     @media (max-width: 1023px) {

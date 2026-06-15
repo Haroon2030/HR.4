@@ -1492,6 +1492,7 @@ window.scheduleBoxes = function(loadInitial) {
         Object.keys(box.day_codes).forEach(function(k) {
             var c = box.day_codes[k];
             if (c === 'D' || c === 'd') box.day_codes[k] = '✓';
+            if ((c || '').toString().toLowerCase() === 'a') delete box.day_codes[k];
         });
         if (Array.isArray(box.days)) {
             box.days.forEach(function(d) {
@@ -1525,9 +1526,9 @@ window.scheduleBoxes = function(loadInitial) {
         editMode: false,
         _initialCount: initial.length,
         months: ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],
-        weekDays: ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
+        weekDays: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
         dayNumbers: Array.from({ length: 31 }, function(_, i) { return i + 1; }),
-        codeCycle: ['', '✓', 'off', 'a'],
+        codeCycle: ['', '✓', 'off'],
         _seq: 1,
         page: 1,
         perPage: 4,

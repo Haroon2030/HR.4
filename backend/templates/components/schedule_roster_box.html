@@ -44,13 +44,11 @@
             <thead>
                 <tr>
                     <template x-for="d in dayNumbers" :key="'wd-' + d">
-                        <th class="hr-schedule-roster__weekday border border-slate-300 bg-sky-50/80 font-bold leading-none"
-                            :class="isDayInMonth(box, d) ? 'text-sky-800' : 'text-slate-300'"
-                            x-text="weekdayForDay(box, d) || '—'"></th>
+                        <th class="hr-schedule-roster__weekday border border-slate-300 font-bold leading-none"
+                            :class="isDayInMonth(box, d) ? '' : 'hr-schedule-roster__weekday--inactive'">
+                            <span class="hr-schedule-roster__weekday-text" x-text="weekdayForDay(box, d) || '—'"></span>
+                        </th>
                     </template>
-                    <th rowspan="2" class="hr-schedule-roster__notes-head border border-slate-300 bg-slate-100 font-bold text-slate-700 align-middle min-w-[7rem]">
-                        ملاحظات
-                    </th>
                 </tr>
                 <tr>
                     <template x-for="d in dayNumbers" :key="'num-' + d">
@@ -66,7 +64,6 @@
                             :class="{
                                 'hr-schedule-roster__cell--inactive': !isDayInMonth(box, d),
                                 'hr-schedule-roster__cell--off': getDayCode(box, d).toLowerCase() === 'off',
-                                'hr-schedule-roster__cell--absent': getDayCode(box, d).toLowerCase() === 'a',
                                 'hr-schedule-roster__cell--work': isWorkDayCode(getDayCode(box, d))
                             }">
                             <button type="button"
@@ -77,11 +74,6 @@
                                     x-text="formatDayCode(getDayCode(box, d))"></button>
                         </td>
                     </template>
-                    <td rowspan="1" class="hr-schedule-roster__notes border border-slate-300 align-top bg-white">
-                        <textarea x-model="box.notes" rows="2" :readonly="!editable"
-                                  class="hr-schedule-roster__notes-input w-full text-xs border-0 resize-y bg-transparent focus:outline-none focus:ring-1 focus:ring-primary-400 rounded"
-                                  placeholder="ملاحظات..."></textarea>
-                    </td>
                 </tr>
             </tbody>
         </table>
@@ -89,7 +81,6 @@
     <div class="px-3 py-1.5 bg-slate-50 border-t border-slate-200 text-[10px] text-slate-500 flex flex-wrap gap-3">
         <span><strong class="text-emerald-700">✓</strong> دوام</span>
         <span><strong class="text-slate-700">off</strong> إجازة</span>
-        <span><strong class="text-rose-600">a</strong> غياب</span>
-        <span class="text-slate-400">— انقر على الخلية: فارغ ← ✓ ← off ← a</span>
+        <span class="text-slate-400">— انقر على الخلية: فارغ ← ✓ ← off</span>
     </div>
 </div>

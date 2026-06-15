@@ -301,7 +301,7 @@ def set_work_schedule(request, employee_id):
             day_codes: dict[str, str] = {}
             raw_codes = box.get('day_codes') or {}
             if isinstance(raw_codes, dict):
-                allowed = {'d', 'off', 'a', 'check', 'v'}
+                allowed = {'d', 'off', 'check', 'v'}
                 for k, v in raw_codes.items():
                     try:
                         di = int(k)
