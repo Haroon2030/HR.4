@@ -158,6 +158,13 @@ def _wrap_action(a, user):
     """تحويل PendingAction إلى DTO موحّد للعرض."""
     first = resolve_first_approver(a)
     can_del = can_delete_pending_action(user, a)
+    if a.status == PendingAction.Status.APPROVED:
+        delete_confirm = (
+            f'إخفاء الطلب المكتمل #{a.id} ({a.get_action_type_display()}) من القائمة؟ '
+            'العملية نُفّذت ولا يُلغى تنفيذها.'
+        )
+    else:
+        delete_confirm = f'حذف الطلب #{a.id} ({a.get_action_type_display()})؟ لا يمكن التراجع.'
     return SimpleNamespace(
         kind='action',
         id=a.id,
@@ -179,7 +186,7 @@ def _wrap_action(a, user):
         resubmit_count=a.resubmit_count or 0,
         detail_url=reverse('web:pending_action_detail', args=[a.id]),
         delete_url=reverse('web:delete_pending_action', args=[a.id]) if can_del else '',
-        delete_confirm=f'حذف الطلب #{a.id} ({a.get_action_type_display()})؟ لا يمكن التراجع.',
+        delete_confirm=delete_confirm,
     )
 
 
@@ -189,6 +196,14 @@ def _wrap_hire(r, user):
 
     first = resolve_first_approver(r)
     can_del = can_delete_employment_request(user, r)
+    from apps.employees.models import EmploymentRequest
+    if r.status == EmploymentRequest.Status.APPROVED:
+        delete_confirm = (
+            f'إخفاء طلب التوظيف المكتمل «{r.name}» من القائمة؟ '
+            'تم اعتماد الطلب ولا يُلغى إنشاء الموظف.'
+        )
+    else:
+        delete_confirm = f'حذف طلب التوظيف «{r.name}»؟ لا يمكن التراجع.'
     return SimpleNamespace(
         kind='hire',
         id=r.id,
@@ -210,7 +225,7 @@ def _wrap_hire(r, user):
         resubmit_count=0,
         detail_url=reverse('web:list_employment_requests'),
         delete_url=reverse('web:delete_employment_request', args=[r.id]) if can_del else '',
-        delete_confirm=f'حذف طلب التوظيف «{r.name}»؟ لا يمكن التراجع.',
+        delete_confirm=delete_confirm,
     )
 
 
@@ -519,7 +534,7 @@ def delete_pending_action(request, action_id):
 
     action = get_object_or_404(_user_visible_actions(request.user), id=action_id)
     if not can_delete_pending_action(request.user, action):
-        messages.error(request, 'لا تملك صلاحية حذف هذا الطلب أو أنه مُنفَّذ بالفعل.')
+        messages.error(request, 'لا تملك صلاحية حذف هذا الطلب.')
         return redirect('web:list_pending_actions')
 
     label = f'#{action.id} — {action.get_action_type_display()}'

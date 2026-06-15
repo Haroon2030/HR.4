@@ -242,7 +242,7 @@ def delete_employment_request(request, request_id):
 
     emp_req = get_object_or_404(_user_visible_hire_requests(request.user), id=request_id)
     if not can_delete_employment_request(request.user, emp_req):
-        messages.error(request, 'لا تملك صلاحية حذف هذا الطلب أو أنه مُعتمد بالفعل.')
+        messages.error(request, 'لا تملك صلاحية حذف هذا الطلب.')
         return redirect('web:list_pending_actions')
 
     name = emp_req.name

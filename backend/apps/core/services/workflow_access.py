@@ -111,10 +111,8 @@ def user_can_reject_employment_request(user, emp_req) -> bool:
 
 
 def can_delete_pending_action(user, action) -> bool:
-    """حذف طلب عملية — ممنوع بعد التنفيذ؛ المقدّم يلغي المسودة/المرتجع؛ الإدارة لباقي الحالات."""
+    """حذف/إخفاء طلب عملية — الإدارة لكل الحالات؛ المقدّم لطلباته بما فيها المكتملة."""
     if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
-        return False
-    if action.status == PendingAction.Status.APPROVED:
         return False
     if user.is_superuser or _is_super_or_admin(user):
         return True
@@ -122,17 +120,16 @@ def can_delete_pending_action(user, action) -> bool:
         return action.status in (
             PendingAction.Status.RETURNED,
             PendingAction.Status.PENDING_BRANCH,
+            PendingAction.Status.APPROVED,
         )
     return False
 
 
 def can_delete_employment_request(user, emp_req) -> bool:
-    """حذف طلب توظيف — نفس منطق الحذف مع دعم المرفوض."""
+    """حذف/إخفاء طلب توظيف — الإدارة لكل الحالات؛ المقدّم لطلباته بما فيها المكتملة."""
     from apps.employees.models import EmploymentRequest
 
     if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
-        return False
-    if emp_req.status == EmploymentRequest.Status.APPROVED:
         return False
     if user.is_superuser or _is_super_or_admin(user):
         return True
@@ -141,5 +138,6 @@ def can_delete_employment_request(user, emp_req) -> bool:
             EmploymentRequest.Status.PENDING_BRANCH,
             EmploymentRequest.Status.PENDING,
             EmploymentRequest.Status.REJECTED,
+            EmploymentRequest.Status.APPROVED,
         )
     return False
