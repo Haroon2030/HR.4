@@ -1,58 +1,23 @@
 """
 دوال مساعدة لواجهات الويب — Web Views Helpers
 ===============================================
-هذا الملف يحتوي على أدوات مشتركة تُستخدم من قِبل كل Views الويب:
+أدوات مشتركة تُستخدم من قِبل Views الويب:
 
-1. Decorators لفحص الأدوار:
-   - admin_required — يتطلب دور أدمن
-   - branch_manager_required — يتطلب أن يكون مدير فرع
-   - general_manager_required — يتطلب مدير عام أو مدير موارد
-   - hr_officer_required — يتطلب موظف موارد
-   - employee_branch_access_required — يتحقق من أن المستخدم له حق الوصول لفرع الموظف
+1. Decorators:
+   - general_manager_required — مدير عام أو مدير موارد
+   - employee_branch_access_required — صلاحية فرع الموظف
 
 2. دوال فحص الأدوار:
-   - _is_branch_manager — هل يدير فرعاً واحداً على الأقل؟
-   - _is_general_manager — هل هو مدير عام / مدير موارد / سوبر يوزر؟
-   - _is_hr_officer — هل هو موظف موارد؟
-   - _can_act_at_stage — هل يحق له اتخاذ قرار في مرحلة معينة من دورة الموافقات؟
+   - _is_branch_manager — مدير فرع؟
+   - _is_general_manager — مدير عام / مدير موارد؟
+   - _is_hr_officer — موظف موارد؟
+   - _can_act_at_stage — صلاحية مرحلة الموافقات
 """
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from functools import wraps
 
 from apps.core.models import Role
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Decorator: فحص دور الأدمن
-# ══════════════════════════════════════════════════════════════════════════════
-
-def admin_required(view_func):
-    """
-    يتحقق من أن المستخدم لديه دور أدمن أو أنه superuser.
-    يُستخدم لحماية صفحات الإدارة العامة (إعدادات، مستخدمين، إلخ).
-    """
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('web:auth:login')
-        
-        # السوبر يوزر يمر مباشرة
-        if request.user.is_superuser:
-            return view_func(request, *args, **kwargs)
-        
-        # فحص دور الأدمن عبر الـ Profile
-        try:
-            user_profile = request.user.profile
-            if user_profile.role and user_profile.role.role_type == Role.RoleType.ADMIN:
-                return view_func(request, *args, **kwargs)
-        except Exception as e:
-            # المستخدم ليس لديه profile
-            pass
-        
-        messages.error(request, 'ليس لديك صلاحية للوصول إلى هذه الصفحة')
-        return redirect('web:dashboard')
-    return wrapper
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -69,33 +34,6 @@ def _is_branch_manager(user):
         user.is_superuser
         or user.managed_branches.filter(is_deleted=False).exists()
     )
-
-
-def _is_administration_manager(user):
-    """هل المستخدم مدير إدارة (معيّن على إدارة أو بدور مدير إدارة)؟"""
-    if user.is_superuser:
-        return True
-    if user.managed_administrations.filter(is_deleted=False).exists():
-        return True
-    profile = getattr(user, 'profile', None)
-    return bool(
-        profile
-        and profile.role
-        and profile.role.role_type == Role.RoleType.ADMIN_MANAGER
-    )
-
-
-def branch_manager_required(view_func):
-    """Decorator: يتطلب أن يكون المستخدم مدير فرع."""
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('web:auth:login')
-        if _is_branch_manager(request.user):
-            return view_func(request, *args, **kwargs)
-        messages.error(request, 'هذه الصفحة متاحة لمدراء الفروع فقط')
-        return redirect('web:dashboard')
-    return wrapper
 
 
 def filter_employees_queryset_for_user(user, queryset):
@@ -279,18 +217,5 @@ def general_manager_required(view_func):
         if _is_general_manager(request.user):
             return view_func(request, *args, **kwargs)
         messages.error(request, 'هذه الصفحة متاحة للمدير العام / مدير الموارد فقط')
-        return redirect('web:dashboard')
-    return wrapper
-
-
-def hr_officer_required(view_func):
-    """Decorator: يتطلب أن يكون المستخدم موظف موارد أو سوبر يوزر."""
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('web:auth:login')
-        if _is_hr_officer(request.user) or request.user.is_superuser:
-            return view_func(request, *args, **kwargs)
-        messages.error(request, 'هذه الصفحة متاحة لموظفي الموارد فقط')
         return redirect('web:dashboard')
     return wrapper

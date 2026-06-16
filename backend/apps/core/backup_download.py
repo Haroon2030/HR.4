@@ -6,7 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 from django.conf import settings
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse
 
 ALLOWED_BACKUP_FILENAME = re.compile(
     r'^hr_backup_\d{8}_\d{6}(?:_[a-zA-Z0-9-]+)?\.(?:sql|sqlite3)\.gz$'
@@ -53,7 +53,3 @@ def stream_database_backup_file(*, filename: str, r2_key: str = '') -> FileRespo
     resp = FileResponse(blob, as_attachment=True, filename=filename)
     resp['Content-Type'] = 'application/gzip'
     return resp
-
-
-def backup_download_error_response(message: str, *, status: int = 400) -> HttpResponse:
-    return HttpResponse(message, status=status, content_type='text/plain; charset=utf-8')
