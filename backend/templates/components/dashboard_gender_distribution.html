@@ -1,22 +1,37 @@
 {% load custom_tags %}
-{# توزيع الموظفين حسب الجنس — يتطلب gender_distribution, stats #}
-<div class="hr-dist-card">
-    {% include "components/dashboard_dist_card_head.html" with icon="users" title="الموظفون حسب الجنس" subtitle="توزيع القوى العاملة حسب الجنس" total=stats.employees_total %}
+{# توزيع الموظفين حسب الجنس — مخطط دائري #}
+<div class="hr-dist-card hr-dist-card--gender-donut">
+    {% include "components/dashboard_dist_card_head.html" with icon="users" title="الموظفون حسب الجنس" subtitle="توزيع القوى العاملة حسب الجنس" %}
 
     {% if gender_distribution and stats.employees_total %}
-    <div class="hr-dist-card__grid">
-        {% for g in gender_distribution %}
-        {% with color=g.gender|gender_dist_color %}
-        {% widthratio g.c stats.employees_total 100 as pct %}
-        {% if g.gender == 'male' %}
-            {% include "components/dashboard_dist_card_row.html" with label="ذكر" count=g.c percent=pct color=color icon="mars" %}
-        {% elif g.gender == 'female' %}
-            {% include "components/dashboard_dist_card_row.html" with label="أنثى" count=g.c percent=pct color=color icon="venus" %}
-        {% else %}
-            {% include "components/dashboard_dist_card_row.html" with label="غير محدد" count=g.c percent=pct color=color icon="user" %}
-        {% endif %}
-        {% endwith %}
-        {% endfor %}
+    <div class="hr-dist-card__body hr-dist-card__body--donut">
+        <div class="hr-dist-card__donut-wrap" aria-hidden="true">
+            <div class="hr-dist-card__donut" style="--hr-dist-donut-gradient: {{ gender_distribution|gender_donut_style }};">
+                <div class="hr-dist-card__donut-ring"></div>
+                <div class="hr-dist-card__donut-hole">
+                    <span class="hr-dist-card__donut-value">{{ stats.employees_total }}</span>
+                    <span class="hr-dist-card__donut-label">إجمالي</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hr-dist-card__legend" role="list" aria-label="تفاصيل توزيع الجنس">
+            {% for g in gender_distribution %}
+            {% with color=g.gender|gender_dist_color %}
+            {% widthratio g.c stats.employees_total 100 as pct %}
+            <div class="hr-dist-card__legend-item hr-dist-card__legend-item--{{ color }}" role="listitem">
+                <span class="hr-dist-card__legend-dot" aria-hidden="true"></span>
+                <span class="hr-dist-card__legend-label">
+                    {% if g.gender == 'male' %}ذكر{% elif g.gender == 'female' %}أنثى{% else %}غير محدد{% endif %}
+                </span>
+                <span class="hr-dist-card__legend-meta">
+                    <strong>{{ g.c }}</strong>
+                    <span>{{ pct }}%</span>
+                </span>
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
     </div>
     {% else %}
     <div class="hr-dist-card__empty">

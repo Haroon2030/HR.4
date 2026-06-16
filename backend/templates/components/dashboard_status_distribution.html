@@ -1,12 +1,32 @@
 {# توزيع حالة الموظفين — يتطلب stats و employee_status_rows #}
-<div class="hr-dist-card">
-    {% include "components/dashboard_dist_card_head.html" with icon="pie-chart" title="توزيع حالة الموظفين" subtitle="نظرة سريعة على وضع القوى العاملة" total=stats.employees_total %}
+{% load custom_tags %}
+<div class="hr-dist-card hr-dist-card--status-donut">
+    {% include "components/dashboard_dist_card_head.html" with icon="pie-chart" title="توزيع حالة الموظفين" subtitle="نظرة سريعة على وضع القوى العاملة" %}
 
     {% if stats.employees_total %}
-    <div class="hr-dist-card__grid">
-        {% for row in employee_status_rows %}
-        {% include "components/dashboard_dist_card_row.html" with label=row.label count=row.count percent=row.percent color=row.color icon=row.icon %}
-        {% endfor %}
+    <div class="hr-dist-card__body hr-dist-card__body--donut">
+        <div class="hr-dist-card__donut-wrap" aria-hidden="true">
+            <div class="hr-dist-card__donut" style="--hr-dist-donut-gradient: {{ employee_status_rows|employee_status_donut_style }};">
+                <div class="hr-dist-card__donut-ring"></div>
+                <div class="hr-dist-card__donut-hole">
+                    <span class="hr-dist-card__donut-value">{{ stats.employees_total }}</span>
+                    <span class="hr-dist-card__donut-label">إجمالي</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hr-dist-card__legend" role="list" aria-label="تفاصيل توزيع حالة الموظفين">
+            {% for row in employee_status_rows %}
+            <div class="hr-dist-card__legend-item hr-dist-card__legend-item--{{ row.color }}" role="listitem">
+                <span class="hr-dist-card__legend-dot" aria-hidden="true"></span>
+                <span class="hr-dist-card__legend-label">{{ row.label }}</span>
+                <span class="hr-dist-card__legend-meta">
+                    <strong>{{ row.count }}</strong>
+                    <span>{{ row.percent }}%</span>
+                </span>
+            </div>
+            {% endfor %}
+        </div>
     </div>
     {% else %}
     <div class="hr-dist-card__empty">

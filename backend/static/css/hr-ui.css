@@ -6366,6 +6366,416 @@ body.hr-app .hr-app-main {
 .hr-dist-card__seg--suspended { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
 .hr-dist-card__seg--terminated { background: linear-gradient(90deg, #fb7185, #f43f5e); }
 
+/* ── Donut chart — employee status distribution ── */
+.hr-dist-card--status-donut .hr-dist-card__head,
+.hr-dist-card--gender-donut .hr-dist-card__head {
+    margin-bottom: 0.85rem;
+}
+
+.hr-dist-card__body--donut {
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+    flex-wrap: wrap;
+}
+
+.hr-dist-card__donut-wrap {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hr-dist-card__donut {
+    --hr-dist-donut-size: 8.75rem;
+    --hr-dist-donut-ring: 1.05rem;
+    position: relative;
+    width: var(--hr-dist-donut-size);
+    height: var(--hr-dist-donut-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hr-dist-card__donut-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--hr-dist-donut-gradient, conic-gradient(#e2e8f0 0deg 360deg));
+    box-shadow:
+        0 6px 18px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: background 0.35s ease;
+}
+
+.hr-dist-card__donut-ring::after {
+    content: '';
+    position: absolute;
+    inset: var(--hr-dist-donut-ring);
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.hr-dist-card__donut-hole {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+.hr-dist-card__donut-value {
+    font-size: 1.35rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.hr-dist-card__donut-label {
+    font-size: 0.62rem;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    letter-spacing: 0.02em;
+}
+
+.hr-dist-card__legend {
+    flex: 1 1 12rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.hr-dist-card__legend-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.65rem;
+    border: 1px solid #e8edf3;
+    background: rgba(255, 255, 255, 0.72);
+    transition:
+        border-color 0.16s ease,
+        box-shadow 0.16s ease,
+        background 0.16s ease;
+}
+
+.hr-dist-card__legend-item:hover {
+    border-color: rgba(59, 130, 246, 0.28);
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.08);
+}
+
+.hr-dist-card__legend-dot {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95);
+}
+
+.hr-dist-card__legend-item--active .hr-dist-card__legend-dot { background: #10b981; }
+.hr-dist-card__legend-item--leave .hr-dist-card__legend-dot { background: #0ea5e9; }
+.hr-dist-card__legend-item--suspended .hr-dist-card__legend-dot { background: #f59e0b; }
+.hr-dist-card__legend-item--terminated .hr-dist-card__legend-dot { background: #f43f5e; }
+
+.hr-dist-card__legend-label {
+    font-size: 0.78rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #0f172a !important;
+    line-height: 1.25;
+}
+
+.hr-dist-card__legend-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #64748b !important;
+    white-space: nowrap;
+}
+
+.hr-dist-card__legend-meta strong {
+    font-size: 0.82rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+}
+
+@media (min-width: 640px) {
+    .hr-dist-card__body--donut {
+        flex-wrap: nowrap;
+    }
+
+    .hr-dist-card__donut {
+        --hr-dist-donut-size: 9.5rem;
+    }
+}
+
+/* ── Branch — vertical bar chart ── */
+.hr-dist-card--chart-vbars .hr-dist-card__head {
+    margin-bottom: 0.75rem;
+}
+
+.hr-dist-card__vchart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 0.45rem;
+    min-height: 9.5rem;
+    padding: 0.35rem 0.15rem 0;
+}
+
+.hr-dist-card__vbar-col {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 5.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hr-dist-card__vbar-value {
+    font-size: 0.72rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.hr-dist-card__vbar-track {
+    width: 100%;
+    height: 6.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 0.15rem;
+    border-radius: 0.65rem 0.65rem 0.35rem 0.35rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    border: 1px solid #e8edf3;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.hr-dist-card__vbar-fill {
+    display: block;
+    width: 72%;
+    min-height: 0.35rem;
+    border-radius: 0.55rem 0.55rem 0.25rem 0.25rem;
+    transition: height 0.35s ease;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.hr-dist-card__vbar-fill--active { background: linear-gradient(180deg, #34d399, #059669); }
+.hr-dist-card__vbar-fill--leave { background: linear-gradient(180deg, #38bdf8, #0284c7); }
+.hr-dist-card__vbar-fill--suspended { background: linear-gradient(180deg, #fcd34d, #d97706); }
+.hr-dist-card__vbar-fill--terminated { background: linear-gradient(180deg, #fb7185, #e11d48); }
+
+.hr-dist-card__vbar-label {
+    font-size: 0.68rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #334155 !important;
+    text-align: center;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hr-dist-card__vbar-pct {
+    font-size: 0.62rem;
+    font-weight: 700 !important;
+    color: #64748b !important;
+}
+
+/* ── Gender — stacked horizontal strip ── */
+.hr-dist-card--chart-stack .hr-dist-card__head {
+    margin-bottom: 0.75rem;
+}
+
+.hr-dist-card__stack--gender {
+    height: 1.35rem;
+    margin-bottom: 0.85rem;
+    border-radius: 999px;
+    box-shadow:
+        inset 0 1px 2px rgba(15, 23, 42, 0.06),
+        0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.hr-dist-card__stack-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.hr-dist-card__stack-legend-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.65rem;
+    border: 1px solid #e8edf3;
+    background: rgba(255, 255, 255, 0.78);
+    transition:
+        border-color 0.16s ease,
+        box-shadow 0.16s ease,
+        background 0.16s ease;
+}
+
+.hr-dist-card__stack-legend-item:hover {
+    border-color: rgba(59, 130, 246, 0.24);
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.07);
+}
+
+.hr-dist-card__stack-legend-item--leave {
+    border-color: #bae6fd;
+    background: linear-gradient(90deg, rgba(240, 249, 255, 0.9) 0%, #ffffff 100%);
+}
+
+.hr-dist-card__stack-legend-item--terminated {
+    border-color: #fecdd3;
+    background: linear-gradient(90deg, rgba(255, 241, 242, 0.9) 0%, #ffffff 100%);
+}
+
+.hr-dist-card__stack-legend-item--suspended {
+    border-color: #fde68a;
+    background: linear-gradient(90deg, rgba(255, 251, 235, 0.9) 0%, #ffffff 100%);
+}
+
+.hr-dist-card__stack-legend-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.hr-dist-card__stack-legend-glyph,
+.hr-dist-card__stack-legend-icon svg {
+    width: 0.85rem !important;
+    height: 0.85rem !important;
+}
+
+.hr-dist-card__stack-legend-item--leave .hr-dist-card__stack-legend-icon { color: #0284c7 !important; }
+.hr-dist-card__stack-legend-item--terminated .hr-dist-card__stack-legend-icon { color: #e11d48 !important; }
+.hr-dist-card__stack-legend-item--suspended .hr-dist-card__stack-legend-icon { color: #d97706 !important; }
+
+.hr-dist-card__stack-legend-label {
+    font-size: 0.78rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #0f172a !important;
+}
+
+.hr-dist-card__stack-legend-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #64748b !important;
+    white-space: nowrap;
+}
+
+.hr-dist-card__stack-legend-meta strong {
+    font-size: 0.82rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+}
+
+/* ── Nationality — horizontal bar rows ── */
+.hr-dist-card--chart-hbars .hr-dist-card__head {
+    margin-bottom: 0.75rem;
+}
+
+.hr-dist-card__hbars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.hr-dist-card__hbar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.32rem;
+}
+
+.hr-dist-card__hbar-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.hr-dist-card__hbar-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 800 !important;
+    color: #475569 !important;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.hr-dist-card__hbar-label {
+    font-size: 0.76rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #0f172a !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hr-dist-card__hbar-meta {
+    font-size: 0.7rem;
+    font-weight: var(--hr-font-weight) !important;
+    color: #64748b !important;
+    white-space: nowrap;
+}
+
+.hr-dist-card__hbar-meta strong {
+    font-weight: 800 !important;
+    color: #0f172a !important;
+}
+
+.hr-dist-card__hbar-track {
+    height: 0.72rem;
+    border-radius: 999px;
+    background: #eef2f7;
+    border: 1px solid #e8edf3;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.hr-dist-card__hbar-fill {
+    display: block;
+    height: 100%;
+    min-width: 0.3rem;
+    border-radius: 999px;
+    transition: width 0.35s ease;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+}
+
+.hr-dist-card__hbar-fill--active { background: linear-gradient(90deg, #34d399, #059669); }
+.hr-dist-card__hbar-fill--leave { background: linear-gradient(90deg, #38bdf8, #0284c7); }
+.hr-dist-card__hbar-fill--suspended { background: linear-gradient(90deg, #fcd34d, #d97706); }
+.hr-dist-card__hbar-fill--terminated { background: linear-gradient(90deg, #fb7185, #e11d48); }
+
 .hr-dist-card__grid {
     display: grid;
     gap: 0.55rem;
@@ -7309,10 +7719,12 @@ body.hr-app .hr-employee-profile-table .hr-field-item {
     background: #ffffff;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    cursor: default;
     transition:
         border-color 0.16s ease,
         box-shadow 0.16s ease,
-        background 0.16s ease;
+        background 0.16s ease,
+        transform 0.16s ease;
 }
 
 body.hr-app .hr-employee-profile-table > .hr-field-item:nth-child(even),
@@ -7321,11 +7733,16 @@ body.hr-app .hr-employee-profile-table > .hr-field-item:nth-child(odd) {
 }
 
 body.hr-app .hr-employee-profile-table .hr-field-item:hover {
-    border-color: #cbd5e1;
-    background: #ffffff;
+    border-color: var(--hr-form-field-active-ring);
+    background: var(--hr-form-field-active-bg);
     box-shadow:
-        0 0 0 1px rgba(59, 130, 246, 0.1),
-        0 2px 8px rgba(37, 99, 235, 0.06);
+        0 0 0 1px var(--hr-form-field-active-ring),
+        var(--hr-form-field-active-shadow);
+    transform: translateY(-1px);
+}
+
+body.hr-app .hr-employee-profile-table .hr-field-item:hover .hr-field-lbl {
+    color: #2563eb !important;
 }
 
 body.hr-app .hr-employee-profile-table .hr-field-lbl {
@@ -7333,6 +7750,7 @@ body.hr-app .hr-employee-profile-table .hr-field-lbl {
     font-weight: var(--hr-font-weight-strong) !important;
     font-size: var(--hr-profile-field-label-size) !important;
     line-height: 1.25;
+    transition: color 0.16s ease;
 }
 
 body.hr-app .hr-employee-profile-table .hr-field-val {

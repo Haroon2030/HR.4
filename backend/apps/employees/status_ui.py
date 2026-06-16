@@ -101,6 +101,37 @@ def build_employee_status_dashboard_rows(stats: dict[str, Any]) -> list[dict[str
     return rows
 
 
+EMPLOYEE_STATUS_DONUT_FILL: dict[str, str] = {
+    'active': '#10b981',
+    'leave': '#0ea5e9',
+    'suspended': '#f59e0b',
+    'terminated': '#f43f5e',
+}
+
+
+def build_employee_status_donut_style(rows: list[dict[str, Any]]) -> str:
+    """CSS conic-gradient for employee status donut chart."""
+    total = sum(int(row.get('count') or 0) for row in rows)
+    if total <= 0:
+        return 'conic-gradient(#e2e8f0 0deg 360deg)'
+
+    parts: list[str] = []
+    angle = 0.0
+    for row in rows:
+        count = int(row.get('count') or 0)
+        if count <= 0:
+            continue
+        sweep = count * 360.0 / total
+        fill = EMPLOYEE_STATUS_DONUT_FILL.get(str(row.get('color') or ''), '#94a3b8')
+        end = angle + sweep
+        parts.append(f'{fill} {angle:.2f}deg {end:.2f}deg')
+        angle = end
+
+    if not parts:
+        return 'conic-gradient(#e2e8f0 0deg 360deg)'
+    return f"conic-gradient({', '.join(parts)})"
+
+
 def employee_status_dist_palette() -> tuple[str, ...]:
     colors = tuple(get_employee_status_ui(status).color for status in EMPLOYEE_STATUS_ORDER)
     return colors + colors[:2]

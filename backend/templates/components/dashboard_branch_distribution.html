@@ -1,14 +1,22 @@
 {% load custom_tags %}
-{# توزيع الموظفين حسب الفرع — يتطلب branch_distribution, stats #}
-<div class="hr-dist-card">
-    {% include "components/dashboard_dist_card_head.html" with icon="building-2" title="الموظفون حسب الفرع" subtitle="أعلى الفروع من حيث عدد الموظفين" total=stats.employees_total %}
+{# توزيع الموظفين حسب الفرع — مخطط أعمدة رأسية #}
+<div class="hr-dist-card hr-dist-card--chart-vbars">
+    {% include "components/dashboard_dist_card_head.html" with icon="building-2" title="الموظفون حسب الفرع" subtitle="أعلى الفروع من حيث عدد الموظفين" %}
 
     {% if branch_distribution and stats.employees_total %}
-    <div class="hr-dist-card__grid">
+    <div class="hr-dist-card__vchart" role="img" aria-label="مخطط أعمدة — الموظفون حسب الفرع">
         {% for b in branch_distribution %}
         {% with color=forloop.counter0|dist_palette_color %}
+        {% widthratio b.c max_branch 100 as bar_h %}
         {% widthratio b.c stats.employees_total 100 as pct %}
-        {% include "components/dashboard_dist_card_row.html" with label=b.branch__name|default:"بدون فرع" count=b.c percent=pct color=color icon="building-2" %}
+        <div class="hr-dist-card__vbar-col">
+            <span class="hr-dist-card__vbar-value">{{ b.c }}</span>
+            <div class="hr-dist-card__vbar-track" aria-hidden="true">
+                <span class="hr-dist-card__vbar-fill hr-dist-card__vbar-fill--{{ color }}" style="height: {% if bar_h < 8 %}8{% else %}{{ bar_h }}{% endif %}%;"></span>
+            </div>
+            <span class="hr-dist-card__vbar-label" title="{{ b.branch__name|default:'بدون فرع' }}">{{ b.branch__name|default:"بدون فرع"|truncatechars:14 }}</span>
+            <span class="hr-dist-card__vbar-pct">{{ pct }}%</span>
+        </div>
         {% endwith %}
         {% endfor %}
     </div>

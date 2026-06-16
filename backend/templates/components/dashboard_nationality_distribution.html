@@ -1,14 +1,23 @@
 {% load custom_tags %}
-{# توزيع الموظفين حسب الجنسية — يتطلب nationality_distribution, stats #}
-<div class="hr-dist-card">
-    {% include "components/dashboard_dist_card_head.html" with icon="globe" title="الموظفون حسب الجنسية" subtitle="أبرز الجنسيات في المنشأة" total=stats.employees_total %}
+{# توزيع الموظفين حسب الجنسية — أشرطة أفقية مرتّبة #}
+<div class="hr-dist-card hr-dist-card--chart-hbars">
+    {% include "components/dashboard_dist_card_head.html" with icon="globe" title="الموظفون حسب الجنسية" subtitle="أبرز الجنسيات في المنشأة" %}
 
     {% if nationality_distribution and stats.employees_total %}
-    <div class="hr-dist-card__grid">
+    <div class="hr-dist-card__hbars" role="list" aria-label="أشرطة أفقية — الموظفون حسب الجنسية">
         {% for n in nationality_distribution %}
         {% with color=forloop.counter0|dist_palette_color %}
         {% widthratio n.c stats.employees_total 100 as pct %}
-        {% include "components/dashboard_dist_card_row.html" with label=n.nationality__name|default:"بدون جنسية" count=n.c percent=pct color=color icon="flag" %}
+        <div class="hr-dist-card__hbar-row" role="listitem">
+            <div class="hr-dist-card__hbar-head">
+                <span class="hr-dist-card__hbar-rank">{{ forloop.counter }}</span>
+                <span class="hr-dist-card__hbar-label" title="{{ n.nationality__name|default:'بدون جنسية' }}">{{ n.nationality__name|default:"بدون جنسية"|truncatechars:24 }}</span>
+                <span class="hr-dist-card__hbar-meta"><strong>{{ n.c }}</strong> · {{ pct }}%</span>
+            </div>
+            <div class="hr-dist-card__hbar-track" aria-hidden="true">
+                <span class="hr-dist-card__hbar-fill hr-dist-card__hbar-fill--{{ color }}" style="width: {% if pct < 4 %}4{% else %}{{ pct }}{% endif %}%;"></span>
+            </div>
+        </div>
         {% endwith %}
         {% endfor %}
     </div>

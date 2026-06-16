@@ -20,9 +20,51 @@ _ROLE_BADGE_CLASS = {
 }
 
 from apps.core.icon_glyphs import render_lucide_glyph
-from apps.employees.status_ui import employee_status_dist_palette, get_employee_status_ui
+from apps.employees.status_ui import (
+    build_employee_status_donut_style,
+    employee_status_dist_palette,
+    get_employee_status_ui,
+)
 
 _DIST_PALETTE = employee_status_dist_palette()
+
+
+@register.filter
+def employee_status_donut_style(rows):
+    return build_employee_status_donut_style(rows or [])
+
+
+_GENDER_DONUT_FILL = {
+    'leave': '#0ea5e9',
+    'terminated': '#f43f5e',
+    'suspended': '#f59e0b',
+}
+
+
+@register.filter
+def gender_donut_style(distribution):
+    """CSS conic-gradient for gender distribution donut chart."""
+    items = distribution or []
+    total = sum(int(item.get('c') or 0) for item in items)
+    if total <= 0:
+        return 'conic-gradient(#e2e8f0 0deg 360deg)'
+
+    parts: list[str] = []
+    angle = 0.0
+    for item in items:
+        count = int(item.get('c') or 0)
+        if count <= 0:
+            continue
+        sweep = count * 360.0 / total
+        color_key = gender_dist_color(item.get('gender'))
+        fill = _GENDER_DONUT_FILL.get(color_key, '#94a3b8')
+        end = angle + sweep
+        parts.append(f'{fill} {angle:.2f}deg {end:.2f}deg')
+        angle = end
+
+    if not parts:
+        return 'conic-gradient(#e2e8f0 0deg 360deg)'
+    return f"conic-gradient({', '.join(parts)})"
 
 
 @register.simple_tag
