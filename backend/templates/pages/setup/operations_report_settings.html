@@ -64,7 +64,17 @@
 
         <p class="font-semibold mb-1">تحذير ضبط البريد</p>
 
-        <p class="mb-0">{{ email_delivery.from_warning }}</p>
+        <p class="mb-0">{{ email_delivery.from_warning }} سيُصحَّح المرسل تلقائياً إلى: <code dir="ltr">{{ email_delivery.effective_from }}</code></p>
+
+    </div>
+
+    {% else %}
+
+    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+
+        <p class="font-semibold mb-1">SMTP جاهز</p>
+
+        <p class="mb-0">المرسل: <code dir="ltr">{{ email_delivery.effective_from }}</code>. إن لم يصل البريد: راجع Spam في Gmail، ومجلد Sent في Hostinger، وسجل SPF/DKIM للنطاق.</p>
 
     </div>
 

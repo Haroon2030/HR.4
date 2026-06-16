@@ -28,18 +28,18 @@ def _build_email_body(bundle: OperationsReportBundle, report_date: date) -> str:
 
     body_lines = [
         f'مرفق {bundle.report_title} (PDF).',
-        f'الأقسام: {section_titles or "—"}.',
+        f'الأقسام: {section_titles or "-"}.',
         '',
         f'تاريخ التقرير: {report_date.isoformat()}',
         f'إجمالي عمليات اليوم: {completed_total}',
         f'إجمالي المعلّق: {pending_total}',
         '',
-        '— تفصيل اليوم —',
+        '- تفصيل اليوم -',
     ]
     for section in bundle.sections:
         if section.completed_rows:
             body_lines.append(f'  • {section.title}: {len(section.completed_rows)}')
-    body_lines.extend(['', '— نظام الموارد البشرية'])
+    body_lines.extend(['', '- نظام الموارد البشرية'])
     return '\n'.join(body_lines)
 
 
@@ -57,7 +57,7 @@ def _send_operations_report_email(
         include_completed=settings_obj.include_completed,
     )
 
-    subject = f'{bundle.report_title} — {report_date.isoformat()}'
+    subject = f'{bundle.report_title} - {report_date.isoformat()}'
     msg = EmailMessage(
         subject=subject,
         body=_build_email_body(bundle, report_date),
