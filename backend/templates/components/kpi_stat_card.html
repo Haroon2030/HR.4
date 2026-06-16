@@ -1,5 +1,5 @@
 {% comment %}
-  بطاقة إحصائية (نمط لوحة تحكم حديث).
+  بطاقة إحصائية — لوحة التحكم.
   {% include 'components/kpi_stat_card.html' with label='...' value=123 theme='primary' icon='users' href=url %}
   theme: primary | emerald | amber | rose | indigo | purple | slate | orange | cyan | mono
 {% endcomment %}
@@ -8,15 +8,25 @@
 {% else %}
 <div class="hr-stat-card hr-stat-card--{{ theme|default:'mono' }}">
 {% endif %}
+    <span class="hr-stat-card__accent" aria-hidden="true"></span>
     <span class="hr-stat-card__blob" aria-hidden="true"></span>
-    <span class="hr-stat-card__icon" aria-hidden="true">
-        <i data-lucide="{{ icon|default:'bar-chart-2' }}" class="w-5 h-5"></i>
-    </span>
-    <p class="hr-stat-card__label">{{ label }}</p>
-    <p class="hr-stat-card__value">{{ value|default:0 }}</p>
-    {% if hint %}
-    <p class="hr-stat-card__hint">{{ hint }}</p>
-    {% endif %}
+    <div class="hr-stat-card__inner">
+        <span class="hr-stat-card__icon" aria-hidden="true">
+            <i data-lucide="{{ icon|default:'bar-chart-2' }}" class="w-5 h-5"></i>
+        </span>
+        <div class="hr-stat-card__content">
+            <p class="hr-stat-card__label">{{ label }}</p>
+            <p class="hr-stat-card__value">{{ value|default:0 }}</p>
+            {% if hint %}
+            <p class="hr-stat-card__hint">{{ hint }}</p>
+            {% endif %}
+        </div>
+        {% if href %}
+        <span class="hr-stat-card__chevron" aria-hidden="true">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </span>
+        {% endif %}
+    </div>
 {% if href %}
 </a>
 {% else %}

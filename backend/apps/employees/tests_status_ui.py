@@ -37,6 +37,7 @@ class EmployeeStatusUITests(SimpleTestCase):
         self.assertEqual(len(rows), 4)
         self.assertEqual(rows[0]['count'], 5)
         self.assertEqual(rows[0]['percent'], 50)
+        self.assertEqual(rows[0]['theme'], 'emerald')
         self.assertEqual(rows[1]['icon'], 'calendar-off')
         self.assertEqual(rows[3]['color'], 'terminated')
 

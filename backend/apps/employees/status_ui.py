@@ -25,6 +25,13 @@ EMPLOYEE_STATUS_ORDER: tuple[str, ...] = (
     Employee.Status.TERMINATED,
 )
 
+_STATUS_KPI_THEME: dict[str, str] = {
+    Employee.Status.ACTIVE: 'emerald',
+    Employee.Status.LEAVE: 'cyan',
+    Employee.Status.SUSPENDED: 'amber',
+    Employee.Status.TERMINATED: 'rose',
+}
+
 _DEFAULT_UI = EmployeeStatusUI(
     status='',
     label='غير محدد',
@@ -94,6 +101,7 @@ def build_employee_status_dashboard_rows(stats: dict[str, Any]) -> list[dict[str
                 'label': ui.label,
                 'icon': ui.icon,
                 'color': ui.color,
+                'theme': _STATUS_KPI_THEME.get(ui.status, 'slate'),
                 'count': count,
                 'percent': percent,
             }

@@ -14,22 +14,22 @@
     <!-- ═══ KPI Stats Cards ═══ -->
     <div class="hr-stat-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {% url 'web:list_employees' as list_employees_url %}
-        {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='mono' icon='users' href=list_employees_url %}
+        {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='primary' icon='users' href=list_employees_url %}
         {% for row in employee_status_rows %}
         {% if row.status != 'terminated' %}
-        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme='mono' icon=row.icon %}
+        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme=row.theme icon=row.icon %}
         {% endif %}
         {% endfor %}
         {% url 'web:list_employment_requests' as employment_requests_url %}
-        {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='mono' icon='file-plus' href=employment_requests_url %}
+        {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='orange' icon='file-plus' href=employment_requests_url %}
         {% url 'web:list_pending_actions' as pending_actions_url %}
-        {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='mono' icon='clipboard-list' href=pending_actions_url %}
+        {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='indigo' icon='clipboard-list' href=pending_actions_url %}
         {% for row in employee_status_rows %}
         {% if row.status == 'terminated' %}
-        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme='mono' icon=row.icon %}
+        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme=row.theme icon=row.icon %}
         {% endif %}
         {% endfor %}
-        {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='mono' icon='calculator' %}
+        {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='purple' icon='calculator' %}
     </div>
     {% endif %}
 
