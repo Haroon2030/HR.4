@@ -1,0 +1,19 @@
+{% load custom_tags %}
+{% comment %}
+  زر طباعة رسمي — لوحة التقارير والنماذج.
+  {% include "components/hr_btn_print.html" with label="طباعة رسمية" size="sm" %}
+  {% include "components/hr_btn_print.html" with icon_only=True title="طباعة" onclick="..." %}
+{% endcomment %}
+<button type="button"
+        class="hr-btn-print{% if size == 'sm' %} hr-btn-print--sm{% endif %}{% if icon_only %} hr-btn-print--icon-only{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
+        onclick="{{ onclick|default:'window.print()' }}"
+        title="{{ title|default:'طباعة نسخة رسمية من الصفحة' }}">
+    <span class="hr-btn-print__icon-wrap" aria-hidden="true">
+        {% lucide_glyph 'printer' 'hr-btn-print__icon' %}
+    </span>
+    {% if icon_only %}
+    <span class="sr-only">{{ label|default:'طباعة رسمية' }}</span>
+    {% else %}
+    <span class="hr-btn-print__label">{{ label|default:'طباعة رسمية' }}</span>
+    {% endif %}
+</button>

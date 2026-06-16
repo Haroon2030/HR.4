@@ -200,7 +200,8 @@ class OperationsReportSettingsForm(forms.ModelForm):
                     'data-recipient-role': key,
                     'data-saved-email': saved_email,
                     'data-linked': 'true' if saved_email else 'false',
-                    'autocomplete': 'email',
+                    # قسم فريد لكل دور — يمنع المتصفح من نسخ نفس البريد لكل الحقول
+                    'autocomplete': f'section-operations-report-{key} email',
                 }),
             )
             if self.instance.pk and not self.data:

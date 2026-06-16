@@ -36,7 +36,7 @@
 
     <div class="hr-glass-panel rounded-xl p-5 space-y-4">
 
-        <form method="post" id="operations-report-form" class="space-y-4">
+        <form method="post" id="operations-report-form" class="space-y-4" autocomplete="off">
 
             {% csrf_token %}
 
@@ -321,7 +321,10 @@
 
             if (!input) return;
 
-            input.addEventListener('input', function () {
+            input.addEventListener('input', function (event) {
+
+                // لا تسمح بانتشار قيمة حقل واحد إلى بقية الصفوف (حماية إضافية)
+                if (event.target !== input) return;
 
                 const saved = (input.dataset.savedEmail || '').trim();
 

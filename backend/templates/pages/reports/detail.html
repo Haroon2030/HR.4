@@ -57,9 +57,7 @@
             {% include "components/hr_btn.html" with href=export_url label="Excel" variant="success" icon="file-spreadsheet" size="sm" %}
             {% endif %}
             {% endif %}
-            <button onclick="window.print()" class="hr-btn-print px-3 py-1.5 gap-1">
-                <i data-lucide="printer" class="w-3.5 h-3.5"></i> طباعة
-            </button>
+            {% include "components/hr_btn_print.html" with label="طباعة رسمية" size="sm" %}
         </div>
     </div>
 

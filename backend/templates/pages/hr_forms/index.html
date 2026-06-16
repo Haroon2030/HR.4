@@ -205,9 +205,10 @@
                     </button>
                     <button type="button"
                             @click="openForm('{{ f.key }}', true)"
-                            class="hr-btn-print"
+                            class="hr-btn-print hr-btn-print--icon-only"
                             title="فتح وطباعة مباشرة">
-                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        {% lucide_glyph 'printer' 'hr-btn-print__icon' %}
+                        <span class="sr-only">طباعة</span>
                     </button>
                 </div>
             </div>
