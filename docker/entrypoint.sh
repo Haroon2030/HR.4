@@ -57,6 +57,14 @@ elif redis_url:
     print('==> REDIS_URL مضبوط — Cache: Redis.')
 PY_REDIS
 
+# ─── SMTP (البريد — لا يوقف الإقلاع) ─────────────────────────────────────────
+echo "==> Email / SMTP check..."
+if python manage.py check_email_delivery --verify-connection; then
+    echo "==> SMTP connection OK."
+else
+    echo "!! WARNING: SMTP غير جاهز أو فشل الاتصال — جدول الدوام وتقرير العمليات لن يُرسلا فعلياً."
+fi
+
 # ─── فحص قاعدة البيانات والبصمة (بعد migrate + collectstatic) ───────────────
 echo "==> Attendance / database deploy check..."
 if ! python manage.py check_attendance_production --deploy; then

@@ -34,6 +34,44 @@
 
 
 
+    {% if not email_delivery.smtp_ready %}
+
+    <div class="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+
+        <p class="font-semibold mb-1">البريد غير جاهز للإرسال الفعلي</p>
+
+        <p class="mb-0">
+
+            اضبط <code dir="ltr">EMAIL_HOST</code>،
+
+            <code dir="ltr">EMAIL_HOST_USER</code>،
+
+            <code dir="ltr">EMAIL_HOST_PASSWORD</code>،
+
+            و<code dir="ltr">DEFAULT_FROM_EMAIL</code>
+
+            في Environment بـ Dokploy ثم أعد نشر التطبيق.
+
+            بدون SMTP ستظهر «تم الإرسال» محلياً لكن لا يصل بريد حقيقي.
+
+        </p>
+
+    </div>
+
+    {% elif email_delivery.from_warning %}
+
+    <div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+
+        <p class="font-semibold mb-1">تحذير ضبط البريد</p>
+
+        <p class="mb-0">{{ email_delivery.from_warning }}</p>
+
+    </div>
+
+    {% endif %}
+
+
+
     <div class="hr-glass-panel rounded-xl p-5 space-y-4">
 
         <form method="post" id="operations-report-form" class="space-y-4" autocomplete="off">

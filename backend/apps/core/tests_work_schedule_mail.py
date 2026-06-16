@@ -58,8 +58,8 @@ class WorkSchedulePdfTests(TestCase):
         self.assertTrue(pdf.startswith(b'%PDF'))
         self.assertGreater(len(pdf), 500)
 
-    @patch('apps.core.services.work_schedule_mail.EmailMultiAlternatives.send')
-    def test_send_work_schedule_email_attaches_pdf(self, mock_send):
+    @patch('apps.core.services.work_schedule_mail.deliver_email_message')
+    def test_send_work_schedule_email_attaches_pdf(self, mock_deliver):
         from apps.core.services.work_schedule_mail import send_work_schedule_email
 
         send_work_schedule_email(
@@ -73,4 +73,4 @@ class WorkSchedulePdfTests(TestCase):
             }],
             recipients=['hr@example.com'],
         )
-        mock_send.assert_called_once()
+        mock_deliver.assert_called_once()

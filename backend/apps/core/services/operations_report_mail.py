@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils import timezone
 
-from apps.core.services.email_delivery import ensure_smtp_ready
+from apps.core.services.email_delivery import deliver_email_message, ensure_smtp_ready
 from apps.core.services.operations_report_data import (
     OperationsReportBundle,
     bundle_has_content,
@@ -67,8 +67,7 @@ def _send_operations_report_email(
     role_suffix = bundle.role_key if bundle.role_key and bundle.role_key != 'full' else 'full'
     filename = f'operations-report-{role_suffix}-{report_date.isoformat()}.pdf'
     msg.attach(filename, pdf_bytes, 'application/pdf')
-    msg.send(fail_silently=False)
-    logger.info('تم إرسال تقرير العمليات (%s) إلى %s', bundle.report_title, ', '.join(recipients))
+    deliver_email_message(msg, log_context=f'operations_report:{role_suffix}')
 
 
 def build_and_send_operations_report(

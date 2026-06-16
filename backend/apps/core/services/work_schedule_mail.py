@@ -1,6 +1,7 @@
 """إرسال جدول الدوام — بريد رسمي + PDF."""
 from __future__ import annotations
 
+from apps.core.services.email_delivery import deliver_email_message
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -63,4 +64,4 @@ def send_work_schedule_email(*, employee, boxes_data: list[dict], recipients: li
     msg.attach_alternative(html_body, 'text/html')
     filename = f'work-schedule-{employee.id}-{issued_date.isoformat()}.pdf'
     msg.attach(filename, pdf_bytes, 'application/pdf')
-    msg.send(fail_silently=False)
+    deliver_email_message(msg, log_context='work_schedule')

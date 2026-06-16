@@ -1,7 +1,13 @@
 """حالة إرسال البريد الفعلي (SMTP مقابل وضع التطوير)."""
 from __future__ import annotations
 
+import logging
+import re
+from typing import Any
+
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class SmtpNotConfiguredError(Exception):
@@ -37,13 +43,35 @@ def is_real_smtp_delivery() -> bool:
 def email_delivery_status() -> dict:
     mode = email_delivery_mode()
     smtp_ready = is_real_smtp_delivery()
+    from_warning = from_email_smtp_mismatch_warning()
     return {
         'mode': mode,
         'smtp_ready': smtp_ready,
         'backend': getattr(settings, 'EMAIL_BACKEND', ''),
         'host': (getattr(settings, 'EMAIL_HOST', '') or '').strip(),
         'from_email': (getattr(settings, 'DEFAULT_FROM_EMAIL', '') or '').strip(),
+        'from_warning': from_warning,
     }
+
+
+def _extract_email_address(raw: str) -> str:
+    value = (raw or '').strip()
+    match = re.search(r'<([^>]+)>', value)
+    if match:
+        return match.group(1).strip()
+    return value
+
+
+def from_email_smtp_mismatch_warning() -> str:
+    """تحذير إن كان مرسل الرسالة يختلف عن حساب SMTP (سبب شائع لعدم وصول البريد)."""
+    user = (getattr(settings, 'EMAIL_HOST_USER', '') or '').strip().lower()
+    from_addr = _extract_email_address(getattr(settings, 'DEFAULT_FROM_EMAIL', '') or '').lower()
+    if user and from_addr and user != from_addr:
+        return (
+            f'DEFAULT_FROM_EMAIL ({from_addr}) يختلف عن EMAIL_HOST_USER ({user}) — '
+            'بعض مزودي SMTP (مثل Hostinger) يرفضون الإرسال.'
+        )
+    return ''
 
 
 def smtp_not_configured_message() -> str:
@@ -58,6 +86,11 @@ def ensure_smtp_ready(*, verify_connection: bool = False) -> None:
     """يرفع خطأ واضح إذا لم يكن SMTP جاهزاً."""
     if not is_real_smtp_delivery():
         raise SmtpNotConfiguredError(smtp_not_configured_message())
+
+    mismatch = from_email_smtp_mismatch_warning()
+    if mismatch:
+        logger.warning(mismatch)
+
     if not verify_connection:
         return
     from django.core.mail import get_connection
@@ -70,3 +103,20 @@ def ensure_smtp_ready(*, verify_connection: bool = False) -> None:
         raise SmtpConnectionError(
             f'تعذّر الاتصال بـ SMTP ({settings.EMAIL_HOST}): {exc}'
         ) from exc
+
+
+def deliver_email_message(message: Any, *, verify_connection: bool = True, log_context: str = '') -> int:
+    """
+    يتحقق من SMTP ثم يرسل الرسالة فعلياً.
+    يرفع SmtpNotConfiguredError / SmtpConnectionError أو خطأ SMTP من Django.
+    """
+    ensure_smtp_ready(verify_connection=verify_connection)
+    sent_count = message.send(fail_silently=False)
+    recipients = list(getattr(message, 'to', None) or [])
+    logger.info(
+        'تم إرسال بريد (%s) عبر %s إلى %s',
+        log_context or 'outbound',
+        email_delivery_mode(),
+        ', '.join(recipients) or '—',
+    )
+    return sent_count

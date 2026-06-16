@@ -391,6 +391,7 @@ def set_work_schedule(request, employee_id):
             messages.warning(request, f'تم حفظ {len(cleaned)} شهر — لكن لم يتم الإرسال (لا يوجد بريد).')
             return redirect('web:view_employee', employee_id=employee.id)
         try:
+            from apps.core.services.email_delivery import SmtpConnectionError, SmtpNotConfiguredError
             from apps.core.services.work_schedule_mail import send_work_schedule_email
 
             email_boxes = payload.get('boxes') if isinstance(payload.get('boxes'), list) else cleaned
@@ -400,6 +401,8 @@ def set_work_schedule(request, employee_id):
                 recipients=recipients,
             )
             messages.success(request, f'تم حفظ الجدول وإرساله رسمياً (PDF) إلى: {", ".join(recipients)}')
+        except (SmtpNotConfiguredError, SmtpConnectionError) as e:
+            messages.error(request, f'تم حفظ الجدول لكن فشل الإرسال: {e}')
         except Exception as e:
             messages.error(request, f'تم حفظ الجدول لكن فشل الإرسال: {e}')
     else:

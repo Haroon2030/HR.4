@@ -45,14 +45,14 @@ def operations_report_settings(request):
 
             try:
                 if test_email:
-                    build_and_send_operations_report(
+                    sent = build_and_send_operations_report(
                         recipient=test_email,
                         settings_obj=settings_obj,
                         force=True,
                     )
                     sent_label = test_email
                 else:
-                    build_and_send_operations_report(
+                    sent = build_and_send_operations_report(
                         settings_obj=settings_obj,
                         force=True,
                     )
@@ -62,10 +62,16 @@ def operations_report_settings(request):
             except Exception as exc:
                 messages.error(request, f'فشل إرسال التجربة: {exc}')
             else:
-                messages.success(
-                    request,
-                    f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label} — تحقق من الوارد والـ Spam.',
-                )
+                if sent:
+                    messages.success(
+                        request,
+                        f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label} — تحقق من الوارد والـ Spam.',
+                    )
+                else:
+                    messages.warning(
+                        request,
+                        'لم يُرسل أي تقرير — تحقق من ضبط SMTP، المستلمين، أو وجود بيانات لليوم.',
+                    )
             return redirect(reverse('web:operations_report_settings'))
 
         if form.is_valid():
