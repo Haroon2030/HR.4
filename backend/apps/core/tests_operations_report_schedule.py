@@ -33,3 +33,26 @@ class OperationsReportScheduleTests(SimpleTestCase):
         status = operations_report_schedule_status(_Solo())
         self.assertFalse(status['auto_ready'])
         self.assertIn('غير مفعّل', status['blockers'][0])
+
+    @override_settings(TIME_ZONE='Asia/Riyadh')
+    def test_schedule_status_next_send_today(self):
+        class _Solo:
+            is_enabled = True
+            send_time = time(21, 50)
+            last_sent_at = None
+
+            def active_recipient_emails(self):
+                return ['a@example.com']
+
+        with self.settings(TIME_ZONE='Asia/Riyadh'):
+            from unittest.mock import patch
+
+            from django.utils import timezone as dj_tz
+
+            fixed = datetime(2026, 6, 17, 21, 40, 0, tzinfo=ZoneInfo('Asia/Riyadh'))
+            with patch.object(dj_tz, 'localtime', return_value=fixed):
+                status = operations_report_schedule_status(_Solo())
+        self.assertTrue(status['auto_ready'])
+        self.assertEqual(status['next_send_at'].hour, 21)
+        self.assertEqual(status['next_send_at'].minute, 50)
+        self.assertEqual(status['next_send_at'].date().isoformat(), '2026-06-17')

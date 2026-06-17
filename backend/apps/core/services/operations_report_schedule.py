@@ -1,7 +1,7 @@
 """مطابقة وقت إرسال تقرير العمليات."""
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from django.conf import settings
 from django.utils import timezone
@@ -43,6 +43,12 @@ def operations_report_schedule_status(settings_obj) -> dict:
     recipients = settings_obj.active_recipient_emails() if hasattr(settings_obj, 'active_recipient_emails') else []
     last_sent = getattr(settings_obj, 'last_sent_at', None)
     last_sent_local = timezone.localtime(last_sent) if last_sent else None
+    next_send = None
+    if enabled:
+        candidate = datetime.combine(now.date(), send_at, tzinfo=now.tzinfo)
+        if now >= candidate:
+            candidate += timedelta(days=1)
+        next_send = candidate
 
     return {
         'timezone': tz_name,
@@ -53,6 +59,7 @@ def operations_report_schedule_status(settings_obj) -> dict:
         'recipient_count': len(recipients),
         'time_matches_now': send_time_matches_minute(now, send_at),
         'last_sent_at': last_sent_local,
+        'next_send_at': next_send,
         'auto_ready': enabled and bool(recipients),
         'blockers': [
             *( [] if enabled else ['الإرسال التلقائي غير مفعّل — فعّله واحفظ الإعدادات.'] ),

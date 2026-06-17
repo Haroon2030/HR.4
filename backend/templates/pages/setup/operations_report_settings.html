@@ -102,6 +102,12 @@
 
             {% endif %}
 
+            {% if schedule_status.is_enabled and schedule_status.next_send_at %}
+
+            <li>الإرسال التلقائي القادم: <strong dir="ltr">{{ schedule_status.next_send_at|date:"Y-m-d H:i:s" }}</strong></li>
+
+            {% endif %}
+
             {% for blocker in schedule_status.blockers %}
 
             <li class="text-rose-800">{{ blocker }}</li>
@@ -110,7 +116,7 @@
 
         </ul>
 
-        <p class="text-xs mt-2 mb-0 opacity-90">«إرسال تجربة» يعمل فوراً ولا يعني أن الجدولة مفعّلة — يجب تفعيل المربع وحفظ الإعدادات.</p>
+        <p class="text-xs mt-2 mb-0 opacity-90">«إرسال تجربة» فوري ولا يفعّل الجدولة — فعّل المربع ثم «حفظ الإعدادات». إن لم يُرسل تقرير دور، يُرسل تقرير شامل احتياطياً عند وجود بيانات.</p>
 
     </div>
 

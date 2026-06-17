@@ -147,7 +147,7 @@ def _link_recipient_ajax(request, settings_obj: OperationsReportSettings):
 
     return JsonResponse({
         'success': True,
-        'message': 'تم ربط البريد بنجاح.',
+        'message': 'تم ربط البريد بنجاح. فعّل «الإرسال التلقائي» واحفظ الإعدادات لتفعيل الجدولة.',
         'role_key': role_key,
         'email': email,
     })

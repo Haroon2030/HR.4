@@ -149,12 +149,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('أضف --send-email لإرسال البريد فعلياً.'))
             return
 
-        if reports_to_send == 0:
-            msg = 'لم يُرسل أي تقرير — لا توجد بيانات لليوم لأي دور مستلم.'
-            logger.warning(msg)
-            self.stdout.write(self.style.WARNING(msg))
-            return
-
         try:
             sent = build_and_send_operations_report(
                 report_date=report_date,
@@ -170,7 +164,7 @@ class Command(BaseCommand):
         if sent:
             solo.last_sent_at = now
             solo.save(update_fields=['last_sent_at'])
-            logger.info('تم إرسال تقرير العمليات المجدول بنجاح إلى %s دور/مستلم.', reports_to_send)
+            logger.info('تم إرسال تقرير العمليات المجدول بنجاح.')
             self.stdout.write(self.style.SUCCESS('تم إرسال تقرير العمليات بنجاح.'))
         else:
             msg = 'لم يُرسل أي تقرير (لا بيانات أو لا مستلمين).'

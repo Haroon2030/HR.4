@@ -98,6 +98,13 @@ def build_and_send_operations_report(
             include_completed=settings_obj.include_completed,
             role_key=None,
         )
+        if not bundle_has_content(
+            bundle,
+            include_pending=settings_obj.include_pending,
+            include_completed=settings_obj.include_completed,
+        ):
+            logger.info('تخطي تقرير العمليات التجريبي: لا توجد بيانات لليوم.')
+            return False
         _send_operations_report_email(
             bundle=bundle,
             recipients=[recipient.strip()],
@@ -135,6 +142,36 @@ def build_and_send_operations_report(
             settings_obj=settings_obj,
         )
         sent_any = True
+
+    if not sent_any:
+        full_bundle = collect_operations_report(
+            report_date=report_date,
+            include_pending=settings_obj.include_pending,
+            include_completed=settings_obj.include_completed,
+            role_key=None,
+        )
+        if bundle_has_content(
+            full_bundle,
+            include_pending=settings_obj.include_pending,
+            include_completed=settings_obj.include_completed,
+        ):
+            seen: set[str] = set()
+            for email in settings_obj.active_recipient_emails():
+                norm = email.strip().lower()
+                if not norm or norm in seen:
+                    continue
+                seen.add(norm)
+                _send_operations_report_email(
+                    bundle=full_bundle,
+                    recipients=[email.strip()],
+                    report_date=report_date,
+                    settings_obj=settings_obj,
+                )
+                sent_any = True
+            if sent_any:
+                logger.info(
+                    'تقرير العمليات: إرسال تقرير شامل احتياطي — لا بيانات في تقارير الأدوار المفلترة.'
+                )
 
     if not sent_any:
         logger.info('تخطي تقرير العمليات: لا يوجد بريد مستلم أو لا توجد بيانات.')
