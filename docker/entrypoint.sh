@@ -153,12 +153,18 @@ if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then CRON_NEEDED=true; fi
 
 if [ "$CRON_NEEDED" = "true" ]; then
     mkdir -p /app/backups /app/logs
+    # cron لا يرث متغيرات Docker — نحفظها لكل مهمة مجدولة
+    CRON_ENV_FILE=/app/logs/cron-runtime.env
+    printenv | grep -E '^(DJANGO_|DATABASE_URL|EMAIL_|SECRET_KEY|REDIS_URL|TIME_ZONE|DEFAULT_FROM|ALLOWED_HOSTS|ATTENDANCE_|OPERATIONS_|BACKUP_|DOCUMENT_|CSRF_|USE_HTTPS|CORS_|AWS_|R2_|STORAGE_)' \
+        > "$CRON_ENV_FILE" 2>/dev/null || true
+    chmod 600 "$CRON_ENV_FILE"
     {
         echo "SHELL=/bin/sh"
         echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        echo "DJANGO_ENV=${DJANGO_ENV:-production}"
         if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
             BACKUP_SCHEDULE="${BACKUP_SCHEDULE:-0 3 * * *}"
-            echo "${BACKUP_SCHEDULE} root cd /app && python manage.py backup_db --cleanup --trigger cron >> /app/logs/backup.log 2>&1"
+            echo "${BACKUP_SCHEDULE} root run-cron-cmd python manage.py backup_db --cleanup --trigger cron >> /app/logs/backup.log 2>&1"
         fi
         if [ "${DOCUMENT_EXPIRY_CRON:-true}" = "true" ]; then
             DOC_SCHED="${DOCUMENT_EXPIRY_CRON_SCHEDULE:-30 6 * * *}"
@@ -167,15 +173,16 @@ if [ "$CRON_NEEDED" = "true" ]; then
             if [ "${DOCUMENT_EXPIRY_CRON_SEND_EMAIL:-false}" = "true" ]; then
                 DOC_EXTRA=" --send-email"
             fi
-            echo "${DOC_SCHED} root cd /app && python manage.py notify_document_expiry --days ${DOC_DAYS}${DOC_EXTRA} >> /app/logs/document_expiry.log 2>&1"
+            echo "${DOC_SCHED} root run-cron-cmd python manage.py notify_document_expiry --days ${DOC_DAYS}${DOC_EXTRA} >> /app/logs/document_expiry.log 2>&1"
         fi
         if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then
             OPS_SCHED="${OPERATIONS_REPORT_CRON_SCHEDULE:-* * * * *}"
-            echo "${OPS_SCHED} root cd /app && python manage.py send_operations_report --send-email >> /app/logs/operations_report.log 2>&1"
+            echo "${OPS_SCHED} root run-cron-cmd python manage.py send_operations_report --send-email >> /app/logs/operations_report.log 2>&1"
         fi
+        echo ""
     } > /etc/cron.d/hr-backup
     chmod 0644 /etc/cron.d/hr-backup
-    crontab /etc/cron.d/hr-backup
+    # /etc/cron.d/ يُقرأ مباشرة — لا تستخدم crontab (تفسد صيغة root)
     service cron start || cron || echo "!! cron service start failed (non-fatal)"
     if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
         echo "==> Backup cron: ${BACKUP_SCHEDULE:-0 3 * * *}"

@@ -77,7 +77,10 @@ def operations_report_settings(request):
                 else:
                     messages.warning(
                         request,
-                        'لم يُرسل أي تقرير — تحقق من ضبط SMTP، المستلمين، أو وجود بيانات لليوم.',
+                        'لم يُرسل أي تقرير — لا توجد عمليات معلّقة أو مُنجزة لتاريخ اليوم '
+                        f'({timezone.localdate().isoformat()}). '
+                        'المُنجز = ما تمت الموافقة عليه اليوم فقط. '
+                        'جرّب بعد اعتماد طلب، أو فعّل «تضمين المعلّق».',
                     )
             return redirect(reverse('web:operations_report_settings'))
 
