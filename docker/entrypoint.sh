@@ -24,6 +24,13 @@ while [ "$n" -le "$MIGRATE_MAX_RETRIES" ]; do
     n=$((n + 1))
 done
 
+# ─── إعدادات تقرير العمليات (جدول + سجل افتراضي) ─────────────────────────────
+echo "==> Ensuring operations report settings table..."
+python manage.py ensure_operations_report_settings || {
+    echo "!! ensure_operations_report_settings failed — aborting."
+    exit 1
+}
+
 # ─── مزامنة سجل الصلاحيات من الـ decorators (مهم عند نشر migrations غير core فقط) ─
 echo "==> Syncing permission registry (post-migrate deploy)..."
 python manage.py shell <<'PY_SYNC'
