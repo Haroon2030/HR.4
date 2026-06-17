@@ -1,6 +1,7 @@
 """مصادقة وكيل البصمة المحلي (مفتاح API عام أو مفتاح لكل جهاز)."""
 from __future__ import annotations
 
+import logging
 import secrets
 
 from django.conf import settings
@@ -9,6 +10,8 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from apps.attendance.services.agent_keys import find_device_by_agent_key
+
+logger = logging.getLogger(__name__)
 
 
 class AttendanceAgentPrincipal:
@@ -66,4 +69,11 @@ class AgentAPIKeyAuthentication(BaseAuthentication):
                 'agent-api-key',
             )
 
+        remote = (request.META.get('REMOTE_ADDR') or '-').strip()
+        logger.warning(
+            'وكيل البصمة: مفتاح غير صحيح | path=%s | ip=%s | ua=%s',
+            getattr(request, 'path', '-'),
+            remote,
+            ((request.META.get('HTTP_USER_AGENT') or '')[:80] or '-'),
+        )
         raise AuthenticationFailed(_('مفتاح وكيل البصمة غير صحيح.'))

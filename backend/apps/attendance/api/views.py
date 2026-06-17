@@ -34,6 +34,31 @@ from apps.attendance.services.ingest_signature import (
 logger = logging.getLogger(__name__)
 
 
+def _client_ip(request) -> str:
+    forwarded = (request.META.get('HTTP_X_FORWARDED_FOR') or '').strip()
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return (request.META.get('REMOTE_ADDR') or '-').strip()
+
+
+def _log_agent_denial(request, reason: str, *, principal: AttendanceAgentPrincipal | None = None) -> None:
+    """تسجيل واضح في السجلات — django.request Forbidden وحده لا يكفي للتشخيص."""
+    key_hint = 'unknown'
+    if isinstance(principal, AttendanceAgentPrincipal):
+        if principal.is_global_key:
+            key_hint = 'global (ATTENDANCE_AGENT_API_KEY)'
+        elif principal.device is not None:
+            key_hint = f'device-{principal.device.pk}'
+    logger.warning(
+        'وكيل البصمة: %s | path=%s | ip=%s | key=%s | ua=%s',
+        reason,
+        request.path,
+        _client_ip(request),
+        key_hint,
+        ((request.META.get('HTTP_USER_AGENT') or '')[:80] or '-'),
+    )
+
+
 class AgentRateThrottle(SimpleRateThrottle):
     scope = 'attendance_agent'
 
@@ -53,6 +78,11 @@ def _deny_global_key_metadata(request) -> None:
         return
     principal = request.user
     if isinstance(principal, AttendanceAgentPrincipal) and principal.is_global_key:
+        reason = (
+            'المفتاح العام مرفوض لطلبات السحب/الأجهزة في الإنتاج — '
+            'استخدم AGENT_API_KEY لمفتاح الجهاز من HR في config.env'
+        )
+        _log_agent_denial(request, reason, principal=principal)
         raise PermissionDenied(
             'المفتاح العام لا يمكنه هذا الإجراء في الإنتاج. '
             'استخدم مفتاحاً لكل جهاز (AGENT_GLOBAL_KEY_LIST_DEVICES=true للاستثناء).'
@@ -67,6 +97,11 @@ def _deny_global_key_ingest(request) -> None:
         return
     principal = request.user
     if isinstance(principal, AttendanceAgentPrincipal) and principal.is_global_key:
+        reason = (
+            'المفتاح العام مرفوض لرفع البصمات في الإنتاج — '
+            'استخدم AGENT_API_KEY لمفتاح الجهاز من HR في config.env'
+        )
+        _log_agent_denial(request, reason, principal=principal)
         raise PermissionDenied(
             'المفتاح العام لا يمكنه إدخال البصمات في الإنتاج. '
             'استخدم مفتاحاً لكل جهاز.'
@@ -86,6 +121,11 @@ def _assert_device_access(request, device_id: int) -> BiometricDevice:
             is_active=True,
         )
     if principal.device is None or principal.device.pk != device_id:
+        reason = (
+            f'مفتاح الجهاز {principal.device.pk if principal.device else "?"} '
+            f'غير مصرح للجهاز {device_id}'
+        )
+        _log_agent_denial(request, reason, principal=principal)
         raise PermissionDenied('المفتاح غير مصرح لهذا الجهاز.')
     return principal.device
 
