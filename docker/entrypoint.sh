@@ -153,15 +153,32 @@ if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then CRON_NEEDED=true; fi
 
 if [ "$CRON_NEEDED" = "true" ]; then
     mkdir -p /app/backups /app/logs
-    # cron لا يرث متغيرات Docker — نحفظها لكل مهمة مجدولة
-    CRON_ENV_FILE=/app/logs/cron-runtime.env
-    printenv | grep -E '^(DJANGO_|DATABASE_URL|EMAIL_|SECRET_KEY|REDIS_URL|TIME_ZONE|DEFAULT_FROM|ALLOWED_HOSTS|ATTENDANCE_|OPERATIONS_|BACKUP_|DOCUMENT_|CSRF_|USE_HTTPS|CORS_|AWS_|R2_|STORAGE_)' \
-        > "$CRON_ENV_FILE" 2>/dev/null || true
-    chmod 600 "$CRON_ENV_FILE"
+    # cron لا يرث متغيرات Docker — نحفظها بقيم مُهرَّبة باستخدام Python
+    python - <<'PY_ENV'
+import os, sys
+keys = (
+    'DJANGO_ENV','DJANGO_SETTINGS_MODULE','DATABASE_URL','DB_SSLMODE',
+    'SECRET_KEY','ALLOWED_HOSTS','CSRF_TRUSTED_ORIGINS',
+    'EMAIL_HOST','EMAIL_HOST_USER','EMAIL_HOST_PASSWORD','EMAIL_PORT',
+    'EMAIL_USE_TLS','EMAIL_USE_SSL','DEFAULT_FROM_EMAIL',
+    'REDIS_URL','TZ','TIME_ZONE','USE_HTTPS',
+    'ATTENDANCE_AGENT_API_KEY',
+)
+lines = []
+for k in keys:
+    v = os.environ.get(k)
+    if v and '\n' not in v:
+        escaped = v.replace("'", "'\\''")
+        lines.append(f"export {k}='{escaped}'")
+with open('/app/logs/cron-runtime.env', 'w') as f:
+    f.write('\n'.join(lines) + '\n')
+os.chmod('/app/logs/cron-runtime.env', 0o600)
+print(f'==> cron env: {len(lines)} vars saved to /app/logs/cron-runtime.env')
+PY_ENV
+
     {
         echo "SHELL=/bin/sh"
         echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-        echo "DJANGO_ENV=${DJANGO_ENV:-production}"
         if [ "${BACKUP_ENABLED:-true}" = "true" ]; then
             BACKUP_SCHEDULE="${BACKUP_SCHEDULE:-0 3 * * *}"
             echo "${BACKUP_SCHEDULE} root run-cron-cmd python manage.py backup_db --cleanup --trigger cron >> /app/logs/backup.log 2>&1"
@@ -177,7 +194,7 @@ if [ "$CRON_NEEDED" = "true" ]; then
         fi
         if [ "${OPERATIONS_REPORT_CRON:-true}" = "true" ]; then
             OPS_SCHED="${OPERATIONS_REPORT_CRON_SCHEDULE:-* * * * *}"
-            echo "${OPS_SCHED} root run-cron-cmd python manage.py send_operations_report --send-email >> /app/logs/operations_report.log 2>&1"
+            echo "${OPS_SCHED} root run-cron-cmd python manage.py send_operations_report --send-email --verbose-skip >> /app/logs/operations_report.log 2>&1"
         fi
         echo ""
     } > /etc/cron.d/hr-backup
