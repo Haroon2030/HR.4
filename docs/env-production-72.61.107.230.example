@@ -6,6 +6,7 @@
 
 DJANGO_ENV=production
 DJANGO_SETTINGS_MODULE=config.settings
+TIME_ZONE=Asia/Riyadh
 DEBUG=False
 PORT=8082
 

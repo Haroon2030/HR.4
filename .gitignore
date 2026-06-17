@@ -89,6 +89,7 @@ Thumbs.db
 *.tmp
 temp/
 tmp/
+testsprite_tests/
 
 # Attendance export dumps (local pulls)
 backend/exports/

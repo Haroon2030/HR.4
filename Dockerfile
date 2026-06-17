@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     DJANGO_ENV=production \
     DJANGO_SETTINGS_MODULE=config.settings \
+    TZ=Asia/Riyadh \
     PORT=8082
 
 # System deps for psycopg2 + Pillow + build + pg_dump/psql for backups

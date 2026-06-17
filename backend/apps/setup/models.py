@@ -50,7 +50,7 @@ class OperationsReportSettings(models.Model):
     send_time = models.TimeField(
         'وقت الإرسال',
         default=time(12, 0, 0),
-        help_text='يُرسل التقرير يومياً عند هذا الوقت (توقيت السيرفر).',
+        help_text='يُرسل يومياً عند هذا الوقت (توقيت Django — TIME_ZONE).',
     )
     include_pending = models.BooleanField('تضمين العمليات المعلّقة', default=True)
     include_completed = models.BooleanField('تضمين العمليات المُنجزة (يوم التقرير)', default=True)

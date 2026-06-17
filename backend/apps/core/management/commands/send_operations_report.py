@@ -1,142 +1,178 @@
-"""إرسال تقرير العمليات PDF يومياً (cron)."""
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-
-from apps.core.services.operations_report_data import bundle_has_content, collect_operations_report
-from apps.core.services.operations_report_mail import build_and_send_operations_report
-from apps.core.services.operations_report_schedule import format_send_time, send_time_matches_minute
-from apps.setup.models import OperationsReportSettings
-from apps.setup.operations_report_recipients import OPERATIONS_REPORT_RECIPIENT_ROLES
-
-
-class Command(BaseCommand):
-    help = (
-        'يبني تقرير PDF للعمليات المعلّقة والمُنجزة ويرسله إلى البريد المُحدّد '
-        'في إعدادات تهيئة النظام (setup/operations-report/).'
-    )
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--send-email',
-            action='store_true',
-            help='إرسال البريد فعلياً (مطلوب من cron).',
-        )
-        parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='عرض الملخص دون إرسال.',
-        )
-        parser.add_argument(
-            '--force',
-            action='store_true',
-            help='تجاهل فحص الساعة والتكرار (للاختبار اليدوي).',
-        )
-        parser.add_argument(
-            '--recipient',
-            default='',
-            help='بريد مستلم بديل (للاختبار — تقرير شامل).',
-        )
-
-    def handle(self, *args, **options):
-        send_email = bool(options['send_email'])
-        dry_run = bool(options['dry_run'])
-        force = bool(options['force'])
-        recipient_override = (options.get('recipient') or '').strip()
-
-        solo = OperationsReportSettings.get_solo()
-        now = timezone.localtime()
-
-        if not solo.is_enabled and not force and not recipient_override:
-            self.stdout.write('الإرسال التلقائي غير مفعّل — تخطي.')
-            return
-
-        email_map = solo.recipient_emails_map()
-        if recipient_override:
-            target_roles = [('test', recipient_override)]
-        else:
-            target_roles = [
-                (rk, (email_map.get(rk) or '').strip())
-                for rk, _label in OPERATIONS_REPORT_RECIPIENT_ROLES
-                if (email_map.get(rk) or '').strip()
-            ]
-
-        if not target_roles:
-            self.stdout.write(self.style.WARNING('لا يوجد بريد مستلم — حدّده من صفحة إعدادات تقرير العمليات.'))
-            return
-
-        if not force and not send_time_matches_minute(now, solo.send_time):
-            self.stdout.write(
-                f'ليس وقت الإرسال ({format_send_time(solo.send_time)}) — '
-                f'الآن {now.strftime("%H:%M:%S")} — تخطي.'
-            )
-            return
-
-        if not force and solo.last_sent_at:
-            last = timezone.localtime(solo.last_sent_at)
-            if (
-                last.date() == now.date()
-                and last.hour == now.hour
-                and last.minute == now.minute
-            ):
-                self.stdout.write('تم الإرسال مسبقاً اليوم في هذا الوقت — تخطي.')
-                return
-
-        report_date = now.date()
-        reports_to_send = 0
-
-        for role_key, email in target_roles:
-            rk = None if role_key == 'test' else role_key
-            bundle = collect_operations_report(
-                report_date=report_date,
-                include_pending=solo.include_pending,
-                include_completed=solo.include_completed,
-                role_key=rk,
-            )
-            if recipient_override:
-                has_content = True
-            elif not bundle_has_content(
-                bundle,
-                include_pending=solo.include_pending,
-                include_completed=solo.include_completed,
-            ):
-                self.stdout.write(f'  [{role_key}] لا بيانات — تخطي ({email})')
-                continue
-
-            completed_total = sum(len(s.completed_rows) for s in bundle.sections)
-            pending_total = sum(len(s.pending_rows) for s in bundle.sections)
-            self.stdout.write(
-                f'تقرير {report_date} [{bundle.report_title}]: '
-                f'معلّقة={pending_total} | مُنجزة={completed_total} → {email}'
-            )
-            for section in bundle.sections:
-                if section.completed_rows or section.pending_rows:
-                    self.stdout.write(
-                        f'  - {section.title}: اليوم={len(section.completed_rows)} معلّق={len(section.pending_rows)}'
-                    )
-            reports_to_send += 1
-
-        if dry_run:
-            self.stdout.write(self.style.SUCCESS(f'dry-run — {reports_to_send} تقرير(ات) — لم يُرسل بريد.'))
-            return
-
-        if not send_email:
-            self.stdout.write(self.style.WARNING('أضف --send-email لإرسال البريد فعلياً.'))
-            return
-
-        try:
-            sent = build_and_send_operations_report(
-                report_date=report_date,
-                recipient=recipient_override or None,
-                settings_obj=solo,
-                force=True,
-            )
-        except Exception as exc:
-            self.stdout.write(self.style.ERROR(f'فشل الإرسال: {exc}'))
-            raise
-
-        if sent:
-            solo.last_sent_at = now
-            solo.save(update_fields=['last_sent_at'])
-            self.stdout.write(self.style.SUCCESS('تم إرسال تقرير العمليات بنجاح.'))
-        else:
-            self.stdout.write(self.style.WARNING('لم يُرسل أي تقرير (لا بيانات أو لا مستلمين).'))
+"""إرسال تقرير العمليات PDF يومياً (cron)."""
+import logging
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from apps.core.services.operations_report_data import bundle_has_content, collect_operations_report
+from apps.core.services.operations_report_mail import build_and_send_operations_report
+from apps.core.services.operations_report_schedule import format_send_time, send_time_matches_minute
+from apps.setup.models import OperationsReportSettings
+from apps.setup.operations_report_recipients import OPERATIONS_REPORT_RECIPIENT_ROLES
+
+logger = logging.getLogger(__name__)
+
+
+class Command(BaseCommand):
+    help = (
+        'يبني تقرير PDF للعمليات المعلّقة والمُنجزة ويرسله إلى البريد المُحدّد '
+        'في إعدادات تهيئة النظام (setup/operations-report/).'
+    )
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--send-email',
+            action='store_true',
+            help='إرسال البريد فعلياً (مطلوب من cron).',
+        )
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='عرض الملخص دون إرسال.',
+        )
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='تجاهل فحص الساعة والتكرار (للاختبار اليدوي).',
+        )
+        parser.add_argument(
+            '--recipient',
+            default='',
+            help='بريد مستلم بديل (للاختبار — تقرير شامل).',
+        )
+        parser.add_argument(
+            '--verbose-skip',
+            action='store_true',
+            help='طباعة سبب التخطي حتى خارج وقت الإرسال (للتشخيص).',
+        )
+
+    def handle(self, *args, **options):
+        send_email = bool(options['send_email'])
+        dry_run = bool(options['dry_run'])
+        force = bool(options['force'])
+        recipient_override = (options.get('recipient') or '').strip()
+        verbose_skip = bool(options['verbose_skip'])
+
+        solo = OperationsReportSettings.get_solo()
+        now = timezone.localtime()
+
+        if not solo.is_enabled and not force and not recipient_override:
+            msg = 'تخطي: الإرسال التلقائي غير مفعّل في إعدادات تقرير العمليات.'
+            logger.info(msg)
+            if verbose_skip:
+                self.stdout.write(msg)
+            return
+
+        email_map = solo.recipient_emails_map()
+        if recipient_override:
+            target_roles = [('test', recipient_override)]
+        else:
+            target_roles = [
+                (rk, (email_map.get(rk) or '').strip())
+                for rk, _label in OPERATIONS_REPORT_RECIPIENT_ROLES
+                if (email_map.get(rk) or '').strip()
+            ]
+
+        if not target_roles:
+            msg = 'تخطي: لا يوجد بريد مستلم — حدّده من صفحة إعدادات تقرير العمليات.'
+            logger.warning(msg)
+            self.stdout.write(self.style.WARNING(msg))
+            return
+
+        if not force and not send_time_matches_minute(now, solo.send_time):
+            if verbose_skip:
+                self.stdout.write(
+                    f'ليس وقت الإرسال ({format_send_time(solo.send_time)} {timezone.get_current_timezone_name()}) — '
+                    f'الآن {now.strftime("%H:%M:%S")} — تخطي.'
+                )
+            return
+
+        if not force and solo.last_sent_at:
+            last = timezone.localtime(solo.last_sent_at)
+            if (
+                last.date() == now.date()
+                and last.hour == now.hour
+                and last.minute == now.minute
+            ):
+                msg = 'تخطي: تم الإرسال مسبقاً اليوم في هذا الوقت.'
+                logger.info(msg)
+                if verbose_skip:
+                    self.stdout.write(msg)
+                return
+
+        report_date = now.date()
+        reports_to_send = 0
+
+        logger.info(
+            'بدء تقرير العمليات المجدول — %s %s — مستلمون: %s',
+            report_date.isoformat(),
+            now.strftime('%H:%M:%S'),
+            len(target_roles),
+        )
+
+        for role_key, email in target_roles:
+            rk = None if role_key == 'test' else role_key
+            bundle = collect_operations_report(
+                report_date=report_date,
+                include_pending=solo.include_pending,
+                include_completed=solo.include_completed,
+                role_key=rk,
+            )
+            if recipient_override:
+                has_content = True
+            elif not bundle_has_content(
+                bundle,
+                include_pending=solo.include_pending,
+                include_completed=solo.include_completed,
+            ):
+                self.stdout.write(f'  [{role_key}] لا بيانات — تخطي ({email})')
+                continue
+
+            completed_total = sum(len(s.completed_rows) for s in bundle.sections)
+            pending_total = sum(len(s.pending_rows) for s in bundle.sections)
+            self.stdout.write(
+                f'تقرير {report_date} [{bundle.report_title}]: '
+                f'معلّقة={pending_total} | مُنجزة={completed_total} → {email}'
+            )
+            for section in bundle.sections:
+                if section.completed_rows or section.pending_rows:
+                    self.stdout.write(
+                        f'  - {section.title}: اليوم={len(section.completed_rows)} معلّق={len(section.pending_rows)}'
+                    )
+            reports_to_send += 1
+
+        if dry_run:
+            self.stdout.write(self.style.SUCCESS(f'dry-run — {reports_to_send} تقرير(ات) — لم يُرسل بريد.'))
+            return
+
+        if not send_email:
+            self.stdout.write(self.style.WARNING('أضف --send-email لإرسال البريد فعلياً.'))
+            return
+
+        if reports_to_send == 0:
+            msg = 'لم يُرسل أي تقرير — لا توجد بيانات لليوم لأي دور مستلم.'
+            logger.warning(msg)
+            self.stdout.write(self.style.WARNING(msg))
+            return
+
+        try:
+            sent = build_and_send_operations_report(
+                report_date=report_date,
+                recipient=recipient_override or None,
+                settings_obj=solo,
+                force=bool(recipient_override or force),
+            )
+        except Exception as exc:
+            logger.exception('فشل إرسال تقرير العمليات المجدول')
+            self.stdout.write(self.style.ERROR(f'فشل الإرسال: {exc}'))
+            raise
+
+        if sent:
+            solo.last_sent_at = now
+            solo.save(update_fields=['last_sent_at'])
+            logger.info('تم إرسال تقرير العمليات المجدول بنجاح إلى %s دور/مستلم.', reports_to_send)
+            self.stdout.write(self.style.SUCCESS('تم إرسال تقرير العمليات بنجاح.'))
+        else:
+            msg = 'لم يُرسل أي تقرير (لا بيانات أو لا مستلمين).'
+            logger.warning(msg)
+            self.stdout.write(self.style.WARNING(msg))

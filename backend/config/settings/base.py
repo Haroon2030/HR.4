@@ -244,7 +244,7 @@ LANGUAGE_CODE = 'ar'
 LANGUAGES = [
     ('ar', 'العربية'),
 ]
-TIME_ZONE = 'UTC'
+TIME_ZONE = env('TIME_ZONE', default='Asia/Riyadh')
 USE_I18N = True     # تفعيل الترجمة
 USE_TZ = True       # تفعيل المنطقة الزمنية
 

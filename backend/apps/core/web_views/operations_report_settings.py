@@ -15,6 +15,7 @@ from apps.core.services.email_delivery import (
     email_delivery_status,
 )
 from apps.core.services.operations_report_mail import build_and_send_operations_report
+from apps.core.services.operations_report_schedule import operations_report_schedule_status
 from apps.setup.forms import OperationsReportSettingsForm
 from apps.setup.models import OperationsReportSettings
 from apps.setup.operations_report_recipients import (
@@ -67,6 +68,12 @@ def operations_report_settings(request):
                         request,
                         f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label} — تحقق من الوارد والـ Spam.',
                     )
+                    if not settings_obj.is_enabled:
+                        messages.warning(
+                            request,
+                            'التجربة نجحت — لكن الإرسال التلقائي غير مفعّل. '
+                            'فعّل «تفعيل الإرسال التلقائي» ثم اضغط «حفظ الإعدادات».',
+                        )
                 else:
                     messages.warning(
                         request,
@@ -76,7 +83,16 @@ def operations_report_settings(request):
 
         if form.is_valid():
             form.save()
-            messages.success(request, 'تم حفظ إعدادات تقرير العمليات.')
+            settings_obj = OperationsReportSettings.get_solo()
+            if settings_obj.is_enabled:
+                tz = timezone.get_current_timezone_name()
+                messages.success(
+                    request,
+                    f'تم الحفظ — الإرسال التلقائي مفعّل يومياً الساعة '
+                    f'{settings_obj.send_time.strftime("%H:%M")} ({tz}).',
+                )
+            else:
+                messages.success(request, 'تم حفظ إعدادات تقرير العمليات.')
             return redirect(reverse('web:operations_report_settings'))
 
         messages.error(request, 'تعذّر الحفظ — راجع الحقول.')
@@ -94,10 +110,12 @@ def operations_report_settings(request):
         }
         for key, label in OPERATIONS_REPORT_RECIPIENT_ROLES
     ]
+    schedule_status = operations_report_schedule_status(settings_obj)
     return render(request, 'pages/setup/operations_report_settings.html', {
         'form': form,
         'settings_obj': settings_obj,
         'local_now': local_now,
+        'schedule_status': schedule_status,
         'email_delivery': email_delivery_status(),
         'recipient_rows': recipient_rows,
     })

@@ -82,6 +82,40 @@
 
 
 
+    <div class="rounded-xl border px-4 py-3 text-sm {% if schedule_status.auto_ready %}border-emerald-200 bg-emerald-50 text-emerald-900{% else %}border-amber-200 bg-amber-50 text-amber-900{% endif %}">
+
+        <p class="font-semibold mb-1">حالة الإرسال المجدول</p>
+
+        <ul class="mb-0 space-y-1 list-none ps-0">
+
+            <li>الوقت الحالي للسيرفر: <strong dir="ltr">{{ schedule_status.server_now|date:"Y-m-d H:i:s" }} ({{ schedule_status.timezone }})</strong></li>
+
+            <li>وقت الإرسال المحفوظ: <strong dir="ltr">{{ schedule_status.send_time_label }}</strong></li>
+
+            <li>الإرسال التلقائي: {% if schedule_status.is_enabled %}<strong>مفعّل</strong>{% else %}<strong class="text-rose-700">غير مفعّل</strong>{% endif %}</li>
+
+            <li>المستلمون المحفوظون: <strong>{{ schedule_status.recipient_count }}</strong></li>
+
+            {% if schedule_status.last_sent_at %}
+
+            <li>آخر إرسال تلقائي: <strong dir="ltr">{{ schedule_status.last_sent_at|date:"Y-m-d H:i:s" }}</strong></li>
+
+            {% endif %}
+
+            {% for blocker in schedule_status.blockers %}
+
+            <li class="text-rose-800">{{ blocker }}</li>
+
+            {% endfor %}
+
+        </ul>
+
+        <p class="text-xs mt-2 mb-0 opacity-90">«إرسال تجربة» يعمل فوراً ولا يعني أن الجدولة مفعّلة — يجب تفعيل المربع وحفظ الإعدادات.</p>
+
+    </div>
+
+
+
     <div class="hr-glass-panel rounded-xl p-5 space-y-4">
 
         <form method="post" id="operations-report-form" class="space-y-4" autocomplete="off">
@@ -171,7 +205,7 @@
 
                     {{ form.send_time }}
 
-                    <p class="text-xs text-slate-500 mt-1">اختر الساعة والدقائق والثواني (24 ساعة). الإرسال التلقائي يطابق الساعة والدقيقة.</p>
+                    <p class="text-xs text-slate-500 mt-1">24 ساعة — التوقيت: {{ schedule_status.timezone }} (يجب أن يطابق وقتك المحلي بعد ضبط TIME_ZONE).</p>
 
                     {% if form.send_time.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.send_time.errors.0 }}</p>{% endif %}
 
