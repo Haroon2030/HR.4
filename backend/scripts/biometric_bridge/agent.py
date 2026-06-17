@@ -76,6 +76,55 @@ class DeviceTarget:
     device_port: int
     comm_key: int
     label: str = ''
+    api_key: str = ''
+
+
+def _api_key_for(device: DeviceTarget | None, settings: AgentSettings) -> str:
+    if device and device.api_key:
+        return device.api_key
+    return settings.api_key
+
+
+def load_device_keys(config_path: Path) -> dict[int, str]:
+    """مفاتيح وكيل لكل جهاز — device_keys.env (سطر: device_id=KEY)."""
+    keys_path = config_path.parent / 'device_keys.env'
+    result: dict[int, str] = {}
+    for key, val in _parse_env_file(keys_path).items():
+        if key.isdigit() and val:
+            result[int(key)] = val
+    return result
+
+
+def bind_device_api_keys(
+    devices: list[DeviceTarget],
+    settings: AgentSettings,
+    config_path: Path,
+) -> list[DeviceTarget]:
+    keys_map = load_device_keys(config_path)
+    bound: list[DeviceTarget] = []
+    for device in devices:
+        api_key = keys_map.get(device.device_id, '')
+        if not api_key and len(devices) == 1:
+            api_key = settings.api_key
+        bound.append(
+            DeviceTarget(
+                device_id=device.device_id,
+                device_ip=device.device_ip,
+                device_port=device.device_port,
+                comm_key=device.comm_key,
+                label=device.label,
+                api_key=api_key,
+            )
+        )
+    if len(bound) > 1:
+        missing = [d.device_id for d in bound if not d.api_key]
+        if missing:
+            raise ValueError(
+                'عدة أجهزة تتطلب مفتاحاً لكل جهاز في device_keys.env '
+                f'(الناقص: {", ".join(str(i) for i in missing)}). '
+                'ولّد «مفتاح وكيل» من HR لكل جهاز — أو استخدم PC منفصل لكل فرع.'
+            )
+    return bound
 
 
 def _parse_env_file(path: Path) -> dict[str, str]:
@@ -351,11 +400,12 @@ def push_to_server(
         'users': users,
     }
     body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
-    signature = _ingest_signature(settings.api_key, body)
+    api_key = _api_key_for(device, settings)
+    signature = _ingest_signature(api_key, body)
     resp = requests.post(
         url,
         headers={
-            'X-Attendance-Agent-Key': settings.api_key,
+            'X-Attendance-Agent-Key': api_key,
             'Content-Type': 'application/json',
             'X-Attendance-Signature': signature,
             'Authorization': f'Attendance-HMAC {signature}',
@@ -430,7 +480,7 @@ def run_device_cycle(
     watermark: datetime | None = None
     if not (date_from or date_to):
         try:
-            watermark = fetch_sync_watermark(settings, device.device_id)
+            watermark = fetch_sync_watermark(settings, device)
         except Exception as exc:
             LOG.warning('تعذّر جلب آخر بصمة من السيرفر — سحب كامل مؤقت: %s', exc)
 
@@ -504,13 +554,13 @@ def filter_devices(
     return matched
 
 
-def fetch_sync_watermark(settings: AgentSettings, device_id: int) -> datetime | None:
+def fetch_sync_watermark(settings: AgentSettings, device: DeviceTarget) -> datetime | None:
     """آخر بصمة محفوظة على السيرفر — للسحب التزايدي."""
     url = f'{settings.server_url}/api/v1/attendance/agent/sync-state/'
     resp = requests.get(
         url,
-        headers={'X-Attendance-Agent-Key': settings.api_key},
-        params={'device_id': device_id},
+        headers={'X-Attendance-Agent-Key': _api_key_for(device, settings)},
+        params={'device_id': device.device_id},
         timeout=30,
     )
     try:
@@ -526,12 +576,11 @@ def fetch_sync_watermark(settings: AgentSettings, device_id: int) -> datetime | 
     return _parse_punch_time(str(raw))
 
 
-def fetch_pull_requests(settings: AgentSettings) -> list[PullRequest]:
-    """طلبات سحب أرسلها المستخدم من موقع HR."""
+def _fetch_pull_requests_with_key(settings: AgentSettings, api_key: str) -> list[PullRequest]:
     url = f'{settings.server_url}/api/v1/attendance/agent/pull-requests/'
     resp = requests.get(
         url,
-        headers={'X-Attendance-Agent-Key': settings.api_key},
+        headers={'X-Attendance-Agent-Key': api_key},
         timeout=30,
     )
     try:
@@ -559,23 +608,49 @@ def fetch_pull_requests(settings: AgentSettings) -> list[PullRequest]:
     return rows
 
 
-def fetch_pull_request_ids(settings: AgentSettings) -> list[int]:
-    return [r.device_id for r in fetch_pull_requests(settings)]
+def fetch_pull_requests(
+    settings: AgentSettings,
+    devices: list[DeviceTarget] | None = None,
+) -> list[PullRequest]:
+    """طلبات سحب أرسلها المستخدم من موقع HR."""
+    if not devices:
+        return _fetch_pull_requests_with_key(settings, settings.api_key)
+    if len(devices) == 1:
+        return _fetch_pull_requests_with_key(settings, _api_key_for(devices[0], settings))
+
+    merged: dict[int, PullRequest] = {}
+    for device in devices:
+        try:
+            for row in _fetch_pull_requests_with_key(settings, _api_key_for(device, settings)):
+                merged[row.device_id] = row
+        except Exception as exc:
+            LOG.warning('تعذّر جلب طلبات السحب لجهاز %s: %s', device.device_id, exc)
+    return list(merged.values())
 
 
-def ack_pull_request(settings: AgentSettings, device_id: int) -> None:
+def fetch_pull_request_ids(
+    settings: AgentSettings,
+    devices: list[DeviceTarget] | None = None,
+) -> list[int]:
+    return [r.device_id for r in fetch_pull_requests(settings, devices)]
+
+
+def ack_pull_request(
+    settings: AgentSettings,
+    device: DeviceTarget,
+) -> None:
     url = f'{settings.server_url}/api/v1/attendance/agent/pull-requests/'
     resp = requests.post(
         url,
         headers={
-            'X-Attendance-Agent-Key': settings.api_key,
+            'X-Attendance-Agent-Key': _api_key_for(device, settings),
             'Content-Type': 'application/json',
         },
-        json={'device_id': device_id},
+        json={'device_id': device.device_id},
         timeout=30,
     )
     if resp.status_code >= 400:
-        LOG.warning('تعذّر إغلاق طلب السحب لجهاز %s: HTTP %s', device_id, resp.status_code)
+        LOG.warning('تعذّر إغلاق طلب السحب لجهاز %s: HTTP %s', device.device_id, resp.status_code)
 
 
 def run_all_cycles(
@@ -586,7 +661,7 @@ def run_all_cycles(
 ) -> bool:
     pull_requests: list[PullRequest] = []
     try:
-        pull_requests = fetch_pull_requests(settings)
+        pull_requests = fetch_pull_requests(settings, devices)
     except Exception as exc:
         LOG.warning('تعذّر جلب طلبات السحب من الموقع: %s', exc)
 
@@ -642,7 +717,7 @@ def run_all_cycles(
         ):
             ok += 1
             if device.device_id in pull_ids:
-                ack_pull_request(settings, device.device_id)
+                ack_pull_request(settings, device)
     total = len(devices_to_run)
     LOG.info('النتيجة: %s/%s جهاز نجح', ok, total)
     if ok == 0:
@@ -655,12 +730,12 @@ def run_all_cycles(
     return ok == total
 
 
-def fetch_devices_from_server(settings: AgentSettings) -> list[DeviceTarget]:
+def fetch_devices_from_server(settings: AgentSettings, *, api_key: str | None = None) -> list[DeviceTarget]:
     """جلب قائمة الأجهزة المسجّلة في HR (بعد إضافتها من لوحة البصمة)."""
     url = f'{settings.server_url}/api/v1/attendance/agent/devices/'
     resp = requests.get(
         url,
-        headers={'X-Attendance-Agent-Key': settings.api_key},
+        headers={'X-Attendance-Agent-Key': api_key or settings.api_key},
         timeout=60,
     )
     try:
@@ -712,7 +787,9 @@ def write_devices_list(path: Path, devices: list[DeviceTarget]) -> None:
 def sync_devices_list_file(config_path: Path, settings: AgentSettings) -> list[DeviceTarget]:
     list_path = config_path.parent / 'devices.list'
     local_keys = _comm_keys_from_devices_list(list_path)
-    devices = fetch_devices_from_server(settings)
+    keys_map = load_device_keys(config_path)
+    list_api_key = next(iter(keys_map.values()), None) or settings.api_key
+    devices = fetch_devices_from_server(settings, api_key=list_api_key)
     if not devices:
         raise ValueError('لا أجهزة نشطة على السيرفر — أضفها من: البصمة → أجهزة البصمة')
     merged: list[DeviceTarget] = []
@@ -804,7 +881,10 @@ def main() -> int:
             LOG.info('  • id=%s %s:%s comm_key=%s %s', d.device_id, d.device_ip, d.device_port, d.comm_key, d.label)
         return 0
 
-    devices = filter_devices(load_devices(config_path, settings), device_id=args.device)
+    devices = filter_devices(
+        bind_device_api_keys(load_devices(config_path, settings), settings, config_path),
+        device_id=args.device,
+    )
 
     LOG.info('السيرفر: %s | أجهزة: %s', settings.server_url, len(devices))
     for d in devices:

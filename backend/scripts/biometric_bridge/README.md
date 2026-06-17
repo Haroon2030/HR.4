@@ -91,6 +91,33 @@ python manage.py check_attendance_production --details
 
 Verifies DB connection, tables, agent API key, punch rows in `attendance_attendancepunch`, and employee enrollments.
 
+## Multiple devices (no duplication)
+
+Each ZKTeco device in HR has its **own** agent key. One key must not be reused for another device.
+
+### Option A — one PC per branch (recommended)
+
+| Branch | `config.env` | Scheduled task |
+|--------|----------------|----------------|
+| Branch 1 | `DEVICE_ID=1`, `AGENT_API_KEY=<key for device 1>` | One task on branch PC |
+| Branch 2 | `DEVICE_ID=2`, `AGENT_API_KEY=<key for device 2>` | One task on branch PC |
+
+Do **not** copy the same `config.env` to another branch. Do **not** run two scheduled tasks on the same PC for the same device.
+
+### Option B — central PC (VPN/Tailscale to all branches)
+
+1. `devices.list` — one line per device (ID, IP, port, comm_key, label).
+2. `device_keys.env` — one line per device: `device_id=RAW_KEY_FROM_HR`.
+3. `setup_central.ps1` or `python agent.py --sync-list` then `--probe`.
+
+Attendance deduplication on the server is **per device** (same user + same second on the same device is skipped). Different devices keep separate punch rows.
+
+### Fix repeated 403 errors
+
+- `AGENT_API_KEY` must match the **device key** from HR (not an old or global key).
+- `DEVICE_ID` must match the device **ID** column in HR.
+- On Windows: `schtasks /query /fo LIST /v | findstr biometric` — remove duplicate tasks.
+
 ## Central PC (optional)
 
-Multiple branches via VPN/Tailscale: `setup_central.ps1` + `devices.list.example`.
+Multiple branches via VPN/Tailscale: `setup_central.ps1` + `devices.list.example` + `device_keys.env.example`.
