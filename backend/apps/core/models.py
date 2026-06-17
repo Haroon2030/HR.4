@@ -34,6 +34,13 @@ class SoftDeleteManager(models.Manager):
     def all_with_deleted(self):
         return SoftDeleteQuerySet(self.model, using=self._db)
 
+
+class AllObjectsManager(models.Manager):
+    """كل السجلات بما فيها المحذوفة منطقياً — يدعم hard_delete على مستوى QuerySet."""
+
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db)
+
 class BaseModel(models.Model):
     """
     النموذج الأب (Base Model) الذي يجب أن ترث منه جميع نماذج النظام السابقة والقادمة:
@@ -48,7 +55,7 @@ class BaseModel(models.Model):
 
     # مدير الاستعلامات
     objects = SoftDeleteManager()
-    all_objects = models.Manager()
+    all_objects = AllObjectsManager()
 
     class Meta:
         abstract = True
