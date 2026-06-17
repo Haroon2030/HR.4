@@ -54,7 +54,6 @@
                         <th class="text-right w-12 zk-bio-col-mono">ID</th>
                         <th class="text-right">الجهاز</th>
                         <th class="text-right zk-bio-col-mono">IP:Port</th>
-                        <th class="text-right">الفرع</th>
                         <th class="text-right">الحالة</th>
                         <th class="text-right">آخر مزامنة</th>
                         <th class="text-right">بصمات</th>
@@ -73,7 +72,6 @@
                             {% if not d.is_active %}<span class="mr-1 text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">معطّل</span>{% endif %}
                         </td>
                         <td class="zk-bio-col-mono" dir="ltr">{{ d.address_label }}</td>
-                        <td>{{ d.branch.name|default:"—" }}</td>
                         <td>
                             {% if d.connection_status == 'online' %}
                             <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>متصل</span>
@@ -160,7 +158,7 @@
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">لا بيانات</td></tr>
+                    <tr><td colspan="{% if user|has_permission:'attendance.manage' %}8{% else %}7{% endif %}" class="px-4 py-8 text-center text-slate-500">لا بيانات</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
