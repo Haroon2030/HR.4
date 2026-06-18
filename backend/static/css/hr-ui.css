@@ -736,6 +736,7 @@ body.hr-app .hr-scroll-hover:focus-within {
 body.hr-app .hr-page-card__body::-webkit-scrollbar,
 body.hr-app .hr-scroll-hover::-webkit-scrollbar {
     width: 5px;
+    height: 5px;
 }
 
 body.hr-app .hr-page-card__body::-webkit-scrollbar-track,
@@ -5084,6 +5085,375 @@ body.hr-app .hr-main {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1rem 1.15rem;
+}
+
+/* مصفوفة الصلاحيات — تمرير أفقي/عمودي داخل صندوق ثابت */
+.hr-perm-matrix {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.hr-perm-matrix__scroll {
+    overflow: auto;
+    max-height: 62vh;
+    max-height: min(62vh, calc(100dvh - 17rem));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-x pan-y;
+}
+
+.hr-perm-matrix__scroll > table,
+.hr-perm-matrix__table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.hr-perm-matrix__head th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    box-shadow: inset 0 -1px 0 #e2e8f0;
+}
+
+/* ── صفحة صلاحيات المستخدم — نسخة مضغوطة ── */
+.hr-user-perms-page {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.hr-user-perms-form {
+    min-width: 0;
+}
+
+.hr-perm-matrix--compact .hr-perm-matrix__scroll {
+    max-height: 68vh;
+    max-height: min(68vh, calc(100dvh - 11.5rem));
+}
+
+.hr-perm-matrix__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem 0.85rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+}
+
+.hr-perm-matrix__toolbar-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.hr-perm-matrix__title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.hr-perm-matrix__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.55rem;
+    background: #eff6ff;
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+.hr-perm-matrix__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.hr-perm-matrix__meta {
+    margin: 0.1rem 0 0;
+    font-size: 0.68rem;
+    color: #64748b;
+    line-height: 1.3;
+}
+
+.hr-perm-matrix__legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hr-perm-legend-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.2;
+    border: 1px solid transparent;
+}
+
+.hr-perm-legend-chip--allow {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.hr-perm-legend-chip--deny {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+}
+
+.hr-perm-matrix__toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.hr-perm-matrix__back.hr-glass-back-btn--labeled {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.72rem;
+}
+
+.hr-perm-matrix__table {
+    font-size: 0.6875rem;
+}
+
+.hr-perm-matrix__table tbody tr:not(:last-child) td,
+.hr-perm-matrix__table tbody tr:not(:last-child) th.hr-perm-module-col {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.hr-perm-matrix__table tbody tr:nth-child(odd) td,
+.hr-perm-matrix__table tbody tr:nth-child(odd) th.hr-perm-module-col {
+    background: #fcfdfe;
+}
+
+.hr-perm-matrix__table tbody tr:hover td,
+.hr-perm-matrix__table tbody tr:hover th.hr-perm-module-col {
+    background: #f8fafc;
+}
+
+.hr-perm-module-col {
+    position: sticky;
+    inset-inline-end: 0;
+    z-index: 3;
+    min-width: 6.75rem;
+    max-width: 9rem;
+    padding: 0.3rem 0.45rem;
+    text-align: right;
+    vertical-align: middle;
+    background: #ffffff;
+    box-shadow: -3px 0 6px rgba(15, 23, 42, 0.05);
+    border-inline-start: 1px solid #eef2f7;
+}
+
+.hr-perm-matrix__head .hr-perm-module-col {
+    z-index: 5;
+    background: #f8fafc;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #334155;
+    padding: 0.35rem 0.45rem;
+}
+
+.hr-perm-module {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.hr-perm-module__icon {
+    width: 0.85rem;
+    height: 0.85rem;
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+.hr-perm-module__name {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 6.5rem;
+}
+
+.hr-perm-op-col {
+    width: 2.35rem;
+    min-width: 2.35rem;
+    max-width: 2.35rem;
+    padding: 0.2rem 0.15rem;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.hr-perm-op-col__short {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #475569;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+
+.hr-perm-empty {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.hr-perm-readonly {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.hr-perm-readonly--allow {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.hr-perm-toggle {
+    display: inline-flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.4rem;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.hr-perm-toggle__opt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    margin: 0;
+    cursor: pointer;
+    color: #94a3b8;
+    background: #ffffff;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.hr-perm-toggle__opt + .hr-perm-toggle__opt {
+    border-inline-start: 1px solid #e2e8f0;
+}
+
+.hr-perm-toggle__opt span {
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.hr-perm-toggle__opt--allow.is-active {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.hr-perm-toggle__opt--deny.is-active {
+    background: #ffe4e6;
+    color: #be123c;
+}
+
+.hr-perm-toggle__opt:not(.is-active):hover {
+    background: #f8fafc;
+}
+
+.hr-perm-matrix__empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #64748b;
+}
+
+.hr-user-perms-form__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    padding-top: 0.15rem;
+}
+
+@media (min-width: 768px) {
+    .hr-perm-matrix__toolbar {
+        padding: 0.75rem 0.9rem;
+    }
+
+    .hr-perm-matrix__title {
+        font-size: 1.05rem;
+    }
+
+    .hr-perm-module-col {
+        min-width: 8rem;
+        max-width: 11rem;
+    }
+
+    .hr-perm-module__name {
+        max-width: 9rem;
+        font-size: 0.72rem;
+    }
+
+    .hr-perm-op-col {
+        width: 2.55rem;
+        min-width: 2.55rem;
+        max-width: 2.55rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .hr-perm-matrix__scroll {
+        max-height: 56vh;
+        max-height: min(56vh, calc(100dvh - 14rem));
+    }
+
+    .hr-perm-matrix--compact .hr-perm-matrix__scroll {
+        max-height: 62vh;
+        max-height: min(62vh, calc(100dvh - 10rem));
+    }
+
+    .hr-user-perms-form__footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 6;
+        padding: 0.55rem 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 28%);
+    }
+
+    .hr-perm-matrix__save {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) {
+    .hr-user-perms-form__footer {
+        display: none;
+    }
 }
 
 @media (min-width: 768px) {

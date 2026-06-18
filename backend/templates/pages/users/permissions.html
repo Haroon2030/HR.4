@@ -3,90 +3,92 @@
 {% block title %}صلاحيات المستخدم — {{ user_obj.username }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="hr-user-perms-page w-full max-w-full">
 
     {% hr_breadcrumb items=breadcrumb_items %}
 
-    {# Header #}
-    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5 flex items-start justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-3 min-w-0">
-            <div class="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
-            </div>
-            <div class="min-w-0">
-                <h1 class="text-xl font-bold text-slate-800 truncate">
-                    {{ user_obj.get_full_name|default:user_obj.username }}
-                </h1>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    @{{ user_obj.username }} ·
-                    {% if role %}الدور: <span class="font-semibold">{{ role|role_arabic_name }}</span>{% else %}بدون دور{% endif %}
-                </p>
-            </div>
-        </div>
-        {% url 'web:list_users' as back_url %}
-        {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع' aria_label='رجوع لقائمة المستخدمين' %}
-    </div>
-
-    {# Legend #}
-    <div class="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap items-center gap-4 text-xs">
-        <div class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-emerald-200"></span>
-            <span class="text-slate-600"><strong>مسموح</strong> — الصلاحية مفعّلة</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-rose-200"></span>
-            <span class="text-slate-600"><strong>ممنوع</strong> — الصلاحية غير مفعّلة</span>
-        </div>
-    </div>
-
-    <form method="post">
+    <form method="post" class="hr-user-perms-form">
         {% csrf_token %}
 
-        {# Matrix — صندوق بارتفاع ثابت وتمرير داخلي #}
-        <div class="hr-perm-matrix">
+        <div class="hr-perm-matrix hr-perm-matrix--compact">
+            {# شريط علوي مضغوط #}
+            <div class="hr-perm-matrix__toolbar">
+                <div class="hr-perm-matrix__toolbar-main min-w-0">
+                    <div class="hr-perm-matrix__title-row">
+                        <span class="hr-perm-matrix__avatar" aria-hidden="true">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h1 class="hr-perm-matrix__title truncate">
+                                {{ user_obj.get_full_name|default:user_obj.username }}
+                            </h1>
+                            <p class="hr-perm-matrix__meta truncate">
+                                @{{ user_obj.username }}
+                                {% if role %}· {{ role|role_arabic_name }}{% else %}· بدون دور{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="hr-perm-matrix__legend" aria-label="دليل الألوان">
+                        <span class="hr-perm-legend-chip hr-perm-legend-chip--allow">مسموح</span>
+                        <span class="hr-perm-legend-chip hr-perm-legend-chip--deny">ممنوع</span>
+                    </div>
+                </div>
+                <div class="hr-perm-matrix__toolbar-actions">
+                    {% url 'web:list_users' as back_url %}
+                    {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع' aria_label='رجوع لقائمة المستخدمين' extra_class='hr-perm-matrix__back' %}
+                    {% if not is_admin_user and matrix %}
+                    {% url 'web:list_users' as users_list_url %}
+                    {% include "components/hr_btn.html" with label="حفظ" type="submit" variant="primary" icon="save" size="sm" extra_class="hr-perm-matrix__save" %}
+                    {% endif %}
+                </div>
+            </div>
+
+            {# الجدول #}
             <div class="hr-perm-matrix__scroll hr-scroll-hover">
-                <table class="w-full min-w-max">
-                    <thead class="hr-perm-matrix__head bg-slate-50 border-b border-slate-200">
+                <table class="hr-perm-matrix__table">
+                    <thead class="hr-perm-matrix__head">
                         <tr>
-                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 min-w-[9.5rem] whitespace-nowrap">الوحدة</th>
+                            <th class="hr-perm-module-col" scope="col">الوحدة</th>
                             {% for op_code, op_label in operations %}
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-40">
-                                {{ op_label }}
+                            <th class="hr-perm-op-col" scope="col" title="{{ op_label }}">
+                                <span class="hr-perm-op-col__short">{{ op_code|perm_op_short }}</span>
                             </th>
                             {% endfor %}
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         {% for row in matrix %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3 whitespace-nowrap min-w-[9.5rem]">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
-                                        <i data-lucide="{{ row.module.icon }}" class="w-4 h-4"></i>
-                                    </div>
-                                    <span class="text-sm font-bold text-slate-800 whitespace-nowrap">{{ row.module.name }}</span>
-                                </div>
-                            </td>
+                        <tr>
+                            <th class="hr-perm-module-col" scope="row" title="{{ row.module.name }}">
+                                <span class="hr-perm-module">
+                                    <i data-lucide="{{ row.module.icon }}" class="hr-perm-module__icon" aria-hidden="true"></i>
+                                    <span class="hr-perm-module__name">{{ row.module.name }}</span>
+                                </span>
+                            </th>
                             {% for cell in row.cells %}
-                            <td class="px-3 py-3 text-center align-middle">
+                            <td class="hr-perm-op-col">
                                 {% if not cell.available %}
-                                    <span class="text-slate-300 text-lg">—</span>
+                                    <span class="hr-perm-empty" aria-hidden="true">—</span>
+                                {% elif is_admin_user %}
+                                    <span class="hr-perm-readonly hr-perm-readonly--allow" title="مفعّلة (أدمن)">✓</span>
                                 {% else %}
-                                    <div class="inline-flex items-center gap-1">
-                                        <select name="perm_{{ cell.perm.id }}"
-                                                {% if is_admin_user %}disabled{% endif %}
-                                                class="text-xs px-2 py-1 rounded border
-                                                    {% if cell.effective %}bg-emerald-50 border-emerald-300 text-emerald-800
-                                                    {% else %}bg-rose-50 border-rose-300 text-rose-800{% endif %}
-                                                    focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
-                                            <option value="allowed" {% if cell.effective %}selected{% endif %}>مسموح</option>
-                                            <option value="denied" {% if not cell.effective %}selected{% endif %}>ممنوع</option>
-                                        </select>
-                                        {% if cell.effective %}
-                                        <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" title="مفعّلة"></i>
-                                        {% else %}
-                                        <i data-lucide="x" class="w-3.5 h-3.5 text-slate-300 flex-shrink-0" title="غير مفعّلة"></i>
-                                        {% endif %}
+                                    <div class="hr-perm-toggle" role="group" aria-label="{{ row.module.name }} — {{ cell.op_label }}">
+                                        <label class="hr-perm-toggle__opt hr-perm-toggle__opt--allow{% if cell.effective %} is-active{% endif %}">
+                                            <input type="radio"
+                                                   name="perm_{{ cell.perm.id }}"
+                                                   value="allowed"
+                                                   {% if cell.effective %}checked{% endif %}
+                                                   class="sr-only hr-perm-toggle__input">
+                                            <span aria-hidden="true">✓</span>
+                                        </label>
+                                        <label class="hr-perm-toggle__opt hr-perm-toggle__opt--deny{% if not cell.effective %} is-active{% endif %}">
+                                            <input type="radio"
+                                                   name="perm_{{ cell.perm.id }}"
+                                                   value="denied"
+                                                   {% if not cell.effective %}checked{% endif %}
+                                                   class="sr-only hr-perm-toggle__input">
+                                            <span aria-hidden="true">✕</span>
+                                        </label>
                                     </div>
                                 {% endif %}
                             </td>
@@ -94,8 +96,8 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="{{ operations|length|add:1 }}" class="px-4 py-10 text-center text-slate-500">
-                                <i data-lucide="package" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+                            <td colspan="{{ operations|length|add:1 }}" class="hr-perm-matrix__empty">
+                                <i data-lucide="package" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
                                 <p class="text-sm">لا بيانات</p>
                             </td>
                         </tr>
@@ -105,11 +107,10 @@
             </div>
         </div>
 
-        {# Actions #}
         {% if not is_admin_user and matrix %}
-        <div class="mt-5 flex items-center justify-end gap-2">
+        <div class="hr-user-perms-form__footer">
             {% url 'web:list_users' as users_list_url %}
-            {% include "components/hr_btn.html" with label="إلغاء" href=users_list_url variant="secondary" %}
+            {% include "components/hr_btn.html" with label="إلغاء" href=users_list_url variant="secondary" size="sm" %}
             {% include "components/hr_btn.html" with label="حفظ الصلاحيات" type="submit" variant="primary" icon="save" %}
         </div>
         {% endif %}
@@ -118,20 +119,19 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
-    // تحديث لون select عند التغيير
-    document.querySelectorAll('select[name^="perm_"]').forEach(sel => {
-        sel.addEventListener('change', e => {
-            const v = e.target.value;
-            e.target.classList.remove(
-                'bg-emerald-50','border-emerald-300','text-emerald-800',
-                'bg-rose-50','border-rose-300','text-rose-800'
-            );
-            if (v === 'allowed') {
-                e.target.classList.add('bg-emerald-50','border-emerald-300','text-emerald-800');
-            } else {
-                e.target.classList.add('bg-rose-50','border-rose-300','text-rose-800');
-            }
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.lucide) lucide.createIcons();
+        document.querySelectorAll('.hr-perm-toggle').forEach(function (group) {
+            group.querySelectorAll('.hr-perm-toggle__input').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    group.querySelectorAll('.hr-perm-toggle__opt').forEach(function (opt) {
+                        opt.classList.remove('is-active');
+                    });
+                    if (input.checked) {
+                        input.closest('.hr-perm-toggle__opt').classList.add('is-active');
+                    }
+                });
+            });
         });
     });
 </script>

@@ -405,6 +405,24 @@ def role_badge_class(role_type):
     return _ROLE_BADGE_CLASS.get(role_type, 'bg-slate-100 text-slate-700')
 
 
+@register.filter
+def perm_op_short(op_code):
+    """اختصار عمود العملية في مصفوفة الصلاحيات."""
+    labels = {
+        'view': 'عرض',
+        'add': 'إض',
+        'edit': 'تعد',
+        'delete': 'حذف',
+        'approve_branch': 'ف.فرع',
+        'approve_admin': 'ف.إد',
+        'approve_gm': 'ف.ع',
+        'approve_officer': 'ف.م',
+        'return': 'إرج',
+        'resubmit': 'إع',
+    }
+    return labels.get(op_code, op_code)
+
+
 @register.simple_tag(takes_context=True)
 def user_permissions(context):
     """
