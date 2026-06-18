@@ -18,7 +18,7 @@
                         <span class="hr-perm-matrix__avatar" aria-hidden="true">
                             <i data-lucide="shield-check" class="w-4 h-4"></i>
                         </span>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <h1 class="hr-perm-matrix__title truncate">
                                 {{ user_obj.get_full_name|default:user_obj.username }}
                             </h1>
@@ -27,10 +27,10 @@
                                 {% if role %}· {{ role|role_arabic_name }}{% else %}· بدون دور{% endif %}
                             </p>
                         </div>
-                    </div>
-                    <div class="hr-perm-matrix__legend" aria-label="دليل الألوان">
-                        <span class="hr-perm-legend-chip hr-perm-legend-chip--allow">مسموح</span>
-                        <span class="hr-perm-legend-chip hr-perm-legend-chip--deny">ممنوع</span>
+                        <div class="hr-perm-matrix__legend" aria-label="دليل الألوان">
+                            <span class="hr-perm-legend-chip hr-perm-legend-chip--allow">مسموح</span>
+                            <span class="hr-perm-legend-chip hr-perm-legend-chip--deny">ممنوع</span>
+                        </div>
                     </div>
                 </div>
                 <div class="hr-perm-matrix__toolbar-actions">

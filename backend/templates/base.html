@@ -324,7 +324,7 @@
                     </button>
                 </div>
                 <nav class="hr-nav flex-1 min-h-0"
-                     x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
+                     x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard','create_employee_full','edit_employee','view_employee'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
                     {% include "components/sidebar_nav.html" with always_show=True %}
                 </nav>
                 {% include "components/sidebar_panel_footer.html" with allow_collapse=False always_show=True %}
@@ -340,7 +340,7 @@
                 <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
                     {% include "components/app_org_bar.html" %}
                     <nav class="hr-nav flex-1 min-h-0"
-                         x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
+                         x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard','create_employee_full','edit_employee','view_employee'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
                         {% include "components/sidebar_nav.html" with always_show=False %}
                     </nav>
                     {% include "components/sidebar_panel_footer.html" with allow_collapse=True %}
