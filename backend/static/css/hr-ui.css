@@ -5432,21 +5432,34 @@ body.hr-app .hr-main {
 }
 
 .hr-perm-op-col {
-    width: 2.35rem;
-    min-width: 2.35rem;
-    max-width: 2.35rem;
     padding: 0.2rem 0.15rem;
     text-align: center;
     vertical-align: middle;
 }
 
-.hr-perm-op-col__short {
+.hr-perm-matrix__head .hr-perm-op-col {
+    min-width: 3.4rem;
+    max-width: 5rem;
+    width: auto;
+    padding: 0.3rem 0.25rem;
+    vertical-align: bottom;
+}
+
+.hr-perm-matrix__table tbody .hr-perm-op-col {
+    width: 2.35rem;
+    min-width: 2.35rem;
+    max-width: 2.35rem;
+}
+
+.hr-perm-op-col__label {
     display: block;
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 800;
     color: #475569;
-    line-height: 1.15;
-    white-space: nowrap;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-word;
+    text-align: center;
 }
 
 .hr-perm-empty {
@@ -5555,7 +5568,16 @@ body.hr-app .hr-main {
         font-size: 0.72rem;
     }
 
-    .hr-perm-op-col {
+    .hr-perm-matrix__head .hr-perm-op-col {
+        min-width: 3.75rem;
+        max-width: 5.5rem;
+    }
+
+    .hr-perm-op-col__label {
+        font-size: 0.62rem;
+    }
+
+    .hr-perm-matrix__table tbody .hr-perm-op-col {
         width: 2.55rem;
         min-width: 2.55rem;
         max-width: 2.55rem;

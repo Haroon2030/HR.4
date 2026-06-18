@@ -50,8 +50,8 @@
                         <tr>
                             <th class="hr-perm-module-col" scope="col">الوحدة</th>
                             {% for op_code, op_label in operations %}
-                            <th class="hr-perm-op-col" scope="col" title="{{ op_label }}">
-                                <span class="hr-perm-op-col__short">{{ op_code|perm_op_short }}</span>
+                            <th class="hr-perm-op-col" scope="col">
+                                <span class="hr-perm-op-col__label">{{ op_label }}</span>
                             </th>
                             {% endfor %}
                         </tr>
