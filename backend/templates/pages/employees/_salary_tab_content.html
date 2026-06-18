@@ -56,9 +56,9 @@
                         x-show="isSaudi()"
                         x-cloak
                         x-model.number="salaryInsuranceRate"
+                        :disabled="!isSaudi() || {% if not can_edit_salary %}true{% else %}false{% endif %}"
                         class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono"
-                        dir="ltr"
-                        {% if not can_edit_salary %}disabled{% endif %}>
+                        dir="ltr">
                     <option value="">-- اختر --</option>
                     <option value="10.75">10.75%</option>
                     <option value="10.25">10.25%</option>
@@ -70,9 +70,9 @@
                        x-show="!isSaudi()"
                        x-cloak
                        x-model.number="salaryInsuranceRate"
+                       :disabled="isSaudi() || {% if not can_edit_salary %}true{% else %}false{% endif %}"
                        class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono"
-                       dir="ltr"
-                       {% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                       dir="ltr">
                 {% if not can_edit_salary and employee.insurance_deduction_rate is not None %}
                 <input type="hidden" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate|input_decimal }}">
                 {% endif %}

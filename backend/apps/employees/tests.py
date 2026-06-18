@@ -1,10 +1,11 @@
+from django.http import QueryDict
 from django.test import TestCase
 from decimal import Decimal
 from datetime import date, timedelta
 from django.utils import timezone
 from apps.employees.forms import EmployeeForm
 from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, LoanInstallment
-from apps.setup.models import Sponsorship
+from apps.setup.models import Nationality, Sponsorship
 
 class SalaryPaymentSplitTests(TestCase):
     def test_transfer_employee_gets_full_bank_amount(self):
@@ -71,6 +72,32 @@ class EmployeeFormTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         saved = form.save()
         self.assertEqual(saved.basic_salary, Decimal('0'))
+
+    def test_saudi_employee_accepts_gosi_insurance_rate(self):
+        saudi = Nationality.objects.create(name='سعودي', code='SA')
+        form = EmployeeForm(
+            data={
+                'name': 'موظف سعودي',
+                'nationality': str(saudi.pk),
+                'contract_type': 'fixed',
+                'insurance_deduction_rate': '10.75',
+            },
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.insurance_deduction_rate, Decimal('10.75'))
+
+    def test_duplicate_post_insurance_rate_last_value_wins(self):
+        """محاكاة إرسال حقلين بنفس الاسم — آخر قيمة هي التي يقرأها النموذج."""
+        saudi = Nationality.objects.create(name='سعودي', code='SA')
+        post = QueryDict(mutable=True)
+        post.setlist('insurance_deduction_rate', ['10.75', '0'])
+        post['name'] = 'موظف سعودي'
+        post['nationality'] = str(saudi.pk)
+        post['contract_type'] = 'fixed'
+        form = EmployeeForm(data=post)
+        self.assertFalse(form.is_valid())
+        self.assertIn('insurance_deduction_rate', form.errors)
 
 
 class EmployeeModelTests(TestCase):
