@@ -47,7 +47,7 @@
 
 /* ── Toast ── */
 @keyframes hr-toast-in {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -61,6 +61,8 @@
     font-weight: 700;
     line-height: 1.4;
     color: #0f172a;
+    pointer-events: auto;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
     backdrop-filter: blur(14px) saturate(1.15);
     -webkit-backdrop-filter: blur(14px) saturate(1.15);
     border: 1px solid rgba(226, 232, 240, 0.9);

@@ -287,7 +287,7 @@
         {% endif %}
     </div>
 
-    <div x-show="toast" x-cloak x-transition class="hr-toast fixed bottom-6 left-6 z-50 max-w-md flex items-center text-sm" :class="toastOk ? 'hr-toast--success' : 'hr-toast--error'" x-text="toastMsg"></div>
+    <div x-show="toast" x-cloak x-transition class="hr-toast fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-md flex items-center text-sm" :class="toastOk ? 'hr-toast--success' : 'hr-toast--error'" x-text="toastMsg"></div>
 
     {% include "pages/attendance/_device_modal.html" %}
     {% if user|has_permission:'attendance.manage' %}
