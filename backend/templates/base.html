@@ -180,7 +180,7 @@
     <script defer src="/static/js/hr-employee-smart-search.js?v=20260610-2"></script>
     <script defer src="/static/js/hr-archive-pager.js?v=20260613b"></script>
     <script defer src="/static/js/hr-glass-loader.js?v=20260612b"></script>
-    <script defer src="/static/js/hr-shell.js?v=20260620"></script>
+    <script defer src="/static/js/hr-shell.js?v=20260620c"></script>
     <script defer src="/static/js/alpine.min.js"></script>
     <script defer src="/static/js/lucide.min.js"></script>
     
@@ -208,7 +208,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260619-action-btn-theme" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260620-mobile-menu" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -218,40 +218,26 @@
          x-data="hrShellState()"
          x-init="init()">
     <!-- Mobile Overlay -->
-    <div 
-        x-show="mobileMenuOpen" 
-        @click="mobileMenuOpen = false"
-        x-transition:enter="transition-opacity ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition-opacity ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-        style="display: none;"
-    ></div>
+    <div id="hrMobileOverlay"
+         class="hr-mobile-overlay md:hidden"
+         data-hr-mobile-menu-close
+         hidden
+         aria-hidden="true"></div>
 
         <!-- Mobile Sidebar -->
-        <aside
-            x-show="mobileMenuOpen"
-            @click.away="mobileMenuOpen = false"
-            x-transition:enter="transition-transform ease-out duration-300"
-            x-transition:enter-start="translate-x-full"
-            x-transition:enter-end="translate-x-0"
-            x-transition:leave="transition-transform ease-in duration-200"
-            x-transition:leave-start="translate-x-0"
-            x-transition:leave-end="translate-x-full"
-            class="hr-sidebar hr-sidebar--expanded md:hidden flex flex-col hr-sidebar--mobile-drawer"
-            style="display: none;"
+        <aside id="hrMobileSidebar"
+            class="hr-sidebar hr-sidebar--expanded hr-sidebar--mobile-drawer flex flex-col"
+            hidden
+            aria-hidden="true"
+            aria-label="القائمة الرئيسية"
         >
             <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
                 <div class="hr-sidebar-mobile-head shrink-0">
-                    <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn ms-auto" title="إغلاق">
+                    <button type="button" data-hr-mobile-menu-close class="hr-topbar-icon-btn ms-auto" title="إغلاق">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
-                <nav class="hr-nav flex-1 min-h-0"
-                     x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard','create_employee_full','edit_employee','view_employee'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
+                <nav class="hr-nav flex-1 min-h-0">
                     {% include "components/sidebar_nav.html" with always_show=True %}
                 </nav>
                 {% include "components/sidebar_panel_footer.html" with allow_collapse=False always_show=True %}
@@ -266,8 +252,7 @@
                 :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
             >
                 <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
-                    <nav class="hr-nav flex-1 min-h-0"
-                         x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard','create_employee_full','edit_employee','view_employee'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
+                    <nav class="hr-nav flex-1 min-h-0">
                         {% include "components/sidebar_nav.html" with always_show=False %}
                     </nav>
                     {% include "components/sidebar_panel_footer.html" with allow_collapse=True %}
@@ -284,9 +269,9 @@
                                 aria-controls="hrDesktopSidebar">
                             <i data-lucide="panel-right" class="w-5 h-5"></i>
                         </button>
-                        <button type="button" @click="toggleMobileMenu()"
+                        <button type="button" data-hr-mobile-menu-toggle
                                 class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة"
-                                :aria-expanded="mobileMenuOpen ? 'true' : 'false'">
+                                aria-expanded="false" aria-controls="hrMobileSidebar">
                             <i data-lucide="menu" class="w-5 h-5"></i>
                         </button>
                         <div class="hr-topbar__title-wrap">
@@ -474,6 +459,7 @@
 
             document.body.addEventListener('htmx:afterSwap', function (evt) {
                 hrScheduleLucide();
+                if (window.hrInitNavDropdowns) window.hrInitNavDropdowns(evt.detail.target || document);
                 if (evt.detail.target && evt.detail.target.id === 'notif-dropdown-content') {
                     return;
                 }
