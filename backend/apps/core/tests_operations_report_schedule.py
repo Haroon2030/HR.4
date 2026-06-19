@@ -1,11 +1,13 @@
 """اختبارات جدولة تقرير العمليات."""
-from datetime import datetime, time
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from django.test import SimpleTestCase, override_settings
 
 from apps.core.services.operations_report_schedule import (
     operations_report_schedule_status,
+    resolve_operations_report_date,
+    scheduled_send_due,
     send_time_matches_minute,
 )
 
@@ -20,6 +22,33 @@ class OperationsReportScheduleTests(SimpleTestCase):
     def test_send_time_matches_minute_different_minute(self):
         now = datetime(2026, 6, 16, 8, 31, 0, tzinfo=ZoneInfo('Asia/Riyadh'))
         self.assertFalse(send_time_matches_minute(now, time(8, 30, 0)))
+
+    @override_settings(TIME_ZONE='Asia/Riyadh')
+    def test_resolve_report_date_morning_is_yesterday(self):
+        now = datetime(2026, 6, 19, 5, 11, 0, tzinfo=ZoneInfo('Asia/Riyadh'))
+        self.assertEqual(
+            resolve_operations_report_date(now, time(5, 0), manual=False),
+            date(2026, 6, 18),
+        )
+
+    @override_settings(TIME_ZONE='Asia/Riyadh')
+    def test_resolve_report_date_afternoon_is_today(self):
+        now = datetime(2026, 6, 19, 14, 0, 0, tzinfo=ZoneInfo('Asia/Riyadh'))
+        self.assertEqual(
+            resolve_operations_report_date(now, time(12, 0), manual=False),
+            date(2026, 6, 19),
+        )
+
+    @override_settings(TIME_ZONE='Asia/Riyadh')
+    def test_scheduled_send_catch_up_after_missed_minute(self):
+        class _Solo:
+            send_time = time(5, 0)
+            last_sent_at = None
+
+        now = datetime(2026, 6, 19, 5, 11, 0, tzinfo=ZoneInfo('Asia/Riyadh'))
+        due, reason = scheduled_send_due(now, _Solo())
+        self.assertTrue(due)
+        self.assertEqual(reason, 'catch_up')
 
     def test_schedule_status_blockers_when_disabled(self):
         class _Solo:

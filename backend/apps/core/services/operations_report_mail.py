@@ -103,7 +103,7 @@ def build_and_send_operations_report(
             include_pending=settings_obj.include_pending,
             include_completed=settings_obj.include_completed,
         ):
-            logger.info('تخطي تقرير العمليات التجريبي: لا توجد بيانات لليوم.')
+            logger.info('تخطي تقرير العمليات التجريبي: لا توجد بيانات لتاريخ %s.', report_date)
             return False
         _send_operations_report_email(
             bundle=bundle,

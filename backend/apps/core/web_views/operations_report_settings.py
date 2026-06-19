@@ -15,7 +15,7 @@ from apps.core.services.email_delivery import (
     email_delivery_status,
 )
 from apps.core.services.operations_report_mail import build_and_send_operations_report
-from apps.core.services.operations_report_schedule import operations_report_schedule_status
+from apps.core.services.operations_report_schedule import operations_report_schedule_status, resolve_operations_report_date
 from apps.setup.forms import OperationsReportSettingsForm
 from apps.setup.models import OperationsReportSettings
 from apps.setup.operations_report_recipients import (
@@ -45,8 +45,14 @@ def operations_report_settings(request):
                 return redirect(reverse('web:operations_report_settings'))
 
             try:
+                report_date = resolve_operations_report_date(
+                    timezone.localtime(),
+                    settings_obj.send_time,
+                    manual=False,
+                )
                 if test_email:
                     sent = build_and_send_operations_report(
+                        report_date=report_date,
                         recipient=test_email,
                         settings_obj=settings_obj,
                         force=True,
@@ -54,6 +60,7 @@ def operations_report_settings(request):
                     sent_label = test_email
                 else:
                     sent = build_and_send_operations_report(
+                        report_date=report_date,
                         settings_obj=settings_obj,
                         force=True,
                     )
@@ -77,9 +84,9 @@ def operations_report_settings(request):
                 else:
                     messages.warning(
                         request,
-                        'لم يُرسل أي تقرير — لا توجد عمليات معلّقة أو مُنجزة لتاريخ اليوم '
-                        f'({timezone.localdate().isoformat()}). '
-                        'المُنجز = ما تمت الموافقة عليه اليوم فقط. '
+                        f'لم يُرسل أي تقرير — لا توجد عمليات معلّقة أو مُنجزة لتاريخ '
+                        f'{report_date.isoformat()}. '
+                        'المُنجز = ما تمت الموافقة عليه في ذلك اليوم. '
                         'جرّب بعد اعتماد طلب، أو فعّل «تضمين المعلّق».',
                     )
             return redirect(reverse('web:operations_report_settings'))

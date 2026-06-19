@@ -1,7 +1,7 @@
 """مطابقة وقت إرسال تقرير العمليات."""
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
 from django.utils import timezone
@@ -29,6 +29,68 @@ def send_time_matches_minute(now: datetime, send_time: time | None) -> bool:
     return now.hour == target.hour and now.minute == target.minute
 
 
+def resolve_operations_report_date(
+    now: datetime,
+    send_time: time | None,
+    *,
+    manual: bool = False,
+) -> date:
+    """
+    تاريخ محتوى التقرير.
+    الإرسال المجدول قبل ظهراً: تقرير أمس (ملخص يوم كامل).
+    الإرسال المجدول ظهراً فما بعد: تقرير اليوم.
+    الاختبار اليدوي: اليوم الحالي.
+    """
+    if manual:
+        return now.date()
+    target = normalize_send_time(send_time)
+    if target.hour < 12:
+        return now.date() - timedelta(days=1)
+    return now.date()
+
+
+def scheduled_send_due(
+    now: datetime,
+    settings_obj,
+    *,
+    force: bool = False,
+    catch_up_hours: int = 6,
+) -> tuple[bool, str]:
+    """
+    هل حان إرسال التقرير المجدول؟
+    يُرجع (due, reason) — reason للسجلات والتشخيص.
+    """
+    if force:
+        return True, 'force'
+
+    target = normalize_send_time(getattr(settings_obj, 'send_time', None))
+    send_dt = datetime.combine(now.date(), target, tzinfo=now.tzinfo)
+
+    if send_time_matches_minute(now, target):
+        last = getattr(settings_obj, 'last_sent_at', None)
+        if last:
+            last_local = timezone.localtime(last)
+            if (
+                last_local.date() == now.date()
+                and last_local.hour == now.hour
+                and last_local.minute == now.minute
+            ):
+                return False, 'already_sent_this_minute'
+        return True, 'exact_minute'
+
+    if now < send_dt:
+        return False, 'before_send_time'
+
+    last = getattr(settings_obj, 'last_sent_at', None)
+    if last and timezone.localtime(last).date() >= now.date():
+        return False, 'already_sent_today'
+
+    if now <= send_dt + timedelta(hours=catch_up_hours):
+        return True, 'catch_up'
+
+    return False, 'missed_send_window'
+
+
 def format_send_time(send_time: time | None) -> str:
     target = normalize_send_time(send_time)
     return target.strftime('%H:%M:%S')
@@ -43,6 +105,8 @@ def operations_report_schedule_status(settings_obj) -> dict:
     recipients = settings_obj.active_recipient_emails() if hasattr(settings_obj, 'active_recipient_emails') else []
     last_sent = getattr(settings_obj, 'last_sent_at', None)
     last_sent_local = timezone.localtime(last_sent) if last_sent else None
+    report_date = resolve_operations_report_date(now, send_at, manual=False)
+    due, due_reason = scheduled_send_due(now, settings_obj)
     next_send = None
     if enabled:
         candidate = datetime.combine(now.date(), send_at, tzinfo=now.tzinfo)
@@ -55,9 +119,12 @@ def operations_report_schedule_status(settings_obj) -> dict:
         'server_now': now,
         'send_time': send_at,
         'send_time_label': format_send_time(send_at),
+        'report_date': report_date,
         'is_enabled': enabled,
         'recipient_count': len(recipients),
         'time_matches_now': send_time_matches_minute(now, send_at),
+        'scheduled_due_now': due,
+        'scheduled_due_reason': due_reason,
         'last_sent_at': last_sent_local,
         'next_send_at': next_send,
         'auto_ready': enabled and bool(recipients),

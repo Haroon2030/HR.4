@@ -6,7 +6,11 @@ from django.utils import timezone
 
 from apps.core.services.operations_report_data import bundle_has_content, collect_operations_report
 from apps.core.services.operations_report_mail import build_and_send_operations_report
-from apps.core.services.operations_report_schedule import format_send_time, send_time_matches_minute
+from apps.core.services.operations_report_schedule import (
+    format_send_time,
+    resolve_operations_report_date,
+    scheduled_send_due,
+)
 from apps.setup.models import OperationsReportSettings
 from apps.setup.operations_report_recipients import OPERATIONS_REPORT_RECIPIENT_ROLES
 
@@ -79,34 +83,29 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(msg))
             return
 
-        if not force and not send_time_matches_minute(now, solo.send_time):
-            if verbose_skip:
-                self.stdout.write(
-                    f'ليس وقت الإرسال ({format_send_time(solo.send_time)} {timezone.get_current_timezone_name()}) — '
-                    f'الآن {now.strftime("%H:%M:%S")} — تخطي.'
+        if not force and not recipient_override:
+            due, due_reason = scheduled_send_due(now, solo)
+            if not due:
+                msg = (
+                    f'تخطي ({due_reason}): وقت الإرسال {format_send_time(solo.send_time)} '
+                    f'{timezone.get_current_timezone_name()} — الآن {now.strftime("%H:%M:%S")}.'
                 )
-            return
-
-        if not force and solo.last_sent_at:
-            last = timezone.localtime(solo.last_sent_at)
-            if (
-                last.date() == now.date()
-                and last.hour == now.hour
-                and last.minute == now.minute
-            ):
-                msg = 'تخطي: تم الإرسال مسبقاً اليوم في هذا الوقت.'
                 logger.info(msg)
                 if verbose_skip:
                     self.stdout.write(msg)
                 return
 
-        report_date = now.date()
+        report_date = resolve_operations_report_date(
+            now,
+            solo.send_time,
+            manual=bool(recipient_override or force),
+        )
         reports_to_send = 0
 
         logger.info(
-            'بدء تقرير العمليات المجدول — %s %s — مستلمون: %s',
+            'بدء تقرير العمليات المجدول — report_date=%s now=%s — مستلمون: %s',
             report_date.isoformat(),
-            now.strftime('%H:%M:%S'),
+            now.strftime('%Y-%m-%d %H:%M:%S'),
             len(target_roles),
         )
 
@@ -167,6 +166,6 @@ class Command(BaseCommand):
             logger.info('تم إرسال تقرير العمليات المجدول بنجاح.')
             self.stdout.write(self.style.SUCCESS('تم إرسال تقرير العمليات بنجاح.'))
         else:
-            msg = 'لم يُرسل أي تقرير (لا بيانات أو لا مستلمين).'
+            msg = f'لم يُرسل أي تقرير (لا بيانات لتاريخ {report_date} أو لا مستلمين).'
             logger.warning(msg)
             self.stdout.write(self.style.WARNING(msg))
