@@ -1,58 +1,26 @@
-{# أيقونة عين + نافذة تفاصيل صغيرة — title, content, modal_uid (مثلاً st.id) #}
+{# أيقونة عين + نافذة تفاصيل — title, content, modal_uid #}
 {% load custom_tags %}
-<div class="inline-flex items-center shrink-0"
-     x-data="{ open: false }"
-     @keydown.escape.window="open && (open = false)">
+{% if content %}
+<div class="inline-flex items-center shrink-0">
+    <template id="archive-detail-html-{{ modal_uid }}">
+        <div class="hr-text-detail-modal__html-panel">
+            {% if '───' in content or '═══' in content %}
+            {{ content|format_archive_text }}
+            {% else %}
+            <div class="whitespace-pre-line leading-relaxed">{{ content }}</div>
+            {% endif %}
+        </div>
+    </template>
     <button type="button"
             class="hr-act hr-act--view"
             title="عرض التفاصيل"
             aria-label="عرض تفاصيل {{ title }}"
-            @click="open = true; $nextTick(() => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 2 } }); })">
+            data-hr-text-detail-open
+            data-hr-text-detail-icon="file-text"
+            data-hr-text-detail-title="{{ title }}"
+            data-hr-text-detail-label="الملاحظات"
+            data-hr-text-detail-html-id="archive-detail-html-{{ modal_uid }}">
         <i data-lucide="eye" class="hr-act__icon"></i>
     </button>
-
-    <template x-teleport="body">
-        <div x-show="open" x-cloak
-             x-transition:enter="transition ease-out duration-150"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-100"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="hr-glass-modal-overlay fixed inset-0 z-[250] flex items-center justify-center p-3"
-             @click.self="open = false"
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="archive-detail-title-{{ modal_uid }}">
-            <div class="hr-glass-modal hr-glass-modal--compact relative max-w-sm w-full overflow-hidden"
-                 @click.stop
-                 x-transition:enter="transition ease-out duration-150"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100">
-                <div class="hr-glass-modal__head px-3 py-2.5 flex items-center justify-between gap-2">
-                    <h3 id="archive-detail-title-{{ modal_uid }}"
-                        class="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5 min-w-0">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-primary-600 shrink-0"></i>
-                        <span class="truncate">{{ title }}</span>
-                    </h3>
-                    <button type="button" @click="open = false" class="hr-glass-modal__close hr-glass-modal__close--sm" aria-label="إغلاق">
-                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
-                <div class="hr-glass-modal__body hr-glass-modal__body--compact px-3 py-2.5 overflow-y-auto">
-                    {% if '───' in content or '═══' in content %}
-                    {{ content|format_archive_text }}
-                    {% else %}
-                    <div class="text-slate-600 whitespace-pre-line leading-relaxed">{{ content }}</div>
-                    {% endif %}
-                </div>
-                <div class="hr-glass-modal__foot px-3 py-2 flex justify-start">
-                    <button type="button" @click="open = false"
-                            class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-slate-200 bg-white/80 text-slate-700 hover:bg-white transition-colors">
-                        إغلاق
-                    </button>
-                </div>
-            </div>
-        </div>
-    </template>
 </div>
+{% endif %}

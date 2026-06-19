@@ -3947,6 +3947,576 @@ body.hr-app .border-blue-200.bg-blue-50 {
     -webkit-backdrop-filter: blur(6px);
 }
 
+/* نوافذ عامة في body — لا تعتمد على z-[…] في Tailwind المُجمّع */
+#hr-glass-text-modal,
+#hr-glass-media-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    pointer-events: none;
+}
+
+#hr-glass-text-modal.is-open,
+#hr-glass-media-modal.is-open,
+#hr-glass-text-modal[aria-hidden="false"],
+#hr-glass-media-modal[aria-hidden="false"] {
+    display: flex !important;
+    pointer-events: auto;
+}
+
+/* ── نافذة تفاصيل نصية — ثيم الشريط الجانبي (نص أبيض) ── */
+.hr-glass-modal--sidebar {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    );
+    border: 1px solid var(--hr-sidebar-border);
+    box-shadow:
+        0 28px 56px rgba(29, 74, 119, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+    color: #fff;
+    max-height: min(92vh, 36rem);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar {
+    max-height: min(92vh, 36rem);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__body {
+    color: #fff;
+}
+
+.hr-glass-modal--sidebar .hr-text-detail-modal__title,
+.hr-glass-modal--sidebar .hr-text-detail-modal__title span,
+.hr-glass-modal--sidebar #hr-glass-text-title-text,
+.hr-glass-modal--sidebar .hr-text-detail-modal__reason-label,
+.hr-glass-modal--sidebar .hr-text-detail-modal__reason-label span,
+.hr-glass-modal--sidebar .hr-text-detail-modal__chip-label,
+.hr-glass-modal--sidebar .hr-text-detail-modal__chip-value,
+.hr-glass-modal--sidebar .hr-text-detail-modal__reason-text,
+.hr-glass-modal--sidebar .hr-text-detail-modal__btn,
+.hr-glass-modal--sidebar .hr-text-detail-modal__attachment-link {
+    color: #fff !important;
+}
+
+.hr-glass-modal--sidebar .hr-text-detail-modal__chip-value.is-accent {
+    color: #fde68a !important;
+}
+
+.hr-glass-modal--sidebar .hr-text-detail-modal__chip-value.is-danger {
+    color: #fecaca !important;
+}
+
+.hr-glass-modal--sidebar .hr-text-detail-modal__chip-value.is-success {
+    color: #bbf7d0 !important;
+}
+
+.hr-glass-modal--sidebar .hr-text-detail-modal__icon,
+.hr-glass-modal--sidebar .hr-text-detail-modal__icon-wrap svg,
+.hr-glass-modal--sidebar .hr-text-detail-modal__head i[data-lucide],
+.hr-glass-modal--sidebar .hr-text-detail-modal__reason-label i[data-lucide],
+.hr-glass-modal--sidebar .hr-text-detail-modal__btn i[data-lucide],
+.hr-glass-modal--sidebar .hr-text-detail-modal__close i[data-lucide],
+.hr-glass-modal--sidebar .hr-text-detail-modal__attachment-link i[data-lucide],
+.hr-glass-modal--sidebar .hr-text-detail-modal__html-panel i[data-lucide],
+.hr-glass-modal--sidebar .hr-text-detail-modal__html-panel svg {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+/* html-panel + محتوى مُضمَّن — بدون لوحة بيضاء داخلية */
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel {
+    background: transparent;
+    color: #fff;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    max-height: 18rem;
+    overflow-y: auto;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel * {
+    color: inherit;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .bg-white,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .bg-slate-50 {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="text-slate"],
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .whitespace-pre-line,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .leading-relaxed {
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="text-primary"] {
+    color: #dbeafe !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="text-emerald"] {
+    color: #bbf7d0 !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="text-primary"] i[data-lucide],
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="text-emerald"] i[data-lucide] {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="border-slate"],
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel [class*="border-primary"] {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* تفاصيل النقل داخل النافذة */
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-transfer__reason-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-transfer__reason p,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-transfer__muted {
+    color: rgba(255, 255, 255, 0.88) !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-transfer__chip {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-transfer__chip.is-changed {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #fde68a !important;
+}
+
+/* تفاصيل دفتر الأستاذ — أسطح شفافة للقراءة على الأزرق */
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section-title,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__row-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__result,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__balance-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail--plain .hr-ledger-detail__text {
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-item,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-item--period {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section {
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: none;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--emerald {
+    border-color: rgba(187, 247, 208, 0.45);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber {
+    border-color: rgba(253, 230, 138, 0.45);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section-head,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--emerald .hr-ledger-detail__section-head,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__section-head {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--emerald .hr-ledger-detail__section-title {
+    color: #bbf7d0 !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__section-title {
+    color: #fde68a !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section-hint,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--emerald .hr-ledger-detail__section-hint,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__section-hint {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__rows {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__row {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__row--highlight,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__row--highlight {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__formula {
+    color: rgba(255, 255, 255, 0.78) !important;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__sep,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__bal-eq {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__row--highlight .hr-ledger-detail__result {
+    color: #bbf7d0 !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__row--highlight .hr-ledger-detail__result {
+    color: #fde68a !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__balances,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--emerald .hr-ledger-detail__balances,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__balances {
+    background: rgba(255, 255, 255, 0.08);
+    border-top-color: rgba(255, 255, 255, 0.16);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__bal-chip {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__bal-chip--total,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--emerald .hr-ledger-detail__bal-chip--total {
+    background: rgba(187, 247, 208, 0.18);
+    border-color: rgba(187, 247, 208, 0.45);
+    color: #bbf7d0 !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section--amber .hr-ledger-detail__bal-chip--total {
+    background: rgba(253, 230, 138, 0.18);
+    border-color: rgba(253, 230, 138, 0.45);
+    color: #fde68a !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__bal-op {
+    color: #bbf7d0 !important;
+}
+
+.hr-text-detail-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.15rem;
+    border-bottom: 1px solid var(--hr-sidebar-border);
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.hr-text-detail-modal__head-main {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.hr-text-detail-modal__icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: 0.65rem;
+    background: var(--hr-sidebar-surface);
+    border: 1px solid var(--hr-sidebar-border);
+}
+
+.hr-text-detail-modal__icon,
+.hr-text-detail-modal__icon-wrap svg,
+.hr-text-detail-modal__head i[data-lucide],
+.hr-text-detail-modal__reason-label i[data-lucide],
+.hr-text-detail-modal__btn i[data-lucide] {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+.hr-text-detail-modal__title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fff;
+    min-width: 0;
+}
+
+.hr-text-detail-modal__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    border-radius: 0.5rem;
+    border: 1px solid var(--hr-sidebar-border);
+    background: var(--hr-sidebar-surface);
+    color: #fff;
+    transition: background 0.12s ease;
+}
+
+.hr-text-detail-modal__close:hover {
+    background: var(--hr-sidebar-hover);
+}
+
+.hr-text-detail-modal__body {
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.hr-text-detail-modal__meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.hr-text-detail-modal__chip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.55rem;
+    border: 1px solid var(--hr-sidebar-border);
+    background: var(--hr-sidebar-surface);
+}
+
+.hr-text-detail-modal__chip-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--hr-sidebar-text-muted);
+    line-height: 1.2;
+}
+
+.hr-text-detail-modal__chip-value {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.hr-text-detail-modal__chip-value.is-mono {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+.hr-text-detail-modal__chip-value.is-accent {
+    color: #fde68a;
+}
+
+.hr-text-detail-modal__chip-value.is-danger {
+    color: #fecaca;
+}
+
+.hr-text-detail-modal__reason {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.hr-text-detail-modal__reason-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+}
+
+.hr-text-detail-modal__reason-text {
+    padding: 0.75rem 0.85rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--hr-sidebar-border);
+    background: rgba(0, 0, 0, 0.12);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.65;
+    color: #fff;
+    white-space: pre-line;
+    max-height: 10rem;
+    overflow-y: auto;
+}
+
+.hr-text-detail-modal__foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.75rem 1.15rem 1rem;
+    border-top: 1px solid var(--hr-sidebar-border);
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.hr-text-detail-modal__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--hr-sidebar-border);
+    background: var(--hr-sidebar-surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    transition: background 0.12s ease;
+}
+
+.hr-text-detail-modal__btn:hover {
+    background: var(--hr-sidebar-hover);
+}
+
+.hr-text-detail-modal__chip.is-wide {
+    grid-column: 1 / -1;
+}
+
+.hr-text-detail-modal__chip-value.is-success {
+    color: #bbf7d0;
+}
+
+.hr-text-detail-modal__reason-text--html {
+    white-space: normal;
+    padding: 0;
+    background: transparent;
+    border: none;
+    max-height: none;
+    overflow: visible;
+}
+
+.hr-text-detail-modal__html-panel {
+    background: transparent;
+    color: #fff;
+    border-radius: 0;
+    padding: 0;
+    max-height: 18rem;
+    overflow-y: auto;
+    border: none;
+    box-shadow: none;
+}
+
+.hr-text-detail-modal__html-panel .hr-ledger-detail {
+    font-size: 0.75rem;
+}
+
+.hr-text-detail-modal__attachment {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hr-text-detail-modal__attachment-preview {
+    display: block;
+    width: 100%;
+    padding: 0.35rem;
+    border-radius: 0.55rem;
+    border: 1px solid var(--hr-sidebar-border);
+    background: var(--hr-sidebar-surface);
+    cursor: zoom-in;
+}
+
+.hr-text-detail-modal__attachment-img {
+    display: block;
+    max-height: 9rem;
+    width: 100%;
+    object-fit: contain;
+    margin: 0 auto;
+    border-radius: 0.35rem;
+}
+
+.hr-text-detail-modal__attachment-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    align-self: flex-start;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.45rem;
+    border: 1px solid var(--hr-sidebar-border);
+    background: var(--hr-sidebar-surface);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+    transition: background 0.12s ease;
+}
+
+.hr-text-detail-modal__attachment-link:hover {
+    background: var(--hr-sidebar-hover);
+}
+
+.hr-text-detail-transfer__reason {
+    margin-bottom: 0.65rem;
+}
+
+.hr-text-detail-transfer__reason-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.hr-text-detail-transfer__reason p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: #334155;
+}
+
+.hr-text-detail-transfer__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    margin-top: 0.45rem;
+}
+
+.hr-text-detail-transfer__chip {
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.35rem;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+}
+
+.hr-text-detail-transfer__chip.is-changed {
+    background: #f3e8ff;
+    color: #7e22ce;
+    font-weight: 700;
+}
+
+.hr-text-detail-transfer__muted {
+    font-size: 0.625rem;
+    color: #94a3b8;
+}
+
 .hr-glass-modal {
     background: var(--hr-glass-bg-strong);
     backdrop-filter: var(--hr-glass-blur);
@@ -3956,6 +4526,32 @@ body.hr-app .border-blue-200.bg-blue-50 {
         0 24px 48px rgba(15, 23, 42, 0.14),
         inset 0 1px 0 var(--hr-glass-border);
     border-radius: 1rem;
+}
+
+/* يتغلب على .hr-glass-modal أعلاه — نافذة الملاحظات بثيم الشريط */
+.hr-glass-modal.hr-glass-modal--sidebar,
+#hr-glass-text-modal .hr-glass-modal.hr-glass-modal--sidebar {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    );
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: var(--hr-sidebar-border);
+    box-shadow:
+        0 28px 56px rgba(29, 74, 119, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.hr-glass-modal.hr-glass-modal--sidebar .hr-text-detail-modal__chip-label {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.hr-glass-modal.hr-glass-modal--sidebar .hr-text-detail-modal__foot {
+    border-top-color: var(--hr-sidebar-border);
+    background: rgba(0, 0, 0, 0.06);
 }
 
 .hr-glass-modal__head {
@@ -9921,4 +10517,51 @@ body.hr-app .hr-main :is(
     color: var(--hr-action-btn-fg) !important;
     background: var(--hr-action-btn-bg-hover) !important;
     border-color: var(--hr-action-btn-border-hover) !important;
+}
+
+/* ── نافذة الملاحظات — أولوية قصوى (يتغلب على كل قواعد hr-glass-modal) ── */
+#hr-glass-text-modal .hr-glass-modal.hr-glass-modal--sidebar {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: var(--hr-sidebar-border) !important;
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__head,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__body,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__foot {
+    background: transparent !important;
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__title,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__title span,
+#hr-glass-text-modal .hr-glass-modal--sidebar #hr-glass-text-title-text,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__chip-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__chip-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__reason-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__reason-label span,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__reason-text,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel {
+    color: #fff !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__chip {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__reason-text {
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar svg {
+    color: #fff !important;
+    stroke: #fff !important;
 }

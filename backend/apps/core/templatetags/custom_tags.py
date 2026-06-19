@@ -119,6 +119,23 @@ def input_decimal(value):
     return format_decimal_for_number_input(value)
 
 
+@register.filter
+def js_number(value, default='0'):
+    """
+    رقم آمن لـ Alpine.js / JavaScript — نقطة عشرية دائماً (100.5 لا 100,50).
+    """
+    if value is None or value == '':
+        return mark_safe(str(default))
+    try:
+        amount = Decimal(str(value).replace(',', '.'))
+    except (InvalidOperation, ValueError, TypeError):
+        return mark_safe(str(default))
+    text = format(amount, 'f')
+    if '.' in text:
+        text = text.rstrip('0').rstrip('.') or '0'
+    return mark_safe(text)
+
+
 def _format_amount_value(value, max_decimals=2):
     """100 بدل 100.00 — مع فاصلة آلاف ونقطة عشرية."""
     if value is None or value == '':

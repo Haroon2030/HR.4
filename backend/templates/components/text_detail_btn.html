@@ -1,0 +1,16 @@
+{# زر عين موحّد — يفتح glass_text_detail_modal (ثيم الشريط الجانبي)
+   title, icon?, btn_title?, content_label?, content_id?, html_id?, meta_json?, attachment_url?, extra_class? #}
+<button type="button"
+        class="hr-act hr-act--view {% if extra_class %}{{ extra_class }}{% endif %}"
+        title="{{ btn_title|default:'عرض التفاصيل' }}"
+        aria-label="{{ btn_title|default:'عرض التفاصيل' }}"
+        data-hr-text-detail-open
+        data-hr-text-detail-icon="{{ icon|default:'file-text' }}"
+        data-hr-text-detail-title="{{ title }}"
+        {% if content_label %}data-hr-text-detail-label="{{ content_label }}"{% endif %}
+        {% if content_id %}data-hr-text-detail-content-id="{{ content_id }}"{% endif %}
+        {% if html_id %}data-hr-text-detail-html-id="{{ html_id }}"{% endif %}
+        {% if meta_json %}data-hr-text-detail-meta='{{ meta_json }}'{% endif %}
+        {% if attachment_url %}data-hr-text-detail-attachment="{{ attachment_url }}"{% endif %}>
+    <i data-lucide="eye" class="hr-act__icon"></i>
+</button>

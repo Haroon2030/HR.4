@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
 
@@ -138,7 +138,16 @@ def load_employee_view_context(
         ctx['loans'] = list(employee.loans.all().order_by('-issued_at', '-id'))
 
     if need('absences'):
-        ctx['absences'] = list(employee.absences.all().order_by('-absence_date', '-id'))
+        absences = list(employee.absences.all().order_by('-absence_date', '-id'))
+        ctx['absences'] = absences
+        ctx['absences_days_total'] = sum((a.days or 0 for a in absences), 0)
+        deduction_total = Decimal('0')
+        for absence in absences:
+            try:
+                deduction_total += Decimal(str(absence.deduction_amount or 0))
+            except (InvalidOperation, ValueError, TypeError):
+                continue
+        ctx['absences_deduction_total'] = deduction_total
 
     if need('leaves'):
         ctx['leave_timeline'] = _load_leave_timeline(employee)
@@ -170,7 +179,48 @@ def load_employee_view_context(
         from apps.employees.selectors.employee_archive import load_employee_archive_extras
         ctx.update(load_employee_archive_extras(employee=employee, user=user))
 
+    ctx['employee_modal_js'] = _build_employee_modal_js(employee, user)
+
     return ctx
+
+
+def _modal_js_float(value) -> float:
+    try:
+        return float(Decimal(str(value or 0)))
+    except (InvalidOperation, ValueError, TypeError):
+        return 0.0
+
+
+def _modal_js_int(value) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _build_employee_modal_js(employee: Employee, user) -> dict:
+    """أرقام صفحة الموظف لـ Alpine — JSON آمن (نقطة عشرية) بعيداً عن تنسيق ar locale."""
+    from apps.core.salary_access import user_can_view_salary
+
+    hire = employee.hire_date
+    payload = {
+        'hire_date': hire.isoformat() if hire else '',
+        'today_iso': timezone.localdate().isoformat(),
+        'remaining_leave_days': _modal_js_int(employee.remaining_leave_days),
+        'has_sponsor': bool(employee.sponsorship_id),
+    }
+    if user_can_view_salary(user):
+        payload.update({
+            'total_salary': _modal_js_float(employee.total_salary),
+            'eos_salary': _modal_js_float(employee.salary_for_end_of_service),
+            'meal_allowance': _modal_js_float(employee.meal_allowance),
+            'basic_salary': _modal_js_float(employee.basic_salary),
+            'housing_allowance': _modal_js_float(employee.housing_allowance),
+            'transport_allowance': _modal_js_float(employee.transport_allowance),
+            'other_allowance': _modal_js_float(employee.other_allowance),
+            'cash_amount': _modal_js_float(employee.cash_amount),
+        })
+    return payload
 
 
 def _user_display_name(user) -> str:

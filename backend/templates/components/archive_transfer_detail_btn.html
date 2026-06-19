@@ -1,72 +1,38 @@
 {# نقل — title, transfer (dict من from_json), modal_uid #}
-<div class="inline-flex items-center shrink-0"
-     x-data="{ open: false }"
-     @keydown.escape.window="open && (open = false)">
+<div class="inline-flex items-center shrink-0">
+    <template id="archive-transfer-html-{{ modal_uid }}">
+        <div class="hr-text-detail-modal__html-panel hr-text-detail-modal__html-panel--transfer">
+            {% if transfer.reason %}
+            <div class="hr-text-detail-transfer__reason">
+                <span class="hr-text-detail-transfer__reason-label">سبب النقل</span>
+                <p>{{ transfer.reason }}</p>
+            </div>
+            {% endif %}
+            <div class="hr-text-detail-transfer__row">
+                <i data-lucide="building-2" class="w-3.5 h-3.5 shrink-0"></i>
+                <span class="hr-text-detail-transfer__chip">{{ transfer.branch_from }}</span>
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5 shrink-0"></i>
+                <span class="hr-text-detail-transfer__chip {% if transfer.branch_changed %}is-changed{% endif %}">{{ transfer.branch_to }}</span>
+                {% if not transfer.branch_changed %}<span class="hr-text-detail-transfer__muted">بدون تغيير</span>{% endif %}
+            </div>
+            <div class="hr-text-detail-transfer__row">
+                <i data-lucide="layers" class="w-3.5 h-3.5 shrink-0"></i>
+                <span class="hr-text-detail-transfer__chip">{{ transfer.dept_from }}</span>
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5 shrink-0"></i>
+                <span class="hr-text-detail-transfer__chip {% if transfer.dept_changed %}is-changed{% endif %}">{{ transfer.dept_to }}</span>
+                {% if not transfer.dept_changed %}<span class="hr-text-detail-transfer__muted">بدون تغيير</span>{% endif %}
+            </div>
+        </div>
+    </template>
     <button type="button"
             class="hr-act hr-act--view"
             title="عرض تفاصيل النقل"
             aria-label="عرض تفاصيل {{ title }}"
-            @click="open = true; $nextTick(() => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 2 } }); })">
+            data-hr-text-detail-open
+            data-hr-text-detail-icon="move"
+            data-hr-text-detail-title="{{ title }}"
+            data-hr-text-detail-label="تفاصيل النقل"
+            data-hr-text-detail-html-id="archive-transfer-html-{{ modal_uid }}">
         <i data-lucide="eye" class="hr-act__icon"></i>
     </button>
-
-    <template x-teleport="body">
-        <div x-show="open"
-             x-transition:enter="transition ease-out duration-150"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-100"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="hr-glass-modal-overlay fixed inset-0 z-[250] flex items-center justify-center p-3"
-             @click.self="open = false"
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="archive-transfer-title-{{ modal_uid }}">
-            <div class="hr-glass-modal hr-glass-modal--compact relative max-w-sm w-full overflow-hidden"
-                 @click.stop
-                 x-transition:enter="transition ease-out duration-150"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100">
-                <div class="hr-glass-modal__head px-3 py-2.5 flex items-center justify-between gap-2">
-                    <h3 id="archive-transfer-title-{{ modal_uid }}"
-                        class="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5 min-w-0">
-                        <i data-lucide="move" class="w-3.5 h-3.5 text-purple-600 shrink-0"></i>
-                        <span class="truncate">{{ title }}</span>
-                    </h3>
-                    <button type="button" @click="open = false" class="hr-glass-modal__close hr-glass-modal__close--sm" aria-label="إغلاق">
-                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
-                <div class="hr-glass-modal__body hr-glass-modal__body--compact px-3 py-2.5 overflow-y-auto space-y-2">
-                    {% if transfer.reason %}
-                    <div class="text-[11px] text-slate-600 flex items-start gap-1.5">
-                        <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400"></i>
-                        <span>{{ transfer.reason }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="flex items-center gap-1.5 text-[11px] flex-wrap">
-                        <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                        <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">{{ transfer.branch_from }}</span>
-                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
-                        <span class="px-1.5 py-0.5 rounded {% if transfer.branch_changed %}bg-purple-100 text-purple-700 font-bold{% else %}bg-slate-100 text-slate-500{% endif %}">{{ transfer.branch_to }}</span>
-                        {% if not transfer.branch_changed %}<span class="text-slate-400 text-[10px]">بدون تغيير</span>{% endif %}
-                    </div>
-                    <div class="flex items-center gap-1.5 text-[11px] flex-wrap">
-                        <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                        <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">{{ transfer.dept_from }}</span>
-                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
-                        <span class="px-1.5 py-0.5 rounded {% if transfer.dept_changed %}bg-purple-100 text-purple-700 font-bold{% else %}bg-slate-100 text-slate-500{% endif %}">{{ transfer.dept_to }}</span>
-                        {% if not transfer.dept_changed %}<span class="text-slate-400 text-[10px]">بدون تغيير</span>{% endif %}
-                    </div>
-                </div>
-                <div class="hr-glass-modal__foot px-3 py-2 flex justify-start">
-                    <button type="button" @click="open = false"
-                            class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-slate-200 bg-white/80 text-slate-700 hover:bg-white transition-colors">
-                        إغلاق
-                    </button>
-                </div>
-            </div>
-        </div>
-    </template>
 </div>

@@ -175,6 +175,17 @@
 
     </style>
     
+    <script>
+    window.hrNum = window.hrNum || function (v) {
+        if (v == null || v === '') return 0;
+        return parseFloat(String(v).replace(/\s/g, '').replace(/,/g, '.')) || 0;
+    };
+    window.hrInt = window.hrInt || function (v) {
+        if (v == null || v === '') return 0;
+        return parseInt(String(v).replace(/\s/g, '').replace(/,/g, '.'), 10) || 0;
+    };
+    </script>
+    
     <!-- HTMX + Alpine + Lucide — تأجيل التحميل لعدم حجب العرض -->
     <script defer src="/static/js/htmx.min.js"></script>
     <script defer src="/static/js/hr-employee-smart-search.js?v=20260610-2"></script>
@@ -208,7 +219,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260620-mobile-menu" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260620-text-modal-final" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -329,6 +340,7 @@
     </div>
     
     {% include "components/glass_media_viewer.html" %}
+    {% include "components/glass_text_detail_modal.html" %}
     {% include "components/glass_loading_popup.html" %}
 
     <!-- Toast Notifications -->

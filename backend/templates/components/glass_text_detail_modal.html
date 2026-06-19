@@ -1,0 +1,432 @@
+{# نافذة نصية موحّدة — ملاحظات، أسباب، تفاصيل (ثيم الشريط الجانبي) #}
+
+<div id="hr-glass-text-modal"
+
+     class="hr-glass-modal-overlay"
+
+     role="dialog"
+
+     aria-modal="true"
+
+     aria-labelledby="hr-glass-text-title"
+
+     aria-hidden="true">
+
+    <div class="hr-glass-modal hr-glass-modal--sidebar relative max-w-lg w-full mx-auto overflow-hidden flex flex-col"
+
+         onclick="event.stopPropagation()">
+
+        <div class="hr-text-detail-modal__head">
+
+            <div class="hr-text-detail-modal__head-main">
+
+                <span class="hr-text-detail-modal__icon-wrap" aria-hidden="true">
+
+                    <i data-lucide="file-text" class="hr-text-detail-modal__icon" id="hr-glass-text-head-icon"></i>
+
+                </span>
+
+                <h3 id="hr-glass-text-title" class="hr-text-detail-modal__title">
+
+                    <span class="truncate" id="hr-glass-text-title-text"></span>
+
+                </h3>
+
+            </div>
+
+            <button type="button" class="hr-text-detail-modal__close" aria-label="إغلاق" id="hr-glass-text-close">
+
+                <i data-lucide="x" class="w-4 h-4"></i>
+
+            </button>
+
+        </div>
+
+        <div class="hr-text-detail-modal__body">
+
+            <div id="hr-glass-text-meta" class="hr-text-detail-modal__meta hidden"></div>
+
+            <div class="hr-text-detail-modal__reason">
+
+                <div class="hr-text-detail-modal__reason-label">
+
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+
+                    <span id="hr-glass-text-content-label">السبب</span>
+
+                </div>
+
+                <div id="hr-glass-text-content" class="hr-text-detail-modal__reason-text"></div>
+
+            </div>
+
+            <div id="hr-glass-text-attachment" class="hr-text-detail-modal__attachment hidden"></div>
+
+        </div>
+
+        <div class="hr-text-detail-modal__foot">
+
+            <button type="button" id="hr-glass-text-close-btn" class="hr-text-detail-modal__btn">
+
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+
+                إغلاق
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+(function () {
+
+    var modal = document.getElementById('hr-glass-text-modal');
+
+    if (!modal || window.hrOpenGlassTextDetail) return;
+
+
+
+    if (modal.parentElement !== document.body) {
+
+        document.body.appendChild(modal);
+
+    }
+
+
+
+    var titleEl = document.getElementById('hr-glass-text-title-text');
+
+    var iconEl = document.getElementById('hr-glass-text-head-icon');
+
+    var metaEl = document.getElementById('hr-glass-text-meta');
+
+    var contentEl = document.getElementById('hr-glass-text-content');
+
+    var labelEl = document.getElementById('hr-glass-text-content-label');
+
+    var attachmentEl = document.getElementById('hr-glass-text-attachment');
+
+
+
+    function applyValueTone(el, valueClass) {
+
+        if (!valueClass) return;
+
+        if (valueClass.indexOf('orange') !== -1) el.classList.add('is-accent');
+
+        if (valueClass.indexOf('rose') !== -1) el.classList.add('is-danger');
+
+        if (valueClass.indexOf('emerald') !== -1) el.classList.add('is-success');
+
+        if (valueClass.indexOf('mono') !== -1) el.classList.add('is-mono');
+
+    }
+
+
+
+    function renderMeta(items) {
+
+        metaEl.innerHTML = '';
+
+        if (!items || !items.length) {
+
+            metaEl.classList.add('hidden');
+
+            return;
+
+        }
+
+        metaEl.classList.remove('hidden');
+
+        items.forEach(function (item) {
+
+            if (!item || !item.label) return;
+
+            var chip = document.createElement('div');
+
+            chip.className = 'hr-text-detail-modal__chip';
+
+            if (item.span === '2' || item.span === 2) chip.classList.add('is-wide');
+
+            var label = document.createElement('span');
+
+            label.className = 'hr-text-detail-modal__chip-label';
+
+            label.textContent = item.label;
+
+            var value = document.createElement('span');
+
+            value.className = 'hr-text-detail-modal__chip-value';
+
+            value.textContent = item.value != null ? String(item.value) : '—';
+
+            applyValueTone(value, item.valueClass || '');
+
+            chip.appendChild(label);
+
+            chip.appendChild(value);
+
+            metaEl.appendChild(chip);
+
+        });
+
+    }
+
+
+
+    function renderAttachment(url, title) {
+
+        attachmentEl.innerHTML = '';
+
+        if (!url) {
+
+            attachmentEl.classList.add('hidden');
+
+            return;
+
+        }
+
+        attachmentEl.classList.remove('hidden');
+
+        var isImage = /\.(jpe?g|png|gif|webp|bmp|svg)(\?|$)/i.test(String(url).split('?')[0]);
+
+        if (isImage) {
+
+            var btn = document.createElement('button');
+
+            btn.type = 'button';
+
+            btn.className = 'hr-text-detail-modal__attachment-preview';
+
+            btn.title = title || 'معاينة المرفق';
+
+            var img = document.createElement('img');
+
+            img.src = url;
+
+            img.alt = title || 'مرفق';
+
+            img.className = 'hr-text-detail-modal__attachment-img';
+
+            btn.appendChild(img);
+
+            btn.addEventListener('click', function () {
+
+                if (window.hrOpenGlassMedia) window.hrOpenGlassMedia(url, title || 'مرفق');
+
+            });
+
+            attachmentEl.appendChild(btn);
+
+        }
+
+        var link = document.createElement('button');
+
+        link.type = 'button';
+
+        link.className = 'hr-text-detail-modal__attachment-link';
+
+        link.innerHTML = '<i data-lucide="paperclip" class="w-3.5 h-3.5"></i> عرض المرفق';
+
+        link.addEventListener('click', function () {
+
+            if (window.hrOpenGlassMedia) {
+
+                window.hrOpenGlassMedia(url, title || 'مرفق');
+
+            } else {
+
+                window.open(url, '_blank', 'noopener');
+
+            }
+
+        });
+
+        attachmentEl.appendChild(link);
+
+    }
+
+
+
+    function closeModal() {
+
+        modal.classList.remove('is-open');
+
+        modal.setAttribute('aria-hidden', 'true');
+
+        document.body.style.overflow = '';
+
+    }
+
+
+
+    function openModal(opts) {
+
+        opts = opts || {};
+
+        titleEl.textContent = opts.title || 'التفاصيل';
+
+        labelEl.textContent = opts.contentLabel || 'السبب';
+
+
+
+        contentEl.classList.remove('hr-text-detail-modal__reason-text--html');
+
+        if (opts.html) {
+
+            contentEl.innerHTML = opts.html;
+
+            contentEl.classList.add('hr-text-detail-modal__reason-text--html');
+
+        } else {
+
+            contentEl.textContent = opts.content || '—';
+
+        }
+
+
+
+        renderMeta(opts.meta);
+
+        renderAttachment(opts.attachment || '', opts.title || '');
+
+
+
+        var iconName = opts.icon || 'file-text';
+
+        iconEl.setAttribute('data-lucide', iconName);
+
+
+
+        document.body.appendChild(modal);
+
+        modal.classList.add('is-open');
+
+        modal.setAttribute('aria-hidden', 'false');
+
+        document.body.style.overflow = 'hidden';
+
+
+
+        if (window.lucide) {
+
+            lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+
+        }
+
+    }
+
+
+
+    window.hrOpenGlassTextDetail = openModal;
+
+    window.hrCloseGlassTextDetail = closeModal;
+
+
+
+    document.getElementById('hr-glass-text-close').addEventListener('click', closeModal);
+
+    document.getElementById('hr-glass-text-close-btn').addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function (e) {
+
+        if (e.target === modal) closeModal();
+
+    });
+
+    document.addEventListener('keydown', function (e) {
+
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+
+    });
+
+
+
+    document.addEventListener('click', function (e) {
+
+        var trigger = e.target.closest('[data-hr-text-detail-open]');
+
+        if (!trigger) return;
+
+        e.preventDefault();
+
+        e.stopPropagation();
+
+
+
+        var meta = [];
+
+        var metaRaw = trigger.getAttribute('data-hr-text-detail-meta');
+
+        if (metaRaw) {
+
+            try { meta = JSON.parse(metaRaw); } catch (err) { meta = []; }
+
+        }
+
+
+
+        var html = '';
+
+        var htmlId = trigger.getAttribute('data-hr-text-detail-html-id');
+
+        if (htmlId) {
+
+            var htmlTpl = document.getElementById(htmlId);
+
+            if (htmlTpl) html = htmlTpl.innerHTML;
+
+        }
+
+
+
+        var content = trigger.getAttribute('data-hr-text-detail-content') || '';
+
+        var contentId = trigger.getAttribute('data-hr-text-detail-content-id');
+
+        if (!html && contentId) {
+
+            var tpl = document.getElementById(contentId);
+
+            if (tpl) {
+
+                content = tpl.content ? tpl.content.textContent : tpl.textContent;
+
+            }
+
+        }
+
+        content = (content || '').trim();
+
+
+
+        openModal({
+
+            title: trigger.getAttribute('data-hr-text-detail-title') || trigger.getAttribute('title') || 'التفاصيل',
+
+            icon: trigger.getAttribute('data-hr-text-detail-icon') || 'file-text',
+
+            contentLabel: trigger.getAttribute('data-hr-text-detail-label') || 'السبب',
+
+            html: html,
+
+            content: content,
+
+            meta: meta,
+
+            attachment: trigger.getAttribute('data-hr-text-detail-attachment') || ''
+
+        });
+
+    });
+
+})();
+
+</script>
+
