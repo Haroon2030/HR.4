@@ -1,14 +1,14 @@
-{% comment %}
-  رأس صندوق الشريط الجانبي — اسم النظام.
-{% endcomment %}
-<div class="hr-sidebar-panel__head shrink-0" dir="rtl">
-    <a href="{% url 'web:dashboard' %}" class="hr-sidebar-org" title="لوحة التحكم">
-        <span class="hr-sidebar-org__icon" aria-hidden="true">
-            <i data-lucide="users-round" class="w-4 h-4"></i>
-        </span>
-        <span class="hr-sidebar-org__text" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-            <span class="hr-sidebar-org__title">نظام الموارد البشرية</span>
-        </span>
-        <i data-lucide="chevrons-up-down" class="hr-sidebar-org__chev w-3.5 h-3.5 opacity-50 shrink-0" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %} aria-hidden="true"></i>
-    </a>
-</div>
+{% comment %}رأس الشريط — شعار + عنوان + جرس (Dokploy){% endcomment %}
+<div class="hr-nav__head shrink-0" dir="rtl">
+    <div class="hr-sidebar-brand-bar">
+        <a href="{% url 'web:dashboard' %}" class="hr-sidebar-brand-bar__main" title="لوحة التحكم">
+            <span class="hr-sidebar-brand-bar__logo" aria-hidden="true">
+                <i data-lucide="users-round" class="w-4 h-4"></i>
+            </span>
+            <span class="hr-sidebar-brand-bar__name">نظام الموارد البشرية</span>
+        </a>
+        <div class="hr-sidebar-brand-bar__tools">
+            {% include "components/notifications_dropdown.html" with in_sidebar=True %}
+        </div>
+    </div>
+</div>

@@ -207,7 +207,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260616-official-print-btn" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260619-nav-dropdown" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -227,83 +227,9 @@
         style="display: none;"
     ></div>
 
-    <!-- هيكل: شريط علوي كامل العرض ← ثم شريط جانبي + المحتوى -->
+    <!-- هيكل Dokploy: شريط جانبي + محتوى (الشريط العلوي داخل المحتوى) -->
     <div class="hr-app-shell flex flex-col h-screen min-h-0 overflow-hidden">
-        <div class="hr-app-chrome shrink-0 w-full">
-            <header class="hr-topbar shrink-0">
-                <div class="hr-topbar__start">
-                    <button type="button" @click="sidebarOpen = !sidebarOpen"
-                            class="hr-topbar-icon-btn hr-topbar-collapse-btn" title="طي القائمة">
-                        <i data-lucide="panel-right" class="w-5 h-5"></i>
-                    </button>
-                    <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
-                            class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة">
-                        <i data-lucide="menu" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div class="hr-topbar__center">
-                    <div class="hr-topbar-page" aria-label="الصفحة الحالية">
-                        {% block breadcrumb_parent %}{% endblock %}
-                        <h1 id="hr-topbar-page-title" class="hr-topbar-page__title">
-                            {% block page_title %}لوحة التحكم{% endblock %}
-                        </h1>
-                    </div>
-                </div>
-                <div class="hr-topbar__end">
-                    <div class="hr-topbar-actions">
-                        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                            <button type="button"
-                                    @click.stop="open = !open; if(open){ htmx.trigger('#notif-dropdown-content', 'notif-open'); }"
-                                    class="hr-topbar-icon-btn relative" title="الإشعارات">
-                                <i data-lucide="bell" class="w-5 h-5"></i>
-                                {% if unread_notifications_count %}
-                                <span class="hr-topbar-icon-btn__badge" aria-label="{{ unread_notifications_count }} إشعار غير مقروء">{% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}</span>
-                                {% endif %}
-                            </button>
-                            <div x-show="open" x-cloak x-transition
-                                 class="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
-                                <div id="notif-dropdown-content"
-                                     hx-get="{% url 'web:notifications_dropdown' %}"
-                                     hx-trigger="notif-open"
-                                     hx-swap="innerHTML">
-                                    <div class="p-6 text-center text-sm text-slate-400">
-                                        اضغط الجرس لتحميل الإشعارات
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% include "components/topbar_app_info.html" %}
-                        <div class="relative" x-data="{ accountOpen: false }" @click.outside="accountOpen = false">
-                            <button type="button" @click.stop="accountOpen = !accountOpen"
-                                    class="hr-topbar-user" :aria-expanded="accountOpen ? 'true' : 'false'">
-                                <span class="hr-topbar-user__avatar" aria-hidden="true"><i data-lucide="user-cog" class="w-4 h-4"></i></span>
-                                <i data-lucide="chevron-down" class="hr-topbar-user__chevron w-4 h-4 hidden sm:block"></i>
-                            </button>
-                            <div x-show="accountOpen" x-cloak x-transition dir="rtl"
-                                 class="absolute left-0 top-full mt-2 z-50 w-72 rounded-xl border border-slate-200 bg-white py-1.5 shadow-2xl ring-1 ring-black/5"
-                                 style="display: none;">
-                                <div class="px-4 py-3 border-b border-slate-100">
-                                    <p class="text-sm font-bold text-slate-900 truncate">{{ user.get_full_name|default:user.username }}</p>
-                                    {% if user.profile.role %}<p class="text-xs text-slate-500 mt-0.5">{{ user.profile.role.name }}</p>{% endif %}
-                                </div>
-                                <a href="{% url 'web:auth:password_change' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50">
-                                    <i data-lucide="key" class="h-4 w-4 text-slate-500"></i> تغيير كلمة المرور
-                                </a>
-                                <div class="my-1 border-t border-slate-100"></div>
-                                <form method="post" action="{% url 'web:auth:logout' %}" class="m-0">
-                                    {% csrf_token %}
-                                    <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50 text-start border-0 bg-transparent cursor-pointer">
-                                        <i data-lucide="log-out" class="h-4 w-4"></i> تسجيل الخروج
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-        </div>
-
-        <!-- Mobile Sidebar (خارج hr-app-body لتفادي تعارض position: relative) -->
+        <!-- Mobile Sidebar -->
         <aside
             x-show="mobileMenuOpen"
             @click.away="mobileMenuOpen = false"
@@ -318,8 +244,7 @@
         >
             <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
                 <div class="hr-sidebar-mobile-head shrink-0">
-                    {% include "components/app_org_bar.html" with always_show=True %}
-                    <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn" title="إغلاق">
+                    <button type="button" @click="mobileMenuOpen = false" class="hr-topbar-icon-btn ms-auto" title="إغلاق">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -338,7 +263,6 @@
                 :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
             >
                 <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
-                    {% include "components/app_org_bar.html" %}
                     <nav class="hr-nav flex-1 min-h-0"
                          x-data="{ employeesOpen: ['list_employees','add_employee','document_expiry_dashboard','create_employee_full','edit_employee','view_employee'].includes('{{ request.resolver_match.url_name }}'), attendanceOpen: {% if '/attendance/' in request.path %}true{% else %}false{% endif %}, systemOpen: {% if '/branches/' in request.path or '/setup/' in request.path %}true{% else %}false{% endif %} }">
                         {% include "components/sidebar_nav.html" with always_show=False %}
@@ -348,6 +272,54 @@
             </aside>
 
             <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
+                <header class="hr-topbar shrink-0">
+                    <div class="hr-topbar__start">
+                        <button type="button" @click="sidebarOpen = !sidebarOpen"
+                                class="hr-topbar-icon-btn hr-topbar-collapse-btn" title="طي القائمة">
+                            <i data-lucide="panel-right" class="w-5 h-5"></i>
+                        </button>
+                        <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
+                                class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
+                        </button>
+                        <div class="hr-topbar__title-wrap">
+                            {% block breadcrumb_parent %}{% endblock %}
+                            <h1 id="hr-topbar-page-title" class="hr-topbar__title">{% block page_title %}لوحة التحكم{% endblock %}</h1>
+                        </div>
+                    </div>
+                    <div class="hr-topbar__end">
+                        <div class="hr-topbar-actions">
+                            {% include "components/topbar_time_pill.html" %}
+                            {% include "components/topbar_app_info.html" %}
+                            <div class="relative" x-data="{ accountOpen: false }" @click.outside="accountOpen = false">
+                                <button type="button" @click.stop="accountOpen = !accountOpen"
+                                        class="hr-topbar-user" :aria-expanded="accountOpen ? 'true' : 'false'">
+                                    <span class="hr-topbar-user__avatar" aria-hidden="true"><i data-lucide="user-cog" class="w-4 h-4"></i></span>
+                                    <i data-lucide="chevron-down" class="hr-topbar-user__chevron w-4 h-4 hidden sm:block"></i>
+                                </button>
+                                <div x-show="accountOpen" x-cloak x-transition dir="rtl"
+                                     class="absolute left-0 top-full mt-2 z-50 w-72 rounded-xl border border-slate-200 bg-white py-1.5 shadow-2xl ring-1 ring-black/5"
+                                     style="display: none;">
+                                    <div class="px-4 py-3 border-b border-slate-100">
+                                        <p class="text-sm font-bold text-slate-900 truncate">{{ user.get_full_name|default:user.username }}</p>
+                                        {% if user.profile.role %}<p class="text-xs text-slate-500 mt-0.5">{{ user.profile.role.name }}</p>{% endif %}
+                                    </div>
+                                    <a href="{% url 'web:auth:password_change' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50">
+                                        <i data-lucide="key" class="h-4 w-4 text-slate-500"></i> تغيير كلمة المرور
+                                    </a>
+                                    <div class="my-1 border-t border-slate-100"></div>
+                                    <form method="post" action="{% url 'web:auth:logout' %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-700 hover:bg-rose-50 text-start border-0 bg-transparent cursor-pointer">
+                                            <i data-lucide="log-out" class="h-4 w-4"></i> تسجيل الخروج
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
                 <main class="hr-main hr-scroll-hide flex-1 min-h-0 relative" style="direction:ltr;">
                     <div class="hr-page-card">
                         <div id="hr-htmx-indicator" class="hr-htmx-indicator" aria-hidden="true" hidden>
@@ -358,17 +330,6 @@
                             {% block content %}{% endblock %}
                             </div>
                         </div>
-                        <footer class="hr-footer hr-page-card__footer hr-app-footer shrink-0 text-center">
-                            <div class="hr-app-footer__inner">
-                                <span class="hr-app-footer__brand" dir="rtl">
-                                    <i data-lucide="circuit-board" class="hr-app-footer__icon" aria-hidden="true"></i>
-                                    <span class="hr-app-footer__copy">
-                                        <span class="hr-app-footer__label">تطوير الحلول التقنيه للتواصل</span>
-                                        <a href="tel:0531847156" class="hr-app-footer__tel" dir="ltr" title="اتصال">0531847156</a>
-                                    </span>
-                                </span>
-                            </div>
-                        </footer>
                     </div>
                 </main>
             </div>
@@ -436,9 +397,9 @@
         }
 
         function hrSyncChromeHeight() {
-            var chrome = document.querySelector('.hr-app-chrome');
-            if (!chrome) return;
-            document.documentElement.style.setProperty('--hr-chrome-height', chrome.getBoundingClientRect().height + 'px');
+            var topbar = document.querySelector('.hr-topbar');
+            if (!topbar) return;
+            document.documentElement.style.setProperty('--hr-chrome-height', topbar.getBoundingClientRect().height + 'px');
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -463,22 +424,22 @@
             hrScheduleLucide();
             hrSyncChromeHeight();
 
-            var chromeForResize = document.querySelector('.hr-app-chrome');
-            if (chromeForResize && typeof ResizeObserver !== 'undefined') {
-                new ResizeObserver(hrSyncChromeHeight).observe(chromeForResize);
+            var topbarForResize = document.querySelector('.hr-topbar');
+            if (topbarForResize && typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(hrSyncChromeHeight).observe(topbarForResize);
             } else {
                 window.addEventListener('resize', hrSyncChromeHeight);
             }
 
-            var topbar = document.querySelector('.hr-topbar');
+            var topbarEl = document.querySelector('.hr-topbar');
             var main = document.querySelector('.hr-main');
-            if (topbar && main) {
+            if (topbarEl && main) {
                 var scrollTick = false;
                 main.addEventListener('scroll', function () {
                     if (scrollTick) return;
                     scrollTick = true;
                     requestAnimationFrame(function () {
-                        topbar.classList.toggle('is-scrolled', main.scrollTop > 8);
+                        topbarEl.classList.toggle('is-scrolled', main.scrollTop > 8);
                         scrollTick = false;
                     });
                 }, { passive: true });

@@ -1,0 +1,24 @@
+{% comment %}قائمة الإشعارات{% endcomment %}
+<div class="relative hr-notif-dropdown" x-data="{ open: false }" @click.outside="open = false">
+    <button type="button"
+            @click.stop="open = !open; if(open){ htmx.trigger('#notif-dropdown-content', 'notif-open'); }"
+            class="{% if in_sidebar %}hr-sidebar-notif-btn{% else %}hr-topbar-icon-btn{% endif %} relative"
+            title="الإشعارات"
+            aria-label="الإشعارات{% if unread_notifications_count %} — {{ unread_notifications_count }} غير مقروء{% endif %}">
+        <i data-lucide="bell" class="{% if in_sidebar %}hr-sidebar-notif-btn__icon{% else %}w-5 h-5{% endif %}" aria-hidden="true"></i>
+        {% if unread_notifications_count %}
+        <span class="hr-topbar-icon-btn__badge" aria-hidden="true">{% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}</span>
+        {% endif %}
+    </button>
+    <div x-show="open" x-cloak x-transition
+         class="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+        <div id="notif-dropdown-content"
+             hx-get="{% url 'web:notifications_dropdown' %}"
+             hx-trigger="notif-open"
+             hx-swap="innerHTML">
+            <div class="p-6 text-center text-sm text-slate-400">
+                اضغط الجرس لتحميل الإشعارات
+            </div>
+        </div>
+    </div>
+</div>

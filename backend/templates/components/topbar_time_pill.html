@@ -1,0 +1,21 @@
+<div class="hr-topbar-time-pill"
+     x-data="{
+         timeLabel: '',
+         tick() {
+             try {
+                 this.timeLabel = new Date().toLocaleTimeString('ar-SA', {
+                     hour: '2-digit', minute: '2-digit', second: '2-digit',
+                     hour12: false, timeZone: 'Asia/Riyadh'
+                 });
+             } catch (e) {
+                 this.timeLabel = new Date().toLocaleTimeString();
+             }
+         }
+     }"
+     x-init="tick(); setInterval(() => tick(), 1000)"
+     aria-live="polite">
+    <i data-lucide="clock" class="hr-topbar-time-pill__icon" aria-hidden="true"></i>
+    <span class="hr-topbar-time-pill__label">الوقت</span>
+    <span class="hr-topbar-time-pill__time" x-text="timeLabel" dir="ltr"></span>
+    <span class="hr-topbar-time-pill__tz">UTC+3</span>
+</div>
