@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db.models import Q
+from django.urls import reverse
 
 from apps.core.web_views._helpers import (
     _is_branch_manager,
@@ -277,33 +278,72 @@ def edit_employment_request(request, request_id):
         messages.error(request, 'لا تملك صلاحية تعديل بيانات هذا الطلب.')
         return redirect('web:list_employment_requests')
 
+    active_tab = 'main'
+    tab_status = svc.employment_request_tab_status(emp_req)
+
     if request.method == 'POST':
-        form = EmploymentRequestEditForm(request.POST, request.FILES, instance=emp_req)
+        action = (request.POST.get('action') or 'save').strip()
+        save_tab = (request.POST.get('save_tab') or '').strip()
+        if action == 'save_tab' and save_tab not in svc.VALID_EMP_REQ_TABS:
+            save_tab = 'main'
+        form = EmploymentRequestEditForm(
+            request.POST,
+            request.FILES,
+            instance=emp_req,
+            save_tab=save_tab if action == 'save_tab' else None,
+        )
         if form.is_valid():
             form.save()
-            # هل المستخدم ضغط "حفظ والموافقة"؟
-            if request.POST.get('action') == 'save_and_approve':
+            emp_req.refresh_from_db()
+            tab_status = svc.employment_request_tab_status(emp_req)
+            active_tab = save_tab or request.POST.get('return_tab', 'main')
+            if active_tab not in svc.VALID_EMP_REQ_TABS:
+                active_tab = 'main'
+            if active_tab == 'bank' and not emp_req.sponsorship_id:
+                active_tab = 'salary'
+
+            if action == 'save_and_approve':
                 try:
-                    svc.officer_approve(emp_req, request.user,
-                                        notes=request.POST.get('review_notes', ''))
+                    svc.officer_approve(
+                        emp_req,
+                        request.user,
+                        notes=request.POST.get('review_notes', ''),
+                    )
                     messages.success(
                         request,
-                        f'تم حفظ البيانات والموافقة النهائية على "{emp_req.name}".'
+                        f'تم حفظ البيانات والموافقة النهائية على "{emp_req.name}".',
                     )
                     return redirect('web:list_employment_requests')
                 except ValueError as e:
                     messages.error(request, str(e))
-                    # نبقى في صفحة التعديل
             else:
-                messages.success(request, f'تم حفظ بيانات "{emp_req.name}" بنجاح.')
-                return redirect('web:edit_employment_request', request_id=emp_req.id)
+                url = reverse(
+                    'web:edit_employment_request',
+                    kwargs={'request_id': emp_req.id},
+                )
+                return redirect(f'{url}?tab={active_tab}&saved={save_tab}')
         else:
+            active_tab = request.POST.get('return_tab', 'main')
+            if active_tab not in svc.VALID_EMP_REQ_TABS:
+                active_tab = 'main'
             messages.error(request, 'يوجد أخطاء في النموذج، يرجى مراجعة الحقول.')
     else:
         form = EmploymentRequestEditForm(instance=emp_req)
+        active_tab = (request.GET.get('tab') or 'main').strip()
+        if active_tab not in svc.VALID_EMP_REQ_TABS:
+            active_tab = 'main'
+        if active_tab == 'bank' and not emp_req.sponsorship_id:
+            active_tab = 'main'
 
-    # عرض الحقول الناقصة كتنبيه
+    saved_tab = ''
+    if request.method != 'POST':
+        saved_tab = (request.GET.get('saved') or '').strip()
+        if saved_tab not in svc.VALID_EMP_REQ_TABS:
+            saved_tab = ''
+    saved_tab_label = svc.EMP_REQ_TAB_LABELS.get(saved_tab, '') if saved_tab else ''
+
     missing = svc.validate_employee_data_complete(emp_req)
+    can_final_approve = svc.employment_request_all_tabs_complete(emp_req)
 
     from apps.employees.services.contract_rules import saudi_nationality_ids
 
@@ -311,6 +351,11 @@ def edit_employment_request(request, request_id):
         'form': form,
         'emp_req': emp_req,
         'missing_fields': missing,
+        'tab_status': tab_status,
+        'active_tab': active_tab,
+        'can_final_approve': can_final_approve,
+        'saved_tab': saved_tab,
+        'saved_tab_label': saved_tab_label,
         'title': f'تعديل بيانات الموظف — {emp_req.name}',
         'saudi_nationality_ids': saudi_nationality_ids(),
     })

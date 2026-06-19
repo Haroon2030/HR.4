@@ -81,7 +81,104 @@ def validate_employee_data_complete(req):
     if is_saudi_nationality(getattr(req, 'nationality', None)):
         if not is_valid_saudi_insurance_rate(getattr(req, 'insurance_deduction_rate', None)):
             missing.append('نسبة خصم التأمينات (GOSI)')
+    if getattr(req, 'sponsorship_id', None):
+        if not getattr(req, 'bank_id', None):
+            missing.append('البنك')
+        if not (getattr(req, 'iban', None) or '').strip():
+            missing.append('رقم الآيبان')
+        if not (getattr(req, 'account_type', None) or '').strip():
+            missing.append('طبيعة الحساب')
     return missing
+
+
+EMP_REQ_TAB_REQUIRED = {
+    'main': frozenset({
+        'name', 'id_number', 'phone', 'email', 'employee_number', 'hire_date',
+    }),
+    'org': frozenset({'nationality', 'profession', 'sponsorship'}),
+    'salary': frozenset({
+        'basic_salary', 'housing_allowance', 'transport_allowance',
+    }),
+    'bank': frozenset({'bank', 'iban', 'account_type'}),
+    'docs': frozenset({'id_document'}),
+}
+
+VALID_EMP_REQ_TABS = frozenset(EMP_REQ_TAB_REQUIRED.keys())
+
+EMP_REQ_TAB_LABELS = {
+    'main': 'بيانات الموظف',
+    'org': 'التنظيمي والتأمين',
+    'salary': 'الراتب',
+    'bank': 'البنك',
+    'docs': 'المستندات',
+}
+
+
+def employment_request_tab_status(req):
+    """حالة كل تبويب: complete | incomplete | skipped (البنك بدون كفالة)."""
+
+    def _str_ok(attr):
+        value = getattr(req, attr, None)
+        return bool(value and str(value).strip())
+
+    def _fk_ok(attr):
+        return getattr(req, attr, None) is not None
+
+    def _date_ok(attr):
+        return getattr(req, attr, None) is not None
+
+    def _dec_ok(attr):
+        return getattr(req, attr, None) is not None
+
+    def _file_ok(attr):
+        return bool(getattr(req, attr, None))
+
+    status = {
+        'main': 'complete' if all([
+            _str_ok('name'), _str_ok('id_number'), _str_ok('phone'),
+            _str_ok('email'), _str_ok('employee_number'), _date_ok('hire_date'),
+        ]) else 'incomplete',
+        'org': 'complete' if all([
+            _fk_ok('nationality_id'), _fk_ok('profession_id'), _fk_ok('sponsorship_id'),
+        ]) else 'incomplete',
+        'salary': 'incomplete',
+        'docs': 'complete' if _file_ok('id_document') else 'incomplete',
+    }
+
+    salary_ok = all([
+        _dec_ok('basic_salary'),
+        _dec_ok('housing_allowance'),
+        _dec_ok('transport_allowance'),
+    ])
+    from apps.employees.services.contract_rules import (
+        is_saudi_nationality,
+        is_valid_saudi_insurance_rate,
+    )
+    if is_saudi_nationality(getattr(req, 'nationality', None)):
+        salary_ok = salary_ok and is_valid_saudi_insurance_rate(
+            getattr(req, 'insurance_deduction_rate', None),
+        )
+    status['salary'] = 'complete' if salary_ok else 'incomplete'
+
+    if not getattr(req, 'sponsorship_id', None):
+        status['bank'] = 'skipped'
+    else:
+        bank_ok = all([
+            _fk_ok('bank_id'),
+            _str_ok('iban'),
+            _str_ok('account_type'),
+        ])
+        status['bank'] = 'complete' if bank_ok else 'incomplete'
+
+    return status
+
+
+def employment_request_all_tabs_complete(req):
+    """True عندما تكون كل التبويبات المطلوبة مكتملة (البنك يُتخطى بدون كفالة)."""
+    return all(
+        state in ('complete', 'skipped')
+        for state in employment_request_tab_status(req).values()
+    )
 
 
 def _notify_general_managers(req, **kwargs):

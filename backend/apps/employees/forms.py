@@ -352,6 +352,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
+        self._save_tab = kwargs.pop('save_tab', None)
         super().__init__(*args, **kwargs)
         # 🏷️ إظهار الاسم في القوائم المنسدلة بدلاً من الرقم/التمثيل الافتراضي
         _apply_fk_label_overrides(self)
@@ -359,13 +360,26 @@ class EmploymentRequestEditForm(forms.ModelForm):
         # اجعل كل الحقول اختيارية ابتداءً ثم اضبط الإلزامي
         for field_name, field in self.fields.items():
             field.required = False
-        # تفعيل الإلزامي
-        for field_name in EMPLOYMENT_REQUEST_REQUIRED_FIELDS:
-            if field_name in self.fields:
-                self.fields[field_name].required = True
-        # الاسم دائماً إلزامي
-        if 'name' in self.fields:
-            self.fields['name'].required = True
+        # تفعيل الإلزامي — عند الحفظ لكل تبويب نُلزم حقول ذلك التبويب فقط
+        from apps.core.services.employment_requests import EMP_REQ_TAB_REQUIRED
+        if self._save_tab and self._save_tab in EMP_REQ_TAB_REQUIRED:
+            tab_required = EMP_REQ_TAB_REQUIRED[self._save_tab]
+            for field_name in EMPLOYMENT_REQUEST_REQUIRED_FIELDS:
+                if field_name in self.fields:
+                    self.fields[field_name].required = field_name in tab_required
+            if 'name' in self.fields:
+                self.fields['name'].required = 'name' in tab_required
+            for bank_field in ('bank', 'iban', 'account_type'):
+                if bank_field in self.fields:
+                    self.fields[bank_field].required = (
+                        self._save_tab == 'bank'
+                    )
+        else:
+            for field_name in EMPLOYMENT_REQUEST_REQUIRED_FIELDS:
+                if field_name in self.fields:
+                    self.fields[field_name].required = True
+            if 'name' in self.fields:
+                self.fields['name'].required = True
 
         # 🎨 تطبيق ستايل Tailwind على كل widgets النموذج
         text_class = (
@@ -423,6 +437,10 @@ class EmploymentRequestEditForm(forms.ModelForm):
             )
         if 'nationality' in self.fields:
             self.fields['nationality'].widget.attrs['@change'] = 'onNationalityChange()'
+        if 'sponsorship' in self.fields:
+            self.fields['sponsorship'].widget.attrs['@change'] = (
+                "if (!hasSponsorship() && activeTab === 'bank') activeTab = 'salary'"
+            )
 
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة
@@ -443,6 +461,8 @@ class EmploymentRequestEditForm(forms.ModelForm):
     def clean_name(self):
         name = (self.cleaned_data.get('name') or '').strip()
         if not name:
+            if self._save_tab and self._save_tab != 'main':
+                return getattr(self.instance, 'name', '') or ''
             raise ValidationError('اسم الموظف مطلوب')
         return name
 
@@ -463,12 +483,24 @@ class EmploymentRequestEditForm(forms.ModelForm):
             validate_salary_payment_fields,
         )
         normalize_salary_payment_fields(cleaned, instance)
-        validate_salary_payment_fields(self, cleaned, instance)
+
+        action = (self.data.get('action') or '').strip()
+        save_tab = (self.data.get('save_tab') or '').strip()
+        run_payment_validation = (
+            action == 'save_and_approve'
+            or save_tab in ('salary', 'bank')
+        )
+        if run_payment_validation:
+            validate_salary_payment_fields(self, cleaned, instance)
 
         nationality = cleaned.get('nationality') or (
             instance.nationality if instance and instance.pk else None
         )
-        if 'insurance_deduction_rate' in self.fields:
+        run_insurance_validation = (
+            action == 'save_and_approve'
+            or save_tab == 'salary'
+        )
+        if 'insurance_deduction_rate' in self.fields and run_insurance_validation:
             from apps.employees.services.contract_rules import (
                 validate_insurance_deduction_rate_for_nationality,
             )

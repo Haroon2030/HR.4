@@ -2253,6 +2253,20 @@ body.hr-app [role="tablist"] .hr-tab:focus-visible:not(.hr-tab--active):not(.is-
     pointer-events: none;
 }
 
+body.hr-app .hr-tab-btn--complete:not(.is-active):not(.hr-tab--active) {
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+body.hr-app .hr-tab-btn__status {
+    color: rgb(16 185 129);
+    flex-shrink: 0;
+}
+
+body.hr-app .hr-tab-btn.is-active .hr-tab-btn__status,
+body.hr-app .hr-tab-btn.hr-tab--active .hr-tab-btn__status {
+    color: rgb(5 150 105);
+}
+
 body.hr-app .hr-tab-btn.is-active::after,
 body.hr-app .hr-tab-btn.hr-tab--active::after,
 body.hr-app .hr-tab.hr-tab--active::after,
