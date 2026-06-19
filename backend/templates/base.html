@@ -192,6 +192,7 @@
     <script defer src="/static/js/hr-archive-pager.js?v=20260613b"></script>
     <script defer src="/static/js/hr-glass-loader.js?v=20260612b"></script>
     <script defer src="/static/js/hr-shell.js?v=20260620c"></script>
+    <script defer src="/static/js/hr-date-picker.js?v=20260620-fix"></script>
     <script defer src="/static/js/alpine.min.js"></script>
     <script defer src="/static/js/lucide.min.js"></script>
     
@@ -219,7 +220,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260620-text-modal-final" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260620-topbar-avatar" rel="stylesheet">
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -427,6 +428,7 @@
             hrDisableBoostOnForms();
             hrScheduleLucide();
             hrSyncChromeHeight();
+            if (window.hrInitDatePickers) window.hrInitDatePickers(document);
 
             var topbarForResize = document.querySelector('.hr-topbar');
             if (topbarForResize && typeof ResizeObserver !== 'undefined') {
@@ -471,6 +473,7 @@
 
             document.body.addEventListener('htmx:afterSwap', function (evt) {
                 hrScheduleLucide();
+                if (window.hrInitDatePickers) window.hrInitDatePickers(evt.detail.target || document);
                 if (window.hrInitNavDropdowns) window.hrInitNavDropdowns(evt.detail.target || document);
                 if (evt.detail.target && evt.detail.target.id === 'notif-dropdown-content') {
                     return;

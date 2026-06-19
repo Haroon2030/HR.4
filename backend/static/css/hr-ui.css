@@ -7574,7 +7574,7 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     padding: 0.2rem 0.35rem 0.2rem 0.2rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.65rem;
-    background: #ffffff;
+    background: #ffffff !important;
     cursor: pointer;
     transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -7591,14 +7591,19 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     width: 2.15rem;
     height: 2.15rem;
     border-radius: 0.55rem;
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    );
     color: #ffffff !important;
 }
 
 .hr-topbar-user__avatar svg {
     width: 1.05rem;
     height: 1.05rem;
-    stroke: currentColor;
+    stroke: #ffffff !important;
+    color: #ffffff !important;
 }
 
 .hr-topbar-user__chevron {
@@ -10315,7 +10320,6 @@ body.hr-app :is(
     .hr-act,
     .hr-btn-print,
     .hr-topbar-icon-btn,
-    .hr-topbar-user,
     .hr-glass-back-btn,
     .zk-bio-btn,
     .hr-btn-dark,
@@ -10336,7 +10340,6 @@ body.hr-app :is(
     .hr-act,
     .hr-btn-print,
     .hr-topbar-icon-btn,
-    .hr-topbar-user,
     .hr-glass-back-btn,
     .zk-bio-btn,
     .hr-btn-dark,
@@ -10357,7 +10360,6 @@ body.hr-app :is(
     .hr-act,
     .hr-btn-print,
     .hr-topbar-icon-btn,
-    .hr-topbar-user,
     .hr-glass-back-btn,
     .zk-bio-btn,
     .hr-btn-dark,
@@ -10380,7 +10382,6 @@ body.hr-app :is(
     .hr-act,
     .hr-btn-print,
     .hr-topbar-icon-btn,
-    .hr-topbar-user,
     .hr-glass-back-btn,
     .zk-bio-btn,
     .hr-btn-dark,
@@ -10389,7 +10390,8 @@ body.hr-app :is(
     .hr-payroll-icon-btn,
     .hr-payroll-action-btn,
     .hr-payroll-row-actions__btn
-) :is(svg, i[data-lucide], .hr-btn__icon, .hr-act__icon, .hr-btn-print__icon) {
+) :is(svg, i[data-lucide], .hr-btn__icon, .hr-act__icon, .hr-btn-print__icon),
+body.hr-app .hr-topbar-user__avatar :is(svg, i[data-lucide]) {
     color: var(--hr-action-btn-fg) !important;
     stroke: var(--hr-action-btn-fg) !important;
 }
@@ -10564,4 +10566,302 @@ body.hr-app .hr-main :is(
 #hr-glass-text-modal .hr-glass-modal--sidebar svg {
     color: #fff !important;
     stroke: #fff !important;
+}
+
+/* ── منتقي التاريخ HR (تقويم مخصص RTL) ── */
+body.hr-app .hr-date-picker {
+    position: relative;
+    width: 100%;
+}
+
+body.hr-app .hr-date-picker__native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+body.hr-app .hr-date-picker__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 2.625rem;
+    padding: 0 2.5rem 0 0.875rem;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+body.hr-app .hr-date-picker__field:hover {
+    border-color: #94a3b8;
+}
+
+body.hr-app .hr-date-picker.is-open .hr-date-picker__field,
+body.hr-app .hr-date-picker__field:focus-within {
+    border-color: #1e293b;
+    box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4px rgba(234, 179, 8, 0.55);
+    outline: none;
+}
+
+body.hr-app .hr-date-picker__display {
+    flex: 1;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.9375rem;
+    font-family: inherit;
+    color: #0f172a;
+    cursor: pointer;
+    outline: none;
+}
+
+body.hr-app .hr-date-picker__display.is-empty {
+    color: #94a3b8;
+}
+
+body.hr-app .hr-date-picker__display::placeholder {
+    color: #94a3b8;
+}
+
+body.hr-app .hr-date-picker__icon {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #334155;
+    pointer-events: none;
+}
+
+body.hr-app .hr-date-picker__icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+body.hr-app .hr-date-picker__popover {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.625rem;
+    box-shadow:
+        0 10px 28px rgba(15, 23, 42, 0.12),
+        0 2px 8px rgba(15, 23, 42, 0.06);
+    padding: 0.875rem 0.75rem 0.75rem;
+    direction: rtl;
+}
+
+body.hr-app .hr-date-picker__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0 0.125rem;
+}
+
+body.hr-app .hr-date-picker__title {
+    flex: 1;
+    text-align: center;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 0.25rem 0.5rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+body.hr-app .hr-date-picker__title:hover {
+    background: #f1f5f9;
+    color: var(--hr-sidebar-bg, #3d7aad);
+}
+
+body.hr-app .hr-date-picker__nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+body.hr-app .hr-date-picker__nav:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+body.hr-app .hr-date-picker__nav svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+body.hr-app .hr-date-picker__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.125rem;
+    margin-bottom: 0.375rem;
+}
+
+body.hr-app .hr-date-picker__weekday {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    line-height: 1.75rem;
+}
+
+body.hr-app .hr-date-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.125rem;
+}
+
+body.hr-app .hr-date-picker__day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 2.25rem;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1e293b;
+    cursor: pointer;
+    transition:
+        color 0.12s ease,
+        border-color 0.12s ease,
+        background 0.12s ease;
+}
+
+body.hr-app .hr-date-picker__day:hover:not(:disabled):not(.is-outside) {
+    background: #f8fafc;
+}
+
+body.hr-app .hr-date-picker__day.is-selected {
+    border-color: #3b82f6;
+    color: #2563eb;
+    font-weight: 700;
+    background: transparent;
+}
+
+body.hr-app .hr-date-picker__day.is-today:not(.is-selected) {
+    border-color: var(--hr-sidebar-bg, #3d7aad);
+    color: var(--hr-sidebar-bg, #3d7aad);
+    font-weight: 600;
+    background: transparent;
+}
+
+body.hr-app .hr-date-picker__day.is-today.is-selected {
+    border-color: var(--hr-sidebar-bg, #3d7aad);
+    color: var(--hr-sidebar-bg, #3d7aad);
+    font-weight: 700;
+}
+
+body.hr-app .hr-date-picker__day.is-outside {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+body.hr-app .hr-date-picker__day:disabled {
+    color: #cbd5e1;
+    cursor: not-allowed;
+}
+
+body.hr-app .hr-date-picker__months-view {
+    direction: rtl;
+}
+
+body.hr-app .hr-date-picker__header--year {
+    margin-bottom: 0.625rem;
+}
+
+body.hr-app .hr-date-picker__year-label {
+    flex: 1;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+body.hr-app .hr-date-picker__months-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.375rem;
+}
+
+body.hr-app .hr-date-picker__month {
+    padding: 0.5rem 0.375rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition:
+        border-color 0.12s ease,
+        color 0.12s ease,
+        background 0.12s ease;
+}
+
+body.hr-app .hr-date-picker__month:hover {
+    border-color: var(--hr-sidebar-bg, #3d7aad);
+    color: var(--hr-sidebar-bg, #3d7aad);
+    background: #f8fafc;
+}
+
+body.hr-app .hr-date-picker__month.is-active {
+    border-color: var(--hr-sidebar-bg, #3d7aad);
+    color: var(--hr-sidebar-bg, #3d7aad);
+    background: rgba(61, 122, 173, 0.08);
+}
+
+/* حقول التاريخ داخل hr-form-field */
+body.hr-app .hr-form-field .hr-date-picker__field {
+    border: 0;
+    min-height: auto;
+    padding-right: 2rem;
+    padding-left: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.hr-app .hr-form-field:focus-within .hr-date-picker__field {
+    box-shadow: none;
+    border-color: transparent;
+}
+
+body.hr-app .hr-form-field .hr-date-picker__icon {
+    right: 0;
+}
+
+/* إخفاء مؤشر التقويم الأصلي إن بقي ظاهراً */
+body.hr-app input[type="date"]:not(.hr-date-picker__native)::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
 }
