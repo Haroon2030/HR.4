@@ -101,20 +101,29 @@
     --hr-dash-icon-border: #e0e7ff;
     --hr-dash-icon-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
     --hr-dash-icon-bg-hover: #e0e7ff;
-    /* Dokploy shell */
+    /* Dokploy shell — sidebar (#0e6ec4 من المرجع) */
     --hr-shell-bg: #f3f4f6;
-    --hr-sidebar-canvas: #f3f4f6;
-    --hr-sidebar-bg: #f9fafb;
-    --hr-sidebar-bg-soft: #f9fafb;
-    --hr-sidebar-surface: #ffffff;
-    --hr-sidebar-border: #e5e7eb;
-    --hr-sidebar-text: #111827;
-    --hr-sidebar-text-muted: #6b7280;
-    --hr-sidebar-hover: #f3f4f6;
-    --hr-sidebar-active: #e5e7eb;
-    --hr-sidebar-active-text: #111827;
+    --hr-sidebar-canvas: #0e6ec4;
+    --hr-sidebar-bg: #0e6ec4;
+    --hr-sidebar-bg-soft: #0c5da8;
+    --hr-sidebar-surface: rgba(255, 255, 255, 0.16);
+    --hr-sidebar-border: rgba(255, 255, 255, 0.24);
+    --hr-sidebar-accent: #029adc;
+    --hr-sidebar-text: #ffffff;
+    --hr-sidebar-text-muted: rgba(255, 255, 255, 0.82);
+    --hr-sidebar-hover: rgba(255, 255, 255, 0.12);
+    --hr-sidebar-active: rgba(255, 255, 255, 0.22);
+    --hr-sidebar-active-text: #ffffff;
     --hr-sidebar-icon-bg: transparent;
-    --hr-sidebar-icon-fg: #374151;
+    --hr-sidebar-icon-fg: #ffffff;
+    --hr-sidebar-dropdown-bg: rgba(0, 0, 0, 0.08);
+    --hr-sidebar-dropdown-trigger-bg: rgba(255, 255, 255, 0.16);
+    --hr-sidebar-dropdown-line: rgba(255, 255, 255, 0.3);
+    --hr-sidebar-sublink-hover-bg: rgba(255, 255, 255, 0.14);
+    --hr-sidebar-sublink-active-bg: rgba(255, 255, 255, 0.22);
+    --hr-sidebar-sublink-dot: rgba(255, 255, 255, 0.45);
+    --hr-sidebar-sublink-dot-hover: rgba(255, 255, 255, 0.78);
+    --hr-sidebar-sublink-dot-active: #ffffff;
     --hr-card-bg: #ffffff;
     --hr-card-border: #e5e7eb;
     --hr-card-radius: 0.875rem;
@@ -557,7 +566,7 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
 
 .hr-nav-dropdown.is-open {
     padding: 0.2rem;
-    background: #f3f4f6;
+    background: var(--hr-sidebar-dropdown-bg);
     gap: 0.125rem;
     overflow: visible;
 }
@@ -568,11 +577,11 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
     margin-inline: 0;
     display: flex !important;
     min-height: auto;
-    background: #ffffff !important;
+    background: var(--hr-sidebar-dropdown-trigger-bg) !important;
     border: 1px solid var(--hr-sidebar-border) !important;
     border-radius: 0.5rem;
     color: var(--hr-sidebar-active-text) !important;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    box-shadow: none !important;
 }
 
 .hr-nav-dropdown.is-open > .hr-nav-dropdown__trigger::before,
@@ -597,8 +606,8 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
 .hr-nav-chevron {
     flex-shrink: 0;
     opacity: 0.55;
-    color: #6b7280 !important;
-    stroke: #6b7280 !important;
+    color: var(--hr-sidebar-text-muted) !important;
+    stroke: var(--hr-sidebar-text-muted) !important;
     transition: transform 0.22s ease, opacity 0.2s ease;
 }
 
@@ -646,7 +655,7 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
     top: 0.35rem;
     bottom: 0.35rem;
     width: 1px;
-    background: #d1d5db;
+    background: var(--hr-sidebar-dropdown-line);
     pointer-events: none;
 }
 
@@ -676,7 +685,7 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
     width: 5px;
     height: 5px;
     border-radius: 999px;
-    background: #d1d5db;
+    background: var(--hr-sidebar-sublink-dot);
     transition: background 0.15s ease, transform 0.15s ease;
 }
 
@@ -690,35 +699,35 @@ body.hr-app .hr-sidebar .hr-nav-sublink:hover {
 }
 
 .hr-nav-dropdown .hr-nav-sublink:hover {
-    background: #ffffff !important;
+    background: var(--hr-sidebar-sublink-hover-bg) !important;
     color: var(--hr-sidebar-text) !important;
     border-color: transparent !important;
 }
 
 .hr-nav-dropdown .hr-nav-sublink:hover::before {
-    background: #9ca3af;
+    background: var(--hr-sidebar-sublink-dot-hover);
 }
 
 .hr-nav-dropdown .hr-nav-sublink.is-active {
-    background: #ffffff !important;
+    background: var(--hr-sidebar-sublink-active-bg) !important;
     color: var(--hr-sidebar-active-text) !important;
     font-weight: 600 !important;
     border-color: transparent !important;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+    box-shadow: none !important;
 }
 
 .hr-nav-dropdown .hr-nav-sublink.is-active::before {
-    background: #111827;
+    background: var(--hr-sidebar-sublink-dot-active);
     transform: scale(1.2);
 }
 
 body.hr-app .hr-sidebar-panel .hr-nav-dropdown.is-open {
-    background: #f3f4f6;
+    background: var(--hr-sidebar-dropdown-bg);
 }
 
 body.hr-app .hr-sidebar-panel .hr-nav-dropdown.is-open > .hr-nav-dropdown__trigger,
 body.hr-app .hr-sidebar-panel .hr-nav-dropdown.is-open > .hr-nav-link--btn.hr-nav-dropdown__trigger {
-    background: #ffffff !important;
+    background: var(--hr-sidebar-dropdown-trigger-bg) !important;
     border-color: var(--hr-sidebar-border) !important;
     color: var(--hr-sidebar-active-text) !important;
 }
@@ -726,12 +735,13 @@ body.hr-app .hr-sidebar-panel .hr-nav-dropdown.is-open > .hr-nav-link--btn.hr-na
 body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sublink.is-active,
 body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sublink:hover {
     color: var(--hr-sidebar-text) !important;
-    background: #ffffff !important;
+    background: var(--hr-sidebar-sublink-hover-bg) !important;
 }
 
 body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sublink.is-active {
     color: var(--hr-sidebar-active-text) !important;
     font-weight: 600 !important;
+    background: var(--hr-sidebar-sublink-active-bg) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4942,9 +4952,9 @@ body.hr-app .hr-sidebar-panel {
     min-height: 0;
     width: 100%;
     background: var(--hr-sidebar-bg) !important;
-    border: 1px solid var(--hr-sidebar-border);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: var(--hr-card-radius);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 16px rgba(14, 110, 196, 0.35);
     overflow: hidden;
 }
 
@@ -4960,7 +4970,7 @@ body.hr-app .hr-sidebar-panel {
     text-align: right;
     font-size: 0.875rem;
     font-weight: 800 !important;
-    color: #0f172a !important;
+    color: var(--hr-sidebar-text) !important;
 }
 
 /* ── الشريط الجانبي — Dokploy (هامش + تصميم) ── */
@@ -5009,7 +5019,7 @@ body.hr-app .hr-sidebar-panel {
     width: 2rem;
     height: 2rem;
     border-radius: var(--hr-sidebar-item-radius);
-    background: #ffffff;
+    background: var(--hr-sidebar-surface);
     border: 1px solid var(--hr-sidebar-border);
     color: var(--hr-sidebar-icon-fg);
 }
@@ -5036,8 +5046,8 @@ body.hr-app .hr-sidebar-panel {
 .hr-sidebar-brand-bar__chev {
     flex-shrink: 0;
     opacity: 0.45;
-    color: #6b7280 !important;
-    stroke: #6b7280 !important;
+    color: var(--hr-sidebar-text-muted) !important;
+    stroke: var(--hr-sidebar-text-muted) !important;
 }
 
 .hr-sidebar-brand-bar__tools {
@@ -5057,7 +5067,7 @@ body.hr-app .hr-sidebar-panel {
     flex-shrink: 0;
     border: 1px solid transparent;
     background: transparent;
-    color: #6b7280 !important;
+    color: var(--hr-sidebar-text-muted) !important;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -5065,7 +5075,7 @@ body.hr-app .hr-sidebar-panel {
 .hr-sidebar-notif-btn:hover {
     background: var(--hr-sidebar-hover);
     border-color: var(--hr-sidebar-border);
-    color: #374151 !important;
+    color: var(--hr-sidebar-text) !important;
 }
 
 .hr-sidebar-notif-btn__icon {
@@ -5189,7 +5199,21 @@ body.hr-app .hr-sidebar-panel .hr-nav-link--btn {
     gap: 0.6rem;
     font-weight: 500 !important;
     font-size: 0.875rem;
-    color: #374151 !important;
+    color: var(--hr-sidebar-text-muted) !important;
+}
+
+body.hr-app .hr-sidebar-panel .hr-nav-icon i,
+body.hr-app .hr-sidebar-panel .hr-nav-icon svg {
+    color: var(--hr-sidebar-icon-fg) !important;
+    stroke: var(--hr-sidebar-icon-fg) !important;
+}
+
+body.hr-app .hr-sidebar-panel .hr-nav-link.is-active .hr-nav-icon i,
+body.hr-app .hr-sidebar-panel .hr-nav-link.is-active .hr-nav-icon svg,
+body.hr-app .hr-sidebar-panel .hr-nav-link--btn.is-active .hr-nav-icon i,
+body.hr-app .hr-sidebar-panel .hr-nav-link--btn.is-active .hr-nav-icon svg {
+    color: var(--hr-sidebar-active-text) !important;
+    stroke: var(--hr-sidebar-active-text) !important;
 }
 
 body.hr-app .hr-sidebar-panel .hr-nav-icon {
@@ -5262,7 +5286,7 @@ body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sub {
     box-sizing: border-box;
     flex-shrink: 0;
     padding: 0.5rem var(--hr-sidebar-pad-x) 0.55rem;
-    border-top: 1px solid var(--hr-sidebar-border);
+    border-top: 2px solid var(--hr-sidebar-accent);
     background: var(--hr-sidebar-bg);
     display: flex;
     flex-direction: column;
@@ -5352,9 +5376,9 @@ body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sub {
     width: 2rem;
     height: 2rem;
     border-radius: var(--hr-sidebar-item-radius);
-    background: #f3f4f6;
+    background: var(--hr-sidebar-surface);
     border: 1px solid var(--hr-sidebar-border);
-    color: #374151 !important;
+    color: var(--hr-sidebar-text) !important;
     font-size: 0.75rem;
     font-weight: 700 !important;
     line-height: 1;
@@ -5393,8 +5417,8 @@ body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sub {
 
 .hr-sidebar-account__chev {
     opacity: 0.45;
-    color: #6b7280 !important;
-    stroke: #6b7280 !important;
+    color: var(--hr-sidebar-text-muted) !important;
+    stroke: var(--hr-sidebar-text-muted) !important;
 }
 
 .hr-sidebar-panel__version {
