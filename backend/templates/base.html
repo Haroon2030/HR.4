@@ -180,6 +180,7 @@
     <script defer src="/static/js/hr-employee-smart-search.js?v=20260610-2"></script>
     <script defer src="/static/js/hr-archive-pager.js?v=20260613b"></script>
     <script defer src="/static/js/hr-glass-loader.js?v=20260612b"></script>
+    <script defer src="/static/js/hr-shell.js?v=20260620"></script>
     <script defer src="/static/js/alpine.min.js"></script>
     <script defer src="/static/js/lucide.min.js"></script>
     
@@ -211,8 +212,11 @@
     <link href="/static/css/hr-motion.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="hr-app min-h-screen"
-      x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }">
+<body class="hr-app min-h-screen">
+
+    <div class="hr-app-shell flex flex-col h-screen min-h-0 overflow-hidden"
+         x-data="hrShellState()"
+         x-init="init()">
     <!-- Mobile Overlay -->
     <div 
         x-show="mobileMenuOpen" 
@@ -227,8 +231,6 @@
         style="display: none;"
     ></div>
 
-    <!-- هيكل Dokploy: شريط جانبي + محتوى (الشريط العلوي داخل المحتوى) -->
-    <div class="hr-app-shell flex flex-col h-screen min-h-0 overflow-hidden">
         <!-- Mobile Sidebar -->
         <aside
             x-show="mobileMenuOpen"
@@ -259,7 +261,8 @@
         <div class="hr-app-body flex flex-1 min-h-0 min-w-0 overflow-hidden">
             <!-- Desktop Sidebar -->
             <aside
-                class="hr-sidebar hidden md:flex transition-all duration-300 flex-col min-h-0 shrink-0"
+                id="hrDesktopSidebar"
+                class="hr-sidebar hidden md:flex transition-all duration-300 flex-col min-h-0 shrink-0 hr-sidebar--expanded"
                 :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
             >
                 <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
@@ -274,12 +277,16 @@
             <div class="hr-app-main flex min-w-0 flex-1 flex-col overflow-hidden min-h-0">
                 <header class="hr-topbar shrink-0">
                     <div class="hr-topbar__start">
-                        <button type="button" @click="sidebarOpen = !sidebarOpen"
-                                class="hr-topbar-icon-btn hr-topbar-collapse-btn" title="طي القائمة">
+                        <button type="button" @click="toggleSidebar()"
+                                class="hr-topbar-icon-btn hr-topbar-collapse-btn"
+                                :title="sidebarOpen ? 'طي القائمة' : 'توسيع القائمة'"
+                                :aria-expanded="sidebarOpen ? 'true' : 'false'"
+                                aria-controls="hrDesktopSidebar">
                             <i data-lucide="panel-right" class="w-5 h-5"></i>
                         </button>
-                        <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
-                                class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة">
+                        <button type="button" @click="toggleMobileMenu()"
+                                class="hr-topbar-icon-btn hr-topbar-menu-btn" title="القائمة"
+                                :aria-expanded="mobileMenuOpen ? 'true' : 'false'">
                             <i data-lucide="menu" class="w-5 h-5"></i>
                         </button>
                         <div class="hr-topbar__title-wrap">
