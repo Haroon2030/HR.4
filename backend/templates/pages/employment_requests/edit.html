@@ -69,7 +69,7 @@
     </div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" class="space-y-4" hx-boost="false">
+    <form method="post" enctype="multipart/form-data" class="space-y-4" hx-boost="false" novalidate>
         {% csrf_token %}
         <input type="hidden" name="return_tab" :value="activeTab">
         <input type="hidden" name="save_tab" :value="activeTab">

@@ -37,7 +37,6 @@ _REQUIRED_EMPLOYEE_FIELDS = [
     # نصوص أساسية
     ('رقم الهوية', 'id_number', 'str'),
     ('رقم الجوال', 'phone', 'str'),
-    ('البريد الإلكتروني', 'email', 'str'),
     ('الرقم الوظيفي', 'employee_number', 'str'),
     # FKs
     ('الجنسية', 'nationality_id', 'fk'),
@@ -78,7 +77,12 @@ def validate_employee_data_complete(req):
             if not value:
                 missing.append(label)
     from apps.employees.services.contract_rules import is_saudi_nationality, is_valid_saudi_insurance_rate
-    if is_saudi_nationality(getattr(req, 'nationality', None)):
+    is_saudi = is_saudi_nationality(getattr(req, 'nationality', None))
+    # البريد الإلكتروني إلزامي فقط لمن على كفالة أو سعودي الجنسية
+    if getattr(req, 'sponsorship_id', None) or is_saudi:
+        if not (getattr(req, 'email', None) or '').strip():
+            missing.append('البريد الإلكتروني')
+    if is_saudi:
         if not is_valid_saudi_insurance_rate(getattr(req, 'insurance_deduction_rate', None)):
             missing.append('نسبة خصم التأمينات (GOSI)')
     if getattr(req, 'sponsorship_id', None):
@@ -93,7 +97,7 @@ def validate_employee_data_complete(req):
 
 EMP_REQ_TAB_REQUIRED = {
     'main': frozenset({
-        'name', 'id_number', 'phone', 'email', 'employee_number', 'hire_date',
+        'name', 'id_number', 'phone', 'employee_number', 'hire_date',
     }),
     'org': frozenset({'nationality', 'profession', 'sponsorship'}),
     'salary': frozenset({
@@ -133,10 +137,21 @@ def employment_request_tab_status(req):
     def _file_ok(attr):
         return bool(getattr(req, attr, None))
 
+    from apps.employees.services.contract_rules import (
+        is_saudi_nationality,
+        is_valid_saudi_insurance_rate,
+    )
+    is_saudi = is_saudi_nationality(getattr(req, 'nationality', None))
+
+    # البريد الإلكتروني إلزامي فقط لمن على كفالة أو سعودي الجنسية
+    email_ok = True
+    if getattr(req, 'sponsorship_id', None) or is_saudi:
+        email_ok = _str_ok('email')
+
     status = {
         'main': 'complete' if all([
             _str_ok('name'), _str_ok('id_number'), _str_ok('phone'),
-            _str_ok('email'), _str_ok('employee_number'), _date_ok('hire_date'),
+            email_ok, _str_ok('employee_number'), _date_ok('hire_date'),
         ]) else 'incomplete',
         'org': 'complete' if all([
             _fk_ok('nationality_id'), _fk_ok('profession_id'), _fk_ok('sponsorship_id'),
@@ -150,11 +165,7 @@ def employment_request_tab_status(req):
         _dec_ok('housing_allowance'),
         _dec_ok('transport_allowance'),
     ])
-    from apps.employees.services.contract_rules import (
-        is_saudi_nationality,
-        is_valid_saudi_insurance_rate,
-    )
-    if is_saudi_nationality(getattr(req, 'nationality', None)):
+    if is_saudi:
         salary_ok = salary_ok and is_valid_saudi_insurance_rate(
             getattr(req, 'insurance_deduction_rate', None),
         )
