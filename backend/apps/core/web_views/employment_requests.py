@@ -317,7 +317,13 @@ def edit_employment_request(request, request_id):
                 except ValueError as e:
                     messages.error(request, str(e))
             else:
-                messages.success(request, 'تم الحفظ')
+                # احسب حالة التبويبات بعد الحفظ لصياغة الرسالة
+                _all_done = svc.employment_request_all_tabs_complete(emp_req)
+                if _all_done:
+                    _msg = 'تم الحفظ — جميع التبويبات مكتملة، يمكنك إتمام الموافقة النهائية.'
+                else:
+                    _msg = 'تم الحفظ — أكمل باقي التبويبات.'
+                messages.success(request, _msg)
                 url = reverse(
                     'web:edit_employment_request',
                     kwargs={'request_id': emp_req.id},
@@ -348,6 +354,13 @@ def edit_employment_request(request, request_id):
     missing = svc.validate_employee_data_complete(emp_req)
     can_final_approve = svc.employment_request_all_tabs_complete(emp_req)
 
+    saved_message = ''
+    if show_saved_message:
+        if can_final_approve:
+            saved_message = 'تم الحفظ — جميع التبويبات مكتملة، يمكنك إتمام الموافقة النهائية.'
+        else:
+            saved_message = 'تم الحفظ — أكمل باقي التبويبات.'
+
     from apps.employees.services.contract_rules import saudi_nationality_ids
 
     return render(request, 'pages/employment_requests/edit.html', {
@@ -359,6 +372,7 @@ def edit_employment_request(request, request_id):
         'can_final_approve': can_final_approve,
         'saved_tab': saved_tab,
         'show_saved_message': show_saved_message,
+        'saved_message': saved_message,
         'title': f'تعديل بيانات الموظف — {emp_req.name}',
         'saudi_nationality_ids': saudi_nationality_ids(),
     })

@@ -366,21 +366,10 @@ class EmploymentRequestEditForm(forms.ModelForm):
         # اجعل كل الحقول اختيارية ابتداءً ثم اضبط الإلزامي
         for field_name, field in self.fields.items():
             field.required = False
-        # تفعيل الإلزامي — عند الحفظ لكل تبويب نُلزم حقول ذلك التبويب فقط
-        from apps.core.services.employment_requests import EMP_REQ_TAB_REQUIRED
-        if self._save_tab and self._save_tab in EMP_REQ_TAB_REQUIRED:
-            tab_required = EMP_REQ_TAB_REQUIRED[self._save_tab]
-            for field_name in EMPLOYMENT_REQUEST_REQUIRED_FIELDS:
-                if field_name in self.fields:
-                    self.fields[field_name].required = field_name in tab_required
-            if 'name' in self.fields:
-                self.fields['name'].required = 'name' in tab_required
-            for bank_field in ('bank', 'iban', 'account_type'):
-                if bank_field in self.fields:
-                    self.fields[bank_field].required = (
-                        self._save_tab == 'bank'
-                    )
-        else:
+        # حفظ كل تبويب (save_tab) = حفظ تقدّمي بدون إلزام أي حقل،
+        # حتى يُحفَظ ما أُدخِل ويظهر "تم الحفظ". الإلزام الكامل يكون فقط
+        # عند الموافقة النهائية (save_tab=None) وتُعرَض الحقول الناقصة في التنبيه.
+        if not self._save_tab:
             for field_name in EMPLOYMENT_REQUEST_REQUIRED_FIELDS:
                 if field_name in self.fields:
                     self.fields[field_name].required = True

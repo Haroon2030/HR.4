@@ -30,6 +30,15 @@ _DIST_PALETTE = employee_status_dist_palette()
 
 
 @register.filter
+def user_display(user, default='—'):
+    """اسم المستخدم للعرض — آمن عند user=None."""
+    if user is None:
+        return default
+    name = (user.get_full_name() or user.username or default).strip()
+    return name or default
+
+
+@register.filter
 def employee_status_donut_style(rows):
     return build_employee_status_donut_style(rows or [])
 
