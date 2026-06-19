@@ -317,6 +317,7 @@ def edit_employment_request(request, request_id):
                 except ValueError as e:
                     messages.error(request, str(e))
             else:
+                messages.success(request, 'تم الحفظ')
                 url = reverse(
                     'web:edit_employment_request',
                     kwargs={'request_id': emp_req.id},
@@ -336,11 +337,13 @@ def edit_employment_request(request, request_id):
             active_tab = 'main'
 
     saved_tab = ''
+    show_saved_message = False
     if request.method != 'POST':
         saved_tab = (request.GET.get('saved') or '').strip()
-        if saved_tab not in svc.VALID_EMP_REQ_TABS:
+        if saved_tab in svc.VALID_EMP_REQ_TABS:
+            show_saved_message = True
+        else:
             saved_tab = ''
-    saved_tab_label = svc.EMP_REQ_TAB_LABELS.get(saved_tab, '') if saved_tab else ''
 
     missing = svc.validate_employee_data_complete(emp_req)
     can_final_approve = svc.employment_request_all_tabs_complete(emp_req)
@@ -355,7 +358,7 @@ def edit_employment_request(request, request_id):
         'active_tab': active_tab,
         'can_final_approve': can_final_approve,
         'saved_tab': saved_tab,
-        'saved_tab_label': saved_tab_label,
+        'show_saved_message': show_saved_message,
         'title': f'تعديل بيانات الموظف — {emp_req.name}',
         'saudi_nationality_ids': saudi_nationality_ids(),
     })

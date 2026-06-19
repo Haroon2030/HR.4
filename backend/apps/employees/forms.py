@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms.models import ModelChoiceField
 
 from apps.employees.models import Employee, EmploymentRequest, EmployeeStatement
 
@@ -69,6 +70,9 @@ def _apply_fk_label_overrides(form):
         f = form.fields.get(fname)
         if f is not None and hasattr(f, 'queryset'):
             f.label_from_instance = label_fn
+    for f in form.fields.values():
+        if isinstance(f, ModelChoiceField):
+            f.empty_label = '-- اختر --'
 
 
 # الحقول التي ستديرها الـ form (نستثني history + employment_request المُربَط لاحقاً)
@@ -120,6 +124,8 @@ class EmployeeForm(forms.ModelForm):
         from apps.core.widgets import apply_decimal_number_widgets
         apply_decimal_number_widgets(self)
         _apply_fk_label_overrides(self)
+        from apps.employees.form_ui import apply_hr_empty_input_defaults
+        apply_hr_empty_input_defaults(self)
         if user is not None and 'branch' in self.fields:
             from apps.core.models import Branch
             from apps.core.services.access_control import filter_branches_queryset
@@ -421,6 +427,9 @@ class EmploymentRequestEditForm(forms.ModelForm):
 
         from apps.core.widgets import apply_decimal_number_widgets
         apply_decimal_number_widgets(self)
+
+        from apps.employees.form_ui import apply_hr_empty_input_defaults
+        apply_hr_empty_input_defaults(self)
 
         _salary_field_labels = {
             'bank': 'البنك',

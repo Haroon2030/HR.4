@@ -31,6 +31,12 @@ from apps.core.web_views._helpers import (
 )
 
 
+def _user_display(user):
+    if user is None:
+        return '-'
+    return (user.get_full_name() or user.username or '-').strip() or '-'
+
+
 # =============================================================================
 # قائمة الطلبات (مفلترة حسب الدور)
 # =============================================================================
@@ -181,6 +187,7 @@ def _wrap_action(a, user):
         officer_reviewed_at=a.officer_reviewed_at,
         assigned_officer=a.assigned_officer,
         requested_by=a.requested_by,
+        requested_by_name=_user_display(a.requested_by),
         requested_at=a.requested_at,
         updated_at=a.updated_at,
         resubmit_count=a.resubmit_count or 0,
@@ -220,6 +227,7 @@ def _wrap_hire(r, user):
         officer_reviewed_at=r.officer_reviewed_at,
         assigned_officer=r.assigned_officer,
         requested_by=r.requested_by,
+        requested_by_name=_user_display(r.requested_by),
         requested_at=r.created_at,
         updated_at=r.updated_at,
         resubmit_count=0,

@@ -141,7 +141,7 @@ class EmploymentRequest(BaseModel):
     )
 
     gender = models.CharField(
-        "الجنس", max_length=10, choices=Gender.choices, default=Gender.MALE, blank=True,
+        "الجنس", max_length=10, choices=Gender.choices, default='', blank=True,
     )
 
     # تواريخ
@@ -156,7 +156,7 @@ class EmploymentRequest(BaseModel):
     )
     health_card_status = models.CharField(
         "حالة الكرت الصحي", max_length=20,
-        choices=HealthCardStatus.choices, default=HealthCardStatus.NOT_AVAILABLE, blank=True,
+        choices=HealthCardStatus.choices, default='', blank=True,
     )
     health_card_expiry = models.DateField("تاريخ انتهاء الكرت الصحي", null=True, blank=True)
 
@@ -244,7 +244,7 @@ class Employee(BaseModel):
     # ── بيانات أساسية ───────────────────────────────────────────
     name = models.CharField("الاسم", max_length=200)
     gender = models.CharField(
-        "الجنس", max_length=10, choices=Gender.choices, default=Gender.MALE, blank=True
+        "الجنس", max_length=10, choices=Gender.choices, default='', blank=True
     )
     id_number = models.CharField("رقم الهوية", max_length=50, blank=True)
     phone = models.CharField("رقم الجوال", max_length=20, blank=True)
@@ -298,7 +298,7 @@ class Employee(BaseModel):
 
     health_card_status = models.CharField(
         "حالة الكرت الصحي", max_length=20,
-        choices=HealthCardStatus.choices, default=HealthCardStatus.NOT_AVAILABLE, blank=True,
+        choices=HealthCardStatus.choices, default='', blank=True,
     )
     health_card_expiry = models.DateField("تاريخ انتهاء الكرت الصحي", null=True, blank=True)
 

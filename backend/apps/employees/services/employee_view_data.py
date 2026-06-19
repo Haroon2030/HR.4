@@ -77,6 +77,7 @@ def load_employee_view_context(
         'active_custodies': [],
         'loans': [],
         'absences': [],
+        'leave_timeline': [],
         'contract_is_saudi': False,
         'contract_fourth_year_start': None,
         'accruals': [],
@@ -139,6 +140,9 @@ def load_employee_view_context(
     if need('absences'):
         ctx['absences'] = list(employee.absences.all().order_by('-absence_date', '-id'))
 
+    if need('leaves'):
+        ctx['leave_timeline'] = _load_leave_timeline(employee)
+
     if need('contract') or need('main'):
         from apps.employees.services.contract_rules import (
             fourth_year_start,
@@ -167,6 +171,111 @@ def load_employee_view_context(
         ctx.update(load_employee_archive_extras(employee=employee, user=user))
 
     return ctx
+
+
+def _user_display_name(user) -> str:
+    if not user:
+        return '—'
+    return (user.get_full_name() or user.username or '—').strip() or '—'
+
+
+def _parse_iso_date(value):
+    if not value:
+        return None
+    if isinstance(value, date):
+        return value
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except (ValueError, TypeError):
+        return None
+
+
+def _load_leave_timeline(employee: Employee) -> list[dict]:
+    """سجل الإجازات المُنفَّذة + طلبات الإجازة قيد الموافقة."""
+    from apps.core.models import PendingAction
+    from apps.employees.models import EmployeeLeave
+
+    leave_labels = dict(EmployeeLeave.LeaveType.choices)
+    rows: list[dict] = []
+
+    for lv in (
+        EmployeeLeave.objects.filter(employee_id=employee.pk)
+        .select_related('created_by')
+        .order_by('-date_from', '-created_at')
+    ):
+        search_bits = [
+            lv.get_leave_type_display(),
+            lv.notes or '',
+            str(lv.date_from),
+            str(lv.date_to),
+            str(lv.days),
+            _user_display_name(lv.created_by),
+        ]
+        rows.append({
+            'sort_at': lv.created_at,
+            'leave_type': lv.leave_type,
+            'leave_type_display': lv.get_leave_type_display(),
+            'date_from': lv.date_from,
+            'date_to': lv.date_to,
+            'days': lv.days,
+            'notes': lv.notes or '',
+            'executor_name': _user_display_name(lv.created_by),
+            'status_label': 'مُسجَّلة',
+            'status_class': 'bg-emerald-100 text-emerald-700',
+            'document_url': lv.document.url if lv.document else '',
+            'search_text': ' '.join(search_bits).lower(),
+        })
+
+    pending_qs = (
+        PendingAction.objects.filter(
+            employee_id=employee.pk,
+            action_type=PendingAction.ActionType.LEAVE,
+        )
+        .exclude(status=PendingAction.Status.APPROVED)
+        .select_related('requested_by')
+        .order_by('-requested_at')
+    )
+    for action in pending_qs:
+        payload = action.payload or {}
+        leave_type = payload.get('leave_type') or EmployeeLeave.LeaveType.ANNUAL
+        d_from = _parse_iso_date(payload.get('date_from'))
+        d_to = _parse_iso_date(payload.get('date_to'))
+        days = payload.get('days')
+        if days in (None, ''):
+            if d_from and d_to:
+                days = (d_to - d_from).days + 1
+            else:
+                days = '—'
+        type_display = leave_labels.get(leave_type, leave_type)
+        search_bits = [
+            type_display,
+            payload.get('notes') or '',
+            str(d_from or ''),
+            str(d_to or ''),
+            str(days),
+            _user_display_name(action.requested_by),
+            action.get_status_display(),
+        ]
+        status_class = 'bg-amber-100 text-amber-800'
+        if action.status == PendingAction.Status.RETURNED:
+            status_class = 'bg-rose-100 text-rose-700'
+        rows.append({
+            'sort_at': action.requested_at,
+            'leave_type': leave_type,
+            'leave_type_display': type_display,
+            'date_from': d_from,
+            'date_to': d_to,
+            'days': days,
+            'notes': payload.get('notes') or '',
+            'executor_name': _user_display_name(action.requested_by),
+            'status_label': action.get_status_display(),
+            'status_class': status_class,
+            'document_url': action.attachment.url if action.attachment else '',
+            'search_text': ' '.join(search_bits).lower(),
+        })
+
+    rows.sort(key=lambda row: row['sort_at'] or timezone.now(), reverse=True)
+    return rows
 
 
 def _load_accruals_tab(employee: Employee, user) -> list:

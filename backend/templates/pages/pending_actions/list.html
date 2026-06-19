@@ -100,7 +100,7 @@
                             {% include "components/approval_workflow_track.html" with track=a first_stage_label=a.first_stage_label gm_label="المدير العام" officer_label="موظف الموارد" %}
                             {% if a.resubmit_count %}<span class="text-xs text-slate-400 ms-2">إعادة إرسال #{{ a.resubmit_count }}</span>{% endif %}
                         </td>
-                        <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.requested_by.get_full_name|default:a.requested_by.username|default:"-" }}</td>
+                        <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.requested_by_name }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.updated_at|date:"Y-m-d H:i" }}</td>
                         <td class="px-3 py-2 text-left whitespace-nowrap">
                             {% include "components/table_actions.html" with view_url=a.detail_url view_title="فتح الطلب" delete_url=a.delete_url delete_confirm=a.delete_confirm delete_title="حذف الطلب" %}
