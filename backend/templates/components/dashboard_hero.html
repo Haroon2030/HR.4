@@ -1,30 +1,48 @@
 {% load custom_tags %}
-<div class="hr-hero">
+<div class="hr-hero" dir="rtl">
+    <div class="hr-hero__mesh" aria-hidden="true"></div>
+    <div class="hr-hero__grid-pattern" aria-hidden="true"></div>
     <span class="hr-hero__glow" aria-hidden="true"></span>
     <span class="hr-hero__glow hr-hero__glow--secondary" aria-hidden="true"></span>
+
     <div class="hr-hero__inner">
-        <div class="hr-hero__top">
-            <span class="hr-hero__date">
-                <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
-                {% now "l، j F Y" %}
-            </span>
-        </div>
-        <div class="hr-hero__body">
-            <span class="hr-hero__avatar" aria-hidden="true">
-                <i data-lucide="user-round" class="w-6 h-6"></i>
-            </span>
-            <div class="hr-hero__content min-w-0">
-                <p class="hr-hero__welcome-line">
-                    <span class="hr-hero__greeting">مرحباً بك،</span>
-                    <strong class="hr-hero__name">{{ request.user.get_full_name|default:request.user.username }}</strong>
-                </p>
-                {% if request.user.profile.role %}
-                <span class="hr-hero__role-chip">
-                    <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                    {{ request.user.profile.role|role_arabic_name }}
+        <div class="hr-hero__main">
+            <div class="hr-hero__identity">
+                <span class="hr-hero__avatar" aria-hidden="true">
+                    <span class="hr-hero__avatar-ring"></span>
+                    <i data-lucide="user-round" class="w-7 h-7"></i>
                 </span>
-                {% endif %}
+                <div class="hr-hero__content min-w-0">
+                    <h1 class="hr-hero__welcome">
+                        <span class="hr-hero__greeting">مرحباً،</span>
+                        <span class="hr-hero__name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    </h1>
+                    <div class="hr-hero__meta">
+                        {% if request.user.profile.role %}
+                        <span class="hr-hero__role-chip">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                            {{ request.user.profile.role|role_arabic_name }}
+                        </span>
+                        {% endif %}
+                        <span class="hr-hero__online">
+                            <span class="hr-hero__online-dot" aria-hidden="true"></span>
+                            جلسة نشطة
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <aside class="hr-hero__aside" aria-label="التاريخ">
+            <div class="hr-hero__date-card">
+                <span class="hr-hero__date-icon" aria-hidden="true">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                </span>
+                <div class="hr-hero__date-text">
+                    <span class="hr-hero__date-day">{% now "l" %}</span>
+                    <span class="hr-hero__date-full" dir="ltr">{% now "j F Y" %}</span>
+                </div>
+            </div>
+        </aside>
     </div>
 </div>

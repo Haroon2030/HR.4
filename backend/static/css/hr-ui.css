@@ -7289,44 +7289,320 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
 .hr-hero {
     position: relative;
     overflow: hidden;
-    padding: 1.35rem 1.4rem !important;
-    border-radius: 1.15rem !important;
-    background: linear-gradient(155deg, #ffffff 0%, #f8fafc 52%, #ffffff 100%) !important;
-    border: 1px solid #e2e8f0 !important;
+    padding: 1.35rem 1.5rem !important;
+    border-radius: 1.25rem !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 38%, #eff6ff 100%) !important;
+    border: 1px solid rgba(61, 122, 173, 0.18) !important;
     box-shadow:
-        0 8px 24px rgba(15, 23, 42, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+        0 12px 32px rgba(15, 23, 42, 0.07),
+        0 2px 8px rgba(37, 99, 235, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
 
+.hr-hero__mesh {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 80% 60% at 100% 0%, rgba(61, 122, 173, 0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 55% 45% at 0% 100%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+}
+
+.hr-hero__grid-pattern {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image: radial-gradient(rgba(61, 122, 173, 0.14) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, transparent 72%);
+    -webkit-mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, transparent 72%);
+}
+
 .hr-hero__glow {
     position: absolute;
-    top: -45%;
-    inset-inline-start: -8%;
-    width: 13rem;
-    height: 13rem;
+    top: -40%;
+    inset-inline-end: -5%;
+    width: 14rem;
+    height: 14rem;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.11) 0%, transparent 72%);
+    background: radial-gradient(circle, rgba(61, 122, 173, 0.14) 0%, transparent 70%);
     pointer-events: none;
 }
 
 .hr-hero__glow--secondary {
     top: auto;
-    bottom: -55%;
-    inset-inline-start: auto;
-    inset-inline-end: -6%;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.09) 0%, transparent 72%);
+    bottom: -50%;
+    inset-inline-end: auto;
+    inset-inline-start: -8%;
+    width: 11rem;
+    height: 11rem;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 72%);
 }
 
 .hr-hero__inner {
     position: relative;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 1.15rem 1.25rem;
 }
 
+.hr-hero__main {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.hr-hero__identity {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.hr-hero__avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.75rem;
+    height: 3.75rem;
+    border-radius: 1.1rem;
+    background: linear-gradient(145deg, #3d7aad 0%, #2563eb 100%);
+    color: #fff !important;
+    flex-shrink: 0;
+    box-shadow:
+        0 10px 24px rgba(37, 99, 235, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.hr-hero__avatar-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #6baed6, #3d7aad 45%, #1e40af);
+    z-index: -1;
+    opacity: 0.85;
+}
+
+.hr-hero__avatar svg {
+    stroke: #fff !important;
+    color: #fff !important;
+}
+
+.hr-hero__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.hr-hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    color: #1e40af !important;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(147, 197, 253, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hr-hero__eyebrow svg {
+    stroke: currentColor !important;
+    flex-shrink: 0;
+}
+
+.hr-hero__welcome {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+    line-height: 1.15;
+}
+
+.hr-hero__greeting {
+    font-size: 0.9375rem;
+    font-weight: 600 !important;
+    color: #64748b !important;
+}
+
+.hr-hero__name {
+    font-size: 1.55rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    letter-spacing: -0.02em;
+    word-break: break-word;
+}
+
+@media (min-width: 768px) {
+    .hr-hero__name {
+        font-size: 1.85rem;
+    }
+
+    .hr-hero__avatar {
+        width: 4.25rem;
+        height: 4.25rem;
+        border-radius: 1.2rem;
+    }
+}
+
+.hr-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.15rem;
+}
+
+.hr-hero__role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    padding: 0.32rem 0.62rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700 !important;
+    line-height: 1;
+    white-space: nowrap;
+    background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #6ee7b7;
+    color: #047857 !important;
+    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.12);
+}
+
+.hr-hero__role-chip svg {
+    stroke: currentColor !important;
+    flex-shrink: 0;
+}
+
+.hr-hero__online {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.32rem 0.62rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid #e2e8f0;
+}
+
+.hr-hero__online-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+    animation: hr-hero-online-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hr-hero-online-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(0.92); }
+}
+
+.hr-hero__aside {
+    flex-shrink: 0;
+}
+
+.hr-hero__date-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    min-width: 10.5rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.hr-hero__date-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8 !important;
+    flex-shrink: 0;
+}
+
+.hr-hero__date-icon svg {
+    stroke: currentColor !important;
+}
+
+.hr-hero__date-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.hr-hero__date-day {
+    font-size: 0.8125rem;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    line-height: 1.2;
+}
+
+.hr-hero__date-full {
+    font-size: 0.6875rem;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+@media (max-width: 639px) {
+    .hr-hero {
+        padding: 1.1rem 1.15rem !important;
+    }
+
+    .hr-hero__inner {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hr-hero__aside {
+        order: -1;
+    }
+
+    .hr-hero__date-card {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .hr-hero__eyebrow {
+        white-space: normal;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hr-hero__online-dot {
+        animation: none;
+    }
+}
+
+/* legacy aliases — kept for compatibility */
 .hr-hero__badge {
     display: inline-flex;
     align-items: center;
@@ -7342,41 +7618,6 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     line-height: 1;
 }
 
-.hr-hero__badge svg {
-    stroke: currentColor !important;
-    color: currentColor !important;
-}
-
-.hr-hero__greeting {
-    margin: 0.7rem 0 0;
-    font-size: 0.78rem;
-    font-weight: var(--hr-font-weight) !important;
-    color: #64748b !important;
-}
-
-.hr-hero__name {
-    margin: 0.25rem 0 0;
-    font-size: 1.5rem;
-    font-weight: 800 !important;
-    color: #0f172a !important;
-    line-height: 1.2;
-}
-
-@media (min-width: 768px) {
-    .hr-hero__name {
-        font-size: 1.85rem;
-    }
-}
-
-.hr-hero__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    margin-top: 0.7rem;
-}
-
-.hr-hero__role-chip,
 .hr-hero__date {
     display: inline-flex;
     align-items: center;
@@ -7387,50 +7628,14 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     font-weight: 700 !important;
     line-height: 1;
     white-space: nowrap;
-}
-
-.hr-hero__role-chip {
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    color: #047857 !important;
-}
-
-.hr-hero__date {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     color: #475569 !important;
 }
 
-.hr-hero__role-chip svg,
 .hr-hero__date svg {
     stroke: currentColor !important;
     flex-shrink: 0;
-}
-
-.hr-hero__avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 1rem;
-    background: var(--hr-dash-icon-bg);
-    border: 1px solid var(--hr-dash-icon-border);
-    color: var(--hr-dash-icon-fg) !important;
-    box-shadow: var(--hr-dash-icon-shadow);
-    flex-shrink: 0;
-}
-
-.hr-hero__avatar svg {
-    stroke: currentColor !important;
-    color: currentColor !important;
-}
-
-@media (min-width: 768px) {
-    .hr-hero__avatar {
-        width: 3.75rem;
-        height: 3.75rem;
-    }
 }
 
 /* ── بطاقة توزيع حالة الموظفين (لوحة التحكم) ── */
