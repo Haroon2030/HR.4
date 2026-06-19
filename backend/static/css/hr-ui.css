@@ -2649,7 +2649,7 @@ body.hr-app .hr-dropdown-menu:not(.hr-dropdown-menu--sidebar) .hr-dropdown-divid
 
 /* ── جداول زجاجية رمادية — كل الموقع ── */
 body.hr-app .hr-main table,
-body.hr-app .hr-glass-modal table,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table,
 body.hr-app .salary-adjust-archive table {
     width: 100%;
     border-collapse: separate;
@@ -3268,7 +3268,7 @@ body.hr-app .hr-main .overflow-hidden.rounded-lg {
 }
 
 body.hr-app .hr-main table thead th,
-body.hr-app .hr-glass-modal table thead th,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table thead th,
 body.hr-app .salary-adjust-archive table thead th {
     color: #000000 !important;
     font-weight: 700 !important;
@@ -3282,7 +3282,7 @@ body.hr-app .salary-adjust-archive table thead th {
 }
 
 body.hr-app .hr-main table tbody td,
-body.hr-app .hr-glass-modal table tbody td,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody td,
 body.hr-app .salary-adjust-archive table tbody td {
     color: #000000 !important;
     font-weight: var(--hr-font-weight);
@@ -3294,25 +3294,25 @@ body.hr-app .salary-adjust-archive table tbody td {
 }
 
 body.hr-app .hr-main table tbody tr:last-child td,
-body.hr-app .hr-glass-modal table tbody tr:last-child td,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:last-child td,
 body.hr-app .salary-adjust-archive table tbody tr:last-child td {
     border-bottom: none;
 }
 
 body.hr-app .hr-main table tbody tr:nth-child(odd) td,
-body.hr-app .hr-glass-modal table tbody tr:nth-child(odd) td,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:nth-child(odd) td,
 body.hr-app .salary-adjust-archive table tbody tr:nth-child(odd) td {
     background: var(--hr-table-glass-row);
 }
 
 body.hr-app .hr-main table tbody tr:nth-child(even) td,
-body.hr-app .hr-glass-modal table tbody tr:nth-child(even) td,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:nth-child(even) td,
 body.hr-app .salary-adjust-archive table tbody tr:nth-child(even) td {
     background: var(--hr-table-glass-row-alt);
 }
 
 body.hr-app .hr-main table tbody tr:hover td,
-body.hr-app .hr-glass-modal table tbody tr:hover td,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:hover td,
 body.hr-app .salary-adjust-archive table tbody tr:hover td {
     background: var(--hr-table-glass-row-hover) !important;
     box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.35);
@@ -3331,7 +3331,7 @@ body.hr-app .hr-main .bg-white.rounded-xl table {
 
 /* ── خط الجداول — تجاوز text-xs / text-sm داخل الجدول (موحّد) ── */
 body.hr-app .hr-main table .text-xs,
-body.hr-app .hr-glass-modal table .text-xs,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table .text-xs,
 body.hr-app .salary-adjust-archive table .text-xs,
 body.hr-app .hr-main .payroll-tbl .text-xs,
 body.hr-app .hr-main .hr-payroll-runs-datatable__table .text-xs,
@@ -3340,22 +3340,22 @@ body.hr-app .hr-main .hr-payroll-audit__table .text-xs {
 }
 
 body.hr-app .hr-main table tbody .text-sm,
-body.hr-app .hr-glass-modal table tbody .text-sm,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody .text-sm,
 body.hr-app .salary-adjust-archive table tbody .text-sm,
 body.hr-app .hr-main table.text-sm,
-body.hr-app .hr-glass-modal table.text-sm,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table.text-sm,
 body.hr-app .salary-adjust-archive table.text-sm {
     font-size: var(--hr-table-body-size) !important;
 }
 
 body.hr-app .hr-main table thead .text-sm,
-body.hr-app .hr-glass-modal table thead .text-sm,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table thead .text-sm,
 body.hr-app .salary-adjust-archive table thead .text-sm {
     font-size: var(--hr-table-head-size) !important;
 }
 
 body.hr-app .hr-main table.text-xs,
-body.hr-app .hr-glass-modal table.text-xs,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table.text-xs,
 body.hr-app .salary-adjust-archive table.text-xs {
     font-size: var(--hr-table-compact-size);
 }
@@ -4530,6 +4530,7 @@ body.hr-app .border-blue-200.bg-blue-50 {
 
 /* يتغلب على .hr-glass-modal أعلاه — نافذة الملاحظات بثيم الشريط */
 .hr-glass-modal.hr-glass-modal--sidebar,
+.hr-schedule-roster-modal.hr-glass-modal.hr-glass-modal--sidebar,
 #hr-glass-text-modal .hr-glass-modal.hr-glass-modal--sidebar {
     background: linear-gradient(
         165deg,
@@ -4723,9 +4724,9 @@ body.hr-app .fixed.inset-0 .hr-glass-modal > .bg-gradient-to-l {
 body.hr-app .hr-main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]),
 body.hr-app .hr-main select,
 body.hr-app .hr-main textarea,
-body.hr-app .hr-glass-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]),
-body.hr-app .hr-glass-modal select,
-body.hr-app .hr-glass-modal textarea,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]),
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) select,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) textarea,
 body.hr-app .hr-glass-input,
 body.hr-app .zk-modal-field {
     background: rgba(255, 255, 255, 0.62) !important;
@@ -4741,9 +4742,9 @@ body.hr-app .zk-modal-field {
 body.hr-app .hr-main input:focus,
 body.hr-app .hr-main select:focus,
 body.hr-app .hr-main textarea:focus,
-body.hr-app .hr-glass-modal input:focus,
-body.hr-app .hr-glass-modal select:focus,
-body.hr-app .hr-glass-modal textarea:focus,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) input:focus,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) select:focus,
+body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) textarea:focus,
 body.hr-app .hr-glass-input:focus,
 body.hr-app .zk-modal-field:focus {
     outline: none;
@@ -10864,4 +10865,475 @@ body.hr-app .hr-form-field .hr-date-picker__icon {
 /* إخفاء مؤشر التقويم الأصلي إن بقي ظاهراً */
 body.hr-app input[type="date"]:not(.hr-date-picker__native)::-webkit-calendar-picker-indicator {
     opacity: 0.6;
+}
+
+/* ── نافذة جدول الدوام — ثيم الشريط الجانبي ── */
+.hr-schedule-roster-modal.hr-glass-modal.hr-glass-modal--sidebar {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: var(--hr-sidebar-border) !important;
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar form,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar h3,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar h3 span,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar label,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar p,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar span:not(.hr-schedule-roster__weekday-text):not(.hr-schedule-roster__code) {
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar svg,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar i[data-lucide] {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar [class*="border-slate"],
+.hr-schedule-roster-modal.hr-glass-modal--sidebar [class*="border-b"],
+.hr-schedule-roster-modal.hr-glass-modal--sidebar [class*="border-t"] {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-400 {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-400:hover,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar button.text-slate-400:hover {
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-teal-600,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-teal-800,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-emerald-600 {
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-slate-50,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-white\/95 {
+    background: rgba(0, 0, 0, 0.12) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-slate-100 {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-slate-100:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster {
+    background: rgba(0, 0, 0, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.24) !important;
+    box-shadow: none !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__title {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__title h4,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__title p {
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-emerald-100 {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-emerald-800,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-emerald-700 {
+    color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__day-num {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--work .hr-schedule-roster__code {
+    background: rgba(16, 185, 129, 0.35) !important;
+    color: #ecfdf5 !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--off .hr-schedule-roster__code {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--inactive {
+    background: rgba(0, 0, 0, 0.12) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__code:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster > div:last-child {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-top-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-500,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-600,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-700,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-800 {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar button.absolute.top-2.left-2 {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.24) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar button.absolute.top-2.left-2:hover {
+    color: #fecaca !important;
+    border-color: rgba(254, 202, 202, 0.45) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .sticky.bottom-0 {
+    background: rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: none !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .border-2.border-dashed {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .text-slate-300 {
+    color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-white\/80 {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #fff !important;
+}
+
+/* ── جدول الدوام — تجاوز قواعد hr-glass-modal table (نص أسود) ── */
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal.hr-glass-modal--sidebar {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: var(--hr-sidebar-border) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form *:not(.hr-schedule-roster__code):not(.hr-schedule-roster__weekday-text) {
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar svg,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar i[data-lucide] {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar table thead th,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar table tbody td {
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__weekday {
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__day-num {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .bg-white {
+    background: rgba(0, 0, 0, 0.14) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--work .hr-schedule-roster__code {
+    color: #ecfdf5 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--off .hr-schedule-roster__code {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .sticky.bottom-0 {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ── صندوق .hr-schedule-roster داخل النافذة — ثيم الشريط الكامل ── */
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__title {
+    background: rgba(0, 0, 0, 0.08) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster h4,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__hint,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend-muted,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend strong {
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster svg,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster i[data-lucide] {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift-read,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select:focus,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year:focus,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift:focus {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    border: 1px solid rgba(255, 255, 255, 0.32) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    caret-color: #fff !important;
+    box-shadow: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-inline: 0.5rem 1.75rem !important;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
+        linear-gradient(
+            165deg,
+            var(--hr-sidebar-bg, #3d7aad) 0%,
+            var(--hr-sidebar-bg-soft, #356391) 100%
+        ) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select:focus,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year:focus,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift:focus {
+    border-color: rgba(255, 255, 255, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
+    outline: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select option {
+    color: #0f172a !important;
+    background: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift::placeholder {
+    color: rgba(255, 255, 255, 0.55) !important;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.55) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year::-webkit-outer-spin-button,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year::-webkit-inner-spin-button {
+    filter: invert(1);
+    opacity: 0.85;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__badge {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__scroll,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__table {
+    background: transparent !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__table thead th,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__table tbody td {
+    color: #fff !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    padding: 0 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday {
+    background: var(--hr-sidebar-bg-soft, #356391) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday-text {
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday--inactive {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday--inactive .hr-schedule-roster__weekday-text {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__day-num {
+    background: var(--hr-sidebar-bg, #3d7aad) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--inactive {
+    background: rgba(0, 0, 0, 0.18) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--work .hr-schedule-roster__code {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--off .hr-schedule-roster__code {
+    background: rgba(0, 0, 0, 0.15) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--inactive .hr-schedule-roster__code {
+    color: rgba(255, 255, 255, 0.35) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__code:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend {
+    background: rgba(0, 0, 0, 0.08) !important;
+    border-top-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend-muted {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ── قسم البريد في نافذة جدول الدوام ── */
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__email {
+    border-top-color: rgba(255, 255, 255, 0.22) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__label,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send span {
+    color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send svg,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send i[data-lucide] {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:focus {
+    padding: 0.5rem 0.75rem !important;
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    border: 1px solid rgba(255, 255, 255, 0.32) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    caret-color: #fff !important;
+    box-shadow: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:focus {
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:-webkit-autofill,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff !important;
+    caret-color: #fff !important;
+    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.28) inset !important;
+    transition: background-color 99999s ease-out 0s;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input::placeholder {
+    color: rgba(255, 255, 255, 0.55) !important;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.55) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__checkbox {
+    accent-color: #fff;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── أولوية قصوى — حقول جدول الدوام (تتغلب على hr-glass-modal input) ── */
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__shift,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__year,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    caret-color: #fff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select {
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
+        linear-gradient(
+            165deg,
+            var(--hr-sidebar-bg, #3d7aad) 0%,
+            var(--hr-sidebar-bg-soft, #356391) 100%
+        ) !important;
 }

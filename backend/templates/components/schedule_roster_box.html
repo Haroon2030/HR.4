@@ -1,38 +1,38 @@
-{# جدول ورديات شهري — يُستخدم داخل x-for مع متغير box و editable (boolean) #}
-<div class="hr-schedule-roster border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
-    <div class="hr-schedule-roster__title px-4 py-3 bg-gradient-to-l from-sky-50 to-teal-50 border-b border-slate-200">
+{# جدول ورديات شهري — يُستخدم داخل نافذة جدول الدوام فقط #}
+<div class="hr-schedule-roster border rounded-lg overflow-hidden">
+    <div class="hr-schedule-roster__title px-4 py-3 border-b">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-                <h4 class="text-sm sm:text-base font-bold text-slate-800 flex flex-wrap items-center gap-2">
-                    <i data-lucide="calendar-range" class="w-4 h-4 text-teal-600 shrink-0"></i>
+                <h4 class="text-sm sm:text-base font-bold flex flex-wrap items-center gap-2">
+                    <i data-lucide="calendar-range" class="w-4 h-4 shrink-0"></i>
                     <span>جدول عملك لشهر</span>
                     <template x-if="editable">
                         <span class="inline-flex flex-wrap items-center gap-1.5">
-                            <select x-model.number="box.month" class="text-sm font-bold border border-slate-300 rounded-lg px-2 py-1 bg-white">
+                            <select x-model.number="box.month" class="hr-schedule-roster__select text-sm font-bold rounded-lg px-2 py-1">
                                 <template x-for="(mn, idx) in months" :key="idx">
                                     <option :value="idx+1" x-text="mn"></option>
                                 </template>
                             </select>
                             <input type="number" x-model.number="box.year" min="2020" max="2100"
-                                   class="w-20 text-sm font-bold border border-slate-300 rounded-lg px-2 py-1 text-center bg-white">
+                                   class="hr-schedule-roster__year w-20 text-sm font-bold rounded-lg px-2 py-1 text-center">
                         </span>
                     </template>
                     <template x-if="!editable">
-                        <span class="text-teal-800" x-text="boxMonthLabel(box)"></span>
+                        <span x-text="boxMonthLabel(box)"></span>
                     </template>
                 </h4>
-                <p class="text-[11px] text-slate-500 mt-1" x-show="editable" x-text="'الشهر المحدد: ' + boxMonthLabel(box)"></p>
+                <p class="text-[11px] mt-1 hr-schedule-roster__hint" x-show="editable" x-text="'الشهر المحدد: ' + boxMonthLabel(box)"></p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <template x-if="editable">
                     <input type="text" x-model="box.shift_label"
                            placeholder="اكتب الوردية (مثال: 8ص–4م)"
-                           class="text-xs font-bold border border-slate-300 rounded-lg px-2 py-1.5 bg-white min-w-[9rem] w-full sm:w-52">
+                           class="hr-schedule-roster__shift text-xs font-bold rounded-lg px-2 py-1.5 min-w-[9rem] w-full sm:w-52">
                 </template>
                 <template x-if="!editable">
-                    <span class="text-xs font-bold text-slate-600 px-2 py-1 bg-white/80 border border-slate-200 rounded-lg" x-text="shiftShortLabel(box)"></span>
+                    <span class="text-xs font-bold px-2 py-1 rounded-lg hr-schedule-roster__shift-read" x-text="shiftShortLabel(box)"></span>
                 </template>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span class="hr-schedule-roster__badge inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold">
                     <span x-text="workDaysCount(box)"></span> يوم دوام
                 </span>
             </div>
@@ -44,7 +44,7 @@
             <thead>
                 <tr>
                     <template x-for="d in dayNumbers" :key="'wd-' + d">
-                        <th class="hr-schedule-roster__weekday border border-slate-300 font-bold leading-none"
+                        <th class="hr-schedule-roster__weekday border font-bold leading-none"
                             :class="isDayInMonth(box, d) ? '' : 'hr-schedule-roster__weekday--inactive'">
                             <span class="hr-schedule-roster__weekday-text" x-text="weekdayForDay(box, d) || '—'"></span>
                         </th>
@@ -52,7 +52,7 @@
                 </tr>
                 <tr>
                     <template x-for="d in dayNumbers" :key="'num-' + d">
-                        <th class="hr-schedule-roster__day-num border border-slate-300 bg-sky-50 font-bold text-slate-800 leading-none"
+                        <th class="hr-schedule-roster__day-num border font-bold leading-none"
                             x-text="d"></th>
                     </template>
                 </tr>
@@ -60,7 +60,7 @@
             <tbody>
                 <tr>
                     <template x-for="d in dayNumbers" :key="'cell-' + d">
-                        <td class="hr-schedule-roster__cell border border-slate-300 p-0 align-middle"
+                        <td class="hr-schedule-roster__cell border p-0 align-middle"
                             :class="{
                                 'hr-schedule-roster__cell--inactive': !isDayInMonth(box, d),
                                 'hr-schedule-roster__cell--off': getDayCode(box, d).toLowerCase() === 'off',
@@ -68,7 +68,6 @@
                             }">
                             <button type="button"
                                     class="hr-schedule-roster__code w-full flex items-center justify-center font-bold"
-                                    :class="isWorkDayCode(getDayCode(box, d)) ? 'text-emerald-700' : 'uppercase'"
                                     :disabled="!editable || !isDayInMonth(box, d)"
                                     @click="cycleDayCode(box, d)"
                                     x-text="formatDayCode(getDayCode(box, d))"></button>
@@ -78,9 +77,9 @@
             </tbody>
         </table>
     </div>
-    <div class="px-3 py-1.5 bg-slate-50 border-t border-slate-200 text-[10px] text-slate-500 flex flex-wrap gap-3">
-        <span><strong class="text-emerald-700">✓</strong> دوام</span>
-        <span><strong class="text-slate-700">off</strong> إجازة</span>
-        <span class="text-slate-400">— انقر على الخلية: فارغ ← ✓ ← off</span>
+    <div class="hr-schedule-roster__legend px-3 py-1.5 border-t text-[10px] flex flex-wrap gap-3">
+        <span><strong>✓</strong> دوام</span>
+        <span><strong>off</strong> إجازة</span>
+        <span class="hr-schedule-roster__legend-muted">— انقر على الخلية: فارغ ← ✓ ← off</span>
     </div>
 </div>

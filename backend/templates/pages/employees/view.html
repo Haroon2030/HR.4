@@ -280,7 +280,7 @@
     <!-- Modal: جدول الدوام (ورديات + بريد) -->
     <div x-show="quickModal==='schedule'" x-cloak class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
          @click.self="window.dispatchEvent(new CustomEvent('close-schedule-modal'))">
-        <div class="hr-glass-modal hr-schedule-roster-modal w-full max-h-[94vh] overflow-y-auto"
+        <div class="hr-glass-modal hr-glass-modal--sidebar hr-schedule-roster-modal w-full max-h-[94vh] overflow-y-auto"
              x-data="Object.assign(scheduleBoxes(true), {
                 editable: true,
                 focusedBoxId: null,
@@ -361,25 +361,25 @@
                     </template>
                 </div>
 
-                <div class="border-t border-slate-200 pt-4 space-y-3">
+                <div class="hr-schedule-modal__email border-t pt-4 space-y-3">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">بريد الموظف</label>
+                            <label class="hr-schedule-modal__label block text-xs font-bold mb-1">بريد الموظف</label>
                             <input type="email" name="employee_email" x-model="empEmail"
                                    placeholder="{{ employee.email|default:'employee@example.com' }}"
-                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                                   class="hr-schedule-modal__input w-full text-sm rounded-lg">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">بريد الموارد البشرية</label>
+                            <label class="hr-schedule-modal__label block text-xs font-bold mb-1">بريد الموارد البشرية</label>
                             <input type="email" name="hr_email" x-model="hrEmail"
                                    placeholder="hr@example.com"
-                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                                   class="hr-schedule-modal__input w-full text-sm rounded-lg">
                         </div>
                     </div>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="sendEmail" name="send_email" value="1" class="w-4 h-4 text-emerald-600 border-slate-300 rounded">
-                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
-                            <i data-lucide="mail" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <label class="hr-schedule-modal__send flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="sendEmail" name="send_email" value="1" class="hr-schedule-modal__checkbox w-4 h-4 rounded">
+                        <span class="text-xs font-bold flex items-center gap-1">
+                            <i data-lucide="mail" class="w-3.5 h-3.5 shrink-0"></i>
                             إرسال نسخة بالبريد الإلكتروني بعد الحفظ
                         </span>
                     </label>
