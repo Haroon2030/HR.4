@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-4" x-data="{
     activeTab: 'main',
-    insuranceRate: parseFloat('{{ emp_req.insurance_deduction_rate|default:"0" }}') || 0,
+    insuranceRate: {% if emp_req.insurance_deduction_rate %}'{{ emp_req.insurance_deduction_rate|floatformat:2 }}'{% else %}''{% endif %},
     saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
     hasSponsorship() {
         const el = document.querySelector('[name=sponsorship]');

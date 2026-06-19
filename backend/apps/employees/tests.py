@@ -3,8 +3,8 @@ from django.test import TestCase
 from decimal import Decimal
 from datetime import date, timedelta
 from django.utils import timezone
-from apps.employees.forms import EmployeeForm
-from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, LoanInstallment
+from apps.employees.forms import EmployeeForm, EmploymentRequestEditForm
+from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, LoanInstallment, EmploymentRequest
 from apps.setup.models import Nationality, Sponsorship
 
 class SalaryPaymentSplitTests(TestCase):
@@ -98,6 +98,27 @@ class EmployeeFormTests(TestCase):
         form = EmployeeForm(data=post)
         self.assertFalse(form.is_valid())
         self.assertIn('insurance_deduction_rate', form.errors)
+
+    def test_employment_request_saudi_gosi_rate_saves(self):
+        saudi = Nationality.objects.create(name='سعودي', code='SA')
+        sp = Sponsorship.objects.create(code='SP-ER', company_name='كفالة')
+        req = EmploymentRequest.objects.create(name='أحمد', nationality=saudi, sponsorship=sp)
+        form = EmploymentRequestEditForm(
+            data={
+                'name': 'أحمد',
+                'nationality': str(saudi.pk),
+                'sponsorship': str(sp.pk),
+                'insurance_deduction_rate': '10.25',
+                'basic_salary': '3200',
+                'housing_allowance': '800',
+                'transport_allowance': '400',
+                'cash_amount': '0',
+            },
+            instance=req,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.insurance_deduction_rate, Decimal('10.25'))
 
 
 class EmployeeModelTests(TestCase):

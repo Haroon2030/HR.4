@@ -77,6 +77,10 @@ def validate_employee_data_complete(req):
         elif kind == 'file':
             if not value:
                 missing.append(label)
+    from apps.employees.services.contract_rules import is_saudi_nationality, is_valid_saudi_insurance_rate
+    if is_saudi_nationality(getattr(req, 'nationality', None)):
+        if not is_valid_saudi_insurance_rate(getattr(req, 'insurance_deduction_rate', None)):
+            missing.append('نسبة خصم التأمينات (GOSI)')
     return missing
 
 

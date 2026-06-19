@@ -1,14 +1,18 @@
 {# نسبة خصم التأمينات — قائمة GOSI للسعودي، حقل رقمي لغير السعودي #}
+{# حقل hidden واحد فقط يُرسل القيمة (يتجنب تضارب حقلين بنفس الاسم) #}
 <div class="space-y-1.5">
     <label class="block text-xs font-bold text-slate-800">
         نسبة خصم التأمينات (%)
         <span x-show="isSaudi()" class="block text-[10px] font-normal text-slate-500 mt-0.5">سعودي — 10.75 / 10.25 / 9.75</span>
     </label>
-    <select :name="isSaudi() ? 'insurance_deduction_rate' : null"
-            x-show="isSaudi()"
+    {% if can_edit %}
+    <input type="hidden"
+           name="insurance_deduction_rate"
+           :value="(insuranceRate === '' || insuranceRate === null || Number.isNaN(Number(insuranceRate))) ? '' : insuranceRate">
+    <select x-show="isSaudi()"
             x-cloak
-            x-model.number="insuranceRate"
-            :disabled="!isSaudi() || {% if not can_edit %}true{% else %}false{% endif %}"
+            x-model="insuranceRate"
+            :disabled="!isSaudi()"
             class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white font-mono"
             dir="ltr">
         <option value="">-- اختر --</option>
@@ -18,14 +22,16 @@
     </select>
     <input type="number"
            step="0.01"
-           :name="!isSaudi() ? 'insurance_deduction_rate' : null"
            x-show="!isSaudi()"
            x-cloak
-           x-model.number="insuranceRate"
-           :disabled="isSaudi() || {% if not can_edit %}true{% else %}false{% endif %}"
+           x-model="insuranceRate"
+           :disabled="isSaudi()"
            class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white font-mono"
            dir="ltr">
-    {% if not can_edit and rate is not None %}
+    {% else %}
     <input type="hidden" name="insurance_deduction_rate" value="{{ rate|default:'' }}">
+    <div class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm bg-slate-50 font-mono text-slate-700" dir="ltr">
+        {{ rate|default:"—" }}{% if rate %}%{% endif %}
+    </div>
     {% endif %}
 </div>

@@ -80,6 +80,10 @@ def is_saudi_nationality(nationality) -> bool:
 
 @lru_cache(maxsize=1)
 def saudi_nationality_ids() -> tuple[int, ...]:
+    return _query_saudi_nationality_ids()
+
+
+def _query_saudi_nationality_ids() -> tuple[int, ...]:
     return tuple(
         Nationality.objects.filter(
             Q(name__icontains='سعود')
@@ -90,6 +94,11 @@ def saudi_nationality_ids() -> tuple[int, ...]:
             is_deleted=False,
         ).values_list('id', flat=True)
     )
+
+
+def refresh_saudi_nationality_ids_cache() -> tuple[int, ...]:
+    saudi_nationality_ids.cache_clear()
+    return saudi_nationality_ids()
 
 
 def _add_months(d: date, months: int) -> date:

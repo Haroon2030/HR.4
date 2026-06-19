@@ -12,7 +12,8 @@ from django.core.exceptions import ValidationError
 from apps.employees.models import Employee, EmploymentRequest, EmployeeStatement
 
 
-# حقول رقمية لا تقبل NULL في DB؛ إرسال "" من المتصفح يُنتج None بدون تطبيع.
+# حقول تُرسَل دائماً عبر hidden/UI مخصص — لا تُستثنى من التحديث عند غيابها عن POST
+_ALWAYS_POST_FIELDS = frozenset({'insurance_deduction_rate'})
 _SALARY_DECIMAL_FIELDS = (
     'basic_salary',
     'housing_allowance',
@@ -146,7 +147,7 @@ class EmployeeForm(forms.ModelForm):
         if self.instance and self.instance.pk and self.data:
             to_drop = []
             for field_name in list(self.fields.keys()):
-                if field_name == 'name':
+                if field_name == 'name' or field_name in _ALWAYS_POST_FIELDS:
                     continue
                 # الحقل غير موجود في الـ POST؟
                 in_post = field_name in self.data or field_name in self.files
@@ -428,7 +429,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
         if self.instance and self.instance.pk and self.data:
             to_drop = []
             for field_name in list(self.fields.keys()):
-                if field_name == 'name':
+                if field_name == 'name' or field_name in _ALWAYS_POST_FIELDS:
                     continue
                 in_post = field_name in self.data or field_name in self.files
                 if in_post:

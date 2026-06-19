@@ -52,11 +52,14 @@
                     نسبة خصم التأمينات (%)
                     <span x-show="isSaudi()" class="block text-[10px] font-normal text-slate-400 mt-0.5">سعودي — اختر من نسب GOSI</span>
                 </label>
-                <select :name="isSaudi() ? 'insurance_deduction_rate' : null"
-                        x-show="isSaudi()"
+                {% if can_edit_salary %}
+                <input type="hidden"
+                       name="insurance_deduction_rate"
+                       :value="(salaryInsuranceRate === '' || salaryInsuranceRate === null || Number.isNaN(Number(salaryInsuranceRate))) ? '' : salaryInsuranceRate">
+                <select x-show="isSaudi()"
                         x-cloak
-                        x-model.number="salaryInsuranceRate"
-                        :disabled="!isSaudi() || {% if not can_edit_salary %}true{% else %}false{% endif %}"
+                        x-model="salaryInsuranceRate"
+                        :disabled="!isSaudi()"
                         class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono"
                         dir="ltr">
                     <option value="">-- اختر --</option>
@@ -66,15 +69,17 @@
                 </select>
                 <input type="number"
                        step="0.01"
-                       :name="!isSaudi() ? 'insurance_deduction_rate' : null"
                        x-show="!isSaudi()"
                        x-cloak
-                       x-model.number="salaryInsuranceRate"
-                       :disabled="isSaudi() || {% if not can_edit_salary %}true{% else %}false{% endif %}"
+                       x-model="salaryInsuranceRate"
+                       :disabled="isSaudi()"
                        class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono"
                        dir="ltr">
-                {% if not can_edit_salary and employee.insurance_deduction_rate is not None %}
-                <input type="hidden" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate|input_decimal }}">
+                {% else %}
+                <input type="hidden" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate|input_decimal|default:'0' }}">
+                <div class="w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm bg-slate-50 font-mono text-slate-700" dir="ltr">
+                    {{ employee.insurance_deduction_rate|floatformat:2|default:"—" }}{% if employee.insurance_deduction_rate %}%{% endif %}
+                </div>
                 {% endif %}
             </div>
         </div>
