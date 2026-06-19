@@ -17,11 +17,17 @@
             </div>
             <div class="hr-bank-panel__field">
                 {% if editable %}
-                <select name="bank" class="hr-bank-panel__control"{% if not can_edit_salary %} disabled{% endif %}>
+                {% if not can_edit_salary and employee.bank_id %}
+                <input type="hidden" name="bank" value="{{ employee.bank_id }}">
+                <select class="hr-bank-panel__control" disabled aria-hidden="true" tabindex="-1">
+                    <option value="{{ employee.bank_id }}" selected>{{ employee.bank.name }}</option>
+                </select>
+                {% else %}
+                <select name="bank" class="hr-bank-panel__control">
                     <option value="">— اختر البنك —</option>
                     {% for bk in banks %}<option value="{{ bk.id }}" {% if employee.bank_id == bk.id %}selected{% endif %}>{{ bk.name }}</option>{% endfor %}
                 </select>
-                {% if not can_edit_salary and employee.bank_id %}<input type="hidden" name="bank" value="{{ employee.bank_id }}">{% endif %}
+                {% endif %}
                 {% else %}
                 <span class="hr-bank-panel__value">{{ employee.bank.name|default:"—" }}</span>
                 {% endif %}
@@ -51,13 +57,19 @@
             </div>
             <div class="hr-bank-panel__field">
                 {% if editable %}
-                <select name="account_type" class="hr-bank-panel__control"{% if not can_edit_salary %} disabled{% endif %}>
+                {% if not can_edit_salary and employee.account_type %}
+                <input type="hidden" name="account_type" value="{{ employee.account_type }}">
+                <select class="hr-bank-panel__control" disabled aria-hidden="true" tabindex="-1">
+                    <option value="{{ employee.account_type }}" selected>{% if employee.account_type == 'bank_account' %}حساب بنكي{% elif employee.account_type == 'salary_card' %}بطاقة راتب{% elif employee.account_type == 'sarie' %}سريع (SARIE){% else %}{{ employee.account_type }}{% endif %}</option>
+                </select>
+                {% else %}
+                <select name="account_type" class="hr-bank-panel__control">
                     <option value="">— اختر النوع —</option>
                     <option value="bank_account" {% if employee.account_type == 'bank_account' %}selected{% endif %}>حساب بنكي</option>
                     <option value="salary_card" {% if employee.account_type == 'salary_card' %}selected{% endif %}>بطاقة راتب</option>
                     <option value="sarie" {% if employee.account_type == 'sarie' %}selected{% endif %}>سريع (SARIE)</option>
                 </select>
-                {% if not can_edit_salary and employee.account_type %}<input type="hidden" name="account_type" value="{{ employee.account_type }}">{% endif %}
+                {% endif %}
                 {% else %}
                 <span class="hr-bank-panel__value" dir="ltr">{% if employee.account_type == 'bank_account' %}حساب بنكي{% elif employee.account_type == 'salary_card' %}بطاقة راتب{% elif employee.account_type == 'sarie' %}سريع (SARIE){% else %}—{% endif %}</span>
                 {% endif %}
