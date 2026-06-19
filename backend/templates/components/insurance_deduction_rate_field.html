@@ -4,7 +4,7 @@
         نسبة خصم التأمينات (%)
         <span x-show="isSaudi()" class="block text-[10px] font-normal text-slate-500 mt-0.5">سعودي — 10.75 / 10.25 / 9.75</span>
     </label>
-    <select name="insurance_deduction_rate"
+    <select :name="isSaudi() ? 'insurance_deduction_rate' : null"
             x-show="isSaudi()"
             x-cloak
             x-model.number="insuranceRate"
@@ -18,7 +18,7 @@
     </select>
     <input type="number"
            step="0.01"
-           name="insurance_deduction_rate"
+           :name="!isSaudi() ? 'insurance_deduction_rate' : null"
            x-show="!isSaudi()"
            x-cloak
            x-model.number="insuranceRate"

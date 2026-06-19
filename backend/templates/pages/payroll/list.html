@@ -166,86 +166,15 @@
                             {% if active_payroll_view == 'detailed' %}خط سير التفصيلي{% else %}خط سير المسير{% endif %}
                         </h2>
                         <p class="hr-payroll-panel__desc">
-                            {% if active_payroll_view == 'detailed' %}عرض ثم بناء — توزيع الفروع للمنقولين{% else %}① عرض → ② بناء → ③ حفظ → ④ إغلاق{% endif %}
+                            {% if active_payroll_view == 'detailed' %}خطوتان — عرض ثم بناء{% else %}دورة كاملة في أربع خطوات{% endif %}
                         </p>
                     </div>
                 </div>
-                <div class="hr-payroll-panel__body hr-payroll-panel__body--compact">
+                <div class="hr-payroll-panel__body hr-payroll-panel__body--compact hr-payroll-panel__body--pipeline">
                     {% if active_payroll_view == 'detailed' %}
                     {% include "pages/payroll/_payroll_detailed_actions.html" %}
                     {% else %}
-                    <div class="hr-payroll-pipeline" aria-label="إجراءات المسير">
-                        <div class="hr-payroll-pipeline__track">
-                            <div class="hr-payroll-pipeline__step">
-                                <span class="hr-payroll-pipeline__num">①</span>
-                                <button type="submit" form="payrollFilterForm" class="hr-payroll-action-btn hr-payroll-action-btn--view" title="عرض المسودة المحفوظة">
-                                    <i data-lucide="eye" class="w-4 h-4"></i>
-                                    <span>عرض</span>
-                                </button>
-                            </div>
-                            <div class="hr-payroll-pipeline__step">
-                                <span class="hr-payroll-pipeline__num">②</span>
-                                {% if can_build %}
-                                <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="standard"
-                                        class="hr-payroll-action-btn hr-payroll-action-btn--build"
-                                        {% if has_draft_runs %}onclick="return confirm('سيتم استبدال المسودة الحالية. متابعة؟');"{% endif %}>
-                                    <i data-lucide="{% if has_draft_runs %}refresh-cw{% else %}play{% endif %}" class="w-4 h-4"></i>
-                                    <span>{% if has_draft_runs %}إعادة بناء{% else %}بناء{% endif %}</span>
-                                </button>
-                                {% else %}
-                                <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--build hr-payroll-action-btn--disabled">بناء</button>
-                                {% endif %}
-                            </div>
-                            <div class="hr-payroll-pipeline__step">
-                                <span class="hr-payroll-pipeline__num">③</span>
-                                {% if can_build %}
-                                <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents" onsubmit="return confirm('تحديث المسودة بأحدث البيانات؟');">
-                                    {% csrf_token %}
-                                    {% include "pages/payroll/_payroll_filter_hidden.html" %}
-                                    <button type="submit" name="payroll_action" value="save" class="hr-payroll-action-btn hr-payroll-action-btn--save"
-                                            {% if not show_table or not has_payroll_lines %}disabled{% endif %}>
-                                        <i data-lucide="save" class="w-4 h-4"></i>
-                                        <span>حفظ</span>
-                                    </button>
-                                </form>
-                                {% else %}
-                                <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--save hr-payroll-action-btn--disabled">حفظ</button>
-                                {% endif %}
-                            </div>
-                            <div class="hr-payroll-pipeline__step">
-                                <span class="hr-payroll-pipeline__num">④</span>
-                                {% if can_build %}
-                                <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="contents" onsubmit="return confirm('الإغلاق النهائي — لا رجوع. متابعة؟');">
-                                    {% csrf_token %}
-                                    {% include "pages/payroll/_payroll_filter_hidden.html" %}
-                                    <button type="submit" name="payroll_action" value="lock" class="hr-payroll-action-btn hr-payroll-action-btn--lock"
-                                            {% if not show_table or not has_draft_runs or financial_audit and not financial_audit.ready_to_lock %}disabled{% endif %}>
-                                        <i data-lucide="lock" class="w-4 h-4"></i>
-                                        <span>إغلاق</span>
-                                    </button>
-                                </form>
-                                {% else %}
-                                <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--lock hr-payroll-action-btn--disabled">إغلاق</button>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="hr-payroll-pipeline__extras">
-                            {% if show_table and has_draft_runs and financial_audit %}
-                            {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
-                            {% endif %}
-                            {% if can_export and show_table %}
-                            <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}" class="hr-payroll-action-btn hr-payroll-action-btn--export">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                <span>Excel</span>
-                            </a>
-                            {% else %}
-                            <span class="hr-payroll-action-btn hr-payroll-action-btn--export hr-payroll-action-btn--disabled" aria-disabled="true">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                <span>Excel</span>
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
+                    {% include "pages/payroll/_payroll_standard_pipeline.html" %}
                     {% endif %}
                 </div>
             </section>

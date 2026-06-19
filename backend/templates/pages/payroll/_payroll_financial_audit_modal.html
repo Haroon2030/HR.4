@@ -3,12 +3,17 @@
 {% if financial_audit %}
 {% if audit_modal_trigger %}
 <button type="button"
-        class="hr-payroll-action-btn hr-payroll-action-btn--audit hr-payroll-action-btn--audit-{{ financial_audit.status_level }}"
+        class="{% if audit_icon_only %}hr-payroll-icon-btn hr-payroll-icon-btn--audit hr-payroll-icon-btn--audit-{{ financial_audit.status_level }}{% else %}hr-payroll-action-btn hr-payroll-action-btn--audit hr-payroll-action-btn--audit-{{ financial_audit.status_level }}{% endif %}"
         @click="openAuditModal()"
-        title="فحص تلقائي قبل الإغلاق النهائي — معادلات الراتب، التأمينات، والإجماليات">
+        title="تقرير التحقق المالي — {{ financial_audit.status_label }}"
+        aria-label="تقرير التحقق المالي — {{ financial_audit.status_label }}">
     <i data-lucide="shield-check" class="w-4 h-4"></i>
+    {% if audit_icon_only %}
+    <span class="hr-payroll-icon-btn__dot hr-payroll-icon-btn__dot--{{ financial_audit.status_level }}" aria-hidden="true"></span>
+    {% else %}
     <span>تقرير التحقق المالي</span>
     <span class="hr-payroll-audit-trigger__pill hr-payroll-audit-trigger__pill--{{ financial_audit.status_level }}">{{ financial_audit.status_label }}</span>
+    {% endif %}
 </button>
 {% endif %}
 

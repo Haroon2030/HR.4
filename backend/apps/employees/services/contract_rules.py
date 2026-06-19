@@ -82,7 +82,11 @@ def is_saudi_nationality(nationality) -> bool:
 def saudi_nationality_ids() -> tuple[int, ...]:
     return tuple(
         Nationality.objects.filter(
-            Q(name__icontains='سعود') | Q(code__iexact='SA') | Q(code__iexact='SAU'),
+            Q(name__icontains='سعود')
+            | Q(code__iexact='SA')
+            | Q(code__iexact='SAU')
+            | Q(code__iexact='SAUDI')
+            | Q(code='1'),
             is_deleted=False,
         ).values_list('id', flat=True)
     )
