@@ -33,47 +33,47 @@
                     <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="quickOpen ? 'rotate-180' : ''"></i>
                 </button>
                 <div x-show="quickOpen" x-cloak x-transition
-                    class="hr-dropdown-menu end-0 top-full mt-2 w-56 py-1">
-                    <button type="button" @click="quickModal='leave'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="calendar-plus" class="w-4 h-4 text-blue-600"></i> تقديم إجازة
+                    class="hr-dropdown-menu hr-dropdown-menu--sidebar end-0 top-full mt-2 w-56 py-1">
+                    <button type="button" @click="quickModal='leave'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="calendar-plus" class="w-4 h-4"></i> تقديم إجازة
                     </button>
-                    <button type="button" @click="quickModal='terminate'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="user-x" class="w-4 h-4 text-red-600"></i> تصفية موظف
+                    <button type="button" @click="quickModal='terminate'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="user-x" class="w-4 h-4"></i> تصفية موظف
                     </button>
                     {% if can_edit_salary %}
-                    <button type="button" @click="quickModal='salary'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-600"></i> تعديل راتب
+                    <button type="button" @click="quickModal='salary'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="dollar-sign" class="w-4 h-4"></i> تعديل راتب
                     </button>
                     {% endif %}
-                    <button type="button" @click="quickModal='transfer'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="move" class="w-4 h-4 text-indigo-600"></i> نقل موظف
+                    <button type="button" @click="quickModal='transfer'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="move" class="w-4 h-4"></i> نقل موظف
                     </button>
-                    <button type="button" @click="quickModal='statement'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i> إفادات ومخالفات
+                    <button type="button" @click="quickModal='statement'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> إفادات ومخالفات
                     </button>
-                    <button type="button" @click="quickModal='schedule'; quickOpen=false; $dispatch('open-schedule-modal', { add: true })" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="calendar-days" class="w-4 h-4 text-teal-600"></i> جدول الدوام
+                    <button type="button" @click="quickModal='schedule'; quickOpen=false; $dispatch('open-schedule-modal', { add: true })" class="hr-dropdown-item">
+                        <i data-lucide="calendar-days" class="w-4 h-4"></i> جدول الدوام
                     </button>
-                    <div class="border-t border-slate-100 my-1"></div>
-                    <button type="button" @click="quickModal='custody_receive'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="package-check" class="w-4 h-4 text-emerald-600"></i> استلام عهدة
+                    <div class="hr-dropdown-divider"></div>
+                    <button type="button" @click="quickModal='custody_receive'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="package-check" class="w-4 h-4"></i> استلام عهدة
                     </button>
-                    <button type="button" @click="quickModal='custody_clear'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="package-x" class="w-4 h-4 text-rose-600"></i> تصفية عهدة
+                    <button type="button" @click="quickModal='custody_clear'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="package-x" class="w-4 h-4"></i> تصفية عهدة
                     </button>
-                    <button type="button" @click="quickModal='loan'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="wallet" class="w-4 h-4 text-amber-600"></i> تقديم سلفة
+                    <button type="button" @click="quickModal='loan'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="wallet" class="w-4 h-4"></i> تقديم سلفة
                     </button>
-                    <button type="button" @click="quickModal='absence'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <i data-lucide="user-minus" class="w-4 h-4 text-orange-600"></i> تسجيل غياب
+                    <button type="button" @click="quickModal='absence'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="user-minus" class="w-4 h-4"></i> تسجيل غياب
                     </button>
-                    <div class="border-t border-slate-100 my-1"></div>
+                    <div class="hr-dropdown-divider"></div>
                     {% if can_view_salary %}
-                    <button type="button" @click="quickModal='contract_end'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-red-50">
-                        <i data-lucide="file-x-2" class="w-4 h-4 text-red-600"></i> انتهاء عقد (EOSB)
+                    <button type="button" @click="quickModal='contract_end'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="file-x-2" class="w-4 h-4"></i> انتهاء عقد (EOSB)
                     </button>
-                    <button type="button" @click="quickModal='end_of_service'; quickOpen=false" class="w-full text-right flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-red-50">
-                        <i data-lucide="file-x-2" class="w-4 h-4 text-red-600"></i> تصفية نهاية خدمة / استقالة
+                    <button type="button" @click="quickModal='end_of_service'; quickOpen=false" class="hr-dropdown-item">
+                        <i data-lucide="file-x-2" class="w-4 h-4"></i> تصفية نهاية خدمة / استقالة
                     </button>
                     {% endif %}
                 </div>

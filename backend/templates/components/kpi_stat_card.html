@@ -1,7 +1,7 @@
 {% comment %}
   بطاقة إحصائية — لوحة التحكم.
   {% include 'components/kpi_stat_card.html' with label='...' value=123 theme='primary' icon='users' href=url %}
-  theme: primary | emerald | amber | rose | indigo | purple | slate | orange | cyan | mono
+  theme: primary | emerald | amber | rose | indigo | purple | slate | orange | cyan | mono | canvas
 {% endcomment %}
 {% if href %}
 <a href="{{ href }}" class="hr-stat-card hr-stat-card--link hr-stat-card--{{ theme|default:'mono' }} group">

@@ -2,12 +2,13 @@
 <template x-teleport="body">
 <div x-show="modalRunId !== null"
      x-cloak
-     class="hr-glass-modal-overlay hr-payroll-run-modal-overlay fixed inset-0 z-[10050] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
+     dir="rtl"
+     class="hr-glass-modal-overlay hr-payroll-run-modal-overlay"
      @click.self="closeModal()"
      role="dialog"
      aria-modal="true"
      aria-label="تفاصيل المسير">
-    <div class="hr-glass-modal hr-glass-modal--payroll-run relative w-full my-auto flex flex-col shadow-2xl"
+    <div class="hr-glass-modal hr-glass-modal--payroll-run relative flex flex-col shadow-2xl"
          @click.stop>
         {% for run in modal_runs %}
         <div x-show="modalRunId === {{ run.id }}"

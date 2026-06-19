@@ -124,6 +124,13 @@
     --hr-sidebar-sublink-dot: rgba(255, 255, 255, 0.4);
     --hr-sidebar-sublink-dot-hover: rgba(255, 255, 255, 0.72);
     --hr-sidebar-sublink-dot-active: #ffffff;
+    --hr-action-btn-bg: linear-gradient(165deg, var(--hr-sidebar-bg, #3d7aad) 0%, var(--hr-sidebar-bg-soft, #356391) 100%);
+    --hr-action-btn-bg-hover: linear-gradient(165deg, #4688b8 0%, var(--hr-sidebar-bg, #3d7aad) 100%);
+    --hr-action-btn-border: rgba(255, 255, 255, 0.18);
+    --hr-action-btn-border-hover: rgba(255, 255, 255, 0.28);
+    --hr-action-btn-shadow: 0 2px 6px rgba(61, 122, 173, 0.22);
+    --hr-action-btn-shadow-hover: 0 4px 10px rgba(61, 122, 173, 0.28);
+    --hr-action-btn-fg: #ffffff;
     --hr-card-bg: #ffffff;
     --hr-card-border: #e5e7eb;
     --hr-card-radius: 0.875rem;
@@ -2481,6 +2488,60 @@ body.hr-app .hr-dropdown-menu {
     border: 1px solid var(--hr-table-glass-border) !important;
     border-radius: 0.65rem;
     box-shadow: var(--hr-table-glass-shadow);
+}
+
+body.hr-app .hr-dropdown-menu--sidebar {
+    background: var(--hr-sidebar-bg) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid var(--hr-sidebar-border) !important;
+    border-radius: 0.65rem;
+    box-shadow: 0 12px 28px rgba(29, 74, 119, 0.28);
+}
+
+body.hr-app .hr-dropdown-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 0;
+    background: transparent;
+    text-align: right;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--hr-sidebar-text);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+body.hr-app .hr-dropdown-menu--sidebar .hr-dropdown-item {
+    color: #ffffff !important;
+}
+
+body.hr-app .hr-dropdown-menu--sidebar .hr-dropdown-item:hover,
+body.hr-app .hr-dropdown-menu--sidebar .hr-dropdown-item:focus-visible {
+    background: var(--hr-sidebar-hover);
+    color: #ffffff !important;
+    outline: none;
+}
+
+body.hr-app .hr-dropdown-menu--sidebar .hr-dropdown-item i[data-lucide],
+body.hr-app .hr-dropdown-menu--sidebar .hr-dropdown-item svg {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+body.hr-app .hr-dropdown-divider {
+    margin: 0.25rem 0;
+    border-top: 1px solid var(--hr-sidebar-border);
+}
+
+body.hr-app .hr-dropdown-menu:not(.hr-dropdown-menu--sidebar) .hr-dropdown-divider {
+    border-top-color: #f1f5f9;
 }
 
 /* ── شبكة حقول مضغوطة — جدول زجاجي بظل رمادي (عرض الموظف وغيره) ── */
@@ -7255,6 +7316,36 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     background: var(--hr-dash-icon-bg-hover);
 }
 
+.hr-stat-card--canvas {
+    background: linear-gradient(145deg, #ffffff 0%, #f3f8fc 52%, #eaf2f9 100%);
+    border-color: rgba(61, 122, 173, 0.28);
+}
+.hr-stat-card--canvas .hr-stat-card__accent { background: linear-gradient(90deg, #6baed6, var(--hr-sidebar-bg, #3d7aad)); }
+.hr-stat-card--canvas .hr-stat-card__blob { background: rgba(61, 122, 173, 0.24); }
+.hr-stat-card--canvas .hr-stat-card__icon {
+    background: linear-gradient(165deg, var(--hr-sidebar-bg, #3d7aad) 0%, var(--hr-sidebar-bg-soft, #356391) 100%);
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 4px 14px rgba(61, 122, 173, 0.22);
+}
+.hr-stat-card--canvas .hr-stat-card__icon svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+.hr-stat-card--canvas .hr-stat-card__value {
+    color: #1e4976 !important;
+    font-variant-numeric: tabular-nums;
+}
+.hr-stat-card--canvas:hover,
+.hr-stat-card--canvas:focus-visible {
+    border-color: rgba(61, 122, 173, 0.42);
+    box-shadow: 0 14px 34px rgba(61, 122, 173, 0.16);
+}
+.hr-stat-card--canvas:hover .hr-stat-card__icon,
+.hr-stat-card--canvas:focus-visible .hr-stat-card__icon {
+    box-shadow: 0 6px 18px rgba(61, 122, 173, 0.28);
+}
+
 .hr-stat-card--orange {
     background: linear-gradient(145deg, #ffffff 0%, #fff7ed 50%, #ffedd5 100%);
     border-color: #fed7aa;
@@ -9588,4 +9679,216 @@ body.hr-app .hr-employees-table__empty {
     color: #94a3b8;
     font-size: var(--hr-table-body-size);
     font-weight: var(--hr-font-weight);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   توحيد أزرار الموقع — لون الشريط + نص/أيقونات بيضاء
+   ══════════════════════════════════════════════════════════════ */
+body.hr-app :is(
+    .hr-btn,
+    .hr-act,
+    .hr-btn-print,
+    .hr-topbar-icon-btn,
+    .hr-topbar-user,
+    .hr-glass-back-btn,
+    .zk-bio-btn,
+    .hr-btn-dark,
+    .hr-glass-btn,
+    .hr-tab-btn,
+    .hr-payroll-icon-btn,
+    .hr-payroll-action-btn,
+    .hr-payroll-row-actions__btn
+) {
+    color: var(--hr-action-btn-fg) !important;
+    background: var(--hr-action-btn-bg) !important;
+    border-color: var(--hr-action-btn-border) !important;
+    box-shadow: var(--hr-action-btn-shadow);
+}
+
+body.hr-app :is(
+    .hr-btn,
+    .hr-act,
+    .hr-btn-print,
+    .hr-topbar-icon-btn,
+    .hr-topbar-user,
+    .hr-glass-back-btn,
+    .zk-bio-btn,
+    .hr-btn-dark,
+    .hr-glass-btn,
+    .hr-tab-btn,
+    .hr-payroll-icon-btn,
+    .hr-payroll-action-btn,
+    .hr-payroll-row-actions__btn
+):hover:not(:disabled):not(.is-disabled):not([aria-disabled="true"]) {
+    color: var(--hr-action-btn-fg) !important;
+    background: var(--hr-action-btn-bg-hover) !important;
+    border-color: var(--hr-action-btn-border-hover) !important;
+    box-shadow: var(--hr-action-btn-shadow-hover);
+}
+
+body.hr-app :is(
+    .hr-btn,
+    .hr-act,
+    .hr-btn-print,
+    .hr-topbar-icon-btn,
+    .hr-topbar-user,
+    .hr-glass-back-btn,
+    .zk-bio-btn,
+    .hr-btn-dark,
+    .hr-glass-btn,
+    .hr-tab-btn,
+    .hr-payroll-icon-btn,
+    .hr-payroll-action-btn,
+    .hr-payroll-row-actions__btn
+):is(:disabled, .is-disabled, [aria-disabled="true"]) {
+    color: var(--hr-action-btn-fg) !important;
+    background: var(--hr-action-btn-bg) !important;
+    border-color: var(--hr-action-btn-border) !important;
+    opacity: 0.42;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+body.hr-app :is(
+    .hr-btn,
+    .hr-act,
+    .hr-btn-print,
+    .hr-topbar-icon-btn,
+    .hr-topbar-user,
+    .hr-glass-back-btn,
+    .zk-bio-btn,
+    .hr-btn-dark,
+    .hr-glass-btn,
+    .hr-tab-btn,
+    .hr-payroll-icon-btn,
+    .hr-payroll-action-btn,
+    .hr-payroll-row-actions__btn
+) :is(svg, i[data-lucide], .hr-btn__icon, .hr-act__icon, .hr-btn-print__icon) {
+    color: var(--hr-action-btn-fg) !important;
+    stroke: var(--hr-action-btn-fg) !important;
+}
+
+body.hr-app :is(
+    .hr-btn,
+    .hr-btn-print,
+    .hr-glass-back-btn,
+    .hr-tab-btn
+) :is(span, .hr-btn-print__label, .hr-glass-back-btn__text) {
+    color: var(--hr-action-btn-fg) !important;
+}
+
+body.hr-app .hr-btn-print__icon-wrap {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.hr-app .hr-tab-btn::before,
+body.hr-app .hr-tab-btn::after {
+    opacity: 0 !important;
+}
+
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-primary"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-emerald"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-blue"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-red"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-amber"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-orange"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-indigo"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-sky"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-rose"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-cyan"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-slate"],
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-teal"] {
+    color: var(--hr-action-btn-fg) !important;
+    background: var(--hr-action-btn-bg) !important;
+    border-color: var(--hr-action-btn-border) !important;
+}
+
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-primary"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-emerald"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-blue"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-red"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-amber"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-orange"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-indigo"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-sky"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-rose"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-cyan"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-slate"]:hover,
+body.hr-app .hr-main :is(
+    button,
+    a
+)[class*="bg-teal"]:hover {
+    color: var(--hr-action-btn-fg) !important;
+    background: var(--hr-action-btn-bg-hover) !important;
+    border-color: var(--hr-action-btn-border-hover) !important;
 }

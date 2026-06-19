@@ -1,34 +1,65 @@
-<div class="hr-payroll-pipeline hr-payroll-pipeline--icons hr-payroll-pipeline--detailed" aria-label="إجراءات المسير التفصيلي">
-    <div class="hr-payroll-icon-actions" role="toolbar" aria-label="إجراءات المسير التفصيلي">
-        <button type="submit" form="payrollFilterForm"
-                class="hr-payroll-icon-btn hr-payroll-icon-btn--view"
-                title="عرض المسير التفصيلي المحفوظ"
-                aria-label="عرض المسير التفصيلي المحفوظ">
-            <i data-lucide="eye" class="w-4 h-4"></i>
-        </button>
-
-        {% if can_build %}
-        <button type="submit" form="payrollCreateForm"
-                formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
-                name="build_kind" value="detailed"
-                class="hr-payroll-icon-btn hr-payroll-icon-btn--build"
-                title="{% if has_detailed_draft %}استبدال المسودة التفصيلية{% else %}بناء تفصيلي{% endif %}"
-                aria-label="{% if has_detailed_draft %}استبدال المسودة التفصيلية{% else %}بناء تفصيلي{% endif %}"
-                {% if has_detailed_draft %}onclick="return confirm('استبدال المسودة التفصيلية؟');"{% endif %}>
-            <i data-lucide="{% if has_detailed_draft %}refresh-cw{% else %}git-branch{% endif %}" class="w-4 h-4"></i>
-        </button>
-        {% else %}
-        <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--build is-disabled"
-                title="بناء تفصيلي" aria-label="بناء تفصيلي">
-            <i data-lucide="git-branch" class="w-4 h-4"></i>
-        </button>
-        {% endif %}
-
-        {% if show_table and has_draft_runs and financial_audit %}
-        <span class="hr-payroll-icon-actions__sep" aria-hidden="true"></span>
-        {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True audit_icon_only=True %}
-        {% endif %}
-    </div>
-
-    <p class="hr-payroll-pipeline__hint">الفرع الجديد يتحمّل الراتب كاملاً للمنقولين.</p>
-</div>
+<div class="hr-payroll-pipeline hr-payroll-pipeline--icons hr-payroll-pipeline--detailed" aria-label="إجراءات المسير التفصيلي">
+    <div class="hr-payroll-icon-actions" role="toolbar" aria-label="إجراءات المسير التفصيلي">
+        <div class="hr-payroll-icon-action">
+            <button type="submit" form="payrollFilterForm"
+                    class="hr-payroll-icon-btn hr-payroll-icon-btn--view"
+                    title="عرض المسير التفصيلي المحفوظ"
+                    aria-label="عرض المسير التفصيلي المحفوظ">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+            <span class="hr-payroll-icon-action__label">عرض</span>
+        </div>
+
+        <div class="hr-payroll-icon-action">
+            {% if can_build_new %}
+            <button type="submit" form="payrollCreateForm"
+                    formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                    name="build_kind" value="detailed"
+                    class="hr-payroll-icon-btn hr-payroll-icon-btn--build"
+                    title="بناء تفصيلي"
+                    aria-label="بناء تفصيلي">
+                <i data-lucide="git-branch" class="w-4 h-4"></i>
+            </button>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--build is-disabled"
+                    title="{% if has_detailed_draft %}المسودة موجودة — استخدم استبدال{% else %}حدّد السنة والشهر{% endif %}"
+                    aria-label="بناء تفصيلي">
+                <i data-lucide="git-branch" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">بناء</span>
+        </div>
+
+        {% if has_detailed_draft %}
+        <div class="hr-payroll-icon-action">
+            {% if can_build %}
+            <button type="submit" form="payrollCreateForm"
+                    formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                    name="build_kind" value="detailed"
+                    class="hr-payroll-icon-btn hr-payroll-icon-btn--rebuild"
+                    title="استبدال المسودة التفصيلية"
+                    aria-label="استبدال المسودة التفصيلية"
+                    onclick="return confirm('استبدال المسودة التفصيلية؟');">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--rebuild is-disabled"
+                    title="استبدال المسودة" aria-label="استبدال المسودة">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">استبدال</span>
+        </div>
+        {% endif %}
+
+        {% if show_table and has_draft_runs and financial_audit %}
+        <span class="hr-payroll-icon-actions__sep" aria-hidden="true"></span>
+        <div class="hr-payroll-icon-action">
+            {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True audit_icon_only=True %}
+            <span class="hr-payroll-icon-action__label">تحقق مالي</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <p class="hr-payroll-pipeline__hint">الفرع الجديد يتحمّل الراتب كاملاً للمنقولين.</p>
+</div>

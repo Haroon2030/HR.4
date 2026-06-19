@@ -1,88 +1,130 @@
-{# خط سير المسير — أيقونات إجراءات بسيطة #}
-<div class="hr-payroll-pipeline hr-payroll-pipeline--icons" aria-label="إجراءات المسير">
-    <div class="hr-payroll-icon-actions" role="toolbar" aria-label="إجراءات المسير">
-        <button type="submit" form="payrollFilterForm"
-                class="hr-payroll-icon-btn hr-payroll-icon-btn--view"
-                title="عرض المسودة المحفوظة"
-                aria-label="عرض المسودة المحفوظة">
-            <i data-lucide="eye" class="w-4 h-4"></i>
-        </button>
-
-        {% if can_build %}
-        <button type="submit" form="payrollCreateForm"
-                formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
-                name="build_kind" value="standard"
-                class="hr-payroll-icon-btn hr-payroll-icon-btn--build"
-                title="{% if has_draft_runs %}استبدال المسودة{% else %}بناء المسير{% endif %}"
-                aria-label="{% if has_draft_runs %}استبدال المسودة{% else %}بناء المسير{% endif %}"
-                {% if has_draft_runs %}onclick="return confirm('سيتم استبدال المسودة الحالية. متابعة؟');"{% endif %}>
-            <i data-lucide="{% if has_draft_runs %}refresh-cw{% else %}zap{% endif %}" class="w-4 h-4"></i>
-        </button>
-        {% else %}
-        <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--build is-disabled"
-                title="بناء المسير" aria-label="بناء المسير">
-            <i data-lucide="zap" class="w-4 h-4"></i>
-        </button>
-        {% endif %}
-
-        {% if can_build %}
-        <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="hr-payroll-icon-actions__form"
-              onsubmit="return confirm('تحديث المسودة بأحدث البيانات؟');">
-            {% csrf_token %}
-            {% include "pages/payroll/_payroll_filter_hidden.html" %}
-            <button type="submit" name="payroll_action" value="save"
-                    class="hr-payroll-icon-btn hr-payroll-icon-btn--save"
-                    title="حفظ المسودة"
-                    aria-label="حفظ المسودة"
-                    {% if not show_table or not has_payroll_lines %}disabled{% endif %}>
-                <i data-lucide="save" class="w-4 h-4"></i>
-            </button>
-        </form>
-        {% else %}
-        <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--save is-disabled"
-                title="حفظ المسودة" aria-label="حفظ المسودة">
-            <i data-lucide="save" class="w-4 h-4"></i>
-        </button>
-        {% endif %}
-
-        {% if can_build %}
-        <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="hr-payroll-icon-actions__form"
-              onsubmit="return confirm('الإغلاق النهائي — لا رجوع. متابعة؟');">
-            {% csrf_token %}
-            {% include "pages/payroll/_payroll_filter_hidden.html" %}
-            <button type="submit" name="payroll_action" value="lock"
-                    class="hr-payroll-icon-btn hr-payroll-icon-btn--lock"
-                    title="إغلاق نهائي"
-                    aria-label="إغلاق نهائي"
-                    {% if not show_table or not has_draft_runs or financial_audit and not financial_audit.ready_to_lock %}disabled{% endif %}>
-                <i data-lucide="lock" class="w-4 h-4"></i>
-            </button>
-        </form>
-        {% else %}
-        <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--lock is-disabled"
-                title="إغلاق نهائي" aria-label="إغلاق نهائي">
-            <i data-lucide="lock" class="w-4 h-4"></i>
-        </button>
-        {% endif %}
-
-        <span class="hr-payroll-icon-actions__sep" aria-hidden="true"></span>
-
-        {% if show_table and has_draft_runs and financial_audit %}
-        {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True audit_icon_only=True %}
-        {% endif %}
-
-        {% if can_export and show_table %}
-        <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
-           class="hr-payroll-icon-btn hr-payroll-icon-btn--export"
-           title="تصدير Excel"
-           aria-label="تصدير Excel">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-        </a>
-        {% else %}
-        <span class="hr-payroll-icon-btn hr-payroll-icon-btn--export is-disabled" aria-disabled="true"
-              title="تصدير Excel">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-        </span>
-        {% endif %}
-    </div>
-</div>
+{# خط سير المسير — أيقونات إجراءات بسيطة #}
+<div class="hr-payroll-pipeline hr-payroll-pipeline--icons" aria-label="إجراءات المسير">
+    <div class="hr-payroll-icon-actions" role="toolbar" aria-label="إجراءات المسير">
+        <div class="hr-payroll-icon-action">
+            <button type="submit" form="payrollFilterForm"
+                    class="hr-payroll-icon-btn hr-payroll-icon-btn--view"
+                    title="عرض المسودة المحفوظة"
+                    aria-label="عرض المسودة المحفوظة">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+            <span class="hr-payroll-icon-action__label">عرض</span>
+        </div>
+
+        <div class="hr-payroll-icon-action" id="payrollBuildAction">
+            {% if can_build_new %}
+            <button type="submit" form="payrollCreateForm"
+                    formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                    name="build_kind" value="standard"
+                    class="hr-payroll-icon-btn hr-payroll-icon-btn--build"
+                    id="payrollBuildBtn"
+                    title="بناء المسير"
+                    aria-label="بناء المسير">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+            </button>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--build is-disabled"
+                    id="payrollBuildBtn"
+                    title="{% if has_draft_runs %}المسودة موجودة — استخدم استبدال أو حفظ{% else %}حدّد السنة والشهر{% endif %}"
+                    aria-label="بناء المسير">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">بناء</span>
+        </div>
+
+        {% if has_draft_runs %}
+        <div class="hr-payroll-icon-action">
+            {% if can_build %}
+            <button type="submit" form="payrollCreateForm"
+                    formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                    name="build_kind" value="standard"
+                    class="hr-payroll-icon-btn hr-payroll-icon-btn--rebuild"
+                    title="استبدال المسودة الحالية"
+                    aria-label="استبدال المسودة الحالية"
+                    onclick="return confirm('سيتم استبدال المسودة الحالية. متابعة؟');">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--rebuild is-disabled"
+                    title="استبدال المسودة" aria-label="استبدال المسودة">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">استبدال</span>
+        </div>
+        {% endif %}
+
+        <div class="hr-payroll-icon-action">
+            {% if can_build %}
+            <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="hr-payroll-icon-actions__form"
+                  onsubmit="return confirm('تحديث المسودة بأحدث البيانات؟');">
+                {% csrf_token %}
+                {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                <button type="submit" name="payroll_action" value="save"
+                        class="hr-payroll-icon-btn hr-payroll-icon-btn--save"
+                        title="حفظ المسودة"
+                        aria-label="حفظ المسودة"
+                        {% if not show_table or not has_payroll_lines %}disabled{% endif %}>
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                </button>
+            </form>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--save is-disabled"
+                    title="حفظ المسودة" aria-label="حفظ المسودة">
+                <i data-lucide="save" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">حفظ</span>
+        </div>
+
+        <div class="hr-payroll-icon-action">
+            {% if can_build %}
+            <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="hr-payroll-icon-actions__form"
+                  onsubmit="return confirm('الإغلاق النهائي — لا رجوع. متابعة؟');">
+                {% csrf_token %}
+                {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                <button type="submit" name="payroll_action" value="lock"
+                        class="hr-payroll-icon-btn hr-payroll-icon-btn--lock"
+                        title="إغلاق نهائي"
+                        aria-label="إغلاق نهائي"
+                        {% if not show_table or not has_draft_runs or financial_audit and not financial_audit.ready_to_lock %}disabled{% endif %}>
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                </button>
+            </form>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-icon-btn hr-payroll-icon-btn--lock is-disabled"
+                    title="إغلاق نهائي" aria-label="إغلاق نهائي">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">إغلاق</span>
+        </div>
+
+        <span class="hr-payroll-icon-actions__sep" aria-hidden="true"></span>
+
+        {% if show_table and has_draft_runs and financial_audit %}
+        <div class="hr-payroll-icon-action">
+            {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True audit_icon_only=True %}
+            <span class="hr-payroll-icon-action__label">تحقق مالي</span>
+        </div>
+        {% endif %}
+
+        <div class="hr-payroll-icon-action">
+            {% if can_export and show_table %}
+            <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
+               class="hr-payroll-icon-btn hr-payroll-icon-btn--export"
+               title="تصدير Excel"
+               aria-label="تصدير Excel">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            </a>
+            {% else %}
+            <span class="hr-payroll-icon-btn hr-payroll-icon-btn--export is-disabled" aria-disabled="true"
+                  title="تصدير Excel">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            </span>
+            {% endif %}
+            <span class="hr-payroll-icon-action__label">تصدير</span>
+        </div>
+    </div>
+</div>

@@ -361,11 +361,11 @@
             activeTab: '{% firstof default_employee_tab "main" %}',
             sponsorshipId: '{% if employee.sponsorship_id %}{{ employee.sponsorship_id }}{% endif %}',
             saudiIds: [{% for id in saudi_nationality_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-            salaryBasic: parseFloat('{{ employee.basic_salary|input_decimal|default:"0" }}') || 0,
-            salaryHousing: parseFloat('{{ employee.housing_allowance|input_decimal|default:"0" }}') || 0,
-            salaryTransport: parseFloat('{{ employee.transport_allowance|input_decimal|default:"0" }}') || 0,
-            salaryOther: parseFloat('{{ employee.other_allowance|input_decimal|default:"0" }}') || 0,
-            salaryMeal: parseFloat('{{ employee.meal_allowance|input_decimal|default:"0" }}') || 0,
+            salaryBasic: {% if is_create %}''{% else %}'{{ employee.basic_salary|input_decimal }}'{% endif %},
+            salaryHousing: {% if is_create %}''{% else %}'{{ employee.housing_allowance|input_decimal }}'{% endif %},
+            salaryTransport: {% if is_create %}''{% else %}'{{ employee.transport_allowance|input_decimal }}'{% endif %},
+            salaryOther: {% if is_create %}''{% else %}'{{ employee.other_allowance|input_decimal }}'{% endif %},
+            salaryMeal: {% if is_create %}''{% else %}'{{ employee.meal_allowance|input_decimal }}'{% endif %},
             salaryInsuranceRate: {% if is_create %}''{% elif employee.insurance_deduction_rate %}'{{ employee.insurance_deduction_rate|input_decimal }}'{% else %}''{% endif %},
             salaryNum(v) {
                 const n = parseFloat(v);

@@ -52,7 +52,22 @@ def apply_hr_empty_input_defaults(form) -> None:
         choices = [(value, label) for value, label in field.choices if value != '']
         field.choices = [_EMPTY_SELECT, *choices]
 
-    if is_post or not incomplete:
+    if is_post:
+        return
+
+    for name in _ZERO_DECIMAL_FIELDS:
+        if name not in form.fields:
+            continue
+        val = form.initial.get(name)
+        if val in (None, '', 0, Decimal('0')):
+            form.initial[name] = ''
+            continue
+        if instance is not None:
+            inst_val = getattr(instance, name, None)
+            if inst_val in (None, 0, Decimal('0')):
+                form.initial[name] = ''
+
+    if not incomplete:
         return
 
     model = getattr(getattr(form, 'Meta', None), 'model', None)
@@ -65,10 +80,3 @@ def apply_hr_empty_input_defaults(form) -> None:
     if health_field and model and hasattr(model, 'HealthCardStatus'):
         if getattr(instance, 'health_card_status', None) == model.HealthCardStatus.NOT_AVAILABLE:
             form.initial['health_card_status'] = ''
-
-    for name in _ZERO_DECIMAL_FIELDS:
-        if name not in form.fields:
-            continue
-        val = getattr(instance, name, None)
-        if val is None or val == 0 or val == Decimal('0'):
-            form.initial[name] = ''

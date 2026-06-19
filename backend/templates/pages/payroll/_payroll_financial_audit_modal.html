@@ -21,7 +21,8 @@
 <template x-teleport="body">
     <div x-show="auditModalOpen"
          x-cloak
-         class="hr-glass-modal-overlay hr-payroll-audit-modal-overlay fixed inset-0 z-[10040] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
+         dir="rtl"
+         class="hr-glass-modal-overlay hr-payroll-audit-modal-overlay"
          @click.self="closeAuditModal()"
          role="dialog"
          aria-modal="true"

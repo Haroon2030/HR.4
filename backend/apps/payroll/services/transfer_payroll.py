@@ -327,7 +327,7 @@ def build_payroll_detailed_run(
         salary_mode=salary_mode,
         keep_pk=run.pk,
     )
-    PayrollAllocationLine.all_objects.filter(run=run).delete()
+    PayrollAllocationLine.all_objects.filter(run=run).hard_delete()
 
     transfers = transfers_in_period(company.id, year, month)
     period_start, period_end = calendar_period_bounds(year, month)

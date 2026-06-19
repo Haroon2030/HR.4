@@ -119,6 +119,38 @@ def input_decimal(value):
     return format_decimal_for_number_input(value)
 
 
+def _format_amount_value(value, max_decimals=2):
+    """100 بدل 100.00 — مع فاصلة آلاف ونقطة عشرية."""
+    if value is None or value == '':
+        return None
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+
+    max_decimals = max(0, min(int(max_decimals or 2), 6))
+    if max_decimals:
+        quantizer = Decimal('0.' + '0' * max_decimals)
+        amount = amount.quantize(quantizer)
+
+    if amount == amount.to_integral_value():
+        return f'{int(amount):,}'
+
+    formatted = f'{float(amount):,.{max_decimals}f}'
+    whole, fraction = formatted.split('.', 1)
+    fraction = fraction.rstrip('0')
+    return whole if not fraction else f'{whole}.{fraction}'
+
+
+@register.filter
+def format_amount(value, max_decimals=2):
+    """
+    تنسيق مبلغ/رقم للعرض: 100 بدل 100.00 أو 100,00 — يحافظ على الكسور عند الحاجة.
+    """
+    formatted = _format_amount_value(value, max_decimals)
+    return formatted if formatted is not None else '—'
+
+
 @register.filter
 def format_sar(value, style='neutral'):
     """

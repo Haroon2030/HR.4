@@ -26,26 +26,26 @@
         <div class="hr-salary-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1.5">
                 <label class="block text-xs font-bold text-slate-600 m-0">الراتب الأساسي</label>
-                <input type="number" step="0.01" name="basic_salary" x-model.number="salaryBasic" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                <input type="number" step="0.01" name="basic_salary" x-model="salaryBasic" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
             <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1.5">
                 <label class="block text-xs font-bold text-slate-600 m-0">بدل السكن</label>
-                <input type="number" step="0.01" name="housing_allowance" x-model.number="salaryHousing" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                <input type="number" step="0.01" name="housing_allowance" x-model="salaryHousing" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
             <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1.5">
                 <label class="block text-xs font-bold text-slate-600 m-0">بدل النقل</label>
-                <input type="number" step="0.01" name="transport_allowance" x-model.number="salaryTransport" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                <input type="number" step="0.01" name="transport_allowance" x-model="salaryTransport" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
             <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1.5">
                 <label class="block text-xs font-bold text-slate-600 m-0">بدل إضافي</label>
-                <input type="number" step="0.01" name="other_allowance" x-model.number="salaryOther" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                <input type="number" step="0.01" name="other_allowance" x-model="salaryOther" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
             <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1.5">
                 <label class="block text-xs font-bold text-slate-600 m-0">
                     بدل التغذية
                     <span class="block text-[10px] font-normal text-slate-400 mt-0.5">لا يُحتسب ضمن مكافأة نهاية الخدمة</span>
                 </label>
-                <input type="number" step="0.01" name="meal_allowance" x-model.number="salaryMeal" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
+                <input type="number" step="0.01" name="meal_allowance" x-model="salaryMeal" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono" dir="ltr" title="يُحسب في الراتب والمسير ولا يدخل في مكافأة نهاية الخدمة"{% if not can_edit_salary %} readonly tabindex="-1"{% endif %}>
             </div>
             <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1.5">
                 <label class="block text-xs font-bold text-slate-600 m-0">
@@ -76,9 +76,9 @@
                        class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white font-mono"
                        dir="ltr">
                 {% else %}
-                <input type="hidden" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate|input_decimal|default:'0' }}">
+                <input type="hidden" name="insurance_deduction_rate" value="{{ employee.insurance_deduction_rate|input_decimal }}">
                 <div class="w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm bg-slate-50 font-mono text-slate-700" dir="ltr">
-                    {{ employee.insurance_deduction_rate|floatformat:2|default:"—" }}{% if employee.insurance_deduction_rate %}%{% endif %}
+                    {{ employee.insurance_deduction_rate|format_amount|default:"—" }}{% if employee.insurance_deduction_rate %}%{% endif %}
                 </div>
                 {% endif %}
             </div>

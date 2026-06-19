@@ -9,12 +9,14 @@ from django import forms
 
 
 def format_decimal_for_number_input(value) -> str:
-    """قيمة مناسبة لـ input type=number — دائماً بنقطة عشرية."""
+    """قيمة مناسبة لـ input type=number — دائماً بنقطة عشرية؛ الصفر يُعرض فارغاً."""
     if value is None or value == '':
         return ''
     try:
         amount = Decimal(str(value).replace(',', '.'))
     except (InvalidOperation, ValueError, TypeError):
+        return ''
+    if amount == 0:
         return ''
     return format(amount, 'f')
 

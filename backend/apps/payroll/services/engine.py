@@ -370,7 +370,8 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
     PayrollRun.acquire_row_lock(run.pk)
 
     # حذف الأسطر القديمة حذفاً فعلياً (hard delete) لتجنب تعارض القيد الفريد
-    PayrollLine.all_objects.filter(run=run).delete()
+    # (run_id, employee_id). الحذف الوهمي يُبقي الصفوف فيقع IntegrityError عند bulk_create.
+    PayrollLine.all_objects.filter(run=run).hard_delete()
 
     # ── حدود الشهر: فترة تقويمية للتصفية، 30 يوماً لقسمة الراتب ──
     period_start, period_end = calendar_period_bounds(year, month)
@@ -507,7 +508,8 @@ def build_consolidated_payroll_run(
         raise ValueError('المسير مُغلق ولا يمكن إعادة بنائه. أعد فتحه أولاً.')
 
     PayrollRun.acquire_row_lock(run.pk)
-    PayrollLine.all_objects.filter(run=run).delete()
+    # حذف فعلي (hard delete) لتفادي تعارض القيد الفريد (run_id, employee_id)
+    PayrollLine.all_objects.filter(run=run).hard_delete()
 
     period_start, period_end = calendar_period_bounds(year, month)
 

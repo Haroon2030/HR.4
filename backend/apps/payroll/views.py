@@ -509,12 +509,28 @@ def _infer_payroll_filters_from_drafts(filters: dict, user, scope: PayrollBranch
     return filters
 
 
+def _payroll_filters_explicitly_submitted(request) -> bool:
+    if not request or request.method != 'GET':
+        return False
+    return (request.GET.get('payroll_filters') or '').strip() == '1'
+
+
 def _merge_stored_payroll_filters(
     filters: dict,
     stored: dict,
     *,
     restore_payroll_view: bool = True,
+    request=None,
 ) -> dict:
+    if request and _payroll_filters_explicitly_submitted(request):
+        if (
+            restore_payroll_view
+            and stored.get('payroll_view')
+            and not (request.GET.get('payroll_view') or '').strip()
+        ):
+            filters['payroll_view'] = stored['payroll_view']
+        return filters
+
     if 'branch_ids' in stored and not filters.get('branch_ids'):
         stored_branches = stored['branch_ids']
         filters['branch_ids'] = list(stored_branches) if stored_branches else None
@@ -528,9 +544,11 @@ def _merge_stored_payroll_filters(
         filters['sponsorship_ids'] = stored['sponsorship_ids']
     if filters.get('salary_mode') == PayrollRun.SalaryMode.CASH:
         filters['sponsorship_ids'] = None
-    if stored.get('year'):
+    has_explicit_year = bool((request.GET.get('year') or '').strip()) if request else False
+    has_explicit_month = bool((request.GET.get('month') or '').strip()) if request else False
+    if stored.get('year') and not has_explicit_year:
         filters['year'] = stored['year']
-    if stored.get('month'):
+    if stored.get('month') and not has_explicit_month:
         filters['month'] = stored['month']
     if restore_payroll_view and stored.get('payroll_view'):
         filters['payroll_view'] = stored['payroll_view']
@@ -570,6 +588,7 @@ def _restore_payroll_list_filters(request, filters: dict, user, scope: PayrollBr
             filters,
             stored,
             restore_payroll_view=restore_payroll_view,
+            request=request,
         )
 
     filters = _infer_payroll_filters_from_drafts(filters, user, scope)
@@ -1210,6 +1229,11 @@ def list_payroll_runs(request):
         'runs_count': runs_count,
         'show_table': filters['ready'],
         'can_build': user_can_manage_payroll(request.user),
+        'can_build_new': (
+            user_can_manage_payroll(request.user)
+            and bool(filters.get('year') and filters.get('month'))
+            and not has_draft_runs
+        ),
         'has_draft_runs': has_draft_runs,
         'has_payroll_lines': has_payroll_lines,
         'can_export': bool(
