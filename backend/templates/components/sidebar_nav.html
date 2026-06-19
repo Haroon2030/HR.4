@@ -6,9 +6,8 @@
 {% include "components/nav_section.html" with label="الرئيسية" always_show=always_show %}
 {% include "components/nav_item.html" with url="web:dashboard" icon="layout-grid" label="لوحة التحكم" force_show_label=always_show %}
 
-{% include "components/nav_section.html" with label="الموارد البشرية" always_show=always_show %}
-
 {% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
+{% include "components/nav_section.html" with label="الموارد البشرية" always_show=always_show %}
 <div class="hr-nav-dropdown" {% if always_show %}:class="{ 'is-open': employeesOpen }"{% else %}:class="{ 'is-open': employeesOpen && sidebarOpen }"{% endif %}>
     <button type="button" @click="employeesOpen = !employeesOpen"
         class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'document_expiry_dashboard' or request.resolver_match.url_name == 'create_employee_full' or request.resolver_match.url_name == 'edit_employee' or request.resolver_match.url_name == 'view_employee' %}is-active{% endif %}">
@@ -36,6 +35,7 @@
 {% endif %}
 
 {% if user.is_superuser or user|has_permission:'payroll.view' or user|has_permission:'payroll.manage' or user|has_permission:'payroll.process' %}
+{% include "components/nav_section.html" with label="المالية" always_show=always_show %}
 {% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="banknote" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
 

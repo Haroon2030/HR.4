@@ -433,7 +433,282 @@
         }
     }
 
-    /* ── شاشة المسير — تصميم موحّد ── */
+    /* ── Hero + command layout + pipeline ── */
+    .hr-payroll-hero {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.2rem 1.35rem;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.07) 0%, rgba(255, 255, 255, 0.95) 52%, #fff 100%);
+        border: 1px solid rgba(37, 99, 235, 0.12);
+    }
+
+    .hr-payroll-hero__top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .hr-payroll-hero__brand {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        min-width: 0;
+        flex: 1 1 16rem;
+    }
+
+    .hr-payroll-hero__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.85rem;
+        background: linear-gradient(145deg, #2563eb, #1d4ed8);
+        color: #fff;
+        box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+    }
+
+    .hr-payroll-hero__icon i,
+    .hr-payroll-hero__icon svg {
+        color: #fff !important;
+        stroke: #fff !important;
+    }
+
+    .hr-payroll-hero__title {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 800 !important;
+        color: #0f172a;
+        line-height: 1.25;
+    }
+
+    .hr-payroll-hero__subtitle {
+        margin: 0.35rem 0 0;
+        font-size: 0.8125rem;
+        line-height: 1.55;
+        color: #64748b;
+        max-width: 38rem;
+    }
+
+    .hr-payroll-hero__period {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.875rem;
+        font-weight: 800 !important;
+        color: #1e3a8a;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 0.65rem;
+        flex-shrink: 0;
+    }
+
+    .hr-payroll-hero__stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.55rem;
+    }
+
+    @media (min-width: 640px) {
+        .hr-payroll-hero__stats {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    .hr-payroll-hero__stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.12rem;
+        padding: 0.55rem 0.65rem;
+        border-radius: 0.65rem;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        min-width: 0;
+    }
+
+    .hr-payroll-hero__stat--accent {
+        border-color: #a7f3d0;
+        background: #f0fdf4;
+    }
+
+    .hr-payroll-hero__stat--net {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+    }
+
+    .hr-payroll-hero__stat-label {
+        font-size: 0.6875rem;
+        font-weight: 600 !important;
+        color: #64748b;
+    }
+
+    .hr-payroll-hero__stat-value {
+        font-size: 0.8125rem;
+        font-weight: 700 !important;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .hr-payroll-hero__stat-value.is-muted {
+        color: #94a3b8;
+        font-weight: 600 !important;
+        font-size: 0.75rem;
+        white-space: normal;
+    }
+
+    .hr-payroll-hero__stat--net .hr-payroll-hero__stat-value {
+        color: #1d4ed8;
+    }
+
+    .hr-payroll-tabs {
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+
+    .hr-payroll-workspace {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .hr-payroll-command-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    @media (min-width: 1100px) {
+        .hr-payroll-command-layout {
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+            align-items: stretch;
+        }
+    }
+
+    .hr-payroll-panel--command,
+    .hr-payroll-panel--pipeline {
+        height: 100%;
+    }
+
+    .hr-payroll-panel--command .hr-payroll-panel__head {
+        background: linear-gradient(180deg, #f8fafc 0%, #fafafa 100%);
+    }
+
+    .hr-payroll-panel--pipeline .hr-payroll-panel__head {
+        background: linear-gradient(180deg, #eff6ff 0%, #fafafa 100%);
+    }
+
+    .hr-payroll-panel__head--compact {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .hr-payroll-panel__body--compact {
+        padding: 0.75rem 0.85rem 0.85rem;
+    }
+
+    .hr-payroll-panel__desc {
+        margin: 0.2rem 0 0;
+        font-size: 0.6875rem;
+        line-height: 1.45;
+        color: #64748b;
+    }
+
+    .hr-payroll-pipeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .hr-payroll-pipeline__track {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem 0.25rem;
+    }
+
+    .hr-payroll-pipeline__step {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        position: relative;
+    }
+
+    .hr-payroll-pipeline__step:not(:last-child)::after {
+        content: "→";
+        margin-inline: 0.15rem 0.35rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #94a3b8;
+        opacity: 0.85;
+    }
+
+    .hr-payroll-pipeline__num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 999px;
+        font-size: 0.625rem;
+        font-weight: 800;
+        color: #475569;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    .hr-payroll-pipeline__extras {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45rem;
+        padding-top: 0.35rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    .hr-payroll-pipeline__hint {
+        margin: 0;
+        font-size: 0.6875rem;
+        line-height: 1.45;
+        color: #64748b;
+    }
+
+    .hr-payroll-pipeline--detailed .hr-payroll-pipeline__track {
+        max-width: 28rem;
+    }
+
+    .hr-payroll-pipeline .hr-payroll-action-btn {
+        min-width: 5.5rem;
+    }
+
+    @media (max-width: 639px) {
+        .hr-payroll-pipeline__track {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .hr-payroll-pipeline__step {
+            width: 100%;
+        }
+
+        .hr-payroll-pipeline__step:not(:last-child)::after {
+            display: none;
+        }
+
+        .hr-payroll-pipeline__step .hr-payroll-action-btn {
+            flex: 1;
+        }
+    }
+
     .hr-payroll-page__period-badge {
         display: inline-flex;
         align-items: center;
@@ -890,7 +1165,27 @@
     }
 
     .hr-payroll-runs-datatable__th-actions {
-        width: 5.5rem;
+        width: auto;
+        min-width: 10.5rem;
+    }
+
+    .hr-payroll-runs-datatable__cell-actions {
+        white-space: nowrap;
+    }
+
+    .hr-payroll-run-row-end {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
+        gap: 0.45rem;
+        max-width: 100%;
+    }
+
+    .hr-payroll-run-row-end .hr-payroll-row-actions,
+    .hr-payroll-run-row-end > .hr-tbl-actions,
+    .hr-payroll-runs-datatable__cell-actions .hr-tbl-actions {
+        flex-wrap: nowrap;
     }
 
     .hr-payroll-runs-datatable__table tbody td {
@@ -1170,6 +1465,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        flex-wrap: nowrap;
         gap: 0.25rem;
     }
 

@@ -6,7 +6,7 @@ Usage: include "pages/employment_requests/_field.html" with field=form.field_nam
 {% if field %}
 <div class="hr-form-field">
     <label class="block text-xs font-bold text-slate-800" for="{{ field.id_for_label }}">
-        {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+        {{ field.label }}{% if field.field.required %} <span class="hr-required-mark text-red-500">*</span>{% endif %}
     </label>
     {{ field }}
     {% for err in field.errors %}

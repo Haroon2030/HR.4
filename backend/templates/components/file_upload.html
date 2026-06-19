@@ -48,7 +48,7 @@
      }">
     <label class="block text-[11px] font-bold text-slate-600 mb-0.5 flex items-center gap-1">
         <i data-lucide="{{ icon|default:'paperclip' }}" class="w-3.5 h-3.5"></i>
-        {{ label|default:"مرفق" }}{% if required %} <span class="text-red-500">*</span>{% endif %}
+        {{ label|default:"مرفق" }}{% if required %} <span class="hr-required-mark text-red-500">*</span>{% endif %}
     </label>
 
     <div class="flex items-center gap-2">

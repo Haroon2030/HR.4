@@ -6,7 +6,7 @@ Usage: include "pages/employment_requests/_file_field.html" with field=form.fiel
 <div class="space-y-1 border border-slate-200 rounded-lg p-3">
     <label class="block text-xs font-bold text-slate-800" for="{{ field.id_for_label }}">
         <i data-lucide="paperclip" class="w-3 h-3 inline-block"></i>
-        {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+        {{ field.label }}{% if field.field.required %} <span class="hr-required-mark text-red-500">*</span>{% endif %}
     </label>
     {% if field.value %}
         <div class="flex items-center gap-2 text-xs">

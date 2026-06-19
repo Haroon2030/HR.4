@@ -1,167 +1,81 @@
 {% extends "base.html" %}
 
-
-
 {% block title %}تقرير العمليات المجدول{% endblock %}
-
 {% block page_title %}تقرير العمليات المجدول{% endblock %}
 
-
-
 {% block content %}
+<div class="hr-ops-report max-w-5xl mx-auto space-y-4">
 
-<div class="max-w-3xl mx-auto space-y-4">
-
-    <div class="flex flex-wrap items-center justify-between gap-3">
-
-        <div>
-
-            <h1 class="text-2xl font-bold text-slate-900">تقرير العمليات المجدول</h1>
-
-            <p class="text-sm text-slate-500 mt-1">
-
-                إرسال PDF يومي مخصّص لكل مدير — حسب إدارة الموظف في تهيئة الإدارات.
-
-            </p>
-
+    <header class="hr-ops-report__hero hr-glass-panel">
+        <div class="flex flex-wrap items-start justify-between gap-3 w-full">
+            <div class="hr-ops-report__hero-main">
+                <span class="hr-ops-report__hero-icon" aria-hidden="true">
+                    <i data-lucide="mail-check" class="w-5 h-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h1 class="hr-ops-report__title">تقرير العمليات المجدول</h1>
+                    <p class="hr-ops-report__subtitle">
+                        إرسال PDF يومي مخصّص لكل مدير — حسب إدارة الموظف في تهيئة الإدارات.
+                    </p>
+                </div>
+            </div>
+            {% url 'web:list_branches' as branches_url %}
+            {% include 'components/glass_back_link.html' with back_url=branches_url show_label=True label='تهيئة النظام' aria_label='رجوع لتهيئة النظام' extra_class='shrink-0' %}
         </div>
 
-        {% url 'web:list_branches' as branches_url %}
+        <div class="hr-ops-report__stats" aria-label="ملخص الإعدادات">
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">الإرسال التلقائي</span>
+                <span class="hr-ops-report__stat-value {% if schedule_status.is_enabled %}is-on{% else %}is-off{% endif %}">
+                    {% if schedule_status.is_enabled %}مفعّل{% else %}متوقف{% endif %}
+                </span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">وقت الإرسال</span>
+                <span class="hr-ops-report__stat-value" dir="ltr">{{ schedule_status.send_time_label }}</span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">المستلمون</span>
+                <span class="hr-ops-report__stat-value">{{ schedule_status.recipient_count }}</span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">التوقيت</span>
+                <span class="hr-ops-report__stat-value" dir="ltr">{{ schedule_status.timezone }}</span>
+            </div>
+        </div>
+    </header>
 
-        {% include 'components/glass_back_link.html' with back_url=branches_url show_label=True label='تهيئة النظام' aria_label='رجوع لتهيئة النظام' %}
+    <form method="post" id="operations-report-form" class="space-y-4" autocomplete="off">
+        {% csrf_token %}
 
-    </div>
+        <div class="hr-ops-report__layout">
+            <section class="hr-ops-report__section hr-glass-panel">
+                <div class="hr-ops-report__section-head">
+                    <span class="hr-ops-report__section-icon" aria-hidden="true">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="hr-ops-report__section-title">مستلمو التقرير</h2>
+                        <p class="hr-ops-report__section-desc">
+                            اربط بريداً لكل دور ثم احفظ الإعدادات. زر الربط يثبت البريد قبل الحفظ الكامل.
+                        </p>
+                    </div>
+                </div>
 
-
-
-    {% if not email_delivery.smtp_ready %}
-
-    <div class="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-
-        <p class="font-semibold mb-1">البريد غير جاهز للإرسال الفعلي</p>
-
-        <p class="mb-0">
-
-            اضبط <code dir="ltr">EMAIL_HOST</code>،
-
-            <code dir="ltr">EMAIL_HOST_USER</code>،
-
-            <code dir="ltr">EMAIL_HOST_PASSWORD</code>،
-
-            و<code dir="ltr">DEFAULT_FROM_EMAIL</code>
-
-            في Environment بـ Dokploy ثم أعد نشر التطبيق.
-
-            بدون SMTP ستظهر «تم الإرسال» محلياً لكن لا يصل بريد حقيقي.
-
-        </p>
-
-    </div>
-
-    {% elif email_delivery.from_warning %}
-
-    <div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-
-        <p class="font-semibold mb-1">تحذير ضبط البريد</p>
-
-        <p class="mb-0">{{ email_delivery.from_warning }} سيُصحَّح المرسل تلقائياً إلى: <code dir="ltr">{{ email_delivery.effective_from }}</code></p>
-
-    </div>
-
-    {% else %}
-
-    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-
-        <p class="font-semibold mb-1">SMTP جاهز</p>
-
-        <p class="mb-0">المرسل: <code dir="ltr">{{ email_delivery.effective_from }}</code>. إن لم يصل البريد: راجع Spam في Gmail، ومجلد Sent في Hostinger، وسجل SPF/DKIM للنطاق.</p>
-
-    </div>
-
-    {% endif %}
-
-
-
-    <div class="rounded-xl border px-4 py-3 text-sm {% if schedule_status.auto_ready %}border-emerald-200 bg-emerald-50 text-emerald-900{% else %}border-amber-200 bg-amber-50 text-amber-900{% endif %}">
-
-        <p class="font-semibold mb-1">حالة الإرسال المجدول</p>
-
-        <ul class="mb-0 space-y-1 list-none ps-0">
-
-            <li>الوقت الحالي للسيرفر: <strong dir="ltr">{{ schedule_status.server_now|date:"Y-m-d H:i:s" }} ({{ schedule_status.timezone }})</strong></li>
-
-            <li>وقت الإرسال المحفوظ: <strong dir="ltr">{{ schedule_status.send_time_label }}</strong></li>
-
-            <li>الإرسال التلقائي: {% if schedule_status.is_enabled %}<strong>مفعّل</strong>{% else %}<strong class="text-rose-700">غير مفعّل</strong>{% endif %}</li>
-
-            <li>المستلمون المحفوظون: <strong>{{ schedule_status.recipient_count }}</strong></li>
-
-            {% if schedule_status.last_sent_at %}
-
-            <li>آخر إرسال تلقائي: <strong dir="ltr">{{ schedule_status.last_sent_at|date:"Y-m-d H:i:s" }}</strong></li>
-
-            {% endif %}
-
-            {% if schedule_status.is_enabled and schedule_status.next_send_at %}
-
-            <li>الإرسال التلقائي القادم: <strong dir="ltr">{{ schedule_status.next_send_at|date:"Y-m-d H:i:s" }}</strong></li>
-
-            {% endif %}
-
-            {% for blocker in schedule_status.blockers %}
-
-            <li class="text-rose-800">{{ blocker }}</li>
-
-            {% endfor %}
-
-        </ul>
-
-        <p class="text-xs mt-2 mb-0 opacity-90">«إرسال تجربة» فوري ولا يفعّل الجدولة — فعّل المربع ثم «حفظ الإعدادات». إن لم يُرسل تقرير دور، يُرسل تقرير شامل احتياطياً عند وجود بيانات.</p>
-
-    </div>
-
-
-
-    <div class="hr-glass-panel rounded-xl p-5 space-y-4">
-
-        <form method="post" id="operations-report-form" class="space-y-4" autocomplete="off">
-
-            {% csrf_token %}
-
-
-
-            <div>
-
-                <p class="text-sm font-semibold text-slate-700 mb-2">مستلمو التقرير</p>
-
-                <div class="hr-recipients-table-shell overflow-x-auto rounded-lg border border-slate-200 bg-white/60">
-
+                <div class="hr-ops-report__recipients-shell hr-recipients-table-shell overflow-x-auto">
                     <table class="hr-recipients-table w-full text-sm">
-
                         <thead>
-
                             <tr>
-
                                 <th scope="col" class="hr-recipients-table__role text-right px-4 py-2.5 font-semibold text-slate-700 w-[38%]">المسؤول</th>
-
                                 <th scope="col" class="hr-recipients-table__email text-right px-4 py-2.5 font-semibold text-slate-700">البريد الإلكتروني</th>
-
                             </tr>
-
                         </thead>
-
                         <tbody>
-
                             {% for row in recipient_rows %}
-
                             <tr data-recipient-row="{{ row.key }}">
-
                                 <td class="hr-recipients-table__role px-4 py-2.5 font-medium text-slate-800 align-middle whitespace-nowrap">{{ row.label }}</td>
-
                                 <td class="hr-recipients-table__email px-4 py-2 align-middle">
-
                                     <div class="hr-recipient-email-row flex items-center gap-2">
-
                                         <button type="button"
                                                 class="hr-recipient-link-btn{% if row.saved_email %} is-linked{% endif %}"
                                                 data-role="{{ row.key }}"
@@ -172,364 +86,251 @@
                                                class="hr-recipient-link-btn__icon"
                                                aria-hidden="true"></i>
                                         </button>
-
                                         <div class="flex-1 min-w-0">
-
                                             {{ row.field }}
-
                                             {% if row.field.errors %}
-
                                             <p class="text-xs text-rose-600 mt-1">{{ row.field.errors.0 }}</p>
-
                                             {% endif %}
-
                                         </div>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
                             {% endfor %}
-
                         </tbody>
-
                     </table>
-
                 </div>
+            </section>
 
+            <div class="hr-ops-report__aside-stack">
+                <section class="hr-ops-report__section hr-glass-panel">
+                    <div class="hr-ops-report__section-head">
+                        <span class="hr-ops-report__section-icon" aria-hidden="true">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="hr-ops-report__section-title">الجدولة</h2>
+                            <p class="hr-ops-report__section-desc">حدّد وقت الإرسال اليومي وفعّل التشغيل التلقائي.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="hr-ops-report__switch-card" for="id_is_enabled">
+                            {{ form.is_enabled }}
+                            <span class="hr-ops-report__switch-text">
+                                <span class="hr-ops-report__switch-title">تفعيل الإرسال التلقائي</span>
+                                <span class="hr-ops-report__switch-desc">يرسل التقرير يومياً في الوقت المحدّد.</span>
+                            </span>
+                        </label>
+
+                        <div class="hr-ops-report__field">
+                            <label for="id_send_time" class="hr-ops-report__field-label">وقت الإرسال</label>
+                            {{ form.send_time }}
+                            <p class="hr-ops-report__field-hint">24 ساعة — يجب أن يطابق التوقيت المحلي للسيرفر.</p>
+                            {% if form.send_time.errors %}
+                            <p class="text-xs text-rose-600">{{ form.send_time.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="hr-ops-report__section hr-glass-panel">
+                    <div class="hr-ops-report__section-head">
+                        <span class="hr-ops-report__section-icon" aria-hidden="true">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="hr-ops-report__section-title">محتوى التقرير</h2>
+                            <p class="hr-ops-report__section-desc">اختر أنواع العمليات المُضمَّنة في ملف PDF.</p>
+                        </div>
+                    </div>
+
+                    <div class="hr-ops-report__options">
+                        <label class="hr-ops-report__option">
+                            {{ form.include_pending }}
+                            <span class="hr-ops-report__option-body">
+                                <span class="hr-ops-report__option-title">العمليات المعلّقة</span>
+                                <span class="hr-ops-report__option-desc">طلبات بانتظار الموافقة أو الإجراء.</span>
+                            </span>
+                        </label>
+                        <label class="hr-ops-report__option">
+                            {{ form.include_completed }}
+                            <span class="hr-ops-report__option-body">
+                                <span class="hr-ops-report__option-title">العمليات المُنجزة</span>
+                                <span class="hr-ops-report__option-desc">ما تم اعتماده في يوم التقرير فقط.</span>
+                            </span>
+                        </label>
+                    </div>
+                </section>
             </div>
+        </div>
 
+        {% if form.non_field_errors %}
+        <div class="hr-ops-report__alert hr-ops-report__alert--error" role="alert">
+            {{ form.non_field_errors.0 }}
+        </div>
+        {% endif %}
 
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                <div>
-
-                    <label for="id_send_time" class="block text-sm font-semibold text-slate-700 mb-1">وقت الإرسال</label>
-
-                    {{ form.send_time }}
-
-                    <p class="text-xs text-slate-500 mt-1">24 ساعة — التوقيت: {{ schedule_status.timezone }} (يجب أن يطابق وقتك المحلي بعد ضبط TIME_ZONE).</p>
-
-                    {% if form.send_time.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.send_time.errors.0 }}</p>{% endif %}
-
-                </div>
-
-                <div class="flex items-end pb-1">
-
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
-
-                        {{ form.is_enabled }}
-
-                        <span class="text-sm font-semibold text-slate-700">تفعيل الإرسال التلقائي</span>
-
-                    </label>
-
-                </div>
-
-            </div>
-
-
-
-            <div class="flex flex-wrap gap-4">
-
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-
-                    {{ form.include_pending }}
-
-                    <span class="text-sm text-slate-700">تضمين العمليات المعلّقة</span>
-
-                </label>
-
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-
-                    {{ form.include_completed }}
-
-                    <span class="text-sm text-slate-700">تضمين العمليات المُنجزة (يوم التقرير)</span>
-
-                </label>
-
-            </div>
-
-
-
-            {% if form.non_field_errors %}
-
-            <div class="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-
-                {{ form.non_field_errors.0 }}
-
-            </div>
-
-            {% endif %}
-
-
-
-            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/80">
-
-                {% include "components/hr_btn.html" with label="حفظ الإعدادات" type="submit" name="action" value="save" variant="primary" icon="save" %}
-
-            </div>
-
-        </form>
-
-
-
-        <form method="post" class="flex flex-wrap items-end gap-2 pt-2 border-t border-slate-200/80">
-
-            {% csrf_token %}
-
-            <input type="hidden" name="action" value="test_send">
-
-            {% if not email_delivery.smtp_ready %}
-
-            <p class="w-full text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-0">
-
-                لا يمكن إرسال بريد حقيقي حتى تضبط SMTP — ستظهر رسالة خطأ عند التجربة.
-
+        <div class="hr-ops-report__actions">
+            <p class="hr-ops-report__actions-note">
+                احفظ الإعدادات لتفعيل الجدولة. «إرسال تجربة» في الأسفل للاختبار الفوري دون انتظار الموعد.
             </p>
+            {% include "components/hr_btn.html" with label="حفظ الإعدادات" type="submit" name="action" value="save" variant="primary" icon="save" %}
+        </div>
+    </form>
 
-            {% endif %}
-
-            <div class="flex-1 min-w-[14rem]">
-
-                <label class="block text-xs font-semibold text-slate-600 mb-1">إرسال تجريبي إلى (اختياري)</label>
-
-                <input type="email" name="test_recipient" value=""
-
-                       class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" dir="ltr"
-
-                       placeholder="اتركه فارغاً لإرسال لجميع المستلمين المحفوظين">
-
+    <section class="hr-ops-report__section hr-glass-panel hr-ops-report__test">
+        <div class="hr-ops-report__section-head">
+            <span class="hr-ops-report__section-icon" aria-hidden="true">
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 class="hr-ops-report__section-title">إرسال تجريبي</h2>
+                <p class="hr-ops-report__section-desc">اختبر التقرير فوراً — اترك البريد فارغاً لإرساله لجميع المستلمين المحفوظين.</p>
             </div>
+        </div>
 
+        <form method="post" class="hr-ops-report__test-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="test_send">
+            <div class="hr-ops-report__test-field">
+                <label class="hr-ops-report__field-label" for="test-recipient-email">بريد الاختبار (اختياري)</label>
+                <input type="email"
+                       id="test-recipient-email"
+                       name="test_recipient"
+                       value=""
+                       class="hr-ops-report__test-input"
+                       dir="ltr"
+                       placeholder="example@company.com">
+            </div>
             {% include "components/hr_btn.html" with label="إرسال تجربة الآن" type="submit" variant="glass-sky" icon="refresh-cw" %}
-
         </form>
-
-    </div>
-
+    </section>
 </div>
-
 {% endblock %}
 
-
-
 {% block extra_js %}
-
 <script>
-
 (function () {
-
     const LINK_URL = '{% url "web:operations_report_settings" %}';
 
     function getCsrfToken() {
-
         return document.querySelector('#operations-report-form [name=csrfmiddlewaretoken]')?.value || '';
-
     }
 
     function isValidEmail(value) {
-
         const v = (value || '').trim();
-
         return v.length > 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-
     }
 
     function setLinkIcon(btn, linked) {
-
         const icon = btn.querySelector('.hr-recipient-link-btn__icon');
-
         if (!icon) return;
-
         icon.setAttribute('data-lucide', linked ? 'check' : 'link-2');
-
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
-
             window.lucide.createIcons();
-
         }
-
     }
 
     function updateRecipientRow(row) {
-
         const input = row.querySelector('.hr-recipient-email-input');
-
         const btn = row.querySelector('.hr-recipient-link-btn');
-
         if (!input || !btn) return;
 
         const email = input.value.trim();
-
         const saved = (input.dataset.savedEmail || '').trim();
-
         const linked = input.dataset.linked === 'true' && email === saved && isValidEmail(email);
 
         if (linked) {
-
             btn.classList.add('is-linked');
-
             btn.title = 'مربوط';
-
             btn.setAttribute('aria-label', 'مربوط');
-
             btn.disabled = true;
-
             btn.classList.remove('is-loading');
-
             setLinkIcon(btn, true);
-
             return;
-
         }
 
         btn.classList.remove('is-linked');
-
         btn.title = 'ربط البريد';
-
         btn.setAttribute('aria-label', 'ربط البريد');
-
         btn.disabled = !isValidEmail(email);
-
         btn.classList.remove('is-loading');
-
         setLinkIcon(btn, false);
-
     }
 
     function initRecipientRows() {
-
         document.querySelectorAll('[data-recipient-row]').forEach(function (row) {
-
             const input = row.querySelector('.hr-recipient-email-input');
-
             if (!input) return;
 
             input.addEventListener('input', function (event) {
-
-                // لا تسمح بانتشار قيمة حقل واحد إلى بقية الصفوف (حماية إضافية)
                 if (event.target !== input) return;
-
                 const saved = (input.dataset.savedEmail || '').trim();
-
                 if (input.value.trim() !== saved) {
-
                     input.dataset.linked = 'false';
-
                 }
-
                 updateRecipientRow(row);
-
             });
 
             updateRecipientRow(row);
-
         });
-
     }
 
     async function linkRecipient(btn) {
-
         const row = btn.closest('[data-recipient-row]');
-
         const input = row?.querySelector('.hr-recipient-email-input');
-
         if (!row || !input) return;
 
         const email = input.value.trim();
-
         const roleKey = btn.dataset.role || input.dataset.recipientRole;
-
         if (!isValidEmail(email) || !roleKey) return;
 
         btn.disabled = true;
-
         btn.classList.add('is-loading');
 
         try {
-
             const body = new URLSearchParams({
-
                 csrfmiddlewaretoken: getCsrfToken(),
-
                 action: 'link_recipient',
-
                 role_key: roleKey,
-
                 email: email,
-
             });
 
             const response = await fetch(LINK_URL, {
-
                 method: 'POST',
-
                 headers: {
-
                     'Content-Type': 'application/x-www-form-urlencoded',
-
                     'X-Requested-With': 'XMLHttpRequest',
-
                 },
-
                 body: body.toString(),
-
             });
 
             const data = await response.json().catch(function () { return {}; });
-
             if (!response.ok || !data.success) {
-
                 throw new Error(data.message || 'تعذّر الربط.');
-
             }
 
             input.dataset.savedEmail = email;
-
             input.dataset.linked = 'true';
-
             updateRecipientRow(row);
-
         } catch (err) {
-
             btn.disabled = false;
-
             btn.classList.remove('is-loading');
-
             window.alert(err.message || 'تعذّر الربط.');
-
         }
-
     }
 
     document.addEventListener('click', function (event) {
-
         const btn = event.target.closest('.hr-recipient-link-btn');
-
         if (!btn || btn.disabled || btn.classList.contains('is-linked')) return;
-
         event.preventDefault();
-
         linkRecipient(btn);
-
     });
 
     document.addEventListener('DOMContentLoaded', initRecipientRows);
-
     if (document.readyState !== 'loading') {
-
         initRecipientRows();
-
     }
-
 })();
-
 </script>
-
 {% endblock %}
-
-

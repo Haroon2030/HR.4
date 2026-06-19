@@ -15,11 +15,7 @@
                     {% endif %}
                     <th class="text-center" scope="col">الفترة</th>
                     <th class="col-num" scope="col">موظفون</th>
-                    <th class="col-num th-earn" scope="col">الاستحقاقات</th>
-                    <th class="col-num th-deduct" scope="col">الخصومات</th>
-                    <th class="col-num th-net" scope="col">الصافي</th>
-                    <th class="text-center" scope="col">الحالة</th>
-                    <th class="text-center hr-payroll-runs-datatable__th-actions" scope="col">إجراءات</th>
+                    <th class="text-center hr-payroll-runs-datatable__th-actions" scope="col">الحالة · إجراءات</th>
                 </tr>
             </thead>
             <tbody>
@@ -39,27 +35,24 @@
                     {% endif %}
                     <td class="text-center hr-payroll-runs-datatable__period">{{ filter_month }}/{{ filter_year }}</td>
                     <td class="col-num hr-payroll-runs-datatable__count">{{ period_totals.employees_count }}</td>
-                    <td class="col-num td-earn">{{ period_totals.total_earnings|format_sar:"earn" }}</td>
-                    <td class="col-num td-deduct">{{ period_totals.total_deductions|format_sar:"deduct" }}</td>
-                    <td class="col-num td-net">{{ period_totals.total_net|format_sar:"net" }}</td>
-                    <td class="text-center">
-                        <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
-                    </td>
-                    <td class="text-center">
-                        <div class="hr-payroll-row-actions">
-                            {% if can_export %}
-                            <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
-                               class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
-                               title="تصدير ملف Excel واحد">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                            </a>
-                            {% endif %}
-                            <button type="button"
-                                    class="hr-payroll-row-actions__btn"
-                                    title="تفصيل الفروع"
-                                    @click="showBranchDetail = !showBranchDetail">
-                                <i data-lucide="list" class="w-4 h-4"></i>
-                            </button>
+                    <td class="text-center hr-payroll-runs-datatable__cell-actions">
+                        <div class="hr-payroll-run-row-end">
+                            <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
+                            <div class="hr-payroll-row-actions">
+                                {% if can_export %}
+                                <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}"
+                                   class="hr-payroll-row-actions__btn hr-payroll-row-actions__btn--export"
+                                   title="تصدير ملف Excel واحد">
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                </a>
+                                {% endif %}
+                                <button type="button"
+                                        class="hr-payroll-row-actions__btn"
+                                        title="تفصيل الفروع"
+                                        @click="showBranchDetail = !showBranchDetail">
+                                    <i data-lucide="list" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -92,18 +85,15 @@
                     {% endif %}
                     <td class="text-center hr-payroll-runs-datatable__period">{{ run.period_label }}</td>
                     <td class="col-num hr-payroll-runs-datatable__count">{{ run.employees_count }}</td>
-                    <td class="col-num td-earn">{{ run.total_earnings|format_sar:"earn" }}</td>
-                    <td class="col-num td-deduct">{{ run.total_deductions|format_sar:"deduct" }}</td>
-                    <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
-                    <td class="text-center">
-                        {% if run.status == 'draft' %}
-                        <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
-                        {% elif run.status == 'locked' %}
-                        <span class="hr-payroll-status hr-payroll-status--locked">مُغلق</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        {% include "pages/payroll/_payroll_run_row_actions.html" with delete_confirm="حذف هذه المسودة نهائياً؟" %}
+                    <td class="text-center hr-payroll-runs-datatable__cell-actions">
+                        <div class="hr-payroll-run-row-end">
+                            {% if run.status == 'draft' %}
+                            <span class="hr-payroll-status hr-payroll-status--draft">مسودة</span>
+                            {% elif run.status == 'locked' %}
+                            <span class="hr-payroll-status hr-payroll-status--locked">مُغلق</span>
+                            {% endif %}
+                            {% include "pages/payroll/_payroll_run_row_actions.html" with delete_confirm="حذف هذه المسودة نهائياً؟" %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -114,7 +104,7 @@
                         {% for i in "12345"|make_list %}
                             {% if forloop.counter > visible_rows %}
                             <tr class="hr-payroll-runs-datatable__row hr-payroll-runs-datatable__row--placeholder" aria-hidden="true">
-                                <td colspan="{% if active_salary_mode == 'transfer' %}10{% else %}9{% endif %}">&nbsp;</td>
+                                <td colspan="{% if active_salary_mode == 'transfer' %}6{% else %}5{% endif %}">&nbsp;</td>
                             </tr>
                             {% endif %}
                         {% endfor %}
@@ -125,7 +115,7 @@
                         {% for i in "123456"|make_list %}
                             {% if forloop.counter > visible_rows %}
                             <tr class="hr-payroll-runs-datatable__row hr-payroll-runs-datatable__row--placeholder" aria-hidden="true">
-                                <td colspan="{% if active_salary_mode == 'transfer' %}10{% else %}9{% endif %}">&nbsp;</td>
+                                <td colspan="{% if active_salary_mode == 'transfer' %}6{% else %}5{% endif %}">&nbsp;</td>
                             </tr>
                             {% endif %}
                         {% endfor %}

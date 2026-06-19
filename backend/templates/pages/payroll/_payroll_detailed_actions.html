@@ -1,37 +1,30 @@
-<div class="hr-payroll-actions-unified hr-payroll-actions-unified--detailed" aria-label="إجراءات المسير التفصيلي">
-    <div class="hr-payroll-actions-unified__head">
-        <span class="hr-payroll-actions-unified__title">
-            <i data-lucide="git-branch" class="w-4 h-4"></i>
-            إجراءات المسير التفصيلي
-        </span>
-        <span class="hr-payroll-actions-unified__hint">① عرض ← ② {% if has_detailed_draft %}إعادة بناء{% else %}بناء{% endif %} — توزيع تحمّل الفروع للمنقولين</span>
-    </div>
-    <div class="hr-payroll-actions-unified__grid hr-payroll-actions-unified__grid--single">
-        <div class="hr-payroll-actions-unified__group">
-            <span class="hr-payroll-actions-unified__group-label">التحضير والبناء</span>
-            <div class="hr-payroll-actions-unified__buttons">
-                <button type="submit"
-                        form="payrollFilterForm"
-                        class="hr-payroll-action-btn hr-payroll-action-btn--view"
-                        title="عرض المسير التفصيلي المحفوظ">
-                    <i data-lucide="eye" class="w-4 h-4"></i>
-                    <span>① عرض المسير</span>
-                </button>
-                {% if can_build %}
-                <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
-                        class="hr-payroll-action-btn hr-payroll-action-btn--detailed"
-                        title="{% if has_detailed_draft %}إعادة بناء المسير التفصيلي واستبدال المسودة الحالية{% else %}بناء مسير تفصيلي لموظفي النقل بين الفروع{% endif %}"
-                        {% if has_detailed_draft %}onclick="return confirm('سيتم استبدال المسودة التفصيلية الحالية بأحدث البيانات. هل تريد إعادة البناء؟');"{% endif %}>
-                    <i data-lucide="{% if has_detailed_draft %}refresh-cw{% else %}play{% endif %}" class="w-4 h-4"></i>
-                    <span>② {% if has_detailed_draft %}إعادة بناء المسير التفصيلي{% else %}بناء المسير التفصيلي{% endif %}</span>
-                </button>
-                {% else %}
-                <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">② {% if has_detailed_draft %}إعادة بناء المسير التفصيلي{% else %}بناء المسير التفصيلي{% endif %}</button>
-                {% endif %}
-                {% if show_table and has_draft_runs and financial_audit %}
-                {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
-                {% endif %}
-            </div>
+<div class="hr-payroll-pipeline hr-payroll-pipeline--detailed" aria-label="إجراءات المسير التفصيلي">
+    <div class="hr-payroll-pipeline__track">
+        <div class="hr-payroll-pipeline__step">
+            <span class="hr-payroll-pipeline__num">①</span>
+            <button type="submit" form="payrollFilterForm" class="hr-payroll-action-btn hr-payroll-action-btn--view" title="عرض المسير التفصيلي المحفوظ">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+                <span>عرض</span>
+            </button>
+        </div>
+        <div class="hr-payroll-pipeline__step">
+            <span class="hr-payroll-pipeline__num">②</span>
+            {% if can_build %}
+            <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post" name="build_kind" value="detailed"
+                    class="hr-payroll-action-btn hr-payroll-action-btn--detailed"
+                    {% if has_detailed_draft %}onclick="return confirm('استبدال المسودة التفصيلية؟');"{% endif %}>
+                <i data-lucide="{% if has_detailed_draft %}refresh-cw{% else %}play{% endif %}" class="w-4 h-4"></i>
+                <span>{% if has_detailed_draft %}إعادة بناء{% else %}بناء{% endif %}</span>
+            </button>
+            {% else %}
+            <button type="button" disabled class="hr-payroll-action-btn hr-payroll-action-btn--detailed hr-payroll-action-btn--disabled">بناء</button>
+            {% endif %}
         </div>
     </div>
+    <div class="hr-payroll-pipeline__extras">
+        {% if show_table and has_draft_runs and financial_audit %}
+        {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
+        {% endif %}
+    </div>
+    <p class="hr-payroll-pipeline__hint">توزيع تحمّل الفروع للمنقولين — الفرع الجديد يتحمل الراتب كاملاً.</p>
 </div>
