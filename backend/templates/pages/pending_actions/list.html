@@ -92,6 +92,7 @@
                             {% elif a.action_type == 'salary_adjust' %}<span class="px-2 py-1 rounded bg-amber-100 text-amber-700 font-semibold">تعديل راتب</span>
                             {% elif a.action_type == 'terminate' %}<span class="px-2 py-1 rounded bg-red-100 text-red-700 font-semibold">إنهاء خدمة</span>
                             {% elif a.action_type == 'reactivate' %}<span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 font-semibold">إعادة تفعيل</span>
+                            {% elif a.action_type == 'cash_shortage' %}<span class="px-2 py-1 rounded bg-rose-100 text-rose-700 font-semibold">عجز كاشير</span>
                             {% else %}<span class="px-2 py-1 rounded bg-slate-100 text-slate-700">{{ a.action_type_display }}</span>{% endif %}
                         </td>
                         <td class="px-3 py-2 text-xs font-medium text-slate-900 whitespace-nowrap">{{ a.employee_name|default:"-" }}</td>

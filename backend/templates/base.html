@@ -221,7 +221,7 @@
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
     <link href="/static/css/hr-ui.css?v=20260620-tab-badge-blink" rel="stylesheet">
-    <link href="/static/css/hr-motion.css" rel="stylesheet">
+    <link href="/static/css/hr-motion.css?v=20260620-toast-z" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="hr-app min-h-screen">
@@ -345,7 +345,7 @@
     {% include "components/glass_loading_popup.html" %}
 
     <!-- Toast Notifications -->
-    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] space-y-2 flex flex-col items-center w-auto max-w-[92vw] pointer-events-none"></div>
+    <div id="toast-container"></div>
     
     <!-- Django Messages Data -->
     {% if messages %}

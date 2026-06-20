@@ -46,6 +46,21 @@
 .htmx-settling { opacity: 1; }
 
 /* ── Toast ── */
+#toast-container {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10080;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    max-width: 92vw;
+    pointer-events: none;
+}
+
 @keyframes hr-toast-in {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }

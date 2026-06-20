@@ -124,6 +124,11 @@ def _action_details(action: PendingAction, branch_cache: dict[int, str]) -> tupl
         days = p.get('days') or 1
         return f'تاريخ {absence_date} — {days} يوم', '—'
 
+    if action_type == PendingAction.ActionType.CASH_SHORTAGE:
+        shortage_date = p.get('shortage_date', '—')
+        amount = _money(p.get('amount'))
+        return f'تاريخ {shortage_date}', f'{amount} ر.س'
+
     if action_type == PendingAction.ActionType.SALARY_ADJUST:
         new_basic = _money(p.get('new_basic_salary'))
         effective = p.get('effective_date', '—')
