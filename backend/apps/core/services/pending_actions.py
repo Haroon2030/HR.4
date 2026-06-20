@@ -451,6 +451,7 @@ def _execute_cash_shortage(action, executor):
         amount=amount,
         branch=branch,
         notes=p.get('notes', ''),
+        document=action.attachment or None,
         created_by=action.requested_by,
     )
     return f'تم تسجيل عجز كاشير بمبلغ {shortage.amount} ر.س للموظف {employee.name}'

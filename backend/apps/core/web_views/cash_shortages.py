@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from apps.core.decorators import has_permission, permission_required
 from apps.core.forms import CashShortageForm
+from apps.core.services.file_helpers import apply_uploaded_file_rename
 from apps.core.services.pending_actions import create_pending_action
 from apps.core.web_views._helpers import filter_employees_queryset_for_user
 from apps.employees.models import Employee, EmployeeCashShortage
@@ -67,6 +68,11 @@ def register_cash_shortage(request):
             messages.error(request, err[0])
         return redirect('web:list_cash_shortages')
 
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
     cd = form.cleaned_data
     branch = cd['branch']
     amount = cd['amount']
@@ -84,6 +90,7 @@ def register_cash_shortage(request):
             'notes': cd.get('notes', ''),
         },
         requested_by=request.user,
+        attachment=files.get('document') or None,
     )
     messages.success(
         request,

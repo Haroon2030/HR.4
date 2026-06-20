@@ -664,6 +664,7 @@ def add_employee_cash_shortage(request, employee_id):
     """تسجيل عجز كاشير لموظف (ينتظر اعتماد محاسب الفرع)."""
     from apps.employees.models import Employee
     from apps.core.forms import CashShortageForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
     if employee.status == Employee.Status.TERMINATED:
@@ -678,6 +679,11 @@ def add_employee_cash_shortage(request, employee_id):
             messages.error(request, err[0])
         return redirect('web:view_employee', employee_id=employee.id)
 
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
     cd = form.cleaned_data
     create_pending_action(
         action_type='cash_shortage',
@@ -688,6 +694,7 @@ def add_employee_cash_shortage(request, employee_id):
             'branch_id': cd['branch'].id,
             'notes': cd.get('notes', ''),
         },
+        attachment=files.get('document') or None,
         requested_by=request.user,
     )
     messages.success(request, 'تم إرسال طلب عجز الكاشير إلى محاسب الفرع للاعتماد.')

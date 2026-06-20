@@ -1028,6 +1028,10 @@ class EmployeeCashShortage(BaseModel):
         verbose_name="الفرع",
     )
     notes = models.TextField("ملاحظات", blank=True)
+    document = models.FileField(
+        "مستند مرفق", upload_to='employees/cash_shortages/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+    )
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

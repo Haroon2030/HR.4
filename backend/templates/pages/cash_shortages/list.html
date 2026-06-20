@@ -25,7 +25,7 @@
             <i data-lucide="plus-circle" class="w-4 h-4 text-primary-600"></i>
             تسجيل عجز جديد
         </h2>
-        <form method="post" action="{% url 'web:register_cash_shortage' %}" class="space-y-4">
+        <form method="post" action="{% url 'web:register_cash_shortage' %}" enctype="multipart/form-data" class="space-y-4">
             {% csrf_token %}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="lg:col-span-2">
@@ -59,6 +59,9 @@
                               class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none"
                               placeholder="اختياري"></textarea>
                 </div>
+                <div class="lg:col-span-2">
+                    {% include 'components/file_upload.html' with name='document' label='مرفق العجز' accept='image/*,.pdf' icon='paperclip' %}
+                </div>
             </div>
             <div class="flex justify-end pt-2">
                 {% include "components/hr_btn.html" with type="submit" label="إرسال للاعتماد" variant="primary" icon="send" %}
@@ -86,6 +89,7 @@
                         <th class="px-3 py-2 text-right font-bold">التاريخ</th>
                         <th class="px-3 py-2 text-right font-bold">المبلغ</th>
                         <th class="px-3 py-2 text-right font-bold">المسير</th>
+                        <th class="px-3 py-2 text-right font-bold">المستند</th>
                         <th class="px-3 py-2 text-right font-bold">أُضيف بواسطة</th>
                     </tr>
                 </thead>
@@ -108,6 +112,7 @@
                             <span class="text-amber-600">بانتظار المسير</span>
                             {% endif %}
                         </td>
+                        <td class="px-3 py-2">{% if s.document %}{% include "components/table_act_file.html" with url=s.document.url title="عرض المرفق" %}{% else %}—{% endif %}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ s.created_by.get_full_name|default:s.created_by.username|default:"—" }}</td>
                     </tr>
                     {% endfor %}
