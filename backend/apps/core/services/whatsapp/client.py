@@ -145,6 +145,11 @@ def send_media(
         raise EvolutionAPIError(f'Evolution API connection error: {exc}') from exc
 
 
+def _encode_media_base64(data: bytes) -> str:
+    """Evolution API v2 يتوقع base64 خاماً بدون بادئة data URI."""
+    return base64.b64encode(data).decode('ascii')
+
+
 def send_document(
     *,
     phone: str,
@@ -156,8 +161,11 @@ def send_document(
     """Send a PDF document via base64-encoded media."""
     if not file_name:
         raise EvolutionAPIError('file_name مطلوب لإرسال المستند')
-    b64 = base64.b64encode(pdf_bytes).decode('ascii')
-    media = f'data:application/pdf;base64,{b64}'
+    if not pdf_bytes:
+        raise EvolutionAPIError('ملف PDF فارغ')
+
+    media = _encode_media_base64(pdf_bytes)
+    doc_timeout = max(timeout or getattr(settings, 'EVOLUTION_API_TIMEOUT', 20), 60)
     return send_media(
         phone=phone,
         mediatype='document',
@@ -165,5 +173,5 @@ def send_document(
         file_name=file_name,
         mimetype='application/pdf',
         caption=caption,
-        timeout=timeout,
+        timeout=doc_timeout,
     )
