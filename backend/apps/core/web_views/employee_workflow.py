@@ -673,16 +673,16 @@ def add_employee_cash_shortage(request, employee_id):
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
-    form = CashShortageForm(request.POST, user=request.user, employee=employee)
-    if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
-        return redirect('web:view_employee', employee_id=employee.id)
-
     files = request.FILES.copy()
     renamed = apply_uploaded_file_rename(request, 'document')
     if renamed is not None:
         files['document'] = renamed
+
+    form = CashShortageForm(request.POST, files, user=request.user, employee=employee)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
     create_pending_action(
@@ -694,7 +694,7 @@ def add_employee_cash_shortage(request, employee_id):
             'branch_id': cd['branch'].id,
             'notes': cd.get('notes', ''),
         },
-        attachment=files.get('document') or None,
+        attachment=cd['document'],
         requested_by=request.user,
     )
     messages.success(request, 'تم إرسال طلب عجز الكاشير إلى محاسب الفرع للاعتماد.')

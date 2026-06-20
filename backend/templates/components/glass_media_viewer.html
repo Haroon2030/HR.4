@@ -5,11 +5,11 @@
      aria-modal="true"
      aria-labelledby="hr-glass-media-title"
      aria-hidden="true">
-    <div class="hr-glass-modal hr-glass-modal--media relative w-full mx-auto overflow-hidden flex flex-col max-h-[92vh]"
+    <div class="hr-glass-modal hr-glass-modal--media hr-glass-modal--sidebar relative w-full mx-auto overflow-hidden flex flex-col max-h-[92vh]"
          onclick="event.stopPropagation()">
         <div class="hr-glass-modal__head px-4 py-3 flex items-center justify-between gap-3 shrink-0">
-            <h3 id="hr-glass-media-title" class="text-sm font-bold text-slate-800 flex items-center gap-2 min-w-0 m-0">
-                <i data-lucide="image" class="w-4 h-4 text-indigo-600 shrink-0" id="hr-glass-media-head-icon"></i>
+            <h3 id="hr-glass-media-title" class="text-sm font-bold flex items-center gap-2 min-w-0 m-0">
+                <i data-lucide="image" class="w-4 h-4 shrink-0" id="hr-glass-media-head-icon"></i>
                 <span class="truncate" id="hr-glass-media-title-text">معاينة المرفق</span>
             </h3>
             <button type="button" class="hr-glass-modal__close" aria-label="إغلاق" id="hr-glass-media-close">
@@ -20,24 +20,24 @@
             <img id="hr-glass-media-img" alt="" class="hr-glass-modal__img hidden" />
             <iframe id="hr-glass-media-frame" title="معاينة الملف" class="hr-glass-modal__frame hidden"></iframe>
             <div id="hr-glass-media-fallback" class="hr-glass-modal__fallback hidden text-center">
-                <i data-lucide="file-question" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
-                <p class="text-xs text-slate-500 mb-3">لا يمكن معاينة هذا النوع داخل الصفحة</p>
+                <i data-lucide="file-question" class="w-10 h-10 mx-auto mb-2"></i>
+                <p class="text-xs mb-3">لا يمكن معاينة هذا النوع داخل الصفحة</p>
                 <a id="hr-glass-media-download" href="#" target="_blank" rel="noopener"
-                   class="hr-btn hr-btn--primary hr-btn--xs">
+                   class="hr-btn hr-btn--ghost hr-btn--xs hr-glass-media-modal__link-btn">
                     <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                     فتح الملف
                 </a>
             </div>
-            <p id="hr-glass-media-loading" class="text-xs text-slate-500 hidden">جاري التحميل…</p>
+            <p id="hr-glass-media-loading" class="text-xs hidden">جاري التحميل…</p>
         </div>
         <div class="hr-glass-modal__foot px-4 py-2.5 flex items-center justify-between gap-2 shrink-0">
             <a id="hr-glass-media-open-tab" href="#" target="_blank" rel="noopener"
-               class="text-xs font-semibold text-primary-600 hover:underline inline-flex items-center gap-1">
+               class="text-xs font-semibold hover:underline inline-flex items-center gap-1 hr-glass-media-modal__link">
                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                 فتح في تبويب جديد
             </a>
             <button type="button" id="hr-glass-media-close-btn"
-                    class="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 bg-white/80 text-slate-700 hover:bg-white">
+                    class="px-4 py-2 text-xs font-bold rounded-lg hr-glass-media-modal__close-btn">
                 إغلاق
             </button>
         </div>
@@ -49,6 +49,10 @@
     var modal = document.getElementById('hr-glass-media-modal');
     if (!modal || window.hrOpenGlassMedia) return;
 
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+
     var img = document.getElementById('hr-glass-media-img');
     var frame = document.getElementById('hr-glass-media-frame');
     var fallback = document.getElementById('hr-glass-media-fallback');
@@ -57,10 +61,21 @@
     var downloadLink = document.getElementById('hr-glass-media-download');
     var openTab = document.getElementById('hr-glass-media-open-tab');
 
+    function resolveMediaUrl(url) {
+        if (!url) return '';
+        try {
+            return new URL(url, window.location.origin).href;
+        } catch (e) {
+            return url;
+        }
+    }
+
     function mediaKind(url) {
-        var path = (url || '').split('?')[0].toLowerCase();
-        if (/\.(jpe?g|png|gif|webp|bmp|svg)$/.test(path)) return 'image';
-        if (/\.pdf$/.test(path)) return 'pdf';
+        try {
+            var path = decodeURIComponent((url || '').split('?')[0]).toLowerCase();
+            if (/\.(jpe?g|png|gif|webp|bmp|svg)$/.test(path)) return 'image';
+            if (/\.pdf$/.test(path)) return 'pdf';
+        } catch (e) {}
         return 'other';
     }
 
@@ -71,6 +86,15 @@
         loading.classList.add('hidden');
         img.removeAttribute('src');
         frame.removeAttribute('src');
+        img.onload = null;
+        img.onerror = null;
+    }
+
+    function showFallback() {
+        loading.classList.add('hidden');
+        img.classList.add('hidden');
+        frame.classList.add('hidden');
+        fallback.classList.remove('hidden');
     }
 
     function closeModal() {
@@ -82,6 +106,7 @@
     }
 
     function openModal(url, title) {
+        url = resolveMediaUrl(url);
         if (!url) return;
         hidePanels();
         loading.classList.remove('hidden');
@@ -101,18 +126,20 @@
                 img.classList.remove('hidden');
             };
             img.onerror = function () {
-                loading.classList.add('hidden');
-                fallback.classList.remove('hidden');
+                showFallback();
             };
             img.alt = title || 'مرفق';
             img.src = url;
+            if (img.complete) {
+                if (img.naturalWidth > 0) img.onload();
+                else img.onerror();
+            }
         } else if (kind === 'pdf') {
             loading.classList.add('hidden');
             frame.src = url;
             frame.classList.remove('hidden');
         } else {
-            loading.classList.add('hidden');
-            fallback.classList.remove('hidden');
+            showFallback();
         }
 
         if (window.lucide) {
@@ -136,6 +163,7 @@
         var trigger = e.target.closest('[data-hr-media-open]');
         if (!trigger) return;
         e.preventDefault();
+        e.stopPropagation();
         var url = trigger.getAttribute('data-hr-media-url') || trigger.getAttribute('href');
         var title = trigger.getAttribute('data-hr-media-title') || trigger.getAttribute('title') || 'معاينة المرفق';
         if (url) openModal(url, title);

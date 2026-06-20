@@ -62,16 +62,16 @@ def register_cash_shortage(request):
         messages.error(request, 'لا يمكن تسجيل عجز لموظف منتهي الخدمة.')
         return redirect('web:list_cash_shortages')
 
-    form = CashShortageForm(request.POST, user=request.user, employee=employee)
-    if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
-        return redirect('web:list_cash_shortages')
-
     files = request.FILES.copy()
     renamed = apply_uploaded_file_rename(request, 'document')
     if renamed is not None:
         files['document'] = renamed
+
+    form = CashShortageForm(request.POST, files, user=request.user, employee=employee)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return redirect('web:list_cash_shortages')
 
     cd = form.cleaned_data
     branch = cd['branch']
@@ -90,7 +90,7 @@ def register_cash_shortage(request):
             'notes': cd.get('notes', ''),
         },
         requested_by=request.user,
-        attachment=files.get('document') or None,
+        attachment=cd['document'],
     )
     messages.success(
         request,

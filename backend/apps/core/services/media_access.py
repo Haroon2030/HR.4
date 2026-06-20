@@ -71,12 +71,22 @@ def _branch_from_related_document(path: str) -> int | None:
     from apps.employees.models import (
         EmployeeAbsence,
         EmployeeBusinessTrip,
+        EmployeeCashShortage,
         EmployeeCustody,
         EmployeeJobOffer,
         EmployeeLeave,
         EmployeeLoan,
         EmployeeStatement,
     )
+
+    cs = (
+        EmployeeCashShortage.objects.filter(document=path)
+        .select_related('branch', 'employee')
+        .only('branch_id', 'employee__branch_id')
+        .first()
+    )
+    if cs:
+        return cs.branch_id or (cs.employee.branch_id if cs.employee_id else None)
 
     for model in (
         EmployeeLeave,
@@ -151,16 +161,22 @@ def user_may_access_media_path(user, path: str) -> bool:
             return True
         return has_permission(user, 'users.view')
 
-    if path.startswith('pending_actions/'):
-        if not has_permission(user, 'employees.view'):
+    if path.startswith('pending_actions/') or path.startswith('HR/pending_actions/'):
+        if not (
+            has_permission(user, 'employees.view')
+            or has_permission(user, 'cash_shortages.view')
+        ):
             return False
         branch_id = branch_id_for_media_path(path)
         if branch_id is None:
             return False
         return _branch_allowed(user, branch_id)
 
-    if path.startswith('employees/'):
-        if not has_permission(user, 'employees.view'):
+    if path.startswith('employees/') or path.startswith('HR/employees/'):
+        if not (
+            has_permission(user, 'employees.view')
+            or has_permission(user, 'cash_shortages.view')
+        ):
             return False
         branch_id = branch_id_for_media_path(path)
         if branch_id is None:

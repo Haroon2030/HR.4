@@ -29,22 +29,22 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="lg:col-span-2">
-                    {% include "components/employee_search_picker.html" with label="الموظف" employee_search_url=employee_search_url %}
+                    {% include "components/employee_search_picker.html" with label="الموظف *" employee_search_url=employee_search_url %}
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">تاريخ العجز</label>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">تاريخ العجز <span class="text-red-500">*</span></label>
                     <input type="date" name="shortage_date" required
                            class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">مبلغ العجز (ر.س)</label>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">مبلغ العجز (ر.س) <span class="text-red-500">*</span></label>
                     <input type="number" name="amount" step="0.01" min="0.01" required
                            placeholder="0.00"
                            class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">الفرع</label>
-                    <select name="branch" required
+                    <label class="block text-xs font-medium text-slate-600 mb-1">الفرع <span class="text-red-500">*</span></label>
+                    <select name="branch" id="cash-shortage-branch" required
                             class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white">
                         <option value="">— اختر الفرع —</option>
                         {% for b in form.fields.branch.queryset %}
@@ -60,7 +60,7 @@
                               placeholder="اختياري"></textarea>
                 </div>
                 <div class="lg:col-span-2">
-                    {% include 'components/file_upload.html' with name='document' label='مرفق العجز' accept='image/*,.pdf' icon='paperclip' %}
+                    {% include 'components/file_upload.html' with name='document' label='مرفق العجز' accept='image/*,.pdf' icon='paperclip' required=True %}
                 </div>
             </div>
             <div class="flex justify-end pt-2">
@@ -138,4 +138,18 @@
         {% endif %}
     </div>
 </div>
+<script>
+(function () {
+    var branchSelect = document.getElementById('cash-shortage-branch');
+    if (!branchSelect) return;
+    document.addEventListener('hr-employee-picker-selected', function (e) {
+        var branchId = e.detail && e.detail.branch_id;
+        if (!branchId) return;
+        branchSelect.value = String(branchId);
+    });
+    document.addEventListener('hr-employee-picker-cleared', function () {
+        branchSelect.value = '';
+    });
+})();
+</script>
 {% endblock %}

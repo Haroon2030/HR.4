@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 
 from apps.core.models import Role, Branch
+from apps.core.validators import DOCUMENT_VALIDATORS
 from apps.core.widgets import apply_decimal_number_widgets
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
@@ -469,6 +470,11 @@ class CashShortageForm(forms.Form):
         queryset=None,
         required=True,
         error_messages={'required': 'الفرع مطلوب', 'invalid_choice': 'الفرع غير صالح'},
+    )
+    document = forms.FileField(
+        required=True,
+        validators=DOCUMENT_VALIDATORS,
+        error_messages={'required': 'مرفق العجز مطلوب'},
     )
     notes = forms.CharField(required=False)
 

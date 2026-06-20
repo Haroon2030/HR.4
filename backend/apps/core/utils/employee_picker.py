@@ -12,4 +12,5 @@ def employee_picker_dict(emp: Employee) -> dict:
         'id_number': emp.id_number or '',
         'dept': emp.department.name if emp.department_id else '',
         'branch': emp.branch.name if emp.branch_id else '',
+        'branch_id': emp.branch_id or '',
     }

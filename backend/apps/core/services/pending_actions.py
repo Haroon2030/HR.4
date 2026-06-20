@@ -25,8 +25,10 @@
 الدالة الرئيسية: execute_pending_action(action, user) — تستدعي المنفّذ المناسب.
 """
 import json
+import os
 from datetime import date
 from decimal import Decimal
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils import timezone
 from apps.core.salary_month import daily_rate_from_total
@@ -313,6 +315,18 @@ def _build_form_serial_local(code, employee_id):
     return f"{code}-{date_part}-{emp_part}-{hash_part}"
 
 
+def _copy_pending_attachment(attachment):
+    """نسخ مرفق الطلب المعلّق إلى حقل مستند جديد (مسار upload_to الصحيح)."""
+    if not attachment:
+        return None
+    attachment.open('rb')
+    try:
+        data = attachment.read()
+    finally:
+        attachment.close()
+    return ContentFile(data, name=os.path.basename(attachment.name))
+
+
 @transaction.atomic
 def _execute_custody_receive(action, executor):
     from apps.employees.models import EmployeeCustody
@@ -451,7 +465,7 @@ def _execute_cash_shortage(action, executor):
         amount=amount,
         branch=branch,
         notes=p.get('notes', ''),
-        document=action.attachment or None,
+        document=_copy_pending_attachment(action.attachment),
         created_by=action.requested_by,
     )
     return f'تم تسجيل عجز كاشير بمبلغ {shortage.amount} ر.س للموظف {employee.name}'

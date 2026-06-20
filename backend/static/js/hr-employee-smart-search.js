@@ -219,6 +219,11 @@
                 this.showList = false;
                 this.filteredList = [];
                 this.remoteResults = [];
+                try {
+                    document.dispatchEvent(new CustomEvent('hr-employee-picker-selected', {
+                        detail: emp,
+                    }));
+                } catch (e) {}
             },
 
             clearSelection() {
@@ -228,6 +233,9 @@
                 this.filteredList = [];
                 this.remoteResults = [];
                 this.currentPage = 1;
+                try {
+                    document.dispatchEvent(new CustomEvent('hr-employee-picker-cleared'));
+                } catch (e) {}
                 var self = this;
                 this.$nextTick(function () {
                     if (self.$refs && self.$refs.searchInput) self.$refs.searchInput.focus();

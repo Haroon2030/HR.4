@@ -4560,7 +4560,8 @@ body.hr-app .border-blue-200.bg-blue-50 {
 /* يتغلب على .hr-glass-modal أعلاه — نافذة الملاحظات بثيم الشريط */
 .hr-glass-modal.hr-glass-modal--sidebar,
 .hr-schedule-roster-modal.hr-glass-modal.hr-glass-modal--sidebar,
-#hr-glass-text-modal .hr-glass-modal.hr-glass-modal--sidebar {
+#hr-glass-text-modal .hr-glass-modal.hr-glass-modal--sidebar,
+#hr-glass-media-modal .hr-glass-modal.hr-glass-modal--sidebar {
     background: linear-gradient(
         165deg,
         var(--hr-sidebar-bg, #3d7aad) 0%,
@@ -4653,6 +4654,62 @@ body.hr-app .hr-glass-modal__body--compact > .mt-2 {
 
 .hr-glass-modal--media {
     max-width: min(92vw, 52rem);
+}
+
+/* عارض المرفق — ثيم الشريط الجانبي */
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__head,
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__foot {
+    border-color: var(--hr-sidebar-border);
+    background: rgba(0, 0, 0, 0.06);
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__head h3,
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__head span,
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__fallback p,
+#hr-glass-media-modal .hr-glass-modal--sidebar #hr-glass-media-loading,
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__link,
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__close-btn,
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__link-btn {
+    color: #fff !important;
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar i[data-lucide],
+#hr-glass-media-modal .hr-glass-modal--sidebar svg {
+    color: #fff !important;
+    stroke: #fff !important;
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__close {
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__close:hover {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__close-btn {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__close-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__link-btn {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-media-modal__link-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+#hr-glass-media-modal .hr-glass-modal--sidebar .hr-glass-modal__body--media {
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .hr-glass-modal__body--media {
