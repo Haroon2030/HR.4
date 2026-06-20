@@ -1,20 +1,20 @@
 {# Dropdown panel — loaded via HTMX into the bell #}
-<div id="notif-dropdown-inner">
-<div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-    <div class="flex items-center gap-2">
-        <span class="text-sm font-bold text-slate-800">الإشعارات</span>
+<div id="notif-dropdown-inner" class="hr-notif-panel-content">
+<div class="hr-notif-panel-content__head">
+    <div class="hr-notif-panel-content__head-start">
+        <span class="hr-notif-panel-content__title">الإشعارات</span>
         {% if unread_count %}
-        <span class="px-2 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 rounded-full">{{ unread_count }} جديد</span>
+        <span class="hr-notif-panel-content__badge-new">{{ unread_count }} جديد</span>
         {% endif %}
     </div>
-    <div class="flex items-center gap-2">
+    <div class="hr-notif-panel-content__actions">
         {% if unread_count %}
         <button type="button"
                 hx-post="{% url 'web:read_all_notifications' %}"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                hx-target="closest .hr-notif-dropdown-panel"
+                hx-target="closest .hr-notif-panel"
                 hx-swap="innerHTML"
-                class="text-xs text-primary-600 hover:underline">
+                class="hr-notif-panel-content__link-btn">
             تحديد الكل كمقروء
         </button>
         {% endif %}
@@ -22,71 +22,63 @@
         <button type="button"
                 hx-post="{% url 'web:delete_all_notifications' %}"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                hx-target="closest .hr-notif-dropdown-panel"
+                hx-target="closest .hr-notif-panel"
                 hx-swap="innerHTML"
                 hx-confirm="مسح جميع الإشعارات؟"
-                class="text-xs text-rose-600 hover:underline inline-flex items-center gap-1"
+                class="hr-notif-panel-content__link-btn hr-notif-panel-content__link-btn--danger"
                 title="مسح الكل">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> مسح الكل
         </button>
         {% endif %}
     </div>
 </div>
-<div class="max-h-96 overflow-y-auto divide-y divide-slate-100">
+<div class="hr-notif-panel-content__list">
     {% for n in notifications %}
-        <div class="group relative flex items-start gap-2 px-4 py-3 hover:bg-slate-50 transition-colors {% if not n.is_read %}bg-primary-50/40{% endif %}">
+        <div class="hr-notif-panel-content__item group {% if not n.is_read %}hr-notif-panel-content__item--unread{% endif %}">
             <a href="{% if n.link %}{{ n.link }}{% else %}{% url 'web:list_notifications' %}{% endif %}"
-               class="flex items-start gap-3 flex-1 min-w-0"
+               class="hr-notif-panel-content__item-link"
                data-notif-read-url="{% url 'web:read_notification' n.id %}"
                data-csrf="{{ csrf_token }}"
                onclick="event.preventDefault(); var a=this; fetch(a.dataset.notifReadUrl,{method:'POST',headers:{'X-CSRFToken':a.dataset.csrf,'X-Requested-With':'XMLHttpRequest'}}).finally(function(){ window.location.href=a.href; });">
-                <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
-                    {% if n.color == 'emerald' %}bg-emerald-100 text-emerald-700
-                    {% elif n.color == 'amber' %}bg-amber-100 text-amber-700
-                    {% elif n.color == 'rose' %}bg-rose-100 text-rose-700
-                    {% elif n.color == 'red' %}bg-red-100 text-red-700
-                    {% elif n.color == 'indigo' %}bg-indigo-100 text-indigo-700
-                    {% elif n.color == 'violet' %}bg-purple-100 text-purple-700
-                    {% else %}bg-primary-100 text-primary-700{% endif %}
-                    {% if n.is_read %}opacity-60{% endif %}">
+                <div class="hr-notif-panel-content__icon hr-notif-panel-content__icon--{{ n.color|default:'primary' }}{% if n.is_read %} is-read{% endif %}">
                     <i data-lucide="{{ n.icon|default:'bell' }}" class="w-4 h-4"></i>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start gap-2 min-w-0">
-                        <p class="text-sm flex-1 min-w-0 break-words leading-snug {% if n.is_read %}font-normal text-slate-600{% else %}font-semibold text-slate-800{% endif %}">{{ n.title }}</p>
+                <div class="hr-notif-panel-content__body">
+                    <div class="hr-notif-panel-content__title-row">
+                        <p class="hr-notif-panel-content__item-title{% if n.is_read %} is-read{% endif %}">{{ n.title }}</p>
                         {% if n.is_read %}
-                        <span class="text-[10px] text-emerald-600 inline-flex items-center gap-0.5 shrink-0" title="تمت القراءة">
+                        <span class="hr-notif-panel-content__read-mark" title="تمت القراءة">
                             <i data-lucide="check-check" class="w-3 h-3"></i>
                         </span>
                         {% endif %}
                     </div>
-                    {% if n.message %}<p class="text-xs text-slate-500 line-clamp-2 break-words">{{ n.message }}</p>{% endif %}
-                    <p class="text-[10px] text-slate-400 mt-1 whitespace-nowrap">{{ n.created_at|date:"Y-m-d H:i" }}</p>
+                    {% if n.message %}<p class="hr-notif-panel-content__message">{{ n.message }}</p>{% endif %}
+                    <p class="hr-notif-panel-content__time">{{ n.created_at|date:"Y-m-d H:i" }}</p>
                 </div>
                 {% if not n.is_read %}
-                <span class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-2" title="غير مقروء"></span>
+                <span class="hr-notif-panel-content__dot" title="غير مقروء"></span>
                 {% endif %}
             </a>
             <button type="button"
                     hx-post="{% url 'web:delete_notification' n.id %}"
                     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                    hx-target="closest .hr-notif-dropdown-panel"
+                    hx-target="closest .hr-notif-panel"
                     hx-swap="innerHTML"
                     hx-confirm="حذف هذا الإشعار؟"
-                    class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg shrink-0 self-start"
+                    class="hr-notif-panel-content__delete"
                     title="حذف">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
         </div>
     {% empty %}
-        <div class="px-4 py-8 text-center text-sm text-slate-400">
-            <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+        <div class="hr-notif-panel-content__empty">
+            <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2"></i>
             لا بيانات
         </div>
     {% endfor %}
 </div>
-<div class="px-4 py-2 border-t border-slate-100 bg-slate-50 text-center">
-    <a href="{% url 'web:list_notifications' %}" class="text-xs font-semibold text-primary-600 hover:underline">عرض كل الإشعارات</a>
+<div class="hr-notif-panel-content__foot">
+    <a href="{% url 'web:list_notifications' %}" class="hr-notif-panel-content__foot-link">عرض كل الإشعارات</a>
 </div>
 </div>
 <script>

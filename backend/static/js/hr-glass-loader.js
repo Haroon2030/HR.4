@@ -150,7 +150,7 @@
         htmxBound = true;
 
         function isNotifPanel(el) {
-            return el && el.classList && el.classList.contains('hr-notif-dropdown-panel');
+            return el && el.classList && el.classList.contains('hr-notif-panel');
         }
 
         document.body.addEventListener('htmx:beforeRequest', function (evt) {

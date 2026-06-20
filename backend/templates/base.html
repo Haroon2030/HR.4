@@ -220,7 +220,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260620-notif-topbar4" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260620-notif-sidebar-theme" rel="stylesheet">
     <link href="/static/css/hr-motion.css?v=20260620-toast-z" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -478,7 +478,7 @@
                 hrScheduleLucide();
                 if (window.hrInitDatePickers) window.hrInitDatePickers(evt.detail.target || document);
                 if (window.hrInitNavDropdowns) window.hrInitNavDropdowns(evt.detail.target || document);
-                if (evt.detail.target && evt.detail.target.classList && evt.detail.target.classList.contains('hr-notif-dropdown-panel')) {
+                if (evt.detail.target && evt.detail.target.classList && evt.detail.target.classList.contains('hr-notif-panel')) {
                     hrScheduleLucide();
                     return;
                 }

@@ -2,7 +2,7 @@
   dropdown_uid: topbar (الشريط العلوي — جميع الأحجام)
 {% endcomment %}
 {% with uid=dropdown_uid|default:"topbar" %}
-<div class="hr-notif-dropdown hr-notif-dropdown--{{ uid }}"
+<div class="relative hr-notif-dropdown hr-notif-dropdown--{{ uid }}"
      x-data="{ open: false }"
      :class="{ 'is-open': open }"
      @keydown.escape.window="open = false"
@@ -14,15 +14,15 @@
                     $nextTick(() => {
                         var mobile = window.matchMedia('(max-width: 767px)').matches;
                         var panel = mobile
-                            ? ($refs.panelMobile || document.querySelector('.hr-notif-dropdown-panel--topbar'))
-                            : ($refs.panelDesktop || document.querySelector('.hr-notif-dropdown-panel--topbar-desktop'));
+                            ? ($refs.panelMobile || document.querySelector('.hr-notif-panel--mobile'))
+                            : ($refs.panelDesktop || document.querySelector('.hr-topbar-notif-panel'));
                         if (panel && typeof htmx !== 'undefined') {
                             htmx.trigger(panel, 'notif-open');
                         }
                     });
                 }
             "
-            class="hr-topbar-icon-btn relative"
+            class="hr-topbar-icon-btn"
             :aria-expanded="open ? 'true' : 'false'"
             title="الإشعارات"
             aria-label="الإشعارات{% if unread_notifications_count %} — {{ unread_notifications_count }} غير مقروء{% endif %}">
@@ -36,11 +36,11 @@
          x-cloak
          x-ref="panelDesktop"
          @click.outside="open = false"
+         @click.stop
          dir="rtl"
-         class="hr-notif-dropdown-panel hr-notif-dropdown-panel--topbar-desktop w-80 max-w-[calc(100vw-1.5rem)]"
+         class="hr-notif-panel hr-topbar-notif-panel absolute left-0 top-full mt-2 z-50 w-80 max-w-full rounded-xl border overflow-hidden shadow-2xl"
          role="dialog"
          aria-label="قائمة الإشعارات"
-         @click.stop
          hx-get="{% url 'web:notifications_dropdown' %}"
          hx-trigger="notif-open once"
          hx-target="this"
@@ -63,10 +63,11 @@
              x-cloak
              x-ref="panelMobile"
              @click.outside="open = false"
-             class="hr-notif-dropdown-panel hr-notif-dropdown-panel--topbar md:hidden"
+             @click.stop
+             dir="rtl"
+             class="hr-notif-panel hr-notif-panel--mobile hr-notif-dropdown-panel hr-notif-dropdown-panel--topbar md:hidden"
              role="dialog"
              aria-label="قائمة الإشعارات"
-             @click.stop
              hx-get="{% url 'web:notifications_dropdown' %}"
              hx-trigger="notif-open once"
              hx-target="this"
