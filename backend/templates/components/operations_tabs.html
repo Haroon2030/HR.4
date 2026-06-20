@@ -5,7 +5,7 @@
        class="hr-tab-btn{% if request.resolver_match.url_name == 'list_pending_actions' %} is-active{% endif %}">
         <i data-lucide="list-checks" class="w-4 h-4"></i>
         <span>طلبات العمليات</span>
-        {% if pending_actions_count %}<span class="hr-tab-badge bg-amber-500 text-white">{{ pending_actions_count }}</span>{% endif %}
+        {% if pending_actions_count %}<span class="hr-tab-badge">{{ pending_actions_count }}</span>{% endif %}
     </a>
     {% if request.user.is_superuser or request.user.managed_branches.exists %}
     <a href="{% url 'web:list_employment_requests' %}" role="tab"

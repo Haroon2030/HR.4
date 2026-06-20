@@ -55,7 +55,6 @@ urlpatterns = [
     # ══════════════════════════════════════════════════════════════
     path('employees/', web_views.list_employees, name='list_employees'),                                     # قائمة الموظفين
     path('employees/picker/search/', web_views.employee_picker_search, name='employee_picker_search'),       # بحث اختيار موظف
-    path('employees/document-expiry/', web_views.document_expiry_dashboard, name='document_expiry_dashboard'),  # وثائق تنتهي قريباً
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)
     path('employees/<int:employee_id>/', web_views.view_employee, name='view_employee'),                      # عرض ملف الموظف
@@ -75,6 +74,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/custody/clear/', web_views.clear_employee_custody, name='clear_employee_custody'),        # تصفية عهدة
     path('employees/<int:employee_id>/loan/add/', web_views.add_employee_loan, name='add_employee_loan'),                      # سلفة
     path('employees/<int:employee_id>/absence/add/', web_views.add_employee_absence, name='add_employee_absence'),              # تسجيل غياب
+    path('employees/<int:employee_id>/cash-shortage/add/', web_views.add_employee_cash_shortage, name='add_employee_cash_shortage'),
     path('employees/<int:employee_id>/contract-end/', web_views.contract_end_employee, name='contract_end_employee'),          # انتهاء عقد (EOSB)
     path('employees/<int:employee_id>/end-of-service/', web_views.end_of_service_employee, name='end_of_service_employee'), # تصفية نهاية خدمة أو استقالة
     path('employees/<int:employee_id>/ledger-init/', web_views.run_ledger_init, name='run_ledger_init'),        # تهيئة أرصدة الموظف
@@ -249,6 +249,9 @@ urlpatterns = [
     # ══════════════════════════════════════════════════════════════
     # 11. مسير الرواتب الشهري
     # ══════════════════════════════════════════════════════════════
+    path('cash-shortages/', web_views.list_cash_shortages, name='list_cash_shortages'),
+    path('cash-shortages/register/', web_views.register_cash_shortage, name='register_cash_shortage'),
+
     path('payroll/', payroll_views.list_payroll_runs, name='list_payroll_runs'),                            # قائمة المسيرات
     path('payroll/export/', payroll_views.export_payroll_list_excel, name='export_payroll_list_excel'),    # تصدير المسير الموحّد
     path('payroll/create/', payroll_views.create_payroll_run, name='create_payroll_run'),                    # إنشاء/بناء مسير

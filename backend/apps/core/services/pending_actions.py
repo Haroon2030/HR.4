@@ -19,6 +19,7 @@
   ├── BUSINESS_TRIP   → تسجيل رحلة عمل
   ├── LOAN_REQUEST    → إنشاء سلفة + أقساط شهرية
   └── ABSENCE         → تسجيل غياب + حساب الخصم
+  └── CASH_SHORTAGE   → تسجيل عجز كاشير + خصم من الراتب
 
 كل دالة مغلّفة بـ @transaction.atomic لضمان عدم وجود بيانات جزئية.
 الدالة الرئيسية: execute_pending_action(action, user) — تستدعي المنفّذ المناسب.
@@ -430,11 +431,37 @@ def _execute_absence(action, executor):
             f'(سعر اليوم {daily_rate} × {days} = خصم {deduction} ر.س)')
 
 
+@transaction.atomic
+def _execute_cash_shortage(action, executor):
+    from apps.core.models import Branch
+    from apps.employees.models import EmployeeCashShortage
+
+    p = action.payload
+    employee = action.employee
+    serial = p.get('serial_number') or _build_form_serial_local('CS', employee.id)
+    branch_id = p.get('branch_id')
+    branch = Branch.objects.filter(id=branch_id).first() if branch_id else employee.branch
+    if not branch:
+        raise ValueError('الفرع مطلوب لتسجيل عجز الكاشير.')
+    amount = _to_decimal(p['amount'])
+    shortage = EmployeeCashShortage.objects.create(
+        employee=employee,
+        serial_number=serial,
+        shortage_date=_to_date(p['shortage_date']),
+        amount=amount,
+        branch=branch,
+        notes=p.get('notes', ''),
+        created_by=action.requested_by,
+    )
+    return f'تم تسجيل عجز كاشير بمبلغ {shortage.amount} ر.س للموظف {employee.name}'
+
+
 EXECUTORS['custody_receive'] = _execute_custody_receive
 EXECUTORS['custody_clear'] = _execute_custody_clear
 EXECUTORS['business_trip'] = _execute_business_trip
 EXECUTORS['loan_request'] = _execute_loan_request
 EXECUTORS['absence'] = _execute_absence
+EXECUTORS['cash_shortage'] = _execute_cash_shortage
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -800,10 +827,33 @@ def create_pending_action(*, action_type, employee, payload, requested_by, attac
 
 @transaction.atomic
 def branch_approve(action, user, notes=''):
-    """المرحلة الأولى (إدارة/فرع) توافق → ينتقل الطلب إلى المدير العام."""
+    """المرحلة الأولى (إدارة/فرع/محاسب) توافق → GM أو تنفيذ فوري لعجز الكاشير."""
     from apps.core.models import PendingAction
+    from apps.employees.services.cash_shortage_access import user_can_approve_cash_shortage
+
     if action.status != PendingAction.Status.PENDING_BRANCH:
         raise ValueError('هذا الطلب ليس في مرحلة الموافقة الأولى.')
+
+    if action.action_type == PendingAction.ActionType.CASH_SHORTAGE:
+        if not user_can_approve_cash_shortage(user, action):
+            raise ValueError('لا تملك صلاحية اعتماد عجز الكاشير لهذا الفرع.')
+        action.status = PendingAction.Status.APPROVED
+        action.branch_reviewed_by = user
+        action.branch_reviewed_at = timezone.now()
+        action.branch_notes = notes or ''
+        action.save(update_fields=[
+            'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
+        ])
+        execute_pending_action(action, user)
+        notif = _notify()
+        if action.requested_by_id:
+            notif.notify_user(
+                action.requested_by, action,
+                title=f'تم تنفيذ طلبك — {action.get_action_type_display()}',
+                message=f'الموظف: {action.employee.name}',
+                icon='check-circle', color='emerald',
+            )
+        return action
 
     action.status = PendingAction.Status.PENDING_GM
     action.branch_reviewed_by = user

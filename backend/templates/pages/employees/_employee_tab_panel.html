@@ -785,6 +785,61 @@
             </div>
             {% endif %}
 
+            <!-- Cash Shortages -->
+            {% if tab_visible.cash_shortages and default_employee_tab == 'cash_shortages' %}
+            <div x-show="activeTab==='cash_shortages'" class="space-y-3" style="display:none">
+                {% if cash_shortages %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div class="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                        <div class="text-xs text-slate-600 mb-1">إجمالي العجوزات</div>
+                        <div class="text-lg font-bold text-rose-700">{{ cash_shortages|length }} سجل</div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="text-xs text-slate-600 mb-1">إجمالي المبالغ</div>
+                        <div class="text-lg font-bold text-amber-800">{{ cash_shortages_total|format_amount }} ر.س</div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                                <th class="px-3 py-2 text-right font-bold">التاريخ</th>
+                                <th class="px-3 py-2 text-right font-bold">الفرع</th>
+                                <th class="px-3 py-2 text-right font-bold">المبلغ</th>
+                                <th class="px-3 py-2 text-right font-bold">المسير</th>
+                                <th class="px-3 py-2 text-right font-bold">ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for cs in cash_shortages %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ cs.serial_number|default:"—" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ cs.shortage_date|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2 text-slate-600">{{ cs.branch.name }}</td>
+                                <td class="px-3 py-2 font-bold text-rose-700">{{ cs.amount|format_amount }} ر.س</td>
+                                <td class="px-3 py-2 text-xs">
+                                    {% if cs.applied_to_payroll %}
+                                    <span class="text-emerald-700 font-semibold">{{ cs.applied_to_payroll.period_year }}/{{ cs.applied_to_payroll.period_month|stringformat:"02d" }}</span>
+                                    {% else %}
+                                    <span class="text-amber-600">بانتظار المسير</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-xs text-slate-500">{{ cs.notes|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-slate-500 py-12 border border-dashed border-slate-200 rounded-lg">
+                    <i data-lucide="wallet" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+                    لا بيانات
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Archive -->
             {% if tab_visible.archive and default_employee_tab == 'archive' %}            <div x-show="activeTab==='archive'" style="display:none">
             <div x-data="archivePager('archive')" x-init="init()" data-can-view-salary="{% if can_view_salary %}1{% else %}0{% endif %}" class="space-y-3">

@@ -126,11 +126,11 @@
         <nav class="hr-page-tabs__bar" role="tablist" aria-label="عرض التقرير">
             <button type="button" role="tab" class="hr-tab-btn" :class="{ 'is-active': tab === 'daily' }" @click="tab = 'daily'">
                 <span>حضور يومي</span>
-                <span class="hr-tab-badge bg-slate-200 text-slate-700">{{ total_daily_rows }}</span>
+                <span class="hr-tab-badge">{{ total_daily_rows }}</span>
             </button>
             <button type="button" role="tab" class="hr-tab-btn" :class="{ 'is-active': tab === 'detail' }" @click="tab = 'detail'">
                 <span>بصمات تفصيلية</span>
-                <span class="hr-tab-badge bg-slate-200 text-slate-700">{{ punches_page.paginator.count }}</span>
+                <span class="hr-tab-badge">{{ punches_page.paginator.count }}</span>
             </button>
         </nav>
         </div>

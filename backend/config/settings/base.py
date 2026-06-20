@@ -325,10 +325,6 @@ if EMAIL_HOST:
 else:
     EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 
-# بريد اختياري لملخص انتهاء الوثائق (أمر notify_document_expiry --send-email).
-# إذا فارغ يُرسَل إلى عناوين مستخدمي admin / hr_manager النشطين الذين لديهم email.
-DOCUMENT_EXPIRY_EMAIL_RECIPIENTS = env.list('DOCUMENT_EXPIRY_EMAIL_RECIPIENTS', default=[])
-
 # ══════════════════════════════════════════════════════════════════════════════
 # النسخ الاحتياطي لقاعدة البيانات (إشعارات + مسار الملفات)
 # ══════════════════════════════════════════════════════════════════════════════

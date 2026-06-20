@@ -51,7 +51,8 @@ from django.utils import timezone
 
 from apps.payroll.models import PayrollRun, PayrollLine
 from apps.employees.models import (
-    Employee, EmployeeAbsence, EmployeeLeave, EmployeeStatement, LoanInstallment
+    Employee, EmployeeAbsence, EmployeeCashShortage, EmployeeLeave,
+    EmployeeStatement, LoanInstallment,
 )
 
 
@@ -126,6 +127,11 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
         statement_date__range=(period_start, period_end),
     ).filter(applied)
 
+    cash_shortages = EmployeeCashShortage.objects.filter(
+        employee_id__in=employee_ids,
+        shortage_date__range=(period_start, period_end),
+    ).filter(applied)
+
     locked_emp_ids = set(
         PayrollLine.objects.filter(
             employee_id__in=employee_ids,
@@ -147,6 +153,7 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
         _group_by_employee_id(unpaid_leaves),
         inst_by_emp,
         _group_by_employee_id(penalties),
+        _group_by_employee_id(cash_shortages),
         locked_emp_ids,
     )
 
@@ -199,6 +206,7 @@ def _compute_employee_payroll_snapshot(
     leaves_by_emp=None,
     inst_by_emp=None,
     pen_by_emp=None,
+    cs_by_emp=None,
 ) -> dict:
     """حساب snapshot راتب موظف لشهر — يُستخدم في المسير العادي والتفصيلي."""
     from apps.payroll.services.period_eligibility import employee_payroll_period, prorate_amount
@@ -217,7 +225,7 @@ def _compute_employee_payroll_snapshot(
     if abs_by_emp is None:
         if run is None:
             raise ValueError('run مطلوب لحساب الخصومات.')
-        abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, _ = _bulk_payroll_deductions(
+        abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, cs_by_emp, _ = _bulk_payroll_deductions(
             [emp.id], run, period_start, period_end, year, month,
         )
 
@@ -225,6 +233,9 @@ def _compute_employee_payroll_snapshot(
     emp_leaves = leaves_by_emp.get(emp.id, [])
     emp_installments = inst_by_emp.get(emp.id, [])
     emp_penalties = pen_by_emp.get(emp.id, [])
+    if cs_by_emp is None:
+        cs_by_emp = {}
+    emp_cash_shortages = cs_by_emp.get(emp.id, [])
 
     basic_full = Decimal(emp.basic_salary or 0)
     housing_full = Decimal(emp.housing_allowance or 0)
@@ -259,11 +270,14 @@ def _compute_employee_payroll_snapshot(
     penalty_deduction = _q(
         sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
     )
+    cash_shortage_deduction = _q(
+        sum((Decimal(cs.amount or 0) for cs in emp_cash_shortages), Decimal('0'))
+    )
     rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
     insurance_deduction = _q(insurance_base * rate / Decimal('100'))
     total_deductions = _q(
         absence_deduction + unpaid_leave_deduction + loan_deduction
-        + penalty_deduction + insurance_deduction
+        + penalty_deduction + cash_shortage_deduction + insurance_deduction
     )
     if total_deductions > gross:
         total_deductions = _q(gross)
@@ -279,6 +293,7 @@ def _compute_employee_payroll_snapshot(
         'unpaid_leave_deduction': unpaid_leave_deduction,
         'loan_deduction': loan_deduction,
         'penalty_deduction': penalty_deduction,
+        'cash_shortage_deduction': cash_shortage_deduction,
         'insurance_deduction': insurance_deduction,
         'total_earnings': gross,
         'total_deductions': total_deductions,
@@ -311,6 +326,15 @@ def _compute_employee_payroll_snapshot(
             'penalties': [
                 {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount)}
                 for p in emp_penalties
+            ],
+            'cash_shortages': [
+                {
+                    'id': cs.id,
+                    'date': cs.shortage_date.isoformat(),
+                    'amount': str(cs.amount),
+                    'serial': cs.serial_number or '',
+                }
+                for cs in emp_cash_shortages
             ],
             'insurance_rate': str(rate),
         },
@@ -390,7 +414,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         ).order_by('name').distinct()
     )
     employee_ids = [e.id for e in employees]
-    abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, locked_emp_ids = _bulk_payroll_deductions(
+    abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, cs_by_emp, locked_emp_ids = _bulk_payroll_deductions(
         employee_ids, run, period_start, period_end, year, month,
     )
 
@@ -411,6 +435,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             leaves_by_emp=leaves_by_emp,
             inst_by_emp=inst_by_emp,
             pen_by_emp=pen_by_emp,
+            cs_by_emp=cs_by_emp,
         )
         breakdown = dict(snap['breakdown'])
         transfer_info = transfer_breakdown_for_employee(company_transfers.get(emp.id))
@@ -434,6 +459,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             unpaid_leave_deduction=snap['unpaid_leave_deduction'],
             loan_deduction=snap['loan_deduction'],
             penalty_deduction=snap['penalty_deduction'],
+            other_deduction=snap['cash_shortage_deduction'],
             insurance_deduction=snap['insurance_deduction'],
             gross_salary=snap['gross_salary'],
             total_earnings=snap['total_earnings'],
@@ -531,7 +557,7 @@ def build_consolidated_payroll_run(
                 employees.append(emp)
 
     employee_ids = [e.id for e in employees]
-    abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, locked_emp_ids = _bulk_payroll_deductions(
+    abs_by_emp, leaves_by_emp, inst_by_emp, pen_by_emp, cs_by_emp, locked_emp_ids = _bulk_payroll_deductions(
         employee_ids, run, period_start, period_end, year, month,
     )
 
@@ -546,6 +572,7 @@ def build_consolidated_payroll_run(
             leaves_by_emp=leaves_by_emp,
             inst_by_emp=inst_by_emp,
             pen_by_emp=pen_by_emp,
+            cs_by_emp=cs_by_emp,
         )
         breakdown = dict(snap['breakdown'])
         transfer_info = transfer_breakdown_for_employee(company_transfers.get(emp.id))
@@ -569,6 +596,7 @@ def build_consolidated_payroll_run(
             unpaid_leave_deduction=snap['unpaid_leave_deduction'],
             loan_deduction=snap['loan_deduction'],
             penalty_deduction=snap['penalty_deduction'],
+            other_deduction=snap['cash_shortage_deduction'],
             insurance_deduction=snap['insurance_deduction'],
             gross_salary=snap['gross_salary'],
             total_earnings=snap['total_earnings'],
@@ -668,6 +696,7 @@ def lock_payroll_run(run: PayrollRun, user):
         _bind_breakdown_items(ln, 'absences', EmployeeAbsence)
         _bind_breakdown_items(ln, 'unpaid_leaves', EmployeeLeave)
         _bind_breakdown_items(ln, 'penalties', EmployeeStatement)
+        _bind_breakdown_items(ln, 'cash_shortages', EmployeeCashShortage)
         inst_ids = _bind_breakdown_items(
             ln,
             'loan_installments',
@@ -813,6 +842,7 @@ def unlock_payroll_run(run: PayrollRun, user):
     # فك ربط كل البنود
     EmployeeAbsence.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
     EmployeeLeave.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
+    EmployeeCashShortage.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
     LoanInstallment.objects.filter(applied_to_payroll=run).update(
         applied_to_payroll=None, status=LoanInstallment.Status.PENDING
     )

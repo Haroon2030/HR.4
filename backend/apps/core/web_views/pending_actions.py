@@ -69,12 +69,27 @@ def _managed_scope_for_user(user) -> tuple[list[int], list[int]]:
 
 
 def _user_visible_actions(user):
+    from apps.employees.services.cash_shortage_access import (
+        branch_accountant_branch_ids,
+        is_branch_accountant,
+    )
+
     qs = PendingAction.objects.select_related(
         'employee', 'branch', 'administration', 'requested_by',
         'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer', 'returned_by',
     )
     if user.is_superuser or _is_general_manager(user):
         return qs
+
+    if is_branch_accountant(user):
+        ba_ids = list(branch_accountant_branch_ids(user))
+        filters = Q(requested_by=user)
+        if ba_ids:
+            filters |= Q(
+                action_type=PendingAction.ActionType.CASH_SHORTAGE,
+                branch_id__in=ba_ids,
+            )
+        return qs.filter(filters).distinct()
 
     filters = Q(requested_by=user)
     managed_ids, managed_admin_ids = _managed_scope_for_user(user)
@@ -418,7 +433,10 @@ def branch_approve_action(request, action_id):
                 return redirect('web:list_pending_actions')
             from apps.core.services.pending_actions import branch_approve
             branch_approve(action, request.user, notes)
-        messages.success(request, 'تمت موافقتك. الطلب الآن بانتظار المدير العام.')
+        if action.action_type == PendingAction.ActionType.CASH_SHORTAGE:
+            messages.success(request, 'تم اعتماد عجز الكاشير وتنفيذه.')
+        else:
+            messages.success(request, 'تمت موافقتك. الطلب الآن بانتظار المدير العام.')
     except Exception as e:
         messages.error(request, f'تعذّر التنفيذ: {e}')
     return redirect('web:pending_action_detail', action_id=action_id)

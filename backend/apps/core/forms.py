@@ -452,6 +452,48 @@ class AbsenceForm(forms.Form):
     notes = forms.CharField(required=False)
 
 
+class CashShortageForm(forms.Form):
+    """تسجيل عجز كاشير."""
+    shortage_date = forms.DateField(
+        error_messages={'required': 'تاريخ العجز مطلوب', 'invalid': 'تاريخ العجز غير صحيح'},
+    )
+    amount = forms.DecimalField(
+        min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
+        error_messages={
+            'required': 'مبلغ العجز مطلوب',
+            'invalid': 'مبلغ العجز غير صحيح',
+            'min_value': 'يجب أن يكون المبلغ أكبر من صفر',
+        },
+    )
+    branch = forms.ModelChoiceField(
+        queryset=None,
+        required=True,
+        error_messages={'required': 'الفرع مطلوب', 'invalid_choice': 'الفرع غير صالح'},
+    )
+    notes = forms.CharField(required=False)
+
+    def __init__(self, *args, user=None, employee=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.core.models import Branch
+        from apps.core.services.access_control import filter_branches_queryset
+
+        self.employee = employee
+        qs = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
+        if user is not None:
+            qs = filter_branches_queryset(user, qs)
+        self.fields['branch'].queryset = qs
+        if employee and employee.branch_id:
+            self.fields['branch'].initial = employee.branch_id
+            if qs.filter(pk=employee.branch_id).exists():
+                self.fields['branch'].disabled = True
+
+    def clean(self):
+        cd = super().clean()
+        if self.fields['branch'].disabled and self.employee and self.employee.branch_id:
+            cd['branch'] = self.employee.branch
+        return cd
+
+
 class ReviewNotesForm(forms.Form):
     """تستخدم في approve/reject - notes اختيارية للموافقة وإجبارية للرفض."""
     review_notes = forms.CharField(required=False)

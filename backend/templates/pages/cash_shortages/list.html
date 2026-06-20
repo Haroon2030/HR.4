@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block title %}عجز الكاشير{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4" dir="rtl">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <i data-lucide="wallet" class="w-7 h-7 text-primary-600"></i>
+                عجز الكاشير
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">تسجيل العجز وإرساله لمحاسب الفرع للاعتماد — يُخصم من الراتب عند ترحيل المسير.</p>
+        </div>
+        <a href="{% url 'web:list_pending_actions' %}" class="hr-btn hr-btn--soft-slate">
+            <i data-lucide="inbox" class="hr-btn__icon"></i>
+            <span>طلبات العمليات</span>
+        </a>
+    </div>
+
+    {% if can_add %}
+    <div class="hr-glass-panel p-5 overflow-visible">
+        <h2 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-primary-600"></i>
+            تسجيل عجز جديد
+        </h2>
+        <form method="post" action="{% url 'web:register_cash_shortage' %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="lg:col-span-2">
+                    {% include "components/employee_search_picker.html" with label="الموظف" employee_search_url=employee_search_url %}
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">تاريخ العجز</label>
+                    <input type="date" name="shortage_date" required
+                           class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">مبلغ العجز (ر.س)</label>
+                    <input type="number" name="amount" step="0.01" min="0.01" required
+                           placeholder="0.00"
+                           class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">الفرع</label>
+                    <select name="branch" required
+                            class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white">
+                        <option value="">— اختر الفرع —</option>
+                        {% for b in form.fields.branch.queryset %}
+                        <option value="{{ b.pk }}">{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1">يُعرض فرع الموظف تلقائياً عند اختياره إن وُجد.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2"
+                              class="hr-search-field__input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none"
+                              placeholder="اختياري"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                {% include "components/hr_btn.html" with type="submit" label="إرسال للاعتماد" variant="primary" icon="send" %}
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <i data-lucide="list" class="w-4 h-4"></i>
+                سجل العجوزات المعتمدة
+            </h2>
+            <span class="text-xs text-slate-500">{{ page_obj.paginator.count }} سجل</span>
+        </div>
+        {% if shortages %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs">
+                    <tr>
+                        <th class="px-3 py-2 text-right font-bold">الرقم</th>
+                        <th class="px-3 py-2 text-right font-bold">الموظف</th>
+                        <th class="px-3 py-2 text-right font-bold">الفرع</th>
+                        <th class="px-3 py-2 text-right font-bold">التاريخ</th>
+                        <th class="px-3 py-2 text-right font-bold">المبلغ</th>
+                        <th class="px-3 py-2 text-right font-bold">المسير</th>
+                        <th class="px-3 py-2 text-right font-bold">أُضيف بواسطة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for s in shortages %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ s.serial_number|default:"—" }}</td>
+                        <td class="px-3 py-2">
+                            <a href="{% url 'web:view_employee' s.employee_id %}" class="font-semibold text-primary-700 hover:underline">{{ s.employee.name }}</a>
+                        </td>
+                        <td class="px-3 py-2 text-slate-600">{{ s.branch.name }}</td>
+                        <td class="px-3 py-2 font-bold text-slate-800">{{ s.shortage_date|date:"Y/m/d" }}</td>
+                        <td class="px-3 py-2 font-bold text-rose-700">{{ s.amount|format_amount }} ر.س</td>
+                        <td class="px-3 py-2 text-xs">
+                            {% if s.applied_to_payroll %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                                {{ s.applied_to_payroll.period_year }}/{{ s.applied_to_payroll.period_month|stringformat:"02d" }}
+                            </span>
+                            {% else %}
+                            <span class="text-amber-600">بانتظار المسير</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 text-xs text-slate-500">{{ s.created_by.get_full_name|default:s.created_by.username|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 border-t border-slate-100 flex justify-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="hr-btn hr-btn--ghost hr-btn--sm">السابق</a>
+            {% endif %}
+            <span class="text-xs text-slate-500 self-center">صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="hr-btn hr-btn--ghost hr-btn--sm">التالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center text-slate-500 py-12">
+            <i data-lucide="wallet" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+            لا توجد عجوزات معتمدة بعد
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

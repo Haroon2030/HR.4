@@ -144,6 +144,8 @@ class Command(BaseCommand):
                     'operations.approve_officer',
                     'operations.return',
                     'operations.resubmit',
+                    'cash_shortages.view',
+                    'cash_shortages.add',
                 ],
             },
             
@@ -183,6 +185,17 @@ class Command(BaseCommand):
                     'employees.edit',
                     'departments.view',
                     'branches.view',
+                ],
+            },
+            {
+                **_role_meta(Role.RoleType.BRANCH_ACCOUNTANT),
+                'permissions': [
+                    'employees.view',
+                    'cash_shortages.view',
+                    'cash_shortages.add',
+                    'operations.view',
+                    'operations.approve_branch',
+                    'operations.return',
                 ],
             },
         ]

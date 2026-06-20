@@ -77,6 +77,7 @@ def load_employee_view_context(
         'active_custodies': [],
         'loans': [],
         'absences': [],
+        'cash_shortages': [],
         'leave_timeline': [],
         'contract_is_saudi': False,
         'contract_fourth_year_start': None,
@@ -148,6 +149,20 @@ def load_employee_view_context(
             except (InvalidOperation, ValueError, TypeError):
                 continue
         ctx['absences_deduction_total'] = deduction_total
+
+    if need('cash_shortages'):
+        shortages = list(
+            employee.cash_shortages.select_related('branch', 'applied_to_payroll')
+            .order_by('-shortage_date', '-id')
+        )
+        ctx['cash_shortages'] = shortages
+        total_amount = Decimal('0')
+        for row in shortages:
+            try:
+                total_amount += Decimal(str(row.amount or 0))
+            except (InvalidOperation, ValueError, TypeError):
+                continue
+        ctx['cash_shortages_total'] = total_amount
 
     if need('leaves'):
         ctx['leave_timeline'] = _load_leave_timeline(employee)

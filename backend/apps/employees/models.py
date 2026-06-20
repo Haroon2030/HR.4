@@ -1005,6 +1005,54 @@ class EmployeeAbsence(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# عجز كاشير (يُخصم من الراتب بعد اعتماد محاسب الفرع)
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeCashShortage(BaseModel):
+    """تسجيل عجز كاشير — مبلغ ثابت يُخصم في مسير الرواتب."""
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='cash_shortages',
+        verbose_name="الموظف",
+    )
+    serial_number = models.CharField(
+        "الرقم المتسلسل", max_length=40, blank=True, db_index=True,
+        help_text="مثال: CS-260620-0005-A3F2",
+    )
+    shortage_date = models.DateField("تاريخ العجز", db_index=True)
+    amount = models.DecimalField(
+        "مبلغ العجز", max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    branch = models.ForeignKey(
+        Branch, on_delete=models.PROTECT, related_name='cash_shortages',
+        verbose_name="الفرع",
+    )
+    notes = models.TextField("ملاحظات", blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_cash_shortages', verbose_name="أُضيف بواسطة",
+    )
+    applied_to_payroll = models.ForeignKey(
+        'payroll.PayrollRun', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consumed_cash_shortages', verbose_name="المسير المُحتسب فيه",
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "عجز كاشير"
+        verbose_name_plural = "عجوزات الكاشير"
+        ordering = ['-shortage_date', '-created_at']
+        indexes = [
+            models.Index(fields=['employee', 'shortage_date'], name='empcs_emp_date_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.shortage_date} ({self.amount} ر.س)"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # سجل الأرصدة والمخصصات الشهرية (Ledger for Leaves and EOSB)
 # ══════════════════════════════════════════════════════════════════════════════
 class EmployeeLedger(BaseModel):

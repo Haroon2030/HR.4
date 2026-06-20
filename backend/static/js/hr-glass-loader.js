@@ -7,12 +7,31 @@
 
     var tabBound = false;
     var htmxBound = false;
+    var navSafetyTimer = null;
 
     function hrTabLabel(el) {
         if (!el) return 'القسم';
         var textEl = el.querySelector('.hr-nav-text, .hr-tab-btn > span, .hr-tab > span, span:not(.hr-payroll-tab-count):not(.hr-tab-badge):not(.hr-glass-loading__dots span)');
         var raw = (textEl ? textEl.textContent : el.textContent) || '';
         return raw.replace(/\s+/g, ' ').trim().replace(/\s*\d+\s*$/, '').trim() || 'القسم';
+    }
+
+    function hrSameDocumentUrl(a, b) {
+        return a.pathname === b.pathname && a.search === b.search;
+    }
+
+    function hrHideGlassLoader() {
+        clearTimeout(navSafetyTimer);
+        navSafetyTimer = null;
+        hrDefineGlassLoaderStore();
+        if (window.Alpine && Alpine.store('glassLoader')) {
+            Alpine.store('glassLoader').hide();
+        }
+    }
+
+    function hrArmNavLoaderSafety(ms) {
+        clearTimeout(navSafetyTimer);
+        navSafetyTimer = setTimeout(hrHideGlassLoader, ms || 15000);
     }
 
     function hrDefineGlassLoaderStore() {
@@ -105,9 +124,12 @@
             if (tab.tagName === 'A' && tab.href) {
                 try {
                     var url = new URL(tab.href, window.location.href);
-                    if (url.origin === window.location.origin) {
-                        store.show('جاري تحميل ' + label);
-                    }
+                    var current = new URL(window.location.href);
+                    if (url.origin !== window.location.origin) return;
+                    if (hrSameDocumentUrl(url, current)) return;
+                    store.show('جاري تحميل ' + label);
+                    store.scheduleHide(350);
+                    hrArmNavLoaderSafety(15000);
                 } catch (err) { /* ignore */ }
                 return;
             }
@@ -137,8 +159,13 @@
         document.body.addEventListener('htmx:afterRequest', function (evt) {
             var target = evt.detail && evt.detail.target;
             if (!target || target.id === 'notif-dropdown-content') return;
-            if (!window.Alpine || !Alpine.store('glassLoader')) return;
-            Alpine.store('glassLoader').hide();
+            hrHideGlassLoader();
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            var target = evt.detail && evt.detail.target;
+            if (!target || target.id !== 'hr-page-inner') return;
+            hrHideGlassLoader();
         });
     }
 
@@ -146,9 +173,11 @@
         hrDefineGlassLoaderStore();
         hrBindTabGlassLoader();
         hrBindHtmxGlassLoader();
+        hrHideGlassLoader();
     }
 
     document.addEventListener('alpine:init', hrInitGlassLoader);
+    document.addEventListener('DOMContentLoaded', hrHideGlassLoader);
 
     window.hrGlassLoader = {
         show: function (label, hint) {
@@ -184,9 +213,6 @@
         },
     };
 
-    window.addEventListener('pageshow', function () {
-        if (window.Alpine && Alpine.store('glassLoader')) {
-            Alpine.store('glassLoader').hide();
-        }
-    });
+    window.addEventListener('pageshow', hrHideGlassLoader);
+    window.addEventListener('load', hrHideGlassLoader);
 })();

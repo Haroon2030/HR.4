@@ -23,11 +23,12 @@ EMPLOYEE_TABS = (
     {'key': 'contract', 'label': 'العقد', 'order': 138},
     {'key': 'loans', 'label': 'السلف', 'order': 139},
     {'key': 'absences', 'label': 'الغيابات', 'order': 140},
-    {'key': 'fingerprint', 'label': 'البصمة', 'order': 141},
-    {'key': 'docs', 'label': 'المستندات', 'order': 142},
-    {'key': 'accruals', 'label': 'المخصصات والأرصدة', 'order': 143},
-    {'key': 'archive', 'label': 'أرشيف الحركة', 'order': 144},
-    {'key': 'termination', 'label': 'التصفيات', 'order': 145},
+    {'key': 'cash_shortages', 'label': 'العجوزات', 'order': 141},
+    {'key': 'fingerprint', 'label': 'البصمة', 'order': 142},
+    {'key': 'docs', 'label': 'المستندات', 'order': 143},
+    {'key': 'accruals', 'label': 'المخصصات والأرصدة', 'order': 144},
+    {'key': 'archive', 'label': 'أرشيف الحركة', 'order': 145},
+    {'key': 'termination', 'label': 'التصفيات', 'order': 146},
 )
 
 TAB_KEYS = tuple(t['key'] for t in EMPLOYEE_TABS)

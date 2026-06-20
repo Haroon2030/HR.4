@@ -34,6 +34,11 @@ class CoreConfig(AppConfig):
     def ready(self):
         """تفعيل الـ signals عند تشغيل التطبيق"""
         from apps.core.employee_tab_permissions import register_employee_tab_permissions
+        from apps.core.permissions_registry import register_module, register_permission
+
+        register_module('cash_shortages', name='عجز الكاشير', icon='banknote', order=13)
+        register_permission('cash_shortages.view')
+        register_permission('cash_shortages.add')
         register_employee_tab_permissions()
         import apps.core.signals  # noqa: F401
         post_migrate.connect(_sync_permissions_signal, sender=self)

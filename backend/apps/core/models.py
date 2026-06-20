@@ -222,6 +222,7 @@ class Role(BaseModel):
         HR_OFFICER = 'hr_officer', 'HR_OFFICER — منفّذ عمليات الموارد البشرية'
         ADMIN_MANAGER = 'admin_manager', 'ADMIN_MANAGER — مدير الإدارة (موافقة أولى)'
         MANAGER = 'manager', 'BRANCH_MANAGER — مدير الفرع (موافقة أولى)'
+        BRANCH_ACCOUNTANT = 'branch_accountant', 'BRANCH_ACCOUNTANT — محاسب الفرع'
         SPECIALIST = 'specialist', 'DATA_SPECIALIST — أخصائي إدخال البيانات'
         EMPLOYEE = 'employee', 'EMPLOYEE — موظف (صلاحيات ذاتية)'
     
@@ -396,6 +397,10 @@ class UserProfile(BaseModel):
         return self.role and self.role.role_type == Role.RoleType.MANAGER
 
     @property
+    def is_branch_accountant(self):
+        return self.role and self.role.role_type == Role.RoleType.BRANCH_ACCOUNTANT
+
+    @property
     def is_admin_manager(self):
         return self.role and self.role.role_type == Role.RoleType.ADMIN_MANAGER
     
@@ -464,6 +469,7 @@ class PendingAction(BaseModel):
         BUSINESS_TRIP = 'business_trip', 'رحلة عمل'
         LOAN_REQUEST = 'loan_request', 'تقديم سلفة'
         ABSENCE = 'absence', 'تسجيل غياب'
+        CASH_SHORTAGE = 'cash_shortage', 'عجز كاشير'
         CONTRACT_END = 'contract_end', 'انتهاء عقد'
         END_OF_SERVICE = 'end_of_service', 'تصفية نهاية خدمة / استقالة'
 

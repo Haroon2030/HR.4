@@ -36,6 +36,12 @@ def _is_branch_manager(user):
     )
 
 
+def _is_branch_accountant(user):
+    """هل المستخدم محاسب فرع (دور BRANCH_ACCOUNTANT)؟"""
+    from apps.employees.services.cash_shortage_access import is_branch_accountant
+    return is_branch_accountant(user) or user.is_superuser
+
+
 def filter_employees_queryset_for_user(user, queryset):
     """Restrict employee queryset to branches the user may access."""
     branch_ids = _user_accessible_branch_ids(user)
@@ -172,6 +178,9 @@ def _can_act_at_stage(user, action, stage):
         return False
 
     if stage == PendingAction.Stage.BRANCH:
+        if action.action_type == PendingAction.ActionType.CASH_SHORTAGE:
+            from apps.employees.services.cash_shortage_access import user_can_approve_cash_shortage
+            return user_can_approve_cash_shortage(user, action)
         return _can_review_action(user, action)
 
     if stage == PendingAction.Stage.GM:
@@ -188,6 +197,9 @@ def _role_ok_at_stage(user, action, stage):
     from apps.core.models import PendingAction
 
     if stage == PendingAction.Stage.BRANCH:
+        if action.action_type == PendingAction.ActionType.CASH_SHORTAGE:
+            from apps.employees.services.cash_shortage_access import user_can_approve_cash_shortage
+            return user_can_approve_cash_shortage(user, action)
         return _can_review_action(user, action)
     if stage == PendingAction.Stage.GM:
         return True

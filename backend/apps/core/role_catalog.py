@@ -27,6 +27,7 @@ ROLE_TYPE_ORDER = [
     Role.RoleType.HR_OFFICER,
     Role.RoleType.ADMIN_MANAGER,
     Role.RoleType.MANAGER,
+    Role.RoleType.BRANCH_ACCOUNTANT,
     Role.RoleType.SPECIALIST,
     Role.RoleType.EMPLOYEE,
 ]
@@ -75,6 +76,14 @@ ROLE_CATALOG: dict[str, dict[str, str]] = {
             'إدارة موظفي الفرع والموافقة الأولى على طلباتهم عند عدم وجود مدير إدارة فعّال.'
         ),
     },
+    Role.RoleType.BRANCH_ACCOUNTANT: {
+        'code': 'BRANCH_ACCOUNTANT',
+        'name': 'BRANCH_ACCOUNTANT — محاسب الفرع',
+        'type_label': 'BRANCH_ACCOUNTANT — محاسب الفرع (اعتماد عجز الكاشير)',
+        'description': (
+            'اعتماد طلبات عجز الكاشير لموظفي الفروع المعيّنة عليه (profile.branch + assigned_branches).'
+        ),
+    },
     Role.RoleType.SPECIALIST: {
         'code': 'DATA_SPECIALIST',
         'name': 'DATA_SPECIALIST — أخصائي إدخال البيانات',
@@ -97,6 +106,7 @@ LEGACY_ROLE_NAME_TO_TYPE: dict[str, str] = {
     'أخصائي موارد بشرية': Role.RoleType.HR_OFFICER,
     'مدير إدارة': Role.RoleType.ADMIN_MANAGER,
     'مدير فرع': Role.RoleType.MANAGER,
+    'محاسب الفرع': Role.RoleType.BRANCH_ACCOUNTANT,
     'أخصائي إدخال البيانات': Role.RoleType.SPECIALIST,
     'موظف': Role.RoleType.EMPLOYEE,
     'مدير المالية': Role.RoleType.MANAGER,
