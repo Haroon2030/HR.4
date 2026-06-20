@@ -79,7 +79,7 @@ def send_to_employee(
             response=response,
         )
     except client.EvolutionAPIError as exc:
-        logger.exception('WhatsApp send failed for employee %s', employee.pk)
+        logger.warning('WhatsApp send failed for employee %s: %s', employee.pk, exc)
         return _log_message(
             employee=employee,
             phone=phone,
@@ -89,6 +89,17 @@ def send_to_employee(
             related_action=related_action,
             error=str(exc),
             response=getattr(exc, 'payload', '') or '',
+        )
+    except Exception as exc:
+        logger.warning('WhatsApp send failed for employee %s: %s', employee.pk, exc)
+        return _log_message(
+            employee=employee,
+            phone=phone,
+            event_type=event_type,
+            message=message,
+            status=WhatsAppMessageLog.Status.FAILED,
+            related_action=related_action,
+            error=str(exc),
         )
 
 

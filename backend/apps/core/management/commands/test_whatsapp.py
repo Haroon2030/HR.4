@@ -44,9 +44,16 @@ class Command(BaseCommand):
         send_to = (options.get('send_to') or '').strip()
         if send_to:
             if not client.is_configured():
-                self.stdout.write(self.style.ERROR(
-                    'فعّل WHATSAPP_ENABLED=true وحدّد EVOLUTION_INSTANCE.'
-                ))
+                instance = (settings.EVOLUTION_INSTANCE or '').strip()
+                if instance and not client._INSTANCE_RE.fullmatch(instance):
+                    self.stdout.write(self.style.ERROR(
+                        f'EVOLUTION_INSTANCE="{instance}" غير صالح — استخدم اسماً إنجليزياً '
+                        '(مثل hr). شغّل: python manage.py test_whatsapp --list-instances'
+                    ))
+                else:
+                    self.stdout.write(self.style.ERROR(
+                        'فعّل WHATSAPP_ENABLED=true وحدّد EVOLUTION_INSTANCE.'
+                    ))
                 raise SystemExit(1)
             try:
                 result = client.send_text(
