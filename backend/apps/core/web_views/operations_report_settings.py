@@ -15,7 +15,10 @@ from apps.core.services.email_delivery import (
     email_delivery_status,
 )
 from apps.core.services.operations_report_mail import build_and_send_operations_report
-from apps.core.services.operations_report_schedule import operations_report_schedule_status, resolve_operations_report_date
+from apps.core.services.operations_report_schedule import (
+    operations_report_schedule_status,
+    pick_test_report_date,
+)
 from apps.core.services.operations_report_whatsapp import whatsapp_delivery_ready
 from apps.core.services.whatsapp import phone_utils
 from apps.setup.forms import OperationsReportSettingsForm
@@ -58,10 +61,12 @@ def operations_report_settings(request):
                 return redirect(reverse('web:operations_report_settings'))
 
             try:
-                report_date = resolve_operations_report_date(
-                    timezone.localtime(),
-                    settings_obj.send_time,
-                    manual=False,
+                now = timezone.localtime()
+                report_date, used_fallback = pick_test_report_date(
+                    now,
+                    settings_obj,
+                    include_pending=settings_obj.include_pending,
+                    include_completed=settings_obj.include_completed,
                 )
                 if test_email or test_phone:
                     sent = build_and_send_operations_report(
@@ -72,12 +77,14 @@ def operations_report_settings(request):
                         force=True,
                         send_email=bool(test_email),
                         send_whatsapp=bool(test_phone),
+                        allow_empty=True,
                     )
                 else:
                     sent = build_and_send_operations_report(
                         report_date=report_date,
                         settings_obj=settings_obj,
                         force=True,
+                        allow_empty=True,
                     )
                 labels = []
                 if test_email:
@@ -97,8 +104,14 @@ def operations_report_settings(request):
                 if sent:
                     messages.success(
                         request,
-                        f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label}.',
+                        f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label} — تاريخ التقرير: {report_date.isoformat()}.',
                     )
+                    if used_fallback:
+                        messages.info(
+                            request,
+                            f'تم اختيار تاريخ {report_date.isoformat()} لأنه يحتوي بيانات '
+                            f'(التاريخ المجدول الافتراضي لم يُظهر عمليات).',
+                        )
                     if not settings_obj.is_enabled:
                         messages.warning(
                             request,
@@ -108,10 +121,10 @@ def operations_report_settings(request):
                 else:
                     messages.warning(
                         request,
-                        f'لم يُرسل أي تقرير — لا توجد عمليات معلّقة أو مُنجزة لتاريخ '
-                        f'{report_date.isoformat()}. '
-                        'المُنجز = ما تمت الموافقة عليه في ذلك اليوم. '
-                        'جرّب بعد اعتماد طلب، أو فعّل «تضمين المعلّق».',
+                        f'تعذّر الإرسال — تحقق من البريد أو واتساب. '
+                        f'تاريخ التقرير: {report_date.isoformat()}. '
+                        'ملاحظة: التقرير يشمل طلبات الموافقات والتوظيف فقط — '
+                        'التعديل المباشر على ملف الموظف لا يظهر هنا.',
                     )
             return redirect(reverse('web:operations_report_settings'))
 
@@ -175,9 +188,9 @@ def _link_recipient_ajax(request, settings_obj: OperationsReportSettings, *, cha
 
     if channel == 'whatsapp':
         phone = (request.POST.get('phone') or '').strip()
-        normalized = phone_utils.normalize_phone(phone)
-        if len(normalized) < 10:
-            return JsonResponse({'success': False, 'message': 'أدخل رقماً صالحاً (مثال: 05xxxxxxxx).'}, status=400)
+        err = phone_utils.phone_field_error(phone)
+        if err:
+            return JsonResponse({'success': False, 'message': err}, status=400)
 
         phones = settings_obj.recipient_phones_map()
         phones[role_key] = phone

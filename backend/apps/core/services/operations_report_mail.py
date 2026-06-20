@@ -139,6 +139,7 @@ def build_and_send_operations_report(
     role_key: str | None = None,
     send_email: bool = True,
     send_whatsapp: bool | None = None,
+    allow_empty: bool = False,
 ) -> bool:
     """
     يبني PDF ويرسله. يُرجع True عند نجاح إرسال تقرير واحد على الأقل.
@@ -172,6 +173,17 @@ def build_and_send_operations_report(
             include_pending=settings_obj.include_pending,
             include_completed=settings_obj.include_completed,
         ):
+            if allow_empty:
+                return _deliver_bundle(
+                    bundle=bundle,
+                    report_date=report_date,
+                    settings_obj=settings_obj,
+                    email=test_email,
+                    phone=test_phone,
+                    send_email=bool(test_email) and send_email,
+                    send_whatsapp=bool(test_phone),
+                    force_whatsapp=bool(test_phone),
+                )
             logger.info('تخطي تقرير العمليات التجريبي: لا توجد بيانات لتاريخ %s.', report_date)
             return False
         return _deliver_bundle(
@@ -271,6 +283,38 @@ def build_and_send_operations_report(
                 logger.info(
                     'تقرير العمليات: إرسال تقرير شامل احتياطي — لا بيانات في تقارير الأدوار المفلترة.'
                 )
+
+    if not sent_any and allow_empty:
+        full_bundle = collect_operations_report(
+            report_date=report_date,
+            include_pending=settings_obj.include_pending,
+            include_completed=settings_obj.include_completed,
+            role_key=None,
+        )
+        for email in settings_obj.active_recipient_emails():
+            if _deliver_bundle(
+                bundle=full_bundle,
+                report_date=report_date,
+                settings_obj=settings_obj,
+                email=email.strip(),
+                phone='',
+                send_email=send_email,
+                send_whatsapp=False,
+            ):
+                sent_any = True
+        if whatsapp_enabled:
+            for phone in settings_obj.active_recipient_phones():
+                if _deliver_bundle(
+                    bundle=full_bundle,
+                    report_date=report_date,
+                    settings_obj=settings_obj,
+                    email='',
+                    phone=phone,
+                    send_email=False,
+                    send_whatsapp=True,
+                    force_whatsapp=True,
+                ):
+                    sent_any = True
 
     if not sent_any:
         logger.info('تخطي تقرير العمليات: لا يوجد مستلم أو لا توجد بيانات.')

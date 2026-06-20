@@ -219,7 +219,7 @@ class OperationsReportSettingsForm(forms.ModelForm):
                 required=False,
                 widget=forms.TextInput(attrs={
                     'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400 placeholder:font-normal hr-recipient-phone-input',
-                    'placeholder': '05xxxxxxxx',
+                    'placeholder': '0512345678',
                     'dir': 'ltr',
                     'inputmode': 'tel',
                     'data-recipient-role': key,
@@ -252,9 +252,9 @@ class OperationsReportSettingsForm(forms.ModelForm):
             raw_phone = (cleaned.get(phone_field) or '').strip()
             if not raw_phone:
                 continue
-            normalized = phone_utils.normalize_phone(raw_phone)
-            if len(normalized) < 10:
-                self.add_error(phone_field, 'أدخل رقماً صالحاً (مثال: 05xxxxxxxx).')
+            err = phone_utils.phone_field_error(raw_phone)
+            if err:
+                self.add_error(phone_field, err)
 
         if cleaned.get('is_enabled') and not has_email and not (cleaned.get('send_via_whatsapp') and has_phone):
             raise ValidationError(

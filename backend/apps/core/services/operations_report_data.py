@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import Branch, PendingAction
@@ -57,6 +58,13 @@ SECTION_SPECS: tuple[tuple[str, str, tuple[int, int, int], tuple[str, ...]], ...
         ),
     ),
     ('absences', 'الغيابات', (249, 115, 22), (PendingAction.ActionType.ABSENCE,)),
+    ('cash_shortages', 'عجز الكاشير', (220, 38, 38), (PendingAction.ActionType.CASH_SHORTAGE,)),
+    ('business_trips', 'رحلات العمل', (6, 182, 212), (PendingAction.ActionType.BUSINESS_TRIP,)),
+    ('custody', 'العهد', (139, 92, 246), (
+        PendingAction.ActionType.CUSTODY_RECEIVE,
+        PendingAction.ActionType.CUSTODY_CLEAR,
+    )),
+    ('reactivations', 'إعادة التنشيط', (34, 197, 94), (PendingAction.ActionType.REACTIVATE,)),
     ('additions', 'إضافة موظفين جدد', (14, 165, 233), ()),
     ('salary_adjustments', 'تعديلات الراتب', (217, 119, 6), (PendingAction.ActionType.SALARY_ADJUST,)),
 )
@@ -284,11 +292,32 @@ def _completed_actions_qs(report_date: date):
         PendingAction.objects.filter(
             is_deleted=False,
             status=PendingAction.Status.APPROVED,
-            executed_at__date=report_date,
+        )
+        .filter(
+            Q(executed_at__date=report_date)
+            | Q(officer_reviewed_at__date=report_date)
         )
         .select_related('employee__administration', 'administration', 'branch')
-        .order_by('-executed_at')
+        .order_by('-executed_at', '-officer_reviewed_at')
     )
+
+
+def _completed_employment_qs(report_date: date, profile: RoleReportProfile):
+    qs = (
+        EmploymentRequest.objects.filter(
+            is_deleted=False,
+            status=EmploymentRequest.Status.APPROVED,
+        )
+        .filter(
+            Q(officer_reviewed_at__date=report_date)
+            | Q(officer_reviewed_at__isnull=True, updated_at__date=report_date)
+        )
+        .select_related('branch', 'administration')
+        .order_by('-officer_reviewed_at', '-updated_at')
+    )
+    if profile.scoped:
+        qs = qs.filter(administration__report_recipient_role=profile.role_key)
+    return qs
 
 
 def _pending_employment_qs(profile: RoleReportProfile):
@@ -339,6 +368,11 @@ def collect_operations_report(
         if key == 'additions':
             if include_completed:
                 completed_rows = _new_employee_rows(report_date, profile)
+                completed_rows.extend(
+                    _employment_row(r, completed=True)
+                    for r in _completed_employment_qs(report_date, profile)
+                )
+                completed_rows.sort(key=lambda r: r.sort_key, reverse=True)
             if include_pending:
                 pending_rows = [
                     _employment_row(r, completed=False) for r in _pending_employment_qs(profile)

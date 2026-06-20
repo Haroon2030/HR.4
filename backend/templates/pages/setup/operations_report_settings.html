@@ -255,7 +255,7 @@
                            value=""
                            class="hr-ops-report__test-input"
                            dir="ltr"
-                           placeholder="05xxxxxxxx">
+                           placeholder="0512345678">
                 </div>
             </div>
             {% include "components/hr_btn.html" with label="إرسال تجربة الآن" type="submit" variant="glass-sky" icon="refresh-cw" %}
@@ -278,9 +278,28 @@
         return v.length > 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     }
 
+    function extractPhoneDigits(value) {
+        const map = {
+            '٠': '0', '١': '1', '٢': '2', '٣': '3', '۴': '4', '٤': '4',
+            '٥': '5', '۵': '5', '٦': '6', '۶': '6', '٧': '7', '۷': '7',
+            '٨': '8', '۸': '8', '٩': '9', '۹': '9',
+        };
+        return (value || '').trim().split('').map(function (ch) {
+            return map[ch] !== undefined ? map[ch] : ch;
+        }).join('').replace(/\D/g, '');
+    }
+
     function isValidPhone(value) {
-        const v = (value || '').replace(/\D/g, '');
-        return v.length >= 9;
+        let d = extractPhoneDigits(value);
+        if (!d) return false;
+        if (d.startsWith('00')) d = d.slice(2);
+        const country = '966';
+        if (d.startsWith(country)) {
+            const local = d.slice(country.length);
+            return local.length === 9 && local.startsWith('5');
+        }
+        if (d.startsWith('0')) d = d.slice(1);
+        return d.length === 9 && d.startsWith('5');
     }
 
     function setLinkIcon(btn, linked, channel) {

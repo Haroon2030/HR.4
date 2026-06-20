@@ -81,7 +81,7 @@ def send_operations_report_whatsapp(
         return False
 
     normalized = phone_utils.normalize_phone(phone)
-    if not normalized:
+    if not phone_utils.is_valid_phone(phone):
         _log_whatsapp(
             phone='',
             event_type=f'operations_report.{bundle.role_key or "full"}',
