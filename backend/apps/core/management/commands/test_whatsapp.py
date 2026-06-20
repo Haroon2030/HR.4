@@ -21,6 +21,11 @@ class Command(BaseCommand):
             help='رقم جوال (مثال: 9665xxxxxxxx) لإرسال رسالة تجريبية.',
         )
         parser.add_argument(
+            '--send-pdf',
+            default='',
+            help='رقم جوال لإرسال PDF تجريبي صغير (اختبار sendMedia).',
+        )
+        parser.add_argument(
             '--list-instances',
             action='store_true',
             help='عرض instances المتاحة من Evolution API.',
@@ -42,7 +47,8 @@ class Command(BaseCommand):
             self._list_instances()
 
         send_to = (options.get('send_to') or '').strip()
-        if send_to:
+        send_pdf = (options.get('send_pdf') or '').strip()
+        if send_to or send_pdf:
             if not client.is_configured():
                 instance = (settings.EVOLUTION_INSTANCE or '').strip()
                 if instance and not client._INSTANCE_RE.fullmatch(instance):
@@ -56,10 +62,22 @@ class Command(BaseCommand):
                     ))
                 raise SystemExit(1)
             try:
-                result = client.send_text(
-                    phone=send_to,
-                    text='رسالة تجريبية من نظام الموارد البشرية ✓',
-                )
+                target = send_pdf or send_to
+                if send_pdf:
+                    pdf_bytes = (
+                        b'%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF'
+                    )
+                    result = client.send_document(
+                        phone=target,
+                        pdf_bytes=pdf_bytes,
+                        file_name='test-operations-report.pdf',
+                        caption='رسالة تجريبية — تقرير العمليات PDF',
+                    )
+                else:
+                    result = client.send_text(
+                        phone=target,
+                        text='رسالة تجريبية من نظام الموارد البشرية ✓',
+                    )
                 self.stdout.write(self.style.SUCCESS('تم الإرسال.'))
                 self.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
             except client.EvolutionAPIError as exc:

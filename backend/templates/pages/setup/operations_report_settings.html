@@ -15,7 +15,7 @@
                 <div class="min-w-0">
                     <h1 class="hr-ops-report__title">تقرير العمليات المجدول</h1>
                     <p class="hr-ops-report__subtitle">
-                        إرسال PDF يومي مخصّص لكل مدير — حسب إدارة الموظف في تهيئة الإدارات.
+                        إرسال PDF يومي مخصّص لكل مدير — بريد إلكتروني و/أو واتساب.
                     </p>
                 </div>
             </div>
@@ -35,7 +35,17 @@
                 <span class="hr-ops-report__stat-value" dir="ltr">{{ schedule_status.send_time_label }}</span>
             </div>
             <div class="hr-ops-report__stat">
-                <span class="hr-ops-report__stat-label">المستلمون</span>
+                <span class="hr-ops-report__stat-label">واتساب</span>
+                <span class="hr-ops-report__stat-value {% if schedule_status.send_via_whatsapp and whatsapp_delivery %}is-on{% else %}is-off{% endif %}">
+                    {% if schedule_status.send_via_whatsapp and whatsapp_delivery %}جاهز{% elif schedule_status.send_via_whatsapp %}غير مضبوط{% else %}متوقف{% endif %}
+                </span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">أرقام واتساب</span>
+                <span class="hr-ops-report__stat-value">{{ schedule_status.whatsapp_recipient_count }}</span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">بريد المستلمين</span>
                 <span class="hr-ops-report__stat-value">{{ schedule_status.recipient_count }}</span>
             </div>
             <div class="hr-ops-report__stat">
@@ -57,7 +67,7 @@
                     <div class="min-w-0">
                         <h2 class="hr-ops-report__section-title">مستلمو التقرير</h2>
                         <p class="hr-ops-report__section-desc">
-                            اربط بريداً لكل دور ثم احفظ الإعدادات. زر الربط يثبت البريد قبل الحفظ الكامل.
+                            اربط بريداً أو جوال واتساب لكل دور ثم احفظ الإعدادات.
                         </p>
                     </div>
                 </div>
@@ -66,8 +76,9 @@
                     <table class="hr-recipients-table w-full text-sm">
                         <thead>
                             <tr>
-                                <th scope="col" class="hr-recipients-table__role text-right px-4 py-2.5 font-semibold text-slate-700 w-[38%]">المسؤول</th>
+                                <th scope="col" class="hr-recipients-table__role text-right px-4 py-2.5 font-semibold text-slate-700 w-[28%]">المسؤول</th>
                                 <th scope="col" class="hr-recipients-table__email text-right px-4 py-2.5 font-semibold text-slate-700">البريد الإلكتروني</th>
+                                <th scope="col" class="hr-recipients-table__phone text-right px-4 py-2.5 font-semibold text-slate-700">واتساب (جوال)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -79,6 +90,7 @@
                                         <button type="button"
                                                 class="hr-recipient-link-btn{% if row.saved_email %} is-linked{% endif %}"
                                                 data-role="{{ row.key }}"
+                                                data-channel="email"
                                                 title="{% if row.saved_email %}مربوط{% else %}ربط البريد{% endif %}"
                                                 aria-label="ربط البريد"
                                                 disabled>
@@ -90,6 +102,27 @@
                                             {{ row.field }}
                                             {% if row.field.errors %}
                                             <p class="text-xs text-rose-600 mt-1">{{ row.field.errors.0 }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="hr-recipients-table__phone px-4 py-2 align-middle">
+                                    <div class="hr-recipient-phone-row flex items-center gap-2">
+                                        <button type="button"
+                                                class="hr-recipient-link-btn hr-recipient-link-btn--whatsapp{% if row.saved_phone %} is-linked{% endif %}"
+                                                data-role="{{ row.key }}"
+                                                data-channel="whatsapp"
+                                                title="{% if row.saved_phone %}مربوط{% else %}ربط الجوال{% endif %}"
+                                                aria-label="ربط الجوال"
+                                                disabled>
+                                            <i data-lucide="{% if row.saved_phone %}check{% else %}smartphone{% endif %}"
+                                               class="hr-recipient-link-btn__icon"
+                                               aria-hidden="true"></i>
+                                        </button>
+                                        <div class="flex-1 min-w-0">
+                                            {{ row.phone_field }}
+                                            {% if row.phone_field.errors %}
+                                            <p class="text-xs text-rose-600 mt-1">{{ row.phone_field.errors.0 }}</p>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -114,6 +147,17 @@
                     </div>
 
                     <div class="space-y-3">
+                        <label class="hr-ops-report__switch-card" for="id_send_via_whatsapp">
+                            {{ form.send_via_whatsapp }}
+                            <span class="hr-ops-report__switch-text">
+                                <span class="hr-ops-report__switch-title">إرسال عبر واتساب</span>
+                                <span class="hr-ops-report__switch-desc">
+                                    يرسل ملف PDF للأرقام المربوطة
+                                    {% if whatsapp_delivery %}— Evolution API جاهز{% else %}— يتطلب ضبط WHATSAPP_ENABLED{% endif %}.
+                                </span>
+                            </span>
+                        </label>
+
                         <label class="hr-ops-report__switch-card" for="id_is_enabled">
                             {{ form.is_enabled }}
                             <span class="hr-ops-report__switch-text">
@@ -185,22 +229,34 @@
             </span>
             <div class="min-w-0">
                 <h2 class="hr-ops-report__section-title">إرسال تجريبي</h2>
-                <p class="hr-ops-report__section-desc">اختبر التقرير فوراً — اترك البريد فارغاً لإرساله لجميع المستلمين المحفوظين.</p>
+                <p class="hr-ops-report__section-desc">اختبر التقرير فوراً — اترك الحقول فارغة للإرسال لجميع المستلمين المحفوظين.</p>
             </div>
         </div>
 
         <form method="post" class="hr-ops-report__test-form">
             {% csrf_token %}
             <input type="hidden" name="action" value="test_send">
-            <div class="hr-ops-report__test-field">
-                <label class="hr-ops-report__field-label" for="test-recipient-email">بريد الاختبار (اختياري)</label>
-                <input type="email"
-                       id="test-recipient-email"
-                       name="test_recipient"
-                       value=""
-                       class="hr-ops-report__test-input"
-                       dir="ltr"
-                       placeholder="example@company.com">
+            <div class="hr-ops-report__test-grid">
+                <div class="hr-ops-report__test-field">
+                    <label class="hr-ops-report__field-label" for="test-recipient-email">بريد الاختبار (اختياري)</label>
+                    <input type="email"
+                           id="test-recipient-email"
+                           name="test_recipient"
+                           value=""
+                           class="hr-ops-report__test-input"
+                           dir="ltr"
+                           placeholder="example@company.com">
+                </div>
+                <div class="hr-ops-report__test-field">
+                    <label class="hr-ops-report__field-label" for="test-recipient-phone">جوال واتساب (اختياري)</label>
+                    <input type="tel"
+                           id="test-recipient-phone"
+                           name="test_recipient_phone"
+                           value=""
+                           class="hr-ops-report__test-input"
+                           dir="ltr"
+                           placeholder="05xxxxxxxx">
+                </div>
             </div>
             {% include "components/hr_btn.html" with label="إرسال تجربة الآن" type="submit" variant="glass-sky" icon="refresh-cw" %}
         </form>
@@ -222,55 +278,95 @@
         return v.length > 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     }
 
-    function setLinkIcon(btn, linked) {
+    function isValidPhone(value) {
+        const v = (value || '').replace(/\D/g, '');
+        return v.length >= 9;
+    }
+
+    function setLinkIcon(btn, linked, channel) {
         const icon = btn.querySelector('.hr-recipient-link-btn__icon');
         if (!icon) return;
-        icon.setAttribute('data-lucide', linked ? 'check' : 'link-2');
+        if (channel === 'whatsapp') {
+            icon.setAttribute('data-lucide', linked ? 'check' : 'smartphone');
+        } else {
+            icon.setAttribute('data-lucide', linked ? 'check' : 'link-2');
+        }
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
         }
     }
 
     function updateRecipientRow(row) {
-        const input = row.querySelector('.hr-recipient-email-input');
-        const btn = row.querySelector('.hr-recipient-link-btn');
-        if (!input || !btn) return;
+        const emailInput = row.querySelector('.hr-recipient-email-input');
+        const phoneInput = row.querySelector('.hr-recipient-phone-input');
 
-        const email = input.value.trim();
-        const saved = (input.dataset.savedEmail || '').trim();
-        const linked = input.dataset.linked === 'true' && email === saved && isValidEmail(email);
-
-        if (linked) {
-            btn.classList.add('is-linked');
-            btn.title = 'مربوط';
-            btn.setAttribute('aria-label', 'مربوط');
-            btn.disabled = true;
-            btn.classList.remove('is-loading');
-            setLinkIcon(btn, true);
-            return;
+        if (emailInput) {
+            const emailBtn = row.querySelector('.hr-recipient-link-btn[data-channel="email"]');
+            if (emailBtn) {
+                const email = emailInput.value.trim();
+                const saved = (emailInput.dataset.savedEmail || '').trim();
+                const linked = emailInput.dataset.linked === 'true' && email === saved && isValidEmail(email);
+                if (linked) {
+                    emailBtn.classList.add('is-linked');
+                    emailBtn.disabled = true;
+                    emailBtn.classList.remove('is-loading');
+                    setLinkIcon(emailBtn, true, 'email');
+                } else {
+                    emailBtn.classList.remove('is-linked');
+                    emailBtn.disabled = !isValidEmail(email);
+                    emailBtn.classList.remove('is-loading');
+                    setLinkIcon(emailBtn, false, 'email');
+                }
+            }
         }
 
-        btn.classList.remove('is-linked');
-        btn.title = 'ربط البريد';
-        btn.setAttribute('aria-label', 'ربط البريد');
-        btn.disabled = !isValidEmail(email);
-        btn.classList.remove('is-loading');
-        setLinkIcon(btn, false);
+        if (phoneInput) {
+            const phoneBtn = row.querySelector('.hr-recipient-link-btn[data-channel="whatsapp"]');
+            if (phoneBtn) {
+                const phone = phoneInput.value.trim();
+                const saved = (phoneInput.dataset.savedPhone || '').trim();
+                const linked = phoneInput.dataset.linked === 'true' && phone === saved && isValidPhone(phone);
+                if (linked) {
+                    phoneBtn.classList.add('is-linked');
+                    phoneBtn.disabled = true;
+                    phoneBtn.classList.remove('is-loading');
+                    setLinkIcon(phoneBtn, true, 'whatsapp');
+                } else {
+                    phoneBtn.classList.remove('is-linked');
+                    phoneBtn.disabled = !isValidPhone(phone);
+                    phoneBtn.classList.remove('is-loading');
+                    setLinkIcon(phoneBtn, false, 'whatsapp');
+                }
+            }
+        }
     }
 
     function initRecipientRows() {
         document.querySelectorAll('[data-recipient-row]').forEach(function (row) {
-            const input = row.querySelector('.hr-recipient-email-input');
-            if (!input) return;
+            const emailInput = row.querySelector('.hr-recipient-email-input');
+            const phoneInput = row.querySelector('.hr-recipient-phone-input');
 
-            input.addEventListener('input', function (event) {
-                if (event.target !== input) return;
-                const saved = (input.dataset.savedEmail || '').trim();
-                if (input.value.trim() !== saved) {
-                    input.dataset.linked = 'false';
-                }
-                updateRecipientRow(row);
-            });
+            if (emailInput) {
+                emailInput.addEventListener('input', function (event) {
+                    if (event.target !== emailInput) return;
+                    const saved = (emailInput.dataset.savedEmail || '').trim();
+                    if (emailInput.value.trim() !== saved) {
+                        emailInput.dataset.linked = 'false';
+                    }
+                    updateRecipientRow(row);
+                });
+            }
+
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function (event) {
+                    if (event.target !== phoneInput) return;
+                    const saved = (phoneInput.dataset.savedPhone || '').trim();
+                    if (phoneInput.value.trim() !== saved) {
+                        phoneInput.dataset.linked = 'false';
+                    }
+                    updateRecipientRow(row);
+                });
+            }
 
             updateRecipientRow(row);
         });
@@ -278,24 +374,41 @@
 
     async function linkRecipient(btn) {
         const row = btn.closest('[data-recipient-row]');
-        const input = row?.querySelector('.hr-recipient-email-input');
-        if (!row || !input) return;
+        if (!row) return;
 
-        const email = input.value.trim();
-        const roleKey = btn.dataset.role || input.dataset.recipientRole;
-        if (!isValidEmail(email) || !roleKey) return;
+        const channel = btn.dataset.channel || 'email';
+        const roleKey = btn.dataset.role;
+        if (!roleKey) return;
 
-        btn.disabled = true;
-        btn.classList.add('is-loading');
-
-        try {
-            const body = new URLSearchParams({
+        let body;
+        if (channel === 'whatsapp') {
+            const input = row.querySelector('.hr-recipient-phone-input');
+            if (!input) return;
+            const phone = input.value.trim();
+            if (!isValidPhone(phone)) return;
+            body = new URLSearchParams({
+                csrfmiddlewaretoken: getCsrfToken(),
+                action: 'link_whatsapp_recipient',
+                role_key: roleKey,
+                phone: phone,
+            });
+        } else {
+            const input = row.querySelector('.hr-recipient-email-input');
+            if (!input) return;
+            const email = input.value.trim();
+            if (!isValidEmail(email)) return;
+            body = new URLSearchParams({
                 csrfmiddlewaretoken: getCsrfToken(),
                 action: 'link_recipient',
                 role_key: roleKey,
                 email: email,
             });
+        }
 
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+
+        try {
             const response = await fetch(LINK_URL, {
                 method: 'POST',
                 headers: {
@@ -310,8 +423,19 @@
                 throw new Error(data.message || 'تعذّر الربط.');
             }
 
-            input.dataset.savedEmail = email;
-            input.dataset.linked = 'true';
+            if (channel === 'whatsapp') {
+                const input = row.querySelector('.hr-recipient-phone-input');
+                if (input) {
+                    input.dataset.savedPhone = input.value.trim();
+                    input.dataset.linked = 'true';
+                }
+            } else {
+                const input = row.querySelector('.hr-recipient-email-input');
+                if (input) {
+                    input.dataset.savedEmail = input.value.trim();
+                    input.dataset.linked = 'true';
+                }
+            }
             updateRecipientRow(row);
         } catch (err) {
             btn.disabled = false;

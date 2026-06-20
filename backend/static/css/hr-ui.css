@@ -9829,6 +9829,22 @@ body.hr-app .hr-recipients-table__email {
     border: 1px solid #94a3b8;
 }
 
+body.hr-app .hr-recipients-table__phone {
+    background: #fff;
+    border: 1px solid #94a3b8;
+}
+
+body.hr-app .hr-recipient-phone-row {
+    min-width: 0;
+}
+
+body.hr-app .hr-recipient-link-btn--whatsapp.is-linked {
+    border-color: #22c55e;
+    background: #f0fdf4;
+    color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
 /* ── Operations report — recipient link before email ── */
 body.hr-app .hr-recipient-email-row {
     min-width: 0;
@@ -10224,6 +10240,13 @@ body.hr-app .hr-ops-report .hr-recipients-table__role {
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 0.75rem;
+}
+
+.hr-ops-report__test-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    flex: 1 1 100%;
 }
 
 .hr-ops-report__test-field {

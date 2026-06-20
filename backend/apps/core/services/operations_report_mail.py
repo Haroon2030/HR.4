@@ -1,4 +1,4 @@
-"""إرسال تقرير العمليات PDF بالبريد — تقرير مخصّص لكل دور."""
+"""إرسال تقرير العمليات PDF — بريد وواتساب."""
 from __future__ import annotations
 
 import logging
@@ -15,6 +15,7 @@ from apps.core.services.operations_report_data import (
     collect_operations_report,
 )
 from apps.core.services.operations_report_pdf import build_operations_report_pdf
+from apps.core.services.operations_report_whatsapp import send_operations_report_whatsapp
 from apps.setup.models import OperationsReportSettings
 from apps.setup.operations_report_recipients import OPERATIONS_REPORT_RECIPIENT_ROLES
 
@@ -43,18 +44,32 @@ def _build_email_body(bundle: OperationsReportBundle, report_date: date) -> str:
     return '\n'.join(body_lines)
 
 
+def _build_pdf(
+    *,
+    bundle: OperationsReportBundle,
+    report_date: date,
+    settings_obj: OperationsReportSettings,
+) -> bytes:
+    return build_operations_report_pdf(
+        report_date=report_date,
+        bundle=bundle,
+        include_pending=settings_obj.include_pending,
+        include_completed=settings_obj.include_completed,
+    )
+
+
 def _send_operations_report_email(
     *,
     bundle: OperationsReportBundle,
     recipients: list[str],
     report_date: date,
     settings_obj: OperationsReportSettings,
+    pdf_bytes: bytes | None = None,
 ) -> None:
-    pdf_bytes = build_operations_report_pdf(
-        report_date=report_date,
+    pdf = pdf_bytes or _build_pdf(
         bundle=bundle,
-        include_pending=settings_obj.include_pending,
-        include_completed=settings_obj.include_completed,
+        report_date=report_date,
+        settings_obj=settings_obj,
     )
 
     subject = f'{bundle.report_title} - {report_date.isoformat()}'
@@ -66,37 +81,91 @@ def _send_operations_report_email(
     )
     role_suffix = bundle.role_key if bundle.role_key and bundle.role_key != 'full' else 'full'
     filename = f'operations-report-{role_suffix}-{report_date.isoformat()}.pdf'
-    msg.attach(filename, pdf_bytes, 'application/pdf')
+    msg.attach(filename, pdf, 'application/pdf')
     deliver_email_message(msg, log_context=f'operations_report:{role_suffix}')
+
+
+def _deliver_bundle(
+    *,
+    bundle: OperationsReportBundle,
+    report_date: date,
+    settings_obj: OperationsReportSettings,
+    email: str = '',
+    phone: str = '',
+    send_email: bool = True,
+    send_whatsapp: bool = False,
+    pdf_bytes: bytes | None = None,
+    force_whatsapp: bool = False,
+) -> bool:
+    """يرسل التقرير عبر القنوات المفعّلة. يُرجع True عند نجاح قناة واحدة على الأقل."""
+    sent = False
+    pdf = pdf_bytes
+
+    if send_email and email:
+        if pdf is None:
+            pdf = _build_pdf(bundle=bundle, report_date=report_date, settings_obj=settings_obj)
+        _send_operations_report_email(
+            bundle=bundle,
+            recipients=[email.strip()],
+            report_date=report_date,
+            settings_obj=settings_obj,
+            pdf_bytes=pdf,
+        )
+        sent = True
+
+    if send_whatsapp and phone:
+        if pdf is None:
+            pdf = _build_pdf(bundle=bundle, report_date=report_date, settings_obj=settings_obj)
+        if send_operations_report_whatsapp(
+            bundle=bundle,
+            phone=phone,
+            report_date=report_date,
+            settings_obj=settings_obj,
+            pdf_bytes=pdf,
+            force=force_whatsapp,
+        ):
+            sent = True
+
+    return sent
 
 
 def build_and_send_operations_report(
     *,
     report_date: date | None = None,
     recipient: str | None = None,
+    recipient_phone: str | None = None,
     settings_obj: OperationsReportSettings | None = None,
     force: bool = False,
     role_key: str | None = None,
+    send_email: bool = True,
+    send_whatsapp: bool | None = None,
 ) -> bool:
     """
     يبني PDF ويرسله. يُرجع True عند نجاح إرسال تقرير واحد على الأقل.
-    عند تحديد recipient: يُرسل التقرير الشامل للبريد المحدد (اختبار).
+    عند تحديد recipient / recipient_phone: إرسال تجريبي (تقرير شامل).
     """
     settings_obj = settings_obj or OperationsReportSettings.get_solo()
     report_date = report_date or timezone.localdate()
+    whatsapp_enabled = settings_obj.send_via_whatsapp if send_whatsapp is None else send_whatsapp
 
-    if settings_obj.is_enabled is False and not force and recipient is None:
+    if settings_obj.is_enabled is False and not force and recipient is None and recipient_phone is None:
         logger.info('تخطي تقرير العمليات: الإرسال التلقائي غير مفعّل.')
         return False
 
-    ensure_smtp_ready(verify_connection=True)
+    test_email = (recipient or '').strip()
+    test_phone = (recipient_phone or '').strip()
+    if test_email and send_email:
+        ensure_smtp_ready(verify_connection=True)
+    elif not test_email and send_email:
+        if settings_obj.active_recipient_emails():
+            ensure_smtp_ready(verify_connection=True)
 
-    if recipient:
+    if test_email or test_phone:
         bundle = collect_operations_report(
             report_date=report_date,
             include_pending=settings_obj.include_pending,
             include_completed=settings_obj.include_completed,
-            role_key=None,
+            role_key=role_key,
         )
         if not bundle_has_content(
             bundle,
@@ -105,20 +174,25 @@ def build_and_send_operations_report(
         ):
             logger.info('تخطي تقرير العمليات التجريبي: لا توجد بيانات لتاريخ %s.', report_date)
             return False
-        _send_operations_report_email(
+        return _deliver_bundle(
             bundle=bundle,
-            recipients=[recipient.strip()],
             report_date=report_date,
             settings_obj=settings_obj,
+            email=test_email,
+            phone=test_phone,
+            send_email=bool(test_email) and send_email,
+            send_whatsapp=bool(test_phone),
+            force_whatsapp=bool(test_phone),
         )
-        return True
 
     email_map = settings_obj.recipient_emails_map()
+    phone_map = settings_obj.recipient_phones_map()
     sent_any = False
 
     for rk, _label in OPERATIONS_REPORT_RECIPIENT_ROLES:
         email = (email_map.get(rk) or '').strip()
-        if not email:
+        phone = (phone_map.get(rk) or '').strip()
+        if not email and not (whatsapp_enabled and phone):
             continue
 
         bundle = collect_operations_report(
@@ -135,13 +209,16 @@ def build_and_send_operations_report(
             logger.info('تخطي تقرير فارغ للدور: %s', rk)
             continue
 
-        _send_operations_report_email(
+        if _deliver_bundle(
             bundle=bundle,
-            recipients=[email],
             report_date=report_date,
             settings_obj=settings_obj,
-        )
-        sent_any = True
+            email=email,
+            phone=phone,
+            send_email=send_email,
+            send_whatsapp=whatsapp_enabled,
+        ):
+            sent_any = True
 
     if not sent_any:
         full_bundle = collect_operations_report(
@@ -155,24 +232,46 @@ def build_and_send_operations_report(
             include_pending=settings_obj.include_pending,
             include_completed=settings_obj.include_completed,
         ):
-            seen: set[str] = set()
+            seen_emails: set[str] = set()
+            seen_phones: set[str] = set()
             for email in settings_obj.active_recipient_emails():
                 norm = email.strip().lower()
-                if not norm or norm in seen:
+                if not norm or norm in seen_emails:
                     continue
-                seen.add(norm)
-                _send_operations_report_email(
+                seen_emails.add(norm)
+                if _deliver_bundle(
                     bundle=full_bundle,
-                    recipients=[email.strip()],
                     report_date=report_date,
                     settings_obj=settings_obj,
-                )
-                sent_any = True
+                    email=email.strip(),
+                    phone='',
+                    send_email=send_email,
+                    send_whatsapp=False,
+                ):
+                    sent_any = True
+
+            if whatsapp_enabled:
+                for phone in settings_obj.active_recipient_phones():
+                    norm = phone.replace(' ', '').replace('-', '')
+                    if not norm or norm in seen_phones:
+                        continue
+                    seen_phones.add(norm)
+                    if _deliver_bundle(
+                        bundle=full_bundle,
+                        report_date=report_date,
+                        settings_obj=settings_obj,
+                        email='',
+                        phone=phone,
+                        send_email=False,
+                        send_whatsapp=True,
+                    ):
+                        sent_any = True
+
             if sent_any:
                 logger.info(
                     'تقرير العمليات: إرسال تقرير شامل احتياطي — لا بيانات في تقارير الأدوار المفلترة.'
                 )
 
     if not sent_any:
-        logger.info('تخطي تقرير العمليات: لا يوجد بريد مستلم أو لا توجد بيانات.')
+        logger.info('تخطي تقرير العمليات: لا يوجد مستلم أو لا توجد بيانات.')
     return sent_any

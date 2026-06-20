@@ -103,6 +103,8 @@ def operations_report_schedule_status(settings_obj) -> dict:
     send_at = normalize_send_time(getattr(settings_obj, 'send_time', None))
     enabled = bool(getattr(settings_obj, 'is_enabled', False))
     recipients = settings_obj.active_recipient_emails() if hasattr(settings_obj, 'active_recipient_emails') else []
+    phones = settings_obj.active_recipient_phones() if hasattr(settings_obj, 'active_recipient_phones') else []
+    whatsapp_enabled = bool(getattr(settings_obj, 'send_via_whatsapp', False))
     last_sent = getattr(settings_obj, 'last_sent_at', None)
     last_sent_local = timezone.localtime(last_sent) if last_sent else None
     report_date = resolve_operations_report_date(now, send_at, manual=False)
@@ -122,14 +124,17 @@ def operations_report_schedule_status(settings_obj) -> dict:
         'report_date': report_date,
         'is_enabled': enabled,
         'recipient_count': len(recipients),
+        'whatsapp_recipient_count': len(phones),
+        'send_via_whatsapp': whatsapp_enabled,
         'time_matches_now': send_time_matches_minute(now, send_at),
         'scheduled_due_now': due,
         'scheduled_due_reason': due_reason,
         'last_sent_at': last_sent_local,
         'next_send_at': next_send,
-        'auto_ready': enabled and bool(recipients),
+        'auto_ready': enabled and (bool(recipients) or (whatsapp_enabled and bool(phones))),
         'blockers': [
             *( [] if enabled else ['الإرسال التلقائي غير مفعّل — فعّله واحفظ الإعدادات.'] ),
-            *( [] if recipients else ['لا يوجد بريد مستلم محفوظ.'] ),
+            *( [] if recipients or (whatsapp_enabled and phones) else ['لا يوجد بريد أو جوال واتساب محفوظ.'] ),
+            *( [] if not whatsapp_enabled or phones else ['واتساب مفعّل — أضف رقماً واحداً على الأقل.'] ),
         ],
     }

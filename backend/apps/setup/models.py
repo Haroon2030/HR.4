@@ -46,6 +46,17 @@ class OperationsReportSettings(models.Model):
         blank=True,
         help_text='مفاتيح الأدوار: system_manager, hr_manager, ...',
     )
+    recipient_phones = models.JSONField(
+        'جوال واتساب حسب الدور',
+        default=dict,
+        blank=True,
+        help_text='مفاتيح الأدوار: system_manager, hr_manager, ...',
+    )
+    send_via_whatsapp = models.BooleanField(
+        'إرسال عبر واتساب',
+        default=False,
+        help_text='يرسل ملف PDF عبر WhatsApp (Evolution API) للأرقام المربوطة.',
+    )
     is_enabled = models.BooleanField('تفعيل الإرسال التلقائي', default=False)
     send_time = models.TimeField(
         'وقت الإرسال',
@@ -92,6 +103,27 @@ class OperationsReportSettings(models.Model):
             seen.add(norm)
             emails.append(addr)
         return emails
+
+    def recipient_phones_map(self) -> dict[str, str]:
+        stored = dict(self.recipient_phones or {})
+        return {
+            key: (stored.get(key) or '').strip()
+            for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
+        }
+
+    def active_recipient_phones(self) -> list[str]:
+        seen: set[str] = set()
+        phones: list[str] = []
+        for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES:
+            raw = self.recipient_phones_map().get(key, '')
+            if not raw:
+                continue
+            norm = raw.replace(' ', '').replace('-', '')
+            if norm in seen:
+                continue
+            seen.add(norm)
+            phones.append(raw)
+        return phones
 
 
 class Nationality(BaseModel):

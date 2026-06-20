@@ -12,3 +12,4 @@ OPERATIONS_REPORT_RECIPIENT_ROLES: tuple[tuple[str, str], ...] = (
 )
 
 ROLE_FIELD_PREFIX = 'recipient_'
+WHATSAPP_ROLE_FIELD_PREFIX = 'whatsapp_recipient_'

@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = (
-        'يبني تقرير PDF للعمليات المعلّقة والمُنجزة ويرسله إلى البريد المُحدّد '
-        'في إعدادات تهيئة النظام (setup/operations-report/).'
+        'يبني تقرير PDF للعمليات المعلّقة والمُنجزة ويرسله إلى المستلمين '
+        '(بريد و/أو واتساب) من إعدادات تهيئة النظام.'
     )
 
     def add_arguments(self, parser):
@@ -45,6 +45,11 @@ class Command(BaseCommand):
             help='بريد مستلم بديل (للاختبار — تقرير شامل).',
         )
         parser.add_argument(
+            '--recipient-phone',
+            default='',
+            help='جوال واتساب بديل (للاختبار — تقرير شامل).',
+        )
+        parser.add_argument(
             '--verbose-skip',
             action='store_true',
             help='طباعة سبب التخطي حتى خارج وقت الإرسال (للتشخيص).',
@@ -55,12 +60,13 @@ class Command(BaseCommand):
         dry_run = bool(options['dry_run'])
         force = bool(options['force'])
         recipient_override = (options.get('recipient') or '').strip()
+        recipient_phone_override = (options.get('recipient_phone') or '').strip()
         verbose_skip = bool(options['verbose_skip'])
 
         solo = OperationsReportSettings.get_solo()
         now = timezone.localtime()
 
-        if not solo.is_enabled and not force and not recipient_override:
+        if not solo.is_enabled and not force and not recipient_override and not recipient_phone_override:
             msg = 'تخطي: الإرسال التلقائي غير مفعّل في إعدادات تقرير العمليات.'
             logger.info(msg)
             if verbose_skip:
@@ -70,6 +76,8 @@ class Command(BaseCommand):
         email_map = solo.recipient_emails_map()
         if recipient_override:
             target_roles = [('test', recipient_override)]
+        elif recipient_phone_override:
+            target_roles = [('test_phone', recipient_phone_override)]
         else:
             target_roles = [
                 (rk, (email_map.get(rk) or '').strip())
@@ -78,12 +86,20 @@ class Command(BaseCommand):
             ]
 
         if not target_roles:
-            msg = 'تخطي: لا يوجد بريد مستلم — حدّده من صفحة إعدادات تقرير العمليات.'
+            phone_map = solo.recipient_phones_map()
+            target_roles = [
+                (rk, (phone_map.get(rk) or '').strip())
+                for rk, _label in OPERATIONS_REPORT_RECIPIENT_ROLES
+                if solo.send_via_whatsapp and (phone_map.get(rk) or '').strip()
+            ]
+
+        if not target_roles:
+            msg = 'تخطي: لا يوجد بريد أو جوال مستلم — حدّده من صفحة إعدادات تقرير العمليات.'
             logger.warning(msg)
             self.stdout.write(self.style.WARNING(msg))
             return
 
-        if not force and not recipient_override:
+        if not force and not recipient_override and not recipient_phone_override:
             due, due_reason = scheduled_send_due(now, solo)
             if not due:
                 msg = (
@@ -98,7 +114,7 @@ class Command(BaseCommand):
         report_date = resolve_operations_report_date(
             now,
             solo.send_time,
-            manual=bool(recipient_override or force),
+            manual=bool(recipient_override or recipient_phone_override or force),
         )
         reports_to_send = 0
 
@@ -117,7 +133,7 @@ class Command(BaseCommand):
                 include_completed=solo.include_completed,
                 role_key=rk,
             )
-            if recipient_override:
+            if recipient_override or recipient_phone_override:
                 has_content = True
             elif not bundle_has_content(
                 bundle,
@@ -141,19 +157,20 @@ class Command(BaseCommand):
             reports_to_send += 1
 
         if dry_run:
-            self.stdout.write(self.style.SUCCESS(f'dry-run — {reports_to_send} تقرير(ات) — لم يُرسل بريد.'))
+            self.stdout.write(self.style.SUCCESS(f'dry-run — {reports_to_send} تقرير(ات) — لم يُرسل.'))
             return
 
         if not send_email:
-            self.stdout.write(self.style.WARNING('أضف --send-email لإرسال البريد فعلياً.'))
+            self.stdout.write(self.style.WARNING('أضف --send-email لإرسال التقرير فعلياً (بريد و/أو واتساب).'))
             return
 
         try:
             sent = build_and_send_operations_report(
                 report_date=report_date,
                 recipient=recipient_override or None,
+                recipient_phone=recipient_phone_override or None,
                 settings_obj=solo,
-                force=bool(recipient_override or force),
+                force=bool(recipient_override or recipient_phone_override or force),
             )
         except Exception as exc:
             logger.exception('فشل إرسال تقرير العمليات المجدول')

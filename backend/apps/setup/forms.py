@@ -13,7 +13,9 @@ from apps.setup.models import (
 from apps.setup.operations_report_recipients import (
     OPERATIONS_REPORT_RECIPIENT_ROLES,
     ROLE_FIELD_PREFIX,
+    WHATSAPP_ROLE_FIELD_PREFIX,
 )
+from apps.core.services.whatsapp import phone_utils
 
 
 def _validate_unique_code(model, code, instance):
@@ -174,12 +176,14 @@ class OperationsReportSettingsForm(forms.ModelForm):
         model = OperationsReportSettings
         fields = (
             'is_enabled',
+            'send_via_whatsapp',
             'send_time',
             'include_pending',
             'include_completed',
         )
         widgets = {
             'is_enabled': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+            'send_via_whatsapp': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
             'include_pending': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
             'include_completed': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
         }
@@ -187,6 +191,7 @@ class OperationsReportSettingsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         stored = self.instance.recipient_emails_map() if self.instance.pk else {}
+        stored_phones = self.instance.recipient_phones_map() if self.instance.pk else {}
         for key, label in OPERATIONS_REPORT_RECIPIENT_ROLES:
             field_name = f'{ROLE_FIELD_PREFIX}{key}'
             saved_email = (stored.get(key, '') or '').strip() if self.instance.pk else ''
@@ -207,6 +212,25 @@ class OperationsReportSettingsForm(forms.ModelForm):
             if self.instance.pk and not self.data:
                 self.fields[field_name].initial = stored.get(key, '')
 
+            phone_field = f'{WHATSAPP_ROLE_FIELD_PREFIX}{key}'
+            saved_phone = (stored_phones.get(key, '') or '').strip() if self.instance.pk else ''
+            self.fields[phone_field] = forms.CharField(
+                label=f'{label} — واتساب',
+                required=False,
+                widget=forms.TextInput(attrs={
+                    'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400 placeholder:font-normal hr-recipient-phone-input',
+                    'placeholder': '05xxxxxxxx',
+                    'dir': 'ltr',
+                    'inputmode': 'tel',
+                    'data-recipient-role': key,
+                    'data-saved-phone': saved_phone,
+                    'data-linked': 'true' if saved_phone else 'false',
+                    'autocomplete': f'section-operations-report-{key} tel',
+                }),
+            )
+            if self.instance.pk and not self.data:
+                self.fields[phone_field].initial = stored_phones.get(key, '')
+
     def clean_send_time(self):
         value = self.cleaned_data.get('send_time')
         if value is None:
@@ -215,18 +239,39 @@ class OperationsReportSettingsForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        has_any = any(
+        has_email = any(
             (cleaned.get(f'{ROLE_FIELD_PREFIX}{key}') or '').strip()
             for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
         )
-        if cleaned.get('is_enabled') and not has_any:
-            raise ValidationError('يجب تحديد بريد مستلم واحد على الأقل عند تفعيل الإرسال التلقائي.')
+        has_phone = any(
+            (cleaned.get(f'{WHATSAPP_ROLE_FIELD_PREFIX}{key}') or '').strip()
+            for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
+        )
+        for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES:
+            phone_field = f'{WHATSAPP_ROLE_FIELD_PREFIX}{key}'
+            raw_phone = (cleaned.get(phone_field) or '').strip()
+            if not raw_phone:
+                continue
+            normalized = phone_utils.normalize_phone(raw_phone)
+            if len(normalized) < 10:
+                self.add_error(phone_field, 'أدخل رقماً صالحاً (مثال: 05xxxxxxxx).')
+
+        if cleaned.get('is_enabled') and not has_email and not (cleaned.get('send_via_whatsapp') and has_phone):
+            raise ValidationError(
+                'يجب تحديد بريد مستلم واحد على الأقل، أو تفعيل واتساب مع رقم جوال واحد على الأقل.'
+            )
+        if cleaned.get('send_via_whatsapp') and not has_phone:
+            raise ValidationError('فعّلت واتساب — أدخل رقماً واحداً على الأقل في الجدول.')
         return cleaned
 
     def save(self, commit=True):
         obj = super().save(commit=False)
         obj.recipient_emails = {
             key: (self.cleaned_data.get(f'{ROLE_FIELD_PREFIX}{key}') or '').strip()
+            for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
+        }
+        obj.recipient_phones = {
+            key: (self.cleaned_data.get(f'{WHATSAPP_ROLE_FIELD_PREFIX}{key}') or '').strip()
             for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
         }
         obj.recipient_email = obj.recipient_emails.get('system_manager', '')

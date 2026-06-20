@@ -1,13 +1,14 @@
-"""HTTP client for Evolution API — send text messages."""
+"""HTTP client for Evolution API — send text and media messages."""
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, Literal
 
 from django.conf import settings
 
@@ -90,3 +91,79 @@ def send_text(*, phone: str, text: str, timeout: int | None = None) -> dict[str,
     except urllib.error.URLError as exc:
         logger.warning('Evolution API connection error: %s', exc)
         raise EvolutionAPIError(f'Evolution API connection error: {exc}') from exc
+
+
+MediaType = Literal['image', 'document', 'video', 'audio']
+
+
+def send_media(
+    *,
+    phone: str,
+    mediatype: MediaType,
+    media: str,
+    file_name: str = '',
+    mimetype: str = '',
+    caption: str = '',
+    timeout: int | None = None,
+) -> dict[str, Any]:
+    """POST /message/sendMedia/{instance}"""
+    if not is_configured():
+        raise EvolutionAPIError('Evolution API is not configured')
+
+    instance = _validate_instance(settings.EVOLUTION_INSTANCE)
+    url = f'{_base_url()}/message/sendMedia/{urllib.parse.quote(instance, safe="")}'
+    payload: dict[str, Any] = {
+        'number': phone,
+        'mediatype': mediatype,
+        'media': media,
+    }
+    if file_name:
+        payload['fileName'] = file_name
+    if mimetype:
+        payload['mimetype'] = mimetype
+    if caption:
+        payload['caption'] = caption
+
+    body = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=body, headers=_headers(), method='POST')
+    req_timeout = timeout or getattr(settings, 'EVOLUTION_API_TIMEOUT', 20)
+
+    try:
+        with urllib.request.urlopen(req, timeout=req_timeout) as resp:
+            raw = resp.read().decode('utf-8')
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode('utf-8', errors='replace')
+        logger.warning('Evolution API HTTP %s: %s', exc.code, detail[:500])
+        raise EvolutionAPIError(
+            f'Evolution API HTTP {exc.code}',
+            status=exc.code,
+            payload=detail,
+        ) from exc
+    except urllib.error.URLError as exc:
+        logger.warning('Evolution API connection error: %s', exc)
+        raise EvolutionAPIError(f'Evolution API connection error: {exc}') from exc
+
+
+def send_document(
+    *,
+    phone: str,
+    pdf_bytes: bytes,
+    file_name: str,
+    caption: str = '',
+    timeout: int | None = None,
+) -> dict[str, Any]:
+    """Send a PDF document via base64-encoded media."""
+    if not file_name:
+        raise EvolutionAPIError('file_name مطلوب لإرسال المستند')
+    b64 = base64.b64encode(pdf_bytes).decode('ascii')
+    media = f'data:application/pdf;base64,{b64}'
+    return send_media(
+        phone=phone,
+        mediatype='document',
+        media=media,
+        file_name=file_name,
+        mimetype='application/pdf',
+        caption=caption,
+        timeout=timeout,
+    )

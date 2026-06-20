@@ -16,11 +16,14 @@ from apps.core.services.email_delivery import (
 )
 from apps.core.services.operations_report_mail import build_and_send_operations_report
 from apps.core.services.operations_report_schedule import operations_report_schedule_status, resolve_operations_report_date
+from apps.core.services.operations_report_whatsapp import whatsapp_delivery_ready
+from apps.core.services.whatsapp import phone_utils
 from apps.setup.forms import OperationsReportSettingsForm
 from apps.setup.models import OperationsReportSettings
 from apps.setup.operations_report_recipients import (
     OPERATIONS_REPORT_RECIPIENT_ROLES,
     ROLE_FIELD_PREFIX,
+    WHATSAPP_ROLE_FIELD_PREFIX,
 )
 
 
@@ -33,15 +36,25 @@ def operations_report_settings(request):
         action = (request.POST.get('action') or 'save').strip()
 
         if action == 'link_recipient':
-            return _link_recipient_ajax(request, settings_obj)
+            return _link_recipient_ajax(request, settings_obj, channel='email')
+
+        if action == 'link_whatsapp_recipient':
+            return _link_recipient_ajax(request, settings_obj, channel='whatsapp')
 
         form = OperationsReportSettingsForm(request.POST, instance=settings_obj)
 
         if action == 'test_send':
             test_email = (request.POST.get('test_recipient') or '').strip()
+            test_phone = (request.POST.get('test_recipient_phone') or '').strip()
             recipients = [test_email] if test_email else settings_obj.active_recipient_emails()
-            if not recipients:
-                messages.error(request, 'حدّد بريداً للاختبار أو احفظ مستلماً واحداً على الأقل في الجدول.')
+            phones = [test_phone] if test_phone else (
+                settings_obj.active_recipient_phones() if settings_obj.send_via_whatsapp else []
+            )
+            if not recipients and not phones:
+                messages.error(
+                    request,
+                    'حدّد بريداً أو جوالاً للاختبار، أو احفظ مستلماً واحداً على الأقل في الجدول.',
+                )
                 return redirect(reverse('web:operations_report_settings'))
 
             try:
@@ -50,21 +63,32 @@ def operations_report_settings(request):
                     settings_obj.send_time,
                     manual=False,
                 )
-                if test_email:
+                if test_email or test_phone:
                     sent = build_and_send_operations_report(
                         report_date=report_date,
-                        recipient=test_email,
+                        recipient=test_email or None,
+                        recipient_phone=test_phone or None,
                         settings_obj=settings_obj,
                         force=True,
+                        send_email=bool(test_email),
+                        send_whatsapp=bool(test_phone),
                     )
-                    sent_label = test_email
                 else:
                     sent = build_and_send_operations_report(
                         report_date=report_date,
                         settings_obj=settings_obj,
                         force=True,
                     )
-                    sent_label = '، '.join(recipients)
+                labels = []
+                if test_email:
+                    labels.append(test_email)
+                elif recipients:
+                    labels.append('بريد: ' + '، '.join(recipients))
+                if test_phone:
+                    labels.append(test_phone)
+                elif phones:
+                    labels.append('واتساب: ' + '، '.join(phones))
+                sent_label = ' | '.join(labels)
             except (SmtpNotConfiguredError, SmtpConnectionError) as exc:
                 messages.error(request, str(exc))
             except Exception as exc:
@@ -73,7 +97,7 @@ def operations_report_settings(request):
                 if sent:
                     messages.success(
                         request,
-                        f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label} — تحقق من الوارد والـ Spam.',
+                        f'تم إرسال تقرير تجريبي فعلياً إلى {sent_label}.',
                     )
                     if not settings_obj.is_enabled:
                         messages.warning(
@@ -96,10 +120,13 @@ def operations_report_settings(request):
             settings_obj = OperationsReportSettings.get_solo()
             if settings_obj.is_enabled:
                 tz = timezone.get_current_timezone_name()
+                channels = ['بريد']
+                if settings_obj.send_via_whatsapp:
+                    channels.append('واتساب')
                 messages.success(
                     request,
                     f'تم الحفظ — الإرسال التلقائي مفعّل يومياً الساعة '
-                    f'{settings_obj.send_time.strftime("%H:%M")} ({tz}).',
+                    f'{settings_obj.send_time.strftime("%H:%M")} ({tz}) عبر {" و".join(channels)}.',
                 )
             else:
                 messages.success(request, 'تم حفظ إعدادات تقرير العمليات.')
@@ -110,13 +137,16 @@ def operations_report_settings(request):
         form = OperationsReportSettingsForm(instance=settings_obj)
 
     stored_emails = settings_obj.recipient_emails_map() if settings_obj.pk else {}
+    stored_phones = settings_obj.recipient_phones_map() if settings_obj.pk else {}
     local_now = timezone.localtime()
     recipient_rows = [
         {
             'key': key,
             'label': label,
             'field': form[f'{ROLE_FIELD_PREFIX}{key}'],
+            'phone_field': form[f'{WHATSAPP_ROLE_FIELD_PREFIX}{key}'],
             'saved_email': (stored_emails.get(key, '') or '').strip(),
+            'saved_phone': (stored_phones.get(key, '') or '').strip(),
         }
         for key, label in OPERATIONS_REPORT_RECIPIENT_ROLES
     ]
@@ -127,22 +157,41 @@ def operations_report_settings(request):
         'local_now': local_now,
         'schedule_status': schedule_status,
         'email_delivery': email_delivery_status(),
+        'whatsapp_delivery': whatsapp_delivery_ready(),
         'recipient_rows': recipient_rows,
     })
 
 
-def _link_recipient_ajax(request, settings_obj: OperationsReportSettings):
-    """ربط بريد مستلم لدور واحد دون حفظ بقية الإعدادات."""
+def _link_recipient_ajax(request, settings_obj: OperationsReportSettings, *, channel: str):
+    """ربط بريد أو جوال مستلم لدور واحد دون حفظ بقية الإعدادات."""
     if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
         return JsonResponse({'success': False, 'message': 'طلب غير صالح.'}, status=400)
 
     valid_keys = {key for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES}
     role_key = (request.POST.get('role_key') or '').strip()
-    email = (request.POST.get('email') or '').strip()
 
     if role_key not in valid_keys:
         return JsonResponse({'success': False, 'message': 'دور غير معروف.'}, status=400)
 
+    if channel == 'whatsapp':
+        phone = (request.POST.get('phone') or '').strip()
+        normalized = phone_utils.normalize_phone(phone)
+        if len(normalized) < 10:
+            return JsonResponse({'success': False, 'message': 'أدخل رقماً صالحاً (مثال: 05xxxxxxxx).'}, status=400)
+
+        phones = settings_obj.recipient_phones_map()
+        phones[role_key] = phone
+        settings_obj.recipient_phones = phones
+        settings_obj.save(update_fields=['recipient_phones'])
+
+        return JsonResponse({
+            'success': True,
+            'message': 'تم ربط رقم الواتساب. فعّل «إرسال عبر واتساب» والإرسال التلقائي ثم احفظ الإعدادات.',
+            'role_key': role_key,
+            'phone': phone,
+        })
+
+    email = (request.POST.get('email') or '').strip()
     try:
         validate_email(email)
     except ValidationError:
