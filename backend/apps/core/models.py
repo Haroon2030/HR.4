@@ -669,6 +669,48 @@ class Notification(BaseModel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# سجل رسائل WhatsApp (Evolution API)
+# ══════════════════════════════════════════════════════════════════════════════
+class WhatsAppMessageLog(models.Model):
+    """سجل إرسال رسائل WhatsApp للموظفين — للتدقيق واستكشاف الأخطاء."""
+
+    class Status(models.TextChoices):
+        SENT = 'sent', 'مُرسَل'
+        FAILED = 'failed', 'فشل'
+        SKIPPED = 'skipped', 'تخطّي'
+
+    employee = models.ForeignKey(
+        'employees.Employee', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='whatsapp_messages', verbose_name="الموظف",
+    )
+    phone = models.CharField("رقم الجوال", max_length=24, blank=True, db_index=True)
+    event_type = models.CharField("نوع الحدث", max_length=80, db_index=True)
+    message = models.TextField("نص الرسالة")
+    status = models.CharField(
+        "الحالة", max_length=12, choices=Status.choices, default=Status.SKIPPED, db_index=True,
+    )
+    related_action = models.ForeignKey(
+        PendingAction, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='whatsapp_messages', verbose_name="الطلب المرتبط",
+    )
+    response = models.TextField("استجابة Evolution API", blank=True)
+    error = models.TextField("خطأ", blank=True)
+    created_at = models.DateTimeField("تاريخ الإرسال", auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "سجل WhatsApp"
+        verbose_name_plural = "سجلات WhatsApp"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['event_type', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.get_status_display()} — {self.phone or "—"} — {self.event_type}'
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # سجل عمليات النظام (أحداث لا يسجلها simple_history — مثل كلمة المرور)
 # ══════════════════════════════════════════════════════════════════════════════
 class SystemAuditLog(models.Model):

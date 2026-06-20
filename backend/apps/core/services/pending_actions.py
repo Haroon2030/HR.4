@@ -807,6 +807,14 @@ def execute_pending_action(action, executor_user):
         action.executed_at = timezone.now()
         action.execution_error = ''
         action.save(update_fields=['executed_at', 'execution_error'])
+        try:
+            from apps.core.services.whatsapp import notify_whatsapp_action_executed
+            notify_whatsapp_action_executed(action, msg)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                'WhatsApp notification failed for pending action %s', action.pk,
+            )
         return msg
     except Exception as e:
         action.execution_error = str(e)[:1000]

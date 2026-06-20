@@ -326,6 +326,17 @@ else:
     EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 
 # ══════════════════════════════════════════════════════════════════════════════
+# WhatsApp — Evolution API
+# ══════════════════════════════════════════════════════════════════════════════
+
+WHATSAPP_ENABLED = env.bool('WHATSAPP_ENABLED', default=False)
+EVOLUTION_API_URL = env('EVOLUTION_API_URL', default='').rstrip('/')
+EVOLUTION_API_KEY = env('EVOLUTION_API_KEY', default='')
+EVOLUTION_INSTANCE = env('EVOLUTION_INSTANCE', default='')
+EVOLUTION_API_TIMEOUT = env.int('EVOLUTION_API_TIMEOUT', default=20)
+WHATSAPP_DEFAULT_COUNTRY = env('WHATSAPP_DEFAULT_COUNTRY', default='966')
+
+# ══════════════════════════════════════════════════════════════════════════════
 # النسخ الاحتياطي لقاعدة البيانات (إشعارات + مسار الملفات)
 # ══════════════════════════════════════════════════════════════════════════════
 
