@@ -1,14 +1,16 @@
-{% comment %}رأس الشريط — شعار + عنوان + جرس (Dokploy){% endcomment %}
-<div class="hr-nav__head shrink-0" dir="rtl">
-    <div class="hr-sidebar-brand-bar">
-        <a href="{% url 'web:dashboard' %}" class="hr-sidebar-brand-bar__main" title="لوحة التحكم">
-            <span class="hr-sidebar-brand-bar__logo" aria-hidden="true">
-                <i data-lucide="users-round" class="w-4 h-4"></i>
-            </span>
-            <span class="hr-sidebar-brand-bar__name">نظام الموارد البشرية</span>
-        </a>
-        <div class="hr-sidebar-brand-bar__tools">
-            {% include "components/notifications_dropdown.html" with in_sidebar=True %}
-        </div>
-    </div>
-</div>
+{% comment %}رأس الشريط — شعار + عنوان + جرس (Dokploy){% endcomment %}
+<div class="hr-nav__head shrink-0" dir="rtl">
+    <div class="hr-sidebar-brand-bar">
+        <a href="{% url 'web:dashboard' %}" class="hr-sidebar-brand-bar__main" title="لوحة التحكم">
+            <span class="hr-sidebar-brand-bar__logo" aria-hidden="true">
+                <i data-lucide="users-round" class="w-4 h-4"></i>
+            </span>
+            <span class="hr-sidebar-brand-bar__name">نظام الموارد البشرية</span>
+        </a>
+        {% if dropdown_uid != 'mobile' %}
+        <div class="hr-sidebar-brand-bar__tools">
+            {% include "components/notifications_dropdown.html" with in_sidebar=True dropdown_uid=dropdown_uid %}
+        </div>
+        {% endif %}
+    </div>
+</div>

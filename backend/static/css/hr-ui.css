@@ -5827,6 +5827,7 @@ body.hr-app .hr-sidebar-panel {
     top: 0;
     z-index: 3;
     border-bottom: none;
+    overflow: visible;
 }
 
 .hr-sidebar-brand-bar {
@@ -5900,43 +5901,189 @@ body.hr-app .hr-sidebar-panel {
     flex-shrink: 0;
 }
 
+/* ── إشعارات الشريط الجانبي ── */
+.hr-notif-dropdown {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.hr-notif-dropdown.is-open {
+    z-index: 60;
+}
+
 .hr-sidebar-notif-btn {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: 2.25rem;
+    height: 2.25rem;
     border-radius: var(--hr-sidebar-item-radius);
     flex-shrink: 0;
-    border: 1px solid transparent;
-    background: transparent;
+    border: 1px solid var(--hr-sidebar-border);
+    background: var(--hr-sidebar-surface);
     color: var(--hr-sidebar-text-muted) !important;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.hr-sidebar-notif-btn:hover {
+.hr-sidebar-notif-btn:hover,
+.hr-notif-dropdown.is-open .hr-sidebar-notif-btn {
     background: var(--hr-sidebar-hover);
-    border-color: var(--hr-sidebar-border);
+    border-color: rgba(59, 130, 246, 0.35);
     color: var(--hr-sidebar-text) !important;
+    box-shadow: 0 2px 8px rgba(30, 58, 95, 0.08);
+}
+
+.hr-sidebar-notif-btn__bell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    pointer-events: none;
 }
 
 .hr-sidebar-notif-btn__icon {
-    width: 1.05rem;
-    height: 1.05rem;
+    width: 1.1rem;
+    height: 1.1rem;
     color: currentColor !important;
     stroke: currentColor !important;
 }
 
-.hr-sidebar-notif-btn .hr-topbar-icon-btn__badge {
-    top: 0.05rem;
-    inset-inline-end: 0.05rem;
-    min-width: 1rem;
-    height: 1rem;
-    padding: 0 0.2rem;
+.hr-notif-badge {
+    position: absolute;
+    top: -0.2rem;
+    inset-inline-end: -0.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    padding: 0 0.22rem;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #ffffff !important;
     font-size: 0.5625rem;
-    border-width: 1.5px;
+    font-weight: 800 !important;
+    line-height: 1;
+    text-align: center;
+    border: 2px solid var(--hr-sidebar-bg, #fff);
+    pointer-events: none;
+    animation: hr-notif-badge-blink 1.15s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.65);
+    z-index: 1;
+}
+
+.hr-notif-dropdown-panel {
+    position: absolute;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+    top: calc(100% + 0.4rem);
+    width: min(20rem, calc(100vw - 2rem));
+    max-height: min(28rem, 70vh);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.14),
+        0 2px 8px rgba(15, 23, 42, 0.06);
+    z-index: 10080;
+}
+
+.hr-notif-dropdown-panel__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.75rem 1rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.hr-notif-dropdown-panel__spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 999px;
+    animation: hr-htmx-spin 0.7s linear infinite;
+}
+
+.hr-notif-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10070;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.hr-notif-backdrop--topbar-portal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    z-index: 10100;
+}
+
+body.hr-notif-open-lock {
+    overflow: hidden;
+    touch-action: none;
+}
+
+body.hr-notif-open-lock .hr-main {
+    overflow: hidden !important;
+}
+
+@media (max-width: 767px) {
+    /* قائمة الإشعارات — الزاوية الفيزيائية اليسرى (تجاوز inset-inline في RTL) */
+    body .hr-notif-dropdown-panel.hr-notif-dropdown-panel--topbar {
+        position: fixed !important;
+        inset: auto !important;
+        top: calc(3.5rem + 0.35rem) !important;
+        left: 0.75rem !important;
+        right: auto !important;
+        inset-inline-start: unset !important;
+        inset-inline-end: unset !important;
+        width: min(20rem, calc(100vw - 1.5rem));
+        max-width: 22rem;
+        max-height: min(28rem, calc(100dvh - 4.5rem));
+        margin: 0;
+        z-index: 10110;
+    }
+
+    .hr-topbar-notif-mobile {
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+}
+
+@media (min-width: 768px) {
+    .hr-notif-dropdown-panel--desktop {
+        position: absolute;
+        inset-inline-start: 0;
+        inset-inline-end: auto;
+        top: calc(100% + 0.4rem);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hr-notif-badge {
+        animation: none;
+    }
 }
 
 .hr-sidebar--collapsed .hr-nav__head {

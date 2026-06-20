@@ -1,24 +1,86 @@
-{% comment %}قائمة الإشعارات{% endcomment %}
-<div class="relative hr-notif-dropdown" x-data="{ open: false }" @click.outside="open = false">
+{% comment %}
+  dropdown_uid: desktop (الشريط) | topbar (الشريط العلوي — جوال)
+  in_sidebar: true للشريط الجانبي فقط
+{% endcomment %}
+{% with uid=dropdown_uid|default:"main" %}
+<div class="hr-notif-dropdown hr-notif-dropdown--{{ uid }}"
+     x-data="{ open: false }"
+     :class="{ 'is-open': open }"
+     @keydown.escape.window="open = false"
+     {% if uid == 'topbar' %}x-effect="document.body.classList.toggle('hr-notif-open-lock', open)"{% endif %}>
     <button type="button"
-            @click.stop="open = !open; if(open){ htmx.trigger('#notif-dropdown-content', 'notif-open'); }"
-            class="{% if in_sidebar %}hr-sidebar-notif-btn{% else %}hr-topbar-icon-btn{% endif %} relative"
+            @click.stop="
+                open = !open;
+                if (open) {
+                    $nextTick(() => {
+                        var panel = $refs.panel || document.querySelector('.hr-notif-dropdown-panel--{{ uid }}');
+                        if (panel && typeof htmx !== 'undefined') {
+                            htmx.trigger(panel, 'notif-open');
+                        }
+                    });
+                }
+            "
+            class="{% if in_sidebar %}hr-sidebar-notif-btn{% else %}hr-topbar-icon-btn relative{% endif %}"
+            :aria-expanded="open ? 'true' : 'false'"
             title="الإشعارات"
             aria-label="الإشعارات{% if unread_notifications_count %} — {{ unread_notifications_count }} غير مقروء{% endif %}">
-        <i data-lucide="bell" class="{% if in_sidebar %}hr-sidebar-notif-btn__icon{% else %}w-5 h-5{% endif %}" aria-hidden="true"></i>
+        {% if in_sidebar %}
+        <span class="hr-sidebar-notif-btn__bell" aria-hidden="true">
+            <i data-lucide="bell" class="hr-sidebar-notif-btn__icon"></i>
+        </span>
+        {% else %}
+        <i data-lucide="bell" class="w-5 h-5" aria-hidden="true"></i>
+        {% endif %}
         {% if unread_notifications_count %}
-        <span class="hr-topbar-icon-btn__badge" aria-hidden="true">{% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}</span>
+        <span class="{% if in_sidebar %}hr-notif-badge{% else %}hr-topbar-icon-btn__badge{% endif %}" aria-hidden="true">{% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}</span>
         {% endif %}
     </button>
-    <div x-show="open" x-cloak x-transition
-         class="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
-        <div id="notif-dropdown-content"
+
+    {% if uid == 'topbar' %}
+    <template x-teleport="body">
+        <div x-show="open"
+             x-cloak
+             @click="open = false"
+             class="hr-notif-backdrop hr-notif-backdrop--topbar-portal"
+             aria-hidden="true"></div>
+    </template>
+    <template x-teleport="body">
+        <div x-show="open"
+             x-cloak
+             x-ref="panel"
+             @click.outside="open = false"
+             class="hr-notif-dropdown-panel hr-notif-dropdown-panel--topbar"
+             role="dialog"
+             aria-label="قائمة الإشعارات"
+             @click.stop
              hx-get="{% url 'web:notifications_dropdown' %}"
-             hx-trigger="notif-open"
+             hx-trigger="notif-open once"
+             hx-target="this"
              hx-swap="innerHTML">
-            <div class="p-6 text-center text-sm text-slate-400">
-                اضغط الجرس لتحميل الإشعارات
+            <div class="hr-notif-dropdown-panel__placeholder">
+                <span class="hr-notif-dropdown-panel__spinner" aria-hidden="true"></span>
+                <span>جاري تحميل الإشعارات…</span>
             </div>
         </div>
+    </template>
+    {% else %}
+    <div x-show="open"
+         x-cloak
+         @click.outside="open = false"
+         x-ref="panel"
+         class="hr-notif-dropdown-panel hr-notif-dropdown-panel--desktop"
+         role="dialog"
+         aria-label="قائمة الإشعارات"
+         @click.stop
+         hx-get="{% url 'web:notifications_dropdown' %}"
+         hx-trigger="notif-open"
+         hx-target="this"
+         hx-swap="innerHTML">
+        <div class="hr-notif-dropdown-panel__placeholder">
+            <span class="hr-notif-dropdown-panel__spinner" aria-hidden="true"></span>
+            <span>جاري تحميل الإشعارات…</span>
+        </div>
     </div>
+    {% endif %}
 </div>
+{% endwith %}

@@ -12,7 +12,7 @@
         <button type="button"
                 hx-post="{% url 'web:read_all_notifications' %}"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                hx-target="#notif-dropdown-content"
+                hx-target="closest .hr-notif-dropdown-panel"
                 hx-swap="innerHTML"
                 class="text-xs text-primary-600 hover:underline">
             تحديد الكل كمقروء
@@ -22,7 +22,7 @@
         <button type="button"
                 hx-post="{% url 'web:delete_all_notifications' %}"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                hx-target="#notif-dropdown-content"
+                hx-target="closest .hr-notif-dropdown-panel"
                 hx-swap="innerHTML"
                 hx-confirm="مسح جميع الإشعارات؟"
                 class="text-xs text-rose-600 hover:underline inline-flex items-center gap-1"
@@ -70,7 +70,7 @@
             <button type="button"
                     hx-post="{% url 'web:delete_notification' n.id %}"
                     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                    hx-target="#notif-dropdown-content"
+                    hx-target="closest .hr-notif-dropdown-panel"
                     hx-swap="innerHTML"
                     hx-confirm="حذف هذا الإشعار؟"
                     class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg shrink-0 self-start"

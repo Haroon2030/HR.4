@@ -1,7 +1,7 @@
 {% load custom_tags %}
 {# always_show: عرض عناوين الأقسام دائماً (الجوال) #}
 
-{% include "components/app_org_bar.html" with always_show=always_show %}
+{% include "components/app_org_bar.html" with always_show=always_show dropdown_uid=dropdown_uid %}
 
 {% include "components/nav_section.html" with label="الرئيسية" always_show=always_show %}
 {% include "components/nav_item.html" with url="web:dashboard" icon="layout-grid" label="لوحة التحكم" force_show_label=always_show %}

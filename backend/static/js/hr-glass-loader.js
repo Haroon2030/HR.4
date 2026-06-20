@@ -149,16 +149,20 @@
         if (htmxBound || !document.body) return;
         htmxBound = true;
 
+        function isNotifPanel(el) {
+            return el && el.classList && el.classList.contains('hr-notif-dropdown-panel');
+        }
+
         document.body.addEventListener('htmx:beforeRequest', function (evt) {
             var target = evt.detail && evt.detail.target;
-            if (!target || target.id === 'notif-dropdown-content') return;
+            if (isNotifPanel(target)) return;
             if (!window.Alpine || !Alpine.store('glassLoader')) return;
             Alpine.store('glassLoader').show('جاري التحميل');
         });
 
         document.body.addEventListener('htmx:afterRequest', function (evt) {
             var target = evt.detail && evt.detail.target;
-            if (!target || target.id === 'notif-dropdown-content') return;
+            if (isNotifPanel(target)) return;
             hrHideGlassLoader();
         });
 

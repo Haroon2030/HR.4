@@ -220,7 +220,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260620-media-modal-sidebar" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260620-notif-topbar2" rel="stylesheet">
     <link href="/static/css/hr-motion.css?v=20260620-toast-z" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -250,7 +250,7 @@
                     </button>
                 </div>
                 <nav class="hr-nav flex-1 min-h-0">
-                    {% include "components/sidebar_nav.html" with always_show=True %}
+                    {% include "components/sidebar_nav.html" with always_show=True dropdown_uid='mobile' %}
                 </nav>
                 {% include "components/sidebar_panel_footer.html" with allow_collapse=False always_show=True %}
             </div>
@@ -265,7 +265,7 @@
             >
                 <div class="hr-sidebar-panel flex flex-col flex-1 min-h-0">
                     <nav class="hr-nav flex-1 min-h-0">
-                        {% include "components/sidebar_nav.html" with always_show=False %}
+                        {% include "components/sidebar_nav.html" with always_show=False dropdown_uid='desktop' %}
                     </nav>
                     {% include "components/sidebar_panel_footer.html" with allow_collapse=True %}
                 </div>
@@ -294,6 +294,9 @@
                     <div class="hr-topbar__end">
                         <div class="hr-topbar-actions">
                             {% include "components/topbar_time_pill.html" %}
+                            <div class="hr-topbar-notif-mobile md:hidden">
+                                {% include "components/notifications_dropdown.html" with dropdown_uid='topbar' %}
+                            </div>
                             {% include "components/topbar_app_info.html" %}
                             <div class="relative" x-data="{ accountOpen: false }" @click.outside="accountOpen = false">
                                 <button type="button" @click.stop="accountOpen = !accountOpen"
@@ -475,7 +478,8 @@
                 hrScheduleLucide();
                 if (window.hrInitDatePickers) window.hrInitDatePickers(evt.detail.target || document);
                 if (window.hrInitNavDropdowns) window.hrInitNavDropdowns(evt.detail.target || document);
-                if (evt.detail.target && evt.detail.target.id === 'notif-dropdown-content') {
+                if (evt.detail.target && evt.detail.target.classList && evt.detail.target.classList.contains('hr-notif-dropdown-panel')) {
+                    hrScheduleLucide();
                     return;
                 }
                 if (evt.detail.target && evt.detail.target.id === 'hr-page-inner') {
