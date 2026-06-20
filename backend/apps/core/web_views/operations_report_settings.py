@@ -69,7 +69,7 @@ def operations_report_settings(request):
                     include_completed=settings_obj.include_completed,
                 )
                 if test_email or test_phone:
-                    sent = build_and_send_operations_report(
+                    send_result = build_and_send_operations_report(
                         report_date=report_date,
                         recipient=test_email or None,
                         recipient_phone=test_phone or None,
@@ -80,12 +80,15 @@ def operations_report_settings(request):
                         allow_empty=True,
                     )
                 else:
-                    sent = build_and_send_operations_report(
+                    send_result = build_and_send_operations_report(
                         report_date=report_date,
                         settings_obj=settings_obj,
                         force=True,
+                        send_email=bool(recipients),
+                        send_whatsapp=settings_obj.send_via_whatsapp or bool(phones),
                         allow_empty=True,
                     )
+                sent = send_result.sent
                 labels = []
                 if test_email:
                     labels.append(test_email)
@@ -119,12 +122,13 @@ def operations_report_settings(request):
                             'فعّل «تفعيل الإرسال التلقائي» ثم اضغط «حفظ الإعدادات».',
                         )
                 else:
+                    detail = ' — '.join(send_result.errors[:2]) if send_result.errors else (
+                        'تحقق من ضبط البريد أو Evolution API.'
+                    )
                     messages.warning(
                         request,
-                        f'تعذّر الإرسال — تحقق من البريد أو واتساب. '
-                        f'تاريخ التقرير: {report_date.isoformat()}. '
-                        'ملاحظة: التقرير يشمل طلبات الموافقات والتوظيف فقط — '
-                        'التعديل المباشر على ملف الموظف لا يظهر هنا.',
+                        f'تعذّر الإرسال — {detail} '
+                        f'تاريخ التقرير: {report_date.isoformat()}.',
                     )
             return redirect(reverse('web:operations_report_settings'))
 

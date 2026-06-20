@@ -165,13 +165,14 @@ class Command(BaseCommand):
             return
 
         try:
-            sent = build_and_send_operations_report(
+            send_result = build_and_send_operations_report(
                 report_date=report_date,
                 recipient=recipient_override or None,
                 recipient_phone=recipient_phone_override or None,
                 settings_obj=solo,
                 force=bool(recipient_override or recipient_phone_override or force),
             )
+            sent = send_result.sent
         except Exception as exc:
             logger.exception('فشل إرسال تقرير العمليات المجدول')
             self.stdout.write(self.style.ERROR(f'فشل الإرسال: {exc}'))
@@ -184,5 +185,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('تم إرسال تقرير العمليات بنجاح.'))
         else:
             msg = f'لم يُرسل أي تقرير (لا بيانات لتاريخ {report_date} أو لا مستلمين).'
+            if send_result.errors:
+                msg = f'{msg} {" — ".join(send_result.errors[:2])}'
             logger.warning(msg)
             self.stdout.write(self.style.WARNING(msg))

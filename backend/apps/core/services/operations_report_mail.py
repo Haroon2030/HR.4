@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from datetime import date
 
 from django.conf import settings
@@ -20,6 +21,17 @@ from apps.setup.models import OperationsReportSettings
 from apps.setup.operations_report_recipients import OPERATIONS_REPORT_RECIPIENT_ROLES
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class OperationsReportSendResult:
+    sent: bool = False
+    errors: list[str] = field(default_factory=list)
+
+    def add_error(self, message: str) -> None:
+        message = (message or '').strip()
+        if message and message not in self.errors:
+            self.errors.append(message)
 
 
 def _build_email_body(bundle: OperationsReportBundle, report_date: date) -> str:
@@ -96,35 +108,44 @@ def _deliver_bundle(
     send_whatsapp: bool = False,
     pdf_bytes: bytes | None = None,
     force_whatsapp: bool = False,
+    result: OperationsReportSendResult | None = None,
 ) -> bool:
     """يرسل التقرير عبر القنوات المفعّلة. يُرجع True عند نجاح قناة واحدة على الأقل."""
     sent = False
     pdf = pdf_bytes
 
     if send_email and email:
-        if pdf is None:
-            pdf = _build_pdf(bundle=bundle, report_date=report_date, settings_obj=settings_obj)
-        _send_operations_report_email(
-            bundle=bundle,
-            recipients=[email.strip()],
-            report_date=report_date,
-            settings_obj=settings_obj,
-            pdf_bytes=pdf,
-        )
-        sent = True
+        try:
+            if pdf is None:
+                pdf = _build_pdf(bundle=bundle, report_date=report_date, settings_obj=settings_obj)
+            _send_operations_report_email(
+                bundle=bundle,
+                recipients=[email.strip()],
+                report_date=report_date,
+                settings_obj=settings_obj,
+                pdf_bytes=pdf,
+            )
+            sent = True
+        except Exception as exc:
+            if result is not None:
+                result.add_error(f'فشل البريد إلى {email.strip()}: {exc}')
+            logger.warning('Operations report email failed for %s: %s', email, exc)
 
     if send_whatsapp and phone:
         if pdf is None:
             pdf = _build_pdf(bundle=bundle, report_date=report_date, settings_obj=settings_obj)
-        if send_operations_report_whatsapp(
+        ok, err = send_operations_report_whatsapp(
             bundle=bundle,
             phone=phone,
             report_date=report_date,
             settings_obj=settings_obj,
             pdf_bytes=pdf,
             force=force_whatsapp,
-        ):
+        )
+        if ok:
             sent = True
+        elif result is not None and err:
+            result.add_error(f'{phone.strip()}: {err}')
 
     return sent
 
@@ -140,26 +161,40 @@ def build_and_send_operations_report(
     send_email: bool = True,
     send_whatsapp: bool | None = None,
     allow_empty: bool = False,
-) -> bool:
+) -> OperationsReportSendResult:
     """
-    يبني PDF ويرسله. يُرجع True عند نجاح إرسال تقرير واحد على الأقل.
+    يبني PDF ويرسله.
     عند تحديد recipient / recipient_phone: إرسال تجريبي (تقرير شامل).
     """
+    outcome = OperationsReportSendResult()
     settings_obj = settings_obj or OperationsReportSettings.get_solo()
     report_date = report_date or timezone.localdate()
+
+    has_saved_emails = bool(settings_obj.active_recipient_emails())
+    has_saved_phones = bool(settings_obj.active_recipient_phones())
     whatsapp_enabled = settings_obj.send_via_whatsapp if send_whatsapp is None else send_whatsapp
+    if force and has_saved_phones:
+        whatsapp_enabled = True
 
     if settings_obj.is_enabled is False and not force and recipient is None and recipient_phone is None:
         logger.info('تخطي تقرير العمليات: الإرسال التلقائي غير مفعّل.')
-        return False
+        outcome.add_error('الإرسال التلقائي غير مفعّل.')
+        return outcome
 
     test_email = (recipient or '').strip()
     test_phone = (recipient_phone or '').strip()
-    if test_email and send_email:
-        ensure_smtp_ready(verify_connection=True)
-    elif not test_email and send_email:
-        if settings_obj.active_recipient_emails():
+    will_send_email = send_email and bool(test_email or (not test_phone and has_saved_emails))
+    if will_send_email:
+        try:
             ensure_smtp_ready(verify_connection=True)
+        except Exception as exc:
+            outcome.add_error(str(exc))
+            if not (test_phone or (whatsapp_enabled and has_saved_phones)):
+                return outcome
+            send_email = False
+            will_send_email = False
+
+    force_whatsapp = force and bool(test_phone or has_saved_phones)
 
     if test_email or test_phone:
         bundle = collect_operations_report(
@@ -168,34 +203,28 @@ def build_and_send_operations_report(
             include_completed=settings_obj.include_completed,
             role_key=role_key,
         )
-        if not bundle_has_content(
+        has_content = bundle_has_content(
             bundle,
             include_pending=settings_obj.include_pending,
             include_completed=settings_obj.include_completed,
-        ):
-            if allow_empty:
-                return _deliver_bundle(
-                    bundle=bundle,
-                    report_date=report_date,
-                    settings_obj=settings_obj,
-                    email=test_email,
-                    phone=test_phone,
-                    send_email=bool(test_email) and send_email,
-                    send_whatsapp=bool(test_phone),
-                    force_whatsapp=bool(test_phone),
-                )
-            logger.info('تخطي تقرير العمليات التجريبي: لا توجد بيانات لتاريخ %s.', report_date)
-            return False
-        return _deliver_bundle(
-            bundle=bundle,
-            report_date=report_date,
-            settings_obj=settings_obj,
-            email=test_email,
-            phone=test_phone,
-            send_email=bool(test_email) and send_email,
-            send_whatsapp=bool(test_phone),
-            force_whatsapp=bool(test_phone),
         )
+        if has_content or allow_empty:
+            if _deliver_bundle(
+                bundle=bundle,
+                report_date=report_date,
+                settings_obj=settings_obj,
+                email=test_email,
+                phone=test_phone,
+                send_email=bool(test_email) and send_email,
+                send_whatsapp=bool(test_phone),
+                force_whatsapp=bool(test_phone) or force_whatsapp,
+                result=outcome,
+            ):
+                outcome.sent = True
+                return outcome
+        if not has_content:
+            outcome.add_error(f'لا توجد بيانات لتاريخ {report_date.isoformat()}.')
+        return outcome
 
     email_map = settings_obj.recipient_emails_map()
     phone_map = settings_obj.recipient_phones_map()
@@ -229,6 +258,8 @@ def build_and_send_operations_report(
             phone=phone,
             send_email=send_email,
             send_whatsapp=whatsapp_enabled,
+            force_whatsapp=force_whatsapp,
+            result=outcome,
         ):
             sent_any = True
 
@@ -259,6 +290,7 @@ def build_and_send_operations_report(
                     phone='',
                     send_email=send_email,
                     send_whatsapp=False,
+                    result=outcome,
                 ):
                     sent_any = True
 
@@ -276,6 +308,8 @@ def build_and_send_operations_report(
                         phone=phone,
                         send_email=False,
                         send_whatsapp=True,
+                        force_whatsapp=force_whatsapp,
+                        result=outcome,
                     ):
                         sent_any = True
 
@@ -300,6 +334,7 @@ def build_and_send_operations_report(
                 phone='',
                 send_email=send_email,
                 send_whatsapp=False,
+                result=outcome,
             ):
                 sent_any = True
         if whatsapp_enabled:
@@ -313,9 +348,13 @@ def build_and_send_operations_report(
                     send_email=False,
                     send_whatsapp=True,
                     force_whatsapp=True,
+                    result=outcome,
                 ):
                     sent_any = True
 
     if not sent_any:
-        logger.info('تخطي تقرير العمليات: لا يوجد مستلم أو لا توجد بيانات.')
-    return sent_any
+        logger.info('تخطي تقرير العمليات: لا يوجد مستلم أو فشل الإرسال.')
+        if not outcome.errors:
+            outcome.add_error('لم يُرسل عبر أي قناة — تحقق من المستلمين وضبط البريد أو واتساب.')
+    outcome.sent = sent_any
+    return outcome

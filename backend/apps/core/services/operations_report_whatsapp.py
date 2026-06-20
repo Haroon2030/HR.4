@@ -65,10 +65,10 @@ def send_operations_report_whatsapp(
     settings_obj: OperationsReportSettings,
     pdf_bytes: bytes | None = None,
     force: bool = False,
-) -> bool:
-    """يرسل PDF لتقرير العمليات. يُرجع True عند النجاح."""
+) -> tuple[bool, str]:
+    """يرسل PDF لتقرير العمليات. يُرجع (نجاح، رسالة خطأ إن وُجدت)."""
     if not force and not settings_obj.send_via_whatsapp:
-        return False
+        return False, 'إرسال واتساب غير مفعّل — فعّل «إرسال عبر واتساب» واحفظ الإعدادات.'
 
     if not getattr(settings, 'WHATSAPP_ENABLED', False):
         _log_whatsapp(
@@ -78,9 +78,8 @@ def send_operations_report_whatsapp(
             status=WhatsAppMessageLog.Status.SKIPPED,
             error='whatsapp_disabled',
         )
-        return False
+        return False, 'WHATSAPP_ENABLED غير مفعّل في إعدادات السيرفر (Evolution API).'
 
-    normalized = phone_utils.normalize_phone(phone)
     if not phone_utils.is_valid_phone(phone):
         _log_whatsapp(
             phone='',
@@ -89,7 +88,9 @@ def send_operations_report_whatsapp(
             status=WhatsAppMessageLog.Status.SKIPPED,
             error='no_phone',
         )
-        return False
+        return False, phone_utils.phone_field_error(phone) or 'رقم الجوال غير صالح.'
+
+    normalized = phone_utils.normalize_phone(phone)
 
     if not client.is_configured():
         _log_whatsapp(
@@ -99,7 +100,7 @@ def send_operations_report_whatsapp(
             status=WhatsAppMessageLog.Status.SKIPPED,
             error='not_configured',
         )
-        return False
+        return False, 'Evolution API غير مضبوط — تحقق من EVOLUTION_API_URL و EVOLUTION_INSTANCE.'
 
     caption = _build_caption(bundle, report_date)
     filename = _pdf_filename(bundle, report_date)
@@ -127,9 +128,12 @@ def send_operations_report_whatsapp(
             status=WhatsAppMessageLog.Status.SENT,
             response=response,
         )
-        return True
+        return True, ''
     except client.EvolutionAPIError as exc:
         logger.warning('WhatsApp operations report failed for %s: %s', normalized, exc)
+        detail = str(exc)
+        if exc.payload:
+            detail = f'{detail} — {str(exc.payload)[:300]}'
         _log_whatsapp(
             phone=normalized,
             event_type=event_type,
@@ -138,7 +142,7 @@ def send_operations_report_whatsapp(
             error=str(exc),
             response=getattr(exc, 'payload', '') or '',
         )
-        return False
+        return False, f'فشل واتساب: {detail}'
     except Exception as exc:
         logger.warning('WhatsApp operations report failed for %s: %s', normalized, exc)
         _log_whatsapp(
@@ -148,4 +152,4 @@ def send_operations_report_whatsapp(
             status=WhatsAppMessageLog.Status.FAILED,
             error=str(exc),
         )
-        return False
+        return False, f'فشل واتساب: {exc}'
