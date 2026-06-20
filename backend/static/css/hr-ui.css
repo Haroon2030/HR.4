@@ -6047,6 +6047,13 @@ body.hr-notif-open-lock .hr-main {
     overflow: hidden !important;
 }
 
+.hr-topbar-notif {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
 @media (max-width: 767px) {
     /* قائمة الإشعارات — الزاوية الفيزيائية اليسرى (تجاوز inset-inline في RTL) */
     body .hr-notif-dropdown-panel.hr-notif-dropdown-panel--topbar {
@@ -6063,11 +6070,26 @@ body.hr-notif-open-lock .hr-main {
         margin: 0;
         z-index: 10110;
     }
+}
 
-    .hr-topbar-notif-mobile {
-        display: inline-flex;
-        align-items: center;
-        flex-shrink: 0;
+@media (min-width: 768px) {
+    .hr-notif-dropdown-panel--topbar-desktop {
+        position: absolute;
+        left: 0;
+        right: auto;
+        inset-inline-start: 0;
+        inset-inline-end: auto;
+        top: calc(100% + 0.5rem);
+        width: min(20rem, calc(100vw - 2rem));
+        max-width: 22rem;
+        max-height: min(28rem, calc(100vh - 5rem));
+        z-index: 10110;
+    }
+}
+
+@media (max-width: 767px) {
+    .hr-notif-dropdown-panel--topbar-desktop {
+        display: none !important;
     }
 }
 

@@ -1,4 +1,4 @@
-{% comment %}رأس الشريط — شعار + عنوان + جرس (Dokploy){% endcomment %}
+{% comment %}رأس الشريط — شعار + عنوان{% endcomment %}
 <div class="hr-nav__head shrink-0" dir="rtl">
     <div class="hr-sidebar-brand-bar">
         <a href="{% url 'web:dashboard' %}" class="hr-sidebar-brand-bar__main" title="لوحة التحكم">
@@ -7,10 +7,5 @@
             </span>
             <span class="hr-sidebar-brand-bar__name">نظام الموارد البشرية</span>
         </a>
-        {% if dropdown_uid != 'mobile' %}
-        <div class="hr-sidebar-brand-bar__tools">
-            {% include "components/notifications_dropdown.html" with in_sidebar=True dropdown_uid=dropdown_uid %}
-        </div>
-        {% endif %}
     </div>
 </div>

@@ -220,7 +220,7 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20260620-notif-topbar2" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20260620-notif-topbar3" rel="stylesheet">
     <link href="/static/css/hr-motion.css?v=20260620-toast-z" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -294,7 +294,7 @@
                     <div class="hr-topbar__end">
                         <div class="hr-topbar-actions">
                             {% include "components/topbar_time_pill.html" %}
-                            <div class="hr-topbar-notif-mobile md:hidden">
+                            <div class="hr-topbar-notif">
                                 {% include "components/notifications_dropdown.html" with dropdown_uid='topbar' %}
                             </div>
                             {% include "components/topbar_app_info.html" %}
