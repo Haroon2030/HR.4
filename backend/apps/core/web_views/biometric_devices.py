@@ -532,6 +532,8 @@ def biometric_enrollment_save(request):
         )
         return redirect('web:biometric_devices')
 
+    from django.db import transaction
+
     from apps.attendance.models import BiometricEnrollmentAuditLog
     from apps.attendance.services.ingest_audit import log_enrollment_change
 
@@ -546,24 +548,34 @@ def biometric_enrollment_save(request):
     )
     previous_employee = prev_enrollment.employee if prev_enrollment else None
 
-    EmployeeBiometricEnrollment.objects.update_or_create(
-        device_id=device_id,
-        device_user_id=int(device_user_id),
-        defaults={
-            'employee_id': employee_id,
-            'device_user_name': device_user_name,
-            'is_deleted': False,
-        },
-    )
+    with transaction.atomic():
+        # ربط سابق لنفس الموظف على الجهاز برقم مستخدم آخر
+        EmployeeBiometricEnrollment.objects.filter(
+            device_id=device_id,
+            employee_id=employee_id,
+            is_deleted=False,
+        ).exclude(device_user_id=int(device_user_id)).delete()
 
-    punches_relinked = AttendancePunch.objects.filter(
-        device_id=device_id,
-        device_user_id=int(device_user_id),
-        is_deleted=False,
-    ).update(
-        employee_id=employee_id,
-        device_user_name=device_user_name,
-    )
+        # استعادة تسجيل محذوف منطقياً — objects لا يراه update_or_create
+        EmployeeBiometricEnrollment.all_objects.update_or_create(
+            device_id=device_id,
+            device_user_id=int(device_user_id),
+            defaults={
+                'employee_id': employee_id,
+                'device_user_name': device_user_name,
+                'is_deleted': False,
+                'deleted_at': None,
+            },
+        )
+
+        punches_relinked = AttendancePunch.objects.filter(
+            device_id=device_id,
+            device_user_id=int(device_user_id),
+            is_deleted=False,
+        ).update(
+            employee_id=employee_id,
+            device_user_name=device_user_name,
+        )
 
     if previous_employee and previous_employee.pk == int(employee_id):
         audit_action = BiometricEnrollmentAuditLog.Action.UPDATE

@@ -7,7 +7,7 @@
 {% block content %}
 {{ employee_modal_js|json_script:"employee-modal-js" }}
 <div class="space-y-4" x-data="{ activeTab: '{{ default_employee_tab }}', quickModal: null, quickOpen: false }"
-     x-init="{% if tab_visible.fingerprint %}if (window.location.hash === '#fingerprint') { activeTab = 'fingerprint'; }{% endif %}"
+     x-init="{% if tab_visible.fingerprint %}if (window.location.hash === '#fingerprint' && !window.location.search.includes('tab=fingerprint')) { var u = new URL(window.location.href); u.searchParams.set('tab', 'fingerprint'); window.location.replace(u.pathname + u.search + '#fingerprint'); } else if (window.location.hash === '#fingerprint') { activeTab = 'fingerprint'; }{% endif %}"
      @open-schedule-modal.window="quickModal = 'schedule'"
      @close-schedule-modal.window="quickModal = null">
 

@@ -17,6 +17,7 @@ _STMT_COUNT_TYPES = ('statement', 'warning', 'final_warning', 'acknowledgment', 
 
 _EMPTY_FINGERPRINT = {
     'linked': False,
+    'has_formal_enrollment': False,
     'enrollments': [],
     'punches': [],
     'last_punch': None,

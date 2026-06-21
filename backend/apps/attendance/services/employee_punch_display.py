@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch, EmployeeBiometricSettings
 from apps.attendance.selectors.employee_enrollment import (
+    effective_biometric_links,
     enrollment_filter_q,
     enrollments_for_employee,
 )
@@ -38,17 +39,17 @@ def base_punches_queryset(
     date_from: date | None = None,
     date_to: date | None = None,
 ) -> QuerySet:
-    """بصمات الموظف من أجهزة التسجيل فقط (جهاز + رقم مستخدم على الجهاز)."""
+    """بصمات الموظف — عبر التسجيل الرسمي أو employee_id على السجل."""
     enrollments = list(employee_enrollments(employee))
-    if not enrollments:
-        return AttendancePunch.objects.none()
-
-    qs = (
-        AttendancePunch.objects.filter(is_deleted=False)
-        .filter(enrollment_filter_q(enrollments))
-        .select_related('device', 'device__branch')
-        .order_by(*PUNCH_LIST_ORDERING)
+    qs = AttendancePunch.objects.filter(is_deleted=False).select_related(
+        'device', 'device__branch',
     )
+    if enrollments:
+        qs = qs.filter(enrollment_filter_q(enrollments))
+    else:
+        qs = qs.filter(employee_id=employee.id)
+
+    qs = qs.order_by(*PUNCH_LIST_ORDERING)
     if date_from:
         start = timezone.make_aware(datetime.combine(date_from, time.min))
         qs = qs.filter(punched_at__gte=start)
@@ -105,7 +106,7 @@ def get_employee_punch_display(
     max_display: int | None = None,
 ) -> dict:
     settings = settings or get_or_create_biometric_settings(employee)
-    enrollments = list(employee_enrollments(employee))
+    enrollments, has_formal_enrollment = effective_biometric_links(employee)
     linked = bool(enrollments)
 
     cap = max_display if max_display is not None else MAX_EMPLOYEE_PUNCHES_DEFAULT
@@ -120,6 +121,7 @@ def get_employee_punch_display(
 
     return {
         'linked': linked,
+        'has_formal_enrollment': has_formal_enrollment,
         'enrollments': enrollments,
         'punches': punches,
         'last_punch': last_punch,

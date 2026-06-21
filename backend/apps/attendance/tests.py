@@ -357,6 +357,115 @@ class LinkedEnrollmentDisplayTests(TestCase):
         self.assertEqual(alerts, [])
 
 
+class EmployeeFingerprintTabTests(TestCase):
+    """تبويب البصمة في ملف الموظف — ربط رسمي أو مستنتج من السجلات."""
+
+    def test_fingerprint_tab_linked_with_enrollment(self):
+        from apps.attendance.models import EmployeeBiometricEnrollment
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+        from apps.employees.services.employee_view_data import load_employee_view_context
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.70', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='هارون', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp, device=device, device_user_id=9,
+        )
+
+        ctx = load_employee_view_context(
+            employee=emp,
+            user=None,
+            active_tab='fingerprint',
+            tab_visible={'fingerprint': True},
+            request_get={},
+            load_all_tabs=False,
+        )
+        fp = ctx['fingerprint_data']
+        self.assertTrue(fp['linked'])
+        self.assertTrue(fp['has_formal_enrollment'])
+        self.assertEqual(len(fp['enrollments']), 1)
+
+    def test_fingerprint_tab_inferred_from_punches_without_enrollment(self):
+        from datetime import datetime, time
+
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+        from apps.employees.services.employee_view_data import load_employee_view_context
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.71', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='هارون', branch=branch)
+        tz = timezone.get_current_timezone()
+        ts = timezone.make_aware(datetime.combine(timezone.localdate(), time(8, 0)), tz)
+        AttendancePunch.objects.create(
+            device=device,
+            employee=emp,
+            device_user_id=3,
+            punched_at=ts,
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+
+        ctx = load_employee_view_context(
+            employee=emp,
+            user=None,
+            active_tab='fingerprint',
+            tab_visible={'fingerprint': True},
+            request_get={},
+            load_all_tabs=False,
+        )
+        fp = ctx['fingerprint_data']
+        self.assertTrue(fp['linked'])
+        self.assertFalse(fp['has_formal_enrollment'])
+        self.assertEqual(len(fp['enrollments']), 1)
+        self.assertEqual(fp['displayed_count'], 1)
+
+    def test_enrollment_save_restores_soft_deleted_link(self):
+        from django.contrib.auth import get_user_model
+        from django.test import Client
+
+        from apps.attendance.models import EmployeeBiometricEnrollment
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        User = get_user_model()
+        user = User.objects.create_superuser(username='bio_admin', password='x')
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.72', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='هارون', branch=branch)
+        enrollment = EmployeeBiometricEnrollment.objects.create(
+            employee=emp, device=device, device_user_id=11,
+        )
+        enrollment.delete()
+
+        client = Client()
+        client.force_login(user)
+        response = client.post(
+            '/attendance/enrollments/save/',
+            {
+                'employee_id': emp.pk,
+                'device_id': device.pk,
+                'device_user_id': 11,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            EmployeeBiometricEnrollment.objects.filter(
+                employee=emp, device=device, device_user_id=11,
+            ).exists()
+        )
+
+
 class DeviceIpValidatorTests(TestCase):
     def test_valid_ipv4(self):
         self.assertEqual(validate_device_ipv4('192.168.24.59'), '192.168.24.59')

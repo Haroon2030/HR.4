@@ -1,9 +1,22 @@
 """استعلامات ربط الموظف بأجهزة البصمة."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from django.db.models import Exists, OuterRef, Q, QuerySet
 
-from apps.attendance.models import EmployeeBiometricEnrollment
+from apps.attendance.models import AttendancePunch, EmployeeBiometricEnrollment
+from apps.employees.models import Employee
+
+
+@dataclass(frozen=True)
+class InferredBiometricLink:
+    """ربط مستنتج من سجلات البصمة عند غياب EmployeeBiometricEnrollment."""
+
+    device: object
+    device_id: int
+    device_user_id: int
+    device_user_name: str
 
 
 def enrollments_for_employee(employee_id: int) -> QuerySet:
@@ -14,6 +27,46 @@ def enrollments_for_employee(employee_id: int) -> QuerySet:
         .select_related('device', 'device__branch')
         .order_by('device__name')
     )
+
+
+def inferred_links_from_punches(employee: Employee) -> list[InferredBiometricLink]:
+    """أزواج (جهاز، مستخدم) من بصمات مربوطة بالموظف مباشرة — احتياط عند غياب التسجيل."""
+    seen: set[tuple[int, int]] = set()
+    links: list[InferredBiometricLink] = []
+    qs = (
+        AttendancePunch.objects.filter(
+            employee_id=employee.id,
+            is_deleted=False,
+        )
+        .select_related('device', 'device__branch')
+        .order_by('device__name', 'device_user_id', '-punched_at')
+    )
+    for punch in qs:
+        key = (punch.device_id, punch.device_user_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        links.append(
+            InferredBiometricLink(
+                device=punch.device,
+                device_id=punch.device_id,
+                device_user_id=punch.device_user_id,
+                device_user_name=punch.device_user_name or '',
+            )
+        )
+    return links
+
+
+def effective_biometric_links(employee: Employee) -> tuple[list, bool]:
+    """
+    روابط العرض للموظف: تسجيلات HR أو — احتياطاً — من employee_id على البصمات.
+    القيمة الثانية: True إذا وُجد تسجيل رسمي (EmployeeBiometricEnrollment).
+    """
+    enrollments = list(enrollments_for_employee(employee.id))
+    if enrollments:
+        return enrollments, True
+    inferred = inferred_links_from_punches(employee)
+    return inferred, False
 
 
 def enrollment_filter_q(enrollments: list[EmployeeBiometricEnrollment]) -> Q:

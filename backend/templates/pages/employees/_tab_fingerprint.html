@@ -1,5 +1,5 @@
 {# fingerprint_data, fp_date_from, fp_date_to, can_edit_biometric_settings #}
-<div id="fingerprint" x-show="activeTab==='fingerprint'" class="space-y-4" style="display:none">
+<div id="fingerprint" x-show="activeTab==='fingerprint'" class="space-y-4"{% if default_employee_tab != 'fingerprint' %} style="display:none"{% endif %}>
 
     {% with fp=fingerprint_data settings=fp.settings %}
     {% if not fp.linked %}
@@ -8,6 +8,13 @@
         <p class="mt-2 m-0">من {% url 'web:biometric_devices' as bio_devices_href %}{% include "components/hr_btn.html" with href=bio_devices_href label="أجهزة البصمة" variant="glass-primary" extra_class="inline-flex mt-2" %} اربط رقم المستخدم على الجهاز بهذا الموظف.</p>
     </div>
     {% else %}
+
+    {% if not fp.has_formal_enrollment %}
+    <div class="p-3 rounded-lg border border-amber-200 bg-amber-50/90 text-amber-900 text-xs">
+        <p class="font-bold m-0">يوجد سجلات بصمة لهذا الموظف لكن الربط الرسمي غير مكتمل.</p>
+        <p class="mt-1 mb-0">أعد حفظ الربط من {% url 'web:biometric_devices' as bio_devices_href2 %}{% include "components/hr_btn.html" with href=bio_devices_href2 label="أجهزة البصمة" variant="glass-primary" extra_class="inline-flex mt-1" %} لضمان ظهور البيانات بشكل صحيح.</p>
+    </div>
+    {% endif %}
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div class="lg:col-span-2 hr-glass-panel rounded-xl p-4">
