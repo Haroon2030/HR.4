@@ -1,5 +1,5 @@
 {# جدول ورديات شهري — يُستخدم داخل نافذة جدول الدوام فقط #}
-<div class="hr-schedule-roster border rounded-lg overflow-hidden">
+<div class="hr-schedule-roster border rounded-lg">
     <div class="hr-schedule-roster__title px-4 py-3 border-b">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
@@ -7,14 +7,14 @@
                     <i data-lucide="calendar-range" class="w-4 h-4 shrink-0"></i>
                     <span>جدول عملك لشهر</span>
                     <template x-if="editable">
-                        <span class="inline-flex flex-wrap items-center gap-1.5">
-                            <select x-model.number="box.month" class="hr-schedule-roster__select text-sm font-bold rounded-lg px-2 py-1">
-                                <template x-for="(mn, idx) in months" :key="idx">
-                                    <option :value="idx+1" x-text="mn"></option>
-                                </template>
-                            </select>
-                            <input type="number" x-model.number="box.year" min="2020" max="2100"
-                                   class="hr-schedule-roster__year w-20 text-sm font-bold rounded-lg px-2 py-1 text-center">
+                        <span class="hr-schedule-roster__period-controls inline-flex flex-wrap items-center gap-1.5">
+                            <input type="month"
+                                   class="hr-schedule-roster__month-input text-sm font-bold rounded-lg px-2 py-1"
+                                   :value="boxYearMonthValue(box)"
+                                   @input="setBoxYearMonthFromInput(box, $event.target.value)"
+                                   min="2020-01"
+                                   max="2100-12"
+                                   aria-label="اختر الشهر والسنة">
                         </span>
                     </template>
                     <template x-if="!editable">
@@ -27,7 +27,7 @@
                 <template x-if="editable">
                     <input type="text" x-model="box.shift_label"
                            placeholder="اكتب الوردية (مثال: 8ص–4م)"
-                           class="hr-schedule-roster__shift text-xs font-bold rounded-lg px-2 py-1.5 min-w-[9rem] w-full sm:w-52">
+                           class="hr-schedule-roster__shift hr-schedule-modal__input text-xs font-bold rounded-lg px-2 py-1.5 min-w-[9rem] w-full sm:w-52">
                 </template>
                 <template x-if="!editable">
                     <span class="text-xs font-bold px-2 py-1 rounded-lg hr-schedule-roster__shift-read" x-text="shiftShortLabel(box)"></span>

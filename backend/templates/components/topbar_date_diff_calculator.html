@@ -1,0 +1,141 @@
+<div class="relative hr-topbar-date-calc"
+     x-data="{
+         open: false,
+         dateFrom: '',
+         dateTo: '',
+         get diffMs() {
+             if (!this.dateFrom || !this.dateTo) return null;
+             var a = new Date(this.dateFrom + 'T00:00:00');
+             var b = new Date(this.dateTo + 'T00:00:00');
+             if (isNaN(a.getTime()) || isNaN(b.getTime())) return null;
+             return b - a;
+         },
+         get days() {
+             if (this.diffMs === null) return null;
+             return Math.floor(this.diffMs / 86400000);
+         },
+         get years() {
+             if (this.days === null) return null;
+             return +(this.days / 365.25).toFixed(4);
+         },
+         get weeks() {
+             if (this.days === null) return null;
+             return Math.floor(Math.abs(this.days) / 7);
+         },
+         get monthsApprox() {
+             if (this.days === null) return null;
+             return +(Math.abs(this.days) / 30.4375).toFixed(2);
+         },
+         get hasRange() { return this.days !== null; },
+         get isNegative() { return this.hasRange && this.days < 0; },
+         get absDays() { return this.days === null ? null : Math.abs(this.days); },
+         setToday(field) {
+             var today = new Date().toISOString().slice(0, 10);
+             if (field === 'to') this.dateTo = today;
+             else this.dateFrom = today;
+         },
+         swapDates() {
+             var tmp = this.dateFrom;
+             this.dateFrom = this.dateTo;
+             this.dateTo = tmp;
+         },
+         clearAll() {
+             this.dateFrom = '';
+             this.dateTo = '';
+         }
+     }"
+     @keydown.escape.window="open = false"
+     x-effect="if (open && window.lucide) { $nextTick(function () { lucide.createIcons(); }); }">
+    <button type="button"
+            @click.stop="open = !open"
+            class="hr-topbar-icon-btn"
+            :aria-expanded="open ? 'true' : 'false'"
+            title="حاسبة فرق التاريخين"
+            aria-label="حاسبة فرق التاريخين">
+        <i data-lucide="calendar-range" class="w-5 h-5" aria-hidden="true"></i>
+    </button>
+
+    <div x-show="open"
+         x-cloak
+         x-transition
+         @click.outside="open = false"
+         @click.stop
+         dir="rtl"
+         class="hr-date-calc-panel hr-topbar-light-panel absolute left-0 top-full mt-2 z-50 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl overflow-hidden"
+         role="dialog"
+         aria-label="حاسبة فرق التاريخين">
+        <div class="hr-date-calc-panel__head hr-topbar-light-panel__head">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="hr-date-calc-panel__head-icon" aria-hidden="true">
+                    <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                </span>
+                <span class="text-sm font-bold text-slate-900">حاسبة فرق التاريخين</span>
+            </div>
+            <button type="button"
+                    class="hr-date-calc-panel__close hr-topbar-light-panel__close"
+                    @click="open = false"
+                    title="إغلاق"
+                    aria-label="إغلاق">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="hr-date-calc-panel__body space-y-3">
+            <div>
+                <label class="hr-date-calc-panel__label">تاريخ البداية</label>
+                <input type="date"
+                       x-model="dateFrom"
+                       class="hr-date-calc-panel__input"
+                       aria-label="تاريخ البداية">
+            </div>
+            <div>
+                <label class="hr-date-calc-panel__label">تاريخ النهاية</label>
+                <input type="date"
+                       x-model="dateTo"
+                       class="hr-date-calc-panel__input"
+                       aria-label="تاريخ النهاية">
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="button" class="hr-date-calc-panel__chip" @click="setToday('from')">اليوم ← البداية</button>
+                <button type="button" class="hr-date-calc-panel__chip" @click="setToday('to')">اليوم ← النهاية</button>
+                <button type="button" class="hr-date-calc-panel__chip" @click="swapDates()" :disabled="!dateFrom && !dateTo">تبديل</button>
+                <button type="button" class="hr-date-calc-panel__chip hr-date-calc-panel__chip--muted" @click="clearAll()" :disabled="!dateFrom && !dateTo">مسح</button>
+            </div>
+
+            <template x-if="hasRange">
+                <div class="hr-date-calc-panel__results">
+                    <div class="hr-date-calc-panel__result-main">
+                        <span class="text-xs text-slate-500">الفرق</span>
+                        <span class="text-2xl font-bold tabular-nums"
+                              :class="isNegative ? 'text-amber-700' : 'text-primary-700'"
+                              x-text="(isNegative ? '−' : '') + absDays + ' يوم'"></span>
+                    </div>
+                    <p x-show="isNegative" class="text-[11px] text-amber-700 m-0">
+                        تاريخ النهاية قبل تاريخ البداية — القيمة المعروضة للفرق مطلقة.
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="hr-date-calc-panel__stat">
+                            <span class="text-slate-500">بالسنوات</span>
+                            <span class="font-bold text-slate-800 tabular-nums" x-text="(isNegative ? '−' : '') + Math.abs(years).toFixed(4) + ' سنة'"></span>
+                            <span class="text-[10px] text-slate-400">(365.25 يوم/سنة)</span>
+                        </div>
+                        <div class="hr-date-calc-panel__stat">
+                            <span class="text-slate-500">بالأسابيع</span>
+                            <span class="font-bold text-slate-800 tabular-nums" x-text="weeks + ' أسبوع'"></span>
+                        </div>
+                        <div class="hr-date-calc-panel__stat col-span-2">
+                            <span class="text-slate-500">بالأشهر تقريباً</span>
+                            <span class="font-bold text-slate-800 tabular-nums" x-text="monthsApprox + ' شهر'"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <p x-show="!hasRange" class="text-xs text-slate-500 m-0 flex items-center gap-1.5">
+                <i data-lucide="info" class="w-3.5 h-3.5 shrink-0"></i>
+                اختر تاريخي البداية والنهاية لحساب مدة الخدمة أو الفترة بينهما.
+            </p>
+        </div>
+    </div>
+</div>

@@ -221,7 +221,8 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
     payload = {
         'hire_date': hire.isoformat() if hire else '',
         'today_iso': timezone.localdate().isoformat(),
-        'remaining_leave_days': _modal_js_int(employee.remaining_leave_days),
+        'remaining_leave_days': _modal_js_float(employee.remaining_leave_days),
+        'used_leave_days': _modal_js_float(employee.used_leave_days),
         'has_sponsor': bool(employee.sponsorship_id),
     }
     if user_can_view_salary(user):
@@ -359,13 +360,18 @@ def _maybe_init_employee_ledger(employee: Employee, user) -> None:
     from apps.employees.models import EmployeeLedger
     from apps.employees.services.accrual_ledger_notes import build_initial_balance_notes
 
+    from apps.employees.services.leave_balance import (
+        compute_employee_accrued_leave_days,
+        employee_service_days,
+    )
+
     today = timezone.now().date()
-    service_days = (today - employee.hire_date).days
+    service_days = employee_service_days(employee, as_of=today)
     if service_days < 1:
         return
 
+    leave_days = compute_employee_accrued_leave_days(employee, as_of=today)
     service_years = Decimal(str(round(service_days / 365.25, 4)))
-    leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
     total_salary = Decimal(str(employee.total_salary or 0))
     from apps.core.salary_month import daily_rate_from_total
     daily_wage = daily_rate_from_total(total_salary)

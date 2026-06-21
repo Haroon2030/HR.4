@@ -47,10 +47,17 @@
                         <div><dt class="text-slate-400 text-xs">الفرع الجديد</dt><dd class="text-slate-800 font-medium">{{ p.new_branch_id }}</dd></div>
                         {% if p.new_department_id %}<div><dt class="text-slate-400 text-xs">القسم الجديد</dt><dd class="text-slate-800 font-medium">{{ p.new_department_id }}</dd></div>{% endif %}
                         {% if p.reason %}<div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.reason }}</dd></div>{% endif %}
-                    {% elif action.action_type == 'terminate' or action.action_type == 'contract_end' %}
+                    {% elif action.action_type == 'terminate' or action.action_type == 'end_of_service' %}
                         <div><dt class="text-slate-400 text-xs">تاريخ الإنهاء</dt><dd class="text-slate-800 font-medium">{{ p.end_date }}</dd></div>
                         {% if p.terminated_by %}
-                            <div><dt class="text-slate-400 text-xs">الطرف المنهي</dt><dd class="text-slate-800 font-medium">{% if p.terminated_by == 'employee' %}الموظف{% else %}الشركة{% endif %}</dd></div>
+                            <div><dt class="text-slate-400 text-xs">نوع التصفية</dt><dd class="text-slate-800 font-medium">{% if p.terminated_by == 'employee' %}استقالة (من قِبل الموظف){% elif p.terminated_by == 'contract_expiry' %}انتهاء العقد بانتهاء مدته{% elif p.terminated_by == 'article_74' %}إنهاء العقد بالتراضي (المادة 74){% elif p.terminated_by == 'article_77' %}إنهاء العقد — سبب غير مشروع (المادة 77){% elif p.terminated_by == 'article_80' %}إنهاء العقد — سبب مشروع (المادة 80){% elif p.terminated_by == 'probation_end' %}إنهاء العقد — نهاية فترة التجربة{% else %}تصفية نهاية خدمة (من قِبل الشركة){% endif %}</dd></div>
+                        {% endif %}
+                        {% if p.terminated_by == 'article_77' or p.terminated_by == 'article_74' %}
+                            {% with party=p.article_party|default:p.article_77_party %}
+                            {% if party %}
+                            <div><dt class="text-slate-400 text-xs">الطرف المُنهي</dt><dd class="text-slate-800 font-medium">{% if party == 'employee' %}من قِبل الموظف{% else %}من قِبل الشركة{% endif %}</dd></div>
+                            {% endif %}
+                            {% endwith %}
                         {% endif %}
                         <div class="sm:col-span-2"><dt class="text-slate-400 text-xs">السبب</dt><dd class="text-slate-700">{{ p.end_reason }}</dd></div>
                         {% if p.notes %}

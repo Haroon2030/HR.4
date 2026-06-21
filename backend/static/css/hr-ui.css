@@ -2677,7 +2677,7 @@ body.hr-app .hr-dropdown-menu:not(.hr-dropdown-menu--sidebar) .hr-dropdown-divid
 }
 
 /* ── جداول زجاجية رمادية — كل الموقع ── */
-body.hr-app .hr-main table,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table),
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table,
 body.hr-app .salary-adjust-archive table {
     width: 100%;
@@ -3296,7 +3296,7 @@ body.hr-app .hr-main .overflow-hidden.rounded-lg {
     box-shadow: var(--hr-table-glass-shadow);
 }
 
-body.hr-app .hr-main table thead th,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table) thead th,
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table thead th,
 body.hr-app .salary-adjust-archive table thead th {
     color: #000000 !important;
@@ -3310,7 +3310,7 @@ body.hr-app .salary-adjust-archive table thead th {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-body.hr-app .hr-main table tbody td,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table) tbody td,
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody td,
 body.hr-app .salary-adjust-archive table tbody td {
     color: #000000 !important;
@@ -3322,25 +3322,25 @@ body.hr-app .salary-adjust-archive table tbody td {
     transition: background 0.12s ease, box-shadow 0.12s ease;
 }
 
-body.hr-app .hr-main table tbody tr:last-child td,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table) tbody tr:last-child td,
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:last-child td,
 body.hr-app .salary-adjust-archive table tbody tr:last-child td {
     border-bottom: none;
 }
 
-body.hr-app .hr-main table tbody tr:nth-child(odd) td,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table) tbody tr:nth-child(odd) td,
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:nth-child(odd) td,
 body.hr-app .salary-adjust-archive table tbody tr:nth-child(odd) td {
     background: var(--hr-table-glass-row);
 }
 
-body.hr-app .hr-main table tbody tr:nth-child(even) td,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table) tbody tr:nth-child(even) td,
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:nth-child(even) td,
 body.hr-app .salary-adjust-archive table tbody tr:nth-child(even) td {
     background: var(--hr-table-glass-row-alt);
 }
 
-body.hr-app .hr-main table tbody tr:hover td,
+body.hr-app .hr-main table:not(.hr-schedule-roster__table) tbody tr:hover td,
 body.hr-app .hr-glass-modal:not(.hr-schedule-roster-modal) table tbody tr:hover td,
 body.hr-app .salary-adjust-archive table tbody tr:hover td {
     background: var(--hr-table-glass-row-hover) !important;
@@ -3995,6 +3995,355 @@ body.hr-app .border-blue-200.bg-blue-50 {
 #hr-glass-media-modal[aria-hidden="false"] {
     display: flex !important;
     pointer-events: auto;
+}
+
+/* ── لوحات منبثقة موحّدة — ثيم الشريط الجانبي (إشعارات، تفاصيل، حاسبة، …) ── */
+.hr-sidebar-panel,
+.hr-notif-panel {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    border: 1px solid var(--hr-sidebar-border) !important;
+    color: var(--hr-sidebar-text) !important;
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.22),
+        0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.hr-sidebar-panel__head,
+.hr-date-calc-panel__head,
+.hr-topbar-info-panel__head,
+.hr-topbar-account-panel__head {
+    background: rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--hr-sidebar-border);
+}
+
+.hr-sidebar-panel i[data-lucide],
+.hr-sidebar-panel svg,
+.hr-date-calc-panel__head-icon,
+.hr-date-calc-panel__head-icon svg,
+.hr-topbar-info-panel__icon,
+.hr-topbar-info-panel__icon svg {
+    color: var(--hr-sidebar-icon-fg, #fff) !important;
+    stroke: currentColor !important;
+}
+
+.hr-date-calc-panel__head-icon,
+.hr-topbar-info-panel__icon {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--hr-sidebar-border);
+}
+
+.hr-sidebar-panel__close,
+.hr-date-calc-panel__close,
+.hr-topbar-account-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--hr-sidebar-text-muted) !important;
+    cursor: pointer;
+}
+
+.hr-sidebar-panel__close:hover,
+.hr-date-calc-panel__close:hover,
+.hr-topbar-account-panel__close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff !important;
+}
+
+body.hr-app .hr-sidebar-panel .text-slate-900,
+body.hr-app .hr-sidebar-panel .text-slate-800,
+body.hr-app .hr-sidebar-panel .text-slate-700,
+body.hr-app .hr-sidebar-panel .font-bold.text-slate-900,
+body.hr-app .hr-sidebar-panel .font-semibold.text-slate-800,
+body.hr-app .hr-sidebar-panel dt.text-slate-400 + dd.text-slate-800 {
+    color: var(--hr-sidebar-text) !important;
+}
+
+body.hr-app .hr-sidebar-panel .text-slate-500,
+body.hr-app .hr-sidebar-panel .text-slate-600,
+body.hr-app .hr-sidebar-panel .text-slate-400,
+body.hr-app .hr-sidebar-panel .text-\\[11px\\].text-slate-500,
+body.hr-app .hr-sidebar-panel .text-xs.text-slate-500,
+body.hr-app .hr-sidebar-panel .text-xs.text-slate-600,
+body.hr-app .hr-sidebar-panel dt.text-slate-400 {
+    color: var(--hr-sidebar-text-muted) !important;
+}
+
+body.hr-app .hr-sidebar-panel .text-primary-700,
+body.hr-app .hr-sidebar-panel a.text-primary-700,
+body.hr-app .hr-sidebar-panel .hover\\:text-primary-800:hover {
+    color: #bfdbfe !important;
+}
+
+body.hr-app .hr-sidebar-panel .text-primary-700,
+body.hr-app .hr-sidebar-panel .text-emerald-800 {
+    color: #bbf7d0 !important;
+}
+
+body.hr-app .hr-sidebar-panel .text-amber-700 {
+    color: #fde68a !important;
+}
+
+body.hr-app .hr-sidebar-panel .border-slate-100,
+body.hr-app .hr-sidebar-panel .border-slate-200,
+body.hr-app .hr-sidebar-panel .border-t.border-slate-100 {
+    border-color: var(--hr-sidebar-border) !important;
+}
+
+body.hr-app .hr-sidebar-panel .bg-slate-50,
+body.hr-app .hr-sidebar-panel .bg-slate-50\\/60,
+body.hr-app .hr-sidebar-panel .bg-slate-50\\/80 {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.hr-sidebar-panel__input,
+.hr-date-calc-panel__input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.96);
+    color: #0f172a;
+}
+
+.hr-sidebar-panel__input:focus,
+.hr-date-calc-panel__input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
+.hr-date-calc-panel__label,
+.hr-sidebar-panel__label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--hr-sidebar-text-muted);
+}
+
+.hr-sidebar-panel__chip,
+.hr-date-calc-panel__chip {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border: 1px solid var(--hr-sidebar-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    cursor: pointer;
+}
+
+.hr-sidebar-panel__chip:hover:not(:disabled),
+.hr-date-calc-panel__chip:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+}
+
+.hr-date-calc-panel__chip:disabled,
+.hr-sidebar-panel__chip:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.hr-date-calc-panel__chip--muted {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.hr-date-calc-panel__results {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--hr-sidebar-border);
+}
+
+.hr-date-calc-panel__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--hr-sidebar-border);
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel {
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    ) !important;
+    border-color: var(--hr-sidebar-border) !important;
+    color: var(--hr-sidebar-text) !important;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__title,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__year-label,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__weekday,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__day,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__month {
+    color: var(--hr-sidebar-text);
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__nav,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__nav i[data-lucide] {
+    color: var(--hr-sidebar-text-muted) !important;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__nav:hover,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__title:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff !important;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__day:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__day.is-selected {
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: var(--hr-sidebar-bg, #3d7aad) !important;
+    border-color: transparent;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__day.is-today:not(.is-selected) {
+    border-color: rgba(255, 255, 255, 0.75);
+    color: #fff;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__month {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--hr-sidebar-border);
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__month:hover,
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__month.is-active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__year-label {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: var(--hr-sidebar-border);
+}
+
+body.hr-app .hr-date-picker__popover.hr-sidebar-panel .hr-date-picker__year-label:focus {
+    background: rgba(255, 255, 255, 0.96);
+    color: #0f172a;
+    border-color: rgba(255, 255, 255, 0.65);
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .bg-primary-50 {
+    background: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .text-slate-800,
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .font-semibold.text-slate-800 {
+    color: #fff !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .text-slate-500 {
+    color: var(--hr-sidebar-text-muted) !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .text-slate-400,
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .text-slate-300 {
+    color: var(--hr-sidebar-text-muted) !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .text-primary-600,
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .text-primary-700 {
+    color: #bfdbfe !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .bg-slate-100,
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .bg-primary-100 {
+    background: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .bg-primary-600 {
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: var(--hr-sidebar-bg, #3d7aad) !important;
+    border-color: transparent !important;
+}
+
+body.hr-app .hr-employee-smart-search__results.hr-sidebar-panel .bg-white {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
+}
+
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel a,
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel button {
+    color: var(--hr-sidebar-text) !important;
+}
+
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel a:hover,
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel button.hover\:bg-slate-50:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel .text-rose-700 {
+    color: #fecaca !important;
+}
+
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel button.hover\:bg-rose-50:hover {
+    background: rgba(239, 68, 68, 0.18) !important;
+}
+
+body.hr-app .hr-topbar-account-panel.hr-sidebar-panel .border-slate-100,
+body.hr-app .hr-topbar-info-panel.hr-sidebar-panel .hr-topbar-info-panel__foot {
+    border-color: var(--hr-sidebar-border) !important;
+}
+
+.hr-glass-loading__card.hr-sidebar-panel,
+.hr-glass-loading__card {
+    border: 1px solid var(--hr-sidebar-border);
+    background: linear-gradient(
+        165deg,
+        var(--hr-sidebar-bg, #3d7aad) 0%,
+        var(--hr-sidebar-bg-soft, #356391) 100%
+    );
+    box-shadow:
+        0 28px 56px rgba(29, 74, 119, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: var(--hr-sidebar-text);
+}
+
+.hr-glass-loading__title,
+.hr-glass-loading__hint {
+    color: var(--hr-sidebar-text) !important;
+}
+
+.hr-glass-loading__hint {
+    color: var(--hr-sidebar-text-muted) !important;
+}
+
+.hr-glass-loading__ring::before {
+    border-color: rgba(255, 255, 255, 0.22);
+    border-top-color: #fff;
+    border-inline-end-color: rgba(255, 255, 255, 0.72);
+}
+
+.hr-glass-loading__ring i,
+.hr-glass-loading__ring svg {
+    color: #fff !important;
 }
 
 /* ── نافذة تفاصيل نصية — ثيم الشريط الجانبي (نص أبيض) ── */
@@ -5789,7 +6138,7 @@ body.hr-app .hr-sidebar {
     }
 }
 
-body.hr-app .hr-sidebar-panel {
+body.hr-app .hr-sidebar .hr-sidebar-panel {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -5803,7 +6152,7 @@ body.hr-app .hr-sidebar-panel {
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    body.hr-app .hr-sidebar-panel {
+    body.hr-app .hr-sidebar .hr-sidebar-panel {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }
@@ -6330,6 +6679,39 @@ body.hr-notif-open-lock .hr-main {
     overflow: hidden !important;
 }
 
+.hr-topbar-date-calc {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.hr-date-calc-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.hr-date-calc-panel__head-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+}
+
+.hr-date-calc-panel__body {
+    padding: 1rem;
+}
+
+.hr-date-calc-panel__result-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: 0.65rem;
+}
+
 .hr-topbar-notif {
     display: inline-flex;
     align-items: center;
@@ -6338,6 +6720,7 @@ body.hr-notif-open-lock .hr-main {
     overflow: visible;
 }
 
+body.hr-app .hr-topbar-date-calc,
 body.hr-app .hr-topbar__end,
 body.hr-app .hr-topbar-actions,
 body.hr-app .hr-notif-dropdown--topbar {
@@ -7840,7 +8223,16 @@ body.hr-app a[class*="bg-emerald"] > i[data-lucide="search"] {
     background: rgb(241 245 249);
 }
 
-.hr-employee-smart-search__hint {
+.hr-table-smart-search__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hr-table-smart-search .hr-search-field__clear:not(.hidden) {
+    display: inline-flex;
+}
+
     margin-top: 0.5rem;
     font-size: 0.75rem;
     color: rgb(100 116 139);
@@ -8162,8 +8554,6 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.55rem;
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
-    color: #fff !important;
 }
 
 .hr-topbar-info-panel__icon svg {
@@ -8174,6 +8564,7 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
 
 .hr-topbar-info-panel__head {
     text-align: right;
+    padding: 0.75rem 1rem;
 }
 
 /* hr-app-main background unified above — no duplicate override */
@@ -9519,25 +9910,17 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     min-width: min(18rem, 88vw);
     padding: 1.35rem 1.65rem 1.25rem;
     border-radius: 1.15rem;
-    border: 1px solid rgba(255, 255, 255, 0.88);
-    background: linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.96) 0%,
-        rgba(248, 250, 252, 0.92) 100%
-    );
-    box-shadow:
-        0 4px 6px rgba(15, 23, 42, 0.04),
-        0 22px 48px rgba(15, 23, 42, 0.14),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(22px) saturate(1.2);
-    -webkit-backdrop-filter: blur(22px) saturate(1.2);
     animation: hr-glass-loading-card-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
     pointer-events: auto;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .hr-glass-loading__card {
-        background: rgba(255, 255, 255, 0.96);
+        background: linear-gradient(
+            165deg,
+            var(--hr-sidebar-bg, #3d7aad) 0%,
+            var(--hr-sidebar-bg-soft, #356391) 100%
+        );
     }
 }
 
@@ -9584,7 +9967,6 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     margin: 0;
     font-size: 1rem;
     font-weight: 800 !important;
-    color: #0f172a !important;
     letter-spacing: -0.01em;
     text-align: center;
     line-height: 1.4;
@@ -11371,10 +11753,29 @@ body.hr-app .hr-date-picker__header--year {
 
 body.hr-app .hr-date-picker__year-label {
     flex: 1;
+    max-width: 5.5rem;
+    margin: 0 auto;
     text-align: center;
     font-size: 1rem;
     font-weight: 700;
     color: #0f172a;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background: transparent;
+    padding: 0.125rem 0.375rem;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+body.hr-app .hr-date-picker__year-label:focus {
+    outline: none;
+    border-color: var(--hr-sidebar-bg, #3d7aad);
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(61, 122, 173, 0.15);
+}
+
+body.hr-app .hr-date-picker__year-label::placeholder {
+    color: #94a3b8;
 }
 
 body.hr-app .hr-date-picker__months-grid {
@@ -11454,6 +11855,15 @@ body.hr-app input[type="date"]:not(.hr-date-picker__native)::-webkit-calendar-pi
 .hr-schedule-roster-modal.hr-glass-modal--sidebar p,
 .hr-schedule-roster-modal.hr-glass-modal--sidebar span:not(.hr-schedule-roster__weekday-text):not(.hr-schedule-roster__code) {
     color: #fff !important;
+}
+
+.hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__shift,
+.hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input.hr-schedule-roster__shift {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    caret-color: #000000 !important;
 }
 
 .hr-schedule-roster-modal.hr-glass-modal--sidebar svg,
@@ -11608,7 +12018,7 @@ body.hr-app .hr-schedule-roster-modal.hr-glass-modal.hr-glass-modal--sidebar {
 }
 
 body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form,
-body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form *:not(.hr-schedule-roster__code):not(.hr-schedule-roster__weekday-text) {
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form *:not(.hr-schedule-roster__code):not(.hr-schedule-roster__day-num):not(.hr-schedule-roster__weekday):not(.hr-schedule-roster__weekday-text):not(.hr-schedule-roster__select):not(.hr-schedule-roster__year):not(.hr-schedule-roster__month-input):not(.hr-schedule-roster__shift):not(.hr-schedule-modal__input):not(.hr-schedule-roster__period-controls):not(.hr-schedule-roster__period-controls *):not(.hr-schedule-roster__legend):not(.hr-schedule-roster__legend *):not(option) {
     color: #fff !important;
 }
 
@@ -11627,7 +12037,7 @@ body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar table tbody td {
 }
 
 body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__weekday {
-    color: #fff !important;
+    color: #0f172a !important;
 }
 
 body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__day-num {
@@ -11685,20 +12095,27 @@ body.hr-app .hr-schedule-roster-modal .hr-schedule-roster i[data-lucide] {
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year,
-body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift,
-body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift-read,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__month-input,
+body.hr-app .hr-schedule-roster-modal input.hr-schedule-roster__month-input,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select:focus,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year:focus,
-body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift:focus {
-    background: linear-gradient(
-        165deg,
-        var(--hr-sidebar-bg, #3d7aad) 0%,
-        var(--hr-sidebar-bg-soft, #356391) 100%
-    ) !important;
-    border: 1px solid rgba(255, 255, 255, 0.32) !important;
-    color: #fff !important;
-    -webkit-text-fill-color: #fff !important;
-    caret-color: #fff !important;
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__month-input:focus {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal input.hr-schedule-roster__shift,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift:focus,
+body.hr-app .hr-schedule-roster-modal input.hr-schedule-roster__shift:focus {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    caret-color: #000000 !important;
     box-shadow: none !important;
 }
 
@@ -11706,38 +12123,79 @@ body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    color-scheme: light;
     padding-inline: 0.5rem 1.75rem !important;
     background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
-        linear-gradient(
-            165deg,
-            var(--hr-sidebar-bg, #3d7aad) 0%,
-            var(--hr-sidebar-bg-soft, #356391) 100%
-        ) !important;
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
+        #ffffff !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select:focus,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year:focus,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift:focus {
-    border-color: rgba(255, 255, 255, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
     outline: none !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__select option {
     color: #0f172a !important;
-    background: #fff !important;
+    background: #ffffff !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+/* كسر وراثة h4 الأبيض — عناصر القائمة المنسدلة الأصلية */
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster h4 .hr-schedule-roster__period-controls,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster h4 .hr-schedule-roster__period-controls * {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster h4 .hr-schedule-roster__period-controls select.hr-schedule-roster__select {
+    color-scheme: only light;
+}
+
+/* خانة اختيار الشهر — input type=month بخلفية بيضاء */
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__month-input,
+body.hr-app .hr-schedule-roster-modal input.hr-schedule-roster__month-input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    color-scheme: light;
+    min-width: 9.5rem;
+    box-shadow: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__month-input:focus,
+body.hr-app .hr-schedule-roster-modal input.hr-schedule-roster__month-input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+    outline: none !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__month-input::-webkit-calendar-picker-indicator {
+    filter: none;
+    opacity: 0.75;
+    cursor: pointer;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster h4 .hr-schedule-roster__period-controls,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster h4 .hr-schedule-roster__period-controls * {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__shift::placeholder {
-    color: rgba(255, 255, 255, 0.55) !important;
-    -webkit-text-fill-color: rgba(255, 255, 255, 0.55) !important;
+    color: #94a3b8 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year::-webkit-outer-spin-button,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__year::-webkit-inner-spin-button {
-    filter: invert(1);
-    opacity: 0.85;
+    filter: none;
+    opacity: 1;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__badge {
@@ -11764,22 +12222,22 @@ body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__table tbody td {
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday {
-    background: var(--hr-sidebar-bg-soft, #356391) !important;
-    border-color: rgba(255, 255, 255, 0.22) !important;
-    color: #fff !important;
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday-text {
-    color: #fff !important;
+    color: #0f172a !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday--inactive {
-    background: rgba(0, 0, 0, 0.2) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday--inactive .hr-schedule-roster__weekday-text {
-    color: rgba(255, 255, 255, 0.55) !important;
+    color: #94a3b8 !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__day-num {
@@ -11826,81 +12284,639 @@ body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend-muted {
 
 /* ── قسم البريد في نافذة جدول الدوام ── */
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__email {
-    border-top-color: rgba(255, 255, 255, 0.22) !important;
-    color: #fff !important;
+    border-top-color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__label,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send span {
-    color: #fff !important;
+    color: #475569 !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send svg,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__send i[data-lucide] {
-    color: #fff !important;
-    stroke: #fff !important;
+    color: #ef4444 !important;
+    stroke: #ef4444 !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:focus {
     padding: 0.5rem 0.75rem !important;
-    background: linear-gradient(
-        165deg,
-        var(--hr-sidebar-bg, #3d7aad) 0%,
-        var(--hr-sidebar-bg-soft, #356391) 100%
-    ) !important;
-    border: 1px solid rgba(255, 255, 255, 0.32) !important;
-    color: #fff !important;
-    -webkit-text-fill-color: #fff !important;
-    caret-color: #fff !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
     box-shadow: none !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:focus {
-    border-color: rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:-webkit-autofill,
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #fff !important;
-    caret-color: #fff !important;
-    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.28) inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
     transition: background-color 99999s ease-out 0s;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__input::placeholder {
-    color: rgba(255, 255, 255, 0.55) !important;
-    -webkit-text-fill-color: rgba(255, 255, 255, 0.55) !important;
+    color: #94a3b8 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
 }
 
 body.hr-app .hr-schedule-roster-modal .hr-schedule-modal__checkbox {
-    accent-color: #fff;
-    border-color: rgba(255, 255, 255, 0.45) !important;
+    accent-color: #2563eb;
+    border-color: #cbd5e1 !important;
 }
 
-/* ── أولوية قصوى — حقول جدول الدوام (تتغلب على hr-glass-modal input) ── */
+/* ── أولوية قصوى — حقول عنوان الجدول (شهر / سنة / وردية) ── */
 body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__shift,
-body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__year,
-body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select,
-body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input {
-    background: linear-gradient(
-        165deg,
-        var(--hr-sidebar-bg, #3d7aad) 0%,
-        var(--hr-sidebar-bg-soft, #356391) 100%
-    ) !important;
-    color: #fff !important;
-    -webkit-text-fill-color: #fff !important;
-    caret-color: #fff !important;
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input.hr-schedule-roster__shift {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    caret-color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__shift:-webkit-autofill,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__shift:-webkit-autofill:focus {
+    -webkit-text-fill-color: #000000 !important;
+    caret-color: #000000 !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 99999s ease-out 0s;
 }
 
 body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select {
     background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
-        linear-gradient(
-            165deg,
-            var(--hr-sidebar-bg, #3d7aad) 0%,
-            var(--hr-sidebar-bg-soft, #356391) 100%
-        ) !important;
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
+        #ffffff !important;
+    color-scheme: only light;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select option {
+    color: #0f172a !important;
+    background: #ffffff !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+/* ── شبكة جدول الدوام — خلفية بيضاء + رأس أيام بنص أسود ── */
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__scroll {
+    background: #ffffff !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__table thead th.hr-schedule-roster__weekday {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday-text {
+    color: #0f172a !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday-text::after {
+    background: #cbd5e1 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday--inactive {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__weekday--inactive .hr-schedule-roster__weekday-text {
+    color: #94a3b8 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__day-num {
+    background: #f8fafc !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--inactive {
+    background: #f1f5f9 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--work .hr-schedule-roster__code {
+    background: #ef4444 !important;
+    color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--off .hr-schedule-roster__code {
+    background: #ffffff !important;
+    color: #64748b !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--inactive .hr-schedule-roster__code {
+    background: #f1f5f9 !important;
+    color: #cbd5e1 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__code:not(:disabled):hover {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__cell--work .hr-schedule-roster__code:not(:disabled):hover {
+    background: #dc2626 !important;
+    color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend {
+    background: #ffffff !important;
+    border-top-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend strong,
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend-muted {
+    color: #475569 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend strong {
+    color: #ef4444 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal .hr-schedule-roster__legend-muted {
+    color: #94a3b8 !important;
+}
+
+/* ── حاسبة فرق التاريخ — ثيم فاتح (خلفية بيضاء / نص داكن) ── */
+.hr-date-calc-panel {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.12),
+        0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.hr-date-calc-panel__head {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.hr-date-calc-panel__head-icon {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    color: #2563eb !important;
+}
+
+.hr-date-calc-panel__head-icon svg,
+.hr-date-calc-panel__head i[data-lucide] {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
+}
+
+.hr-date-calc-panel__close {
+    background: #ef4444 !important;
+    color: #000000 !important;
+}
+
+.hr-date-calc-panel__close i[data-lucide],
+.hr-date-calc-panel__close svg {
+    color: #000000 !important;
+    stroke: #000000 !important;
+}
+
+.hr-date-calc-panel__close:hover {
+    background: #dc2626 !important;
+    color: #000000 !important;
+}
+
+.hr-date-calc-panel__close:hover i[data-lucide],
+.hr-date-calc-panel__close:hover svg {
+    color: #000000 !important;
+    stroke: #000000 !important;
+}
+
+.hr-date-calc-panel__body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+.hr-date-calc-panel__label {
+    color: #475569 !important;
+}
+
+.hr-date-calc-panel__input {
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+.hr-date-calc-panel__input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+.hr-date-calc-panel__chip {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
+}
+
+.hr-date-calc-panel__chip:hover:not(:disabled) {
+    background: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+.hr-date-calc-panel__chip--muted {
+    background: #f8fafc !important;
+    color: #64748b !important;
+}
+
+.hr-date-calc-panel__results {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.hr-date-calc-panel__stat {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.hr-app .hr-date-calc-panel .text-slate-900,
+body.hr-app .hr-date-calc-panel .text-slate-800,
+body.hr-app .hr-date-calc-panel .text-slate-700 {
+    color: #0f172a !important;
+}
+
+body.hr-app .hr-date-calc-panel .text-slate-500,
+body.hr-app .hr-date-calc-panel .text-slate-600,
+body.hr-app .hr-date-calc-panel .text-slate-400,
+body.hr-app .hr-date-calc-panel .text-xs.text-slate-500 {
+    color: #64748b !important;
+}
+
+body.hr-app .hr-date-calc-panel .text-primary-700 {
+    color: #1d4ed8 !important;
+}
+
+body.hr-app .hr-date-calc-panel .text-amber-700 {
+    color: #b45309 !important;
+}
+
+body.hr-app .hr-date-calc-panel__body i[data-lucide] {
+    color: #64748b !important;
+    stroke: #64748b !important;
+}
+
+/* ── لوحات الشريط العلوي — ثيم فاتح موحّد ── */
+.hr-topbar-light-panel {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.12),
+        0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.hr-topbar-light-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.hr-topbar-light-panel__body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+.hr-topbar-light-panel__close,
+.hr-date-calc-panel__close.hr-topbar-light-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: #ef4444 !important;
+    color: #000000 !important;
+    cursor: pointer;
+}
+
+.hr-topbar-light-panel__close i[data-lucide],
+.hr-topbar-light-panel__close svg,
+.hr-date-calc-panel__close.hr-topbar-light-panel__close i[data-lucide],
+.hr-date-calc-panel__close.hr-topbar-light-panel__close svg {
+    color: #000000 !important;
+    stroke: #000000 !important;
+}
+
+.hr-topbar-light-panel__close:hover,
+.hr-date-calc-panel__close.hr-topbar-light-panel__close:hover {
+    background: #dc2626 !important;
+    color: #000000 !important;
+}
+
+body.hr-app .hr-topbar-light-panel .text-slate-900,
+body.hr-app .hr-topbar-light-panel .text-slate-800,
+body.hr-app .hr-topbar-light-panel .text-slate-700 {
+    color: #0f172a !important;
+}
+
+body.hr-app .hr-topbar-light-panel .text-slate-500,
+body.hr-app .hr-topbar-light-panel .text-slate-600,
+body.hr-app .hr-topbar-light-panel .text-slate-400,
+body.hr-app .hr-topbar-light-panel .text-xs.text-slate-500 {
+    color: #64748b !important;
+}
+
+body.hr-app .hr-topbar-light-panel .text-primary-700 {
+    color: #1d4ed8 !important;
+}
+
+body.hr-app .hr-topbar-light-panel .text-rose-700 {
+    color: #be123c !important;
+}
+
+body.hr-app .hr-topbar-light-panel .border-slate-100,
+body.hr-app .hr-topbar-light-panel .border-t {
+    border-color: #e2e8f0 !important;
+}
+
+body.hr-app .hr-topbar-light-panel a.hover\:bg-slate-50:hover,
+body.hr-app .hr-topbar-light-panel button.hover\:bg-slate-50:hover {
+    background: #f8fafc !important;
+}
+
+body.hr-app .hr-topbar-light-panel button.hover\:bg-rose-50:hover {
+    background: #fff1f2 !important;
+}
+
+/* أيقونة «عن النظام» */
+.hr-topbar-light-panel .hr-topbar-info-panel__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    color: #2563eb !important;
+}
+
+.hr-topbar-light-panel .hr-topbar-info-panel__icon svg,
+.hr-topbar-light-panel .hr-topbar-info-panel__icon i[data-lucide] {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
+}
+
+.hr-topbar-light-panel .hr-topbar-info-panel__foot {
+    border-top-color: #e2e8f0 !important;
+    background: #f8fafc !important;
+}
+
+/* ── الإشعارات — ثيم فاتح ── */
+.hr-notif-panel.hr-topbar-light-panel {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+.hr-topbar-light-panel .hr-notif-dropdown-panel__placeholder {
+    color: #64748b !important;
+}
+
+.hr-topbar-light-panel .hr-notif-dropdown-panel__spinner {
+    border-color: #e2e8f0;
+    border-top-color: #3b82f6;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content {
+    color: #0f172a !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__head {
+    background: #f8fafc !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__title {
+    color: #0f172a !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__link-btn {
+    color: #2563eb !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__link-btn:hover {
+    color: #1d4ed8 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__link-btn--danger {
+    color: #be123c !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__link-btn--danger:hover {
+    color: #9f1239 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__item {
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__item--unread {
+    background: #eff6ff !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__item:hover {
+    background: #f8fafc !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__icon {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__icon--emerald { background: #d1fae5 !important; color: #047857 !important; }
+.hr-topbar-light-panel .hr-notif-panel-content__icon--amber { background: #fef3c7 !important; color: #b45309 !important; }
+.hr-topbar-light-panel .hr-notif-panel-content__icon--rose,
+.hr-topbar-light-panel .hr-notif-panel-content__icon--red { background: #ffe4e6 !important; color: #be123c !important; }
+.hr-topbar-light-panel .hr-notif-panel-content__icon--indigo { background: #e0e7ff !important; color: #4338ca !important; }
+.hr-topbar-light-panel .hr-notif-panel-content__icon--violet { background: #ede9fe !important; color: #6d28d9 !important; }
+.hr-topbar-light-panel .hr-notif-panel-content__icon--primary { background: #eff6ff !important; color: #2563eb !important; }
+
+.hr-topbar-light-panel .hr-notif-panel-content__item-title {
+    color: #0f172a !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__item-title.is-read {
+    color: #64748b !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__read-mark {
+    color: #16a34a !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__message {
+    color: #64748b !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__time {
+    color: #94a3b8 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__dot {
+    background: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__delete {
+    color: #64748b !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__delete:hover {
+    background: #fee2e2 !important;
+    color: #000000 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__empty {
+    color: #64748b !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__empty i,
+.hr-topbar-light-panel .hr-notif-panel-content__empty svg {
+    color: #94a3b8 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__foot {
+    background: #f8fafc !important;
+    border-top-color: #e2e8f0 !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__foot-link {
+    color: #2563eb !important;
+}
+
+.hr-topbar-light-panel .hr-notif-panel-content__foot-link:hover {
+    color: #1d4ed8 !important;
+}
+
+/* قائمة الحساب */
+.hr-topbar-account-panel.hr-topbar-light-panel a,
+.hr-topbar-account-panel.hr-topbar-light-panel button {
+    color: #0f172a !important;
+}
+
+.hr-topbar-account-panel.hr-topbar-light-panel a i[data-lucide],
+.hr-topbar-account-panel.hr-topbar-light-panel button i[data-lucide] {
+    color: #64748b !important;
+    stroke: #64748b !important;
+}
+
+/* أولوية — نص أيام الأسبوع أسود (يتجاوز form * { color: #fff }) */
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form .hr-schedule-roster__weekday,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar form .hr-schedule-roster__weekday-text,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__weekday,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__weekday-text {
+    color: #0f172a !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__weekday--inactive .hr-schedule-roster__weekday-text {
+    color: #94a3b8 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--work .hr-schedule-roster__code {
+    background: #ef4444 !important;
+    color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__cell--work .hr-schedule-roster__code:not(:disabled):hover {
+    background: #dc2626 !important;
+    color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-modal__input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input.hr-schedule-roster__shift {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    caret-color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input:focus,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-modal__input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-modal__input::placeholder {
+    color: #94a3b8 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
+}
+
+/* ── قائمة الشهر/السنة/الوردية — خلفية بيضاء ونص أسود ── */
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__month-input,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__year {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__shift,
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-modal__input.hr-schedule-roster__shift {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    caret-color: #000000 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar input.hr-schedule-roster__month-input {
+    color-scheme: only light;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select {
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 0.45rem center / 0.85rem,
+        #ffffff !important;
+    color-scheme: only light;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar select.hr-schedule-roster__select option {
+    color: #0f172a !important;
+    background: #ffffff !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+/* ── دليل الجدول + أيقونة البريد — أحمر ── */
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-roster__legend strong {
+    color: #ef4444 !important;
+}
+
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-modal__send i[data-lucide],
+body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-modal__send svg {
+    color: #ef4444 !important;
+    stroke: #ef4444 !important;
 }

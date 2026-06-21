@@ -1,16 +1,12 @@
 {% load custom_tags %}
 <div class="hr-tabs__panel">
 {% if tab == "branches" %}
-            <div class="p-4">
-                {% if org_perms.branch_write %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_branch' as add_branch_url %}
-                    {% include "components/hr_btn.html" with href=add_branch_url label="إضافة فرع جديد" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_branch' as add_branch_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم الفرع، الرمز، عدد الموظفين، الحالة..." search_aria_label="بحث الفروع" add_url=add_branch_url add_label="إضافة فرع جديد" show_add=org_perms.branch_write %}
                 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -23,7 +19,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for branch in branches %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ branch.name }} {{ branch.code }} {{ branch.emp_count }} {% if branch.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -68,21 +65,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=6 message="لا توجد فروع مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "cost_centers" %}
-            <div class="p-4">
-                {% if org_perms.cost_center_write %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_cost_center_global' as add_cc_global_url %}
-                    {% include "components/hr_btn.html" with href=add_cc_global_url label="إضافة مركز تكلفة" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_cost_center_global' as add_cc_global_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم المركز، الرمز، عدد الأقسام، الحالة..." search_aria_label="بحث مراكز التكلفة" add_url=add_cc_global_url add_label="إضافة مركز تكلفة" show_add=org_perms.cost_center_write %}
 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -95,7 +89,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for cc in cost_centers %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ cc.name }} {{ cc.code }} {{ cc.dept_count }} {% if cc.branch %}{{ cc.branch.name }}{% endif %} {% if cc.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -144,21 +139,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=6 message="لا توجد مراكز تكلفة مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "departments" %}
-            <div class="p-4">
-                {% if org_perms.department_write %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_department_global' as add_dept_global_url %}
-                    {% include "components/hr_btn.html" with href=add_dept_global_url label="إضافة قسم" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_department_global' as add_dept_global_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم القسم، الرمز، عدد الموظفين، الحالة..." search_aria_label="بحث الأقسام" add_url=add_dept_global_url add_label="إضافة قسم" show_add=org_perms.department_write %}
 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -171,7 +163,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for dept in departments %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ dept.name }} {{ dept.code }} {{ dept.emp_count }} {% if dept.branch %}{{ dept.branch.name }}{% endif %} {% if dept.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -220,20 +213,17 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=6 message="لا توجد أقسام مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "administrations" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_administration' as add_admin_url %}
-                    {% include "components/hr_btn.html" with href=add_admin_url|add:"?tab=administrations" label="إضافة إدارة" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_administration' as add_admin_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم الإدارة، الرمز، مدير الإدارة، الحالة..." search_aria_label="بحث الإدارات" add_url=add_admin_url|add:"?tab=administrations" add_label="إضافة إدارة" show_add=org_perms.system_data_add %}
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -246,7 +236,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for adm in administrations %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ adm.name }} {{ adm.code }} {% if adm.manager %}{{ adm.manager.get_full_name|default:adm.manager.username }}{% endif %} {% if adm.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ adm.code }}</span>
@@ -285,21 +276,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=6 message="لا توجد إدارات مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "nationalities" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_nationality' as add_nat_url %}
-                    {% include "components/hr_btn.html" with href=add_nat_url|add:"?tab=nationalities" label="إضافة جنسية" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_nationality' as add_nat_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم الجنسية، الرمز، الحالة..." search_aria_label="بحث الجنسيات" add_url=add_nat_url|add:"?tab=nationalities" add_label="إضافة جنسية" show_add=org_perms.system_data_add %}
                 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -311,7 +299,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for nat in nationalities %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ nat.name }} {{ nat.code }} {% if nat.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -343,21 +332,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=5 message="لا توجد جنسيات مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "professions" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_profession' as add_prof_url %}
-                    {% include "components/hr_btn.html" with href=add_prof_url|add:"?tab=professions" label="إضافة مهنة" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_profession' as add_prof_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم المهنة، الرمز، الحالة..." search_aria_label="بحث المهن" add_url=add_prof_url|add:"?tab=professions" add_label="إضافة مهنة" show_add=org_perms.system_data_add %}
                 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -369,7 +355,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for prof in professions %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ prof.name }} {{ prof.code }} {% if prof.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -401,21 +388,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=5 message="لا توجد مهن مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "sponsorships" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_sponsorship' as add_spon_url %}
-                    {% include "components/hr_btn.html" with href=add_spon_url|add:"?tab=sponsorships" label="إضافة كفالة" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_sponsorship' as add_spon_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم الشركة، السجل التجاري، الرمز، الحالة..." search_aria_label="بحث الكفالات" add_url=add_spon_url|add:"?tab=sponsorships" add_label="إضافة كفالة" show_add=org_perms.system_data_add %}
                 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -428,7 +412,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for sponsor in sponsorships %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ sponsor.company_name }} {{ sponsor.commercial_registration|default:'' }} {{ sponsor.code }} {% if sponsor.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -463,21 +448,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=6 message="لا توجد كفالات مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "insurances" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_insurance' as add_ins_url %}
-                    {% include "components/hr_btn.html" with href=add_ins_url|add:"?tab=insurances" label="إضافة تأمين" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_insurance' as add_ins_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: نوع التأمين، الرمز، الحالة..." search_aria_label="بحث التأمينات" add_url=add_ins_url|add:"?tab=insurances" add_label="إضافة تأمين" show_add=org_perms.system_data_add %}
                 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -489,7 +471,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for ins in insurances %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ ins.insurance_type }} {{ ins.code }} {% if ins.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -521,21 +504,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=5 message="لا توجد تأمينات مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "insurance_classes" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_insurance_class' as add_ins_class_url %}
-                    {% include "components/hr_btn.html" with href=add_ins_class_url|add:"?tab=insurance_classes" label="إضافة فئة تأمين" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_insurance_class' as add_ins_class_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: نوع الفئة، الرمز، الحالة..." search_aria_label="بحث فئات التأمين" add_url=add_ins_class_url|add:"?tab=insurance_classes" add_label="إضافة فئة تأمين" show_add=org_perms.system_data_add %}
                 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -547,7 +527,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for ic in insurance_classes %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ ic.class_type }} {{ ic.code }} {% if ic.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2">
@@ -579,21 +560,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=5 message="لا توجد فئات تأمين مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "buildings" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_building' as add_building_url %}
-                    {% include "components/hr_btn.html" with href=add_building_url|add:"?tab=buildings" label="إضافة عمارة جديدة" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_building' as add_building_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم العمارة، الرمز، الحالة..." search_aria_label="بحث السكن" add_url=add_building_url|add:"?tab=buildings" add_label="إضافة عمارة جديدة" show_add=org_perms.system_data_add %}
 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -605,7 +583,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for b in buildings %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ b.name }} {{ b.code }} {% if b.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2"><span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ b.code }}</span></td>
                                 <td class="px-3 py-2">
@@ -635,21 +614,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=5 message="لا توجد عمارات مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>
             </div>
 {% elif tab == "banks" %}
-            <div class="p-4">
-                {% if org_perms.system_data_add %}
-                <div class="flex justify-end mb-4">
-                    {% url 'web:add_bank' as add_bank_url %}
-                    {% include "components/hr_btn.html" with href=add_bank_url|add:"?tab=banks" label="إضافة بنك جديد" icon="plus" size="xs" %}
-                </div>
-                {% endif %}
+            <div class="p-4" data-hr-table-search-panel>
+                {% url 'web:add_bank' as add_bank_url %}
+                {% include "components/org_tab_toolbar.html" with search_placeholder="بحث ذكي: اسم البنك، الرمز، الحالة..." search_aria_label="بحث البنوك" add_url=add_bank_url|add:"?tab=banks" add_label="إضافة بنك جديد" show_add=org_perms.system_data_add %}
 
                 <div class="overflow-x-auto">
-                    <table class="w-auto divide-y divide-slate-200">
+                    <table class="w-auto divide-y divide-slate-200" data-hr-table-search>
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">#</th>
@@ -661,7 +637,8 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for bk in banks %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors"
+                                data-search="{{ bk.name }} {{ bk.code }} {% if bk.is_active %}نشط{% else %}معطل{% endif %}">
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ forloop.counter }}</td>
                                 <td class="px-3 py-2"><span class="px-2 py-1 text-xs font-mono rounded-md bg-slate-100 text-slate-800">{{ bk.code }}</span></td>
                                 <td class="px-3 py-2">
@@ -691,6 +668,7 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% include "components/table_search_empty_row.html" with colspan=5 message="لا توجد بنوك مطابقة للبحث" %}
                         </tbody>
                     </table>
                 </div>

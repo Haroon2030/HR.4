@@ -164,23 +164,44 @@ class EmployeeModelTests(TestCase):
         self.assertEqual(self.employee.daily_wage, expected_daily_wage)
 
     def test_accrued_leave_days(self):
-        """Test accrued leave days calculation (21 days per year)"""
-        # Let's set end_date to a fixed date to have deterministic tests
-        self.employee.end_date = date(2024, 1, 1) # Exactly 1 year
-        expected_accrued = Decimal('21.0') # 365 days -> 21.0
+        """Test accrued leave days — 21 يوم/سنة (أول 5 سنوات)."""
+        self.employee.end_date = date(2024, 1, 1)  # 365 يوم خدمة
+        expected_accrued = Decimal('20.99')
         self.assertEqual(self.employee.accrued_leave_days, expected_accrued)
+
+    def test_accrued_leave_days_tiered_after_five_years(self):
+        """بعد 5 سنوات: 21 يوم/سنة × 5 + 30 يوم/سنة × الباقي."""
+        self.employee.hire_date = date(2017, 1, 1)
+        self.employee.end_date = date(2024, 1, 1)  # 7 سنوات
+        from apps.employees.services.settlement_eosb import compute_tiered_leave_accrued_days
+        service_days = (self.employee.end_date - self.employee.hire_date).days
+        expected = compute_tiered_leave_accrued_days(service_days)
+        self.assertEqual(self.employee.accrued_leave_days, expected)
+        self.assertGreater(expected, Decimal('147.00'))
 
     def test_remaining_leave_days(self):
         """Test remaining leave days calculation (accrued - used)"""
         self.employee.end_date = date(2024, 1, 1)
-        # Accrued = 21, Used = 5
-        expected_remaining = Decimal('16.0')
+        expected_remaining = Decimal('15.99')
         self.assertEqual(self.employee.remaining_leave_days, expected_remaining)
+
+    def test_used_leave_days_from_annual_records(self):
+        from apps.employees.models import EmployeeLeave
+
+        EmployeeLeave.objects.create(
+            employee=self.employee,
+            leave_type=EmployeeLeave.LeaveType.ANNUAL,
+            date_from=date(2023, 6, 1),
+            date_to=date(2023, 6, 5),
+            days=Decimal('5'),
+        )
+        self.employee.available_leave_balance = Decimal('2')
+        self.assertEqual(self.employee.used_leave_days, Decimal('5.00'))
 
     def test_leave_compensation(self):
         """Test leave compensation (remaining_leave_days * daily_wage)"""
         self.employee.end_date = date(2024, 1, 1)
-        expected_compensation = (Decimal('16.0') * self.employee.daily_wage).quantize(Decimal('0.01'))
+        expected_compensation = (Decimal('15.99') * self.employee.daily_wage).quantize(Decimal('0.01'))
         self.assertEqual(self.employee.leave_compensation, expected_compensation)
 
     def test_absence_save_enforces_30_day_rule(self):
@@ -417,3 +438,198 @@ class EmployeeLoanTests(TestCase):
             i.amount for i in loan.installments_log.all()
         )
         self.assertEqual(total, Decimal('1000.00'))
+
+
+class SettlementEosbCalculationTests(TestCase):
+    def test_first_five_years_half_salary(self):
+        from apps.employees.services.settlement_eosb import compute_settlement_eosb
+
+        before, after, category, note = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=365 * 3,
+            service_years=Decimal('3'),
+            settlement_type='contract_expiry',
+            eligible=True,
+        )
+        self.assertEqual(before, Decimal('9000.00'))
+        self.assertEqual(after, Decimal('9000.00'))
+        self.assertIn('½ راتب', category)
+        self.assertEqual(note, '')
+
+    def test_after_five_years_full_salary_for_extra_years(self):
+        from apps.employees.services.settlement_eosb import compute_settlement_eosb
+
+        before, after, category, note = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            settlement_type='contract_expiry',
+            eligible=True,
+        )
+        self.assertEqual(before, Decimal('27000.00'))
+        self.assertEqual(after, Decimal('27000.00'))
+        self.assertIn('راتب كامل', category)
+        self.assertEqual(note, '')
+
+    def test_resignation_applies_only_for_employee_type(self):
+        from apps.employees.services.settlement_eosb import compute_settlement_eosb
+
+        _, after, _, note = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            settlement_type='employee',
+            eligible=True,
+        )
+        self.assertEqual(after, Decimal('18000.00'))
+        self.assertIn('ثلثي', note)
+
+    def test_article_77_company_full_eosb_with_penalty(self):
+        from apps.employees.services.settlement_eosb import (
+            compute_settlement_eosb,
+            compute_two_month_penalty,
+        )
+
+        before, after, _, _ = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            settlement_type='article_77',
+            eligible=True,
+            article_77_party='company',
+        )
+        self.assertEqual(before, after)
+        self.assertEqual(before, Decimal('27000.00'))
+        self.assertEqual(compute_two_month_penalty(Decimal('7000')), Decimal('14000.00'))
+
+    def test_article_77_employee_resignation_with_penalty(self):
+        from apps.employees.services.settlement_eosb import compute_settlement_eosb
+
+        _, after, _, note = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            settlement_type='article_77',
+            eligible=True,
+            article_77_party='employee',
+        )
+        self.assertEqual(after, Decimal('18000.00'))
+        self.assertIn('ثلثي', note)
+
+    def test_tiered_leave_first_five_years(self):
+        from apps.employees.services.settlement_eosb import compute_tiered_leave_accrued_days
+
+        days = compute_tiered_leave_accrued_days(int(365.25 * 3))
+        self.assertEqual(days, Decimal('62.96'))
+
+    def test_tiered_leave_after_five_years(self):
+        from apps.employees.services.settlement_eosb import compute_tiered_leave_accrued_days
+
+        days = compute_tiered_leave_accrued_days(int(365.25 * 7))
+        self.assertEqual(days, Decimal('164.94'))
+
+    def test_article_80_leave_settlement_only(self):
+        from apps.employees.services.settlement_eosb import compute_article_80_leave_settlement
+
+        remaining, amount, text = compute_article_80_leave_settlement(
+            service_days=int(365.25 * 7),
+            total_salary=Decimal('6000'),
+            used_leave_days=Decimal('5'),
+            eligible=True,
+        )
+        self.assertEqual(remaining, Decimal('159.94'))
+        self.assertGreater(amount, Decimal('0'))
+        self.assertIn('30 يوم/سنة', text)
+
+    def test_article_80_eosb_is_zero(self):
+        from apps.employees.services.settlement_eosb import compute_settlement_eosb
+
+        before, after, category, _ = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            settlement_type='article_80',
+            eligible=True,
+        )
+        self.assertEqual(before, Decimal('0'))
+        self.assertEqual(after, Decimal('0'))
+        self.assertIn('المادة 80', category)
+
+    def test_probation_end_leave_settlement_flat_21(self):
+        from apps.employees.services.settlement_eosb import compute_probation_end_leave_settlement
+
+        remaining, amount, text = compute_probation_end_leave_settlement(
+            service_days=int(365.25 * 7),
+            total_salary=Decimal('6000'),
+            used_leave_days=Decimal('5'),
+            eligible=True,
+        )
+        self.assertEqual(remaining, Decimal('141.96'))
+        self.assertGreater(amount, Decimal('0'))
+        self.assertIn('21 يوم/سنة', text)
+        self.assertNotIn('30 يوم/سنة', text)
+
+    def test_probation_end_eosb_is_zero(self):
+        from apps.employees.services.settlement_eosb import compute_settlement_eosb
+
+        before, after, category, _ = compute_settlement_eosb(
+            last_salary=Decimal('6000'),
+            service_days=90,
+            service_years=Decimal('0.25'),
+            settlement_type='probation_end',
+            eligible=True,
+        )
+        self.assertEqual(before, Decimal('0'))
+        self.assertEqual(after, Decimal('0'))
+        self.assertIn('نهاية فترة التجربة', category)
+
+    def test_article_74_company_matches_standard_eosb(self):
+        from apps.employees.services.settlement_eosb import (
+            compute_article_74_eosb,
+            compute_standard_eosb,
+        )
+
+        std, _ = compute_standard_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            eligible=True,
+        )
+        art74, _ = compute_article_74_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            party='company',
+            eligible=True,
+        )
+        self.assertEqual(std, art74)
+
+    def test_article_74_employee_third_and_two_thirds(self):
+        from apps.employees.services.settlement_eosb import compute_article_74_eosb
+
+        eosb, category = compute_article_74_eosb(
+            last_salary=Decimal('6000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            party='employee',
+            eligible=True,
+        )
+        first_5 = (Decimal('6000') / 3 * 5).quantize(Decimal('0.01'))
+        extra = (Decimal('6000') * Decimal('2') / Decimal('3') * Decimal('2')).quantize(Decimal('0.01'))
+        self.assertEqual(eosb, first_5 + extra)
+        self.assertIn('⅔ راتب', category)
+
+    def test_article_74_employee_salary_3000_example(self):
+        """راتب 3000 → ⅓=1000/سنة، ⅔=2000/سنة."""
+        from apps.employees.services.settlement_eosb import compute_article_74_eosb
+
+        eosb, category = compute_article_74_eosb(
+            last_salary=Decimal('3000'),
+            service_days=int(365.25 * 7),
+            service_years=Decimal('7'),
+            party='employee',
+            eligible=True,
+        )
+        self.assertEqual(eosb, Decimal('9000.00'))
+        self.assertIn('1000.00', category)
+        self.assertIn('2000.00', category)

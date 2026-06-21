@@ -92,6 +92,7 @@
                         var el = document.getElementById(targetId);
                         if (el) el.innerHTML = html;
                         if (window.lucide) lucide.createIcons();
+                        if (window.hrTableSmartSearch) window.hrTableSmartSearch.refresh(el);
                     })
                     .catch(function (err) {
                         if (err && err.name !== 'AbortError') console.error(err);
@@ -213,6 +214,7 @@
                     var el = document.getElementById(targetId);
                     if (el) el.innerHTML = html;
                     if (window.lucide) lucide.createIcons();
+                    if (window.hrTableSmartSearch) window.hrTableSmartSearch.refresh(el);
                 });
         },
     };

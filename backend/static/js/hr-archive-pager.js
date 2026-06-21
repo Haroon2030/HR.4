@@ -48,8 +48,6 @@
 
             { value: 'terminate', label: 'تصفية' },
 
-            { value: 'contract_end', label: 'انتهاء عقد' },
-
             { value: 'end_of_service', label: 'نهاية خدمة' },
 
             { value: 'reactivate', label: 'إعادة تفعيل' },

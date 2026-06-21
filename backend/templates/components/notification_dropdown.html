@@ -1,6 +1,7 @@
 {# Dropdown panel — loaded via HTMX into the bell #}
 <div id="notif-dropdown-inner" class="hr-notif-panel-content">
-<div class="hr-notif-panel-content__head">
+<div class="hr-notif-panel-content__head hr-topbar-light-panel__head">
+    <div class="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
     <div class="hr-notif-panel-content__head-start">
         <span class="hr-notif-panel-content__title">الإشعارات</span>
         {% if unread_count %}
@@ -31,6 +32,14 @@
         </button>
         {% endif %}
     </div>
+    </div>
+    <button type="button"
+            class="hr-topbar-light-panel__close shrink-0"
+            onclick="window.dispatchEvent(new CustomEvent('hr-notif-close'))"
+            title="إغلاق"
+            aria-label="إغلاق">
+        <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
 </div>
 <div class="hr-notif-panel-content__list">
     {% for n in notifications %}

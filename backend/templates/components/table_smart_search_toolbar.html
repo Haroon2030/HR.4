@@ -1,0 +1,20 @@
+{# بحث فوري في جداول HTML — يُربط بـ hr-table-smart-search.js #}
+<div class="hr-table-smart-search flex-1 sm:max-w-md min-w-0">
+    <div class="hr-search-field hr-search-field--prominent relative">
+        <i data-lucide="search" class="hr-search-field__icon w-4 h-4" aria-hidden="true"></i>
+        <input type="search"
+               data-hr-table-search-input
+               placeholder="{{ placeholder|default:'بحث...' }}"
+               class="hr-search-field__input"
+               autocomplete="off"
+               {% if aria_label %}aria-label="{{ aria_label }}"{% else %}aria-label="{{ placeholder|default:'بحث' }}"{% endif %}>
+        <button type="button"
+                data-hr-table-search-clear
+                class="hr-search-field__clear hidden"
+                title="مسح البحث"
+                aria-label="مسح البحث">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    </div>
+    <p data-hr-table-search-meta class="hr-table-smart-search__meta m-0 mt-1.5 text-xs text-slate-500 hidden"></p>
+</div>

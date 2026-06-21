@@ -1,0 +1,8 @@
+<div class="flex flex-col sm:flex-row sm:items-start gap-3 mb-4">
+    {% include "components/table_smart_search_toolbar.html" with placeholder=search_placeholder aria_label=search_aria_label %}
+    {% if show_add %}
+    <div class="flex justify-end sm:ms-auto shrink-0">
+        {% include "components/hr_btn.html" with href=add_url label=add_label icon="plus" size="xs" %}
+    </div>
+    {% endif %}
+</div>

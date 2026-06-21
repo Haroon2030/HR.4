@@ -254,34 +254,20 @@ class TerminateEmployeeForm(forms.Form):
         return (self.cleaned_data.get('end_reason') or '').strip()
 
 
-class ContractEndForm(forms.Form):
-    """نموذج انتهاء عقد بموجب نظام العمل مع مكافأة نهاية الخدمة."""
-    TERMINATED_BY_CHOICES = [
-        ('company', 'الشركة'),
-        ('employee', 'الموظف (استقالة)'),
-    ]
-    end_date = forms.DateField(
-        error_messages={'invalid': 'تاريخ الانتهاء غير صحيح', 'required': 'تاريخ الانتهاء مطلوب'}
-    )
-    terminated_by = forms.ChoiceField(
-        choices=TERMINATED_BY_CHOICES,
-        error_messages={'required': 'يجب تحديد الطرف المنهي'}
-    )
-    end_reason = forms.CharField(required=False)
-    notes = forms.CharField(required=False)
-
-    def clean_end_reason(self):
-        return (self.cleaned_data.get('end_reason') or '').strip()
-
-    def clean_notes(self):
-        return (self.cleaned_data.get('notes') or '').strip()
-
-
 class EndOfServiceForm(forms.Form):
     """نموذج تصفية نهاية خدمة أو استقالة."""
     TERMINATED_BY_CHOICES = [
         ('company', 'تصفية نهاية خدمة (من قِبل الشركة)'),
         ('employee', 'استقالة (من قِبل الموظف)'),
+        ('contract_expiry', 'انتهاء العقد بانتهاء مدته'),
+        ('article_74', 'إنهاء العقد بالتراضي (المادة 74)'),
+        ('article_77', 'إنهاء العقد — سبب غير مشروع (المادة 77)'),
+        ('article_80', 'إنهاء العقد — سبب مشروع (المادة 80)'),
+        ('probation_end', 'إنهاء العقد — نهاية فترة التجربة'),
+    ]
+    ARTICLE_PARTY_CHOICES = [
+        ('company', 'من قِبل الشركة'),
+        ('employee', 'من قِبل الموظف'),
     ]
     end_date = forms.DateField(
         error_messages={'invalid': 'تاريخ التصفية غير صحيح', 'required': 'تاريخ التصفية مطلوب'}
@@ -290,6 +276,14 @@ class EndOfServiceForm(forms.Form):
         choices=TERMINATED_BY_CHOICES,
         error_messages={'required': 'يجب تحديد نوع التصفية'}
     )
+    article_party = forms.ChoiceField(
+        choices=ARTICLE_PARTY_CHOICES,
+        required=False,
+    )
+    article_77_party = forms.ChoiceField(
+        choices=ARTICLE_PARTY_CHOICES,
+        required=False,
+    )
     end_reason = forms.CharField(required=False)
     notes = forms.CharField(required=False)
 
@@ -298,6 +292,15 @@ class EndOfServiceForm(forms.Form):
 
     def clean_notes(self):
         return (self.cleaned_data.get('notes') or '').strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        party = cleaned_data.get('article_party') or cleaned_data.get('article_77_party')
+        if cleaned_data.get('terminated_by') in ('article_77', 'article_74') and not party:
+            self.add_error('article_party', 'يجب تحديد الطرف المُنهي')
+        elif party:
+            cleaned_data['article_party'] = party
+        return cleaned_data
 
 class ReactivateEmployeeForm(forms.Form):
     new_hire_date = forms.DateField(error_messages={'invalid': 'تاريخ المباشرة الجديد غير صحيح', 'required': 'تاريخ المباشرة الجديد مطلوب'})

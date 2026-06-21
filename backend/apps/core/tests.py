@@ -182,31 +182,6 @@ class AbsenceExecutorTests(_BaseExecutorTests):
         self.assertGreater(ab.deduction_amount, 0)
 
 
-class ContractEndExecutorTests(_BaseExecutorTests):
-    def setUp(self):
-        super().setUp()
-        self.employee.hire_date = date(2019, 1, 1)
-        self.employee.save(update_fields=['hire_date'])
-
-    def test_contract_end_company_terminates(self):
-        action = self._make_action('contract_end', {
-            'end_date': '2026-05-01',
-            'terminated_by': 'company',
-            'end_reason': 'انتهاء عقد محدد المدة',
-        })
-        msg = execute_pending_action(action, self.approver)
-        self.assertIn('مكافأة', msg)
-        self.employee.refresh_from_db()
-        self.assertEqual(self.employee.status, Employee.Status.TERMINATED)
-        self.assertEqual(self.employee.end_date, date(2026, 5, 1))
-        st = EmployeeStatement.objects.filter(
-            employee=self.employee,
-            statement_type=EmployeeStatement.StatementType.TERMINATE,
-        ).first()
-        self.assertIsNotNone(st)
-        self.assertIn('انتهاء عقد', st.title)
-
-
 class TerminateExecutorTests(_BaseExecutorTests):
     def test_terminate_sets_status_and_creates_statement(self):
         action = self._make_action('terminate', {
@@ -225,6 +200,159 @@ class TerminateExecutorTests(_BaseExecutorTests):
             statement_type=EmployeeStatement.StatementType.TERMINATE,
         )
         self.assertIn('استقالة', st.content)
+
+
+class EndOfServiceContractExpiryTests(_BaseExecutorTests):
+    def setUp(self):
+        super().setUp()
+        self.employee.hire_date = date(2019, 1, 1)
+        self.employee.save(update_fields=['hire_date'])
+
+    def test_contract_expiry_uses_full_eosb_without_resignation_factor(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-05-01',
+            'terminated_by': 'contract_expiry',
+            'end_reason': 'انتهاء مدة العقد',
+        })
+        msg = execute_pending_action(action, self.approver)
+        self.assertIn('مكافأة', msg)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.TERMINATED)
+        self.assertIn('انتهاء العقد بانتهاء مدته', self.employee.end_reason)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('انتهاء عقد بانتهاء مدته', st.title)
+        self.assertIn('راتب كامل', st.content)
+
+
+class EndOfServiceArticle77Tests(_BaseExecutorTests):
+    def setUp(self):
+        super().setUp()
+        self.employee.hire_date = date(2019, 1, 1)
+        self.employee.save(update_fields=['hire_date'])
+
+    def test_article_77_from_company_adds_full_eosb_and_penalty(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-05-01',
+            'terminated_by': 'article_77',
+            'article_77_party': 'company',
+            'end_reason': 'سبب غير مشروع',
+        })
+        msg = execute_pending_action(action, self.approver)
+        self.assertIn('جزاء', msg)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('المادة 77', st.title)
+        self.assertIn('شرط جزائي', st.content)
+        self.assertIn('جزاء', st.content)
+
+    def test_article_77_from_employee_uses_resignation_factor(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-05-01',
+            'terminated_by': 'article_77',
+            'article_77_party': 'employee',
+            'end_reason': 'سبب غير مشروع',
+        })
+        execute_pending_action(action, self.approver)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('معامل الاستقالة', st.content)
+
+
+class EndOfServiceArticle74Tests(_BaseExecutorTests):
+    def setUp(self):
+        super().setUp()
+        self.employee.hire_date = date(2019, 1, 1)
+        self.employee.save(update_fields=['hire_date'])
+
+    def test_article_74_from_company_uses_standard_eosb(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-05-01',
+            'terminated_by': 'article_74',
+            'article_party': 'company',
+            'end_reason': 'اتفاق متبادل',
+        })
+        msg = execute_pending_action(action, self.approver)
+        self.assertIn('مكافأة', msg)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('المادة 74', st.title)
+        self.assertIn('راتب كامل', st.content)
+
+    def test_article_74_from_employee_uses_third_and_two_thirds(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-05-01',
+            'terminated_by': 'article_74',
+            'article_party': 'employee',
+            'end_reason': 'اتفاق متبادل',
+        })
+        execute_pending_action(action, self.approver)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('⅓ راتب', st.content)
+        self.assertIn('⅔ راتب', st.content)
+
+
+class EndOfServiceArticle80Tests(_BaseExecutorTests):
+    def setUp(self):
+        super().setUp()
+        self.employee.hire_date = date(2019, 1, 1)
+        self.employee.available_leave_balance = Decimal('5')
+        self.employee.save(update_fields=['hire_date', 'available_leave_balance'])
+
+    def test_article_80_pays_leave_only_without_eosb(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-05-01',
+            'terminated_by': 'article_80',
+            'end_reason': 'سبب مشروع',
+        })
+        msg = execute_pending_action(action, self.approver)
+        self.assertIn('رصيد إجازات', msg)
+        self.assertNotIn('مكافأة:', msg)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('المادة 80', st.title)
+        self.assertIn('بدون مكافأة نهاية خدمة', st.content)
+        self.assertIn('30 يوم/سنة', st.content)
+        self.assertIn('إجازة', st.content)
+
+
+class EndOfServiceProbationEndTests(_BaseExecutorTests):
+    def setUp(self):
+        super().setUp()
+        self.employee.hire_date = date(2026, 1, 1)
+        self.employee.available_leave_balance = Decimal('2')
+        self.employee.save(update_fields=['hire_date', 'available_leave_balance'])
+
+    def test_probation_end_pays_leave_only_without_eosb(self):
+        action = self._make_action('end_of_service', {
+            'end_date': '2026-04-01',
+            'terminated_by': 'probation_end',
+            'end_reason': 'انتهاء فترة التجربة',
+        })
+        msg = execute_pending_action(action, self.approver)
+        self.assertIn('نهاية فترة التجربة', msg)
+        self.assertIn('رصيد إجازات', msg)
+        self.assertNotIn('مكافأة:', msg)
+        st = EmployeeStatement.objects.get(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TERMINATE,
+        )
+        self.assertIn('نهاية فترة التجربة', st.title)
+        self.assertIn('21 يوم/سنة', st.content)
+        self.assertNotIn('30 يوم/سنة', st.content)
 
 
 class ReactivateExecutorTests(_BaseExecutorTests):

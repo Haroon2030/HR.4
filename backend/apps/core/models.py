@@ -184,6 +184,7 @@ class Permission(BaseModel):
         APPROVE_OFFICER = 'approve_officer', 'تنفيذ موظف الموارد'
         RETURN = 'return', 'إرجاع'
         RESUBMIT = 'resubmit', 'إعادة إرسال'
+        EXECUTE = 'execute', 'تنفيذ'
 
     module = models.ForeignKey(
         AppModule,
@@ -470,7 +471,6 @@ class PendingAction(BaseModel):
         LOAN_REQUEST = 'loan_request', 'تقديم سلفة'
         ABSENCE = 'absence', 'تسجيل غياب'
         CASH_SHORTAGE = 'cash_shortage', 'عجز كاشير'
-        CONTRACT_END = 'contract_end', 'انتهاء عقد'
         END_OF_SERVICE = 'end_of_service', 'تصفية نهاية خدمة / استقالة'
 
     class Status(models.TextChoices):

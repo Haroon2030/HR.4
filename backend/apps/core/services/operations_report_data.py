@@ -53,7 +53,6 @@ SECTION_SPECS: tuple[tuple[str, str, tuple[int, int, int], tuple[str, ...]], ...
         (244, 63, 94),
         (
             PendingAction.ActionType.TERMINATE,
-            PendingAction.ActionType.CONTRACT_END,
             PendingAction.ActionType.END_OF_SERVICE,
         ),
     ),
@@ -148,7 +147,6 @@ def _action_details(action: PendingAction, branch_cache: dict[int, str]) -> tupl
 
     if action_type in (
         PendingAction.ActionType.TERMINATE,
-        PendingAction.ActionType.CONTRACT_END,
         PendingAction.ActionType.END_OF_SERVICE,
     ):
         end_date = p.get('end_date', '—')

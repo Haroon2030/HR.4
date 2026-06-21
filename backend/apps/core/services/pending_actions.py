@@ -480,170 +480,6 @@ EXECUTORS['cash_shortage'] = _execute_cash_shortage
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# انتهاء عقد — مكافأة نهاية الخدمة (EOSB) حسب نظام العمل السعودي
-# ─────────────────────────────────────────────────────────────────────────────
-@transaction.atomic
-def _execute_contract_end(action, executor):
-    """
-    حساب مكافأة نهاية الخدمة وتصفية الموظف.
-
-    المنطق القانوني:
-      - فترة التجربة (≤180 يوم): بدون مكافأة، إجازة فقط
-      - أول 5 سنوات: ½ راتب × عدد السنوات
-      - فوق 5 سنوات: راتب كامل × السنوات الزائدة
-
-    معامل الاستقالة (إذا الطرف = الموظف):
-      - أقل من سنتين: 0%
-      - 2-5 سنوات: ⅓ (ثلث)
-      - 5-10 سنوات: ⅔ (ثلثين)
-      - 10+ سنوات: 100%
-    """
-    from apps.employees.models import Employee, EmployeeStatement
-
-    p = action.payload
-    employee = action.employee
-    end_date = _to_date(p['end_date'])
-    terminated_by = p.get('terminated_by', 'company')
-    end_reason = p.get('end_reason', '')
-    notes = p.get('notes', '')
-
-    hire_date = employee.hire_date
-    if not hire_date:
-        raise ValueError('لا يوجد تاريخ مباشرة للموظف — لا يمكن حساب المكافأة.')
-
-    # ── حساب مدة الخدمة ──
-    service_days = (end_date - hire_date).days
-    if service_days < 1:
-        raise ValueError('تاريخ الانتهاء يجب أن يكون بعد تاريخ المباشرة.')
-    service_years = Decimal(str(round(service_days / 365.25, 4)))
-
-    last_salary = Decimal(employee.salary_for_end_of_service or 0)
-    half_salary = (last_salary / 2).quantize(Decimal('0.01'))
-
-    # ── حساب المكافأة الأساسية (كفالة فقط) ──
-    eosb = Decimal('0.00')
-    category = ''
-
-    if not employee.sponsorship_id:
-        category = 'لا يوجد كفالة — لا تُحسب مكافأة نهاية الخدمة'
-    elif service_days <= 180:
-        # فترة تجربة — بدون مكافأة مالية
-        eosb = Decimal('0.00')
-        category = 'فترة تجربة (بدون مكافأة مالية)'
-    elif service_years <= 5:
-        # أول 5 سنوات: نصف راتب × عدد السنوات
-        eosb = (half_salary * service_years).quantize(Decimal('0.01'))
-        category = f'أول 5 سنوات — ½ راتب × {service_years} سنة'
-    else:
-        # أول 5 سنوات + ما فوقها
-        first_5 = (half_salary * 5).quantize(Decimal('0.01'))
-        extra_years = service_years - 5
-        extra = (last_salary * extra_years).quantize(Decimal('0.01'))
-        eosb = first_5 + extra
-        category = f'½ راتب × 5 = {first_5} + راتب × {extra_years} = {extra}'
-
-    # ── معامل الاستقالة ──
-    resignation_factor = Decimal('1.0')
-    resignation_note = ''
-    if employee.sponsorship_id and terminated_by == 'employee':
-        if service_years < 2:
-            resignation_factor = Decimal('0.0')
-            resignation_note = 'استقالة أقل من سنتين — لا مكافأة'
-        elif service_years < 5:
-            resignation_factor = Decimal('1') / Decimal('3')
-            resignation_note = 'استقالة 2-5 سنوات — ثلث المكافأة'
-        elif service_years < 10:
-            resignation_factor = Decimal('2') / Decimal('3')
-            resignation_note = 'استقالة 5-10 سنوات — ثلثي المكافأة'
-        else:
-            resignation_factor = Decimal('1.0')
-            resignation_note = 'استقالة +10 سنوات — المكافأة كاملة'
-
-    eosb_before = eosb
-    eosb = (eosb * resignation_factor).quantize(Decimal('0.01'))
-
-    # ── مستحقات الإجازة من سجل المخصصات ──
-    from apps.employees.services.ledger_balances import settlement_leave_from_ledger
-
-    leave_days, leave_comp, leave_text = settlement_leave_from_ledger(employee)
-
-    total_entitlement = eosb + leave_comp
-
-    # ── تحديث بيانات الموظف ──
-    employee.end_date = end_date
-    employee.end_reason = f'انتهاء عقد — {end_reason}' if end_reason else 'انتهاء عقد'
-    employee.status = Employee.Status.TERMINATED
-    employee.save(update_fields=['end_date', 'end_reason', 'status'])
-
-    # ── تسجيل إفادة مفصّلة ──
-    terminated_label = 'الشركة' if terminated_by == 'company' else 'الموظف (استقالة)'
-    content = (
-        f'═══ انتهاء عقد — مكافأة نهاية الخدمة ═══\n'
-        f'تاريخ الانتهاء: {end_date}\n'
-        f'الطرف المنهي: {terminated_label}\n'
-        f'السبب: {end_reason or "—"}\n'
-        f'───────────────────\n'
-        f'تاريخ المباشرة: {hire_date}\n'
-        f'مدة الخدمة: {service_days} يوم ({service_years} سنة)\n'
-        f'آخر راتب إجمالي: {last_salary} ر.س\n'
-        f'───────────────────\n'
-        f'الفئة: {category}\n'
-        f'المكافأة الأساسية: {eosb_before} ر.س\n'
-    )
-    if terminated_by == 'employee' and resignation_note:
-        content += f'معامل الاستقالة: {resignation_note}\n'
-        content += f'المكافأة بعد المعامل: {eosb} ر.س\n'
-    content += (
-        f'───────────────────\n'
-        f'{leave_text}\n'
-        f'───────────────────\n'
-        f'★ إجمالي المستحقات: {total_entitlement} ر.س\n'
-        f'  (مكافأة {eosb} + إجازة {leave_comp})\n'
-    )
-    if notes:
-        content += f'\nملاحظات: {notes}\n'
-
-    EmployeeStatement.objects.create(
-        employee=employee,
-        statement_type=EmployeeStatement.StatementType.TERMINATE,
-        title=f'انتهاء عقد — مكافأة نهاية خدمة ({terminated_label})',
-        statement_date=end_date,
-        content=content,
-        created_by=action.requested_by,
-    )
-
-    # ── إنشاء سجل في المخصصات (تصفير الرصيد) ──
-    from apps.employees.models import EmployeeLedger
-    last_ledger = EmployeeLedger.objects.filter(employee=employee).order_by('-date', '-created_at').first()
-    prev_leave_days = last_ledger.cumulative_leave_days if last_ledger else Decimal('0')
-    prev_leave_amt = last_ledger.cumulative_leave_amount if last_ledger else Decimal('0')
-    prev_eosb = last_ledger.cumulative_eosb_amount if last_ledger else Decimal('0')
-
-    EmployeeLedger.objects.create(
-        employee=employee,
-        transaction_type=EmployeeLedger.TransactionType.FINAL_SETTLEMENT,
-        date=end_date,
-        leave_days_change=-prev_leave_days,
-        leave_amount_change=-prev_leave_amt,
-        eosb_amount_change=-prev_eosb,
-        cumulative_leave_days=Decimal('0'),
-        cumulative_leave_amount=Decimal('0'),
-        cumulative_eosb_amount=Decimal('0'),
-        notes='انتهاء عقد وتصفير الرصيد',
-        created_by=executor
-    )
-
-    return (
-        f'تم إنهاء عقد {employee.name} بتاريخ {end_date} — '
-        f'مكافأة: {eosb} ر.س + إجازة: {leave_comp} ر.س = '
-        f'إجمالي: {total_entitlement} ر.س'
-    )
-
-
-EXECUTORS['contract_end'] = _execute_contract_end
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # تصفية نهاية خدمة أو استقالة
 # ─────────────────────────────────────────────────────────────────────────────
 @transaction.atomic
@@ -653,7 +489,8 @@ def _execute_end_of_service(action, executor):
     p = action.payload
     employee = action.employee
     end_date = _to_date(p['end_date'])
-    terminated_by = p.get('terminated_by', 'company')
+    settlement_type = p.get('terminated_by', 'company')
+    article_party = p.get('article_party') or p.get('article_77_party', '')
     end_reason = p.get('end_reason', '')
     notes = p.get('notes', '')
 
@@ -661,102 +498,146 @@ def _execute_end_of_service(action, executor):
     if not hire_date:
         raise ValueError('لا يوجد تاريخ مباشرة للموظف — لا يمكن حساب المكافأة.')
 
-    # ── حساب مدة الخدمة ──
     service_days = (end_date - hire_date).days
     if service_days < 1:
         raise ValueError('تاريخ التصفية يجب أن يكون بعد تاريخ المباشرة.')
     service_years = Decimal(str(round(service_days / 365.25, 4)))
 
     last_salary = Decimal(employee.salary_for_end_of_service or 0)
-    half_salary = (last_salary / 2).quantize(Decimal('0.01'))
+    total_salary = Decimal(employee.total_salary or 0)
+    from apps.employees.services.settlement_eosb import (
+        ARTICLE_77_PENALTY_MONTHS,
+        LEAVE_ONLY_SETTLEMENTS,
+        compute_article_80_leave_settlement,
+        compute_probation_end_leave_settlement,
+        compute_settlement_eosb,
+        compute_two_month_penalty,
+        resolve_eosb_settlement_type,
+        settlement_type_label,
+    )
 
-    # ── حساب المكافأة الأساسية (كفالة فقط) ──
-    eosb = Decimal('0.00')
-    category = ''
+    eosb_before, eosb, category, resignation_note = compute_settlement_eosb(
+        last_salary=last_salary,
+        service_days=service_days,
+        service_years=service_years,
+        settlement_type=settlement_type,
+        eligible=bool(employee.sponsorship_id),
+        article_party=article_party,
+    )
 
-    if not employee.sponsorship_id:
-        category = 'لا يوجد كفالة — لا تُحسب مكافأة نهاية الخدمة'
-    elif service_days <= 180:
-        # فترة تجربة — بدون مكافأة مالية
-        eosb = Decimal('0.00')
-        category = 'فترة تجربة (بدون مكافأة مالية)'
-    elif service_years <= 5:
-        # أول 5 سنوات: نصف راتب × عدد السنوات
-        eosb = (half_salary * service_years).quantize(Decimal('0.01'))
-        category = f'أول 5 سنوات — ½ راتب × {service_years} سنة'
+    penalty = Decimal('0.00')
+    if settlement_type == 'article_77':
+        penalty = compute_two_month_penalty(total_salary)
+
+    if settlement_type in LEAVE_ONLY_SETTLEMENTS:
+        leave_fn = (
+            compute_probation_end_leave_settlement
+            if settlement_type == 'probation_end'
+            else compute_article_80_leave_settlement
+        )
+        leave_days, leave_comp, leave_text = leave_fn(
+            service_days=service_days,
+            total_salary=total_salary,
+            used_leave_days=Decimal(employee.used_leave_days or 0),
+            eligible=bool(employee.sponsorship_id),
+        )
     else:
-        # أول 5 سنوات + ما فوقها
-        first_5 = (half_salary * 5).quantize(Decimal('0.01'))
-        extra_years = service_years - 5
-        extra = (last_salary * extra_years).quantize(Decimal('0.01'))
-        eosb = first_5 + extra
-        category = f'½ راتب × 5 = {first_5} + راتب × {extra_years} = {extra}'
+        from apps.employees.services.ledger_balances import settlement_leave_from_ledger
 
-    # ── معامل الاستقالة ──
-    resignation_factor = Decimal('1.0')
-    resignation_note = ''
-    if employee.sponsorship_id and terminated_by == 'employee':
-        if service_years < 2:
-            resignation_factor = Decimal('0.0')
-            resignation_note = 'استقالة أقل من سنتين — لا مكافأة'
-        elif service_years < 5:
-            resignation_factor = Decimal('1') / Decimal('3')
-            resignation_note = 'استقالة 2-5 سنوات — ثلث المكافأة'
-        elif service_years < 10:
-            resignation_factor = Decimal('2') / Decimal('3')
-            resignation_note = 'استقالة 5-10 سنوات — ثلثي المكافأة'
-        else:
-            resignation_factor = Decimal('1.0')
-            resignation_note = 'استقالة +10 سنوات — المكافأة كاملة'
+        leave_days, leave_comp, leave_text = settlement_leave_from_ledger(employee)
 
-    eosb_before = eosb
-    eosb = (eosb * resignation_factor).quantize(Decimal('0.01'))
+    total_entitlement = eosb + leave_comp + penalty
 
-    # ── مستحقات الإجازة من سجل المخصصات ──
-    from apps.employees.services.ledger_balances import settlement_leave_from_ledger
+    type_label = settlement_type_label(settlement_type, article_party=article_party)
+    if settlement_type == 'contract_expiry':
+        default_reason = 'انتهاء العقد بانتهاء مدته'
+    elif settlement_type == 'article_74':
+        default_reason = 'إنهاء العقد بالتراضي (المادة 74)'
+    elif settlement_type == 'article_77':
+        default_reason = 'إنهاء العقد — سبب غير مشروع (المادة 77)'
+    elif settlement_type == 'article_80':
+        default_reason = 'إنهاء العقد — سبب مشروع (المادة 80)'
+    elif settlement_type == 'probation_end':
+        default_reason = 'إنهاء العقد — نهاية فترة التجربة'
+    elif settlement_type == 'employee':
+        default_reason = 'استقالة'
+    else:
+        default_reason = 'تصفية نهاية خدمة'
 
-    leave_days, leave_comp, leave_text = settlement_leave_from_ledger(employee)
-
-    total_entitlement = eosb + leave_comp
-
-    # ── تحديث بيانات الموظف ──
     employee.end_date = end_date
-    employee.end_reason = f'تصفية / استقالة — {end_reason}' if end_reason else 'تصفية نهاية خدمة / استقالة'
+    employee.end_reason = f'{default_reason} — {end_reason}' if end_reason else default_reason
     employee.status = Employee.Status.TERMINATED
     employee.save(update_fields=['end_date', 'end_reason', 'status'])
 
-    # ── تسجيل إفادة مفصّلة ──
-    terminated_label = 'من قِبل الشركة' if terminated_by == 'company' else 'من قِبل الموظف (استقالة)'
+    if settlement_type == 'contract_expiry':
+        header = '═══ انتهاء عقد بانتهاء مدته ═══'
+        statement_title = 'انتهاء عقد بانتهاء مدته'
+    elif settlement_type == 'article_74':
+        header = '═══ إنهاء العقد بالتراضي (المادة 74) ═══'
+        statement_title = f'إنهاء عقد بالتراضي — المادة 74 ({type_label})'
+    elif settlement_type == 'article_77':
+        header = '═══ إنهاء العقد — سبب غير مشروع (المادة 77) ═══'
+        statement_title = f'إنهاء عقد — المادة 77 ({type_label})'
+    elif settlement_type == 'article_80':
+        header = '═══ إنهاء العقد — سبب مشروع (المادة 80) ═══'
+        statement_title = 'إنهاء عقد — المادة 80 (رصيد إجازات فقط)'
+    elif settlement_type == 'probation_end':
+        header = '═══ إنهاء العقد — نهاية فترة التجربة ═══'
+        statement_title = 'إنهاء عقد — نهاية فترة التجربة (رصيد إجازات فقط)'
+    else:
+        header = '═══ تصفية نهاية خدمة / استقالة ═══'
+        statement_title = f'تصفية نهاية خدمة أو استقالة ({type_label})'
+
+    eosb_calc_type = resolve_eosb_settlement_type(settlement_type, article_party)
     content = (
-        f'═══ تصفية نهاية خدمة / استقالة ═══\n'
+        f'{header}\n'
         f'تاريخ التصفية: {end_date}\n'
-        f'نوع التصفية: {terminated_label}\n'
+        f'نوع التصفية: {type_label}\n'
         f'السبب: {end_reason or "—"}\n'
         f'───────────────────\n'
         f'تاريخ المباشرة: {hire_date}\n'
         f'مدة الخدمة: {service_days} يوم ({service_years} سنة)\n'
-        f'آخر راتب إجمالي: {last_salary} ر.س\n'
-        f'───────────────────\n'
-        f'الفئة: {category}\n'
-        f'المكافأة الأساسية: {eosb_before} ر.س\n'
     )
-    if terminated_by == 'employee' and resignation_note:
-        content += f'معامل الاستقالة: {resignation_note}\n'
-        content += f'المكافأة بعد المعامل: {eosb} ر.س\n'
+    if settlement_type not in LEAVE_ONLY_SETTLEMENTS:
+        content += f'آخر راتب إجمالي: {last_salary} ر.س\n'
+        content += (
+            f'───────────────────\n'
+            f'الفئة: {category}\n'
+            f'المكافأة الأساسية: {eosb_before} ر.س\n'
+        )
+        if eosb_calc_type == 'employee' and resignation_note and settlement_type != 'article_74':
+            content += f'معامل الاستقالة: {resignation_note}\n'
+            content += f'المكافأة بعد المعامل: {eosb} ر.س\n'
+        if settlement_type == 'article_77':
+            content += (
+                f'───────────────────\n'
+                f'شرط جزائي (المادة 77): راتب {ARTICLE_77_PENALTY_MONTHS} شهر = {penalty} ر.س\n'
+            )
+    else:
+        content += '───────────────────\n'
+        if settlement_type == 'probation_end':
+            content += 'مكافأة نهاية الخدمة: 0.00 ر.س (نهاية فترة التجربة)\n'
+        else:
+            content += 'مكافأة نهاية الخدمة: 0.00 ر.س (المادة 80)\n'
     content += (
         f'───────────────────\n'
         f'{leave_text}\n'
         f'───────────────────\n'
         f'★ إجمالي المستحقات: {total_entitlement} ر.س\n'
-        f'  (مكافأة {eosb} + إجازة {leave_comp})\n'
     )
+    if settlement_type == 'article_77':
+        content += f'  (مكافأة {eosb} + إجازة {leave_comp} + جزاء {penalty})\n'
+    elif settlement_type in LEAVE_ONLY_SETTLEMENTS:
+        content += f'  (إجازة {leave_comp} فقط)\n'
+    else:
+        content += f'  (مكافأة {eosb} + إجازة {leave_comp})\n'
     if notes:
         content += f'\nملاحظات: {notes}\n'
 
     EmployeeStatement.objects.create(
         employee=employee,
         statement_type=EmployeeStatement.StatementType.TERMINATE,
-        title=f'تصفية نهاية خدمة أو استقالة ({terminated_label})',
+        title=statement_title,
         statement_date=end_date,
         content=content,
         created_by=action.requested_by,
@@ -783,10 +664,21 @@ def _execute_end_of_service(action, executor):
         created_by=executor
     )
 
+    if settlement_type == 'article_80':
+        return (
+            f'تم إنهاء عقد {employee.name} بموجب المادة 80 بتاريخ {end_date} — '
+            f'رصيد إجازات: {leave_comp} ر.س = إجمالي: {total_entitlement} ر.س'
+        )
+    if settlement_type == 'probation_end':
+        return (
+            f'تم إنهاء عقد {employee.name} بنهاية فترة التجربة بتاريخ {end_date} — '
+            f'رصيد إجازات: {leave_comp} ر.س = إجمالي: {total_entitlement} ر.س'
+        )
     return (
         f'تم تصفية {employee.name} بتاريخ {end_date} — '
-        f'مكافأة: {eosb} ر.س + إجازة: {leave_comp} ر.س = '
-        f'إجمالي: {total_entitlement} ر.س'
+        f'مكافأة: {eosb} ر.س + إجازة: {leave_comp} ر.س'
+        + (f' + جزاء: {penalty} ر.س' if penalty else '')
+        + f' = إجمالي: {total_entitlement} ر.س'
     )
 
 EXECUTORS['end_of_service'] = _execute_end_of_service

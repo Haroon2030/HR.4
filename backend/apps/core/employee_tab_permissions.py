@@ -33,6 +33,9 @@ EMPLOYEE_TABS = (
 
 TAB_KEYS = tuple(t['key'] for t in EMPLOYEE_TABS)
 
+# عملية تصفية نهاية خدمة / استقالة — صلاحية مستقلة (افتراضياً: أدمن + مدير الموارد)
+SETTLEMENT_EXECUTE_PERMISSION = 'employee_tab_termination.execute'
+
 # تبويبات نموذج التعديل — بيانات أساسية فقط (العمليات من شاشة العرض)
 EDIT_FORM_TAB_KEYS = frozenset({
     'main', 'contract', 'salary', 'leaves', 'schedule', 'docs',
@@ -41,6 +44,10 @@ EDIT_FORM_TAB_KEYS = frozenset({
 
 def tab_permission_code(tab_key: str) -> str:
     return f'employee_tab_{tab_key}.view'
+
+
+def settlement_execute_permission_code() -> str:
+    return SETTLEMENT_EXECUTE_PERMISSION
 
 
 def register_employee_tab_permissions() -> None:
@@ -54,6 +61,8 @@ def register_employee_tab_permissions() -> None:
             order=tab['order'],
         )
         register_permission(tab_permission_code(tab['key']))
+        if tab['key'] == 'termination':
+            register_permission(SETTLEMENT_EXECUTE_PERMISSION)
 
 
 def _user_has_any_tab_permission(user) -> bool:
@@ -75,6 +84,15 @@ def user_can_see_employee_tab(user, tab_key: str) -> bool:
             return user_can_view_salary(user)
         return 'employees.view' in perms
     return code in perms
+
+
+def user_can_execute_settlement(user) -> bool:
+    """تقديم طلب تصفية نهاية خدمة / استقالة — افتراضياً أدمن ومدير الموارد، أو منح صريح."""
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    from apps.core.decorators import has_permission
+
+    return has_permission(user, SETTLEMENT_EXECUTE_PERMISSION)
 
 
 def employee_tab_visibility(user) -> dict[str, bool]:
@@ -129,6 +147,7 @@ def enrich_employee_page_context(
     context['tab_visible'] = tab_visible
     context['can_view_salary'] = user_can_view_salary(user)
     context['can_edit_salary'] = user_can_edit_salary(user)
+    context['can_execute_settlement'] = user_can_execute_settlement(user)
     context['hr_notification_email'] = (
         getattr(settings, 'HR_NOTIFICATION_EMAIL', '') or ''
     )

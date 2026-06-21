@@ -87,7 +87,6 @@ def _compute_dashboard_overview(user, accessible_branch_ids: list[int] | None) -
     _clearance_types = [
         PendingAction.ActionType.CUSTODY_CLEAR,
         PendingAction.ActionType.TERMINATE,
-        PendingAction.ActionType.CONTRACT_END,
         PendingAction.ActionType.END_OF_SERVICE,
     ]
     pa_stats = pa_qs.aggregate(

@@ -6,6 +6,7 @@
      x-data="{ open: false }"
      :class="{ 'is-open': open }"
      @keydown.escape.window="open = false"
+     @hr-notif-close.window="open = false"
      x-effect="document.body.classList.toggle('hr-notif-open-lock', open && window.matchMedia('(max-width: 767px)').matches)">
     <button type="button"
             @click.stop="
@@ -38,7 +39,7 @@
          @click.outside="open = false"
          @click.stop
          dir="rtl"
-         class="hr-notif-panel hr-topbar-notif-panel absolute left-0 top-full mt-2 z-50 w-80 max-w-full rounded-xl border overflow-hidden shadow-2xl"
+         class="hr-notif-panel hr-topbar-notif-panel hr-topbar-light-panel absolute left-0 top-full mt-2 z-50 w-80 max-w-full rounded-xl border overflow-hidden shadow-2xl"
          role="dialog"
          aria-label="قائمة الإشعارات"
          hx-get="{% url 'web:notifications_dropdown' %}"
@@ -46,8 +47,20 @@
          hx-target="this"
          hx-swap="innerHTML">
         <div class="hr-notif-dropdown-panel__placeholder">
+            <div class="hr-topbar-light-panel__head flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200">
+                <span class="text-sm font-bold text-slate-900">الإشعارات</span>
+                <button type="button"
+                        class="hr-topbar-light-panel__close shrink-0"
+                        onclick="window.dispatchEvent(new CustomEvent('hr-notif-close'))"
+                        title="إغلاق"
+                        aria-label="إغلاق">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="flex flex-col items-center justify-center gap-2 py-6">
             <span class="hr-notif-dropdown-panel__spinner" aria-hidden="true"></span>
             <span>جاري تحميل الإشعارات…</span>
+            </div>
         </div>
     </div>
 
@@ -65,7 +78,7 @@
              @click.outside="open = false"
              @click.stop
              dir="rtl"
-             class="hr-notif-panel hr-notif-panel--mobile hr-notif-dropdown-panel hr-notif-dropdown-panel--topbar md:hidden"
+             class="hr-notif-panel hr-notif-panel--mobile hr-notif-dropdown-panel hr-notif-dropdown-panel--topbar hr-topbar-light-panel md:hidden"
              role="dialog"
              aria-label="قائمة الإشعارات"
              hx-get="{% url 'web:notifications_dropdown' %}"
@@ -73,8 +86,20 @@
              hx-target="this"
              hx-swap="innerHTML">
             <div class="hr-notif-dropdown-panel__placeholder">
+                <div class="hr-topbar-light-panel__head flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200">
+                    <span class="text-sm font-bold text-slate-900">الإشعارات</span>
+                    <button type="button"
+                            class="hr-topbar-light-panel__close shrink-0"
+                            onclick="window.dispatchEvent(new CustomEvent('hr-notif-close'))"
+                            title="إغلاق"
+                            aria-label="إغلاق">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex flex-col items-center justify-center gap-2 py-6">
                 <span class="hr-notif-dropdown-panel__spinner" aria-hidden="true"></span>
                 <span>جاري تحميل الإشعارات…</span>
+                </div>
             </div>
         </div>
     </template>

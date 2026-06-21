@@ -454,27 +454,21 @@ class Employee(BaseModel):
 
     @property
     def accrued_leave_days(self):
-        """رصيد الإجازات المستحق: 21 يوم سنوياً من تاريخ المباشرة (يُحسب فقط إذا كانت الكفالة معبّأة)."""
-        if not self.hire_date or not self.sponsorship_id:
-            return 0
-        from django.utils import timezone
-        from decimal import Decimal
-        end = self.end_date or timezone.localdate()
-        days = (end - self.hire_date).days
-        if days <= 0:
-            return Decimal('0.0')
-        return (Decimal(days) / Decimal('365.25') * Decimal('21')).quantize(Decimal('0.1'))
+        """رصيد الإجازات المستحق: 21 يوم/سنة (5 سنوات) ثم 30 يوم/سنة — مع كفالة."""
+        from apps.employees.services.leave_balance import compute_employee_accrued_leave_days
+        return compute_employee_accrued_leave_days(self)
+
+    @property
+    def used_leave_days(self):
+        """أيام الإجازة السنوية المستخدمة (من السجلات أو الحقل اليدوي)."""
+        from apps.employees.services.leave_balance import resolve_used_leave_days
+        return resolve_used_leave_days(self)
 
     @property
     def remaining_leave_days(self):
-        """الرصيد المتبقي = المستحق - المستخدم (لا يقل عن صفر)."""
-        from decimal import Decimal
-        accrued = Decimal(self.accrued_leave_days or 0)
-        used = Decimal(self.available_leave_balance or 0)
-        remaining = accrued - used
-        if remaining < 0:
-            remaining = Decimal('0')
-        return remaining.quantize(Decimal('0.1'))
+        """الرصيد المتبقي = المستحق − المستخدم (لا يقل عن صفر)."""
+        from apps.employees.services.leave_balance import compute_employee_remaining_leave_days
+        return compute_employee_remaining_leave_days(self)
 
     @property
     def daily_wage(self):

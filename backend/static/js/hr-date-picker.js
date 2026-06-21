@@ -40,7 +40,78 @@
             a.getDate() === b.getDate();
     }
 
-    function getPop(picker) {
+    var YEAR_MIN = 1900;
+    var YEAR_MAX = 2100;
+
+    function clampYear(year) {
+        var y = parseInt(year, 10);
+        if (isNaN(y)) return null;
+        if (y < YEAR_MIN) return YEAR_MIN;
+        if (y > YEAR_MAX) return YEAR_MAX;
+        return y;
+    }
+
+    function commitYearInput(picker, input) {
+        if (!picker || !input) return;
+        var raw = (input.value || '').trim();
+        if (!raw || raw.length < 4) {
+            input.value = picker.dataset.viewYear || String(new Date().getFullYear());
+            return;
+        }
+        var y = clampYear(raw);
+        if (y === null) {
+            input.value = picker.dataset.viewYear || String(new Date().getFullYear());
+            return;
+        }
+        picker.dataset.viewYear = String(y);
+        input.value = String(y);
+        if (picker.dataset.viewMode === 'months') {
+            renderMonthsView(picker);
+        } else {
+            renderCalendar(picker);
+        }
+    }
+
+    function bindYearInput(picker, input) {
+        if (!input || input.dataset.hrYearBound === '1') return;
+        input.dataset.hrYearBound = '1';
+
+        input.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        input.addEventListener('keydown', function (e) {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                commitYearInput(picker, input);
+                input.blur();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                input.value = picker.dataset.viewYear || '';
+                input.blur();
+            }
+        });
+
+        input.addEventListener('input', function () {
+            input.value = input.value.replace(/\D/g, '').slice(0, 4);
+        });
+
+        input.addEventListener('blur', function () {
+            commitYearInput(picker, input);
+        });
+    }
+
+    function syncYearInput(picker, year) {
+        var pop = getPop(picker);
+        if (!pop) return;
+        var yearInput = pop.querySelector('.hr-date-picker__year-label');
+        if (yearInput && document.activeElement !== yearInput) {
+            yearInput.value = String(year);
+        }
+    }
+
         return picker._hrDatePop || null;
     }
 
@@ -146,8 +217,7 @@
 
         var viewYear = parseInt(picker.dataset.viewYear, 10);
         var viewMonth = parseInt(picker.dataset.viewMonth, 10);
-        var yearLabel = pop.querySelector('.hr-date-picker__year-label');
-        if (yearLabel) yearLabel.textContent = String(viewYear);
+        syncYearInput(picker, viewYear);
 
         var grid = pop.querySelector('.hr-date-picker__months-grid');
         if (!grid) return;
@@ -306,7 +376,7 @@
         input.tabIndex = -1;
 
         var pop = document.createElement('div');
-        pop.className = 'hr-date-picker__popover';
+        pop.className = 'hr-date-picker__popover hr-sidebar-panel';
         pop.hidden = true;
         pop.innerHTML =
             '<div class="hr-date-picker__days-view">' +
@@ -325,7 +395,7 @@
             '<div class="hr-date-picker__months-view" hidden>' +
             '  <div class="hr-date-picker__header hr-date-picker__header--year">' +
             '    <button type="button" class="hr-date-picker__nav hr-date-picker__nav--year-prev" aria-label="السنة السابقة"><i data-lucide="chevron-right"></i></button>' +
-            '    <span class="hr-date-picker__year-label"></span>' +
+            '    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="hr-date-picker__year-label" aria-label="السنة" dir="ltr">' +
             '    <button type="button" class="hr-date-picker__nav hr-date-picker__nav--year-next" aria-label="السنة التالية"><i data-lucide="chevron-left"></i></button>' +
             '  </div>' +
             '  <div class="hr-date-picker__months-grid"></div>' +
@@ -405,6 +475,9 @@
             renderMonthsView(picker);
             positionPopover(picker);
         });
+
+        var yearInput = pop.querySelector('.hr-date-picker__year-label');
+        if (yearInput) bindYearInput(picker, yearInput);
 
         input.addEventListener('change', function () {
             display.value = isoToDisplay(input.value);

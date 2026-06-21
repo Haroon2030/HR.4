@@ -28,15 +28,28 @@ class ArchiveExtraRow:
 
 
 def archive_statement_row_type(statement) -> str:
-    """نوع صف الأرشيف لإفادة — يفصل تصفية / انتهاء عقد / نهاية خدمة."""
+    """نوع صف الأرشيف لإفادة — يفصل تصفية نهاية خدمة عن إنهاء خدمة عام."""
     st_type = statement.statement_type
     if st_type != 'terminate':
         return st_type
     title = (statement.title or '')
     content = (statement.content or '')
-    if 'انتهاء عقد' in title or 'انتهاء عقد' in content:
-        return 'contract_end'
-    if 'تصفية نهاية خدمة' in title or 'تصفية نهاية خدمة' in content:
+    if (
+        'تصفية نهاية خدمة' in title
+        or 'تصفية نهاية خدمة' in content
+        or 'انتهاء عقد بانتهاء مدته' in title
+        or 'انتهاء عقد بانتهاء مدته' in content
+        or 'المادة 74' in title
+        or 'المادة 74' in content
+        or 'المادة 77' in title
+        or 'المادة 77' in content
+        or 'المادة 80' in title
+        or 'المادة 80' in content
+        or 'نهاية فترة التجربة' in title
+        or 'نهاية فترة التجربة' in content
+        or 'انتهاء عقد' in title
+        or 'انتهاء عقد' in content
+    ):
         return 'end_of_service'
     return 'terminate'
 

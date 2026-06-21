@@ -47,6 +47,7 @@ OPERATION_NAMES = {
     'approve_officer': 'تنفيذ موظف الموارد',
     'return': 'إرجاع',
     'resubmit': 'إعادة إرسال',
+    'execute': 'تنفيذ',
 }
 
 # الـ registry الفعلي: {module_code: {'name', 'icon', 'order', 'operations': set()}}

@@ -69,14 +69,27 @@ def _parse_final_settlement_statement(content: str) -> dict:
     text = text.replace('\r\n', '\n').replace('\u00a0', ' ')
 
     for pat in (
+        r'\(\s*مكافأة\s*([\d\.]+)\s*\+\s*إجازة\s*([\d\.]+)\s*\+\s*جزاء\s*([\d\.]+)\s*\)',
         r'\(\s*مكافأة\s*([\d\.]+)\s*\+\s*إجازة\s*([\d\.]+)\s*\)',
+        r'\(\s*إجازة\s*([\d\.]+)\s*فقط\s*\)',
+        r'مكافأة\s*([\d\.]+)\s*\+\s*إجازة\s*([\d\.]+)\s*\+\s*جزاء\s*([\d\.]+)',
         r'مكافأة\s*([\d\.]+)\s*\+\s*إجازة\s*([\d\.]+)',
     ):
         m = re.search(pat, text)
         if m:
-            ctx['eosb_amount'] = m.group(1)
-            ctx['leave_comp'] = m.group(2)
+            if m.re.pattern.startswith(r'\(\s*إجازة'):
+                ctx['leave_comp'] = m.group(1)
+                ctx['eosb_amount'] = '0'
+            else:
+                ctx['eosb_amount'] = m.group(1)
+                ctx['leave_comp'] = m.group(2)
+                if m.lastindex and m.lastindex >= 3:
+                    ctx['penalty_amount'] = m.group(3)
             break
+
+    penalty = re.search(r'شرط جزائي.*?=\s*([\d\.]+)', text)
+    if penalty and 'penalty_amount' not in ctx:
+        ctx['penalty_amount'] = penalty.group(1)
 
     tot = re.search(r'(?:[\*★]\s*)?إجمالي المستحقات:\s*([\d\.]+)', text)
     if tot:
@@ -169,7 +182,9 @@ def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
     except (InvalidOperation, TypeError, ValueError):
         return
     net = eosb + lc - ded
-    if eosb > 0 or lc > 0 or ded > 0:
+    penalty = Decimal(str(context.get('penalty_amount') or '0'))
+    net += penalty
+    if eosb > 0 or lc > 0 or ded > 0 or penalty > 0:
         context['total_entitlement'] = str(net.quantize(Decimal('0.01')))
 
 

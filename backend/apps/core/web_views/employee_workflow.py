@@ -707,53 +707,11 @@ def add_employee_cash_shortage(request, employee_id):
 
 
 # =============================================================================
-# انتهاء عقد — مكافأة نهاية الخدمة (EOSB)
-# =============================================================================
-
-@login_required
-@permission_required('employees.edit')
-@salary_view_required
-@employee_branch_access_required
-def contract_end_employee(request, employee_id):
-    """تقديم طلب انتهاء عقد مع حساب مكافأة نهاية الخدمة."""
-    from apps.employees.models import Employee
-    from apps.core.forms import ContractEndForm
-
-    employee = get_object_or_404(Employee, id=employee_id)
-    if employee.status == Employee.Status.TERMINATED:
-        messages.error(request, 'الموظف منتهي الخدمة بالفعل.')
-        return redirect('web:view_employee', employee_id=employee.id)
-    if request.method != 'POST':
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    form = ContractEndForm(request.POST)
-    if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    cd = form.cleaned_data
-    create_pending_action(
-        action_type='contract_end',
-        employee=employee,
-        payload={
-            'end_date': cd['end_date'].isoformat(),
-            'terminated_by': cd['terminated_by'],
-            'end_reason': cd.get('end_reason', ''),
-            'notes': cd.get('notes', ''),
-        },
-        requested_by=request.user,
-    )
-    messages.success(request, 'تم إرسال طلب انتهاء العقد إلى مدير الإدارة/الفرع للموافقة.')
-    return redirect('web:view_employee', employee_id=employee.id)
-
-
-# =============================================================================
 # تصفية نهاية خدمة أو استقالة
 # =============================================================================
 
 @login_required
-@permission_required('employees.edit')
+@permission_required('employee_tab_termination.execute')
 @salary_view_required
 @employee_branch_access_required
 def end_of_service_employee(request, employee_id):
@@ -781,6 +739,7 @@ def end_of_service_employee(request, employee_id):
         payload={
             'end_date': cd['end_date'].isoformat(),
             'terminated_by': cd['terminated_by'],
+            'article_party': cd.get('article_party') or cd.get('article_77_party', ''),
             'end_reason': cd.get('end_reason', ''),
             'notes': cd.get('notes', ''),
         },
