@@ -14,6 +14,7 @@ from apps.core.web_views.cost_centers import *  # noqa: F401,F403
 from apps.core.web_views.departments import *  # noqa: F401,F403
 from apps.core.web_views.lookups import *  # noqa: F401,F403
 from apps.core.web_views.operations_report_settings import *  # noqa: F401,F403
+from apps.core.web_views.whatsapp_integration import *  # noqa: F401,F403
 from apps.core.web_views.pending_actions import *  # noqa: F401,F403
 from apps.core.web_views.notifications import *  # noqa: F401,F403
 from apps.core.web_views.hr_forms import *  # noqa: F401,F403
@@ -23,4 +24,5 @@ from apps.core.web_views.ledger_init import *  # noqa: F401,F403
 from apps.core.web_views.biometric_devices import *  # noqa: F401,F403
 from apps.core.web_views.attendance_records import *  # noqa: F401,F403
 from apps.core.web_views.attendance_report import *  # noqa: F401,F403
+from apps.core.web_views.attendance_late_alerts import *  # noqa: F401,F403
 from apps.core.web_views.cash_shortages import *  # noqa: F401,F403

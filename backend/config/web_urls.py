@@ -200,6 +200,9 @@ urlpatterns = [
 
     # ── إعدادات تقرير العمليات المجدول ──
     path('setup/operations-report/', web_views.operations_report_settings, name='operations_report_settings'),
+    path('setup/whatsapp/', web_views.whatsapp_integration, name='whatsapp_integration'),
+    path('setup/whatsapp/status/', web_views.whatsapp_integration_status, name='whatsapp_integration_status'),
+    path('webhooks/evolution/', web_views.evolution_webhook, name='evolution_webhook'),
     
     # ══════════════════════════════════════════════════════════════
     # 9. إدارة المستخدمين
@@ -244,6 +247,7 @@ urlpatterns = [
     path('attendance/records/export/', web_views.attendance_records_export, name='attendance_records_export'),
     path('attendance/report/', web_views.attendance_report, name='attendance_report'),
     path('attendance/report/export/', web_views.attendance_report_export, name='attendance_report_export'),
+    path('attendance/late-alerts/', web_views.attendance_late_alerts, name='attendance_late_alerts'),
 
     # ══════════════════════════════════════════════════════════════
     # 11. مسير الرواتب الشهري

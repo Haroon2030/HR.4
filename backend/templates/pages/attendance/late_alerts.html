@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block title %}إنذار تأخير البصمة{% endblock %}
+
+{% block content %}
+{% include "pages/attendance/_report_styles.html" %}
+
+<div class="hr-report space-y-3" dir="rtl"
+     x-data="{ adv: {% if filters.device_id or filter_employee %}true{% else %}false{% endif %} }">
+
+    <div class="hr-report-top">
+        <div>
+            <nav class="hr-report-crumb">
+                <a href="{% url 'web:biometric_devices' %}">أجهزة البصمة</a>
+                <i data-lucide="chevron-left" class="w-3 h-3"></i>
+                <span>إنذار التأخير</span>
+            </nav>
+            <h1>إنذار تأخير البصمة</h1>
+            <p class="text-xs text-slate-500 mt-1 max-w-2xl">
+                يظهر الموظفون الذين تأخروا عن <strong>وقت الدخول المتوقع + سماح التأخير</strong> المحدّد في
+                <strong>تبويب البصمة → إعدادات البصمة</strong> لكل موظف، بناءً على سجلات السحب من الأجهزة.
+            </p>
+        </div>
+        <div class="hr-report-actions">
+            {% url 'web:report_detail' 'attendance_late' as late_report_url %}
+            {% with report_href=late_report_url|add:"?"|add:querystring %}
+            {% include "components/hr_btn.html" with href=report_href label="تقرير Excel" variant="success" icon="file-spreadsheet" %}
+            {% endwith %}
+            {% url 'web:attendance_report' as report_url %}
+            {% with report_href=report_url|add:"?"|add:querystring %}
+            {% include "components/hr_btn.html" with href=report_href label="تقرير البصمة" variant="soft-slate" icon="bar-chart-3" %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="hr-report-kpis">
+        <div class="hr-report-kpi">
+            <p class="lbl">إنذارات التأخير</p>
+            <p class="val text-rose-700">{{ summary.total }}</p>
+        </div>
+        <div class="hr-report-kpi">
+            <p class="lbl">موظفون متأثرون</p>
+            <p class="val text-amber-700">{{ summary.employees }}</p>
+        </div>
+        <div class="hr-report-kpi">
+            <p class="lbl">متوسط التأخير</p>
+            <p class="val">{{ summary.avg_late_minutes }} <span class="text-sm font-normal">د</span></p>
+        </div>
+        <div class="hr-report-kpi">
+            <p class="lbl">أقصى تأخير</p>
+            <p class="val text-rose-800">{{ summary.max_late_minutes }} <span class="text-sm font-normal">د</span></p>
+        </div>
+    </div>
+
+    <form method="get" class="hr-report-filter">
+        <div class="hr-filter-grid hr-filter-grid--main">
+            <div class="hr-filter-slot hr-filter-slot--period">
+                <span class="hr-filter-slot__title">الفترة</span>
+                <div class="hr-filter-slot__row">
+                    <div class="hr-filter-cell">
+                        <label class="hr-report-lbl">من</label>
+                        <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="hr-report-field">
+                    </div>
+                    <div class="hr-filter-cell">
+                        <label class="hr-report-lbl">إلى</label>
+                        <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="hr-report-field">
+                    </div>
+                </div>
+            </div>
+            <div class="hr-filter-slot">
+                <span class="hr-filter-slot__title">الفرع</span>
+                {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filters.branch_ids field_class="hr-report-field" aria_label="الفرع" %}
+            </div>
+            <div class="hr-filter-slot">
+                <span class="hr-filter-slot__title">بحث</span>
+                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم موظف أو رقم…" class="hr-report-field" autocomplete="off">
+            </div>
+            <div class="hr-filter-slot hr-filter-slot--actions">
+                <span class="hr-filter-slot__title hr-filter-slot__title--muted">إجراءات</span>
+                <div class="hr-filter-actions">
+                    <button type="button" class="hr-report-filter-toggle"
+                            :class="{ 'is-active': adv }"
+                            @click="adv = !adv">
+                        <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                        فلاتر
+                    </button>
+                    <div class="hr-filter-form flex items-center gap-1">
+                        {% url 'web:attendance_late_alerts' as clear_url %}
+                        {% include "components/filter_actions.html" with clear_url=clear_url %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hr-filter-grid hr-filter-grid--adv" x-show="adv" x-cloak>
+            <div class="hr-filter-slot">
+                <label class="hr-report-lbl">جهاز البصمة</label>
+                <select name="device" class="hr-filter-select hr-report-field">
+                    <option value="">الكل</option>
+                    {% for d in devices %}
+                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="hr-filter-slot hr-filter-slot--employee">
+                {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" filter_employee=filter_employee employee_search_url=employee_search_url %}
+            </div>
+        </div>
+    </form>
+
+    <div class="hr-glass-panel overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm hr-archive-table">
+                <thead class="bg-slate-100 text-slate-600 sticky top-0 z-10">
+                    <tr class="border-b border-slate-200">
+                        <th class="px-3 py-2 text-right font-semibold">التاريخ</th>
+                        <th class="px-3 py-2 text-right font-semibold">الموظف</th>
+                        <th class="px-3 py-2 text-right font-semibold">الفرع</th>
+                        <th class="px-3 py-2 text-right font-semibold">دخول متوقع</th>
+                        <th class="px-3 py-2 text-right font-semibold">سماح (د)</th>
+                        <th class="px-3 py-2 text-right font-semibold">وقت الدخول</th>
+                        <th class="px-3 py-2 text-right font-semibold">التأخير (د)</th>
+                        <th class="px-3 py-2 text-right font-semibold">بعد السماح (د)</th>
+                        <th class="px-3 py-2 text-right font-semibold">ملاحظة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in alerts %}
+                    <tr class="hover:bg-rose-50/40 transition-colors">
+                        <td class="px-3 py-2 font-mono text-xs">{{ row.work_date|date:"Y-m-d" }}</td>
+                        <td class="px-3 py-2">
+                            <a href="{% url 'web:view_employee' row.employee_id %}?tab=fingerprint#fingerprint"
+                               class="font-bold text-slate-800 hover:text-primary-700">{{ row.employee_name }}</a>
+                            {% if row.department_name and row.department_name != '—' %}
+                            <div class="text-[10px] text-slate-500">{{ row.department_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 text-slate-700">{{ row.branch_name }}</td>
+                        <td class="px-3 py-2 font-mono">{{ row.expected_check_in }}</td>
+                        <td class="px-3 py-2 text-center">{{ row.grace_minutes }}</td>
+                        <td class="px-3 py-2 font-mono font-bold text-rose-700">{{ row.check_in_time }}</td>
+                        <td class="px-3 py-2 font-bold text-rose-800">{{ row.late_minutes }}</td>
+                        <td class="px-3 py-2 font-bold text-amber-700">{{ row.late_after_grace_minutes }}</td>
+                        <td class="px-3 py-2 text-xs text-slate-600">{{ row.note }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-4 py-12 text-center text-slate-500">
+                            <i data-lucide="shield-check" class="w-10 h-10 text-emerald-300 mx-auto mb-2"></i>
+                            <p class="text-sm font-bold text-slate-700 mb-1">لا توجد إنذارات تأخير في هذه الفترة</p>
+                            <p class="text-xs text-slate-500 max-w-md mx-auto">
+                                تأكد من تعبئة <strong>وقت الدخول المتوقع</strong> و<strong>سماح التأخير</strong> في تبويب البصمة للموظف،
+                                ومن سحب سجلات الحضور من الأجهزة.
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex justify-center">
+        {% include "components/pagination.html" with page_obj=page_obj querystring=querystring %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

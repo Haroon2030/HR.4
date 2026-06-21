@@ -60,6 +60,7 @@
     <div class="hr-nav-sub">
         <a href="{% url 'web:biometric_devices' %}" class="hr-nav-sublink {% if '/attendance/devices' in request.path %}is-active{% endif %}">أجهزة البصمة</a>
         <a href="{% url 'web:attendance_report' %}" class="hr-nav-sublink {% if '/attendance/report' in request.path %}is-active{% endif %}">تقرير البصمة</a>
+        <a href="{% url 'web:attendance_late_alerts' %}" class="hr-nav-sublink {% if '/attendance/late-alerts' in request.path %}is-active{% endif %}">إنذار تأخير البصمة</a>
         <a href="{% url 'web:attendance_records' %}" class="hr-nav-sublink {% if '/attendance/records' in request.path %}is-active{% endif %}">سجلات الحضور</a>
     </div>
 </div>
@@ -75,10 +76,10 @@
 {% if user|has_permission:'branches.view' or user|has_permission:'users.view' or user|is_general_manager %}
 {% include "components/nav_section.html" with label="إدارة النظام" always_show=always_show %}
 {% if user|has_permission:'branches.view' or user|has_permission:'system_data.edit' %}
-<div class="hr-nav-dropdown{% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' %} is-open{% endif %}" data-nav-dropdown>
+<div class="hr-nav-dropdown{% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' or request.resolver_match.url_name == 'whatsapp_integration' %} is-open{% endif %}" data-nav-dropdown>
     <button type="button" data-nav-dropdown-trigger
-        aria-expanded="{% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' %}true{% else %}false{% endif %}"
-        class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' %}is-active{% endif %}">
+        aria-expanded="{% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' or request.resolver_match.url_name == 'whatsapp_integration' %}true{% else %}false{% endif %}"
+        class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' or request.resolver_match.url_name == 'whatsapp_integration' %}is-active{% endif %}">
         <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="settings" class="w-4 h-4"></i></span>
         {% if always_show %}
         <span class="hr-nav-text flex-1 text-right">تهيئة النظام</span>
@@ -91,11 +92,13 @@
     <div class="hr-nav-sub">
         {% if user|has_permission:'branches.view' %}
         <a href="{% url 'web:list_branches' %}"
-           class="hr-nav-sublink {% if request.resolver_match.url_name != 'operations_report_settings' %}{% if '/branches/' in request.path or '/setup/' in request.path %}is-active{% endif %}{% endif %}">الهيكل التنظيمي</a>
+           class="hr-nav-sublink {% if request.resolver_match.url_name != 'operations_report_settings' and request.resolver_match.url_name != 'whatsapp_integration' %}{% if '/branches/' in request.path or '/setup/' in request.path %}is-active{% endif %}{% endif %}">الهيكل التنظيمي</a>
         {% endif %}
         {% if user|has_permission:'system_data.edit' %}
         <a href="{% url 'web:operations_report_settings' %}"
            class="hr-nav-sublink {% if request.resolver_match.url_name == 'operations_report_settings' %}is-active{% endif %}">تقرير العمليات المجدول</a>
+        <a href="{% url 'web:whatsapp_integration' %}"
+           class="hr-nav-sublink {% if request.resolver_match.url_name == 'whatsapp_integration' %}is-active{% endif %}">ربط WhatsApp</a>
         {% endif %}
     </div>
 </div>

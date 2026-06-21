@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}ربط WhatsApp — Evolution API{% endblock %}
+{% block page_title %}ربط WhatsApp{% endblock %}
+
+{% block content %}
+<div class="hr-ops-report hr-wa-integration max-w-5xl mx-auto space-y-4"
+     x-data="waIntegration()"
+     x-init="init()">
+
+    <header class="hr-ops-report__hero hr-glass-panel">
+        <div class="flex flex-wrap items-start justify-between gap-3 w-full">
+            <div class="hr-ops-report__hero-main">
+                <span class="hr-ops-report__hero-icon" aria-hidden="true">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h1 class="hr-ops-report__title">ربط WhatsApp — Evolution API</h1>
+                    <p class="hr-ops-report__subtitle">
+                        إعداد السيرفر، توليد QR للربط، وضبط Webhook لاستقبال أحداث الاتصال والرسائل.
+                    </p>
+                </div>
+            </div>
+            {% url 'web:list_branches' as branches_url %}
+            {% include 'components/glass_back_link.html' with back_url=branches_url show_label=True label='تهيئة النظام' aria_label='رجوع لتهيئة النظام' extra_class='shrink-0' %}
+        </div>
+
+        <div class="hr-ops-report__stats" aria-label="ملخص الربط">
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">حالة الاتصال</span>
+                <span class="hr-ops-report__stat-value"
+                      :class="statusClass"
+                      x-text="statusLabel">{{ status.connection_label }}</span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">Instance</span>
+                <span class="hr-ops-report__stat-value" dir="ltr">{{ status.instance_name|default:"—" }}</span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">إرسال WhatsApp</span>
+                <span class="hr-ops-report__stat-value {% if status.delivery_ready %}is-on{% else %}is-off{% endif %}">
+                    {% if status.delivery_ready %}جاهز{% else %}غير مفعّل{% endif %}
+                </span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">مصدر الإعداد</span>
+                <span class="hr-ops-report__stat-value" dir="ltr">{{ status.config_source|default:"—" }}</span>
+            </div>
+            {% if status.manager_url %}
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">Evolution Manager</span>
+                <a href="{{ status.manager_url }}" target="_blank" rel="noopener" class="hr-ops-report__stat-value text-primary-700 hover:underline" dir="ltr">فتح</a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="hr-ops-report__layout">
+        <section class="hr-ops-report__section hr-glass-panel">
+            <div class="hr-ops-report__section-head">
+                <span class="hr-ops-report__section-icon" aria-hidden="true">
+                    <i data-lucide="server" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="hr-ops-report__section-title">إعدادات Evolution API</h2>
+                    <p class="hr-ops-report__section-desc">
+                        Server URL ومفتاح API من Evolution Manager — ثم احفظ قبل إنشاء Instance أو QR.
+                    </p>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-4" autocomplete="off">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="hr-report-lbl" for="{{ form.api_url.id_for_label }}">{{ form.api_url.label }}</label>
+                        {{ form.api_url }}
+                        {% if form.api_url.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.api_url.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="hr-report-lbl" for="{{ form.instance_name.id_for_label }}">{{ form.instance_name.label }}</label>
+                        {{ form.instance_name }}
+                        {% if form.instance_name.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.instance_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="hr-report-lbl" for="{{ form.api_key.id_for_label }}">{{ form.api_key.label }}</label>
+                        {{ form.api_key }}
+                        {% if form.api_key.help_text %}<p class="text-xs text-slate-500 mt-1">{{ form.api_key.help_text }}</p>{% endif %}
+                        {% if form.api_key.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.api_key.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4">
+                    <label class="hr-ops-report__switch-card inline-flex items-center gap-2 cursor-pointer">
+                        {{ form.is_enabled }}
+                        <span class="text-sm font-semibold text-slate-800">تفعيل إرسال WhatsApp من النظام</span>
+                    </label>
+                    <label class="hr-ops-report__switch-card inline-flex items-center gap-2 cursor-pointer">
+                        {{ form.webhook_enabled }}
+                        <span class="text-sm font-semibold text-slate-800">تفعيل Webhook عند الضغط على «ضبط Webhook»</span>
+                    </label>
+                </div>
+
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <button type="submit" class="hr-btn hr-btn--primary">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        حفظ الإعدادات
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="hr-ops-report__section hr-glass-panel">
+            <div class="hr-ops-report__section-head">
+                <span class="hr-ops-report__section-icon" aria-hidden="true">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="hr-ops-report__section-title">ربط الجوال (QR)</h2>
+                    <p class="hr-ops-report__section-desc">
+                        أنشئ Instance إن لم يكن موجوداً، ثم ولّد QR وامسحه من واتساب → الأجهزة المرتبطة.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mb-4">
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_instance">
+                    <button type="submit" class="hr-btn hr-btn--soft-slate">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        إنشاء Instance
+                    </button>
+                </form>
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="connect_qr">
+                    <button type="submit" class="hr-btn hr-btn--primary">
+                        <i data-lucide="qr-code" class="w-4 h-4"></i>
+                        توليد QR
+                    </button>
+                </form>
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="refresh_status">
+                    <button type="submit" class="hr-btn hr-btn--soft-slate">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        تحديث الحالة
+                    </button>
+                </form>
+            </div>
+
+            <div class="hr-wa-qr-panel flex flex-col items-center justify-center min-h-[220px] rounded-xl border border-dashed border-slate-200 bg-white/60 p-6">
+                <template x-if="qrcodeSrc">
+                    <div class="text-center space-y-3">
+                        <img :src="qrcodeSrc" alt="QR WhatsApp" class="mx-auto w-56 h-56 rounded-lg border border-slate-200 bg-white p-2">
+                        <p class="text-sm text-slate-600">امسح الرمز من واتساب → الأجهزة المرتبطة → ربط جهاز</p>
+                    </div>
+                </template>
+                <template x-if="!qrcodeSrc">
+                    <div class="text-center text-slate-500 space-y-2">
+                        <i data-lucide="smartphone" class="w-10 h-10 mx-auto text-slate-300"></i>
+                        <p class="text-sm">لا يوجد QR حالياً — اضغط «توليد QR» بعد حفظ الإعدادات</p>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <section class="hr-ops-report__section hr-glass-panel md:col-span-2">
+            <div class="hr-ops-report__section-head">
+                <span class="hr-ops-report__section-icon" aria-hidden="true">
+                    <i data-lucide="webhook" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="hr-ops-report__section-title">Webhook</h2>
+                    <p class="hr-ops-report__section-desc">
+                        يُرسل Evolution API أحداث QR والاتصال والرسائل إلى هذا الرابط داخل نظام HR.
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="hr-report-lbl">رابط Webhook (انسخه أو اضغط ضبط Webhook)</label>
+                    <div class="flex gap-2">
+                        <input type="text" readonly
+                               id="wa-webhook-url"
+                               value="{{ status.webhook_url }}"
+                               class="hr-report-field flex-1 font-mono text-xs"
+                               dir="ltr">
+                        <button type="button" class="hr-btn hr-btn--soft-slate shrink-0" @click="copyWebhook()">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                            نسخ
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="hr-report-lbl mb-1">الأحداث المفعّلة</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for ev in webhook_events %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono bg-slate-100 text-slate-700" dir="ltr">{{ ev }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 items-center text-xs text-slate-500">
+                    {% if status.last_webhook_at %}
+                    <span>آخر Webhook: {{ status.last_webhook_at }}</span>
+                    {% endif %}
+                    {% if status.last_status_sync_at %}
+                    <span>· آخر مزامنة: {{ status.last_status_sync_at }}</span>
+                    {% endif %}
+                </div>
+
+                <form method="post" class="pt-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="set_webhook">
+                    <button type="submit" class="hr-btn hr-btn--success">
+                        <i data-lucide="link" class="w-4 h-4"></i>
+                        ضبط Webhook على Evolution
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+function waIntegration() {
+    return {
+        connectionStatus: '{{ status.connection_status }}',
+        statusLabel: '{{ status.connection_label|escapejs }}',
+        qrcodeSrc: '{{ status.qrcode_base64|escapejs }}',
+        pollTimer: null,
+        init() {
+            if (this.connectionStatus === 'connecting' || this.qrcodeSrc) {
+                this.startPolling();
+            }
+            if (window.lucide) window.lucide.createIcons();
+        },
+        get statusClass() {
+            if (this.connectionStatus === 'open') return 'is-on';
+            if (this.connectionStatus === 'connecting') return 'text-amber-700';
+            return 'is-off';
+        },
+        startPolling() {
+            if (this.pollTimer) return;
+            this.pollTimer = setInterval(() => this.refreshStatus(), 4000);
+        },
+        stopPolling() {
+            if (this.pollTimer) {
+                clearInterval(this.pollTimer);
+                this.pollTimer = null;
+            }
+        },
+        async refreshStatus() {
+            try {
+                const res = await fetch('{% url "web:whatsapp_integration_status" %}', {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.connectionStatus = data.connection_status || 'unknown';
+                this.statusLabel = data.connection_label || '—';
+                if (data.qrcode_base64) {
+                    this.qrcodeSrc = data.qrcode_base64;
+                }
+                if (this.connectionStatus === 'open') {
+                    this.qrcodeSrc = '';
+                    this.stopPolling();
+                }
+            } catch (_) {}
+        },
+        copyWebhook() {
+            const el = document.getElementById('wa-webhook-url');
+            if (!el) return;
+            el.select();
+            navigator.clipboard?.writeText(el.value);
+        },
+    };
+}
+</script>
+{% endblock %}

@@ -126,6 +126,93 @@ class OperationsReportSettings(models.Model):
         return phones
 
 
+DEFAULT_EVOLUTION_WEBHOOK_EVENTS = [
+    'QRCODE_UPDATED',
+    'CONNECTION_UPDATE',
+    'MESSAGES_UPSERT',
+]
+
+
+class EvolutionWhatsAppSettings(models.Model):
+    """إعدادات ربط WhatsApp عبر Evolution API (سجل واحد — pk=1)."""
+
+    class ConnectionStatus(models.TextChoices):
+        UNKNOWN = 'unknown', 'غير معروف'
+        OPEN = 'open', 'متصل'
+        CLOSE = 'close', 'غير متصل'
+        CONNECTING = 'connecting', 'جاري الربط'
+
+    api_url = models.URLField(
+        'رابط Evolution API',
+        max_length=500,
+        blank=True,
+        default='',
+        help_text='مثل http://72.61.107.230:8081',
+    )
+    api_key = models.CharField('مفتاح API', max_length=255, blank=True, default='')
+    instance_name = models.CharField(
+        'اسم Instance',
+        max_length=64,
+        blank=True,
+        default='hr',
+        help_text='اسم إنجليزي فقط — مثل hr أو main',
+    )
+    is_enabled = models.BooleanField('تفعيل إرسال WhatsApp', default=False)
+    webhook_enabled = models.BooleanField('تفعيل Webhook', default=True)
+    webhook_events = models.JSONField(
+        'أحداث Webhook',
+        default=list,
+        blank=True,
+        help_text='أحداث Evolution API المراد استقبالها.',
+    )
+    connection_status = models.CharField(
+        'حالة الاتصال',
+        max_length=20,
+        choices=ConnectionStatus.choices,
+        default=ConnectionStatus.UNKNOWN,
+    )
+    last_qrcode_base64 = models.TextField('آخر QR', blank=True, default='')
+    last_webhook_at = models.DateTimeField('آخر Webhook', null=True, blank=True)
+    last_status_sync_at = models.DateTimeField('آخر مزامنة حالة', null=True, blank=True)
+    updated_at = models.DateTimeField('آخر تحديث', auto_now=True)
+
+    class Meta:
+        db_table = 'setup_evolutionwhatsappsettings'
+        verbose_name = 'إعدادات WhatsApp (Evolution)'
+        verbose_name_plural = 'إعدادات WhatsApp (Evolution)'
+
+    def __str__(self):
+        return 'إعدادات WhatsApp'
+
+    @classmethod
+    def get_solo(cls) -> 'EvolutionWhatsAppSettings':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        if not obj.webhook_events:
+            obj.webhook_events = list(DEFAULT_EVOLUTION_WEBHOOK_EVENTS)
+            obj.save(update_fields=['webhook_events'])
+        return obj
+
+    def webhook_events_list(self) -> list[str]:
+        events = self.webhook_events or DEFAULT_EVOLUTION_WEBHOOK_EVENTS
+        return [str(e).strip().upper() for e in events if str(e).strip()]
+
+    def api_key_masked(self) -> str:
+        key = (self.api_key or '').strip()
+        if not key:
+            return ''
+        if len(key) <= 4:
+            return '••••'
+        return f'{"•" * min(len(key) - 4, 12)}{key[-4:]}'
+
+    def has_api_credentials(self) -> bool:
+        return bool((self.api_url or '').strip() and (self.api_key or '').strip())
+
+    def is_instance_valid(self) -> bool:
+        import re
+        name = (self.instance_name or '').strip()
+        return bool(name and re.fullmatch(r'^[A-Za-z0-9._-]+$', name))
+
+
 class Nationality(BaseModel):
     """الجنسيات"""
     code = models.CharField("رقم الجنسية", max_length=20, unique=True)

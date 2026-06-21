@@ -10,6 +10,7 @@ from apps.core.models import WhatsAppMessageLog
 from apps.core.services.operations_report_data import OperationsReportBundle
 from apps.core.services.operations_report_pdf import build_operations_report_pdf
 from apps.core.services.whatsapp import client, phone_utils
+from apps.core.services.whatsapp.config import get_evolution_runtime_config
 from apps.setup.models import OperationsReportSettings
 
 logger = logging.getLogger(__name__)
@@ -51,10 +52,8 @@ def _log_whatsapp(
 
 
 def whatsapp_delivery_ready() -> bool:
-    return bool(
-        getattr(settings, 'WHATSAPP_ENABLED', False)
-        and client.is_configured()
-    )
+    cfg = get_evolution_runtime_config()
+    return bool(cfg.whatsapp_enabled and client.is_configured())
 
 
 def send_operations_report_whatsapp(
@@ -70,7 +69,7 @@ def send_operations_report_whatsapp(
     if not force and not settings_obj.send_via_whatsapp:
         return False, 'إرسال واتساب غير مفعّل — فعّل «إرسال عبر واتساب» واحفظ الإعدادات.'
 
-    if not getattr(settings, 'WHATSAPP_ENABLED', False):
+    if not get_evolution_runtime_config().whatsapp_enabled:
         _log_whatsapp(
             phone=phone,
             event_type=f'operations_report.{bundle.role_key or "full"}',

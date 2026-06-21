@@ -12,6 +12,8 @@ from typing import Any, Literal
 
 from django.conf import settings
 
+from apps.core.services.whatsapp.config import get_evolution_runtime_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,22 +27,23 @@ class EvolutionAPIError(Exception):
 
 
 def _base_url() -> str:
-    return (getattr(settings, 'EVOLUTION_API_URL', '') or '').rstrip('/')
+    return get_evolution_runtime_config().api_url
 
 
 def _headers() -> dict[str, str]:
     return {
         'Content-Type': 'application/json',
-        'apikey': getattr(settings, 'EVOLUTION_API_KEY', '') or '',
+        'apikey': get_evolution_runtime_config().api_key,
     }
 
 
 def is_configured() -> bool:
-    instance = (getattr(settings, 'EVOLUTION_INSTANCE', '') or '').strip()
+    cfg = get_evolution_runtime_config()
+    instance = cfg.instance_name
     return bool(
-        getattr(settings, 'WHATSAPP_ENABLED', False)
-        and _base_url()
-        and getattr(settings, 'EVOLUTION_API_KEY', '')
+        cfg.whatsapp_enabled
+        and cfg.api_url
+        and cfg.api_key
         and instance
         and _INSTANCE_RE.fullmatch(instance)
     )
@@ -66,7 +69,7 @@ def send_text(*, phone: str, text: str, timeout: int | None = None) -> dict[str,
     if not is_configured():
         raise EvolutionAPIError('Evolution API is not configured')
 
-    instance = _validate_instance(settings.EVOLUTION_INSTANCE)
+    instance = _validate_instance(get_evolution_runtime_config().instance_name)
     url = f'{_base_url()}/message/sendText/{urllib.parse.quote(instance, safe="")}'
     body = json.dumps({
         'number': phone,
@@ -110,7 +113,7 @@ def send_media(
     if not is_configured():
         raise EvolutionAPIError('Evolution API is not configured')
 
-    instance = _validate_instance(settings.EVOLUTION_INSTANCE)
+    instance = _validate_instance(get_evolution_runtime_config().instance_name)
     url = f'{_base_url()}/message/sendMedia/{urllib.parse.quote(instance, safe="")}'
     payload: dict[str, Any] = {
         'number': phone,

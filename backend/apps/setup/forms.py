@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 
 from apps.setup.models import (
     Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
-    Building, Bank, Administration, OperationsReportSettings,
+    Building, Bank, Administration, OperationsReportSettings, EvolutionWhatsAppSettings,
 )
 from apps.setup.operations_report_recipients import (
     OPERATIONS_REPORT_RECIPIENT_ROLES,
@@ -275,6 +275,70 @@ class OperationsReportSettingsForm(forms.ModelForm):
             for key, _ in OPERATIONS_REPORT_RECIPIENT_ROLES
         }
         obj.recipient_email = obj.recipient_emails.get('system_manager', '')
+        if commit:
+            obj.save()
+        return obj
+
+
+class EvolutionWhatsAppSettingsForm(forms.ModelForm):
+    api_key = forms.CharField(
+        label='مفتاح API',
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=False,
+            attrs={
+                'class': 'hr-report-field w-full',
+                'placeholder': 'اتركه فارغاً للإبقاء على المفتاح الحالي',
+                'dir': 'ltr',
+                'autocomplete': 'new-password',
+            },
+        ),
+    )
+
+    class Meta:
+        model = EvolutionWhatsAppSettings
+        fields = (
+            'api_url',
+            'instance_name',
+            'is_enabled',
+            'webhook_enabled',
+        )
+        widgets = {
+            'api_url': forms.URLInput(attrs={
+                'class': 'hr-report-field w-full',
+                'placeholder': 'http://72.61.107.230:8081',
+                'dir': 'ltr',
+            }),
+            'instance_name': forms.TextInput(attrs={
+                'class': 'hr-report-field w-full',
+                'placeholder': 'hr',
+                'dir': 'ltr',
+            }),
+            'is_enabled': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+            'webhook_enabled': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['api_url'].label = 'رابط Evolution API (Server URL)'
+        if self.instance.pk and self.instance.api_key_masked():
+            self.fields['api_key'].help_text = f'المفتاح الحالي: {self.instance.api_key_masked()}'
+
+    def clean_instance_name(self):
+        import re
+        name = (self.cleaned_data.get('instance_name') or '').strip()
+        if name and not re.fullmatch(r'^[A-Za-z0-9._-]+$', name):
+            raise ValidationError('اسم Instance يجب أن يكون إنجليزياً (حروف/أرقام/._-)')
+        return name
+
+    def clean_api_url(self):
+        return (self.cleaned_data.get('api_url') or '').strip().rstrip('/')
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        new_key = (self.cleaned_data.get('api_key') or '').strip()
+        if new_key:
+            obj.api_key = new_key
         if commit:
             obj.save()
         return obj

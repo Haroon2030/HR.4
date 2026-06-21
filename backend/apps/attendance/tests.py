@@ -253,6 +253,109 @@ class LinkedEnrollmentDisplayTests(TestCase):
         self.assertEqual(rows[0].employee_name, 'هارون')
         self.assertEqual(rows[0].status_label, 'بصمة واحدة')
 
+    def test_late_checkin_alerts_from_biometric_settings(self):
+        from datetime import datetime, time
+
+        from django.contrib.auth import get_user_model
+
+        from apps.attendance.models import EmployeeBiometricEnrollment, EmployeeBiometricSettings
+        from apps.attendance.selectors.late_alerts import build_late_checkin_alerts, summarize_late_alerts
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        User = get_user_model()
+        user = User.objects.create_superuser(username='late_admin', password='x')
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.62', port=4370, branch=branch,
+        )
+        emp = Employee.objects.create(name='متأخر', employee_number='L1', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp, device=device, device_user_id=2,
+        )
+        EmployeeBiometricSettings.objects.create(
+            employee=emp,
+            expected_check_in=time(8, 0),
+            late_grace_minutes=30,
+        )
+        tz = timezone.get_current_timezone()
+        day = timezone.localdate()
+        late = timezone.make_aware(datetime.combine(day, time(9, 0)), tz)
+        AttendancePunch.objects.create(
+            device=device,
+            employee=emp,
+            device_user_id=2,
+            punched_at=late,
+            punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+
+        filters = {
+            'date_from': day.isoformat(),
+            'date_to': day.isoformat(),
+        }
+        alerts = build_late_checkin_alerts(user, filters)
+        self.assertEqual(len(alerts), 1)
+        self.assertEqual(alerts[0].employee_id, emp.pk)
+        self.assertEqual(alerts[0].late_minutes, 60)
+        self.assertEqual(alerts[0].late_after_grace_minutes, 30)
+        self.assertEqual(alerts[0].grace_minutes, 30)
+
+        summary = summarize_late_alerts(alerts)
+        self.assertEqual(summary['total'], 1)
+        self.assertEqual(summary['employees'], 1)
+        self.assertEqual(summary['max_late_minutes'], 60)
+
+    def test_late_checkin_alerts_skips_on_time_and_missing_settings(self):
+        from datetime import datetime, time
+
+        from django.contrib.auth import get_user_model
+
+        from apps.attendance.models import EmployeeBiometricEnrollment
+        from apps.attendance.selectors.late_alerts import build_late_checkin_alerts
+        from apps.core.models import Branch, Company
+        from apps.employees.models import Employee
+
+        User = get_user_model()
+        user = User.objects.create_superuser(username='late_admin2', password='x')
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        device = BiometricDevice.objects.create(
+            name='جهاز', ip_address='192.168.1.63', port=4370, branch=branch,
+        )
+        emp_no_settings = Employee.objects.create(name='بدون إعداد', branch=branch)
+        emp_on_time = Employee.objects.create(name='في الوقت', branch=branch)
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp_no_settings, device=device, device_user_id=3,
+        )
+        EmployeeBiometricEnrollment.objects.create(
+            employee=emp_on_time, device=device, device_user_id=4,
+        )
+        from apps.attendance.models import EmployeeBiometricSettings
+        EmployeeBiometricSettings.objects.create(
+            employee=emp_on_time,
+            expected_check_in=time(8, 0),
+            late_grace_minutes=30,
+        )
+        tz = timezone.get_current_timezone()
+        day = timezone.localdate()
+        late_no_settings = timezone.make_aware(datetime.combine(day, time(10, 0)), tz)
+        on_time = timezone.make_aware(datetime.combine(day, time(8, 20)), tz)
+        AttendancePunch.objects.create(
+            device=device, employee=emp_no_settings, device_user_id=3,
+            punched_at=late_no_settings, punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+        AttendancePunch.objects.create(
+            device=device, employee=emp_on_time, device_user_id=4,
+            punched_at=on_time, punch_type=AttendancePunch.PunchType.CHECK_IN,
+        )
+
+        filters = {'date_from': day.isoformat(), 'date_to': day.isoformat()}
+        alerts = build_late_checkin_alerts(user, filters)
+        self.assertEqual(alerts, [])
+
 
 class DeviceIpValidatorTests(TestCase):
     def test_valid_ipv4(self):
