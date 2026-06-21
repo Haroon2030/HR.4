@@ -88,11 +88,13 @@ class EmployeeBiometricEnrollment(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=['device', 'device_user_id'],
-                name='uniq_device_user_per_device',
+                condition=models.Q(is_deleted=False),
+                name='uniq_device_user_per_device_active',
             ),
             models.UniqueConstraint(
                 fields=['device', 'employee'],
-                name='uniq_employee_per_device',
+                condition=models.Q(is_deleted=False),
+                name='uniq_employee_per_device_active',
             ),
         ]
 

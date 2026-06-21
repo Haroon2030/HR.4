@@ -548,34 +548,46 @@ def biometric_enrollment_save(request):
     )
     previous_employee = prev_enrollment.employee if prev_enrollment else None
 
-    with transaction.atomic():
-        # ربط سابق لنفس الموظف على الجهاز برقم مستخدم آخر
-        EmployeeBiometricEnrollment.objects.filter(
-            device_id=device_id,
-            employee_id=employee_id,
-            is_deleted=False,
-        ).exclude(device_user_id=int(device_user_id)).delete()
+    try:
+        with transaction.atomic():
+            # حذف كامل (hard delete) لأي ربط سابق لنفس الموظف على الجهاز برقم آخر
+            # (يتعارض مع unique constraint: device + employee)
+            EmployeeBiometricEnrollment.all_objects.filter(
+                device_id=device_id,
+                employee_id=employee_id,
+            ).exclude(device_user_id=int(device_user_id)).hard_delete()
 
-        # استعادة تسجيل محذوف منطقياً — objects لا يراه update_or_create
-        EmployeeBiometricEnrollment.all_objects.update_or_create(
-            device_id=device_id,
-            device_user_id=int(device_user_id),
-            defaults={
-                'employee_id': employee_id,
-                'device_user_name': device_user_name,
-                'is_deleted': False,
-                'deleted_at': None,
-            },
-        )
+            # حذف كامل لأي ربط محذوف منطقياً لنفس (جهاز + رقم مستخدم) لموظف آخر
+            # (يتعارض مع unique constraint: device + device_user_id)
+            EmployeeBiometricEnrollment.all_objects.filter(
+                device_id=device_id,
+                device_user_id=int(device_user_id),
+                is_deleted=True,
+            ).exclude(employee_id=employee_id).hard_delete()
 
-        punches_relinked = AttendancePunch.objects.filter(
-            device_id=device_id,
-            device_user_id=int(device_user_id),
-            is_deleted=False,
-        ).update(
-            employee_id=employee_id,
-            device_user_name=device_user_name,
-        )
+            # إنشاء أو استعادة التسجيل (يعمل الآن بدون تعارض)
+            EmployeeBiometricEnrollment.all_objects.update_or_create(
+                device_id=device_id,
+                device_user_id=int(device_user_id),
+                defaults={
+                    'employee_id': employee_id,
+                    'device_user_name': device_user_name,
+                    'is_deleted': False,
+                    'deleted_at': None,
+                },
+            )
+
+            punches_relinked = AttendancePunch.objects.filter(
+                device_id=device_id,
+                device_user_id=int(device_user_id),
+                is_deleted=False,
+            ).update(
+                employee_id=employee_id,
+                device_user_name=device_user_name,
+            )
+    except Exception as exc:
+        messages.error(request, f'فشل حفظ الربط: {exc}')
+        return redirect('web:biometric_devices')
 
     if previous_employee and previous_employee.pk == int(employee_id):
         audit_action = BiometricEnrollmentAuditLog.Action.UPDATE
