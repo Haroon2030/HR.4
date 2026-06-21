@@ -17,7 +17,7 @@
                 <div class="min-w-0">
                     <h1 class="hr-ops-report__title">ربط WhatsApp — Evolution API</h1>
                     <p class="hr-ops-report__subtitle">
-                        إعداد السيرفر، توليد QR للربط، وضبط Webhook لاستقبال أحداث الاتصال والرسائل.
+                        إعداد السيرفر، توليد QR للربط، وضبط Webhook — أي زر يحفظ الإعدادات تلقائياً.
                     </p>
                 </div>
             </div>
@@ -32,13 +32,17 @@
                       :class="statusClass"
                       x-text="statusLabel">{{ status.connection_label }}</span>
             </div>
-            <div class="hr-ops-report__stat">
+            <div class="hr-ops-report__stat min-w-0">
                 <span class="hr-ops-report__stat-label">Instance</span>
-                <span class="hr-ops-report__stat-value" dir="ltr">{{ status.instance_name|default:"—" }}</span>
+                <span class="hr-ops-report__stat-value truncate max-w-[14rem] block" dir="ltr"
+                      x-text="instanceName || '—'"
+                      :title="instanceName">{{ status.instance_name|default:"—" }}</span>
             </div>
             <div class="hr-ops-report__stat">
                 <span class="hr-ops-report__stat-label">إرسال WhatsApp</span>
-                <span class="hr-ops-report__stat-value {% if status.delivery_ready %}is-on{% else %}is-off{% endif %}">
+                <span class="hr-ops-report__stat-value"
+                      :class="deliveryReady ? 'is-on' : 'is-off'"
+                      x-text="deliveryReady ? 'جاهز' : 'غير مفعّل'">
                     {% if status.delivery_ready %}جاهز{% else %}غير مفعّل{% endif %}
                 </span>
             </div>
@@ -55,7 +59,9 @@
         </div>
     </header>
 
-    <div class="hr-ops-report__layout">
+    <form method="post" id="wa-settings-form" class="hr-ops-report__layout space-y-4" autocomplete="off">
+        {% csrf_token %}
+
         <section class="hr-ops-report__section hr-glass-panel">
             <div class="hr-ops-report__section-head">
                 <span class="hr-ops-report__section-icon" aria-hidden="true">
@@ -64,15 +70,12 @@
                 <div class="min-w-0">
                     <h2 class="hr-ops-report__section-title">إعدادات Evolution API</h2>
                     <p class="hr-ops-report__section-desc">
-                        Server URL ومفتاح API من Evolution Manager — ثم احفظ قبل إنشاء Instance أو QR.
+                        استخدم اسماً بسيطاً مثل <code dir="ltr">hr</code> — وليس UUID الجهاز. يظهر الاسم فوراً في الملخص أعلاه.
                     </p>
                 </div>
             </div>
 
-            <form method="post" class="space-y-4" autocomplete="off">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="save">
-
+            <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="hr-report-lbl" for="{{ form.api_url.id_for_label }}">{{ form.api_url.label }}</label>
@@ -81,7 +84,15 @@
                     </div>
                     <div>
                         <label class="hr-report-lbl" for="{{ form.instance_name.id_for_label }}">{{ form.instance_name.label }}</label>
-                        {{ form.instance_name }}
+                        <input type="text"
+                               name="instance_name"
+                               id="{{ form.instance_name.id_for_label }}"
+                               value="{{ form.instance_name.value|default:'' }}"
+                               class="hr-report-field w-full"
+                               placeholder="hr"
+                               dir="ltr"
+                               x-model="instanceName"
+                               @input="instanceName = $event.target.value">
                         {% if form.instance_name.errors %}<p class="text-xs text-rose-600 mt-1">{{ form.instance_name.errors.0 }}</p>{% endif %}
                     </div>
                     <div class="md:col-span-2">
@@ -104,12 +115,12 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2 pt-1">
-                    <button type="submit" class="hr-btn hr-btn--primary">
+                    <button type="submit" name="action" value="save" class="hr-btn hr-btn--primary">
                         <i data-lucide="save" class="w-4 h-4"></i>
                         حفظ الإعدادات
                     </button>
                 </div>
-            </form>
+            </div>
         </section>
 
         <section class="hr-ops-report__section hr-glass-panel">
@@ -120,36 +131,24 @@
                 <div class="min-w-0">
                     <h2 class="hr-ops-report__section-title">ربط الجوال (QR)</h2>
                     <p class="hr-ops-report__section-desc">
-                        أنشئ Instance إن لم يكن موجوداً، ثم ولّد QR وامسحه من واتساب → الأجهزة المرتبطة.
+                        الأزرار تحفظ الإعدادات أولاً ثم تنفّذ العملية على Instance الظاهر في الملخص.
                     </p>
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-2 mb-4">
-                <form method="post" class="inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="create_instance">
-                    <button type="submit" class="hr-btn hr-btn--soft-slate">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        إنشاء Instance
-                    </button>
-                </form>
-                <form method="post" class="inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="connect_qr">
-                    <button type="submit" class="hr-btn hr-btn--primary">
-                        <i data-lucide="qr-code" class="w-4 h-4"></i>
-                        توليد QR
-                    </button>
-                </form>
-                <form method="post" class="inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="refresh_status">
-                    <button type="submit" class="hr-btn hr-btn--soft-slate">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                        تحديث الحالة
-                    </button>
-                </form>
+                <button type="submit" name="action" value="create_instance" class="hr-btn hr-btn--soft-slate">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    إنشاء Instance
+                </button>
+                <button type="submit" name="action" value="connect_qr" class="hr-btn hr-btn--primary">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    توليد QR
+                </button>
+                <button type="submit" name="action" value="refresh_status" class="hr-btn hr-btn--soft-slate">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    تحديث الحالة
+                </button>
             </div>
 
             <div class="hr-wa-qr-panel flex flex-col items-center justify-center min-h-[220px] rounded-xl border border-dashed border-slate-200 bg-white/60 p-6">
@@ -162,7 +161,7 @@
                 <template x-if="!qrcodeSrc">
                     <div class="text-center text-slate-500 space-y-2">
                         <i data-lucide="smartphone" class="w-10 h-10 mx-auto text-slate-300"></i>
-                        <p class="text-sm">لا يوجد QR حالياً — اضغط «توليد QR» بعد حفظ الإعدادات</p>
+                        <p class="text-sm">لا يوجد QR حالياً — غيّر Instance إلى <strong dir="ltr">hr</strong> ثم «توليد QR»</p>
                     </div>
                 </template>
             </div>
@@ -183,14 +182,14 @@
 
             <div class="space-y-3">
                 <div>
-                    <label class="hr-report-lbl">رابط Webhook (انسخه أو اضغط ضبط Webhook)</label>
+                    <label class="hr-report-lbl">رابط Webhook</label>
                     <div class="flex gap-2">
                         <input type="text" readonly
                                id="wa-webhook-url"
                                value="{{ status.webhook_url }}"
                                class="hr-report-field flex-1 font-mono text-xs"
                                dir="ltr">
-                        <button type="button" class="hr-btn hr-btn--soft-slate shrink-0" @click="copyWebhook()">
+                        <button type="button" class="hr-btn hr-btn--soft-slate shrink-0" @click.prevent="copyWebhook()">
                             <i data-lucide="copy" class="w-4 h-4"></i>
                             نسخ
                         </button>
@@ -215,17 +214,15 @@
                     {% endif %}
                 </div>
 
-                <form method="post" class="pt-1">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="set_webhook">
-                    <button type="submit" class="hr-btn hr-btn--success">
+                <div class="pt-1">
+                    <button type="submit" name="action" value="set_webhook" class="hr-btn hr-btn--success">
                         <i data-lucide="link" class="w-4 h-4"></i>
                         ضبط Webhook على Evolution
                     </button>
-                </form>
+                </div>
             </div>
         </section>
-    </div>
+    </form>
 </div>
 
 <script>
@@ -233,9 +230,15 @@ function waIntegration() {
     return {
         connectionStatus: '{{ status.connection_status }}',
         statusLabel: '{{ status.connection_label|escapejs }}',
+        instanceName: '{{ status.instance_name|default:""|escapejs }}',
+        deliveryReady: {{ status.delivery_ready|yesno:"true,false" }},
         qrcodeSrc: '{{ status.qrcode_base64|escapejs }}',
         pollTimer: null,
         init() {
+            const field = document.getElementById('{{ form.instance_name.id_for_label }}');
+            if (field && field.value) {
+                this.instanceName = field.value;
+            }
             if (this.connectionStatus === 'connecting' || this.qrcodeSrc) {
                 this.startPolling();
             }
@@ -266,6 +269,8 @@ function waIntegration() {
                 const data = await res.json();
                 this.connectionStatus = data.connection_status || 'unknown';
                 this.statusLabel = data.connection_label || '—';
+                this.instanceName = data.instance_name || this.instanceName;
+                this.deliveryReady = !!data.delivery_ready;
                 if (data.qrcode_base64) {
                     this.qrcodeSrc = data.qrcode_base64;
                 }

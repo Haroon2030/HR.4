@@ -58,14 +58,68 @@ def _status_payload(settings_obj: EvolutionWhatsAppSettings, request) -> dict:
     }
 
 
+def _display_settings(settings_obj: EvolutionWhatsAppSettings, form=None) -> EvolutionWhatsAppSettings:
+    """عرض القيم المُدخلة حتى قبل الحفظ (عند أخطاء التحقق)."""
+    if form is not None and form.is_bound:
+        for field in ('api_url', 'instance_name', 'is_enabled', 'webhook_enabled'):
+            if field in form.data:
+                val = form.data.get(field)
+                if field in ('is_enabled', 'webhook_enabled'):
+                    setattr(settings_obj, field, val in ('on', 'true', 'True', '1'))
+                else:
+                    setattr(settings_obj, field, (val or '').strip())
+    return settings_obj
+
+
+def _apply_settings_from_post(request, settings_obj: EvolutionWhatsAppSettings):
+    """
+    يحفظ الإعدادات إذا وُجدت حقول النموذج في الطلب (مع أي زر: حفظ / QR / webhook).
+    """
+    if 'api_url' not in request.POST and 'instance_name' not in request.POST:
+        return settings_obj, None, False
+
+    form = EvolutionWhatsAppSettingsForm(request.POST, instance=settings_obj)
+    if not form.is_valid():
+        return settings_obj, form, False
+
+    saved = form.save()
+    return saved, form, True
+
+
 @login_required
 @permission_required('system_data.edit')
 @require_http_methods(['GET', 'POST'])
 def whatsapp_integration(request):
     settings_obj = EvolutionWhatsAppSettings.get_solo()
+    form = None
 
     if request.method == 'POST':
         action = (request.POST.get('action') or 'save').strip()
+        settings_obj, form, saved = _apply_settings_from_post(request, settings_obj)
+
+        if action != 'save' and form is not None and not saved:
+            messages.error(request, 'صحّح أخطاء الإعدادات قبل تنفيذ العملية.')
+            status = _status_payload(_display_settings(settings_obj, form), request)
+            return render(request, 'pages/setup/whatsapp_integration.html', {
+                'form': form,
+                'settings_obj': settings_obj,
+                'status': status,
+                'webhook_events': settings_obj.webhook_events_list(),
+            })
+
+        if action == 'save':
+            if saved:
+                messages.success(request, 'تم حفظ إعدادات WhatsApp.')
+            elif form is not None and not form.is_valid():
+                messages.error(request, 'تحقق من الحقول المدخلة.')
+                status = _status_payload(_display_settings(settings_obj, form), request)
+                return render(request, 'pages/setup/whatsapp_integration.html', {
+                    'form': form,
+                    'settings_obj': settings_obj,
+                    'status': status,
+                    'webhook_events': settings_obj.webhook_events_list(),
+                })
+            return redirect(reverse('web:whatsapp_integration'))
 
         if action == 'refresh_status':
             try:
@@ -124,12 +178,8 @@ def whatsapp_integration(request):
                 messages.error(request, str(exc))
             return redirect(reverse('web:whatsapp_integration'))
 
-        form = EvolutionWhatsAppSettingsForm(request.POST, instance=settings_obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'تم حفظ إعدادات WhatsApp.')
-            return redirect(reverse('web:whatsapp_integration'))
-        messages.error(request, 'تحقق من الحقول المدخلة.')
+        messages.error(request, 'إجراء غير معروف.')
+        return redirect(reverse('web:whatsapp_integration'))
 
     else:
         form = EvolutionWhatsAppSettingsForm(instance=settings_obj)
