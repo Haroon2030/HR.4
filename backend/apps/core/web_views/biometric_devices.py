@@ -526,11 +526,43 @@ def biometric_enrollment_save(request):
         .first()
     )
     if existing_user_link:
-        messages.error(
-            request,
-            f'رقم المستخدم {device_user_id} مربوط مسبقاً بالموظف «{existing_user_link.employee.name}».',
-        )
-        return redirect('web:biometric_devices')
+        force = request.POST.get('force_relink') == '1'
+        if not force:
+            # إعادة إرسال النموذج مع force_relink لتخطي التحقق
+            from django.http import HttpResponse
+            prev_name = existing_user_link.employee.name
+            return HttpResponse(
+                f'''<!doctype html><html dir="rtl" lang="ar">
+<head><meta charset="utf-8"><title>تأكيد إعادة الربط</title>
+<link rel="stylesheet" href="/static/css/hr-ui.css">
+<style>body{{font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;margin:0}}.box{{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:2rem;max-width:28rem;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.08)}}</style>
+</head>
+<body>
+<div class="box">
+  <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 1rem">تأكيد إعادة الربط</h2>
+  <p style="font-size:.9rem;color:#475569;margin:0 0 1.5rem">
+    رقم المستخدم <strong>{device_user_id}</strong> مربوط حالياً بالموظف
+    «<strong>{prev_name}</strong>».<br>
+    هل تريد إعادة ربطه بـ «<strong>{employee.name}</strong>»؟<br>
+    <span style="color:#dc2626;font-size:.8rem">سيُحذف الربط السابق نهائياً.</span>
+  </p>
+  <form method="post" action="">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{request.POST.get("csrfmiddlewaretoken", "")}">
+    <input type="hidden" name="employee_id" value="{employee_id}">
+    <input type="hidden" name="device_id" value="{device_id}">
+    <input type="hidden" name="device_user_id" value="{device_user_id}">
+    <input type="hidden" name="force_relink" value="1">
+    <div style="display:flex;gap:.75rem;justify-content:flex-end">
+      <a href="/attendance/biometric-devices/" style="padding:.5rem 1.25rem;border-radius:.5rem;border:1px solid #e2e8f0;color:#475569;font-size:.875rem;text-decoration:none">إلغاء</a>
+      <button type="submit" style="padding:.5rem 1.25rem;border-radius:.5rem;background:#dc2626;color:#fff;border:none;font-size:.875rem;cursor:pointer">نعم، أعد الربط</button>
+    </div>
+  </form>
+</div>
+</body></html>''',
+                content_type='text/html; charset=utf-8',
+            )
+        # force=1 → تابع وسيُحذف الربط القديم في الخطوة التالية
+        prev_name = existing_user_link.employee.name
 
     from django.db import transaction
 
@@ -557,12 +589,11 @@ def biometric_enrollment_save(request):
                 employee_id=employee_id,
             ).exclude(device_user_id=int(device_user_id)).hard_delete()
 
-            # حذف كامل لأي ربط محذوف منطقياً لنفس (جهاز + رقم مستخدم) لموظف آخر
-            # (يتعارض مع unique constraint: device + device_user_id)
+            # حذف كامل لجميع الروابط الأخرى لنفس (جهاز + رقم مستخدم)
+            # سواء كانت نشطة (force) أو محذوفة منطقياً
             EmployeeBiometricEnrollment.all_objects.filter(
                 device_id=device_id,
                 device_user_id=int(device_user_id),
-                is_deleted=True,
             ).exclude(employee_id=employee_id).hard_delete()
 
             # إنشاء أو استعادة التسجيل (يعمل الآن بدون تعارض)
@@ -608,9 +639,15 @@ def biometric_enrollment_save(request):
         action=audit_action,
         punches_relinked=punches_relinked,
     )
-    messages.success(
-        request,
-        f'تم ربط «{employee.name}» برقم {device_user_id} على الجهاز.',
-    )
+    if existing_user_link and request.POST.get('force_relink') == '1':
+        messages.success(
+            request,
+            f'تم إعادة ربط رقم {device_user_id} من «{prev_name}» إلى «{employee.name}».',
+        )
+    else:
+        messages.success(
+            request,
+            f'تم ربط «{employee.name}» برقم {device_user_id} على الجهاز.',
+        )
     from django.urls import reverse
     return redirect('web:biometric_devices')
