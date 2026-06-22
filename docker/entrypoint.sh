@@ -31,6 +31,12 @@ python manage.py ensure_operations_report_settings || {
     exit 1
 }
 
+echo "==> Ensuring workflow WhatsApp settings table..."
+python manage.py ensure_workflow_whatsapp_settings || {
+    echo "!! ensure_workflow_whatsapp_settings failed — aborting."
+    exit 1
+}
+
 # ─── مزامنة سجل الصلاحيات من الـ decorators (مهم عند نشر migrations غير core فقط) ─
 echo "==> Syncing permission registry (post-migrate deploy)..."
 python manage.py shell <<'PY_SYNC'
