@@ -1,7 +1,7 @@
 {% comment %}
    مكوّن مرفق ملف مع إمكانية تعديل الاسم.
    الاستخدام:
-     {% include 'components/file_upload.html' with name='document' label='المرفق' accept='image/*,.pdf' %}
+     {% include 'components/file_upload.html' with name='document' label='المرفق' %}
      {% include '...' with name='id_document' existing_filename=employee.id_document.name|basename %}
 
    البارامترات:
@@ -53,7 +53,7 @@
 
     <div class="flex items-center gap-2">
         <input type="file" name="{{ name }}"
-               accept="{{ accept|default:'image/*,.pdf,.doc,.docx' }}"
+               accept="{{ accept|default:'.pdf,.jpg,.jpeg,.png,.xlsx' }}"
                {% if required %}required{% endif %}
                @change="onPick($event)"
                class="flex-1 min-w-0 px-2 py-1 border border-slate-300 rounded text-xs bg-slate-50 file:ml-2 file:rounded file:border-0 file:bg-primary-100 file:text-primary-700 file:px-2 file:py-0.5 file:text-[11px]">

@@ -72,3 +72,6 @@ if settings.DEBUG:
 _media_route = path('media/<path:path>', serve_protected_media, name='protected_media')
 if not getattr(settings, 'USE_R2', False) or getattr(settings, 'R2_PROXY_MEDIA', True):
     urlpatterns.insert(0, _media_route)
+
+# django-ratelimit — 429 بدل 403 الافتراضي عند تجاوز الحد
+handler403 = 'config.ratelimit_handlers.ratelimited'

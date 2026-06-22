@@ -322,23 +322,23 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="hr-form-field">
                         {% if employee.commencement_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.commencement_document.url title="مستند المباشرة" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' accept='image/*,.pdf' existing_filename=employee.commencement_document.name|basename %}
+                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' existing_filename=employee.commencement_document.name|basename %}
                     </div>
                     <div class="hr-form-field">
                         {% if employee.id_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.id_document.url title="صورة الهوية" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='id_document' label='صورة الهوية' accept='image/*,.pdf' existing_filename=employee.id_document.name|basename %}
+                        {% include 'components/file_upload.html' with name='id_document' label='صورة الهوية' existing_filename=employee.id_document.name|basename %}
                     </div>
                     <div class="hr-form-field">
                         {% if employee.passport_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.passport_document.url title="جواز السفر" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='passport_document' label='جواز السفر' accept='image/*,.pdf' existing_filename=employee.passport_document.name|basename %}
+                        {% include 'components/file_upload.html' with name='passport_document' label='جواز السفر' existing_filename=employee.passport_document.name|basename %}
                     </div>
                     <div class="hr-form-field">
                         {% if employee.contract_document %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.contract_document.url title="العقد" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='contract_document' label='العقد' accept='image/*,.pdf' existing_filename=employee.contract_document.name|basename %}
+                        {% include 'components/file_upload.html' with name='contract_document' label='العقد' existing_filename=employee.contract_document.name|basename %}
                     </div>
                     <div class="hr-form-field">
                         {% if employee.other_documents %}<div class="mb-1">{% include "components/media_preview_btn.html" with url=employee.other_documents.url title="مستندات أخرى" label="الحالي" btn_class="text-xs text-primary-600 font-semibold inline-flex items-center gap-1" icon="eye" icon_class="w-3 h-3" %}</div>{% endif %}
-                        {% include 'components/file_upload.html' with name='other_documents' label='مستندات أخرى' accept='image/*,.pdf' existing_filename=employee.other_documents.name|basename %}
+                        {% include 'components/file_upload.html' with name='other_documents' label='مستندات أخرى' existing_filename=employee.other_documents.name|basename %}
                     </div>
                 </div>
             </div>

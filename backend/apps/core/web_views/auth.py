@@ -5,23 +5,15 @@ Django Template Views - واجهة الويب
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib import messages
-from django.core.cache import cache
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from apps.core.forms import ArabicPasswordChangeForm
+from apps.core.rate_limit import limit_password_change, limit_web_login
 
 from apps.core.models import UserProfile
 
-_LOGIN_ATTEMPT_LIMIT = 20
-_LOGIN_LOCKOUT_SECONDS = 3600
-
-
-def _login_throttle_key(request, username: str = '') -> str:
-    ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
-    if not ip:
-        ip = request.META.get('REMOTE_ADDR', 'unknown')
-    user_part = (username or '').strip().lower()[:64] or 'unknown'
-    return f'login_throttle:{ip}:{user_part}'
+_RATE_LIMIT_MESSAGE = 'تم تجاوز عدد محاولات تسجيل الدخول. حاول مرة أخرى لاحقاً.'
+_PASSWORD_RATE_LIMIT_MESSAGE = 'تجاوزت عدد محاولات تغيير كلمة المرور. حاول لاحقاً.'
 
 
 # =============================================================================
@@ -30,29 +22,20 @@ def _login_throttle_key(request, username: str = '') -> str:
 
 
 
+@limit_web_login
 def login_view(request):
     """صفحة تسجيل الدخول"""
     from apps.core.forms import LoginForm
 
     if request.user.is_authenticated:
         return redirect('web:dashboard')
-    
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        throttle_username = ''
-        if form.is_valid():
-            throttle_username = form.cleaned_data.get('username') or ''
-        else:
-            throttle_username = (request.POST.get('username') or '').strip()
 
-        throttle_key = _login_throttle_key(request, throttle_username)
-        attempts = cache.get(throttle_key, 0)
-        if attempts >= _LOGIN_ATTEMPT_LIMIT:
-            messages.error(
-                request,
-                'تم تجاوز عدد محاولات تسجيل الدخول. حاول مرة أخرى لاحقاً.',
-            )
+    if request.method == 'POST':
+        if getattr(request, 'limited', False):
+            messages.error(request, _RATE_LIMIT_MESSAGE)
             return render(request, 'auth/login.html')
+
+        form = LoginForm(request.POST)
 
         if not form.is_valid():
             for err in form.errors.values():
@@ -71,9 +54,8 @@ def login_view(request):
                 user = authenticate(request, username=profile.user.username, password=password)
             except UserProfile.DoesNotExist:
                 pass
-        
+
         if user is not None:
-            cache.delete(throttle_key)
             from apps.core.services.navigation_cache import invalidate_user_navigation_caches
 
             invalidate_user_navigation_caches(user.pk)
@@ -83,9 +65,8 @@ def login_view(request):
             messages.success(request, f'مرحباً {user.get_full_name() or user.username}')
             return redirect('web:dashboard')
 
-        cache.set(throttle_key, attempts + 1, _LOGIN_LOCKOUT_SECONDS)
         messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
-    
+
     return render(request, 'auth/login.html')
 
 
@@ -102,9 +83,14 @@ def logout_view(request):
 
 
 @login_required
+@limit_password_change
 def password_change_view(request):
     """تغيير كلمة المرور للمستخدم الحالي (واجهة ويب)."""
     if request.method == 'POST':
+        if getattr(request, 'limited', False):
+            messages.error(request, _PASSWORD_RATE_LIMIT_MESSAGE)
+            form = ArabicPasswordChangeForm(request.user, request.POST)
+            return render(request, 'auth/password_change.html', {'form': form})
         form = ArabicPasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()

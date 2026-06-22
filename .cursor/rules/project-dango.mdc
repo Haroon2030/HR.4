@@ -68,6 +68,13 @@ reports/
 
 - Avoid N+1 query problems.
 
+## Django ORM & SQL Safety
+- Prefer Django ORM (`filter`, `annotate`, `aggregate`, `update`, `bulk_create`, `bulk_update`) for application queries.
+- Never embed user or request input in SQL text (`f"...{user_input}"`, `"...".format()`, `%` formatting on SQL strings).
+- Raw SQL only when the ORM cannot express the operation (health checks, sequence sync, migrations); always use `%s` placeholders and pass values as the second argument to `cursor.execute()`.
+- Table/column identifiers may come from `Model._meta` with `connection.ops.quote_name()` — never from request data.
+- Do not use `.raw()`, `.extra()`, or ad-hoc string SQL on `QuerySet`.
+
 ## Migrations
 - Create safe migrations.
 - Never remove production data automatically.
@@ -132,6 +139,8 @@ with transaction.atomic():
 - Validate all permissions server-side.
 - Prevent privilege escalation.
 - Protect APIs with authentication and throttling.
+- Use `django-ratelimit` on login, JWT, password change, and health; DRF throttles on API defaults.
+- Set `REDIS_URL` in production so rate-limit counters are shared across Gunicorn workers.
 
 ## Backups
 - Systems must be backup-friendly.
@@ -175,6 +184,7 @@ Example:
 
 ## JWT
 - Prefer JWT authentication for APIs.
+- Keep access tokens short-lived (e.g. 15 minutes); refresh tokens up to ~7 days with rotation + blacklist enabled.
 
 ## Permissions
 - Use custom permissions when needed.
@@ -256,8 +266,16 @@ Example:
   - Mass Assignment
 
 ## Secrets
-- Never hardcode secrets.
-- Use environment variables.
+- Never hardcode secrets in Python, templates, migrations, or Git.
+- Store in Environment / `.env` (gitignored): `SECRET_KEY`, `JWT_SECRET`, `EVOLUTION_API_KEY`, `ATTENDANCE_AGENT_API_KEY`, `R2_*`, `EMAIL_HOST_PASSWORD`, `DATABASE_URL`.
+- Use `.env.example` and `docs/*.example` with placeholders only (`change-me`, `your-key-here`).
+- CI may use dummy keys in workflow env — never copy CI values to production.
+
+## Error disclosure
+- Production: `DJANGO_ENV=production` and `DEBUG=False` always.
+- `production.py` must refuse startup if `DEBUG=True`.
+- Never return stack traces, SQL, or `str(exc)` to clients when `DEBUG=False` (HTML or API).
+- Use generic `404.html` / `500.html`; log full details server-side (`logger.exception`, optional `SENTRY_DSN`).
 
 ## Uploads
 - Validate uploaded files securely.

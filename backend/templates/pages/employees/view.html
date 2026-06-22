@@ -219,7 +219,7 @@
                     <input type="date" name="statement_date" required class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
                 </div>
                 <div class="md:col-span-2">
-                    {% include 'components/file_upload.html' with name='document' label='المرفق (PDF/صورة)' accept='image/*,.pdf' %}
+                    {% include 'components/file_upload.html' with name='document' label='المرفق (PDF / صورة / Excel)' %}
                 </div>
 
                 <div class="md:col-span-3" x-show="stype === 'penalty'" x-cloak>
@@ -1000,7 +1000,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">مستند الاستلام (اختياري)</label>
-                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.xlsx"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-emerald-50 file:border-0 file:text-emerald-700 file:rounded">
                 </div>
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
@@ -1050,7 +1050,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">مستند التصفية (اختياري)</label>
-                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.xlsx"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-rose-50 file:border-0 file:text-rose-700 file:rounded">
                 </div>
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
@@ -1118,7 +1118,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
-                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.xlsx"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-amber-50 file:border-0 file:text-amber-700 file:rounded">
                 </div>
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
@@ -1203,7 +1203,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
-                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.xlsx"
                            class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
                 </div>
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">

@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status
@@ -5,12 +6,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+_GENERIC_500_MESSAGE = 'حدث خطأ داخلي في الخادم. تم تسجيل الخطأ للمراجعة.'
+
+
 def custom_api_exception_handler(exc, context):
     """
     معالج الأخطاء المركزي الخاص بـ (Django Rest Framework).
     يوحد جميع أشكال وحالات الأخطاء الخارجة من النظام إلى شكل JSON قياسي
     ليسهل على مطور الواجهات (الفرونت إند) قراءتها برمجياً.
-    """
+  """
     
     # استدعاء المعالج الافتراضي الخاص بـ DRF أولاً
     response = exception_handler(exc, context)
@@ -31,16 +35,19 @@ def custom_api_exception_handler(exc, context):
             
         response.data = error_data
     else:
-        # إذا كان الخطأ غير متوقع (مثل سقوط في قاعدة البيانات أو خطأ 500)
-        logger.error(f"انتبه: خطأ داخلي (500) في الرابط {context['request'].path}: {str(exc)}")
-        
+        # خطأ غير متوقع (500) — لا تُعرض تفاصيل تقنية للمستخدم في الإنتاج
+        request = context.get('request')
+        path = getattr(request, 'path', '?')
+        logger.exception('خطأ داخلي (500) في %s', path, exc_info=exc)
+
         error_data = {
             "success": False,
             "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "message": "حدث خطأ داخلي في الخادم. تم تسجيل الخطأ للمراجعة.",
-            "errors": str(exc) # في بيئة الإنتاج يفضل إخفاء هذا السطر أو عرض رسالة عامة
+            "message": _GENERIC_500_MESSAGE,
         }
-        
+        if settings.DEBUG:
+            error_data["errors"] = str(exc)
+
         response = Response(error_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return response

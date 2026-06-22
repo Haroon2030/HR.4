@@ -162,12 +162,17 @@ REST_FRAMEWORK = {
 
 from datetime import timedelta
 
+_jwt_signing_key = (env('JWT_SECRET', default='') or '').strip()
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),    # صلاحية التوكن: ساعة
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),       # صلاحية تجديد التوكن: أسبوع
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env.int('JWT_ACCESS_TOKEN_MINUTES', default=15)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=env.int('JWT_REFRESH_TOKEN_DAYS', default=7)),
     'ROTATE_REFRESH_TOKENS': True,                     # إنشاء refresh جديد عند التجديد
     'BLACKLIST_AFTER_ROTATION': True,                  # حظر الـ refresh القديم
 }
+if _jwt_signing_key:
+    SIMPLE_JWT['SIGNING_KEY'] = _jwt_signing_key
+    SIMPLE_JWT['VERIFYING_KEY'] = _jwt_signing_key
 
 # ══════════════════════════════════════════════════════════════════════════════
 # توثيق API — drf-spectacular
@@ -359,6 +364,19 @@ BACKUP_NOTIFY_ON_FAILURE = env.bool('BACKUP_NOTIFY_ON_FAILURE', default=True)
 BACKUP_BEFORE_MIGRATE = env.bool('BACKUP_BEFORE_MIGRATE', default=True)
 # إن true: فشل النسخ قبل migrate يوقف النشر (entrypoint) / يفشل أمر migrate
 BACKUP_BEFORE_MIGRATE_REQUIRED = env.bool('BACKUP_BEFORE_MIGRATE_REQUIRED', default=False)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Rate limiting — django-ratelimit (يستخدم Django cache؛ Redis موصى به في الإنتاج)
+# ══════════════════════════════════════════════════════════════════════════════
+RATELIMIT_ENABLE = env.bool('RATELIMIT_ENABLE', default=True)
+RATELIMIT_USE_CACHE = 'default'
+RATELIMIT_VIEW = 'config.ratelimit_handlers.ratelimited'
+
+RATELIMIT_LOGIN_IP = env('RATELIMIT_LOGIN_IP', default='20/h')
+RATELIMIT_LOGIN_USER = env('RATELIMIT_LOGIN_USER', default='20/h')
+RATELIMIT_PASSWORD_CHANGE = env('RATELIMIT_PASSWORD_CHANGE', default='10/h')
+RATELIMIT_API_TOKEN_IP = env('RATELIMIT_API_TOKEN_IP', default='30/h')
+RATELIMIT_HEALTH_IP = env('RATELIMIT_HEALTH_IP', default='120/m')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # إعدادات أمنية متنوعة

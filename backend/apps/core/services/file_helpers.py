@@ -3,6 +3,10 @@ import os
 import re
 import unicodedata
 
+from django.core.exceptions import ValidationError
+
+from apps.core.validators import validate_employee_upload
+
 
 def _safe_filename(raw: str) -> str:
     """ينظّف اسم الملف: يُبقي الحروف العربية والإنجليزية والأرقام والشرطات."""
@@ -29,16 +33,17 @@ def apply_uploaded_file_rename(request, field_name: str):
     if not f:
         return None
     new_name = (request.POST.get(f'{field_name}__rename') or '').strip()
-    if not new_name:
-        return f
-    ext = os.path.splitext(f.name)[1]
-    cleaned = _safe_filename(new_name)
-    if not cleaned:
-        return f
-    # إذا تضمّن المستخدم الامتداد، لا نُكرّره
-    if not cleaned.lower().endswith(ext.lower()):
-        cleaned = f'{cleaned}{ext}'
-    f.name = cleaned
+    if new_name:
+        ext = os.path.splitext(f.name)[1]
+        cleaned = _safe_filename(new_name)
+        if cleaned:
+            if not cleaned.lower().endswith(ext.lower()):
+                cleaned = f'{cleaned}{ext}'
+            f.name = cleaned
+    try:
+        validate_employee_upload(f)
+    except ValidationError:
+        return None
     return f
 
 

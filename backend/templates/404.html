@@ -1,0 +1,21 @@
+{% extends "base_public.html" %}
+
+{% block title %}الصفحة غير موجودة — نظام الموارد البشرية{% endblock %}
+
+{% block content %}
+<div class="login-shell">
+    <div class="login-stage" role="main" aria-label="الصفحة غير موجودة">
+        <section class="login-stage__form" aria-label="خطأ 404">
+            <div class="login-stage__form-inner">
+                <h2 class="login-stage__title">404 — الصفحة غير موجودة</h2>
+                <p class="login-stage__subtitle" style="margin-bottom:1.25rem;text-align:center;color:var(--login-muted,#64748b);">
+                    الرابط الذي طلبته غير متوفر أو نُقل إلى مكان آخر.
+                </p>
+                <a href="/" class="login-form__submit" style="display:block;text-align:center;text-decoration:none;">
+                    العودة للرئيسية
+                </a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

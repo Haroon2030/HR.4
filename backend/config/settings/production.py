@@ -122,6 +122,22 @@ _validate_production_secret_key(SECRET_KEY)
 
 from django.core.exceptions import ImproperlyConfigured as _ImproperlyConfigured
 
+_jwt_secret = (env('JWT_SECRET', default='') or '').strip()
+if _jwt_secret and len(_jwt_secret) < 32:
+    raise _ImproperlyConfigured(
+        'JWT_SECRET قصير جداً في الإنتاج (32 حرفاً كحد أدنى). '
+        'أنشئ مفتاحاً عشوائياً وضعه في Environment فقط — لا تضعه في Git.'
+    )
+
+if env.bool('WHATSAPP_ENABLED', default=False):
+    _evo_key = (env('EVOLUTION_API_KEY', default='') or '').strip()
+    if not _evo_key:
+        raise _ImproperlyConfigured(
+            'EVOLUTION_API_KEY مطلوب في Environment عند WHATSAPP_ENABLED=true — لا تضفه في الكود أو Git.'
+        )
+    if len(_evo_key) < 16:
+        raise _ImproperlyConfigured('EVOLUTION_API_KEY قصير جداً في الإنتاج.')
+
 _agent_global_key = (env('ATTENDANCE_AGENT_API_KEY', default='') or '').strip()
 if _agent_global_key and len(_agent_global_key) < 32:
     raise _ImproperlyConfigured(
@@ -135,6 +151,9 @@ if DEBUG:
     from django.core.exceptions import ImproperlyConfigured
 
     raise ImproperlyConfigured('DEBUG يجب أن يكون False في الإنتاج (DJANGO_ENV=production).')
+
+# لا تُمرَّر الاستثناءات لـ Gunicorn — يُعرض قالب 500 العام للمستخدم
+DEBUG_PROPAGATE_EXCEPTIONS = False
 
 # قراءة بروتوكول HTTPS من ترويسة X-Forwarded-Proto (يرسلها البروكسي)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -265,6 +284,12 @@ REST_FRAMEWORK = {
     },
 }
 
+RATELIMIT_LOGIN_IP = env('RATELIMIT_LOGIN_IP', default='10/h')
+RATELIMIT_LOGIN_USER = env('RATELIMIT_LOGIN_USER', default='10/h')
+RATELIMIT_PASSWORD_CHANGE = env('RATELIMIT_PASSWORD_CHANGE', default='5/h')
+RATELIMIT_API_TOKEN_IP = env('RATELIMIT_API_TOKEN_IP', default='10/h')
+RATELIMIT_HEALTH_IP = env('RATELIMIT_HEALTH_IP', default='60/m')
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CORS — مشاركة الموارد بين المواقع
 # مطلوب إذا كانت الواجهة الأمامية على نطاق مختلف عن الـ API
@@ -300,6 +325,11 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
             'propagate': False,
         },
     },
