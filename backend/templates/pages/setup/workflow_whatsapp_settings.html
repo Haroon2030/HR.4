@@ -4,54 +4,132 @@
 {% block page_title %}إشعارات واتساب — سير العمل{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-4">
-    <header class="hr-glass-panel p-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-            <h1 class="text-lg font-bold text-slate-800">إشعارات واتساب — دورة الموافقات</h1>
-            <p class="text-sm text-slate-500 mt-1">
-                تنبيهات عند رفع الطلبات، التعميد، وإسناد الأخصائي — عبر Evolution API.
-            </p>
+<div class="hr-ops-report hr-wa-workflow max-w-5xl mx-auto space-y-4">
+
+    <header class="hr-ops-report__hero hr-glass-panel">
+        <div class="flex flex-wrap items-start justify-between gap-3 w-full">
+            <div class="hr-ops-report__hero-main">
+                <span class="hr-ops-report__hero-icon" aria-hidden="true">
+                    <i data-lucide="message-square-more" class="w-5 h-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h1 class="hr-ops-report__title">إشعارات واتساب — دورة الموافقات</h1>
+                    <p class="hr-ops-report__subtitle">
+                        أرقام ثابتة لكل دور تقني — مع بديل تلقائي عند غياب رقم ملف المستخدم.
+                    </p>
+                </div>
+            </div>
+            {% url 'web:list_branches' as branches_url %}
+            {% include 'components/glass_back_link.html' with back_url=branches_url show_label=True label='تهيئة النظام' extra_class='shrink-0' %}
         </div>
-        {% url 'web:list_branches' as branches_url %}
-        {% include 'components/glass_back_link.html' with back_url=branches_url show_label=True label='تهيئة النظام' %}
+
+        <div class="hr-ops-report__stats" aria-label="ملخص الإعدادات">
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">الإشعارات</span>
+                <span class="hr-ops-report__stat-value {% if settings_obj.is_enabled %}is-on{% else %}is-off{% endif %}">
+                    {% if settings_obj.is_enabled %}مفعّلة{% else %}متوقفة{% endif %}
+                </span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">Evolution API</span>
+                <span class="hr-ops-report__stat-value {% if whatsapp_ready %}is-on{% else %}is-off{% endif %}">
+                    {% if whatsapp_ready %}جاهز{% else %}غير مضبوط{% endif %}
+                </span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">أرقام مُعرَّفة</span>
+                <span class="hr-ops-report__stat-value">{{ configured_count }} / 6</span>
+            </div>
+            <div class="hr-ops-report__stat">
+                <span class="hr-ops-report__stat-label">المفتاح JSON</span>
+                <span class="hr-ops-report__stat-value text-xs" dir="ltr">recipient_phones</span>
+            </div>
+        </div>
     </header>
 
-  {% if not whatsapp_ready %}
+    {% if not whatsapp_ready %}
     <div class="rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
         Evolution API غير جاهز — اضبط الربط من
         <a href="{% url 'web:whatsapp_integration' %}" class="underline font-medium">ربط WhatsApp</a>
-        وفعّل <code class="text-xs">WHATSAPP_ENABLED</code> في السيرفر.
+        وفعّل <code class="text-xs" dir="ltr">WHATSAPP_ENABLED</code> في السيرفر.
     </div>
     {% endif %}
 
-    <div class="rounded-lg border border-sky-200 bg-sky-50 text-sky-900 px-4 py-3 text-sm">
-        لمديري الفروع والإدارات والأخصائيين والمحاسبين: يُفضَّل تعبئة <strong>رقم الهاتف</strong> في ملف المستخدم.
-        إن لم يُعرَّف رقم للمستخدم، يُستخدم الرقم الثابت من الحقول أدناه (إن وُجد).
-    </div>
-
-    <form method="post" class="hr-glass-panel p-5 space-y-5">
+    <form method="post" class="space-y-4" autocomplete="off">
         {% csrf_token %}
-        <label class="flex items-center gap-2 text-sm font-medium text-slate-700">
-            {{ form.is_enabled }}
-            تفعيل إشعارات واتساب لسير العمل
-        </label>
 
-        {% for group_title, fields in phone_role_groups %}
-        <div class="space-y-3">
-            <h2 class="text-sm font-semibold text-slate-700">{{ group_title }}</h2>
-            {% for label, field in fields %}
-            <div>
-                <label class="block text-sm text-slate-600 mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <p class="text-xs text-rose-600 mt-1">{{ field.errors.0 }}</p>
-                {% endif %}
+        <section class="hr-ops-report__section hr-glass-panel">
+            <div class="hr-ops-report__section-head">
+                <span class="hr-ops-report__section-icon" aria-hidden="true">
+                    <i data-lucide="toggle-right" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="hr-ops-report__section-title">التفعيل العام</h2>
+                    <p class="hr-ops-report__section-desc">
+                        يتحكم في كل أحداث <code dir="ltr">workflow.*</code> — بدون تفعيل لا يُرسل أي واتساب.
+                    </p>
+                </div>
             </div>
-            {% endfor %}
-        </div>
+            <label class="flex items-center gap-2 text-sm font-medium text-slate-700 px-1">
+                {{ form.is_enabled }}
+                تفعيل إشعارات واتساب لسير العمل
+            </label>
+        </section>
+
+        {% for group in recipient_groups %}
+        <section class="hr-ops-report__section hr-glass-panel">
+            <div class="hr-ops-report__section-head">
+                <span class="hr-ops-report__section-icon" aria-hidden="true">
+                    <i data-lucide="{{ group.icon }}" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="hr-ops-report__section-title">{{ group.title }}</h2>
+                    <p class="hr-ops-report__section-desc">{{ group.description }}</p>
+                </div>
+            </div>
+
+            <div class="hr-recipients-table-shell overflow-x-auto">
+                <table class="hr-recipients-table w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="text-right px-3 py-2.5 font-semibold text-slate-700 w-[22%]">الدور</th>
+                            <th scope="col" class="text-right px-3 py-2.5 font-semibold text-slate-700">حدث الإشعار</th>
+                            <th scope="col" class="text-right px-3 py-2.5 font-semibold text-slate-700 w-[26%]">رقم واتساب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in group.rows %}
+                        <tr>
+                            <td class="px-3 py-2.5 align-middle font-medium text-slate-800 whitespace-nowrap">{{ row.label }}</td>
+                            <td class="px-3 py-2.5 align-middle">
+                                <ul class="space-y-1.5 list-none m-0 p-0">
+                                    {% for ev in row.events %}
+                                    <li class="rounded-md border border-slate-200/90 bg-slate-50/70 px-2 py-1.5">
+                                        <span class="block text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-0.5">event_type</span>
+                                        <code class="block text-[11px] font-mono text-slate-800 leading-snug break-all" dir="ltr">{{ ev.code }}</code>
+                                        <span class="block text-xs text-slate-600 mt-1">{{ ev.when }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td class="px-3 py-2.5 align-middle">
+                                {{ row.field }}
+                                {% if row.field.errors %}
+                                <p class="text-xs text-rose-600 mt-1">{{ row.field.errors.0 }}</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
         {% endfor %}
 
-        <div class="flex justify-end">
+        <div class="hr-ops-report__actions">
+            <p class="hr-ops-report__actions-note">
+                للأدوار التشغيلية: يُرسل أولاً لرقم ملف المستخدم؛ إن كان فارغاً يُستخدم الرقم الثابت أعلاه.
+            </p>
             <button type="submit" class="hr-btn hr-btn--primary">حفظ الإعدادات</button>
         </div>
     </form>

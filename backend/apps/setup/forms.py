@@ -363,13 +363,14 @@ class WorkflowWhatsAppSettingsForm(forms.ModelForm):
         for key, label in WORKFLOW_WHATSAPP_RECIPIENT_ROLES:
             phone_field = f'{WORKFLOW_WHATSAPP_PREFIX}{key}'
             self.fields[phone_field] = forms.CharField(
-                label=f'{label} — واتساب',
+                label='',
                 required=False,
                 widget=forms.TextInput(attrs={
-                    'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400',
-                    'placeholder': '0512345678',
+                    'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500',
                     'dir': 'ltr',
                     'inputmode': 'tel',
+                    'autocomplete': 'off',
+                    'aria-label': f'واتساب — {label}',
                 }),
             )
             if self.instance.pk and not self.data:

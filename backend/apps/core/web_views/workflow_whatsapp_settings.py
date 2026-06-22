@@ -9,9 +9,9 @@ from apps.core.services.operations_report_whatsapp import whatsapp_delivery_read
 from apps.setup.forms import WorkflowWhatsAppSettingsForm
 from apps.setup.models import WorkflowWhatsAppSettings
 from apps.setup.workflow_whatsapp_recipients import (
-    WORKFLOW_WHATSAPP_RECIPIENT_ROLES,
     WORKFLOW_WHATSAPP_ROLE_GROUPS,
     WHATSAPP_ROLE_FIELD_PREFIX as WORKFLOW_WHATSAPP_PREFIX,
+    workflow_recipient_meta,
 )
 
 
@@ -30,21 +30,33 @@ def workflow_whatsapp_settings(request):
     else:
         form = WorkflowWhatsAppSettingsForm(instance=settings_obj)
 
-    role_labels = dict(WORKFLOW_WHATSAPP_RECIPIENT_ROLES)
-    phone_role_groups = [
-        (
-            group_title,
-            [
-                (role_labels[key], form[f'{WORKFLOW_WHATSAPP_PREFIX}{key}'])
-                for key in role_keys
-            ],
-        )
-        for group_title, role_keys in WORKFLOW_WHATSAPP_ROLE_GROUPS
-    ]
+    stored_phones = settings_obj.recipient_phones_map()
+    configured_count = sum(1 for phone in stored_phones.values() if phone)
+
+    recipient_groups = []
+    for group_title, group_desc, group_icon, role_keys in WORKFLOW_WHATSAPP_ROLE_GROUPS:
+        rows = []
+        for role_key in role_keys:
+            meta = workflow_recipient_meta(role_key)
+            if not meta:
+                continue
+            field = form[f'{WORKFLOW_WHATSAPP_PREFIX}{role_key}']
+            rows.append({
+                **meta,
+                'field': field,
+                'saved_phone': stored_phones.get(role_key, ''),
+            })
+        recipient_groups.append({
+            'title': group_title,
+            'description': group_desc,
+            'icon': group_icon,
+            'rows': rows,
+        })
 
     return render(request, 'pages/setup/workflow_whatsapp_settings.html', {
         'form': form,
         'settings_obj': settings_obj,
-        'phone_role_groups': phone_role_groups,
+        'recipient_groups': recipient_groups,
         'whatsapp_ready': whatsapp_delivery_ready(),
+        'configured_count': configured_count,
     })
