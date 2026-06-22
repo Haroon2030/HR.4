@@ -10320,6 +10320,28 @@ body.hr-app .hr-recipient-link-btn__icon {
     stroke: #ffffff !important;
 }
 
+.hr-ops-report__hero-icon--whatsapp {
+    background: linear-gradient(145deg, #25d366, #128c7e);
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.28);
+}
+
+.hr-ops-report__hero-icon--whatsapp svg {
+    fill: #ffffff !important;
+    stroke: none !important;
+}
+
+.hr-ops-report__hero-icon--evolution {
+    background: linear-gradient(145deg, #171717, #0a0a0a);
+    border: 1px solid #262626;
+    box-shadow: 0 8px 20px rgba(0, 255, 167, 0.16);
+}
+
+.hr-ops-report__hero-icon--evolution svg {
+    color: #00ffa7 !important;
+    fill: #00ffa7 !important;
+    stroke: #00ffa7 !important;
+}
+
 .hr-ops-report__title {
     margin: 0;
     font-size: 1.35rem;
