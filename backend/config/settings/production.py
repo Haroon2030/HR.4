@@ -180,11 +180,28 @@ elif _use_https_raw in ('true', '1', 'yes'):
 else:
     _USE_HTTPS = True
 
-SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=_USE_HTTPS)
-SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=_USE_HTTPS)
-CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=_USE_HTTPS)
+# كوكي Secure يعمل فقط مع HTTPS فعلي — لا يُفعَّل على HTTP حتى لو وُضع في .env
+if _USE_HTTPS:
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
+else:
+    if any(
+        env.bool(name, default=False)
+        for name in ('SECURE_SSL_REDIRECT', 'SESSION_COOKIE_SECURE', 'CSRF_COOKIE_SECURE')
+    ):
+        import sys
 
-# حماية الجلسات — كوكي الجلسة عبر HTTPS فقط، غير قابل للقراءة من JS، ينتهي عند إغلاق المتصفح
+        print(
+            '[production] وضع HTTP: تجاهل SECURE_SSL_REDIRECT/SESSION_COOKIE_SECURE/CSRF_COOKIE_SECURE=true '
+            '— الكوكي الآمن لا يعمل بدون HTTPS ويمنع تسجيل الدخول.',
+            file=sys.stderr,
+        )
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
+# حماية الجلسات — HttpOnly + انتهاء عند إغلاق المتصفح (تعمل على HTTP و HTTPS)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=True)
 

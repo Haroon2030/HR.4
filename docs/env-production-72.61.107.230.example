@@ -23,6 +23,7 @@ CSRF_TRUSTED_ORIGINS=http://72.61.107.230:8082,http://72.61.107.230
 
 USE_HTTPS=false
 SECURE_SSL_REDIRECT=false
+# على HTTP يجب false — وإلا لا يعمل تسجيل الدخول (الكود يُجبرها false تلقائياً)
 SESSION_COOKIE_SECURE=false
 CSRF_COOKIE_SECURE=false
 SESSION_COOKIE_HTTPONLY=true
