@@ -26,8 +26,15 @@ TERMINATION_PARTY_LABELS = {
 # توافق مع الحقل القديم
 ARTICLE_77_PARTY_LABELS = TERMINATION_PARTY_LABELS
 
-DAYS_PER_YEAR = Decimal('365.25')
-FIVE_SERVICE_YEARS_DAYS = DAYS_PER_YEAR * Decimal('5')
+from apps.core.salary_month import (
+    FIRST_TIER_LEAVE_CAP,
+    FIRST_TIER_SERVICE_DAYS,
+    LEAVE_DAYS_QUANT,
+    STANDARD_YEAR_DAYS,
+)
+
+DAYS_PER_YEAR = Decimal(str(STANDARD_YEAR_DAYS))
+FIVE_SERVICE_YEARS_DAYS = FIRST_TIER_SERVICE_DAYS
 LEAVE_DAYS_FIRST_FIVE_YEARS = Decimal('21')
 LEAVE_DAYS_AFTER_FIVE_YEARS = Decimal('30')
 
@@ -54,23 +61,22 @@ def compute_two_month_penalty(total_salary: Decimal) -> Decimal:
 
 
 def compute_tiered_leave_accrued_days(service_days: int) -> Decimal:
-    """21 يوم/سنة أول 5 سنوات، 30 يوم/سنة من السنة السادسة."""
+    """21 يوم/سنة أول 5 سنوات، 30 يوم/سنة من السنة السادسة (سنة = 360 يوماً)."""
     if service_days <= 0:
         return Decimal('0.00')
     service_days_dec = Decimal(service_days)
     if service_days_dec <= FIVE_SERVICE_YEARS_DAYS:
-        return (service_days_dec / DAYS_PER_YEAR * LEAVE_DAYS_FIRST_FIVE_YEARS).quantize(Decimal('0.01'))
-    first_5_leave = LEAVE_DAYS_FIRST_FIVE_YEARS * Decimal('5')
+        return (service_days_dec / DAYS_PER_YEAR * LEAVE_DAYS_FIRST_FIVE_YEARS).quantize(LEAVE_DAYS_QUANT)
     extra_service_days = service_days_dec - FIVE_SERVICE_YEARS_DAYS
-    extra_leave = (extra_service_days / DAYS_PER_YEAR * LEAVE_DAYS_AFTER_FIVE_YEARS).quantize(Decimal('0.01'))
-    return (first_5_leave + extra_leave).quantize(Decimal('0.01'))
+    extra_leave = (extra_service_days / DAYS_PER_YEAR * LEAVE_DAYS_AFTER_FIVE_YEARS).quantize(LEAVE_DAYS_QUANT)
+    return (FIRST_TIER_LEAVE_CAP + extra_leave).quantize(LEAVE_DAYS_QUANT)
 
 
 def compute_flat_21_leave_accrued_days(service_days: int) -> Decimal:
-    """21 يوم/سنة — بدون تدرج."""
+    """21 يوم/سنة — بدون تدرج (سنة = 360 يوماً)."""
     if service_days <= 0:
         return Decimal('0.00')
-    return (Decimal(service_days) / DAYS_PER_YEAR * LEAVE_DAYS_FIRST_FIVE_YEARS).quantize(Decimal('0.01'))
+    return (Decimal(service_days) / DAYS_PER_YEAR * LEAVE_DAYS_FIRST_FIVE_YEARS).quantize(LEAVE_DAYS_QUANT)
 
 
 def _compute_leave_only_settlement(

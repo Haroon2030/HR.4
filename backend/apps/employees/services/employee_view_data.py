@@ -362,6 +362,7 @@ def _maybe_init_employee_ledger(employee: Employee, user) -> None:
     from apps.employees.models import EmployeeLedger
     from apps.employees.services.accrual_ledger_notes import build_initial_balance_notes
 
+    from apps.core.salary_month import daily_rate_from_total, service_years_30day
     from apps.employees.services.leave_balance import (
         compute_employee_accrued_leave_days,
         employee_service_days,
@@ -373,9 +374,8 @@ def _maybe_init_employee_ledger(employee: Employee, user) -> None:
         return
 
     leave_days = compute_employee_accrued_leave_days(employee, as_of=today)
-    service_years = Decimal(str(round(service_days / 365.25, 4)))
+    service_years = service_years_30day(service_days)
     total_salary = Decimal(str(employee.total_salary or 0))
-    from apps.core.salary_month import daily_rate_from_total
     daily_wage = daily_rate_from_total(total_salary)
     leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
 

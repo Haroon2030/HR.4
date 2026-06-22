@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import date, timedelta
 from django.utils import timezone
 from apps.employees.forms import EmployeeForm, EmploymentRequestEditForm
-from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, LoanInstallment, EmploymentRequest
+from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, EmployeeLedger, LoanInstallment, EmploymentRequest
 from apps.setup.models import Nationality, Sponsorship
 
 class SalaryPaymentSplitTests(TestCase):
@@ -174,6 +174,23 @@ class EmployeeModelTests(TestCase):
         self.employee.end_date = date(2026, 6, 22)
         self.assertEqual(self.employee.accrued_leave_days, Decimal('31.50'))
 
+    def test_remaining_leave_eighteen_months_minus_twenty_one_used(self):
+        """سيناريو المستخدم: 31.5 مستحق − 21 مستخدم = 10.5 متبقي."""
+        from apps.employees.models import EmployeeLeave
+
+        self.employee.hire_date = date(2024, 12, 22)
+        self.employee.end_date = date(2026, 6, 22)
+        EmployeeLeave.objects.create(
+            employee=self.employee,
+            leave_type=EmployeeLeave.LeaveType.ANNUAL,
+            date_from=date(2025, 1, 1),
+            date_to=date(2025, 1, 21),
+            days=Decimal('21'),
+        )
+        self.assertEqual(self.employee.accrued_leave_days, Decimal('31.50'))
+        self.assertEqual(self.employee.used_leave_days, Decimal('21.00'))
+        self.assertEqual(self.employee.remaining_leave_days, Decimal('10.50'))
+
     def test_accrued_leave_days_tiered_after_five_years(self):
         """بعد 5 سنوات: 105 يوم + 2.5 يوم/شهر × الأشهر الزائدة."""
         self.employee.hire_date = date(2017, 1, 1)
@@ -222,7 +239,8 @@ class EmployeeModelTests(TestCase):
 
 
 class LedgerBalanceTests(TestCase):
-    def test_settlement_uses_ledger_cumulative_amount(self):
+    def test_settlement_uses_formula_not_ledger_cumulative(self):
+        """التصفية تعتمد الصيغة الموحدة (أشهر × 1.75) وليس تراكم الدفتر."""
         from apps.employees.models import EmployeeLedger
         from apps.employees.services.ledger_balances import settlement_leave_from_ledger
         from apps.setup.models import Sponsorship
@@ -231,8 +249,10 @@ class LedgerBalanceTests(TestCase):
         emp = Employee.objects.create(
             name='Ledger Emp',
             hire_date=date(2024, 1, 1),
+            end_date=date(2025, 1, 1),
             sponsorship=sponsorship,
             basic_salary=Decimal('3000'),
+            available_leave_balance=Decimal('5'),
         )
         EmployeeLedger.objects.create(
             employee=emp,
@@ -245,9 +265,104 @@ class LedgerBalanceTests(TestCase):
             cumulative_eosb_amount=Decimal('500'),
         )
         days, amount, text = settlement_leave_from_ledger(emp)
-        self.assertEqual(days, Decimal('10'))
-        self.assertEqual(amount, Decimal('1000'))
-        self.assertIn('سجل المخصصات', text)
+        self.assertEqual(days, Decimal('16.00'))  # 21 مستحق − 5 مستخدم
+        expected_amount = (Decimal('16') * (Decimal('3000') / Decimal('30'))).quantize(Decimal('0.01'))
+        self.assertEqual(amount, expected_amount)
+        self.assertIn('1.75', text)
+
+
+class LedgerRecalculateTests(TestCase):
+    def test_recalc_initial_only_wrong_formula(self):
+        from apps.employees.services.ledger_recalculate import recalculate_employee_ledger
+        from apps.setup.models import Sponsorship
+
+        sponsorship = Sponsorship.objects.create(code='SP-R', company_name='K')
+        emp = Employee.objects.create(
+            name='Recalc Emp',
+            hire_date=date(2024, 12, 22),
+            sponsorship=sponsorship,
+            basic_salary=Decimal('6000'),
+        )
+        ledger = EmployeeLedger.objects.create(
+            employee=emp,
+            transaction_type=EmployeeLedger.TransactionType.INITIAL_BALANCE,
+            date=date(2026, 6, 22),
+            leave_days_change=Decimal('31.33'),
+            leave_amount_change=Decimal('6266.00'),
+            cumulative_leave_days=Decimal('31.33'),
+            cumulative_leave_amount=Decimal('6266.00'),
+            cumulative_eosb_amount=Decimal('0'),
+        )
+        result = recalculate_employee_ledger(emp)
+        ledger.refresh_from_db()
+        self.assertEqual(result.entries_updated, 1)
+        self.assertEqual(ledger.cumulative_leave_days, Decimal('31.5000'))
+        self.assertIn('1.75', ledger.notes)
+
+    def test_recalc_removes_redundant_initial_when_monthly_exists(self):
+        from apps.core.salary_month import calendar_month_last_day
+        from apps.employees.services.ledger_recalculate import recalculate_employee_ledger
+        from apps.payroll.models import PayrollLine, PayrollRun
+        from apps.core.models import Branch, Company
+        from apps.setup.models import Sponsorship
+
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        sponsorship = Sponsorship.objects.create(code='SP-M', company_name='K')
+        emp = Employee.objects.create(
+            name='Monthly Emp',
+            hire_date=date(2024, 12, 22),
+            sponsorship=sponsorship,
+            branch=branch,
+            basic_salary=Decimal('3000'),
+        )
+        run = PayrollRun.objects.create(
+            branch=branch,
+            period_year=2025,
+            period_month=1,
+            status='locked',
+        )
+        PayrollLine.objects.create(
+            run=run,
+            employee=emp,
+            gross_salary=Decimal('3000'),
+            meal_allowance=Decimal('0'),
+            month_days=30,
+            daily_rate=Decimal('100'),
+            net_salary=Decimal('3000'),
+        )
+        EmployeeLedger.objects.create(
+            employee=emp,
+            transaction_type=EmployeeLedger.TransactionType.INITIAL_BALANCE,
+            date=date(2026, 6, 22),
+            leave_days_change=Decimal('31.33'),
+            leave_amount_change=Decimal('3133'),
+            cumulative_leave_days=Decimal('31.33'),
+            cumulative_leave_amount=Decimal('3133'),
+            cumulative_eosb_amount=Decimal('0'),
+        )
+        monthly = EmployeeLedger.objects.create(
+            employee=emp,
+            transaction_type=EmployeeLedger.TransactionType.MONTHLY_PAYROLL,
+            date=calendar_month_last_day(2025, 1),
+            payroll_run=run,
+            leave_days_change=Decimal('1.75'),
+            leave_amount_change=Decimal('175'),
+            cumulative_leave_days=Decimal('33.08'),
+            cumulative_leave_amount=Decimal('3308'),
+            cumulative_eosb_amount=Decimal('125'),
+        )
+        result = recalculate_employee_ledger(emp)
+        monthly.refresh_from_db()
+        self.assertEqual(result.entries_removed, 1)
+        self.assertEqual(result.entries_updated, 1)
+        self.assertEqual(monthly.cumulative_leave_days, Decimal('1.7500'))
+        self.assertFalse(
+            EmployeeLedger.objects.filter(
+                employee=emp,
+                transaction_type=EmployeeLedger.TransactionType.INITIAL_BALANCE,
+            ).exists(),
+        )
 
 
 class AccrualLedgerNotesTests(TestCase):
@@ -521,13 +636,13 @@ class SettlementEosbCalculationTests(TestCase):
         from apps.employees.services.settlement_eosb import compute_tiered_leave_accrued_days
 
         days = compute_tiered_leave_accrued_days(int(365.25 * 3))
-        self.assertEqual(days, Decimal('62.96'))
+        self.assertEqual(days, Decimal('63.88'))
 
     def test_tiered_leave_after_five_years(self):
         from apps.employees.services.settlement_eosb import compute_tiered_leave_accrued_days
 
         days = compute_tiered_leave_accrued_days(int(365.25 * 7))
-        self.assertEqual(days, Decimal('164.94'))
+        self.assertEqual(days, Decimal('168.00'))
 
     def test_article_80_leave_settlement_only(self):
         from apps.core.models import Branch, Company

@@ -25,21 +25,25 @@ def run_ledger_init(request, employee_id):
             messages.warning(request, 'الموظف لديه سجل مخصصات مسبق. لا يمكن تهيئته مرة أخرى.')
             return redirect('web:view_employee', employee_id=emp.id)
 
+        from apps.core.salary_month import (
+            accrued_annual_leave_days,
+            daily_rate_from_total,
+            employment_service_days,
+            service_years_30day,
+        )
+
         today = timezone.now().date()
-        service_days = (today - emp.hire_date).days
+        service_days = employment_service_days(emp.hire_date, today)
 
         if service_days < 1:
             messages.error(request, 'مدة الخدمة غير كافية لإنشاء مخصصات.')
             return redirect('web:view_employee', employee_id=emp.id)
 
-        service_years = Decimal(str(round(service_days / 365.25, 4)))
-
-        # حساب أيام الإجازة المتراكمة: 21 يوم في السنة من تاريخ المباشرة
-        leave_days = (Decimal(str(service_days)) * Decimal('21') / Decimal('365.25')).quantize(Decimal('0.01'))
+        service_years = service_years_30day(service_days)
+        leave_days = accrued_annual_leave_days(emp.hire_date, today)
         total_salary = Decimal(str(emp.total_salary or 0))
         eosb_base = Decimal(str(emp.salary_for_end_of_service or 0))
 
-        from apps.core.salary_month import daily_rate_from_total
         daily_wage = daily_rate_from_total(total_salary)
         leave_amount = (leave_days * daily_wage).quantize(Decimal('0.01'))
 

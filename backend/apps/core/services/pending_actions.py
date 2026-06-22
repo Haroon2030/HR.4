@@ -498,10 +498,12 @@ def _execute_end_of_service(action, executor):
     if not hire_date:
         raise ValueError('لا يوجد تاريخ مباشرة للموظف — لا يمكن حساب المكافأة.')
 
-    service_days = (end_date - hire_date).days
+    from apps.core.salary_month import employment_service_days, service_years_30day
+
+    service_days = employment_service_days(hire_date, end_date)
     if service_days < 1:
         raise ValueError('تاريخ التصفية يجب أن يكون بعد تاريخ المباشرة.')
-    service_years = Decimal(str(round(service_days / 365.25, 4)))
+    service_years = service_years_30day(service_days)
 
     last_salary = Decimal(employee.salary_for_end_of_service or 0)
     total_salary = Decimal(employee.total_salary or 0)

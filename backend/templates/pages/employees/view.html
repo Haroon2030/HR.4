@@ -1269,7 +1269,7 @@ window.employeeEosCalculator = function() {
             if (!this.hireDate || !this.endDate) return 0;
             return Math.max(0, Math.floor((new Date(this.endDate) - new Date(this.hireDate)) / 86400000));
         },
-        get serviceYears() { return +(this.serviceDays / 365.25).toFixed(4); },
+        get serviceYears() { return +(this.serviceDays / 360).toFixed(4); },
         get category() {
             if (this.serviceDays <= 180) return 'trial';
             if (this.serviceYears <= 5) return 'first5';

@@ -5,14 +5,15 @@ from datetime import date
 from decimal import Decimal
 
 from apps.core.salary_month import (
+    MONTHLY_LEAVE_ACCRUAL_DAYS,
     STANDARD_MONTH_DAYS,
     calendar_month_last_day,
+    completed_employment_months,
     daily_rate_from_total,
+    employment_service_days,
     salary_month_days,
+    service_years_30day,
 )
-
-# 21 يوم إجازة سنوياً ÷ 12 شهر
-MONTHLY_LEAVE_ACCRUAL_DAYS = Decimal('1.75')
 
 
 def monthly_eosb_accrual(gross: Decimal, service_years: float) -> tuple[Decimal, str]:
@@ -53,8 +54,8 @@ def compute_monthly_ledger_amounts(
         eosb_detail = 'لا يوجد كفالة — لا يُحسب استحقاق نهاية الخدمة'
     elif hire_date:
         month_end = calendar_month_last_day(period_year, period_month)
-        service_days = (month_end - hire_date).days
-        service_years = service_days / 365.25
+        service_days = employment_service_days(hire_date, month_end)
+        service_years = float(service_years_30day(service_days))
         eosb, eosb_detail = monthly_eosb_accrual(eosb_gross, service_years)
 
     return {
@@ -82,15 +83,16 @@ def build_initial_balance_notes(
     eosb: Decimal,
     eosb_detail: str,
 ) -> str:
-    service_days = (as_of_date - hire_date).days
-    service_years = Decimal(str(round(service_days / 365.25, 4)))
+    service_days = employment_service_days(hire_date, as_of_date)
+    months = completed_employment_months(hire_date, as_of_date)
+    service_years = service_years_30day(service_days)
     daily_wage = daily_rate_from_total(total_salary)
     return (
         f'عملية: رصيد افتتاحي (من المباشرة حتى {as_of_date})\n'
-        f'تاريخ المباشرة: {hire_date} | مدة الخدمة: {service_days} يوم ({service_years} سنة)\n'
+        f'تاريخ المباشرة: {hire_date} | مدة الخدمة: {service_days} يوم ({service_years} سنة — سنة = 360 يوماً)\n'
         f'── الإجازات ──\n'
         f'الراتب الإجمالي: {total_salary} ر.س | أجر اليوم: {total_salary} ÷ {STANDARD_MONTH_DAYS} = {daily_wage} ر.س\n'
-        f'أيام مستحقة: {service_days} × 21 ÷ 365.25 = {leave_days} يوم\n'
+        f'أشهر الخدمة المكتملة: {months} × {MONTHLY_LEAVE_ACCRUAL_DAYS} = {leave_days} يوم (شهر = {STANDARD_MONTH_DAYS} يوماً)\n'
         f'قيمة الإجازات: {leave_days} × {daily_wage} = {leave_amount} ر.س\n'
         f'── مكافأة نهاية الخدمة (تراكمي حتى التاريخ) ──\n'
         f'{eosb_detail}\n'
@@ -301,8 +303,9 @@ def _initial_display_context(ledger) -> dict | None:
         return None
 
     as_of = ledger.date
-    service_days = (as_of - emp.hire_date).days
-    service_years = round(service_days / 365.25, 4)
+    service_days = employment_service_days(emp.hire_date, as_of)
+    service_years = service_years_30day(service_days)
+    months = completed_employment_months(emp.hire_date, as_of)
     total_salary = Decimal(emp.total_salary or 0)
     daily_wage = daily_rate_from_total(total_salary)
 
@@ -325,7 +328,7 @@ def _initial_display_context(ledger) -> dict | None:
                     {'label': 'أجر اليوم', 'formula': f'{_q(total_salary)} ÷ {STANDARD_MONTH_DAYS}', 'result': f'{_q(daily_wage)} ر.س'},
                     {
                         'label': 'أيام مستحقة',
-                        'formula': f'{service_days} × 21 ÷ 365.25',
+                        'formula': f'{months} × {MONTHLY_LEAVE_ACCRUAL_DAYS} (شهر = {STANDARD_MONTH_DAYS} يوماً)',
                         'result': f'{_q(ledger.leave_days_change)} يوم',
                         'highlight': True,
                     },
