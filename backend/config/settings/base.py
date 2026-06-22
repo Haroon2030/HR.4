@@ -59,6 +59,9 @@ if _os.environ.get('DJANGO_ENV', '').lower() == 'production':
 # النطاقات المسموح بها — تُقرأ من .env
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
+# مسار لوحة Django Admin (بدلاً من /admin الافتراضي)
+DJANGO_ADMIN_URL = env('DJANGO_ADMIN_URL', default='secure-control-panel-2026').strip().strip('/')
+
 # ══════════════════════════════════════════════════════════════════════════════
 # التطبيقات المُثبّتة
 # ══════════════════════════════════════════════════════════════════════════════

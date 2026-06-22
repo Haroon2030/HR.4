@@ -204,6 +204,10 @@ def set_webhook(
 
     event_list = events or list(DEFAULT_EVOLUTION_WEBHOOK_EVENTS)
     quoted = urllib.parse.quote(name, safe='')
+    cfg = config or get_evolution_runtime_config()
+    webhook_headers = {}
+    if cfg.api_key:
+        webhook_headers['apikey'] = cfg.api_key
     payloads = [
         {
             'webhook': {
@@ -212,6 +216,7 @@ def set_webhook(
                 'webhookByEvents': False,
                 'webhookBase64': False,
                 'events': event_list,
+                **({'headers': webhook_headers} if webhook_headers else {}),
             },
         },
         {
@@ -219,6 +224,7 @@ def set_webhook(
             'url': url,
             'webhook_by_events': False,
             'events': event_list,
+            **({'headers': webhook_headers} if webhook_headers else {}),
         },
     ]
     last_exc: EvolutionAPIError | None = None

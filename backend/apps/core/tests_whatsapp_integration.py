@@ -34,6 +34,7 @@ class EvolutionManagerTests(TestCase):
         body = json.loads(req.data.decode())
         self.assertTrue(body['webhook']['enabled'])
         self.assertEqual(body['webhook']['url'], 'https://hr.test/webhooks/evolution/')
+        self.assertEqual(body['webhook']['headers']['apikey'], 'secret-key')
 
     @patch('apps.core.services.whatsapp.evolution_manager.urllib.request.urlopen')
     def test_connect_instance_extracts_qrcode(self, mock_urlopen):
@@ -50,19 +51,32 @@ class EvolutionManagerTests(TestCase):
         self.assertEqual(result['connection_status'], EvolutionWhatsAppSettings.ConnectionStatus.CONNECTING)
 
 
-@override_settings(ALLOWED_HOSTS=['testserver'])
+@override_settings(ALLOWED_HOSTS=['testserver'], EVOLUTION_API_KEY='test-evolution-key')
 class WhatsAppIntegrationViewTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.user = User.objects.create_superuser(username='wa_admin', password='x')
         self.client = Client()
         self.client.force_login(self.user)
-        EvolutionWhatsAppSettings.get_solo()
+        settings_obj = EvolutionWhatsAppSettings.get_solo()
+        settings_obj.api_key = 'test-evolution-key'
+        settings_obj.save()
 
     def test_integration_page_loads(self):
         resp = self.client.get(reverse('web:whatsapp_integration'))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'ربط WhatsApp')
+
+    def test_webhook_rejects_missing_api_key(self):
+        url = reverse('web:evolution_webhook')
+        payload = {'event': 'qrcode.updated', 'data': {}}
+        resp = self.client.post(
+            url,
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertIn('apikey', str(resp.json().get('errors', '')).lower())
 
     def test_webhook_accepts_qrcode_event(self):
         url = reverse('web:evolution_webhook')
@@ -74,6 +88,7 @@ class WhatsAppIntegrationViewTests(TestCase):
             url,
             data=json.dumps(payload),
             content_type='application/json',
+            HTTP_APIKEY='test-evolution-key',
         )
         self.assertEqual(resp.status_code, 200)
         obj = EvolutionWhatsAppSettings.get_solo()

@@ -21,6 +21,7 @@
 from django.urls import path, include
 from django.views.generic import RedirectView
 from apps.core import web_views
+from apps.core.api.webhook_views import EvolutionWebhookView
 from apps.payroll import views as payroll_views
 
 # مساحة الأسماء — تُستخدم في القوالب: {% url 'web:list_employees' %}
@@ -202,7 +203,7 @@ urlpatterns = [
     path('setup/operations-report/', web_views.operations_report_settings, name='operations_report_settings'),
     path('setup/whatsapp/', web_views.whatsapp_integration, name='whatsapp_integration'),
     path('setup/whatsapp/status/', web_views.whatsapp_integration_status, name='whatsapp_integration_status'),
-    path('webhooks/evolution/', web_views.evolution_webhook, name='evolution_webhook'),
+    path('webhooks/evolution/', EvolutionWebhookView.as_view(), name='evolution_webhook'),
     
     # ══════════════════════════════════════════════════════════════
     # 9. إدارة المستخدمين

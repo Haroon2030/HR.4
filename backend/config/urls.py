@@ -3,7 +3,7 @@
 ==========================================
 هذا الملف يُوزّع كل الطلبات الواردة إلى الوجهة المناسبة:
 
-  /admin/       → لوحة تحكم Django الإدارية
+  /secure-control-panel-2026/ → لوحة تحكم Django الإدارية (مسار مخصص — انظر DJANGO_ADMIN_URL)
   /api/v1/      → واجهة REST API (الإصدار الأول)
   /api/token/   → مصادقة JWT (إنشاء/تجديد/تحقق)
   /api/docs/    → توثيق Swagger التفاعلي
@@ -31,8 +31,8 @@ urlpatterns = [
     # أيقونة المتصفح — تُعيد التوجيه لملف SVG ثابت
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.svg', permanent=True)),
     
-    # لوحة الإدارة المدمجة في Django
-    path('admin/', admin.site.urls),
+    # لوحة الإدارة — مسار مخصص (DJANGO_ADMIN_URL) بدلاً من /admin
+    path(f'{settings.DJANGO_ADMIN_URL}/', admin.site.urls),
     
     # واجهة REST API — الإصدار الأول
     path('api/v1/', include('config.api_urls')),

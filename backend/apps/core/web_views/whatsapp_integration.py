@@ -1,16 +1,12 @@
 """شاشة ربط WhatsApp عبر Evolution API."""
 from __future__ import annotations
 
-import json
-import logging
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.core.decorators import permission_required
@@ -19,8 +15,6 @@ from apps.core.services.whatsapp.config import get_evolution_runtime_config
 from apps.core.services.whatsapp import evolution_manager
 from apps.setup.forms import EvolutionWhatsAppSettingsForm
 from apps.setup.models import EvolutionWhatsAppSettings
-
-logger = logging.getLogger(__name__)
 
 
 def _webhook_url(request) -> str:
@@ -203,27 +197,3 @@ def whatsapp_integration_status(request):
     except EvolutionAPIError:
         pass
     return JsonResponse(_status_payload(settings_obj, request))
-
-
-@csrf_exempt
-@require_POST
-def evolution_webhook(request):
-    """استقبال أحداث Evolution API (QR، اتصال، رسائل)."""
-    try:
-        payload = json.loads(request.body.decode('utf-8') or '{}')
-    except json.JSONDecodeError:
-        return JsonResponse({'ok': False, 'error': 'invalid_json'}, status=400)
-
-    settings_obj = EvolutionWhatsAppSettings.get_solo()
-    event = str(payload.get('event') or payload.get('type') or '').lower()
-    settings_obj.last_webhook_at = timezone.now()
-
-    if 'qrcode' in event:
-        evolution_manager.apply_qrcode_from_webhook_payload(settings_obj, payload)
-    elif 'connection' in event:
-        evolution_manager.apply_connection_from_webhook_payload(settings_obj, payload)
-    else:
-        settings_obj.save(update_fields=['last_webhook_at'])
-
-    logger.info('Evolution webhook event=%s instance=%s', event, payload.get('instance'))
-    return JsonResponse({'ok': True})
