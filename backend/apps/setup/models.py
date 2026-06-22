@@ -138,7 +138,7 @@ class WorkflowWhatsAppSettings(models.Model):
         'جوال واتساب حسب الدور',
         default=dict,
         blank=True,
-        help_text='مفاتيح: system_admin, hr_manager',
+        help_text='مفاتيح: system_admin, hr_manager, admin_manager, branch_manager, hr_officer, branch_accountant',
     )
     updated_at = models.DateTimeField('آخر تحديث', auto_now=True)
 

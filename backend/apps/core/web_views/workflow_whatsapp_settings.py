@@ -10,6 +10,7 @@ from apps.setup.forms import WorkflowWhatsAppSettingsForm
 from apps.setup.models import WorkflowWhatsAppSettings
 from apps.setup.workflow_whatsapp_recipients import (
     WORKFLOW_WHATSAPP_RECIPIENT_ROLES,
+    WORKFLOW_WHATSAPP_ROLE_GROUPS,
     WHATSAPP_ROLE_FIELD_PREFIX as WORKFLOW_WHATSAPP_PREFIX,
 )
 
@@ -29,15 +30,21 @@ def workflow_whatsapp_settings(request):
     else:
         form = WorkflowWhatsAppSettingsForm(instance=settings_obj)
 
-    phone_map = settings_obj.recipient_phones_map()
-    phone_form_fields = [
-        (label, form[f'{WORKFLOW_WHATSAPP_PREFIX}{key}'])
-        for key, label in WORKFLOW_WHATSAPP_RECIPIENT_ROLES
+    role_labels = dict(WORKFLOW_WHATSAPP_RECIPIENT_ROLES)
+    phone_role_groups = [
+        (
+            group_title,
+            [
+                (role_labels[key], form[f'{WORKFLOW_WHATSAPP_PREFIX}{key}'])
+                for key in role_keys
+            ],
+        )
+        for group_title, role_keys in WORKFLOW_WHATSAPP_ROLE_GROUPS
     ]
 
     return render(request, 'pages/setup/workflow_whatsapp_settings.html', {
         'form': form,
         'settings_obj': settings_obj,
-        'phone_form_fields': phone_form_fields,
+        'phone_role_groups': phone_role_groups,
         'whatsapp_ready': whatsapp_delivery_ready(),
     })
