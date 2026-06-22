@@ -224,6 +224,7 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
         'today_iso': timezone.localdate().isoformat(),
         'remaining_leave_days': _modal_js_float(employee.remaining_leave_days),
         'used_leave_days': _modal_js_float(employee.used_leave_days),
+        'accrued_leave_days': _modal_js_float(employee.accrued_leave_days),
         'has_sponsor': bool(employee.sponsorship_id),
     }
     if user_can_view_salary(user):

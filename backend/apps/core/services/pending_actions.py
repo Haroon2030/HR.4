@@ -536,15 +536,16 @@ def _execute_end_of_service(action, executor):
             else compute_article_80_leave_settlement
         )
         leave_days, leave_comp, leave_text = leave_fn(
-            service_days=service_days,
-            total_salary=total_salary,
-            used_leave_days=Decimal(employee.used_leave_days or 0),
-            eligible=bool(employee.sponsorship_id),
+            employee=employee,
+            as_of=end_date,
         )
     else:
-        from apps.employees.services.ledger_balances import settlement_leave_from_ledger
+        from apps.employees.services.leave_balance import settlement_leave_for_employee
 
-        leave_days, leave_comp, leave_text = settlement_leave_from_ledger(employee)
+        _, _, leave_days, leave_comp, leave_text = settlement_leave_for_employee(
+            employee,
+            as_of=end_date,
+        )
 
     total_entitlement = eosb + leave_comp + penalty
 

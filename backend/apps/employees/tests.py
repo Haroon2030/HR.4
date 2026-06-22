@@ -164,26 +164,27 @@ class EmployeeModelTests(TestCase):
         self.assertEqual(self.employee.daily_wage, expected_daily_wage)
 
     def test_accrued_leave_days(self):
-        """Test accrued leave days — 21 يوم/سنة (أول 5 سنوات)."""
-        self.employee.end_date = date(2024, 1, 1)  # 365 يوم خدمة
-        expected_accrued = Decimal('20.99')
-        self.assertEqual(self.employee.accrued_leave_days, expected_accrued)
+        """12 شهر خدمة = 12 × 1.75 = 21 يوم مستحق."""
+        self.employee.end_date = date(2024, 1, 1)
+        self.assertEqual(self.employee.accrued_leave_days, Decimal('21.00'))
+
+    def test_accrued_leave_days_eighteen_months(self):
+        """18 شهر = 31.5 يوم — يطابق المعدل الشهري 21÷12."""
+        self.employee.hire_date = date(2024, 12, 22)
+        self.employee.end_date = date(2026, 6, 22)
+        self.assertEqual(self.employee.accrued_leave_days, Decimal('31.50'))
 
     def test_accrued_leave_days_tiered_after_five_years(self):
-        """بعد 5 سنوات: 21 يوم/سنة × 5 + 30 يوم/سنة × الباقي."""
+        """بعد 5 سنوات: 105 يوم + 2.5 يوم/شهر × الأشهر الزائدة."""
         self.employee.hire_date = date(2017, 1, 1)
-        self.employee.end_date = date(2024, 1, 1)  # 7 سنوات
-        from apps.employees.services.settlement_eosb import compute_tiered_leave_accrued_days
-        service_days = (self.employee.end_date - self.employee.hire_date).days
-        expected = compute_tiered_leave_accrued_days(service_days)
+        self.employee.end_date = date(2024, 1, 1)  # 84 شهر
+        expected = Decimal('165.00')  # 60×1.75 + 24×2.5
         self.assertEqual(self.employee.accrued_leave_days, expected)
-        self.assertGreater(expected, Decimal('147.00'))
 
     def test_remaining_leave_days(self):
-        """Test remaining leave days calculation (accrued - used)"""
+        """المتبقي = المستحق − المستخدم (12 شهر − 5 مستخدمة)."""
         self.employee.end_date = date(2024, 1, 1)
-        expected_remaining = Decimal('15.99')
-        self.assertEqual(self.employee.remaining_leave_days, expected_remaining)
+        self.assertEqual(self.employee.remaining_leave_days, Decimal('16.00'))
 
     def test_used_leave_days_from_annual_records(self):
         from apps.employees.models import EmployeeLeave
@@ -201,7 +202,7 @@ class EmployeeModelTests(TestCase):
     def test_leave_compensation(self):
         """Test leave compensation (remaining_leave_days * daily_wage)"""
         self.employee.end_date = date(2024, 1, 1)
-        expected_compensation = (Decimal('15.99') * self.employee.daily_wage).quantize(Decimal('0.01'))
+        expected_compensation = (Decimal('16.00') * self.employee.daily_wage).quantize(Decimal('0.01'))
         self.assertEqual(self.employee.leave_compensation, expected_compensation)
 
     def test_absence_save_enforces_30_day_rule(self):
@@ -529,17 +530,27 @@ class SettlementEosbCalculationTests(TestCase):
         self.assertEqual(days, Decimal('164.94'))
 
     def test_article_80_leave_settlement_only(self):
+        from apps.core.models import Branch, Company
         from apps.employees.services.settlement_eosb import compute_article_80_leave_settlement
+        from apps.setup.models import Sponsorship
 
-        remaining, amount, text = compute_article_80_leave_settlement(
-            service_days=int(365.25 * 7),
-            total_salary=Decimal('6000'),
-            used_leave_days=Decimal('5'),
-            eligible=True,
+        sponsorship = Sponsorship.objects.create(code='SP-80', company_name='K')
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        emp = Employee.objects.create(
+            name='موظف 80',
+            hire_date=date(2017, 1, 1),
+            sponsorship=sponsorship,
+            branch=branch,
+            basic_salary=Decimal('6000'),
         )
-        self.assertEqual(remaining, Decimal('159.94'))
+        remaining, amount, text = compute_article_80_leave_settlement(
+            employee=emp,
+            as_of=date(2024, 1, 1),
+        )
+        self.assertEqual(remaining, Decimal('165.00'))
         self.assertGreater(amount, Decimal('0'))
-        self.assertIn('30 يوم/سنة', text)
+        self.assertIn('2.5', text)
 
     def test_article_80_eosb_is_zero(self):
         from apps.employees.services.settlement_eosb import compute_settlement_eosb
@@ -556,18 +567,28 @@ class SettlementEosbCalculationTests(TestCase):
         self.assertIn('المادة 80', category)
 
     def test_probation_end_leave_settlement_flat_21(self):
+        from apps.core.models import Branch, Company
         from apps.employees.services.settlement_eosb import compute_probation_end_leave_settlement
+        from apps.setup.models import Sponsorship
 
-        remaining, amount, text = compute_probation_end_leave_settlement(
-            service_days=int(365.25 * 7),
-            total_salary=Decimal('6000'),
-            used_leave_days=Decimal('5'),
-            eligible=True,
+        sponsorship = Sponsorship.objects.create(code='SP-PR', company_name='K')
+        company = Company.objects.create(name='شركة')
+        branch = Branch.objects.create(name='فرع', company=company)
+        emp = Employee.objects.create(
+            name='تجربة',
+            hire_date=date(2017, 1, 1),
+            sponsorship=sponsorship,
+            branch=branch,
+            basic_salary=Decimal('6000'),
         )
-        self.assertEqual(remaining, Decimal('141.96'))
+        remaining, amount, text = compute_probation_end_leave_settlement(
+            employee=emp,
+            as_of=date(2024, 1, 1),
+        )
+        self.assertEqual(remaining, Decimal('147.00'))
         self.assertGreater(amount, Decimal('0'))
-        self.assertIn('21 يوم/سنة', text)
-        self.assertNotIn('30 يوم/سنة', text)
+        self.assertIn('1.75', text)
+        self.assertNotIn('2.5', text)
 
     def test_probation_end_eosb_is_zero(self):
         from apps.employees.services.settlement_eosb import compute_settlement_eosb

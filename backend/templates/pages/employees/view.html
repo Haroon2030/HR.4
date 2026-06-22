@@ -1247,7 +1247,24 @@ window.employeeEosCalculator = function() {
         mealAllowance: Number(n.meal_allowance) || 0,
         remainingLeave: Number(n.remaining_leave_days) || 0,
         usedLeaveDays: Number(n.used_leave_days) || 0,
+        accruedLeaveDays: Number(n.accrued_leave_days) || 0,
         hasSponsor: !!n.has_sponsor,
+        completedServiceMonths(hireIso, endIso) {
+            if (!hireIso || !endIso) return 0;
+            var hire = new Date(hireIso);
+            var end = new Date(endIso);
+            var months = (end.getFullYear() - hire.getFullYear()) * 12 + (end.getMonth() - hire.getMonth());
+            if (end.getDate() < hire.getDate()) months -= 1;
+            return Math.max(months, 0);
+        },
+        monthlyAccruedLeaveDays(flat21Only) {
+            if (!this.hasSponsor || !this.hireDate || !this.endDate) return this.accruedLeaveDays;
+            var months = this.completedServiceMonths(this.hireDate, this.endDate);
+            if (months <= 0) return 0;
+            if (flat21Only) return +(months * 1.75).toFixed(2);
+            if (months <= 60) return +(months * 1.75).toFixed(2);
+            return +((60 * 1.75) + ((months - 60) * 2.5)).toFixed(2);
+        },
         get serviceDays() {
             if (!this.hireDate || !this.endDate) return 0;
             return Math.max(0, Math.floor((new Date(this.endDate) - new Date(this.hireDate)) / 86400000));
@@ -1265,16 +1282,10 @@ window.employeeEosCalculator = function() {
             return !this.isLeaveOnlySettlement;
         },
         get flat21AccruedLeaveDays() {
-            if (!this.hasSponsor || !this.serviceDays) return 0;
-            return +((this.serviceDays / 365.25) * 21).toFixed(2);
+            return this.monthlyAccruedLeaveDays(true);
         },
         get tieredAccruedLeaveDays() {
-            if (!this.hasSponsor || !this.serviceDays) return 0;
-            var fiveYearDays = 5 * 365.25;
-            if (this.serviceDays <= fiveYearDays) {
-                return +((this.serviceDays / 365.25) * 21).toFixed(2);
-            }
-            return +((5 * 21) + (((this.serviceDays - fiveYearDays) / 365.25) * 30)).toFixed(2);
+            return this.monthlyAccruedLeaveDays(false);
         },
         get displayLeaveDays() {
             if (this.terminatedBy === 'article_80') {

@@ -75,75 +75,57 @@ def compute_flat_21_leave_accrued_days(service_days: int) -> Decimal:
 
 def _compute_leave_only_settlement(
     *,
-    service_days: int,
-    total_salary: Decimal,
-    used_leave_days: Decimal,
-    eligible: bool,
+    employee,
+    as_of: date | None = None,
+    flat_21_only: bool = False,
     title: str,
-    rule: str,
 ) -> tuple[Decimal, Decimal, str]:
-    from apps.core.salary_month import daily_rate_from_total
+    from apps.employees.services.leave_balance import settlement_leave_for_employee
 
-    if not eligible:
-        return Decimal('0'), Decimal('0'), 'لا يوجد كفالة — لم تُحتسب مستحقات الإجازة'
-
-    accrued = compute_flat_21_leave_accrued_days(service_days) if rule == 'flat_21' else compute_tiered_leave_accrued_days(service_days)
-    used = Decimal(used_leave_days or 0)
-    remaining = (accrued - used).quantize(Decimal('0.01'))
-    if remaining < 0:
-        remaining = Decimal('0.00')
-
-    daily = daily_rate_from_total(total_salary)
-    amount = (remaining * daily).quantize(Decimal('0.01'))
-    if rule == 'flat_21':
-        rule_text = '21 يوم/سنة'
-    elif (Decimal(service_days) / DAYS_PER_YEAR) <= 5:
-        rule_text = '21 يوم/سنة (أول 5 سنوات)'
-    else:
-        rule_text = '21 يوم/سنة × 5 + 30 يوم/سنة × ما زاد'
-
-    text = (
-        f'{title} — رصيد إجازات فقط (بدون مكافأة نهاية خدمة)\n'
-        f'قاعدة الاستحقاق: {rule_text}\n'
-        f'المستحق: {accrued} يوم − المستخدم: {used} = {remaining} يوم\n'
-        f'رصيد الإجازة: {remaining} يوم × {daily} = {amount} ر.س'
+    _, _, remaining, amount, text = settlement_leave_for_employee(
+        employee,
+        as_of=as_of,
+        flat_21_only=flat_21_only,
+        title=title,
     )
     return remaining, amount, text
 
 
 def compute_article_80_leave_settlement(
     *,
-    service_days: int,
-    total_salary: Decimal,
-    used_leave_days: Decimal,
-    eligible: bool,
+    employee,
+    as_of: date | None = None,
+    total_salary: Decimal | None = None,
+    used_leave_days: Decimal | None = None,
+    eligible: bool | None = None,
+    service_days: int | None = None,
 ) -> tuple[Decimal, Decimal, str]:
     """المادة 80 — رصيد إجازات فقط بدون مكافأة نهاية الخدمة."""
+    del total_salary, used_leave_days, eligible, service_days
     return _compute_leave_only_settlement(
-        service_days=service_days,
-        total_salary=total_salary,
-        used_leave_days=used_leave_days,
-        eligible=eligible,
+        employee=employee,
+        as_of=as_of,
+        flat_21_only=False,
         title='المادة 80',
-        rule='tiered',
     )
 
 
 def compute_probation_end_leave_settlement(
     *,
-    service_days: int,
-    total_salary: Decimal,
-    used_leave_days: Decimal,
-    eligible: bool,
+    employee,
+    as_of: date | None = None,
+    total_salary: Decimal | None = None,
+    used_leave_days: Decimal | None = None,
+    eligible: bool | None = None,
+    service_days: int | None = None,
 ) -> tuple[Decimal, Decimal, str]:
     """نهاية فترة التجربة — 21 يوم/سنة فقط."""
+    del total_salary, used_leave_days, eligible, service_days
     return _compute_leave_only_settlement(
-        service_days=service_days,
-        total_salary=total_salary,
-        used_leave_days=used_leave_days,
-        eligible=eligible,
+        employee=employee,
+        as_of=as_of,
+        flat_21_only=True,
         title='نهاية فترة التجربة',
-        rule='flat_21',
     )
 
 
