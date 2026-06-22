@@ -114,21 +114,6 @@ def _execute_terminate(action, executor):
     p = action.payload
     employee = action.employee
 
-    # ── تحذير: إذا كان الموظف موجوداً في مسير DRAFT ──
-    from apps.payroll.models import PayrollRun, PayrollLine
-    draft_runs = PayrollLine.objects.filter(
-        employee=employee,
-        run__status=PayrollRun.Status.DRAFT,
-    ).select_related('run').values_list('run__branch__name', 'run__period_year', 'run__period_month')
-    if draft_runs.exists():
-        import logging
-        logger = logging.getLogger(__name__)
-        runs_info = ', '.join(f'{r[0]} {r[1]}/{r[2]:02d}' for r in draft_runs)
-        logger.warning(
-            f'تصفية الموظف {employee.name} وهو موجود في مسير DRAFT: {runs_info}. '
-            'يُنصح بإعادة بناء المسير لتحديث بيانات الموظف.'
-        )
-
     end_date = _to_date(p['end_date'])
     end_reason = p.get('end_reason', '')
 
@@ -136,6 +121,10 @@ def _execute_terminate(action, executor):
     employee.end_reason = end_reason
     employee.status = Employee.Status.TERMINATED
     employee.save(update_fields=['end_date', 'end_reason', 'status'])
+
+    from apps.payroll.services.settlement_payroll import remove_employee_from_draft_payroll_runs
+
+    payroll_cleanup = remove_employee_from_draft_payroll_runs(employee)
 
     comp_text = (
         f'بدل الإجازة المستحق: {employee.leave_compensation} ر.س'
@@ -154,7 +143,9 @@ def _execute_terminate(action, executor):
         ),
         created_by=action.requested_by,
     )
-    return f'تمت تصفية {employee.name} بتاريخ {end_date}'
+    removed = payroll_cleanup.get('lines_removed', 0) + payroll_cleanup.get('allocations_removed', 0)
+    suffix = f' (أُزيل من {removed} سطر مسير مسودة)' if removed else ''
+    return f'تمت تصفية {employee.name} بتاريخ {end_date}{suffix}'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -571,6 +562,10 @@ def _execute_end_of_service(action, executor):
     employee.end_reason = f'{default_reason} — {end_reason}' if end_reason else default_reason
     employee.status = Employee.Status.TERMINATED
     employee.save(update_fields=['end_date', 'end_reason', 'status'])
+
+    from apps.payroll.services.settlement_payroll import remove_employee_from_draft_payroll_runs
+
+    payroll_cleanup = remove_employee_from_draft_payroll_runs(employee)
 
     if settlement_type == 'contract_expiry':
         header = '═══ انتهاء عقد بانتهاء مدته ═══'

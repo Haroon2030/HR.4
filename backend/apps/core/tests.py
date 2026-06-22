@@ -201,6 +201,30 @@ class TerminateExecutorTests(_BaseExecutorTests):
         )
         self.assertIn('استقالة', st.content)
 
+    def test_terminate_removes_employee_from_draft_payroll(self):
+        from apps.payroll.models import PayrollLine, PayrollRun
+        from apps.payroll.services.engine import build_payroll_run
+
+        run = build_payroll_run(
+            self.branch_a, 2025, 6, user=self.approver,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.pk,
+        )
+        self.assertTrue(
+            PayrollLine.objects.filter(run=run, employee=self.employee).exists(),
+        )
+
+        action = self._make_action('terminate', {
+            'end_date': '2025-06-15',
+            'end_reason': 'تصفية',
+        })
+        execute_pending_action(action, self.approver)
+
+        self.assertFalse(
+            PayrollLine.objects.filter(run=run, employee=self.employee).exists(),
+        )
+        self.assertEqual(run.status, PayrollRun.Status.DRAFT)
+
 
 class EndOfServiceContractExpiryTests(_BaseExecutorTests):
     def setUp(self):
