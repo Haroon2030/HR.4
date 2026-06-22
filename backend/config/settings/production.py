@@ -129,15 +129,6 @@ if _jwt_secret and len(_jwt_secret) < 32:
         'أنشئ مفتاحاً عشوائياً وضعه في Environment فقط — لا تضعه في Git.'
     )
 
-if env.bool('WHATSAPP_ENABLED', default=False):
-    _evo_key = (env('EVOLUTION_API_KEY', default='') or '').strip()
-    if not _evo_key:
-        raise _ImproperlyConfigured(
-            'EVOLUTION_API_KEY مطلوب في Environment عند WHATSAPP_ENABLED=true — لا تضفه في الكود أو Git.'
-        )
-    if len(_evo_key) < 16:
-        raise _ImproperlyConfigured('EVOLUTION_API_KEY قصير جداً في الإنتاج.')
-
 _agent_global_key = (env('ATTENDANCE_AGENT_API_KEY', default='') or '').strip()
 if _agent_global_key and len(_agent_global_key) < 32:
     raise _ImproperlyConfigured(
