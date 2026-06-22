@@ -1096,25 +1096,37 @@
                 <div class="grid grid-cols-1 {% if employee.sponsorship_id %}md:grid-cols-3{% else %}md:grid-cols-2{% endif %} gap-4 mb-4">
                     <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
                         <i data-lucide="calendar" class="w-6 h-6 text-indigo-500 mb-2"></i>
-                        <span class="text-xs font-bold text-indigo-700">أيام الإجازة المتراكمة</span>
-                        <span class="text-xl font-black text-indigo-900 mt-1" dir="ltr">
-                            {% if accruals %}{{ accruals.0.cumulative_leave_days|floatformat:2 }}{% else %}0.00{% endif %}
+                        <span class="text-xs font-bold text-indigo-700">
+                            {% if accruals_balance.is_settled_snapshot %}أيام الإجازة عند التصفية{% else %}أيام الإجازة المتراكمة{% endif %}
                         </span>
-                        <span class="text-[10px] text-indigo-600 mt-1">منذ {{ employee.hire_date|default:"تاريخ المباشرة" }}</span>
+                        <span class="text-xl font-black text-indigo-900 mt-1" dir="ltr">
+                            {{ accruals_balance.leave_days|floatformat:2 }}
+                        </span>
+                        <span class="text-[10px] text-indigo-600 mt-1">
+                            {% if accruals_balance.is_settled_snapshot and employee.end_date %}
+                            حتى {{ employee.end_date }}
+                            {% else %}
+                            منذ {{ employee.hire_date|default:"تاريخ المباشرة" }}
+                            {% endif %}
+                        </span>
                     </div>
                     <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
                         <i data-lucide="banknote" class="w-6 h-6 text-emerald-500 mb-2"></i>
-                        <span class="text-xs font-bold text-emerald-700">قيمة الإجازات (ر.س)</span>
+                        <span class="text-xs font-bold text-emerald-700">
+                            {% if accruals_balance.is_settled_snapshot %}قيمة الإجازات عند التصفية (ر.س){% else %}قيمة الإجازات (ر.س){% endif %}
+                        </span>
                         <span class="text-xl font-black text-emerald-900 mt-1" dir="ltr">
-                            {% if accruals %}{{ accruals.0.cumulative_leave_amount|floatformat:2 }}{% else %}0.00{% endif %}
+                            {{ accruals_balance.leave_amount|floatformat:2 }}
                         </span>
                     </div>
                     {% if employee.sponsorship_id %}
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col justify-center items-center text-center">
                         <i data-lucide="award" class="w-6 h-6 text-amber-500 mb-2"></i>
-                        <span class="text-xs font-bold text-amber-700">مكافأة نهاية الخدمة (ر.س)</span>
+                        <span class="text-xs font-bold text-amber-700">
+                            {% if accruals_balance.is_settled_snapshot %}مكافأة نهاية الخدمة عند التصفية (ر.س){% else %}مكافأة نهاية الخدمة (ر.س){% endif %}
+                        </span>
                         <span class="text-xl font-black text-amber-900 mt-1" dir="ltr">
-                            {% if accruals %}{{ accruals.0.cumulative_eosb_amount|floatformat:2 }}{% else %}0.00{% endif %}
+                            {{ accruals_balance.eosb_amount|floatformat:2 }}
                         </span>
                     </div>
                     {% endif %}

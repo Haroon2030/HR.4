@@ -83,6 +83,12 @@ def load_employee_view_context(
         'contract_is_saudi': False,
         'contract_fourth_year_start': None,
         'accruals': [],
+        'accruals_balance': {
+            'leave_days': Decimal('0'),
+            'leave_amount': Decimal('0'),
+            'eosb_amount': Decimal('0'),
+            'is_settled_snapshot': False,
+        },
         'fingerprint_data': dict(_EMPTY_FINGERPRINT),
         'fp_date_from': '',
         'fp_date_to': '',
@@ -186,7 +192,9 @@ def load_employee_view_context(
             ctx['contract_fourth_year_start'] = fourth_year_start(employee.hire_date)
 
     if need('accruals'):
-        ctx['accruals'] = _load_accruals_tab(employee, user)
+        accruals = _load_accruals_tab(employee, user)
+        ctx['accruals'] = accruals
+        ctx['accruals_balance'] = _accruals_balance_summary(employee, accruals)
 
     if need('fingerprint') or request_get.get('fp_from') or request_get.get('fp_to'):
         ctx.update(_load_fingerprint_tab(employee, request_get))
@@ -356,6 +364,39 @@ def _load_accruals_tab(employee: Employee, user) -> list:
         employee.accruals_ledger.select_related('payroll_run')
         .order_by('-date', '-created_at'),
     )
+
+
+def _accruals_balance_summary(employee: Employee, accruals: list) -> dict:
+    """ملخص الأرصدة في بطاقات التبويب — للمُصفّى يُعرض رصيد ما قبل التصفير النهائية."""
+    from apps.employees.models import EmployeeLedger
+
+    empty = {
+        'leave_days': Decimal('0'),
+        'leave_amount': Decimal('0'),
+        'eosb_amount': Decimal('0'),
+        'is_settled_snapshot': False,
+    }
+    if not accruals:
+        return empty
+
+    latest = accruals[0]
+    if (
+        employee.status == Employee.Status.TERMINATED
+        and latest.transaction_type == EmployeeLedger.TransactionType.FINAL_SETTLEMENT
+    ):
+        return {
+            'leave_days': abs(Decimal(latest.leave_days_change or 0)),
+            'leave_amount': abs(Decimal(latest.leave_amount_change or 0)),
+            'eosb_amount': abs(Decimal(latest.eosb_amount_change or 0)),
+            'is_settled_snapshot': True,
+        }
+
+    return {
+        'leave_days': Decimal(latest.cumulative_leave_days or 0),
+        'leave_amount': Decimal(latest.cumulative_leave_amount or 0),
+        'eosb_amount': Decimal(latest.cumulative_eosb_amount or 0),
+        'is_settled_snapshot': False,
+    }
 
 
 def _maybe_init_employee_ledger(employee: Employee, user) -> None:
