@@ -174,6 +174,21 @@ class EmployeeModelTests(TestCase):
         self.employee.end_date = date(2026, 6, 22)
         self.assertEqual(self.employee.accrued_leave_days, Decimal('31.50'))
 
+    def test_accrued_leave_tiered_hire_first_of_month(self):
+        """مباشرة 1/1/2020 حتى 30/6/2026 = 78 شهر → 105 + 18×2.5 = 150 يوم."""
+        self.employee.hire_date = date(2020, 1, 1)
+        self.employee.end_date = date(2026, 6, 30)
+        self.assertEqual(self.employee.accrued_leave_days, Decimal('150.00'))
+
+    def test_remaining_leave_tiered_150_minus_90(self):
+        """سيناريو المستخدم: 150 مستحق − 90 مستخدم = 60 متبقي."""
+        self.employee.hire_date = date(2020, 1, 1)
+        self.employee.end_date = date(2026, 6, 30)
+        self.employee.available_leave_balance = Decimal('90')
+        self.assertEqual(self.employee.accrued_leave_days, Decimal('150.00'))
+        self.assertEqual(self.employee.used_leave_days, Decimal('90.00'))
+        self.assertEqual(self.employee.remaining_leave_days, Decimal('60.00'))
+
     def test_remaining_leave_eighteen_months_minus_twenty_one_used(self):
         """سيناريو المستخدم: 31.5 مستحق − 21 مستخدم = 10.5 متبقي."""
         from apps.employees.models import EmployeeLeave

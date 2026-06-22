@@ -54,13 +54,18 @@ def employment_service_days(hire_date: date, as_of: date) -> int:
 
 def completed_employment_months(hire_date: date, as_of: date) -> int:
     """
-    أشهر الخدمة المكتملة (تقويمية — تطابق إقفال مسير الرواتب).
-    كل شهر مكتمل = 1.75 يوم إجازة (21 ÷ 12، بافتراض شهر 30 يوماً).
+    أشهر الخدمة المكتملة — تطابق إقفال مسير الرواتب (شهر تقويمي = 30 يوماً).
+
+    - مباشرة في اليوم 1: كل شهر تقويمي يُحسب كاملاً (يناير→يناير = شهر واحد).
+    - غير ذلك: الشهر يُستكمل بعد مرور يوم المباشرة في الشهر التالي.
     """
-    if as_of < hire_date:
+    if as_of <= hire_date:
         return 0
     months = (as_of.year - hire_date.year) * 12 + (as_of.month - hire_date.month)
-    if as_of.day < hire_date.day:
+    if hire_date.day == 1:
+        if as_of.day != hire_date.day:
+            months += 1
+    elif as_of.day < hire_date.day:
         months -= 1
     return max(months, 0)
 

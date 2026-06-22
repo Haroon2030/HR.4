@@ -1253,8 +1253,13 @@ window.employeeEosCalculator = function() {
             if (!hireIso || !endIso) return 0;
             var hire = new Date(hireIso);
             var end = new Date(endIso);
+            if (end <= hire) return 0;
             var months = (end.getFullYear() - hire.getFullYear()) * 12 + (end.getMonth() - hire.getMonth());
-            if (end.getDate() < hire.getDate()) months -= 1;
+            if (hire.getDate() === 1) {
+                if (end.getDate() !== 1) months += 1;
+            } else if (end.getDate() < hire.getDate()) {
+                months -= 1;
+            }
             return Math.max(months, 0);
         },
         monthlyAccruedLeaveDays(flat21Only) {
