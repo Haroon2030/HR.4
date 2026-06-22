@@ -184,6 +184,10 @@ SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=_USE_HTTPS)
 SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=_USE_HTTPS)
 CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=_USE_HTTPS)
 
+# حماية الجلسات — كوكي الجلسة عبر HTTPS فقط، غير قابل للقراءة من JS، ينتهي عند إغلاق المتصفح
+SESSION_COOKIE_HTTPONLY = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=True)
+
 # استثناء فحص الصحة من إعادة التوجيه إلى HTTPS (للمُراقبة الداخلية)
 SECURE_REDIRECT_EXEMPT = [r'^health/$']
 
@@ -229,8 +233,8 @@ SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 # منع تحميل الموقع داخل iframe من مواقع خارجية
 X_FRAME_OPTIONS = 'DENY'
 
-# جلسات أقصر في الإنتاج (يمكن تعديلها من .env)
-SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=28800)  # 8 ساعات
+# عند SESSION_EXPIRE_AT_BROWSER_CLOSE=true يُتجاهل SESSION_COOKIE_AGE (جلسة متصفح فقط)
+SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=28800)
 
 # تقييد أقوى لمحاولات تسجيل الدخول عبر API
 REST_FRAMEWORK = {

@@ -295,11 +295,12 @@ LOGIN_URL = '/auth/login/'                          # صفحة تسجيل الد
 LOGIN_REDIRECT_URL = '/'                            # بعد تسجيل الدخول → لوحة التحكم
 LOGOUT_REDIRECT_URL = '/auth/login/'                # بعد تسجيل الخروج → صفحة الدخول
 
-# إعدادات الجلسة
-SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=43200)  # 12 ساعة افتراضياً
-SESSION_SAVE_EVERY_REQUEST = True                   # تحديث الجلسة مع كل طلب
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False             # لا تنتهي عند إغلاق المتصفح
+# إعدادات الجلسة — حماية افتراضية (يُشدَّد في production.py)
 SESSION_COOKIE_HTTPONLY = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=True)
+# يُستخدم فقط عند SESSION_EXPIRE_AT_BROWSER_CLOSE=False
+SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=28800)
+SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE = env('SESSION_COOKIE_SAMESITE', default='Lax')
 CSRF_COOKIE_HTTPONLY = env.bool('CSRF_COOKIE_HTTPONLY', default=True)
 CSRF_COOKIE_SAMESITE = env('CSRF_COOKIE_SAMESITE', default='Lax')
