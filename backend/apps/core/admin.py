@@ -315,11 +315,11 @@ admin.site.register(User, CustomUserAdmin)
 
 @admin.register(WhatsAppMessageLog)
 class WhatsAppMessageLogAdmin(SuperuserOnlyAdminMixin, admin.ModelAdmin):
-    list_display = ('created_at', 'status', 'phone', 'event_type', 'employee', 'related_action')
+    list_display = ('created_at', 'status', 'phone', 'event_type', 'employee', 'recipient_user', 'related_action')
     list_filter = ('status', 'event_type', 'created_at')
-    search_fields = ('phone', 'message', 'error', 'employee__name', 'employee__employee_number')
+    search_fields = ('phone', 'message', 'error', 'employee__name', 'employee__employee_number', 'recipient_user__username')
     readonly_fields = (
-        'employee', 'phone', 'event_type', 'message', 'status',
+        'employee', 'recipient_user', 'phone', 'event_type', 'message', 'status',
         'related_action', 'response', 'error', 'created_at',
     )
     date_hierarchy = 'created_at'

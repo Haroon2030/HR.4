@@ -228,14 +228,18 @@ def notify_on_first_stage(
                 icon=icon,
                 color=color,
             )
+        from apps.core.services.whatsapp import workflow_notifier
+        workflow_notifier.notify_whatsapp_first_stage(obj, title=title, message=message)
         return first
 
     decision = resolve_first_approver(obj)
     if not decision.recipient:
         return None
 
+    from apps.core.services.whatsapp import workflow_notifier
+
     if isinstance(obj, EmploymentRequest):
-        return notif.notify(
+        result = notif.notify(
             decision.recipient,
             title=title,
             message=message,
@@ -243,12 +247,15 @@ def notify_on_first_stage(
             icon=icon,
             color=color,
         )
-    return notif.notify(
-        decision.recipient,
-        title=title,
-        message=message,
-        link=notif.notify_action_url(obj),
-        icon=icon,
-        color=color,
-        related_action=obj,
-    )
+    else:
+        result = notif.notify(
+            decision.recipient,
+            title=title,
+            message=message,
+            link=notif.notify_action_url(obj),
+            icon=icon,
+            color=color,
+            related_action=obj,
+        )
+    workflow_notifier.notify_whatsapp_first_stage(obj, title=title, message=message)
+    return result

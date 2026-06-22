@@ -785,6 +785,8 @@ def branch_approve(action, user, notes=''):
         message=f'الموظف: {action.employee.name} • وافق عليه {approver_label}',
         icon='user-cog', color='amber',
     )
+    from apps.core.services.whatsapp import workflow_notifier
+    workflow_notifier.notify_whatsapp_pending_gm(action)
     return action
 
 
@@ -820,6 +822,8 @@ def gm_approve_and_assign(action, user, officer, notes=''):
         message=f'الموظف: {action.employee.name} • أسندها {user.get_full_name() or user.username}',
         icon='clipboard-check', color='indigo',
     )
+    from apps.core.services.whatsapp import workflow_notifier
+    workflow_notifier.notify_whatsapp_officer_assigned(action, officer)
     return action
 
 
@@ -940,6 +944,9 @@ def resubmit_action(action, user):
 
 def notify_branch_on_create(action):
     """يُستدعى مرة واحدة بعد إنشاء PendingAction جديد."""
+    from apps.core.services.whatsapp import workflow_notifier
+
+    workflow_notifier.notify_whatsapp_request_created(action)
     notify_on_first_stage(
         action,
         title=f'طلب جديد بانتظار موافقتك — {action.get_action_type_display()}',

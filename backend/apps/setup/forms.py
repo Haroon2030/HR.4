@@ -9,11 +9,16 @@ from django.contrib.auth import get_user_model
 from apps.setup.models import (
     Nationality, Profession, Sponsorship, Insurance, InsuranceClass,
     Building, Bank, Administration, OperationsReportSettings, EvolutionWhatsAppSettings,
+    WorkflowWhatsAppSettings,
 )
 from apps.setup.operations_report_recipients import (
     OPERATIONS_REPORT_RECIPIENT_ROLES,
     ROLE_FIELD_PREFIX,
     WHATSAPP_ROLE_FIELD_PREFIX,
+)
+from apps.setup.workflow_whatsapp_recipients import (
+    WORKFLOW_WHATSAPP_RECIPIENT_ROLES,
+    WHATSAPP_ROLE_FIELD_PREFIX as WORKFLOW_WHATSAPP_PREFIX,
 )
 from apps.core.services.whatsapp import phone_utils
 
@@ -339,6 +344,55 @@ class EvolutionWhatsAppSettingsForm(forms.ModelForm):
         new_key = (self.cleaned_data.get('api_key') or '').strip()
         if new_key:
             obj.api_key = new_key
+        if commit:
+            obj.save()
+        return obj
+
+
+class WorkflowWhatsAppSettingsForm(forms.ModelForm):
+    class Meta:
+        model = WorkflowWhatsAppSettings
+        fields = ('is_enabled',)
+        widgets = {
+            'is_enabled': forms.CheckboxInput(attrs={'class': 'rounded border-slate-300 text-primary-600'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        stored_phones = self.instance.recipient_phones_map() if self.instance.pk else {}
+        for key, label in WORKFLOW_WHATSAPP_RECIPIENT_ROLES:
+            phone_field = f'{WORKFLOW_WHATSAPP_PREFIX}{key}'
+            self.fields[phone_field] = forms.CharField(
+                label=f'{label} — واتساب',
+                required=False,
+                widget=forms.TextInput(attrs={
+                    'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400',
+                    'placeholder': '0512345678',
+                    'dir': 'ltr',
+                    'inputmode': 'tel',
+                }),
+            )
+            if self.instance.pk and not self.data:
+                self.fields[phone_field].initial = stored_phones.get(key, '')
+
+    def clean(self):
+        cleaned = super().clean()
+        for key, _ in WORKFLOW_WHATSAPP_RECIPIENT_ROLES:
+            phone_field = f'{WORKFLOW_WHATSAPP_PREFIX}{key}'
+            raw_phone = (cleaned.get(phone_field) or '').strip()
+            if not raw_phone:
+                continue
+            err = phone_utils.phone_field_error(raw_phone)
+            if err:
+                self.add_error(phone_field, err)
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.recipient_phones = {
+            key: (self.cleaned_data.get(f'{WORKFLOW_WHATSAPP_PREFIX}{key}') or '').strip()
+            for key, _ in WORKFLOW_WHATSAPP_RECIPIENT_ROLES
+        }
         if commit:
             obj.save()
         return obj

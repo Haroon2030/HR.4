@@ -229,6 +229,8 @@ def branch_approve(req, user, notes=''):
         message=f'الفرع: {req.branch.name if req.branch else "—"} • وافق عليه {approver_label}',
         icon='user-cog', color=Notification.Color.AMBER,
     )
+    from apps.core.services.whatsapp import workflow_notifier
+    workflow_notifier.notify_whatsapp_pending_gm(req)
     return req
 
 
@@ -264,6 +266,8 @@ def gm_approve_and_assign(req, user, officer, notes=''):
         message=f'الفرع: {req.branch.name if req.branch else "—"} • أسنده {user.get_full_name() or user.username}',
         icon='clipboard-check', color=Notification.Color.INDIGO,
     )
+    from apps.core.services.whatsapp import workflow_notifier
+    workflow_notifier.notify_whatsapp_officer_assigned(req, officer)
     return req
 
 
@@ -382,6 +386,9 @@ def reject(req, user, notes=''):
 
 def notify_branch_on_create(req):
     """يُستدعى مرة واحدة عند إنشاء طلب توظيف جديد."""
+    from apps.core.services.whatsapp import workflow_notifier
+
+    workflow_notifier.notify_whatsapp_request_created(req)
     notify_on_first_stage(
         req,
         title=f'طلب توظيف جديد بانتظار موافقتك — {req.name}',

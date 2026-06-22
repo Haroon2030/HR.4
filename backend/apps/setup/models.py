@@ -126,6 +126,61 @@ class OperationsReportSettings(models.Model):
         return phones
 
 
+class WorkflowWhatsAppSettings(models.Model):
+    """إعدادات إشعارات واتساب لدورة الموافقات (سجل واحد — pk=1)."""
+
+    is_enabled = models.BooleanField(
+        'تفعيل إشعارات واتساب لسير العمل',
+        default=True,
+        help_text='يرسل تنبيهات عند رفع الطلبات ومراحل الموافقة.',
+    )
+    recipient_phones = models.JSONField(
+        'جوال واتساب حسب الدور',
+        default=dict,
+        blank=True,
+        help_text='مفاتيح: system_admin, hr_manager',
+    )
+    updated_at = models.DateTimeField('آخر تحديث', auto_now=True)
+
+    class Meta:
+        db_table = 'setup_workflowwhatsappsettings'
+        verbose_name = 'إعدادات واتساب — سير العمل'
+        verbose_name_plural = 'إعدادات واتساب — سير العمل'
+
+    def __str__(self):
+        return 'إعدادات واتساب — سير العمل'
+
+    @classmethod
+    def get_solo(cls) -> 'WorkflowWhatsAppSettings':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def recipient_phones_map(self) -> dict[str, str]:
+        from apps.setup.workflow_whatsapp_recipients import WORKFLOW_WHATSAPP_RECIPIENT_ROLES
+
+        stored = dict(self.recipient_phones or {})
+        return {
+            key: (stored.get(key) or '').strip()
+            for key, _ in WORKFLOW_WHATSAPP_RECIPIENT_ROLES
+        }
+
+    def phones_for_roles(self, *role_keys: str) -> list[str]:
+        """أرقام فريدة للأدوار المطلوبة."""
+        phone_map = self.recipient_phones_map()
+        seen: set[str] = set()
+        phones: list[str] = []
+        for key in role_keys:
+            raw = phone_map.get(key, '')
+            if not raw:
+                continue
+            norm = raw.replace(' ', '').replace('-', '')
+            if norm in seen:
+                continue
+            seen.add(norm)
+            phones.append(raw)
+        return phones
+
+
 DEFAULT_EVOLUTION_WEBHOOK_EVENTS = [
     'QRCODE_UPDATED',
     'CONNECTION_UPDATE',

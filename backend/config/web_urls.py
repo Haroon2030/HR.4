@@ -203,6 +203,7 @@ urlpatterns = [
     path('setup/operations-report/', web_views.operations_report_settings, name='operations_report_settings'),
     path('setup/whatsapp/', web_views.whatsapp_integration, name='whatsapp_integration'),
     path('setup/whatsapp/status/', web_views.whatsapp_integration_status, name='whatsapp_integration_status'),
+    path('setup/workflow-whatsapp/', web_views.workflow_whatsapp_settings, name='workflow_whatsapp_settings'),
     path('webhooks/evolution/', EvolutionWebhookView.as_view(), name='evolution_webhook'),
     
     # ══════════════════════════════════════════════════════════════

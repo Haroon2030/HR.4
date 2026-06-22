@@ -683,6 +683,14 @@ class WhatsAppMessageLog(models.Model):
         'employees.Employee', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='whatsapp_messages', verbose_name="الموظف",
     )
+    recipient_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='whatsapp_messages_received',
+        verbose_name='المستخدم المستلم',
+    )
     phone = models.CharField("رقم الجوال", max_length=24, blank=True, db_index=True)
     event_type = models.CharField("نوع الحدث", max_length=80, db_index=True)
     message = models.TextField("نص الرسالة")
