@@ -1158,33 +1158,24 @@
                                         {{ a.get_transaction_type_display }}
                                     </td>
                                     
-                                    <!-- Leave Changes & Cumulative -->
+                                    <!-- Leave Changes -->
                                     <td class="px-4 py-3 text-center border-r border-slate-200">
-                                        <div class="flex flex-col items-center gap-1">
-                                            <span class="text-xs font-bold {% if a.leave_days_change > 0 %}text-emerald-600{% elif a.leave_days_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
-                                                {% if a.leave_days_change > 0 %}+{% endif %}{{ a.leave_days_change|floatformat:2 }} يوم
-                                            </span>
-                                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded" dir="ltr">Σ {{ a.cumulative_leave_days|floatformat:2 }}</span>
-                                        </div>
+                                        <span class="text-xs font-bold {% if a.leave_days_change > 0 %}text-emerald-600{% elif a.leave_days_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
+                                            {% if a.leave_days_change > 0 %}+{% endif %}{{ a.leave_days_change|floatformat:2 }} يوم
+                                        </span>
                                     </td>
                                     <td class="px-4 py-3 text-center border-l border-slate-200 bg-slate-50/50">
-                                        <div class="flex flex-col items-center gap-1">
-                                            <span class="text-xs font-bold {% if a.leave_amount_change > 0 %}text-emerald-600{% elif a.leave_amount_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
-                                                {% if a.leave_amount_change > 0 %}+{% endif %}{{ a.leave_amount_change|floatformat:2 }} ر.س
-                                            </span>
-                                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded" dir="ltr">Σ {{ a.cumulative_leave_amount|floatformat:2 }}</span>
-                                        </div>
+                                        <span class="text-xs font-bold {% if a.leave_amount_change > 0 %}text-emerald-600{% elif a.leave_amount_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
+                                            {% if a.leave_amount_change > 0 %}+{% endif %}{{ a.leave_amount_change|floatformat:2 }} ر.س
+                                        </span>
                                     </td>
 
                                     {% if employee.sponsorship_id %}
-                                    <!-- EOSB Changes & Cumulative -->
+                                    <!-- EOSB Changes -->
                                     <td class="px-4 py-3 text-center border-l border-slate-200">
-                                        <div class="flex flex-col items-center gap-1">
-                                            <span class="text-xs font-bold {% if a.eosb_amount_change > 0 %}text-emerald-600{% elif a.eosb_amount_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
-                                                {% if a.eosb_amount_change > 0 %}+{% endif %}{{ a.eosb_amount_change|floatformat:2 }} ر.س
-                                            </span>
-                                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded" dir="ltr">Σ {{ a.cumulative_eosb_amount|floatformat:2 }}</span>
-                                        </div>
+                                        <span class="text-xs font-bold {% if a.eosb_amount_change > 0 %}text-emerald-600{% elif a.eosb_amount_change < 0 %}text-rose-600{% else %}text-slate-400{% endif %}" dir="ltr">
+                                            {% if a.eosb_amount_change > 0 %}+{% endif %}{{ a.eosb_amount_change|floatformat:2 }} ر.س
+                                        </span>
                                     </td>
                                     {% endif %}
 
