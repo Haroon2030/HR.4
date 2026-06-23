@@ -4481,14 +4481,74 @@ body.hr-app .hr-topbar-info-panel.hr-sidebar-panel .hr-topbar-info-panel__foot {
 }
 
 /* تفاصيل دفتر الأستاذ في النافذة — ثيم فاتح (خلفية بيضاء ونص داكن) */
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) {
+    max-width: min(94vw, 42rem) !important;
+    max-height: min(92vh, 46rem) !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__title,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__title span,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) #hr-glass-text-title-text {
+    font-size: 1.0625rem !important;
+}
+
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__body {
     background: #ffffff !important;
     color: #0f172a !important;
+    padding: 1.1rem 1.25rem 1.15rem !important;
+    gap: 1rem !important;
 }
 
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__reason-label,
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__reason-label span {
     color: #334155 !important;
+    font-size: 0.8125rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail {
+    gap: 0.65rem;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__hero {
+    padding: 0.6rem 0.7rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__hero-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__meta-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__row-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__balance-label {
+    font-size: 0.75rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__hero-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__meta-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__result,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__bal-chip {
+    font-size: 0.8125rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__section-title {
+    font-size: 0.8125rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__section-hint {
+    font-size: 0.6875rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__formula,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__sep,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__bal-eq,
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__bal-op {
+    font-size: 0.75rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__row {
+    min-height: 1.85rem;
+    padding: 0.35rem 0.65rem !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__meta-item {
+    padding: 0.4rem 0.55rem !important;
 }
 
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__reason-text {
