@@ -37,6 +37,7 @@ FORM_CODE_MAP = {
     'contract_termination': 'CT',
     'absence_report': 'AR',
     'employment_letter': 'EL',
+    'salary_certificate': 'SC',
     'permission_request': 'PR',
     'promotion': 'PM',
     'salary_adjustment': 'SA',
@@ -253,9 +254,111 @@ _BASE_HR_FORMS = [
         'icon': 'file-x',
         'color': 'rose',
     },
+    {
+        'key': 'salary_certificate',
+        'title': 'تعريف راتب',
+        'description': 'خطاب تعريف راتب للبنوك (مصرف الراجحي وغيره)',
+        'icon': 'landmark',
+        'color': 'indigo',
+    },
 ]
 
 HR_FORMS = merge_forms_catalog(_BASE_HR_FORMS, PRIMARY_FORM_SPECS)
+
+
+def _active_banks_queryset():
+    from apps.setup.models import Bank
+
+    return Bank.objects.filter(is_deleted=False, is_active=True).order_by('name')
+
+
+def _resolve_salary_certificate_bank(request, employee):
+    """البنك من ?bank_id= أو بنك الموظف أو أول بنك نشط في التهيئة."""
+    bank_id = request.GET.get('bank_id')
+    if bank_id and str(bank_id).isdigit():
+        bank = _active_banks_queryset().filter(pk=int(bank_id)).first()
+        if bank:
+            return bank
+
+    emp_bank = getattr(employee, 'bank', None)
+    if emp_bank and not emp_bank.is_deleted and emp_bank.is_active:
+        return emp_bank
+
+    return _active_banks_queryset().first()
+
+
+def _resolve_employee_sponsorship(employee):
+    """كفالة الموظف (حقل «الشركة» في ملف الموظف) — حتى لو لم تُحمَّل عبر select_related."""
+    from apps.setup.models import Sponsorship
+
+    sid = getattr(employee, 'sponsorship_id', None)
+    if not sid:
+        return None
+    cached = getattr(employee, 'sponsorship', None)
+    if cached is not None:
+        return cached
+    return Sponsorship.all_objects.filter(pk=sid).first()
+
+
+def _letterhead_context(employee, company) -> dict:
+    """اسم المنشأة والسجل التجاري — من كفالة الموظف ثم شركة الفرع."""
+    sponsorship = _resolve_employee_sponsorship(employee)
+    if sponsorship and not getattr(sponsorship, 'is_deleted', False):
+        name = (sponsorship.company_name or '').strip()
+        if name:
+            return {
+                'letterhead_name': name,
+                'letterhead_cr': (sponsorship.commercial_registration or '').strip(),
+                'letterhead_source': 'sponsorship',
+                'employee_sponsorship': sponsorship,
+            }
+
+    branch_company = None
+    if getattr(employee, 'branch_id', None):
+        branch = getattr(employee, 'branch', None)
+        if branch and getattr(branch, 'company_id', None):
+            branch_company = branch.company
+
+    employer = branch_company or company
+    if employer:
+        name = (employer.name or '').strip()
+        if name:
+            return {
+                'letterhead_name': name,
+                'letterhead_cr': (getattr(employer, 'commercial_record', None) or '').strip(),
+                'letterhead_source': 'company',
+                'employee_sponsorship': sponsorship,
+            }
+
+    return {
+        'letterhead_name': '',
+        'letterhead_cr': '',
+        'letterhead_source': '',
+        'employee_sponsorship': sponsorship,
+    }
+
+
+DEFAULT_LETTER_FOOTER_AR = (
+    'المملكة العربية السعودية - الرياض - حي الريان - ص.ب 260778 '
+    'الرمز البريدي 11342 هاتف 4916286 - فاكس 4970476 - تحويله 110'
+)
+DEFAULT_LETTER_FOOTER_EN = (
+    'Kingdom of Saudi Arabia - Riyadh - Al Rayan Area - P.O Box 260778 '
+    'code/11342 Tel/4916286 fax/4970476 Ext/110'
+)
+
+
+def _letter_footer_context(company) -> dict:
+    """تذييل الخطاب الرسمي (عربي + إنجليزي) — أسفل صفحة الطباعة."""
+    ar = ''
+    en = ''
+    if company:
+        ar = (getattr(company, 'letter_footer_ar', None) or '').strip()
+        en = (getattr(company, 'letter_footer_en', None) or '').strip()
+    return {
+        'letter_footer_ar': ar or DEFAULT_LETTER_FOOTER_AR,
+        'letter_footer_en': en or DEFAULT_LETTER_FOOTER_EN,
+    }
 
 
 def _hr_forms_employee_queryset(user):
@@ -275,6 +378,8 @@ def hr_forms_index(request):
         'forms': visible_forms,
         'employee_total': qs.count(),
         'employee_search_url': reverse('web:hr_forms_employee_search'),
+        'banks': list(_active_banks_queryset().values('id', 'name')),
+        'has_salary_certificate': any(f['key'] == 'salary_certificate' for f in visible_forms),
     })
 
 
@@ -303,7 +408,7 @@ def hr_form_print(request, form_type, employee_id):
 
     emp_qs = Employee.objects.select_related(
         'branch', 'branch__company', 'department', 'cost_center',
-        'nationality', 'profession', 'sponsorship',
+        'nationality', 'profession', 'sponsorship', 'bank',
     )
     if form_type == 'final_settlement':
         emp_qs = emp_qs.prefetch_related(
@@ -339,6 +444,8 @@ def hr_form_print(request, form_type, employee_id):
         'branch': employee.branch,
         'form_serial': _build_form_serial(form_type, employee.id),
     }
+    context.update(_letterhead_context(employee, company))
+    context.update(_letter_footer_context(company))
 
     if form_type in ('custody_clearance', 'custody_receipt'):
         from apps.setup.models import Administration
@@ -364,5 +471,14 @@ def hr_form_print(request, form_type, employee_id):
         context['warning_serial'] = EmployeeStatement.generate_serial('warning')
         context['next_statement_serial'] = EmployeeStatement.generate_serial('statement')
         context['employee_warning_no'] = getattr(employee, '_warning_stmt_count', 0) + 1
+
+    if form_type == 'salary_certificate':
+        context['bank'] = _resolve_salary_certificate_bank(request, employee)
+        context['banks'] = _active_banks_queryset()
+        context['other_fixed_allowances'] = (
+            (employee.other_allowance or Decimal('0'))
+            + (employee.cash_amount or Decimal('0'))
+            + (employee.meal_allowance or Decimal('0'))
+        )
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)

@@ -1,0 +1,198 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+
+{% block body %}
+
+
+
+<div class="section" style="margin-top: 8px;">
+
+    <p style="text-align: left; font-size: 14.5px; font-weight: 700; margin: 0 0 28px;">
+
+        السادة /
+
+        {% if banks %}
+
+        <form method="get" class="no-print" style="display:inline; margin:0;">
+
+            {% if request.GET.auto_print %}<input type="hidden" name="auto_print" value="1">{% endif %}
+
+            <label for="hr-salary-cert-bank" class="sr-only">البنك</label>
+
+            <select id="hr-salary-cert-bank" name="bank_id" onchange="this.form.submit()"
+
+                    class="hr-form-bank-select" title="اختر البنك من التهيئة">
+
+                {% for b in banks %}
+
+                <option value="{{ b.id }}" {% if bank and bank.id == b.id %}selected{% endif %}>{{ b.name }}</option>
+
+                {% endfor %}
+
+            </select>
+
+        </form>
+
+        <strong class="print-only">{% if bank %}{{ bank.name }}{% else %}{{ banks.0.name }}{% endif %}</strong>
+
+        {% else %}
+
+        <strong class="no-print" style="color:#b45309;">— لا توجد بنوك —</strong>
+
+        <strong class="print-only">........................</strong>
+
+        <a href="{% url 'web:list_branches' %}?tab=banks" class="no-print hr-form-screen-link"
+
+           style="display:inline-block; margin-right:8px; font-size:12px; font-weight:600; color:#4f46e5;">
+
+            إضافة بنك من التهيئة
+
+        </a>
+
+        {% endif %}
+
+        <span style="float: left; margin-right: 12px;">المحترمين</span>
+
+    </p>
+
+
+
+    <p style="font-size: 14.5px; margin: 0 0 20px;">السلام عليكم ورحمة الله وبركاته،</p>
+
+
+
+    <div class="clause" style="font-size: 14.5px; line-height: 2.15; text-align: justify;">
+
+        نفيدكم نحن
+
+        <strong>{% firstof employee_sponsorship.company_name letterhead_name company.name "........................" %}</strong>
+
+        {% if letterhead_cr %}
+
+        — سجل تجاري رقم ({{ letterhead_cr }}) —
+
+        {% endif %}
+
+        بأن
+
+        {% if employee.gender == 'female' %}الموظفة{% else %}الموظف{% endif %}
+
+        <strong>{{ employee.name }}</strong>،
+
+        <strong>{{ employee.nationality.name|default:"................" }}</strong> الجنسية،
+
+        بموجب هوية رقم
+
+        (<strong>{{ employee.id_number|default:"................" }}</strong>)،
+
+        يعمل لدينا بوظيفة
+
+        <strong>{{ employee.profession.name|default:"................" }}</strong>
+
+        {% if employee.department %}
+
+        بقسم <strong>{{ employee.department.name }}</strong>
+
+        {% endif %}
+
+        {% if employee.branch %}
+
+        — فرع <strong>{{ employee.branch.name }}</strong>
+
+        {% endif %}
+
+        وتاريخ تعيينه
+
+        <strong>{{ employee.hire_date|date:"d/m/Y"|default:"..../..../........" }}</strong>
+
+        وما زال على رأس العمل،
+
+        وأُعطي هذا الخطاب بناءً على طلبه دون أدنى مسؤولية على الجهة.
+
+    </div>
+
+
+
+    <div class="section" style="margin-top: 26px;">
+
+        <h3 style="margin-bottom: 12px;">تفاصيل الراتب</h3>
+
+        <table style="width:100%; border-collapse: collapse; font-size: 13.5px;">
+
+            <tbody>
+
+                <tr>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600; width:55%;">الراتب الأساسي</td>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; text-align:center;">{{ employee.basic_salary|floatformat:2 }} ر.س</td>
+
+                </tr>
+
+                <tr>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">بدل السكن</td>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; text-align:center;">{{ employee.housing_allowance|floatformat:2 }} ر.س</td>
+
+                </tr>
+
+                <tr>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">بدل النقل</td>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; text-align:center;">{{ employee.transport_allowance|floatformat:2 }} ر.س</td>
+
+                </tr>
+
+                <tr>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">(أي بدلات أخرى ثابتة)</td>
+
+                    <td style="padding:8px 12px; border:1px solid #cbd5e1; text-align:center;">{{ other_fixed_allowances|floatformat:2 }} ر.س</td>
+
+                </tr>
+
+                <tr style="background:#dcfce7;">
+
+                    <td style="padding:10px 12px; border:1px solid #cbd5e1; font-weight:800; color:#166534;">إجمالي الراتب</td>
+
+                    <td style="padding:10px 12px; border:1px solid #cbd5e1; text-align:center; font-weight:800;">{{ employee.total_salary|floatformat:2 }} ر.س</td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+        {% if employee.meal_allowance or employee.cash_amount or employee.other_allowance %}
+
+        <p style="font-size: 11px; color: #64748b; margin-top: 8px;">
+
+            تفصيل البدلات الأخرى:
+
+            بدل آخر {{ employee.other_allowance|floatformat:2 }} —
+
+            نقدي {{ employee.cash_amount|floatformat:2 }} —
+
+            تغذية {{ employee.meal_allowance|floatformat:2 }} ر.س
+
+        </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+
+<p style="text-align: center; font-size: 11.5px; color: #64748b; margin-top: 40px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
+
+    ملحوظة: يُطبع النموذج على الأوراق الرسمية للمنشأة
+
+</p>
+
+
+
+{% endblock %}
+

@@ -140,6 +140,34 @@ def _parse_env_file(path: Path) -> dict[str, str]:
     return data
 
 
+def _normalize_server_url(raw: str) -> str:
+    """يفضّل HTTPS في الإنتاج — HTTP يسبب 301 ويفشل POST المزامنة."""
+    url = raw.strip().rstrip('/')
+    if url.lower().startswith('http://'):
+        host = url[7:].split('/')[0].lower()
+        if host not in ('localhost', '127.0.0.1') and not host.startswith('localhost:'):
+            upgraded = 'https://' + url[7:]
+            LOG.warning(
+                'SERVER_URL=%s يستخدم HTTP — تم التحويل تلقائياً إلى %s '
+                '(لتفادي 301 وفشل رفع البصمات).',
+                url,
+                upgraded,
+            )
+            return upgraded
+    return url
+
+
+def _guard_agent_http_response(resp: requests.Response, context: str) -> None:
+    """رفض 3xx — requests قد لا يتابع POST بشكل صحيح بعد 301."""
+    if resp.status_code in (301, 302, 303, 307, 308):
+        location = resp.headers.get('Location', '')
+        raise RuntimeError(
+            f'{context}: HTTP {resp.status_code} إعادة توجيه'
+            f'{f" → {location}" if location else ""}. '
+            'اضبط SERVER_URL=https://hr.alrsheed.net في config.env (بدون http://).'
+        )
+
+
 def load_settings(path: Path) -> AgentSettings:
     data = _parse_env_file(path)
     if not path.exists():
@@ -151,7 +179,7 @@ def load_settings(path: Path) -> AgentSettings:
         return data[key]
 
     return AgentSettings(
-        server_url=req('SERVER_URL').rstrip('/'),
+        server_url=_normalize_server_url(req('SERVER_URL')),
         api_key=req('AGENT_API_KEY'),
         agent_id=data.get('AGENT_ID', 'central-agent'),
         poll_interval_sec=int(data.get('POLL_INTERVAL_SEC', '300')),
@@ -414,6 +442,7 @@ def push_to_server(
         data=body,
         timeout=180,
     )
+    _guard_agent_http_response(resp, 'ingest')
     try:
         body = resp.json()
     except Exception:
@@ -563,6 +592,7 @@ def fetch_sync_watermark(settings: AgentSettings, device: DeviceTarget) -> datet
         params={'device_id': device.device_id},
         timeout=30,
     )
+    _guard_agent_http_response(resp, 'sync-state')
     try:
         body = resp.json()
     except Exception:
@@ -583,6 +613,7 @@ def _fetch_pull_requests_with_key(settings: AgentSettings, api_key: str) -> list
         headers={'X-Attendance-Agent-Key': api_key},
         timeout=30,
     )
+    _guard_agent_http_response(resp, 'pull-requests')
     try:
         body = resp.json()
     except Exception:
@@ -649,6 +680,7 @@ def ack_pull_request(
         json={'device_id': device.device_id},
         timeout=30,
     )
+    _guard_agent_http_response(resp, 'pull-requests ack')
     if resp.status_code >= 400:
         LOG.warning('تعذّر إغلاق طلب السحب لجهاز %s: HTTP %s', device.device_id, resp.status_code)
 

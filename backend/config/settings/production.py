@@ -221,8 +221,12 @@ else:
 SESSION_COOKIE_HTTPONLY = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=True)
 
-# استثناء فحص الصحة من إعادة التوجيه إلى HTTPS (للمُراقبة الداخلية)
-SECURE_REDIRECT_EXEMPT = [r'^health/$']
+# استثناء فحص الصحة وواجهة وكيل البصمة من إعادة التوجيه إلى HTTPS
+# (الوكيل يرسل POST — تحويل 301 يكسر المزامنة إذا كان SERVER_URL=http://)
+SECURE_REDIRECT_EXEMPT = [
+    r'^health/$',
+    r'^api/v1/attendance/agent/',
+]
 
 if _USE_HTTPS or SECURE_SSL_REDIRECT:
     SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)

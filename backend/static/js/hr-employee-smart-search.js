@@ -305,6 +305,9 @@
         return Object.assign(base, {
             employeeTotal: opts.employeeTotal || 0,
             employees: [],
+            banks: opts.banks || [],
+            hasSalaryCertificate: !!opts.hasSalaryCertificate,
+            selectedBankId: opts.defaultBankId || (opts.banks && opts.banks[0] ? String(opts.banks[0].id) : ''),
             get pageNumbers() {
                 var total = this.totalPages;
                 var cur = this.currentPage;
@@ -328,7 +331,13 @@
             },
             openForm(key, autoPrint) {
                 if (!this.selected) return;
-                var url = '/hr-forms/' + key + '/' + this.selected.id + '/' + (autoPrint ? '?auto_print=1' : '');
+                var url = '/hr-forms/' + key + '/' + this.selected.id + '/';
+                var params = [];
+                if (autoPrint) params.push('auto_print=1');
+                if (key === 'salary_certificate' && this.selectedBankId) {
+                    params.push('bank_id=' + encodeURIComponent(this.selectedBankId));
+                }
+                if (params.length) url += '?' + params.join('&');
                 window.open(url, '_blank');
             },
         });
@@ -364,9 +373,30 @@
                 employeeTotal = 0;
             }
         }
+        var banks = [];
+        var banksEl = document.getElementById('hr-forms-banks');
+        if (banksEl) {
+            try {
+                banks = JSON.parse(banksEl.textContent || '[]') || [];
+            } catch (e3) {
+                banks = [];
+            }
+        }
+        var hasSalaryCertificate = false;
+        var salaryCertEl = document.getElementById('hr-forms-has-salary-cert');
+        if (salaryCertEl) {
+            try {
+                hasSalaryCertificate = JSON.parse(salaryCertEl.textContent || 'false') === true;
+            } catch (e4) {
+                hasSalaryCertificate = false;
+            }
+        }
         window.registerHrFormsApp({
             searchUrl: searchUrl,
             employeeTotal: employeeTotal,
+            banks: banks,
+            hasSalaryCertificate: hasSalaryCertificate,
+            defaultBankId: banks.length ? String(banks[0].id) : '',
         });
     })();
 })();

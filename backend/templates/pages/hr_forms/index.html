@@ -184,6 +184,22 @@
 
     {# Step 2 — Forms list (revealed only after selection) #}
     <div x-show="selected" x-cloak x-transition>
+        <div x-show="banks.length && hasSalaryCertificate" x-cloak
+             class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-4 flex flex-wrap items-center gap-3">
+            <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                <i data-lucide="landmark" class="w-4 h-4 text-indigo-600"></i>
+                البنك لنموذج «تعريف راتب» (من تبويب البنوك)
+            </span>
+            <select x-model="selectedBankId"
+                    class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 bg-white min-w-[220px]"
+                    aria-label="اختر البنك">
+                <template x-for="b in banks" :key="b.id">
+                    <option :value="String(b.id)" x-text="b.name"></option>
+                </template>
+            </select>
+            <a href="{% url 'web:list_branches' %}?tab=banks"
+               class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">إدارة البنوك</a>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for f in forms %}
             <div class="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-primary-300 transition-all p-4 flex flex-col">
@@ -220,4 +236,6 @@
 
 {{ employee_search_url|json_script:"hr-forms-search-url" }}
 {{ employee_total|default:0|json_script:"hr-forms-employee-total" }}
+{{ banks|json_script:"hr-forms-banks" }}
+{{ has_salary_certificate|json_script:"hr-forms-has-salary-cert" }}
 {% endblock %}

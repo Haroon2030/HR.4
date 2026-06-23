@@ -41,7 +41,7 @@
 
         .page {
             background: #fff; max-width: 21cm; min-height: 29.7cm;
-            margin: 24px auto; padding: 2.2cm 2cm 2cm 2cm;
+            margin: 24px auto; padding: 2.2cm 2cm 2.6cm 2cm;
             box-shadow: 0 4px 20px rgba(0,0,0,.08);
             position: relative;
         }
@@ -174,11 +174,55 @@
             font-size: 13.5px; line-height: 1.9; color: #334155;
         }
 
-        /* Footer */
+        /* Footer — تذييل الخطاب الرسمي */
         .doc-footer {
-            position: absolute; bottom: 1.2cm; left: 2cm; right: 2cm;
-            font-size: 11px; color: #94a3b8; text-align: center;
-            border-top: 1px solid #e2e8f0; padding-top: 8px;
+            position: absolute;
+            bottom: 0.8cm;
+            left: 1.2cm;
+            right: 1.2cm;
+            text-align: center;
+            color: #0f172a;
+            padding-top: 0;
+            border-top: none;
+        }
+        .doc-footer__ar {
+            margin: 0 0 3px;
+            font-size: 10px;
+            line-height: 1.45;
+            font-weight: 600;
+            direction: rtl;
+        }
+        .doc-footer__en {
+            margin: 0;
+            font-size: 9px;
+            line-height: 1.4;
+            font-weight: 500;
+            direction: ltr;
+            font-family: Arial, Helvetica, sans-serif;
+            letter-spacing: 0.01em;
+        }
+        .doc-footer__system {
+            margin: 10px 0 0;
+            font-size: 10px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+        }
+
+        .print-only { display: none; }
+
+        .hr-form-bank-select {
+            display: inline-block;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            min-width: 200px;
+            max-width: 320px;
+            vertical-align: baseline;
         }
 
         /* Print-only — صفحة واحدة A4 */
@@ -191,11 +235,13 @@
                 padding: 0;
             }
             .toolbar { display: none !important; }
+            .no-print { display: none !important; }
+            .print-only { display: inline !important; }
             .hr-form-screen-link { display: none !important; }
             .page {
                 box-shadow: none; margin: 0; max-width: none;
                 width: 210mm; height: 297mm; min-height: 0;
-                padding: 10mm 12mm 12mm 12mm;
+                padding: 10mm 12mm 22mm 12mm;
                 page-break-after: avoid; page-break-inside: avoid;
                 overflow: hidden;
                 font-size: 11.5px;
@@ -271,9 +317,16 @@
             table th, table td { padding: 4px 6px !important; }
 
             .doc-footer {
-                position: absolute; bottom: 4mm; left: 12mm; right: 12mm;
-                font-size: 9px; padding-top: 4px;
+                position: absolute;
+                bottom: 6mm;
+                left: 10mm;
+                right: 10mm;
+                padding-top: 0;
+                border-top: none;
             }
+            .doc-footer__ar { font-size: 8.5px; margin-bottom: 2px; }
+            .doc-footer__en { font-size: 7.5px; }
+            .doc-footer__system { display: none !important; }
 
             /* لا تكسر العناصر الداخلية */
             .section, .clause, .signatures, table { page-break-inside: avoid; }
@@ -297,10 +350,12 @@
         {# Letterhead #}
         <div class="letterhead">
             <div class="company">
-                <h1 class="name">شركة محمد رشيد الرشيد</h1>
+                <h1 class="name">{% firstof employee_sponsorship.company_name letterhead_name company.name "........................" %}</h1>
                 <div class="meta">
-                    س.ت: 1010055714
-                    {% if employee.sponsorship %}<br>الشركة (الكفالة): <strong>{{ employee.sponsorship.company_name }}</strong>{% endif %}
+                    {% if letterhead_cr %}س.ت: {{ letterhead_cr }}{% endif %}
+                    {% if employee.sponsorship and letterhead_source != 'sponsorship' %}
+                    <br>الشركة (الكفالة): <strong>{{ employee.sponsorship.company_name }}</strong>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -323,7 +378,11 @@
         {% block body %}{% endblock %}
 
         <div class="doc-footer">
-            تم الإنشاء من نظام الموارد البشرية — شركة محمد رشيد الرشيد
+            <p class="doc-footer__ar">{{ letter_footer_ar }}</p>
+            <p class="doc-footer__en">{{ letter_footer_en }}</p>
+            <p class="doc-footer__system no-print">
+                تم الإنشاء من نظام الموارد البشرية{% if letterhead_name %} — {{ letterhead_name }}{% endif %}
+            </p>
         </div>
     </div>
 

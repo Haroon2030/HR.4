@@ -7,8 +7,8 @@
     </p>
 
     <div class="clause" style="font-size:14.5px; line-height: 2.2;">
-        تشهد <strong>شركة محمد رشيد الرشيد</strong>
-        {% if company.commercial_record %}— سجل تجاري رقم ({{ company.commercial_record }}) —{% endif %}
+        تشهد <strong>{{ letterhead_name|default:"........................" }}</strong>
+        {% if letterhead_cr %}— سجل تجاري رقم ({{ letterhead_cr }}) —{% endif %}
         بأن الموظف/ة:
         <strong>{{ employee.name }}</strong>،
         يحمل/تحمل الجنسية <strong>{{ employee.nationality.name|default:"............" }}</strong>،
