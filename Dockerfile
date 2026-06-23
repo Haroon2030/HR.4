@@ -59,6 +59,8 @@ RUN DJANGO_ENV=development SECRET_KEY=build-collectstatic-dummy-key-not-for-prod
 EXPOSE 8082
 
 # Migrations run in entrypoint.sh on every container start (before CMD / Gunicorn).
+# Gunicorn يجب أن يستمع على 0.0.0.0 (وليس 127.0.0.1) حتى يصل Traefik/Nginx من خارج الحاوية.
 ENTRYPOINT ["/entrypoint.sh"]
 # gthread workers — better for I/O-bound apps (DB-heavy). 3 workers × 4 threads = 12 concurrent.
-CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8082} --workers ${GUNICORN_WORKERS:-3} --threads ${GUNICORN_THREADS:-4} --worker-class ${GUNICORN_WORKER_CLASS:-gthread} --timeout ${GUNICORN_TIMEOUT:-120} --keep-alive ${GUNICORN_KEEP_ALIVE:-30} --access-logfile - --error-logfile -"]
+# GUNICORN_BIND اختياري في Dokploy — الافتراضي 0.0.0.0:PORT
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind ${GUNICORN_BIND:-0.0.0.0:${PORT:-8082}} --workers ${GUNICORN_WORKERS:-3} --threads ${GUNICORN_THREADS:-4} --worker-class ${GUNICORN_WORKER_CLASS:-gthread} --timeout ${GUNICORN_TIMEOUT:-120} --keep-alive ${GUNICORN_KEEP_ALIVE:-30} --access-logfile - --error-logfile -"]

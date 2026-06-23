@@ -187,6 +187,27 @@ WHATSAPP_DEFAULT_COUNTRY=966
 1. Dokploy → **Deploy / Redeploy**
 2. راقب السجلات — يجب أن ينجح `migrate` بدون `ImproperlyConfigured`
 
+### Gunicorn — مهم للحاوية Docker
+
+في **Dockerfile** الافتراضي:
+
+```text
+gunicorn config.wsgi:application --bind 0.0.0.0:8082
+```
+
+| العنوان | متى |
+|---------|-----|
+| `0.0.0.0:8082` | ✅ داخل Docker — Traefik/Nginx يصل للحاوية |
+| `127.0.0.1:8082` | ❌ يعمل داخل الحاوية فقط — الموقع لا يفتح من الخارج |
+
+إن غيّرت **Start Command** في Dokploy يدوياً، تأكد أنه `0.0.0.0` وليس `127.0.0.1`.
+
+اختياري في Environment:
+
+```env
+GUNICORN_BIND=0.0.0.0:8082
+```
+
 ---
 
 ## الخطوة 5 — Nginx (إن وُجد)
