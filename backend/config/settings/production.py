@@ -26,7 +26,11 @@ SECRET_KEY = env('SECRET_KEY').strip().strip('"').strip("'")
 DEBUG = env.bool('DEBUG', default=False)
 
 # النطاقات/العناوين المسموح لها بالوصول للسيرفر
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+# يُفضّل ضبط ALLOWED_HOSTS في Dokploy/.env؛ الافتراضي للإنتاج أدناه
+ALLOWED_HOSTS = env.list(
+    'ALLOWED_HOSTS',
+    default=['hr.alrsheed.net', '127.0.0.1'],
+)
 
 # النطاقات الموثوقة لحماية CSRF (مطلوبة لنماذج POST) — حدّد https:// في .env
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
@@ -232,9 +236,9 @@ else:
 
 from django.core.exceptions import ImproperlyConfigured
 
-if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['localhost', '127.0.0.1']:
+if not ALLOWED_HOSTS:
     raise ImproperlyConfigured(
-        'حدّد ALLOWED_HOSTS في .env بنطاق الإنتاج الفعلي (مثال: hr.example.com,72.61.107.230).'
+        'حدّد ALLOWED_HOSTS في .env بنطاق الإنتاج الفعلي (مثال: hr.alrsheed.net,127.0.0.1).'
     )
 if not CSRF_TRUSTED_ORIGINS:
     raise ImproperlyConfigured(
