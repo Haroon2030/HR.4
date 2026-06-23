@@ -127,6 +127,8 @@
     </div>
     {% endif %}
 
+    {% include "pages/employees/_employee_tab_panel.html" %}
+
     {% localize off %}
     <!-- Modal: إعادة تفعيل موظف مُصفّى -->
     <div x-show="quickModal==='reactivate'" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null">
