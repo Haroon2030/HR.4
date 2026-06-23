@@ -57,32 +57,14 @@
 
         /* Document title */
         .doc-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
+            text-align: center;
             margin: 24px 0 28px;
-            padding: 0 4px;
-        }
-        .doc-title::before,
-        .doc-title::after {
-            content: "";
-            flex: 1;
-            height: 2px;
-            background: #1e3a8a;
-            min-width: 28px;
         }
         .doc-title h2 {
-            display: inline-block;
             margin: 0;
             font-size: 22px;
             font-weight: 800;
             color: #1e3a8a;
-            padding: 8px 24px;
-            border: 2px solid #1e3a8a;
-            background: #fff;
-            flex: 0 0 auto;
-            white-space: nowrap;
         }
         .doc-meta {
             display: flex; justify-content: space-between;
@@ -384,10 +366,8 @@
             .letterhead .company .name { font-size: 17px; }
             .letterhead .company .meta { font-size: 10px; line-height: 1.4; }
 
-            .doc-title { margin: 8px 0 12px; gap: 8px; }
-            .doc-title::before,
-            .doc-title::after { height: 1.5px; min-width: 16px; }
-            .doc-title h2 { font-size: 16px; padding: 4px 16px; }
+            .doc-title { margin: 8px 0 12px; }
+            .doc-title h2 { font-size: 16px; }
             .doc-meta { font-size: 10.5px; margin-bottom: 10px; }
             .doc-meta .date-picker {
                 border: none; padding: 0; background: transparent;
