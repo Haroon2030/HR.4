@@ -5102,11 +5102,11 @@ body.hr-app .hr-glass-modal__body--compact > .mt-2 {
    نماذج ونوافذ زجاجية — كل التطبيق
    ══════════════════════════════════════════════════════════════ */
 
-/* نوافذ الإجراءات السريعة — صفحة الموظف (x-teleport="body") */
-body.hr-app .hr-employee-quick-modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10200;
+/* نوافذ الإجراءات السريعة — صفحة الموظف */
+.hr-employee-quick-modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10200 !important;
     display: flex;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -5118,12 +5118,18 @@ body.hr-app.hr-quick-modal-open {
     overflow: hidden;
 }
 
-body.hr-app .hr-employee-quick-modal-overlay .hr-glass-modal {
+.hr-employee-quick-modal-overlay .hr-glass-modal {
     position: relative;
     z-index: 1;
     margin: auto;
+    width: 100%;
     max-height: min(92vh, calc(100dvh - 2rem));
     background: #ffffff;
+}
+
+.hr-employee-quick-modal-overlay[style*="display: none"],
+.hr-employee-quick-modal-overlay[x-cloak] {
+    display: none !important;
 }
 
 /* خلفية النوافذ المنبثقة */

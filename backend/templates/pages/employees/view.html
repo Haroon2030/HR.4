@@ -8,7 +8,7 @@
 {{ employee_modal_js|json_script:"employee-modal-js" }}
 <div class="space-y-4" x-data="{ activeTab: '{{ default_employee_tab }}', quickModal: null, quickOpen: false }"
      x-init="{% if tab_visible.fingerprint %}if (window.location.hash === '#fingerprint' && !window.location.search.includes('tab=fingerprint')) { var u = new URL(window.location.href); u.searchParams.set('tab', 'fingerprint'); window.location.replace(u.pathname + u.search + '#fingerprint'); } else if (window.location.hash === '#fingerprint') { activeTab = 'fingerprint'; }{% endif %}"
-     x-effect="document.body.classList.toggle('hr-quick-modal-open', !!quickModal); if (quickModal === 'end_of_service') $nextTick(() => $dispatch('eos-calculator-reset'))"
+     x-effect="document.body.classList.toggle('hr-quick-modal-open', !!quickModal)"
      @open-schedule-modal.window="quickModal = 'schedule'"
      @close-schedule-modal.window="quickModal = null">
 
@@ -71,7 +71,7 @@
                     </button>
                     <div class="hr-dropdown-divider"></div>
                     {% if can_execute_settlement %}
-                    <button type="button" @click="quickModal='end_of_service'; quickOpen=false" class="hr-dropdown-item">
+                    <button type="button" @click.stop="quickModal='end_of_service'; quickOpen=false; $nextTick(() => $dispatch('eos-calculator-reset'))" class="hr-dropdown-item">
                         <i data-lucide="file-x-2" class="w-4 h-4"></i> تصفية نهاية خدمة / استقالة
                     </button>
                     {% endif %}
@@ -116,8 +116,10 @@
     </div>
     {% endif %}
 
+
+    {% include "pages/employees/_employee_tab_panel.html" %}
+
     {% localize off %}
-    <template x-teleport="body">
     <!-- Modal: إعادة تفعيل موظف مُصفّى -->
     <div x-show="quickModal==='reactivate'" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null">
         <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
@@ -563,7 +565,11 @@
 
     {% if can_execute_settlement %}
     <!-- Modal: تصفية نهاية خدمة أو استقالة -->
-    <div x-show="quickModal==='end_of_service'" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null">
+    <div x-show="quickModal==='end_of_service'" x-cloak
+         class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4"
+         role="dialog" aria-modal="true" aria-label="تصفية نهاية خدمة أو استقالة"
+         @click.self="quickModal=null"
+         x-effect="if (quickModal === 'end_of_service' && window.lucide) $nextTick(() => lucide.createIcons())">
         <div class="hr-glass-modal w-full max-w-xl max-h-[90vh] overflow-y-auto" @click.stop>
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -1225,10 +1231,7 @@
         </div>
     </div>
 
-    </template>
     {% endlocalize %}
-
-    {% include "pages/employees/_employee_tab_panel.html" %}
 
 </div>
 {% endblock %}
