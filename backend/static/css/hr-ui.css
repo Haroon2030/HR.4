@@ -2992,8 +2992,8 @@ body.hr-app .hr-ledger-detail {
 
 body.hr-app .hr-ledger-detail__hero {
     border-radius: 0.625rem;
-    border: 1px solid #c7d2fe;
-    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 55%, #f5f3ff 100%);
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
     padding: 0.45rem 0.55rem;
 }
 
@@ -3010,14 +3010,14 @@ body.hr-app .hr-ledger-detail__hero-row {
 body.hr-app .hr-ledger-detail__hero-label {
     font-size: 0.625rem;
     font-weight: 700;
-    color: #4338ca;
+    color: #475569;
     white-space: nowrap;
 }
 
 body.hr-app .hr-ledger-detail__hero-value {
     font-size: 0.6875rem;
     font-weight: 800;
-    color: #312e81;
+    color: #0f172a;
     text-align: left;
 }
 
@@ -4480,28 +4480,38 @@ body.hr-app .hr-topbar-info-panel.hr-sidebar-panel .hr-topbar-info-panel__foot {
     color: #fde68a !important;
 }
 
-/* تفاصيل دفتر الأستاذ — أسطح شفافة للقراءة على الأزرق */
+/* تفاصيل دفتر الأستاذ — بطاقة الملخص بخلفية بيضاء */
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero {
-    border-color: rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.12);
+    border-color: #e2e8f0 !important;
+    background: #ffffff !important;
 }
 
-#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero-label,
-#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero-value,
-#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-label,
-#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__hero-row {
+    border-bottom-color: #e2e8f0;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__hero-label,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__meta-label {
+    color: #475569 !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__hero-value,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__meta-value {
+    color: #0f172a !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__meta-item,
+#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__hero .hr-ledger-detail__meta-item--period {
+    border-color: #e2e8f0 !important;
+    background: #f8fafc !important;
+}
+
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section-title,
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__row-label,
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__result,
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__balance-label,
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail--plain .hr-ledger-detail__text {
     color: #fff !important;
-}
-
-#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-item,
-#hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__meta-item--period {
-    border-color: rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.08);
 }
 
 #hr-glass-text-modal .hr-glass-modal--sidebar .hr-text-detail-modal__html-panel .hr-ledger-detail__section {
