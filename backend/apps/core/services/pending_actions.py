@@ -722,9 +722,66 @@ def _notify(*args, **kwargs):
     return notif
 
 
+SETTLEMENT_PENDING_ACTION_TYPES = frozenset({'end_of_service', 'terminate'})
+
+
+def _is_settlement_pending_action(action_type: str) -> bool:
+    return action_type in SETTLEMENT_PENDING_ACTION_TYPES
+
+
+def _open_settlement_pending_action_qs(employee):
+    from apps.core.models import PendingAction
+
+    return PendingAction.objects.filter(
+        employee=employee,
+        action_type__in=SETTLEMENT_PENDING_ACTION_TYPES,
+        executed_at__isnull=True,
+    )
+
+
+def mark_employee_settlement_pending(employee, *, payload: dict) -> dict:
+    """عند تقديم طلب تصفية — يُوقَف الموظف حتى اكتمال الموافقات والتنفيذ."""
+    from apps.employees.models import Employee
+
+    payload = dict(payload or {})
+    if employee.status == Employee.Status.TERMINATED:
+        return payload
+
+    payload.setdefault('status_before_settlement', employee.status)
+    if employee.status != Employee.Status.SUSPENDED:
+        employee.status = Employee.Status.SUSPENDED
+        employee.save(update_fields=['status', 'updated_at'])
+    return payload
+
+
+def revert_employee_settlement_pending_status(action) -> None:
+    """إلغاء وقف الموظف عند حذف طلب تصفية غير مُنفَّذ."""
+    from apps.employees.models import Employee
+
+    if action.executed_at or not _is_settlement_pending_action(action.action_type):
+        return
+
+    employee = action.employee
+    if employee.status != Employee.Status.SUSPENDED:
+        return
+
+    prev = action.payload.get('status_before_settlement') or Employee.Status.ACTIVE
+    valid = {choice[0] for choice in Employee.Status.choices}
+    if prev not in valid or prev == Employee.Status.TERMINATED:
+        prev = Employee.Status.ACTIVE
+
+    employee.status = prev
+    employee.save(update_fields=['status', 'updated_at'])
+
+
 def create_pending_action(*, action_type, employee, payload, requested_by, attachment=None):
     """إنشاء طلب معلّق مع لقطة مسار الموافقة."""
     from apps.core.models import PendingAction
+
+    if _is_settlement_pending_action(action_type):
+        if _open_settlement_pending_action_qs(employee).exists():
+            raise ValueError('يوجد طلب تصفية قيد الموافقة لهذا الموظف بالفعل.')
+        payload = mark_employee_settlement_pending(employee, payload=payload)
 
     routing = snapshot_routing_fields(employee)
     return PendingAction.objects.create(

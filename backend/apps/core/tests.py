@@ -8,7 +8,11 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.core.models import Branch, Company, PendingAction, Role
-from apps.core.services.pending_actions import execute_pending_action
+from apps.core.services.pending_actions import (
+    create_pending_action,
+    execute_pending_action,
+    revert_employee_settlement_pending_status,
+)
 from apps.employees.models import (
     Employee,
     EmployeeAbsence,
@@ -224,6 +228,81 @@ class TerminateExecutorTests(_BaseExecutorTests):
             PayrollLine.objects.filter(run=run, employee=self.employee).exists(),
         )
         self.assertEqual(run.status, PayrollRun.Status.DRAFT)
+
+
+class SettlementPendingStatusTests(_BaseExecutorTests):
+    def test_create_end_of_service_marks_employee_suspended(self):
+        action = create_pending_action(
+            action_type='end_of_service',
+            employee=self.employee,
+            payload={
+                'end_date': '2026-06-01',
+                'terminated_by': 'company',
+            },
+            requested_by=self.requester,
+        )
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
+        self.assertEqual(action.payload['status_before_settlement'], Employee.Status.ACTIVE)
+
+    def test_create_terminate_marks_employee_suspended(self):
+        create_pending_action(
+            action_type='terminate',
+            employee=self.employee,
+            payload={
+                'end_date': '2026-06-01',
+                'end_reason': 'تصفية',
+            },
+            requested_by=self.requester,
+        )
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
+
+    def test_duplicate_open_settlement_raises(self):
+        create_pending_action(
+            action_type='end_of_service',
+            employee=self.employee,
+            payload={'end_date': '2026-06-01', 'terminated_by': 'company'},
+            requested_by=self.requester,
+        )
+        with self.assertRaises(ValueError):
+            create_pending_action(
+                action_type='terminate',
+                employee=self.employee,
+                payload={'end_date': '2026-06-02', 'end_reason': 'x'},
+                requested_by=self.requester,
+            )
+
+    def test_revert_restores_previous_status_on_delete(self):
+        action = create_pending_action(
+            action_type='terminate',
+            employee=self.employee,
+            payload={'end_date': '2026-06-01', 'end_reason': 'تصفية'},
+            requested_by=self.requester,
+        )
+        revert_employee_settlement_pending_status(action)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.ACTIVE)
+
+    def test_execute_end_of_service_sets_terminated_after_suspended(self):
+        action = create_pending_action(
+            action_type='end_of_service',
+            employee=self.employee,
+            payload={
+                'end_date': '2026-05-01',
+                'terminated_by': 'contract_expiry',
+                'end_reason': 'انتهاء مدة العقد',
+            },
+            requested_by=self.requester,
+        )
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
+
+        action.status = PendingAction.Status.APPROVED
+        action.save(update_fields=['status'])
+        execute_pending_action(action, self.approver)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.TERMINATED)
 
 
 class EndOfServiceContractExpiryTests(_BaseExecutorTests):

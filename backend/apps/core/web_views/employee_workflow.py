@@ -113,16 +113,20 @@ def terminate_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    create_pending_action(
-        action_type='terminate',
-        employee=employee,
-        payload={
-            'end_date': cd['end_date'].isoformat(),
-            'end_reason': cd.get('end_reason', ''),
-        },
-        requested_by=request.user,
-    )
-    messages.success(request, 'تم إرسال طلب تصفية الموظف إلى مدير الإدارة/الفرع للموافقة.')
+    try:
+        create_pending_action(
+            action_type='terminate',
+            employee=employee,
+            payload={
+                'end_date': cd['end_date'].isoformat(),
+                'end_reason': cd.get('end_reason', ''),
+            },
+            requested_by=request.user,
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect('web:view_employee', employee_id=employee.id)
+    messages.success(request, 'تم إرسال طلب التصفية — أصبح الموظف موقوفاً بانتظار الموافقة النهائية.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -733,17 +737,21 @@ def end_of_service_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
-    create_pending_action(
-        action_type='end_of_service',
-        employee=employee,
-        payload={
-            'end_date': cd['end_date'].isoformat(),
-            'terminated_by': cd['terminated_by'],
-            'article_party': cd.get('article_party') or cd.get('article_77_party', ''),
-            'end_reason': cd.get('end_reason', ''),
-            'notes': cd.get('notes', ''),
-        },
-        requested_by=request.user,
-    )
-    messages.success(request, 'تم إرسال طلب تصفية نهاية الخدمة إلى مدير الإدارة/الفرع للموافقة.')
+    try:
+        create_pending_action(
+            action_type='end_of_service',
+            employee=employee,
+            payload={
+                'end_date': cd['end_date'].isoformat(),
+                'terminated_by': cd['terminated_by'],
+                'article_party': cd.get('article_party') or cd.get('article_77_party', ''),
+                'end_reason': cd.get('end_reason', ''),
+                'notes': cd.get('notes', ''),
+            },
+            requested_by=request.user,
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect('web:view_employee', employee_id=employee.id)
+    messages.success(request, 'تم إرسال طلب التصفية — أصبح الموظف موقوفاً بانتظار الموافقة النهائية.')
     return redirect('web:view_employee', employee_id=employee.id)

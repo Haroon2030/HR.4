@@ -25,7 +25,7 @@
             {% url 'web:list_employees' as employees_list_url %}
             {% include 'components/glass_back_link.html' with back_url=employees_list_url show_label=True label='رجوع' aria_label='رجوع لقائمة الموظفين' %}
 
-            {% if employee.status != 'terminated' %}
+            {% if employee.status == 'active' or employee.status == 'leave' %}
             <!-- زر إضافة سريعة -->
             <div class="hr-dropdown" @click.outside="quickOpen = false">
                 <button type="button" @click="quickOpen = !quickOpen"
@@ -114,10 +114,18 @@
             </button>
         </div>
     </div>
+    {% elif employee.status == 'suspended' %}
+    <!-- بانر الوقف (تصفية قيد الموافقة) -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+            <i data-lucide="user-x" class="w-5 h-5 text-amber-600"></i>
+        </div>
+        <div class="flex-1">
+            <div class="font-bold text-amber-900 text-sm mb-1">الموظف موقوف</div>
+            <p class="text-xs text-amber-800">يوجد طلب تصفية قيد الموافقة — الحالة ستتحول إلى «منتهي الخدمة» بعد اعتماد الطلب وتنفيذه.</p>
+        </div>
+    </div>
     {% endif %}
-
-
-    {% include "pages/employees/_employee_tab_panel.html" %}
 
     {% localize off %}
     <!-- Modal: إعادة تفعيل موظف مُصفّى -->

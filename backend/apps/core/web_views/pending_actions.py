@@ -564,6 +564,8 @@ def delete_pending_action(request, action_id):
         return redirect('web:list_pending_actions')
 
     label = f'#{action.id} — {action.get_action_type_display()}'
+    from apps.core.services.pending_actions import revert_employee_settlement_pending_status
+    revert_employee_settlement_pending_status(action)
     action.delete()
     messages.success(request, f'تم حذف الطلب {label}.')
     return redirect('web:list_pending_actions')
