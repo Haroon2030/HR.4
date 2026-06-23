@@ -1,6 +1,31 @@
 """
 Custom Middleware
 """
+import re
+
+
+class ProxyForwardedHeadersMiddleware:
+    """
+    يُطبَّق قبل SecurityMiddleware — يضمن وجود X-Forwarded-Proto للبروكسي (Traefik/Nginx/Dokploy).
+
+    Django يعتمد على SECURE_PROXY_SSL_HEADER لاكتشاف HTTPS خلف reverse proxy.
+    إن لم يرسل البروكسي X-Forwarded-Proto يفشل تسجيل الدخول وSSL redirect.
+    """
+
+    _FORWARDED_PROTO_RE = re.compile(r'proto=([^;,\s]+)', re.IGNORECASE)
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        meta = request.META
+        if not (meta.get('HTTP_X_FORWARDED_PROTO') or '').strip():
+            forwarded = (meta.get('HTTP_FORWARDED') or '').strip()
+            if forwarded:
+                match = self._FORWARDED_PROTO_RE.search(forwarded)
+                if match:
+                    meta['HTTP_X_FORWARDED_PROTO'] = match.group(1).lower()
+        return self.get_response(request)
 
 
 class DisableCOOPMiddleware:

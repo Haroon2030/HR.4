@@ -1,0 +1,112 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# HR Pro — إنتاج HTTPS: https://hr.alrsheed.net
+# Dokploy → Environment — لا ترفع هذا الملف إلى Git
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Django ───────────────────────────────────────────────────────────────────
+DJANGO_ENV=production
+DJANGO_SETTINGS_MODULE=config.settings
+TIME_ZONE=Asia/Riyadh
+DEBUG=False
+PORT=8082
+
+# ─── المفتاح السري ──────────────────────────────────────────────────────────
+SECRET_KEY=change-me-long-random-secret
+
+# ─── قاعدة البيانات (Neon — pooler) ───────────────────────────────────────────
+DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@ep-morning-rice-ab19c977-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require
+DB_SSLMODE=require
+CONN_MAX_AGE=600
+MIGRATE_MAX_RETRIES=5
+MIGRATE_RETRY_SECS=5
+
+# ─── النطاق والوصول (HTTPS) ───────────────────────────────────────────────────
+# Traefik/Nginx يجب أن يمرّر: X-Forwarded-Proto: https
+ALLOWED_HOSTS=hr.alrsheed.net,72.61.107.230,localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=https://hr.alrsheed.net
+
+# ─── أمان HTTPS ───────────────────────────────────────────────────────────────
+USE_HTTPS=true
+SECURE_SSL_REDIRECT=true
+SESSION_COOKIE_SECURE=true
+CSRF_COOKIE_SECURE=true
+SESSION_COOKIE_HTTPONLY=true
+SESSION_EXPIRE_AT_BROWSER_CLOSE=true
+SESSION_COOKIE_AGE=28800
+
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+CORS_ALLOW_ALL_ORIGINS=False
+CORS_ALLOWED_ORIGINS=https://hr.alrsheed.net
+
+# ─── Gunicorn ─────────────────────────────────────────────────────────────────
+GUNICORN_WORKERS=3
+GUNICORN_THREADS=4
+GUNICORN_TIMEOUT=120
+
+# ─── مدير النظام ─────────────────────────────────────────────────────────────
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_PASSWORD=change-me
+DJANGO_SUPERUSER_EMAIL=admin@alrsheed.net
+
+# ─── Cloudflare R2 ───────────────────────────────────────────────────────────
+USE_R2=True
+R2_ACCESS_KEY_ID=your-r2-access-key
+R2_SECRET_ACCESS_KEY=your-r2-secret-key
+R2_BUCKET_NAME=erphr
+R2_ENDPOINT_URL=https://your-account-id.r2.cloudflarestorage.com
+R2_REGION=auto
+R2_PUBLIC_DOMAIN=
+R2_SIGNED_URLS=true
+R2_SIGNED_URL_EXPIRE=3600
+R2_PROXY_MEDIA=true
+
+# ─── البريد (Hostinger) ─────────────────────────────────────────────────────
+EMAIL_HOST=smtp.hostinger.com
+EMAIL_PORT=465
+EMAIL_USE_SSL=True
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER=your-mailbox@alrsheed.net
+EMAIL_HOST_PASSWORD=change-me
+DEFAULT_FROM_EMAIL=HR Pro <your-mailbox@alrsheed.net>
+HR_NOTIFICATION_EMAIL=admin@alrsheed.net
+EMAIL_TIMEOUT=30
+
+# ─── أجهزة البصمة ZKTeco ─────────────────────────────────────────────────────
+BIOMETRIC_MOCK_MODE=false
+BIOMETRIC_ZK_TIMEOUT=20
+BIOMETRIC_ZK_OMIT_PING=true
+
+# ─── وكيل البصمة ─────────────────────────────────────────────────────────────
+ATTENDANCE_AGENT_API_KEY=your-agent-api-key
+ATTENDANCE_REQUIRE_INGEST_SIGNATURE=true
+AGENT_GLOBAL_KEY_LIST_DEVICES=false
+AGENT_GLOBAL_KEY_ALLOW_INGEST=true
+DRF_ATTENDANCE_AGENT_THROTTLE=120/hour
+
+# ─── نسخ احتياطي ─────────────────────────────────────────────────────────────
+BACKUP_STORAGE_DIR=/app/backups
+BACKUP_ENABLED=true
+BACKUP_BEFORE_MIGRATE=true
+BACKUP_NOTIFY_ON_SUCCESS=true
+BACKUP_NOTIFY_ON_FAILURE=true
+BACKUP_NOTIFY_EMAIL=admin@alrsheed.net
+BACKUP_SCHEDULE=0 3 * * *
+
+# ─── تقرير العمليات PDF ──────────────────────────────────────────────────────
+OPERATIONS_REPORT_CRON=true
+OPERATIONS_REPORT_CRON_SCHEDULE=* * * * *
+
+# ─── WhatsApp / Evolution API ────────────────────────────────────────────────
+WHATSAPP_ENABLED=true
+# اتصال داخلي من الحاوية إلى Evolution على نفس السيرفر — يبقى http
+EVOLUTION_API_URL=http://72.61.107.230:8081
+EVOLUTION_API_KEY=your-evolution-global-api-key
+EVOLUTION_INSTANCE=hr
+EVOLUTION_API_TIMEOUT=20
+WHATSAPP_DEFAULT_COUNTRY=966
+
+# REDIS_URL=redis://YOUR_REDIS_HOST:6379/0
+
+# ─── تحقق بعد النشر ───────────────────────────────────────────────────────────
+# curl -s "https://hr.alrsheed.net/health/?proxy=1"
+# وكيل البصمة (config.env): SERVER_URL=https://hr.alrsheed.net

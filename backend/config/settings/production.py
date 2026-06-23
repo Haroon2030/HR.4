@@ -190,6 +190,8 @@ elif _use_https_raw in ('true', '1', 'yes'):
 else:
     _USE_HTTPS = True
 
+USE_HTTPS = _USE_HTTPS
+
 # كوكي Secure يعمل فقط مع HTTPS فعلي — لا يُفعَّل على HTTP حتى لو وُضع في .env
 if _USE_HTTPS:
     SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)

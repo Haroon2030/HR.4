@@ -99,6 +99,7 @@ INSTALLED_APPS = [
 # ══════════════════════════════════════════════════════════════════════════════
 
 MIDDLEWARE = [
+    'config.middleware.ProxyForwardedHeadersMiddleware',  # قبل SecurityMiddleware — X-Forwarded-Proto
     'django.middleware.security.SecurityMiddleware',          # حماية أمنية أساسية
     'apps.attendance.middleware.AgentIngestBodyMiddleware',   # جسم خام لـ HMAC ingest
     'config.middleware.DisableCOOPMiddleware',                # إزالة COOP header (يسبب تحذيرات على HTTP)
