@@ -45,6 +45,7 @@ FORM_CODE_MAP = {
     'transfer': 'TR',
     'clearance': 'CL',
     'user_account': 'UA',
+    'ledger_settlement': 'LS',
 }
 
 
@@ -599,3 +600,46 @@ def hr_form_print(request, form_type, employee_id):
         )
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def print_ledger_settlement_detail(request, employee_id, ledger_id):
+    """نموذج رسمي قابل للطباعة — تفاصيل حركة المخصصات بعنوان تصفية نهاية الخدمة."""
+    from apps.core.salary_access import user_can_view_salary
+    from apps.employees.models import EmployeeLedger
+
+    if not user_can_view_salary(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض بيانات الراتب والمخصصات.')
+        return redirect('web:view_employee', employee_id=employee_id)
+
+    employee = get_object_or_404(
+        Employee.objects.select_related(
+            'branch', 'branch__company', 'department', 'nationality', 'sponsorship',
+        ),
+        id=employee_id,
+    )
+    ledger = get_object_or_404(
+        EmployeeLedger.objects.filter(employee=employee),
+        id=ledger_id,
+    )
+    company = (employee.branch.company if employee.branch_id else None) or Company.objects.first()
+
+    form_meta = {
+        'key': 'ledger_settlement',
+        'title': 'تصفية نهاية الخدمة',
+        'print_title': 'تصفية نهاية الخدمة',
+    }
+    context = {
+        'form_meta': form_meta,
+        'employee': employee,
+        'ledger': ledger,
+        'company': company,
+        'branch': employee.branch,
+        'form_serial': _build_form_serial('ledger_settlement', employee.id),
+        'form_back_url': reverse('web:view_employee', args=[employee.id]) + '?tab=accruals',
+    }
+    context.update(_letterhead_context(employee, company))
+    context.update(_letter_footer_context(company))
+    return render(request, 'pages/hr_forms/ledger_settlement_detail.html', context)

@@ -1,0 +1,67 @@
+{% with ctx=ledger.calculation_display_context %}
+{% if ctx.kind == 'structured' %}
+
+<div class="section">
+    <h3>ملخص العملية</h3>
+    <div class="info-grid">
+        <div class="row"><span class="label">نوع العملية:</span><span class="value">{{ ctx.operation }}</span></div>
+        <div class="row"><span class="label">الفترة:</span><span class="value" dir="ltr">{{ ctx.period }}</span></div>
+        {% for m in ctx.meta %}
+        <div class="row">
+            <span class="label">{{ m.label }}:</span>
+            <span class="value"{% if m.mono %} dir="ltr" style="font-family:ui-monospace,monospace;font-weight:700"{% endif %}>{{ m.value }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% for section in ctx.sections %}
+<div class="section">
+    <h3>
+        {{ section.title }}
+        {% if section.hint %}<span style="font-size:12px;font-weight:600;color:#64748b;margin-right:6px">({{ section.hint }})</span>{% endif %}
+    </h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+            <tr style="background:#1e3a8a;color:#fff;">
+                <th style="padding:8px;border:1px solid #1e293b;text-align:right;">البيان</th>
+                <th style="padding:8px;border:1px solid #1e293b;text-align:center;width:38%">المعادلة</th>
+                <th style="padding:8px;border:1px solid #1e293b;text-align:center;width:22%">النتيجة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in section.rows %}
+            <tr{% if row.highlight %} style="background:#f0fdf4"{% endif %}>
+                <td style="padding:8px;border:1px solid #cbd5e1;font-weight:600;">{{ row.label }}</td>
+                <td style="padding:8px;border:1px solid #cbd5e1;text-align:center;color:#dc2626;font-weight:700;font-family:ui-monospace,monospace;" dir="ltr">{{ row.formula|default:"—" }}</td>
+                <td style="padding:8px;border:1px solid #cbd5e1;text-align:center;font-weight:800;font-family:ui-monospace,monospace;" dir="ltr">{{ row.result }}</td>
+            </tr>
+            {% endfor %}
+            {% if section.balance %}
+            <tr style="background:#ecfdf5;">
+                <td style="padding:8px;border:1px solid #cbd5e1;font-weight:700;" colspan="2">{{ section.balance.label }}</td>
+                <td style="padding:8px;border:1px solid #cbd5e1;text-align:center;font-weight:800;" dir="ltr">
+                    {{ section.balance.before }} {{ section.balance.change }} = {{ section.balance.after }} {{ section.balance.unit }}
+                </td>
+            </tr>
+            {% endif %}
+            {% if section.balance_money %}
+            <tr style="background:#fffbeb;">
+                <td style="padding:8px;border:1px solid #cbd5e1;font-weight:700;" colspan="2">{{ section.balance_money.label }}</td>
+                <td style="padding:8px;border:1px solid #cbd5e1;text-align:center;font-weight:800;" dir="ltr">
+                    {{ section.balance_money.before }} {{ section.balance_money.change }} = {{ section.balance_money.after }} {{ section.balance_money.unit }}
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="section">
+    <h3>التفاصيل</h3>
+    <div class="blank-block" style="min-height:80px;white-space:pre-line;font-size:13px;line-height:1.7;">{{ ctx.text }}</div>
+</div>
+{% endif %}
+{% endwith %}

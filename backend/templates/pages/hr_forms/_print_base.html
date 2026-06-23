@@ -491,7 +491,7 @@
             <button class="btn btn-primary" onclick="window.print()">
                 طباعة 🖨
             </button>
-            <a class="btn btn-secondary" href="{% url 'web:hr_forms_index' %}">
+            <a class="btn btn-secondary" href="{% if form_back_url %}{{ form_back_url }}{% else %}{% url 'web:hr_forms_index' %}{% endif %}">
                 ← رجوع
             </a>
         </div>

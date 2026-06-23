@@ -78,6 +78,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/cash-shortage/add/', web_views.add_employee_cash_shortage, name='add_employee_cash_shortage'),
     path('employees/<int:employee_id>/end-of-service/', web_views.end_of_service_employee, name='end_of_service_employee'), # تصفية نهاية خدمة أو استقالة
     path('employees/<int:employee_id>/ledger-init/', web_views.run_ledger_init, name='run_ledger_init'),        # تهيئة أرصدة الموظف
+    path('employees/<int:employee_id>/ledger/<int:ledger_id>/print/', web_views.print_ledger_settlement_detail, name='print_ledger_settlement_detail'),
 
     # ══════════════════════════════════════════════════════════════
     # 3. طلبات التوظيف — دورة: أخصائي → مدير فرع → مدير الموارد → أخصائي ينفّذ
