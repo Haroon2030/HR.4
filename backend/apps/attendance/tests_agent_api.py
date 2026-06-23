@@ -205,6 +205,17 @@ class AttendanceAgentAPITests(TestCase):
         self.assertEqual(r2.status_code, 200)
         self.assertIsNone(get_pull_request(self.device.pk))
 
+    def test_pull_requests_accepts_legacy_x_agent_key_header(self):
+        """توافق: بعض العملاء يرسلون X-Agent-Key بدل X-Attendance-Agent-Key."""
+        from apps.attendance.services.agent_pull_queue import queue_pull_request
+
+        queue_pull_request(self.device.pk)
+        client = APIClient()
+        client.credentials(HTTP_X_AGENT_KEY=self.device_key)
+        r = client.get('/api/v1/attendance/agent/pull-requests/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json()['data']), 1)
+
     def test_ingest_invalid_payload_returns_400(self):
         client = self._device_client()
         response = client.post(

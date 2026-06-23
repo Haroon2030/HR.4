@@ -38,23 +38,40 @@ class AttendanceAgentPrincipal:
 class AgentAPIKeyAuthentication(BaseAuthentication):
     """
     Header: X-Attendance-Agent-Key: <key>
+    (توافق: X-Agent-Key يُقبل أيضاً)
 
     - مفتاح عام (ATTENDANCE_AGENT_API_KEY) — وصول كامل (توافق خلفي).
     - مفتاح جهاز — يُقيَّد بجهاز البصمة المطابق في ingest/ack.
     """
 
     header_name = 'X-Attendance-Agent-Key'
+    legacy_header_name = 'X-Agent-Key'
+
+    def _extract_api_key(self, request) -> tuple[str, str]:
+        """يرجع (المفتاح, المصدر: primary|legacy|none)."""
+        primary = (request.headers.get(self.header_name) or '').strip()
+        if primary:
+            return primary, 'primary'
+        legacy = (request.headers.get(self.legacy_header_name) or '').strip()
+        if legacy:
+            return legacy, 'legacy'
+        return '', 'none'
 
     def authenticate(self, request):
         global_key = (getattr(settings, 'ATTENDANCE_AGENT_API_KEY', None) or '').strip()
-        provided = (request.headers.get(self.header_name) or '').strip()
+        provided, _key_source = self._extract_api_key(request)
 
         if not provided:
             if not global_key:
                 raise AuthenticationFailed(
                     _('وكيل البصمة غير مُفعّل (ATTENDANCE_AGENT_API_KEY أو مفتاح جهاز).')
                 )
-            raise AuthenticationFailed(_('مفتاح وكيل البصمة مطلوب.'))
+            raise AuthenticationFailed(
+                _(
+                    'مفتاح وكيل البصمة مطلوب. '
+                    'استخدم الهيدر X-Attendance-Agent-Key (أو X-Agent-Key للتوافق).'
+                )
+            )
 
         if global_key and secrets.compare_digest(provided, global_key):
             return (
