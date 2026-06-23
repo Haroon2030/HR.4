@@ -216,12 +216,13 @@
             font-family: inherit;
             font-size: 14px;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 2px 6px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             background: #fff;
-            min-width: 200px;
-            max-width: 320px;
+            min-width: 0;
+            width: auto;
+            max-width: 240px;
             vertical-align: baseline;
         }
 
@@ -233,13 +234,18 @@
             font-weight: 700;
             color: #0f172a;
             text-align: right;
+            line-height: 1.8;
         }
         .hr-form-bank-address__recipient {
             display: inline-flex;
             align-items: baseline;
-            flex-wrap: wrap;
             gap: 6px;
             max-width: 100%;
+            vertical-align: baseline;
+        }
+        .hr-form-bank-address--ready .hr-form-bank-address__recipient {
+            flex-wrap: nowrap;
+            white-space: nowrap;
         }
         .hr-form-bank-address__prefix { white-space: nowrap; }
         .hr-form-bank-address__suffix { white-space: nowrap; }
@@ -247,6 +253,7 @@
             display: inline-flex;
             align-items: baseline;
             min-width: 0;
+            flex-shrink: 0;
         }
         .hr-form-bank-address__form { display: inline; margin: 0; }
         .hr-form-bank-address__name {
@@ -255,9 +262,10 @@
             font-weight: 800;
             color: #1e3a8a;
         }
-        .hr-form-bank-address__bank .blank {
-            min-width: 160px;
-            max-width: 320px;
+        .hr-form-bank-address__bank .blank,
+        input.blank.hr-form-bank-address__name {
+            min-width: 140px;
+            max-width: 240px;
             text-align: right;
             font-weight: 800;
             color: #1e3a8a;
@@ -265,11 +273,13 @@
             border-bottom-color: #94a3b8;
         }
         .hr-form-bank-address__hint {
-            margin: 8px 0 0;
+            display: inline;
+            margin: 0;
+            margin-right: 8px;
             font-size: 11.5px;
             font-weight: 500;
             color: #64748b;
-            text-align: center;
+            white-space: nowrap;
         }
         .hr-form-bank-address__hint a {
             color: #4f46e5;
@@ -407,7 +417,8 @@
             .clause { padding: 8px 10px; margin: 6px 0; font-size: 11px; line-height: 1.55; }
 
             .hr-form-bank-address { margin-bottom: 14px; }
-            .hr-form-bank-address__line { font-size: 12px; }
+            .hr-form-bank-address__line { font-size: 12px; white-space: nowrap; }
+            .hr-form-bank-address__hint { display: none !important; }
             .hr-form-bank-address__name { font-size: 12.5px; }
             .hr-form-bank-address__bank .blank {
                 border: none;
@@ -527,7 +538,8 @@
             inp.type = isDate ? 'date' : 'text';
             inp.className = 'blank'
                 + (el.classList.contains('hr-form-iban') ? ' hr-form-iban' : '')
-                + (el.classList.contains('hr-form-amount') ? ' hr-form-amount' : '');
+                + (el.classList.contains('hr-form-amount') ? ' hr-form-amount' : '')
+                + (el.classList.contains('hr-form-bank-address__name') ? ' hr-form-bank-address__name' : '');
             inp.setAttribute('aria-label', labelText || 'حقل');
             if (el.classList.contains('hr-form-iban') || el.getAttribute('dir') === 'ltr') {
                 inp.setAttribute('dir', 'ltr');
@@ -579,6 +591,20 @@
             wrap.className = 'choice-note';
             wrap.innerHTML = '<label>سبب / ملاحظة:</label><textarea placeholder="اكتب السبب أو الملاحظة هنا..."></textarea>';
             row.after(wrap);
+        });
+
+        // سطر البنك: سطر واحد عند كتابة اسم البنك يدوياً
+        function syncBankAddressReady(inp) {
+            const wrap = inp.closest('.hr-form-bank-address');
+            if (!wrap) return;
+            const ready = !!(inp.value || '').trim();
+            wrap.classList.toggle('hr-form-bank-address--ready', ready);
+            const hint = wrap.querySelector('.hr-form-bank-address__hint');
+            if (hint) hint.style.display = ready ? 'none' : '';
+        }
+        document.querySelectorAll('input.hr-form-bank-address__name').forEach(function (inp) {
+            inp.addEventListener('input', function () { syncBankAddressReady(inp); });
+            syncBankAddressReady(inp);
         });
 
         // Auto-focus print on load if ?auto_print=1

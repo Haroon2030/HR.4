@@ -1,5 +1,5 @@
-{# سطر «السادة / البنك المحترمين» — تنسيق رسمي للنماذج البنكية #}
-<div class="hr-form-bank-address">
+{# سطر «السادة / البنك المحترمين» — سطر واحد عند توفر البيانات #}
+<div class="hr-form-bank-address{% if bank or banks %} hr-form-bank-address--ready{% endif %}">
     <p class="hr-form-bank-address__line">
         <span class="hr-form-bank-address__recipient">
             <span class="hr-form-bank-address__prefix">السادة /</span>
@@ -20,17 +20,15 @@
                 {% elif bank %}
                 <strong class="hr-form-bank-address__name">{% firstof bank.name "........................" %}</strong>
                 {% else %}
-                <span class="blank hr-form-bank-address__name"></span>
+                <span class="blank hr-form-bank-address__name" data-label="اسم البنك" dir="ltr"></span>
                 {% endif %}
             </span>
             <span class="hr-form-bank-address__suffix">المحترمين</span>
         </span>
+        {% if not banks and not bank %}
+        <span class="no-print hr-form-bank-address__hint">
+            — <a href="{% url 'web:list_branches' %}?tab=banks" class="hr-form-screen-link">إضافة البنوك من التهيئة</a>
+        </span>
+        {% endif %}
     </p>
-    {% if not banks %}
-    <p class="no-print hr-form-bank-address__hint">
-        يمكنك
-        <a href="{% url 'web:list_branches' %}?tab=banks" class="hr-form-screen-link">إضافة البنوك من التهيئة</a>
-        أو كتابة اسم البنك يدوياً في الحقل أعلاه قبل الطباعة.
-    </p>
-    {% endif %}
 </div>
