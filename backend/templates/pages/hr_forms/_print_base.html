@@ -501,10 +501,10 @@
         {# Letterhead #}
         <div class="letterhead">
             <div class="company">
-                <h1 class="name">{% firstof employee_sponsorship.company_name letterhead_name company.name "........................" %}</h1>
+                <h1 class="name">{% firstof letterhead_name company.name "........................" %}</h1>
                 <div class="meta">
                     سجل تجاري رقم:
-                    <strong>{% firstof letterhead_cr employee_sponsorship.commercial_registration company.commercial_record "................" %}</strong>
+                    <strong>{% firstof letterhead_cr company.commercial_record "................" %}</strong>
                 </div>
             </div>
         </div>
