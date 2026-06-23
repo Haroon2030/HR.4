@@ -7,6 +7,7 @@
 
     var tabBound = false;
     var htmxBound = false;
+    var formBound = false;
     var navSafetyTimer = null;
 
     function hrTabLabel(el) {
@@ -174,10 +175,31 @@
         });
     }
 
+    function hrBindFormGlassLoader() {
+        if (formBound) return;
+        formBound = true;
+
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form || form.tagName !== 'FORM') return;
+            if (e.defaultPrevented) return;
+            if (form.getAttribute('data-hr-skip-loader') !== null) return;
+            if (form.getAttribute('hx-boost') === 'true') return;
+            if (form.hasAttribute('hx-post') || form.hasAttribute('hx-get') || form.hasAttribute('hx-put')) return;
+
+            hrDefineGlassLoaderStore();
+            if (!window.Alpine || !Alpine.store('glassLoader')) return;
+
+            Alpine.store('glassLoader').show('جاري الحفظ', 'لحظة — يتم تنفيذ العملية');
+            hrArmNavLoaderSafety(90000);
+        }, true);
+    }
+
     function hrInitGlassLoader() {
         hrDefineGlassLoaderStore();
         hrBindTabGlassLoader();
         hrBindHtmxGlassLoader();
+        hrBindFormGlassLoader();
         hrHideGlassLoader();
     }
 

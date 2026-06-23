@@ -125,7 +125,8 @@ class WhatsAppWorkflowNotificationTests(TestCase):
         )
 
     def test_create_pending_action_sends_broadcast_and_first_stage(self):
-        action = self._create_leave_action()
+        with self.captureOnCommitCallbacks(execute=True):
+            action = self._create_leave_action()
         # signal + notify_branch_on_create: broadcast 2 + admin manager 1
         phones = {call.kwargs.get('phone') or call.args[0] for call in self.mock_send.call_args_list}
         self.assertIn('966555555555', phones)
@@ -165,13 +166,14 @@ class WhatsAppWorkflowNotificationTests(TestCase):
     def test_cash_shortage_notifies_accountant_with_attachment_hint(self):
         doc = SimpleUploadedFile('shortage.pdf', b'%PDF-1.4', content_type='application/pdf')
         self.mock_send.reset_mock()
-        action = create_pending_action(
-            action_type=PendingAction.ActionType.CASH_SHORTAGE,
-            employee=self.employee,
-            payload={'amount': '100', 'shortage_date': '2026-06-01'},
-            requested_by=self.requester,
-            attachment=doc,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            action = create_pending_action(
+                action_type=PendingAction.ActionType.CASH_SHORTAGE,
+                employee=self.employee,
+                payload={'amount': '100', 'shortage_date': '2026-06-01'},
+                requested_by=self.requester,
+                attachment=doc,
+            )
         phones = {c.kwargs.get('phone') for c in self.mock_send.call_args_list}
         self.assertIn('966544444444', phones)
         log = WhatsAppMessageLog.objects.filter(

@@ -386,6 +386,9 @@ if USE_R2:
     else:
         MEDIA_URL = f'{AWS_S3_ENDPOINT_URL.rstrip("/")}/{AWS_STORAGE_BUCKET_NAME}/'
 
+# إشعارات واتساب في خلفية الطلب — لا تحجب POST/redirect بعد إنشاء طلب معلّق
+WHATSAPP_ASYNC_DISPATCH = env.bool('WHATSAPP_ASYNC_DISPATCH', default=True)
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Sentry — مراقبة أخطاء الإنتاج (اختياري)
 # ══════════════════════════════════════════════════════════════════════════════

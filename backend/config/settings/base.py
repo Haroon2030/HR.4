@@ -345,6 +345,8 @@ EVOLUTION_API_KEY = env('EVOLUTION_API_KEY', default='')
 EVOLUTION_INSTANCE = env('EVOLUTION_INSTANCE', default='')
 EVOLUTION_API_TIMEOUT = env.int('EVOLUTION_API_TIMEOUT', default=20)
 WHATSAPP_DEFAULT_COUNTRY = env('WHATSAPP_DEFAULT_COUNTRY', default='966')
+# إرسال إشعارات سير العمل في خلفية الطلب (لا يُفعَّل في التطوير/الاختبارات افتراضياً)
+WHATSAPP_ASYNC_DISPATCH = env.bool('WHATSAPP_ASYNC_DISPATCH', default=False)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # النسخ الاحتياطي لقاعدة البيانات (إشعارات + مسار الملفات)

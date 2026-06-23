@@ -771,7 +771,7 @@
                 </button>
             </div>
 
-            <form method="post" action="{% url 'web:adjust_employee_salary' employee.id %}" class="p-4 space-y-3"
+            <form method="post" action="{% url 'web:adjust_employee_salary' employee.id %}" class="p-4 space-y-3" hx-boost="false"
                   @submit="$refs.newBasicSalary.value = (parseFloat(basic) + parseFloat(raise || 0)).toFixed(2)">
                 {% csrf_token %}
 

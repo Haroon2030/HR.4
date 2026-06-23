@@ -2,10 +2,15 @@
 Django Signals للنظام الأساسي
 """
 import logging
+
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from .models import UserProfile, PendingAction
+
+from apps.core.services.async_dispatch import dispatch_background
+
+from .models import PendingAction, UserProfile
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -38,17 +43,34 @@ def invalidate_sidebar_on_pending_action(sender, instance, **kwargs):
     )
 
 
+def _dispatch_after_commit(task_name: str, fn) -> None:
+    """تشغيل الإشعارات بعد commit عند وجود معاملة نشطة."""
+    if transaction.get_connection().in_atomic_block:
+        transaction.on_commit(lambda: dispatch_background(task_name, fn))
+    else:
+        dispatch_background(task_name, fn)
+
+
 @receiver(post_save, sender=PendingAction)
 def notify_branch_on_pending_action_created(sender, instance, created, **kwargs):
-    """عند إنشاء طلب جديد → أبلغ مدير الفرع."""
+    """عند إنشاء طلب جديد → أبلغ مدير الفرع (خلفية الطلب لتجنّب حجب POST)."""
     if not created:
         return
-    try:
+
+    action_id = instance.pk
+
+    def _notify():
+        try:
+            action = PendingAction.objects.select_related(
+                'employee', 'requested_by', 'branch',
+            ).get(pk=action_id)
+        except PendingAction.DoesNotExist:
+            return
         from apps.core.services.pending_actions import notify_branch_on_create
-        notify_branch_on_create(instance)
-    except Exception as e:
-        # لا نُفشل المعاملة بسبب فشل الإشعار
-        logger.warning("notify_branch_on_pending_action_created failed: %s", e)
+
+        notify_branch_on_create(action)
+
+    _dispatch_after_commit('pending_action_created_notify', _notify)
 
 
 def _register_employment_request_signal():
@@ -70,11 +92,21 @@ def _register_employment_request_signal():
     def _notify(sender, instance, created, **kwargs):
         if not created:
             return
-        try:
+
+        request_id = instance.pk
+
+        def _notify_created():
+            try:
+                req = EmploymentRequest.objects.select_related(
+                    'branch', 'requested_by',
+                ).get(pk=request_id)
+            except EmploymentRequest.DoesNotExist:
+                return
             from apps.core.services.employment_requests import notify_branch_on_create
-            notify_branch_on_create(instance)
-        except Exception as e:
-            logger.warning("notify_employment_request signal failed: %s", e)
+
+            notify_branch_on_create(req)
+
+        _dispatch_after_commit('employment_request_created_notify', _notify_created)
 
 
 def _register_notification_signal():
