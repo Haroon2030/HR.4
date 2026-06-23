@@ -1,0 +1,4 @@
+{% if request.GET.auto_print %}<input type="hidden" name="auto_print" value="1">{% endif %}
+{% if not skip_bank_id and request.GET.bank_id %}<input type="hidden" name="bank_id" value="{{ request.GET.bank_id }}">{% endif %}
+{% if not skip_profession_id and request.GET.profession_id %}<input type="hidden" name="profession_id" value="{{ request.GET.profession_id }}">{% endif %}
+{% if not skip_hire_date and request.GET.hire_date %}<input type="hidden" name="hire_date" value="{{ request.GET.hire_date }}">{% endif %}

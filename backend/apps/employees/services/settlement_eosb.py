@@ -1,6 +1,7 @@
 """حساب مكافأة نهاية الخدمة عند التصفية."""
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 ARTICLE_77_PENALTY_MONTHS = 2
@@ -259,3 +260,48 @@ def compute_settlement_eosb(
         factor, resignation_note = compute_resignation_factor(service_years)
     eosb_after = (eosb_before * factor).quantize(Decimal('0.01'))
     return eosb_before, eosb_after, category, resignation_note
+
+
+def compute_transfer_commitment_eosb_amounts(
+    employee,
+    *,
+    as_of: date | None = None,
+    hire_date: date | None = None,
+) -> dict[str, str | None]:
+    """
+    مستحقات نهاية الخدمة لنموذج التزام تحويل الراتب —
+    نفس منطق «تصفية نهاية خدمة / استقالة» حتى تاريخ اليوم (أو تاريخ التوقف).
+    """
+    from apps.core.salary_month import employment_service_days, service_years_30day
+
+    effective_hire = hire_date or getattr(employee, 'hire_date', None)
+    if not effective_hire:
+        return {'eosb_entitlement': None, 'eosb_resignation': None}
+
+    as_of = as_of or getattr(employee, 'end_date', None) or date.today()
+    service_days = employment_service_days(effective_hire, as_of)
+    if service_days < 1:
+        return {'eosb_entitlement': None, 'eosb_resignation': None}
+
+    service_years = service_years_30day(service_days)
+    last_salary = Decimal(employee.salary_for_end_of_service or 0)
+    eligible = bool(getattr(employee, 'sponsorship_id', None)) and last_salary > 0
+
+    _, eosb_company, _, _ = compute_settlement_eosb(
+        last_salary=last_salary,
+        service_days=service_days,
+        service_years=service_years,
+        settlement_type='company',
+        eligible=eligible,
+    )
+    _, eosb_resignation, _, _ = compute_settlement_eosb(
+        last_salary=last_salary,
+        service_days=service_days,
+        service_years=service_years,
+        settlement_type='employee',
+        eligible=eligible,
+    )
+    return {
+        'eosb_entitlement': f'{eosb_company.quantize(Decimal("0.01")):.2f}',
+        'eosb_resignation': f'{eosb_resignation.quantize(Decimal("0.01")):.2f}',
+    }

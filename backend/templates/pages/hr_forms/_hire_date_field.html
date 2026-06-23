@@ -1,0 +1,12 @@
+{# تاريخ قابل للاختيار — يُعبَّأ من ملف الموظف أو ?hire_date= #}
+<form method="get" class="no-print hr-form-date-form" style="margin:0;">
+    {% include "pages/hr_forms/_hr_form_preserve_params.html" with skip_hire_date=True %}
+    <input type="date" name="hire_date"
+           value="{% if form_hire_date %}{{ form_hire_date|date:'Y-m-d' }}{% endif %}"
+           onchange="this.form.submit()"
+           class="hr-form-date-field date-picker"
+           aria-label="{{ date_label|default:'التاريخ' }}">
+</form>
+<strong class="print-only hr-form-date-print">
+    {% if form_hire_date %}{{ form_hire_date|date:"d/m/Y" }}{% else %}..../..../........{% endif %}
+</strong>

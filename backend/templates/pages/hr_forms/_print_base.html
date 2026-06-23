@@ -225,6 +225,100 @@
             vertical-align: baseline;
         }
 
+        /* سطر «السادة / البنك المحترمين» */
+        .hr-form-bank-address { margin-bottom: 28px; }
+        .hr-form-bank-address__line {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .hr-form-bank-address__prefix { white-space: nowrap; }
+        .hr-form-bank-address__suffix { white-space: nowrap; }
+        .hr-form-bank-address__bank {
+            flex: 1;
+            text-align: center;
+            min-width: 0;
+        }
+        .hr-form-bank-address__form { display: inline; margin: 0; }
+        .hr-form-bank-address__name {
+            display: inline-block;
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e3a8a;
+            min-width: 180px;
+        }
+        .hr-form-bank-address__bank .blank {
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            font-weight: 800;
+            color: #1e3a8a;
+            border-bottom-style: solid;
+            border-bottom-color: #94a3b8;
+        }
+        .hr-form-bank-address__hint {
+            margin: 8px 0 0;
+            font-size: 11.5px;
+            font-weight: 500;
+            color: #64748b;
+            text-align: center;
+        }
+        .hr-form-bank-address__hint a {
+            color: #4f46e5;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .hr-form-bank-address__hint a:hover { text-decoration: underline; }
+
+        .hr-form-profession-select {
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            min-width: 160px;
+            max-width: 100%;
+            color: #1e3a8a;
+        }
+        .hr-form-profession-form { display: block; }
+
+        .hr-form-date-form { display: block; }
+        .hr-form-date-field {
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            color: #0f172a;
+            min-width: 150px;
+        }
+        .hr-form-date-print { font-weight: 700; color: #0f172a; }
+
+        .hr-form-iban.blank,
+        input.blank.hr-form-iban {
+            font-family: 'Courier New', ui-monospace, monospace;
+            letter-spacing: 0.04em;
+            direction: ltr;
+            text-align: left;
+            min-width: 220px;
+        }
+        .hr-form-amount.blank,
+        input.blank.hr-form-amount {
+            direction: ltr;
+            text-align: left;
+            min-width: 100px;
+            font-weight: 700;
+        }
+
         /* Print-only — صفحة واحدة A4 */
         @media print {
             html, body {
@@ -309,6 +403,38 @@
 
             .clause { padding: 8px 10px; margin: 6px 0; font-size: 11px; line-height: 1.55; }
 
+            .hr-form-bank-address { margin-bottom: 14px; }
+            .hr-form-bank-address__line { font-size: 12px; }
+            .hr-form-bank-address__name { font-size: 12.5px; }
+            .hr-form-bank-address__bank .blank {
+                border: none;
+                background: transparent;
+                padding: 0;
+            }
+            .hr-form-profession-select {
+                -webkit-appearance: none;
+                appearance: none;
+                border: none;
+                padding: 0;
+                background: transparent;
+                font-size: 11px;
+            }
+            .hr-form-date-field {
+                border: none;
+                padding: 0;
+                background: transparent;
+                font-size: 11px;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+            .hr-form-date-field::-webkit-calendar-picker-indicator { display: none; }
+            input.blank.hr-form-iban {
+                border: none;
+                background: transparent;
+                padding: 0;
+                font-size: 11px;
+            }
+
             .signatures { gap: 12px; margin-top: 18px; padding-top: 8px; }
             .sig-box { font-size: 10.5px; }
             .sig-box .role { margin-bottom: 22px; }
@@ -335,7 +461,7 @@
 </head>
 <body>
     <div class="toolbar">
-        <h1>{{ form_meta.title }} — {{ employee.name }}</h1>
+        <h1>{% firstof form_meta.print_title form_meta.title %} — {{ employee.name }}</h1>
         <div class="actions">
             <button class="btn btn-primary" onclick="window.print()">
                 طباعة 🖨
@@ -352,7 +478,8 @@
             <div class="company">
                 <h1 class="name">{% firstof employee_sponsorship.company_name letterhead_name company.name "........................" %}</h1>
                 <div class="meta">
-                    {% if letterhead_cr %}س.ت: {{ letterhead_cr }}{% endif %}
+                    سجل تجاري رقم:
+                    <strong>{% firstof letterhead_cr employee_sponsorship.commercial_registration company.commercial_record "................" %}</strong>
                     {% if employee.sponsorship and letterhead_source != 'sponsorship' %}
                     <br>الشركة (الكفالة): <strong>{{ employee.sponsorship.company_name }}</strong>
                     {% endif %}
@@ -362,7 +489,7 @@
 
         {# Document title #}
         <div class="doc-title">
-            <h2>{{ form_meta.title }}</h2>
+            <h2>{% block doc_title %}{% firstof form_meta.print_title form_meta.title %}{% endblock %}</h2>
         </div>
 
         <div class="doc-meta">
@@ -391,12 +518,21 @@
         // كل <span class="blank"></span> → input نصي (أو date إذا كان عنوانه يدل على تاريخ)
         const DATE_HINTS = ['تاريخ', 'بتاريخ', 'بدء', 'انتهاء', 'إلى:', 'من:'];
         document.querySelectorAll('span.blank').forEach(el => {
-            const labelText = (el.previousElementSibling?.textContent || '').trim();
+            const labelText = (el.dataset.label || el.previousElementSibling?.textContent || '').trim();
             const isDate = DATE_HINTS.some(h => labelText.includes(h));
             const inp = document.createElement('input');
             inp.type = isDate ? 'date' : 'text';
-            inp.className = 'blank';
+            inp.className = 'blank'
+                + (el.classList.contains('hr-form-iban') ? ' hr-form-iban' : '')
+                + (el.classList.contains('hr-form-amount') ? ' hr-form-amount' : '');
             inp.setAttribute('aria-label', labelText || 'حقل');
+            if (el.classList.contains('hr-form-iban') || el.getAttribute('dir') === 'ltr') {
+                inp.setAttribute('dir', 'ltr');
+                inp.style.textAlign = 'left';
+            }
+            if (el.classList.contains('hr-form-amount')) {
+                inp.setAttribute('inputmode', 'decimal');
+            }
             
             // Preserve existing value if any
             let val = el.textContent.trim();

@@ -1,0 +1,63 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+{% block body %}
+
+<div class="section" style="margin-top: 8px;">
+    {% include "pages/hr_forms/_bank_salutation.html" with bank_select_id="hr-transfer-commit-bank" %}
+
+    <p style="font-size: 14.5px; margin: 0 0 24px;">السلام عليكم ورحمة الله وبركاته،</p>
+
+    <table style="width:100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 24px;">
+        <tbody>
+            <tr>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600; width:52%;">اسم الموظف</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;"><strong>{{ employee.name }}</strong></td>
+            </tr>
+            <tr>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">رقم بطاقة العمل / الرقم الوظيفي</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;"><strong>{{ employee.employee_number|default:employee.id_number|default:"................" }}</strong></td>
+            </tr>
+            <tr>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مسمى الوظيفة</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_profession_field.html" with profession_select_id="hr-transfer-commit-profession" %}</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">تاريخ الالتحاق بالعمل</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_hire_date_field.html" with date_label="تاريخ الالتحاق بالعمل" %}</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مستحقات نهاية الخدمة (حتى تاريخه)</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;">
+                    {% include "pages/hr_forms/_eosb_amount_field.html" with amount=eosb_entitlement field_label="مستحقات نهاية الخدمة" %}
+                    {% if eosb_entitlement is not None %}<span class="print-only"> ر.س</span>{% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مستحقات نهاية الخدمة في حالة الاستقالة قبل نهاية العقد</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;">
+                    {% include "pages/hr_forms/_eosb_amount_field.html" with amount=eosb_resignation field_label="مستحقات الاستقالة" %}
+                    {% if eosb_resignation is not None %}<span class="print-only"> ر.س</span>{% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="clause" style="font-size: 14.5px; line-height: 2.15; text-align: justify;">
+        تقدم موظفنا الموضحة بياناته أعلاه طالباً تحويل راتبه وبدلاته الشهرية وجميع مستحقاته الوظيفية
+        إلى حسابه الجاري رقم
+        <strong>{% include "pages/hr_forms/_employee_iban_field.html" %}</strong>
+        لأجل سداد الديون التي سوف تترتب عليه لصالح
+        <strong>{% if bank %}{{ bank.name }}{% else %}........................{% endif %}</strong>.
+        <br><br>
+        لذا نود أن نؤكد لكم موافقتنا والتزامنا بهذا التحويل في مواعيده الشهرية واستمراره حتى نهاية علاقته الوظيفية معنا،
+        مع التزامنا بعدم تسليم الموظف المذكور مستحقات نهاية الخدمة أو أي مستحقات أخرى حتى نحصل على مخالصة معتمدة منكم
+        تفيد بانتهاء الالتزامات المترتبة عليه لصالحكم وموافقتكم على إلغاء تحويل راتبه.
+    </div>
+
+    <p style="font-size: 14.5px; margin-top: 32px;">وتقبلوا تحياتي،</p>
+</div>
+
+<div class="salary-cert-stamp sig-box" style="margin-top: 40px; margin-right: auto; margin-left: 0; max-width: 220px; text-align: center;">
+    <div class="line" style="min-width: 150px; padding-top: 8px;">الختم</div>
+</div>
+
+{% endblock %}

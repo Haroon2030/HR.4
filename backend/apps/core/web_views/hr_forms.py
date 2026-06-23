@@ -38,6 +38,7 @@ FORM_CODE_MAP = {
     'absence_report': 'AR',
     'employment_letter': 'EL',
     'salary_certificate': 'SC',
+    'salary_transfer_commitment': 'STC',
     'permission_request': 'PR',
     'promotion': 'PM',
     'salary_adjustment': 'SA',
@@ -257,13 +258,27 @@ _BASE_HR_FORMS = [
     {
         'key': 'salary_certificate',
         'title': 'تعريف راتب',
+        'print_title': 'خطاب تعريف راتب',
         'description': 'خطاب تعريف راتب للبنوك (مصرف الراجحي وغيره)',
         'icon': 'landmark',
+        'color': 'indigo',
+    },
+    {
+        'key': 'salary_transfer_commitment',
+        'title': 'نموذج التزام جهة العمل بتحويل راتب الموظف',
+        'description': 'نموذج التزام جهة العمل بتحويل راتب الموظف للبنك',
+        'icon': 'handshake',
         'color': 'indigo',
     },
 ]
 
 HR_FORMS = merge_forms_catalog(_BASE_HR_FORMS, PRIMARY_FORM_SPECS)
+
+# نماذج بنكية — اختيار البنك من التهيئة
+HR_FORMS_WITH_BANK = frozenset({
+    'salary_certificate',
+    'salary_transfer_commitment',
+})
 
 
 def _active_banks_queryset():
@@ -272,7 +287,20 @@ def _active_banks_queryset():
     return Bank.objects.filter(is_deleted=False, is_active=True).order_by('name')
 
 
-def _resolve_salary_certificate_bank(request, employee):
+def _banks_for_hr_form(employee):
+    """بنوك التهيئة، أو بنك الموظف إن لم تُضف بنوك بعد."""
+    from apps.setup.models import Bank
+
+    qs = _active_banks_queryset()
+    if qs.exists():
+        return qs
+    emp_bank = getattr(employee, 'bank', None)
+    if emp_bank and not emp_bank.is_deleted and (emp_bank.name or '').strip():
+        return Bank.objects.filter(pk=emp_bank.pk)
+    return qs
+
+
+def _resolve_hr_form_bank(request, employee):
     """البنك من ?bank_id= أو بنك الموظف أو أول بنك نشط في التهيئة."""
     bank_id = request.GET.get('bank_id')
     if bank_id and str(bank_id).isdigit():
@@ -285,6 +313,55 @@ def _resolve_salary_certificate_bank(request, employee):
         return emp_bank
 
     return _active_banks_queryset().first()
+
+
+def _active_professions_queryset():
+    from apps.setup.models import Profession
+
+    return Profession.objects.filter(is_deleted=False, is_active=True).order_by('name')
+
+
+def _professions_for_hr_form(employee):
+    """مهن التهيئة، مع مهنة الموظف إن لم تكن ضمن القائمة النشطة."""
+    from apps.setup.models import Profession
+
+    items = list(_active_professions_queryset())
+    emp_prof = getattr(employee, 'profession', None)
+    if emp_prof and emp_prof.pk and not any(p.pk == emp_prof.pk for p in items):
+        if not emp_prof.is_deleted and (emp_prof.name or '').strip():
+            items.append(emp_prof)
+    return items
+
+
+def _resolve_hr_form_profession(request, employee):
+    """المهنة من ?profession_id= أو مهنة الموظف."""
+    profession_id = request.GET.get('profession_id')
+    if profession_id and str(profession_id).isdigit():
+        prof = _active_professions_queryset().filter(pk=int(profession_id)).first()
+        if prof:
+            return prof
+        from apps.setup.models import Profession
+        prof = Profession.objects.filter(pk=int(profession_id), is_deleted=False).first()
+        if prof:
+            return prof
+
+    emp_prof = getattr(employee, 'profession', None)
+    if emp_prof and not emp_prof.is_deleted:
+        return emp_prof
+    return None
+
+
+def _resolve_hr_form_hire_date(request, employee):
+    """تاريخ الالتحاق من ?hire_date= أو ملف الموظف."""
+    from datetime import date as date_cls
+
+    raw = (request.GET.get('hire_date') or '').strip()
+    if raw:
+        try:
+            return date_cls.fromisoformat(raw)
+        except ValueError:
+            pass
+    return getattr(employee, 'hire_date', None)
 
 
 def _resolve_employee_sponsorship(employee):
@@ -306,9 +383,19 @@ def _letterhead_context(employee, company) -> dict:
     if sponsorship and not getattr(sponsorship, 'is_deleted', False):
         name = (sponsorship.company_name or '').strip()
         if name:
+            cr = (sponsorship.commercial_registration or '').strip()
+            if not cr:
+                branch_co = None
+                if getattr(employee, 'branch_id', None):
+                    branch = getattr(employee, 'branch', None)
+                    if branch and getattr(branch, 'company_id', None):
+                        branch_co = branch.company
+                employer_co = branch_co or company
+                if employer_co:
+                    cr = (getattr(employer_co, 'commercial_record', None) or '').strip()
             return {
                 'letterhead_name': name,
-                'letterhead_cr': (sponsorship.commercial_registration or '').strip(),
+                'letterhead_cr': cr,
                 'letterhead_source': 'sponsorship',
                 'employee_sponsorship': sponsorship,
             }
@@ -379,7 +466,7 @@ def hr_forms_index(request):
         'employee_total': qs.count(),
         'employee_search_url': reverse('web:hr_forms_employee_search'),
         'banks': list(_active_banks_queryset().values('id', 'name')),
-        'has_salary_certificate': any(f['key'] == 'salary_certificate' for f in visible_forms),
+        'has_bank_forms': any(f['key'] in HR_FORMS_WITH_BANK for f in visible_forms),
     })
 
 
@@ -472,9 +559,39 @@ def hr_form_print(request, form_type, employee_id):
         context['next_statement_serial'] = EmployeeStatement.generate_serial('statement')
         context['employee_warning_no'] = getattr(employee, '_warning_stmt_count', 0) + 1
 
+    if form_type in HR_FORMS_WITH_BANK:
+        context['bank'] = _resolve_hr_form_bank(request, employee)
+        context['banks'] = _banks_for_hr_form(employee)
+
+    context['profession'] = _resolve_hr_form_profession(request, employee)
+    context['professions'] = _professions_for_hr_form(employee)
+    context['form_hire_date'] = _resolve_hr_form_hire_date(request, employee)
+    context['form_employee_iban'] = (getattr(employee, 'iban', None) or '').strip()
+
+    if form_type == 'salary_transfer_commitment':
+        from apps.employees.services.settlement_eosb import compute_transfer_commitment_eosb_amounts
+
+        eosb_amounts = compute_transfer_commitment_eosb_amounts(
+            employee,
+            hire_date=context['form_hire_date'],
+        )
+        context.update(eosb_amounts)
+        if employee.status == Employee.Status.TERMINATED:
+            stmt = (
+                employee.statements_log.filter(
+                    statement_type=EmployeeStatement.StatementType.TERMINATE,
+                )
+                .exclude(content='')
+                .order_by('-statement_date', '-id')
+                .first()
+            )
+            if stmt and (stmt.content or '').strip():
+                parsed = _parse_final_settlement_statement(stmt.content)
+                if parsed.get('eosb_amount') is not None:
+                    context['eosb_entitlement'] = parsed['eosb_amount']
+                # مستحقات الاستقالة تبقى من الحساب التقديري (معامل الاستقالة)
+
     if form_type == 'salary_certificate':
-        context['bank'] = _resolve_salary_certificate_bank(request, employee)
-        context['banks'] = _active_banks_queryset()
         context['other_fixed_allowances'] = (
             (employee.other_allowance or Decimal('0'))
             + (employee.cash_amount or Decimal('0'))

@@ -184,11 +184,11 @@
 
     {# Step 2 — Forms list (revealed only after selection) #}
     <div x-show="selected" x-cloak x-transition>
-        <div x-show="banks.length && hasSalaryCertificate" x-cloak
+        <div x-show="banks.length && hasBankForms" x-cloak
              class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-4 flex flex-wrap items-center gap-3">
             <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
                 <i data-lucide="landmark" class="w-4 h-4 text-indigo-600"></i>
-                البنك لنموذج «تعريف راتب» (من تبويب البنوك)
+                البنك للنماذج البنكية (تعريف راتب / التزام التحويل)
             </span>
             <select x-model="selectedBankId"
                     class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 bg-white min-w-[220px]"
@@ -237,5 +237,5 @@
 {{ employee_search_url|json_script:"hr-forms-search-url" }}
 {{ employee_total|default:0|json_script:"hr-forms-employee-total" }}
 {{ banks|json_script:"hr-forms-banks" }}
-{{ has_salary_certificate|json_script:"hr-forms-has-salary-cert" }}
+{{ has_bank_forms|json_script:"hr-forms-has-bank-forms" }}
 {% endblock %}

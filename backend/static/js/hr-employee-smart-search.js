@@ -279,6 +279,8 @@
         ctx.$watch('currentPage', function () { ctx.activeIndex = 0; });
     };
 
+    var HR_FORM_BANK_KEYS = ['salary_certificate', 'salary_transfer_commitment'];
+
     function buildHrFormsApp(opts) {
         opts = opts || {};
         if (typeof window.employeePickerBase !== 'function') {
@@ -306,7 +308,7 @@
             employeeTotal: opts.employeeTotal || 0,
             employees: [],
             banks: opts.banks || [],
-            hasSalaryCertificate: !!opts.hasSalaryCertificate,
+            hasBankForms: !!opts.hasBankForms,
             selectedBankId: opts.defaultBankId || (opts.banks && opts.banks[0] ? String(opts.banks[0].id) : ''),
             get pageNumbers() {
                 var total = this.totalPages;
@@ -334,7 +336,7 @@
                 var url = '/hr-forms/' + key + '/' + this.selected.id + '/';
                 var params = [];
                 if (autoPrint) params.push('auto_print=1');
-                if (key === 'salary_certificate' && this.selectedBankId) {
+                if (HR_FORM_BANK_KEYS.indexOf(key) !== -1 && this.selectedBankId) {
                     params.push('bank_id=' + encodeURIComponent(this.selectedBankId));
                 }
                 if (params.length) url += '?' + params.join('&');
@@ -382,20 +384,20 @@
                 banks = [];
             }
         }
-        var hasSalaryCertificate = false;
-        var salaryCertEl = document.getElementById('hr-forms-has-salary-cert');
-        if (salaryCertEl) {
+        var hasBankForms = false;
+        var bankFormsEl = document.getElementById('hr-forms-has-bank-forms');
+        if (bankFormsEl) {
             try {
-                hasSalaryCertificate = JSON.parse(salaryCertEl.textContent || 'false') === true;
+                hasBankForms = JSON.parse(bankFormsEl.textContent || 'false') === true;
             } catch (e4) {
-                hasSalaryCertificate = false;
+                hasBankForms = false;
             }
         }
         window.registerHrFormsApp({
             searchUrl: searchUrl,
             employeeTotal: employeeTotal,
             banks: banks,
-            hasSalaryCertificate: hasSalaryCertificate,
+            hasBankForms: hasBankForms,
             defaultBankId: banks.length ? String(banks[0].id) : '',
         });
     })();
