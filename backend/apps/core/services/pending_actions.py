@@ -540,7 +540,22 @@ def _execute_end_of_service(action, executor):
             as_of=end_date,
         )
 
-    total_entitlement = eosb + leave_comp + penalty
+    from apps.employees.services.settlement_financials import (
+        compute_settlement_financials,
+        net_settlement_total,
+    )
+
+    financials = compute_settlement_financials(employee, end_date)
+    prorated_salary = financials['prorated_salary']
+    loans_deduction = financials['loans_deduction']
+    absences_deduction = financials['absences_deduction']
+    gross_entitlement = eosb + leave_comp + penalty + prorated_salary
+    total_entitlement = net_settlement_total(
+        eosb=eosb,
+        leave_comp=leave_comp,
+        penalty=penalty,
+        financials=financials,
+    )
 
     type_label = settlement_type_label(settlement_type, article_party=article_party)
     if settlement_type == 'contract_expiry':
@@ -621,14 +636,37 @@ def _execute_end_of_service(action, executor):
         f'───────────────────\n'
         f'{leave_text}\n'
         f'───────────────────\n'
-        f'★ إجمالي المستحقات: {total_entitlement} ر.س\n'
+        f'راتب حتى {end_date}: {prorated_salary} ر.س\n'
+    )
+    if loans_deduction > 0:
+        content += f'خصم سلف: {loans_deduction} ر.س\n'
+    if absences_deduction > 0:
+        content += f'خصم غيابات: {absences_deduction} ر.س\n'
+    content += (
+        f'───────────────────\n'
+        f'إجمالي المستحقات (قبل الخصم): {gross_entitlement} ر.س\n'
+        f'★ صافي المستحق: {total_entitlement} ر.س\n'
     )
     if settlement_type == 'article_77':
-        content += f'  (مكافأة {eosb} + إجازة {leave_comp} + جزاء {penalty})\n'
+        content += (
+            f'  (مكافأة {eosb} + إجازة {leave_comp} + جزاء {penalty}'
+            f' + راتب {prorated_salary}'
+        )
+        if loans_deduction or absences_deduction:
+            content += f' − سلف {loans_deduction} − غياب {absences_deduction}'
+        content += ')\n'
     elif settlement_type in LEAVE_ONLY_SETTLEMENTS:
-        content += f'  (إجازة {leave_comp} فقط)\n'
+        content += f'  (إجازة {leave_comp} + راتب {prorated_salary}'
+        if loans_deduction or absences_deduction:
+            content += f' − سلف {loans_deduction} − غياب {absences_deduction}'
+        content += ')\n'
     else:
-        content += f'  (مكافأة {eosb} + إجازة {leave_comp})\n'
+        content += (
+            f'  (مكافأة {eosb} + إجازة {leave_comp} + راتب {prorated_salary}'
+        )
+        if loans_deduction or absences_deduction:
+            content += f' − سلف {loans_deduction} − غياب {absences_deduction}'
+        content += ')\n'
     if notes:
         content += f'\nملاحظات: {notes}\n'
 
@@ -674,9 +712,12 @@ def _execute_end_of_service(action, executor):
         )
     return (
         f'تم تصفية {employee.name} بتاريخ {end_date} — '
-        f'مكافأة: {eosb} ر.س + إجازة: {leave_comp} ر.س'
-        + (f' + جزاء: {penalty} ر.س' if penalty else '')
-        + f' = إجمالي: {total_entitlement} ر.س'
+        f'صافي المستحق: {total_entitlement} ر.س'
+        f' (مكافأة {eosb} + إجازة {leave_comp} + راتب {prorated_salary}'
+        + (f' + جزاء {penalty}' if penalty else '')
+        + (f' − سلف {loans_deduction}' if loans_deduction else '')
+        + (f' − غياب {absences_deduction}' if absences_deduction else '')
+        + ')'
     )
 
 EXECUTORS['end_of_service'] = _execute_end_of_service
@@ -700,6 +741,9 @@ def execute_pending_action(action, executor_user):
         try:
             from apps.core.services.whatsapp import notify_whatsapp_action_executed
             notify_whatsapp_action_executed(action, msg)
+            if action.action_type in SETTLEMENT_PENDING_ACTION_TYPES:
+                from apps.core.services.whatsapp import workflow_notifier
+                workflow_notifier.notify_whatsapp_settlement_executed(action, msg)
         except Exception:
             import logging
             logging.getLogger(__name__).exception(
@@ -796,6 +840,42 @@ def create_pending_action(*, action_type, employee, payload, requested_by, attac
 
 
 @transaction.atomic
+def create_and_execute_settlement_action(
+    *,
+    action_type,
+    employee,
+    payload,
+    requested_by,
+    attachment=None,
+):
+    """إنشاء وتنفيذ تصفية فوراً — بدون تعميد المدير العام أو موظف الموارد."""
+    from apps.core.models import PendingAction
+
+    if not _is_settlement_pending_action(action_type):
+        raise ValueError('نوع عملية غير مدعوم للتنفيذ المباشر.')
+    if _open_settlement_pending_action_qs(employee).exists():
+        raise ValueError('يوجد طلب تصفية قيد الموافقة لهذا الموظف بالفعل.')
+
+    routing = snapshot_routing_fields(employee)
+    now = timezone.now()
+    action = PendingAction.objects.create(
+        action_type=action_type,
+        employee=employee,
+        branch=routing['branch'],
+        administration=routing['administration'],
+        payload=payload,
+        attachment=attachment,
+        requested_by=requested_by,
+        status=PendingAction.Status.APPROVED,
+        branch_reviewed_by=requested_by,
+        branch_reviewed_at=now,
+        branch_notes='تنفيذ مباشر',
+    )
+    msg = execute_pending_action(action, requested_by)
+    return action, msg
+
+
+@transaction.atomic
 def branch_approve(action, user, notes=''):
     """المرحلة الأولى (إدارة/فرع/محاسب) توافق → GM أو تنفيذ فوري لعجز الكاشير."""
     from apps.core.models import PendingAction
@@ -821,6 +901,25 @@ def branch_approve(action, user, notes=''):
                 action.requested_by, action,
                 title=f'تم تنفيذ طلبك — {action.get_action_type_display()}',
                 message=f'الموظف: {action.employee.name}',
+                icon='check-circle', color='emerald',
+            )
+        return action
+
+    if action.action_type in SETTLEMENT_PENDING_ACTION_TYPES:
+        action.status = PendingAction.Status.APPROVED
+        action.branch_reviewed_by = user
+        action.branch_reviewed_at = timezone.now()
+        action.branch_notes = notes or ''
+        action.save(update_fields=[
+            'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
+        ])
+        msg = execute_pending_action(action, user)
+        notif = _notify()
+        if action.requested_by_id:
+            notif.notify_user(
+                action.requested_by, action,
+                title=f'تم تنفيذ طلبك — {action.get_action_type_display()}',
+                message=msg or f'الموظف: {action.employee.name}',
                 icon='check-circle', color='emerald',
             )
         return action
@@ -1001,7 +1100,11 @@ def resubmit_action(action, user):
 
 def notify_branch_on_create(action):
     """يُستدعى مرة واحدة بعد إنشاء PendingAction جديد."""
+    from apps.core.models import PendingAction
     from apps.core.services.whatsapp import workflow_notifier
+
+    if action.status == PendingAction.Status.APPROVED:
+        return
 
     workflow_notifier.notify_whatsapp_request_created(action)
     notify_on_first_stage(

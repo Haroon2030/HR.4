@@ -94,9 +94,23 @@ def _parse_final_settlement_statement(content: str) -> dict:
     if penalty and 'penalty_amount' not in ctx:
         ctx['penalty_amount'] = penalty.group(1)
 
-    tot = re.search(r'(?:[\*★]\s*)?إجمالي المستحقات:\s*([\d\.]+)', text)
+    tot = re.search(r'(?:[\*★]\s*)?صافي المستحق:\s*([\d\.]+)', text)
+    if not tot:
+        tot = re.search(r'(?:[\*★]\s*)?إجمالي المستحقات:\s*([\d\.]+)', text)
     if tot:
         ctx['total_entitlement'] = tot.group(1)
+
+    prorated = re.search(r'راتب حتى [^:]+:\s*([\d\.]+)', text)
+    if prorated:
+        ctx['prorated_salary'] = prorated.group(1)
+
+    loans = re.search(r'خصم سلف:\s*([\d\.]+)', text)
+    if loans:
+        ctx['loans_deduction'] = loans.group(1)
+
+    absences = re.search(r'خصم غيابات:\s*([\d\.]+)', text)
+    if absences:
+        ctx['absences_deduction'] = absences.group(1)
 
     srv = re.search(r'مدة الخدمة:\s*([^\n]+)', text)
     if srv:
@@ -165,7 +179,7 @@ def _custody_final_settlement_context(employee) -> dict:
 
 
 def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
-    """إكمال الحقول الفارغة من النموذج: تعويض إجازة تقديري، سلف، صافي عند غياب سطر الإجمالي."""
+    """إكمال الحقول الفارغة من النموذج: تعويض إجازة تقديري، سلف، غياب، راتب الفترة، صافي."""
     leave_comp, leave_days = _estimate_leave_comp_for_print(employee)
     if not context.get('leave_comp') and leave_comp is not None:
         context['leave_comp'] = leave_comp
@@ -174,20 +188,35 @@ def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
 
     loans = _active_loans_total_str(employee)
     if loans:
-        context['loans_deduction'] = loans
+        context.setdefault('loans_deduction', loans)
+
+    end = employee.end_date
+    if end:
+        from apps.employees.services.settlement_financials import (
+            compute_settlement_financials,
+            net_settlement_total,
+        )
+
+        fin = compute_settlement_financials(employee, end)
+        context.setdefault('prorated_salary', str(fin['prorated_salary']))
+        if fin['absences_deduction'] > 0:
+            context.setdefault('absences_deduction', str(fin['absences_deduction']))
+        if not context.get('loans_deduction') and fin['loans_deduction'] > 0:
+            context['loans_deduction'] = str(fin['loans_deduction'])
 
     if context.get('total_entitlement'):
         return
     try:
         eosb = Decimal(str(context.get('eosb_amount') or '0'))
         lc = Decimal(str(context.get('leave_comp') or '0'))
-        ded = Decimal(str(context.get('loans_deduction') or '0'))
+        prorated = Decimal(str(context.get('prorated_salary') or '0'))
+        loans_ded = Decimal(str(context.get('loans_deduction') or '0'))
+        abs_ded = Decimal(str(context.get('absences_deduction') or '0'))
+        penalty = Decimal(str(context.get('penalty_amount') or '0'))
     except (InvalidOperation, TypeError, ValueError):
         return
-    net = eosb + lc - ded
-    penalty = Decimal(str(context.get('penalty_amount') or '0'))
-    net += penalty
-    if eosb > 0 or lc > 0 or ded > 0 or penalty > 0:
+    net = eosb + lc + prorated + penalty - loans_ded - abs_ded
+    if eosb > 0 or lc > 0 or prorated > 0 or loans_ded > 0 or abs_ded > 0 or penalty > 0:
         context['total_entitlement'] = str(net.quantize(Decimal('0.01')))
 
 

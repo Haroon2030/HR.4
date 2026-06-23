@@ -18,6 +18,7 @@ from apps.core.web_views.whatsapp_integration import *  # noqa: F401,F403
 from apps.core.web_views.workflow_whatsapp_settings import *  # noqa: F401,F403
 from apps.core.web_views.pending_actions import *  # noqa: F401,F403
 from apps.core.web_views.notifications import *  # noqa: F401,F403
+from apps.core.web_views.hr_forms import print_ledger_settlement_detail  # noqa: F401
 from apps.core.web_views.hr_forms import *  # noqa: F401,F403
 from apps.core.web_views.reports import *  # noqa: F401,F403
 from apps.core.web_views.audit_log import *  # noqa: F401,F403

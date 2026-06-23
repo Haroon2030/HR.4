@@ -19,7 +19,7 @@ from apps.core.web_views._helpers import (
 )
 from apps.core.decorators import any_permission_required, permission_required
 from apps.core.salary_access import salary_view_required
-from apps.core.services.pending_actions import create_pending_action
+from apps.core.services.pending_actions import create_and_execute_settlement_action, create_pending_action
 
 @login_required
 @permission_required('employees.edit')
@@ -114,7 +114,7 @@ def terminate_employee(request, employee_id):
 
     cd = form.cleaned_data
     try:
-        create_pending_action(
+        _, msg = create_and_execute_settlement_action(
             action_type='terminate',
             employee=employee,
             payload={
@@ -126,7 +126,7 @@ def terminate_employee(request, employee_id):
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect('web:view_employee', employee_id=employee.id)
-    messages.success(request, 'تم إرسال طلب التصفية — أصبح الموظف موقوفاً بانتظار الموافقة النهائية.')
+    messages.success(request, msg or 'تمت تصفية الموظف مباشرة.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -738,7 +738,7 @@ def end_of_service_employee(request, employee_id):
 
     cd = form.cleaned_data
     try:
-        create_pending_action(
+        _, msg = create_and_execute_settlement_action(
             action_type='end_of_service',
             employee=employee,
             payload={
@@ -753,5 +753,5 @@ def end_of_service_employee(request, employee_id):
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect('web:view_employee', employee_id=employee.id)
-    messages.success(request, 'تم إرسال طلب التصفية — أصبح الموظف موقوفاً بانتظار الموافقة النهائية.')
+    messages.success(request, msg or 'تمت تصفية نهاية الخدمة مباشرة.')
     return redirect('web:view_employee', employee_id=employee.id)

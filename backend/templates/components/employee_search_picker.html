@@ -1,12 +1,11 @@
 {# بحث واختيار موظف ذكي — employees اختياري؛ employee_search_url للبحث عن بُعد #}
 {% with field_name=input_name|default:"employee_id" picker_label=label|default:"الموظف" %}
-<div class="employee-search-picker hr-employee-smart-search"
+<div class="employee-search-picker hr-employee-smart-search overflow-visible"
      x-data="employeePickerBase({ pageSize: 8{% if employee_search_url %}, searchUrl: '{{ employee_search_url|escapejs }}'{% endif %} })"
-     x-init="employees = []; initEmployeePicker($data);{% if filter_employee %}
-     selectEmployee({ id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}' });{% endif %}">
+     x-init="initEmployeePicker($data){% if filter_employee %}; selectEmployee({ id: {{ filter_employee.pk }}, name: '{{ filter_employee.name|escapejs }}', number: '{{ filter_employee.employee_number|default:""|escapejs }}', id_number: '{{ filter_employee.id_number|default:""|escapejs }}', dept: '{{ filter_employee.department.name|default:""|escapejs }}', branch: '{{ filter_employee.branch.name|default:""|escapejs }}', branch_id: '{{ filter_employee.branch_id|default:"" }}' }){% endif %}">
     <input type="hidden" name="{{ field_name }}" :value="selected ? selected.id : ''">
-    <label class="block text-xs font-medium text-slate-600 mb-1 flex items-center gap-1.5">
-        <i data-lucide="search" class="w-3.5 h-3.5 text-primary-600"></i>
+
+    <label class="block text-xs font-medium text-slate-600 mb-1">
         {{ picker_label }}
         <span class="text-slate-400 font-normal">(اسم، رقم وظيفي، هوية)</span>
     </label>
@@ -36,7 +35,9 @@
     <div x-show="!selected" x-cloak class="relative">
         <div class="hr-search-field">
             <i data-lucide="search" class="hr-search-field__icon w-4 h-4" aria-hidden="true"></i>
-            <input type="text" x-model="query" x-ref="searchInput"
+            <input type="search"
+                x-model="query"
+                x-ref="searchInput"
                 @focus="onSearchFocus()"
                 @keydown.arrow-down.prevent="moveActive(1)"
                 @keydown.arrow-up.prevent="moveActive(-1)"
@@ -44,10 +45,16 @@
                 @keydown.escape.prevent="clearQuery()"
                 placeholder="ابحث بالاسم، الرقم الوظيفي، أو الهوية…"
                 autocomplete="off"
-                class="hr-search-field__input"
+                autocapitalize="off"
+                spellcheck="false"
+                class="hr-search-field__input employee-search-picker__input"
                 :aria-label="'{{ picker_label|escapejs }}'">
-            <button type="button" x-show="query" x-cloak @click="clearQuery()"
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+            <button type="button"
+                    x-show="query"
+                    x-cloak
+                    @click="clearQuery()"
+                    class="hr-search-field__clear employee-search-picker__clear"
+                    title="مسح البحث">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>

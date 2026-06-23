@@ -23,6 +23,7 @@ WORKFLOW_WHATSAPP_RECIPIENT_META: tuple[WorkflowRecipientMeta, ...] = (
         'role_type': 'ADMIN',
         'events': (
             {'code': 'workflow.*.created.broadcast', 'when': 'بث عند رفع طلب جديد'},
+            {'code': 'workflow.*.executed.settlement', 'when': 'بث عند تنفيذ تصفية نهاية خدمة'},
         ),
     },
     {
@@ -32,6 +33,7 @@ WORKFLOW_WHATSAPP_RECIPIENT_META: tuple[WorkflowRecipientMeta, ...] = (
         'events': (
             {'code': 'workflow.*.created.broadcast', 'when': 'بث عند رفع طلب جديد'},
             {'code': 'workflow.*.pending_gm', 'when': 'تعميد بعد الموافقة الأولى'},
+            {'code': 'workflow.*.executed.settlement', 'when': 'بث عند تنفيذ تصفية نهاية خدمة'},
         ),
     },
     {

@@ -784,3 +784,42 @@ class SettlementEosbCalculationTests(TestCase):
         self.assertEqual(eosb, Decimal('9000.00'))
         self.assertIn('1000.00', category)
         self.assertIn('2000.00', category)
+
+
+class SettlementFinancialsTests(TestCase):
+    def setUp(self):
+        self.employee = Employee.objects.create(
+            name='تصفية',
+            hire_date=date(2026, 1, 1),
+            basic_salary=Decimal('6000'),
+            housing_allowance=Decimal('0'),
+        )
+
+    def test_prorated_salary_mid_month(self):
+        from apps.employees.services.settlement_financials import prorated_salary_until
+
+        amount = prorated_salary_until(self.employee, date(2026, 6, 15))
+        self.assertEqual(amount, Decimal('3000.00'))
+
+    def test_pending_loans_and_absences_deduction(self):
+        from apps.employees.services.settlement_financials import compute_settlement_financials
+
+        loan = EmployeeLoan.objects.create(
+            employee=self.employee,
+            amount=Decimal('1000'),
+            monthly_deduction=Decimal('250'),
+            installments=4,
+            issued_at=date(2026, 1, 10),
+            first_deduction_date=date(2026, 2, 1),
+        )
+        EmployeeAbsence.objects.create(
+            employee=self.employee,
+            absence_date=date(2026, 6, 5),
+            days=2,
+            total_salary_snapshot=Decimal('6000'),
+        )
+        fin = compute_settlement_financials(self.employee, date(2026, 6, 15))
+        self.assertEqual(fin['loans_deduction'], loan.remaining_balance)
+        self.assertEqual(fin['absences_deduction'], Decimal('400.00'))
+        self.assertEqual(fin['prorated_salary'], Decimal('3000.00'))
+

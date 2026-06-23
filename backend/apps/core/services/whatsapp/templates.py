@@ -190,6 +190,23 @@ def build_workflow_officer_assigned_message(obj, officer) -> str:
     return '\n'.join(lines)
 
 
+def build_workflow_settlement_executed_message(
+    action: PendingAction,
+    execution_message: str = '',
+) -> str:
+    """رسالة لمدير النظام ومدير الموارد عند تنفيذ تصفية."""
+    payload = action.payload or {}
+    lines = [
+        '✅ *تم تنفيذ تصفية في نظام الموارد البشرية*',
+        *_pending_action_summary(action),
+        f'📅 تاريخ التوقف: {_fmt_date(payload.get("end_date"))}',
+    ]
+    if execution_message:
+        lines.append(f'📌 {execution_message}')
+    lines.extend(['', f'🔗 {_pending_action_link(action)}', '', '— نظام الموارد البشرية'])
+    return '\n'.join(line for line in lines if line is not None)
+
+
 def build_executed_message(action: PendingAction, execution_message: str = '') -> str:
     """Build employee-facing message after PendingAction execution."""
     employee = action.employee

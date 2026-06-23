@@ -28,12 +28,12 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td style="padding:8px; border:1px solid #cbd5e1;">الراتب حتى تاريخ</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ employee.total_salary|floatformat:2 }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr><td style="padding:8px; border:1px solid #cbd5e1;">الراتب حتى تاريخ</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ prorated_salary|default:employee.total_salary|floatformat:2 }}</td><td style="padding:8px; border:1px solid #cbd5e1;">{% if employee.end_date %}{{ employee.end_date|date:"Y/m/d" }}{% endif %}</td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">رصيد الإجازات المتبقي ({{ leave_days|default:employee.remaining_leave_days }} يوم)</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ leave_comp|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">مكافأة نهاية الخدمة</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ eosb_amount|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">بدل تذكرة سفر</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">السلف والقروض</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ loans_deduction|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
-            <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">غيابات / خصومات</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">غيابات / خصومات</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ absences_deduction|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr style="background:#fef3c7;">
                 <td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">
                     العهد

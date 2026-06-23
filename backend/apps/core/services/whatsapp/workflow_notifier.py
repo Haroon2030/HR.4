@@ -173,3 +173,32 @@ def notify_whatsapp_officer_assigned(obj, officer) -> None:
         )
     except Exception as exc:
         logger.warning('notify_whatsapp_officer_assigned failed: %s', exc)
+
+
+def notify_whatsapp_settlement_executed(action, execution_message: str = '') -> None:
+    """بث لمدير النظام ومدير الموارد عند تنفيذ تصفية (مباشرة أو بعد الموافقات)."""
+    from apps.core.models import PendingAction
+
+    if not isinstance(action, PendingAction):
+        return
+    if action.action_type not in (
+        PendingAction.ActionType.END_OF_SERVICE,
+        PendingAction.ActionType.TERMINATE,
+    ):
+        return
+    try:
+        settings_obj = _settings()
+        if not settings_obj.is_enabled:
+            return
+        phones = settings_obj.phones_for_roles('system_admin', 'hr_manager')
+        if not phones:
+            return
+        message = templates.build_workflow_settlement_executed_message(action, execution_message)
+        dispatcher.send_to_phones(
+            phones=phones,
+            message=message,
+            event_type='workflow.pending_action.executed.settlement',
+            related_action=action,
+        )
+    except Exception as exc:
+        logger.warning('notify_whatsapp_settlement_executed failed: %s', exc)

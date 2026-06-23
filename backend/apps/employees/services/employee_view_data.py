@@ -236,6 +236,12 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
         'has_sponsor': bool(employee.sponsorship_id),
     }
     if user_can_view_salary(user):
+        from apps.employees.services.settlement_financials import (
+            pending_absences_deduction,
+            pending_loans_deduction,
+        )
+
+        today = timezone.localdate()
         payload.update({
             'total_salary': _modal_js_float(employee.total_salary),
             'eos_salary': _modal_js_float(employee.salary_for_end_of_service),
@@ -245,7 +251,18 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
             'transport_allowance': _modal_js_float(employee.transport_allowance),
             'other_allowance': _modal_js_float(employee.other_allowance),
             'cash_amount': _modal_js_float(employee.cash_amount),
+            'pending_loans_total': _modal_js_float(pending_loans_deduction(employee)),
         })
+        payload['pending_absences'] = [
+            {
+                'date': a.absence_date.isoformat(),
+                'amount': _modal_js_float(a.deduction_amount),
+            }
+            for a in employee.absences.filter(
+                applied_to_payroll__isnull=True,
+                absence_date__lte=today,
+            ).order_by('absence_date')
+        ]
     return payload
 
 
@@ -354,16 +371,28 @@ def _load_leave_timeline(employee: Employee) -> list[dict]:
     return rows
 
 
+def _ledger_settlement_print_url(employee_id: int, ledger_id: int) -> str:
+    from django.urls import NoReverseMatch, reverse
+
+    try:
+        return reverse('web:print_ledger_settlement_detail', args=[employee_id, ledger_id])
+    except NoReverseMatch:
+        return f'/employees/{employee_id}/ledger/{ledger_id}/print/'
+
+
 def _load_accruals_tab(employee: Employee, user) -> list:
     from apps.employees.models import EmployeeLedger
 
     accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
     if employee.hire_date and not accruals_qs.exists():
         _maybe_init_employee_ledger(employee, user)
-    return list(
+    ledgers = list(
         employee.accruals_ledger.select_related('payroll_run')
         .order_by('-date', '-created_at'),
     )
+    for ledger in ledgers:
+        ledger.print_url = _ledger_settlement_print_url(employee.pk, ledger.pk)
+    return ledgers
 
 
 def _accruals_balance_summary(employee: Employee, accruals: list) -> dict:

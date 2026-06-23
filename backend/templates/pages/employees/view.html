@@ -748,11 +748,32 @@
                             </div>
                         </div>
 
+                        <!-- راتب الفترة والخصومات -->
+                        <div x-show="endDate && serviceDays > 0" class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
+                            <div class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                <i data-lucide="wallet" class="w-3.5 h-3.5"></i> راتب الفترة والخصومات
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">راتب حتى التوقف</span>
+                                    <span class="font-bold text-emerald-700" x-text="proratedSalary.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div x-show="loansDeduction > 0" class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">خصم سلف</span>
+                                    <span class="font-bold text-amber-700" x-text="'− ' + loansDeduction.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div x-show="absencesDeduction > 0" class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">خصم غيابات</span>
+                                    <span class="font-bold text-amber-700" x-text="'− ' + absencesDeduction.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- الإجمالي -->
                         <div class="bg-red-50 border border-red-200 rounded-lg p-3">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-bold text-red-800 flex items-center gap-1">
-                                    <i data-lucide="banknote" class="w-4 h-4"></i> إجمالي المستحقات
+                                    <i data-lucide="banknote" class="w-4 h-4"></i> صافي المستحق
                                 </span>
                                 <span class="text-lg font-bold text-red-700" x-text="grandTotal.toFixed(2) + ' ر.س'"></span>
                             </div>
@@ -1272,6 +1293,8 @@ window.employeeEosCalculator = function() {
         usedLeaveDays: Number(n.used_leave_days) || 0,
         accruedLeaveDays: Number(n.accrued_leave_days) || 0,
         hasSponsor: !!n.has_sponsor,
+        pendingLoansTotal: Number(n.pending_loans_total) || 0,
+        pendingAbsences: Array.isArray(n.pending_absences) ? n.pending_absences : [],
         resetCalculator() {
             var fresh = employeeModalJs();
             this.hireDate = fresh.hire_date || '';
@@ -1431,23 +1454,59 @@ window.employeeEosCalculator = function() {
         get penaltyAmount() {
             return this.terminatedBy === 'article_77' ? +(this.totalSalary * 2).toFixed(2) : 0;
         },
+        get proratedSalary() {
+            if (!this.endDate || !this.hireDate || this.totalSalary <= 0) return 0;
+            var end = this.parseLocalDate(this.endDate);
+            if (!end) return 0;
+            var year = end.getFullYear();
+            var month = end.getMonth();
+            var periodStart = new Date(year, month, 1);
+            var periodEnd = new Date(year, month + 1, 0);
+            var hire = this.parseLocalDate(this.hireDate);
+            var effStart = hire && hire > periodStart ? hire : periodStart;
+            var effEnd = end < periodEnd ? end : periodEnd;
+            if (effEnd < effStart) return 0;
+            var calendarDays = Math.floor((effEnd - effStart) / 86400000) + 1;
+            var monthDays = 30;
+            var payableDays = Math.min(calendarDays, monthDays);
+            return +(this.totalSalary * payableDays / monthDays).toFixed(2);
+        },
+        get loansDeduction() { return +(this.pendingLoansTotal || 0).toFixed(2); },
+        get absencesDeduction() {
+            if (!this.endDate || !this.pendingAbsences.length) return 0;
+            var endIso = this.endDate;
+            var sum = this.pendingAbsences.reduce(function(acc, row) {
+                if (row.date && row.date <= endIso) return acc + (Number(row.amount) || 0);
+                return acc;
+            }, 0);
+            return +sum.toFixed(2);
+        },
         get dailyWage() { return +(this.totalSalary / 30).toFixed(2); },
         get leaveComp() {
             if (!this.hasSponsor) return 0;
             return +(this.dailyWage * this.displayLeaveDays).toFixed(2);
         },
-        get grandTotal() { return +(this.eosb + this.leaveComp + this.penaltyAmount).toFixed(2); },
+        get grossEntitlements() {
+            return +(this.eosb + this.leaveComp + this.penaltyAmount + this.proratedSalary).toFixed(2);
+        },
+        get grandTotal() {
+            return +(this.grossEntitlements - this.loansDeduction - this.absencesDeduction).toFixed(2);
+        },
         get totalSummaryText() {
-            if (this.isLeaveOnlySettlement) {
-                return 'إجازة فقط: ' + this.leaveComp.toFixed(2) + ' ر.س (بدون مكافأة نهاية خدمة)';
+            var parts = [];
+            if (!this.isLeaveOnlySettlement && this.hasSponsor) parts.push('مكافأة ' + this.eosb.toFixed(2));
+            if (this.hasSponsor) parts.push('إجازة ' + this.leaveComp.toFixed(2));
+            if (this.proratedSalary > 0) parts.push('راتب ' + this.proratedSalary.toFixed(2));
+            if (this.penaltyAmount > 0) parts.push('جزاء ' + this.penaltyAmount.toFixed(2));
+            var ded = [];
+            if (this.loansDeduction > 0) ded.push('سلف ' + this.loansDeduction.toFixed(2));
+            if (this.absencesDeduction > 0) ded.push('غياب ' + this.absencesDeduction.toFixed(2));
+            var text = parts.join(' + ');
+            if (ded.length) text += ' − ' + ded.join(' − ');
+            if (this.isLeaveOnlySettlement && this.hasSponsor) {
+                return (text || 'إجازة فقط') + ' (بدون مكافأة نهاية خدمة)';
             }
-            if (this.terminatedBy === 'article_77') {
-                return 'مكافأة: ' + this.eosb.toFixed(2) + ' + إجازة: ' + this.leaveComp.toFixed(2) + ' + جزاء: ' + this.penaltyAmount.toFixed(2);
-            }
-            if (this.hasSponsor) {
-                return 'مكافأة: ' + this.eosb.toFixed(2) + ' + إجازة: ' + this.leaveComp.toFixed(2);
-            }
-            return 'إجازة: ' + this.leaveComp.toFixed(2) + ' ر.س (بدون مكافأة نهاية خدمة)';
+            return text || '—';
         }
     };
 };

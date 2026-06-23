@@ -1,6 +1,7 @@
 """Tests for WhatsApp workflow approval notifications."""
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -15,7 +16,9 @@ from apps.core.services.employment_requests import (
 )
 from apps.core.services.pending_actions import (
     branch_approve,
+    create_and_execute_settlement_action,
     create_pending_action,
+    execute_pending_action,
     gm_approve_and_assign,
     notify_branch_on_create,
 )
@@ -228,3 +231,31 @@ class WhatsAppWorkflowNotificationTests(TestCase):
         er_gm_assign(req, self.requester, self.hr_officer)
         phones = {c.kwargs.get('phone') for c in self.mock_send.call_args_list}
         self.assertIn('966533333333', phones)
+
+    def test_direct_settlement_notifies_system_admin_on_execute(self):
+        from apps.setup.models import Sponsorship
+
+        self.employee.hire_date = date(2020, 1, 1)
+        self.employee.sponsorship = Sponsorship.objects.create(code='SP-WA', company_name='كفالة')
+        self.employee.basic_salary = 5000
+        self.employee.save()
+
+        self.mock_send.reset_mock()
+        create_and_execute_settlement_action(
+            action_type=PendingAction.ActionType.END_OF_SERVICE,
+            employee=self.employee,
+            payload={
+                'end_date': '2026-06-01',
+                'terminated_by': 'company',
+                'end_reason': 'تصفية',
+            },
+            requested_by=self.requester,
+        )
+        phones = {c.kwargs.get('phone') for c in self.mock_send.call_args_list}
+        self.assertIn('966555555555', phones)
+        self.assertIn('966566666666', phones)
+        self.assertTrue(
+            WhatsAppMessageLog.objects.filter(
+                event_type='workflow.pending_action.executed.settlement',
+            ).exists()
+        )

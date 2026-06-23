@@ -1193,7 +1193,7 @@
                                                 data-hr-text-detail-icon="calculator"
                                                 data-hr-text-detail-title="{{ a.get_transaction_type_display }}"
                                                 data-hr-text-detail-label="التفاصيل الحسابية"
-                                                data-hr-text-detail-print-url="{% url 'web:print_ledger_settlement_detail' employee.id a.id %}"
+                                                data-hr-text-detail-print-url="{{ a.print_url }}"
                                                 data-hr-text-detail-employee-name="{{ employee.name }}"
                                                 data-hr-text-detail-html-id="ledger-detail-html-{{ a.id }}">
                                             <i data-lucide="eye" class="hr-act__icon"></i>

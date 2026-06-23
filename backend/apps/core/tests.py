@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from apps.core.models import Branch, Company, PendingAction, Role
 from apps.core.services.pending_actions import (
+    create_and_execute_settlement_action,
     create_pending_action,
     execute_pending_action,
     revert_employee_settlement_pending_status,
@@ -303,6 +304,22 @@ class SettlementPendingStatusTests(_BaseExecutorTests):
         execute_pending_action(action, self.approver)
         self.employee.refresh_from_db()
         self.assertEqual(self.employee.status, Employee.Status.TERMINATED)
+
+    def test_create_and_execute_end_of_service_terminates_immediately(self):
+        action, msg = create_and_execute_settlement_action(
+            action_type='end_of_service',
+            employee=self.employee,
+            payload={
+                'end_date': '2026-06-01',
+                'terminated_by': 'company',
+                'end_reason': 'تصفية مباشرة',
+            },
+            requested_by=self.requester,
+        )
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.TERMINATED)
+        self.assertIsNotNone(action.executed_at)
+        self.assertIn('تصفية', msg)
 
 
 class EndOfServiceContractExpiryTests(_BaseExecutorTests):
