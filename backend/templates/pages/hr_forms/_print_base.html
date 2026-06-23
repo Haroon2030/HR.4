@@ -209,7 +209,19 @@
             padding-top: 8px;
         }
 
-        .print-only { display: none; }
+        .print-only { display: none !important; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
 
         .hr-form-bank-select {
             display: inline-block;
@@ -231,36 +243,35 @@
         .hr-form-bank-address__line {
             display: flex;
             flex-direction: row;
-            align-items: baseline;
+            align-items: center;
             flex-wrap: nowrap;
-            gap: 6px;
+            gap: 8px;
             direction: rtl;
             margin: 0;
             font-size: 14.5px;
             font-weight: 700;
             color: #0f172a;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         .hr-form-bank-address__prefix,
-        .hr-form-bank-address__suffix {
+        .hr-form-bank-address__suffix,
+        .hr-form-bank-address__bank {
             flex: 0 0 auto;
             white-space: nowrap;
         }
+        .hr-form-bank-address__bank {
+            display: inline-flex;
+            align-items: center;
+            gap: 0;
+        }
         .hr-form-bank-address__form {
-            display: contents;
+            display: inline;
             margin: 0;
         }
-        .hr-form-bank-address__name {
-            flex: 0 1 auto;
-            display: inline-block;
+        .hr-form-bank-address__print-name {
             font-size: 15px;
             font-weight: 800;
             color: #1e3a8a;
-            white-space: nowrap;
-        }
-        .hr-form-bank-select {
-            flex: 0 1 auto;
-            max-width: min(260px, 50vw);
         }
         input.blank.hr-form-bank-address__name {
             min-width: 120px;
@@ -328,6 +339,7 @@
             .toolbar { display: none !important; }
             .no-print { display: none !important; }
             .print-only { display: inline !important; }
+            .no-print { display: none !important; }
             .hr-form-screen-link { display: none !important; }
             .page {
                 box-shadow: none; margin: 0; max-width: none;
@@ -406,7 +418,7 @@
                 flex-wrap: nowrap;
                 white-space: nowrap;
             }
-            .hr-form-bank-address__name { font-size: 12.5px; }
+            .hr-form-bank-address__print-name { font-size: 12.5px; font-weight: 800; color: #0f172a; }
             .hr-form-bank-select {
                 border: none;
                 padding: 0;

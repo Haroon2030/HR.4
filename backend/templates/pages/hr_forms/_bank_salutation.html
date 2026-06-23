@@ -1,25 +1,28 @@
-{# سطر «السادة / البنك المحترمين» — صف واحد؛ البنك من القائمة المنسدلة في صفحة النماذج #}
+{# سطر «السادة / البنك المحترمين» — صف واحد #}
 <div class="hr-form-bank-address">
     <p class="hr-form-bank-address__line">
         <span class="hr-form-bank-address__prefix">السادة /</span>
-        {% if banks %}
-        <form method="get" class="no-print hr-form-bank-address__form">
-            {% include "pages/hr_forms/_hr_form_preserve_params.html" with skip_bank_id=True %}
-            <label for="{{ bank_select_id|default:'hr-form-bank-select' }}" class="sr-only">البنك</label>
-            <select id="{{ bank_select_id|default:'hr-form-bank-select' }}" name="bank_id"
-                    onchange="this.form.submit()"
-                    class="hr-form-bank-select" title="اختر البنك">
-                {% for b in banks %}
-                <option value="{{ b.id }}" {% if bank and bank.id == b.id %}selected{% endif %}>{{ b.name }}</option>
-                {% endfor %}
-            </select>
-        </form>
-        <strong class="print-only hr-form-bank-address__name">{% firstof bank.name banks.0.name %}</strong>
-        {% elif bank %}
-        <strong class="hr-form-bank-address__name">{% firstof bank.name "........................" %}</strong>
-        {% else %}
-        <span class="blank hr-form-bank-address__name" data-label="اسم البنك"></span>
-        {% endif %}
+        <span class="hr-form-bank-address__bank">
+            {% if banks %}
+            <form method="get" class="no-print hr-form-bank-address__form">
+                {% include "pages/hr_forms/_hr_form_preserve_params.html" with skip_bank_id=True %}
+                <select id="{{ bank_select_id|default:'hr-form-bank-select' }}" name="bank_id"
+                        onchange="this.form.submit()"
+                        class="hr-form-bank-select"
+                        aria-label="البنك"
+                        title="اختر البنك">
+                    {% for b in banks %}
+                    <option value="{{ b.id }}" {% if bank and bank.id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <span class="hr-form-bank-address__print-name print-only">{% firstof bank.name banks.0.name %}</span>
+            {% elif bank %}
+            <span class="hr-form-bank-address__print-name">{% firstof bank.name "........................" %}</span>
+            {% else %}
+            <span class="blank hr-form-bank-address__name" data-label="اسم البنك"></span>
+            {% endif %}
+        </span>
         <span class="hr-form-bank-address__suffix">المحترمين</span>
     </p>
 </div>
