@@ -4535,7 +4535,6 @@ body.hr-app .hr-topbar-info-panel.hr-sidebar-panel .hr-topbar-info-panel__foot {
     font-size: 0.6875rem !important;
 }
 
-#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__formula,
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__sep,
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__bal-eq,
 #hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-ledger-detail__bal-op {
