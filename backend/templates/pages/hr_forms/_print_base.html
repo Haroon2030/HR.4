@@ -505,9 +505,6 @@
                 <div class="meta">
                     سجل تجاري رقم:
                     <strong>{% firstof letterhead_cr employee_sponsorship.commercial_registration company.commercial_record "................" %}</strong>
-                    {% if employee.sponsorship and letterhead_source != 'sponsorship' %}
-                    <br>الشركة (الكفالة): <strong>{{ employee.sponsorship.company_name }}</strong>
-                    {% endif %}
                 </div>
             </div>
         </div>
