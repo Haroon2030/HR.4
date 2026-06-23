@@ -228,20 +228,24 @@
         /* سطر «السادة / البنك المحترمين» */
         .hr-form-bank-address { margin-bottom: 28px; }
         .hr-form-bank-address__line {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 12px;
             margin: 0;
             font-size: 14.5px;
             font-weight: 700;
             color: #0f172a;
+            text-align: right;
+        }
+        .hr-form-bank-address__recipient {
+            display: inline-flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-width: 100%;
         }
         .hr-form-bank-address__prefix { white-space: nowrap; }
         .hr-form-bank-address__suffix { white-space: nowrap; }
         .hr-form-bank-address__bank {
-            flex: 1;
-            text-align: center;
+            display: inline-flex;
+            align-items: baseline;
             min-width: 0;
         }
         .hr-form-bank-address__form { display: inline; margin: 0; }
@@ -250,12 +254,11 @@
             font-size: 15px;
             font-weight: 800;
             color: #1e3a8a;
-            min-width: 180px;
         }
         .hr-form-bank-address__bank .blank {
-            width: 100%;
-            max-width: 360px;
-            text-align: center;
+            min-width: 160px;
+            max-width: 320px;
+            text-align: right;
             font-weight: 800;
             color: #1e3a8a;
             border-bottom-style: solid;
