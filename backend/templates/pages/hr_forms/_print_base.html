@@ -229,64 +229,48 @@
         /* سطر «السادة / البنك المحترمين» */
         .hr-form-bank-address { margin-bottom: 28px; }
         .hr-form-bank-address__line {
+            display: flex;
+            flex-direction: row;
+            align-items: baseline;
+            flex-wrap: nowrap;
+            gap: 6px;
+            direction: rtl;
             margin: 0;
             font-size: 14.5px;
             font-weight: 700;
             color: #0f172a;
-            text-align: right;
-            line-height: 1.8;
+            line-height: 1.6;
         }
-        .hr-form-bank-address__recipient {
-            display: inline-flex;
-            align-items: baseline;
-            gap: 6px;
-            max-width: 100%;
-            vertical-align: baseline;
-        }
-        .hr-form-bank-address--ready .hr-form-bank-address__recipient {
-            flex-wrap: nowrap;
+        .hr-form-bank-address__prefix,
+        .hr-form-bank-address__suffix {
+            flex: 0 0 auto;
             white-space: nowrap;
         }
-        .hr-form-bank-address__prefix { white-space: nowrap; }
-        .hr-form-bank-address__suffix { white-space: nowrap; }
-        .hr-form-bank-address__bank {
-            display: inline-flex;
-            align-items: baseline;
-            min-width: 0;
-            flex-shrink: 0;
+        .hr-form-bank-address__form {
+            display: contents;
+            margin: 0;
         }
-        .hr-form-bank-address__form { display: inline; margin: 0; }
         .hr-form-bank-address__name {
+            flex: 0 1 auto;
             display: inline-block;
             font-size: 15px;
             font-weight: 800;
             color: #1e3a8a;
+            white-space: nowrap;
         }
-        .hr-form-bank-address__bank .blank,
+        .hr-form-bank-select {
+            flex: 0 1 auto;
+            max-width: min(260px, 50vw);
+        }
         input.blank.hr-form-bank-address__name {
-            min-width: 140px;
-            max-width: 240px;
+            min-width: 120px;
+            max-width: 220px;
             text-align: right;
             font-weight: 800;
             color: #1e3a8a;
             border-bottom-style: solid;
             border-bottom-color: #94a3b8;
         }
-        .hr-form-bank-address__hint {
-            display: inline;
-            margin: 0;
-            margin-right: 8px;
-            font-size: 11.5px;
-            font-weight: 500;
-            color: #64748b;
-            white-space: nowrap;
-        }
-        .hr-form-bank-address__hint a {
-            color: #4f46e5;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .hr-form-bank-address__hint a:hover { text-decoration: underline; }
 
         .hr-form-profession-select {
             font-family: inherit;
@@ -417,9 +401,19 @@
             .clause { padding: 8px 10px; margin: 6px 0; font-size: 11px; line-height: 1.55; }
 
             .hr-form-bank-address { margin-bottom: 14px; }
-            .hr-form-bank-address__line { font-size: 12px; white-space: nowrap; }
-            .hr-form-bank-address__hint { display: none !important; }
+            .hr-form-bank-address__line {
+                font-size: 12px;
+                flex-wrap: nowrap;
+                white-space: nowrap;
+            }
             .hr-form-bank-address__name { font-size: 12.5px; }
+            .hr-form-bank-select {
+                border: none;
+                padding: 0;
+                background: transparent;
+                font-size: 12px;
+                max-width: none;
+            }
             .hr-form-bank-address__bank .blank {
                 border: none;
                 background: transparent;
@@ -541,7 +535,7 @@
                 + (el.classList.contains('hr-form-amount') ? ' hr-form-amount' : '')
                 + (el.classList.contains('hr-form-bank-address__name') ? ' hr-form-bank-address__name' : '');
             inp.setAttribute('aria-label', labelText || 'حقل');
-            if (el.classList.contains('hr-form-iban') || el.getAttribute('dir') === 'ltr') {
+            if (el.classList.contains('hr-form-iban') || (el.getAttribute('dir') === 'ltr' && !el.classList.contains('hr-form-bank-address__name'))) {
                 inp.setAttribute('dir', 'ltr');
                 inp.style.textAlign = 'left';
             }
@@ -591,20 +585,6 @@
             wrap.className = 'choice-note';
             wrap.innerHTML = '<label>سبب / ملاحظة:</label><textarea placeholder="اكتب السبب أو الملاحظة هنا..."></textarea>';
             row.after(wrap);
-        });
-
-        // سطر البنك: سطر واحد عند كتابة اسم البنك يدوياً
-        function syncBankAddressReady(inp) {
-            const wrap = inp.closest('.hr-form-bank-address');
-            if (!wrap) return;
-            const ready = !!(inp.value || '').trim();
-            wrap.classList.toggle('hr-form-bank-address--ready', ready);
-            const hint = wrap.querySelector('.hr-form-bank-address__hint');
-            if (hint) hint.style.display = ready ? 'none' : '';
-        }
-        document.querySelectorAll('input.hr-form-bank-address__name').forEach(function (inp) {
-            inp.addEventListener('input', function () { syncBankAddressReady(inp); });
-            syncBankAddressReady(inp);
         });
 
         // Auto-focus print on load if ?auto_print=1
