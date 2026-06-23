@@ -241,39 +241,47 @@
         /* سطر «السادة / البنك المحترمين» */
         .hr-form-bank-address { margin-bottom: 28px; }
         .hr-form-bank-address__line {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            flex-wrap: nowrap;
-            gap: 8px;
-            direction: rtl;
+            display: block;
             margin: 0;
+            padding: 0;
+            text-align: right;
+            direction: rtl;
+            white-space: nowrap;
             font-size: 14.5px;
             font-weight: 700;
             color: #0f172a;
-            line-height: 1.5;
+            line-height: 1.8;
         }
         .hr-form-bank-address__prefix,
         .hr-form-bank-address__suffix,
-        .hr-form-bank-address__bank {
-            flex: 0 0 auto;
+        .hr-form-bank-address__print-name {
+            display: inline;
+            vertical-align: baseline;
             white-space: nowrap;
         }
-        .hr-form-bank-address__bank {
-            display: inline-flex;
-            align-items: center;
-            gap: 0;
-        }
         .hr-form-bank-address__form {
-            display: inline;
+            border: none;
             margin: 0;
+            padding: 0;
+            background: transparent;
+            font: inherit;
+            color: inherit;
         }
         .hr-form-bank-address__print-name {
             font-size: 15px;
             font-weight: 800;
             color: #1e3a8a;
+            margin: 0 4px;
+        }
+        .hr-form-bank-select {
+            display: inline-block;
+            vertical-align: baseline;
+            margin: 0 4px;
         }
         input.blank.hr-form-bank-address__name {
+            display: inline-block;
+            vertical-align: baseline;
+            margin: 0 4px;
             min-width: 120px;
             max-width: 220px;
             text-align: right;
@@ -415,21 +423,16 @@
             .hr-form-bank-address { margin-bottom: 14px; }
             .hr-form-bank-address__line {
                 font-size: 12px;
-                flex-wrap: nowrap;
                 white-space: nowrap;
             }
             .hr-form-bank-address__print-name { font-size: 12.5px; font-weight: 800; color: #0f172a; }
             .hr-form-bank-select {
                 border: none;
                 padding: 0;
+                margin: 0 2px;
                 background: transparent;
                 font-size: 12px;
                 max-width: none;
-            }
-            .hr-form-bank-address__bank .blank {
-                border: none;
-                background: transparent;
-                padding: 0;
             }
             .hr-form-profession-select {
                 -webkit-appearance: none;
