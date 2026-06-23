@@ -611,11 +611,22 @@
                     <p class="text-[10px] text-slate-500 mt-1" x-show="terminatedBy === 'article_74'">الشركة: ½ راتب × 5 سنوات + راتب كامل بعدها. الموظف: ⅓ راتب/سنة أول 5 سنوات (مثلاً 3000 ← 1000/سنة) + ⅔ راتب/سنة بعدها (3000 ← 2000/سنة).</p>
                 </div>
 
-                <!-- تاريخ التوقف -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التوقف <span class="text-red-500">*</span></label>
-                    <input type="date" name="end_date" x-model="endDate" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                <!-- فترة التصفية -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">من تاريخ (المباشرة)</label>
+                        <input type="date" :value="hireDate" readonly disabled
+                               class="w-full px-3 py-2 text-sm border border-slate-200 rounded bg-slate-50 text-slate-700 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التوقف (إلى) <span class="text-red-500">*</span></label>
+                        <input type="date" name="end_date" x-model="endDate" :min="hireDate || undefined" required
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
+                    </div>
                 </div>
+                <p x-show="hireDate && endDate && endDate < hireDate" x-cloak class="text-xs text-red-600">
+                    تاريخ التوقف يجب أن يكون في أو بعد تاريخ المباشرة.
+                </p>
 
                 <!-- حاسبة EOSB التفاعلية -->
                 <template x-if="endDate && serviceDays > 0">
@@ -626,6 +637,10 @@
                                 <i data-lucide="info" class="w-3.5 h-3.5"></i> بيانات الخدمة
                             </div>
                             <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="flex justify-between bg-white rounded px-2 py-1.5 col-span-2">
+                                    <span class="text-slate-500">الفترة (من المباشرة → التوقف)</span>
+                                    <span class="font-bold" x-text="hireDate + ' → ' + endDate"></span>
+                                </div>
                                 <div class="flex justify-between bg-white rounded px-2 py-1.5">
                                     <span class="text-slate-500">مدة الخدمة</span>
                                     <span class="font-bold" x-text="serviceDays + ' يوم (' + serviceYears.toFixed(2) + ' سنة)'"></span>
@@ -692,9 +707,17 @@
                                     <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
                                     <span x-text="leaveSectionLabel"></span>
                                 </div>
-                                <div class="grid grid-cols-3 gap-2 text-xs">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                                     <div class="flex justify-between bg-white rounded px-2 py-1.5">
-                                        <span class="text-slate-500">الرصيد</span>
+                                        <span class="text-slate-500">المستحق حتى التوقف</span>
+                                        <span class="font-bold" x-text="accruedAtEndDate.toFixed(2) + ' يوم'"></span>
+                                    </div>
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">المستخدم</span>
+                                        <span class="font-bold text-slate-600" x-text="usedLeaveDays.toFixed(2) + ' يوم'"></span>
+                                    </div>
+                                    <div class="flex justify-between bg-white rounded px-2 py-1.5">
+                                        <span class="text-slate-500">الرصيد المتبقي</span>
                                         <span class="font-bold" x-text="displayLeaveDays.toFixed(2) + ' يوم'"></span>
                                     </div>
                                     <div class="flex justify-between bg-white rounded px-2 py-1.5">
@@ -1239,7 +1262,7 @@ window.employeeEosCalculator = function() {
     var n = employeeModalJs();
     return {
         hireDate: n.hire_date || '',
-        endDate: '',
+        endDate: n.today_iso || '',
         terminatedBy: 'company',
         articleParty: 'company',
         totalSalary: Number(n.total_salary) || 0,
@@ -1249,11 +1272,17 @@ window.employeeEosCalculator = function() {
         usedLeaveDays: Number(n.used_leave_days) || 0,
         accruedLeaveDays: Number(n.accrued_leave_days) || 0,
         hasSponsor: !!n.has_sponsor,
+        parseLocalDate(iso) {
+            if (!iso) return null;
+            var p = String(iso).split('-');
+            if (p.length !== 3) return null;
+            return new Date(+p[0], +p[1] - 1, +p[2]);
+        },
         completedServiceMonths(hireIso, endIso) {
             if (!hireIso || !endIso) return 0;
-            var hire = new Date(hireIso);
-            var end = new Date(endIso);
-            if (end <= hire) return 0;
+            var hire = this.parseLocalDate(hireIso);
+            var end = this.parseLocalDate(endIso);
+            if (!hire || !end || end <= hire) return 0;
             var months = (end.getFullYear() - hire.getFullYear()) * 12 + (end.getMonth() - hire.getMonth());
             if (hire.getDate() === 1) {
                 if (end.getDate() !== 1) months += 1;
@@ -1263,7 +1292,7 @@ window.employeeEosCalculator = function() {
             return Math.max(months, 0);
         },
         monthlyAccruedLeaveDays(flat21Only) {
-            if (!this.hasSponsor || !this.hireDate || !this.endDate) return this.accruedLeaveDays;
+            if (!this.hasSponsor || !this.hireDate || !this.endDate) return 0;
             var months = this.completedServiceMonths(this.hireDate, this.endDate);
             if (months <= 0) return 0;
             if (flat21Only) return +(months * 1.75).toFixed(2);
@@ -1272,7 +1301,10 @@ window.employeeEosCalculator = function() {
         },
         get serviceDays() {
             if (!this.hireDate || !this.endDate) return 0;
-            return Math.max(0, Math.floor((new Date(this.endDate) - new Date(this.hireDate)) / 86400000));
+            var hire = this.parseLocalDate(this.hireDate);
+            var end = this.parseLocalDate(this.endDate);
+            if (!hire || !end || end < hire) return 0;
+            return Math.max(0, Math.floor((end - hire) / 86400000));
         },
         get serviceYears() { return +(this.serviceDays / 360).toFixed(4); },
         get category() {
@@ -1292,14 +1324,14 @@ window.employeeEosCalculator = function() {
         get tieredAccruedLeaveDays() {
             return this.monthlyAccruedLeaveDays(false);
         },
+        get accruedAtEndDate() {
+            if (!this.hasSponsor || !this.hireDate || !this.endDate) return 0;
+            if (this.terminatedBy === 'probation_end') return this.flat21AccruedLeaveDays;
+            return this.tieredAccruedLeaveDays;
+        },
         get displayLeaveDays() {
-            if (this.terminatedBy === 'article_80') {
-                return Math.max(0, +(this.tieredAccruedLeaveDays - this.usedLeaveDays).toFixed(2));
-            }
-            if (this.terminatedBy === 'probation_end') {
-                return Math.max(0, +(this.flat21AccruedLeaveDays - this.usedLeaveDays).toFixed(2));
-            }
-            return this.remainingLeave;
+            if (!this.hasSponsor || !this.hireDate || !this.endDate) return this.remainingLeave;
+            return Math.max(0, +(this.accruedAtEndDate - this.usedLeaveDays).toFixed(2));
         },
         get leaveSectionLabel() {
             if (this.terminatedBy === 'article_80') return 'رصيد الإجازة (المادة 80)';
