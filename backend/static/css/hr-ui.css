@@ -4886,9 +4886,28 @@ body.hr-app .hr-topbar-info-panel.hr-sidebar-panel .hr-topbar-info-panel__foot {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
     padding: 0.75rem 1.15rem 1rem;
     border-top: 1px solid var(--hr-sidebar-border);
     background: rgba(0, 0, 0, 0.06);
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__foot {
+    background: #ffffff !important;
+    border-top-color: #e2e8f0 !important;
+    justify-content: space-between;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__foot .hr-text-detail-modal__btn {
+    color: #334155 !important;
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+#hr-glass-text-modal .hr-glass-modal--sidebar:has(.hr-ledger-detail) .hr-text-detail-modal__foot .hr-text-detail-modal__btn i[data-lucide] {
+    color: #334155 !important;
+    stroke: #334155 !important;
 }
 
 .hr-text-detail-modal__btn {

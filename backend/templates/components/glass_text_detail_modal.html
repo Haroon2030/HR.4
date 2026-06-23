@@ -66,6 +66,18 @@
 
         <div class="hr-text-detail-modal__foot">
 
+            <button type="button" id="hr-glass-text-print-btn" class="hr-btn-print hr-btn-print--sm hidden" hidden>
+
+                <span class="hr-btn-print__icon-wrap" aria-hidden="true">
+
+                    <i data-lucide="printer" class="hr-btn-print__icon"></i>
+
+                </span>
+
+                <span class="hr-btn-print__label">طباعة رسمية</span>
+
+            </button>
+
             <button type="button" id="hr-glass-text-close-btn" class="hr-text-detail-modal__btn">
 
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -111,6 +123,108 @@
     var labelEl = document.getElementById('hr-glass-text-content-label');
 
     var attachmentEl = document.getElementById('hr-glass-text-attachment');
+
+    var printBtnEl = document.getElementById('hr-glass-text-print-btn');
+
+    var currentPrintUrl = '';
+
+    var currentEmployeeName = '';
+
+
+
+    function setPrintButtonVisible(show) {
+
+        if (!printBtnEl) return;
+
+        printBtnEl.hidden = !show;
+
+        printBtnEl.classList.toggle('hidden', !show);
+
+    }
+
+
+
+    function printOfficial() {
+
+        if (currentPrintUrl) {
+
+            window.open(currentPrintUrl, '_blank', 'noopener');
+
+            return;
+
+        }
+
+
+
+        var title = titleEl.textContent || 'التفاصيل';
+
+        var employeeName = currentEmployeeName || '';
+
+        var label = labelEl.textContent || '';
+
+        var metaHtml = metaEl.classList.contains('hidden') ? '' : metaEl.outerHTML;
+
+        var contentHtml = contentEl.innerHTML;
+
+        var cssLink = document.querySelector('link[href*="hr-ui.css"]');
+
+        var cssHref = cssLink ? cssLink.getAttribute('href') : '/static/css/hr-ui.css';
+
+        var win = window.open('', '_blank');
+
+        if (!win) return;
+
+
+
+        win.document.write(
+
+            '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
+
+            '<title>' + title.replace(/</g, '&lt;') + '</title>' +
+
+            '<link rel="stylesheet" href="' + cssHref + '">' +
+
+            '<style>' +
+
+            'body{margin:0;padding:1.25rem 1.5rem;font-family:system-ui,sans-serif;background:#fff;color:#0f172a;}' +
+
+            '.hr-text-detail-print__head{margin-bottom:1rem;padding-bottom:.75rem;border-bottom:2px solid #0f172a;}' +
+
+            '.hr-text-detail-print__title{margin:0;font-size:1.125rem;font-weight:800;}' +
+
+            '.hr-text-detail-print__employee{margin:.35rem 0 0;font-size:.875rem;font-weight:700;color:#475569;}' +
+
+            '.hr-text-detail-print__label{margin:0 0 .5rem;font-size:.8125rem;font-weight:700;color:#334155;}' +
+
+            '.hr-text-detail-print__meta{margin-bottom:.85rem;}' +
+
+            '</style></head><body class="hr-app hr-text-detail-print">' +
+
+            '<div class="hr-text-detail-print__head">' +
+
+            '<h1 class="hr-text-detail-print__title">' + title.replace(/</g, '&lt;') + '</h1>' +
+
+            (employeeName ? '<p class="hr-text-detail-print__employee">الموظف: ' + employeeName.replace(/</g, '&lt;') + '</p>' : '') +
+
+            '</div>' +
+
+            (metaHtml ? '<div class="hr-text-detail-print__meta">' + metaHtml + '</div>' : '') +
+
+            '<p class="hr-text-detail-print__label">' + label.replace(/</g, '&lt;') + '</p>' +
+
+            '<div class="hr-text-detail-print__body">' + contentHtml + '</div>' +
+
+            '</body></html>'
+
+        );
+
+        win.document.close();
+
+        win.focus();
+
+        setTimeout(function () { win.print(); }, 400);
+
+    }
 
 
 
@@ -278,11 +392,19 @@
 
         contentEl.classList.remove('hr-text-detail-modal__reason-text--html');
 
+        var hasLedger = !!(opts.html && opts.html.indexOf('hr-ledger-detail') !== -1);
+
         if (opts.html) {
 
             contentEl.innerHTML = opts.html;
 
             contentEl.classList.add('hr-text-detail-modal__reason-text--html');
+
+            if (!hasLedger && contentEl.querySelector('.hr-ledger-detail')) {
+
+                hasLedger = true;
+
+            }
 
         } else {
 
@@ -295,6 +417,14 @@
         renderMeta(opts.meta);
 
         renderAttachment(opts.attachment || '', opts.title || '');
+
+
+
+        currentPrintUrl = opts.printUrl || '';
+
+        currentEmployeeName = opts.employeeName || '';
+
+        setPrintButtonVisible(!!(opts.printUrl || opts.printable || hasLedger));
 
 
 
@@ -328,11 +458,15 @@
 
     window.hrCloseGlassTextDetail = closeModal;
 
+    window.hrPrintGlassTextDetail = printOfficial;
+
 
 
     document.getElementById('hr-glass-text-close').addEventListener('click', closeModal);
 
     document.getElementById('hr-glass-text-close-btn').addEventListener('click', closeModal);
+
+    if (printBtnEl) printBtnEl.addEventListener('click', printOfficial);
 
     modal.addEventListener('click', function (e) {
 
@@ -420,7 +554,13 @@
 
             meta: meta,
 
-            attachment: trigger.getAttribute('data-hr-text-detail-attachment') || ''
+            attachment: trigger.getAttribute('data-hr-text-detail-attachment') || '',
+
+            printUrl: trigger.getAttribute('data-hr-text-detail-print-url') || '',
+
+            printable: trigger.hasAttribute('data-hr-text-detail-printable'),
+
+            employeeName: trigger.getAttribute('data-hr-text-detail-employee-name') || ''
 
         });
 
