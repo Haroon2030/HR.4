@@ -5102,6 +5102,30 @@ body.hr-app .hr-glass-modal__body--compact > .mt-2 {
    نماذج ونوافذ زجاجية — كل التطبيق
    ══════════════════════════════════════════════════════════════ */
 
+/* نوافذ الإجراءات السريعة — صفحة الموظف (x-teleport="body") */
+body.hr-app .hr-employee-quick-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10200;
+    display: flex;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem;
+}
+
+body.hr-app.hr-quick-modal-open {
+    overflow: hidden;
+}
+
+body.hr-app .hr-employee-quick-modal-overlay .hr-glass-modal {
+    position: relative;
+    z-index: 1;
+    margin: auto;
+    max-height: min(92vh, calc(100dvh - 2rem));
+    background: #ffffff;
+}
+
 /* خلفية النوافذ المنبثقة */
 body.hr-app .hr-glass-modal-overlay,
 body.hr-app .fixed.inset-0.flex.items-center.justify-center[class*="bg-black"],
