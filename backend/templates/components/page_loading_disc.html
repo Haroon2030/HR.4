@@ -1,0 +1,36 @@
+{# قرص تحميل تقني — يُستخدم في boot و Alpine #}
+<div class="hr-page-loading-screen__disc hr-page-loading-disc">
+    <div class="hr-page-loading-disc__scan" aria-hidden="true"></div>
+    <div class="hr-page-loading-disc__orbit" aria-hidden="true">
+        <span class="hr-page-loading-disc__ring hr-page-loading-disc__ring--outer"></span>
+        <span class="hr-page-loading-disc__ring hr-page-loading-disc__ring--inner"></span>
+        <span class="hr-page-loading-disc__core">
+            <span class="hr-page-loading-disc__core-pulse" aria-hidden="true"></span>
+        </span>
+    </div>
+    <div class="hr-page-loading-disc__content">
+        <span class="hr-page-loading-disc__chip">
+            <span class="hr-page-loading-disc__chip-dot" aria-hidden="true"></span>
+            SYS · LOADING
+        </span>
+        {% if loader_alpine %}
+        <p class="hr-page-loading-disc__title">
+            <span x-text="$store.glassLoader.label">جاري تحميل الصفحة</span>
+        </p>
+        <div class="hr-page-loading-disc__track" aria-hidden="true">
+            <span class="hr-page-loading-disc__track-fill"></span>
+        </div>
+        <p class="hr-page-loading-disc__meta"
+           x-show="$store.glassLoader.hint"
+           x-text="$store.glassLoader.hint"></p>
+        <p class="hr-page-loading-disc__meta hr-page-loading-disc__meta--pulse"
+           x-show="!$store.glassLoader.hint">FETCH · RENDER · SYNC</p>
+        {% else %}
+        <p class="hr-page-loading-disc__title">جاري تحميل الصفحة</p>
+        <div class="hr-page-loading-disc__track" aria-hidden="true">
+            <span class="hr-page-loading-disc__track-fill"></span>
+        </div>
+        <p class="hr-page-loading-disc__meta hr-page-loading-disc__meta--pulse">FETCH · RENDER · SYNC</p>
+        {% endif %}
+    </div>
+</div>

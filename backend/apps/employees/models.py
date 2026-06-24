@@ -369,6 +369,33 @@ class Employee(BaseModel):
     )
     leaves_archive = models.TextField("أرشيف الإجازات", blank=True)
 
+    # ── ترحيل من نظام سابق (رصيد افتتاحي + تاريخ بدء احتساب الإجازة) ──
+    leave_accrual_start_date = models.DateField(
+        "تاريخ بدء احتساب الإجازة في النظام",
+        null=True,
+        blank=True,
+        help_text="يُستخدم بعد الترحيل — الافتراضي تاريخ الانتقال العام في الإعدادات.",
+    )
+    opening_leave_days = models.DecimalField(
+        "رصيد إجازة افتتاحي (أيام)",
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text="المتبقي من النظام القديم عند تاريخ الانتقال.",
+    )
+    opening_eosb_amount = models.DecimalField(
+        "مخصص نهاية خدمة افتتاحي (ر.س)",
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="المخصص المتراكم المستورد من النظام القديم عند الانتقال.",
+    )
+    migration_locked = models.BooleanField(
+        "اعتماد أرصدة الترحيل",
+        default=False,
+        help_text="يمنع إعادة الاستيراد ويفعّل احتساب الإجازة من تاريخ الانتقال.",
+    )
+
     # ── الجدول والإفادات ───────────────────────────────────────
     attendance_notes = models.TextField("الحضور والانصراف الشهري", blank=True)
     work_schedule = models.TextField("جدول الدوام", blank=True)
@@ -837,6 +864,11 @@ class EmployeeLoan(BaseModel):
         )['total'] or Decimal('0')
         return (Decimal(self.amount) - Decimal(paid)).quantize(Decimal('0.01'))
 
+    @property
+    def is_financially_locked(self) -> bool:
+        from apps.employees.services.employee_record_locks import loan_has_consumed_installments
+        return loan_has_consumed_installments(self)
+
     def generate_installments(self):
         """يولّد سجلات LoanInstallment حسب عدد الأقساط وتاريخ بداية الخصم."""
         from decimal import Decimal
@@ -1118,5 +1150,10 @@ class EmployeeLedger(BaseModel):
         """هيكل منظم لنافذة تفاصيل العملية الحسابية."""
         from apps.employees.services.accrual_ledger_notes import get_ledger_display_context
         return get_ledger_display_context(self)
+
+    @property
+    def is_locked(self) -> bool:
+        from apps.employees.services.employee_record_locks import ledger_entry_is_locked
+        return ledger_entry_is_locked(self)
 
 

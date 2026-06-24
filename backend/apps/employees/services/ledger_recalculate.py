@@ -110,7 +110,13 @@ def _compute_monthly_changes(employee: Employee, entry: EmployeeLedger) -> tuple
         period_month=run.period_month,
         eligible_for_eosb=bool(employee.sponsorship_id),
     )
-    leave_amount_change = calc['leave_amount']
+    from apps.employees.services.migration_balance import should_accrue_leave_in_period
+
+    if not should_accrue_leave_in_period(employee, run.period_year, run.period_month):
+        leave_days_change = Decimal('0')
+        leave_amount_change = Decimal('0.00')
+    else:
+        leave_amount_change = calc['leave_amount']
     eosb_amount_change = calc['eosb']
     return leave_days_change, leave_amount_change, eosb_amount_change, ''
 
@@ -123,6 +129,30 @@ def _compute_initial_changes(
     prev_eosb: Decimal,
 ) -> tuple[Decimal, Decimal, Decimal, str]:
     from apps.employees.services.accrual_ledger_notes import build_initial_balance_notes
+    from apps.employees.services.migration_balance import employee_uses_migration_balance
+    from apps.employees.services.opening_balances import build_migration_initial_ledger_notes
+
+    if employee_uses_migration_balance(employee):
+        from apps.employees.services.migration_balance import (
+            compute_opening_eosb_amount,
+            compute_opening_leave_days,
+        )
+
+        target_days = compute_opening_leave_days(employee)
+        target_eosb = compute_opening_eosb_amount(employee)
+        daily = daily_rate_from_total(employee.total_salary)
+        target_leave_amt = _quantize_amount(target_days * daily)
+        leave_days_change = _quantize_leave(target_days - prev_leave_days)
+        leave_amount_change = _quantize_amount(target_leave_amt - prev_leave_amt)
+        eosb_amount_change = _quantize_amount(target_eosb - prev_eosb)
+        notes = build_migration_initial_ledger_notes(
+            employee=employee,
+            cutover_date=entry.date,
+            leave_days=target_days,
+            leave_amount=target_leave_amt,
+            eosb_amount=target_eosb,
+        )
+        return leave_days_change, leave_amount_change, eosb_amount_change, notes
 
     if not employee.hire_date:
         return Decimal('0'), Decimal('0'), Decimal('0'), entry.notes or ''

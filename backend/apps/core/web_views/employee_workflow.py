@@ -92,6 +92,95 @@ def add_employee_leave(request, employee_id):
 
 
 @login_required
+@any_permission_required(
+    'employees.edit_leave', 'employees.edit',
+)
+@employee_branch_access_required
+def edit_employee_leave(request, employee_id, leave_id):
+    """تعديل إجازة مُسجَّلة من تبويب الإجازات."""
+    from decimal import Decimal
+    from apps.employees.models import Employee, EmployeeLeave
+    from apps.core.forms import LeaveRequestForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+    from apps.employees.services.employee_record_locks import leave_is_editable
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    leave = get_object_or_404(EmployeeLeave, id=leave_id, employee_id=employee.id)
+
+    if not leave_is_editable(leave):
+        messages.error(request, 'لا يمكن تعديل إجازة مُطبّقة على مسير رواتب مُرحّل.')
+        return _redirect_employee_tab(employee.id, 'leaves')
+
+    if request.method != 'POST':
+        return _redirect_employee_tab(employee.id, 'leaves')
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = LeaveRequestForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return _redirect_employee_tab(employee.id, 'leaves')
+
+    cd = form.cleaned_data
+    leave_type = cd['leave_type']
+    d_from = cd['date_from']
+    d_to = cd['date_to']
+    days = Decimal((d_to - d_from).days + 1)
+
+    if leave_type == EmployeeLeave.LeaveType.ANNUAL:
+        remaining = Decimal(employee.remaining_leave_days or 0)
+        if leave.leave_type == EmployeeLeave.LeaveType.ANNUAL:
+            remaining += Decimal(leave.days or 0)
+        if days > remaining:
+            messages.error(
+                request,
+                f'الرصيد غير كافٍ: الرصيد المتاح {remaining} يوم، والمطلوب {days} يوم.',
+            )
+            return _redirect_employee_tab(employee.id, 'leaves')
+
+    leave.leave_type = leave_type
+    leave.date_from = d_from
+    leave.date_to = d_to
+    leave.days = days
+    leave.notes = cd.get('notes', '') or ''
+    if files.get('document'):
+        leave.document = files['document']
+    leave.save()
+    messages.success(request, 'تم تحديث سجل الإجازة.')
+    return _redirect_employee_tab(employee.id, 'leaves')
+
+
+@login_required
+@any_permission_required(
+    'employees.delete_leave', 'employees.delete',
+    'employees.edit_leave', 'employees.edit',
+)
+@employee_branch_access_required
+def delete_employee_leave(request, employee_id, leave_id):
+    """حذف إجازة مُسجَّلة من تبويب الإجازات."""
+    from apps.employees.models import Employee, EmployeeLeave
+    from apps.employees.services.employee_record_locks import leave_is_editable
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    leave = get_object_or_404(EmployeeLeave, id=leave_id, employee_id=employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_tab(employee.id, 'leaves')
+
+    if not leave_is_editable(leave):
+        messages.error(request, 'لا يمكن حذف إجازة مُطبّقة على مسير رواتب مُرحّل.')
+        return _redirect_employee_tab(employee.id, 'leaves')
+
+    leave.delete()
+    messages.success(request, 'تم حذف سجل الإجازة.')
+    return _redirect_employee_tab(employee.id, 'leaves')
+
+
+@login_required
 @permission_required('employees.edit')
 @employee_branch_access_required
 def terminate_employee(request, employee_id):
@@ -659,6 +748,221 @@ def add_employee_absence(request, employee_id):
     )
     messages.success(request, 'تم إرسال طلب تسجيل الغياب إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
+
+
+def _redirect_employee_absences_tab(employee_id: int):
+    from django.urls import reverse
+    return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee_id})}?tab=absences#employee-tab-panel')
+
+
+def _redirect_employee_tab(employee_id: int, tab: str):
+    from django.urls import reverse
+    return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee_id})}?tab={tab}#employee-tab-panel')
+
+
+@login_required
+@any_permission_required('employees.edit_loan', 'employees.edit')
+@employee_branch_access_required
+def edit_employee_loan(request, employee_id, loan_id):
+    """تعديل سلفة موظف."""
+    from django.db import transaction
+    from apps.employees.models import Employee, EmployeeLoan, LoanInstallment
+    from apps.core.forms import LoanRequestForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+    from apps.employees.services.employee_record_locks import loan_has_consumed_installments
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    loan = get_object_or_404(EmployeeLoan, id=loan_id, employee_id=employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_tab(employee.id, 'loans')
+
+    locked = loan_has_consumed_installments(loan)
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    if locked:
+        loan.reason = (request.POST.get('reason') or '').strip()
+        loan.notes = (request.POST.get('notes') or '').strip()
+        if files.get('document'):
+            loan.document = files['document']
+        loan.save()
+        messages.success(request, 'تم تحديث بيانات السلفة (السبب/الملاحظات فقط — يوجد أقساط مُحصّلة).')
+        return _redirect_employee_tab(employee.id, 'loans')
+
+    form = LoanRequestForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return _redirect_employee_tab(employee.id, 'loans')
+
+    cd = form.cleaned_data
+    with transaction.atomic():
+        loan.amount = cd['amount']
+        loan.monthly_deduction = cd['monthly_deduction']
+        loan.installments = int(cd.get('installments') or 1)
+        loan.reason = cd.get('reason', '') or ''
+        loan.notes = cd.get('notes', '') or ''
+        loan.issued_at = cd['issued_at']
+        loan.first_deduction_date = cd.get('first_deduction_date')
+        if files.get('document'):
+            loan.document = files['document']
+        loan.save()
+        loan.installments_log.all().delete()
+        loan.generate_installments()
+
+    messages.success(request, 'تم تحديث السلفة وإعادة توليد الأقساط.')
+    return _redirect_employee_tab(employee.id, 'loans')
+
+
+@login_required
+@any_permission_required(
+    'employees.delete_loan', 'employees.delete',
+    'employees.edit_loan', 'employees.edit',
+)
+@employee_branch_access_required
+def delete_employee_loan(request, employee_id, loan_id):
+    """حذف سلفة موظف."""
+    from apps.employees.models import Employee, EmployeeLoan
+    from apps.employees.services.employee_record_locks import loan_has_consumed_installments
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    loan = get_object_or_404(EmployeeLoan, id=loan_id, employee_id=employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_tab(employee.id, 'loans')
+
+    if loan_has_consumed_installments(loan):
+        messages.error(request, 'لا يمكن حذف سلفة بها أقساط مُحصّلة أو مُطبّقة على مسير رواتب.')
+        return _redirect_employee_tab(employee.id, 'loans')
+
+    loan.delete()
+    messages.success(request, 'تم حذف السلفة.')
+    return _redirect_employee_tab(employee.id, 'loans')
+
+
+@login_required
+@any_permission_required('employees.edit_ledger', 'employees.edit')
+@employee_branch_access_required
+def edit_employee_ledger(request, employee_id, ledger_id):
+    """تعديل ملاحظات سجل مخصصات."""
+    from apps.employees.models import Employee, EmployeeLedger
+    from apps.employees.services.employee_record_locks import ledger_entry_is_locked
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    entry = get_object_or_404(EmployeeLedger, id=ledger_id, employee_id=employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_tab(employee.id, 'accruals')
+
+    if ledger_entry_is_locked(entry):
+        messages.error(request, 'لا يمكن تعديل سجل مرتبط بمسير رواتب أو تصفية نهائية.')
+        return _redirect_employee_tab(employee.id, 'accruals')
+
+    entry.notes = (request.POST.get('notes') or '').strip()
+    entry.save(update_fields=['notes', 'updated_at'])
+    messages.success(request, 'تم تحديث ملاحظات السجل.')
+    return _redirect_employee_tab(employee.id, 'accruals')
+
+
+@login_required
+@any_permission_required(
+    'employees.delete_ledger', 'employees.delete',
+    'employees.edit_ledger', 'employees.edit',
+)
+@employee_branch_access_required
+def delete_employee_ledger(request, employee_id, ledger_id):
+    """حذف سجل مخصصات مع إعادة احتساب التراكمي."""
+    from django.db import transaction
+    from apps.employees.models import Employee, EmployeeLedger
+    from apps.employees.services.employee_record_locks import ledger_entry_is_locked
+    from apps.employees.services.ledger_recalculate import recalculate_employee_ledger
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    entry = get_object_or_404(EmployeeLedger, id=ledger_id, employee_id=employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_tab(employee.id, 'accruals')
+
+    if ledger_entry_is_locked(entry):
+        messages.error(request, 'لا يمكن حذف سجل مرتبط بمسير رواتب أو تصفية نهائية.')
+        return _redirect_employee_tab(employee.id, 'accruals')
+
+    with transaction.atomic():
+        entry.delete()
+        recalculate_employee_ledger(employee)
+
+    messages.success(request, 'تم حذف السجل وإعادة احتساب الأرصدة.')
+    return _redirect_employee_tab(employee.id, 'accruals')
+
+
+@login_required
+@any_permission_required('employees.edit_absence', 'employees.edit')
+@employee_branch_access_required
+def edit_employee_absence(request, employee_id, absence_id):
+    """تعديل سجل غياب (مدير الموارد / الأدمن)."""
+    from apps.employees.models import Employee, EmployeeAbsence
+    from apps.core.forms import AbsenceForm
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    absence = get_object_or_404(EmployeeAbsence, id=absence_id, employee_id=employee.id)
+
+    if absence.applied_to_payroll_id:
+        messages.error(request, 'لا يمكن تعديل غياب مُطبّق على مسير رواتب مُرحّل.')
+        return _redirect_employee_absences_tab(employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_absences_tab(employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = AbsenceForm(request.POST, files)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return _redirect_employee_absences_tab(employee.id)
+
+    cd = form.cleaned_data
+    absence.absence_date = cd['absence_date']
+    absence.days = int(cd['days'])
+    absence.reason = cd.get('reason', '') or ''
+    absence.notes = cd.get('notes', '') or ''
+    if files.get('document'):
+        absence.document = files['document']
+    absence.save()
+    messages.success(request, 'تم تحديث سجل الغياب.')
+    return _redirect_employee_absences_tab(employee.id)
+
+
+@login_required
+@any_permission_required(
+    'employees.delete_absence', 'employees.delete',
+    'employees.edit_absence', 'employees.edit',
+)
+@employee_branch_access_required
+def delete_employee_absence(request, employee_id, absence_id):
+    """حذف سجل غياب (مدير الموارد / الأدمن)."""
+    from apps.employees.models import Employee, EmployeeAbsence
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    absence = get_object_or_404(EmployeeAbsence, id=absence_id, employee_id=employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_absences_tab(employee.id)
+
+    if absence.applied_to_payroll_id:
+        messages.error(request, 'لا يمكن حذف غياب مُطبّق على مسير رواتب مُرحّل.')
+        return _redirect_employee_absences_tab(employee.id)
+
+    absence.delete()
+    messages.success(request, 'تم حذف سجل الغياب.')
+    return _redirect_employee_absences_tab(employee.id)
 
 
 @login_required

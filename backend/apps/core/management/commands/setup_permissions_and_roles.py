@@ -48,6 +48,16 @@ class Command(BaseCommand):
             {'code': 'employees.delete', 'name': 'حذف موظف', 'module': 'employees'},
             {'code': 'employees.view_salary', 'name': 'عرض رواتب الموظفين', 'module': 'employees'},
             {'code': 'employees.edit_salary', 'name': 'تعديل رواتب الموظفين', 'module': 'employees'},
+            {'code': 'employees.edit_absence', 'name': 'تعديل غياب موظف', 'module': 'employees'},
+            {'code': 'employees.delete_absence', 'name': 'حذف غياب موظف', 'module': 'employees'},
+            {'code': 'employees.edit_statement', 'name': 'تعديل إفادة / إنذار', 'module': 'employees'},
+            {'code': 'employees.delete_statement', 'name': 'حذف إفادة / إنذار', 'module': 'employees'},
+            {'code': 'employees.edit_loan', 'name': 'تعديل سلفة موظف', 'module': 'employees'},
+            {'code': 'employees.delete_loan', 'name': 'حذف سلفة موظف', 'module': 'employees'},
+            {'code': 'employees.edit_ledger', 'name': 'تعديل سجل مخصصات', 'module': 'employees'},
+            {'code': 'employees.delete_ledger', 'name': 'حذف سجل مخصصات', 'module': 'employees'},
+            {'code': 'employees.edit_leave', 'name': 'تعديل إجازة موظف', 'module': 'employees'},
+            {'code': 'employees.delete_leave', 'name': 'حذف إجازة موظف', 'module': 'employees'},
             
             # ═══════════════════════════════════════════════════════════
             # الأقسام والفروع (Departments & Branches)
@@ -211,6 +221,16 @@ class Command(BaseCommand):
                     'employees.delete',
                     'employees.view_salary',
                     'employees.edit_salary',
+                    'employees.edit_absence',
+                    'employees.delete_absence',
+                    'employees.edit_statement',
+                    'employees.delete_statement',
+                    'employees.edit_loan',
+                    'employees.delete_loan',
+                    'employees.edit_ledger',
+                    'employees.delete_ledger',
+                    'employees.edit_leave',
+                    'employees.delete_leave',
                     # الأقسام والفروع
                     'departments.view',
                     'departments.manage',

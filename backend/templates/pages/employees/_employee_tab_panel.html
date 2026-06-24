@@ -89,16 +89,104 @@
 
             <!-- Leaves -->
             {% if tab_visible.leaves and default_employee_tab == 'leaves' %}            <div x-show="activeTab==='leaves'" class="space-y-4" style="display:none">
-                {% if not employee.hire_date or not employee.sponsorship_id %}
+                {% if not employee.sponsorship_id %}
                 <div class="p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs flex items-start gap-2">
                     <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5"></i>
-                    <span>لم يبدأ احتساب الإجازات بعد. يجب تعبئة <b>تاريخ المباشرة</b> و <b>الكفالة</b>.</span>
+                    <span>يبدأ احتساب الإجازات تلقائياً فور تعبئة <b>الكفالة</b> في تبويب «بيانات الموظف».</span>
+                </div>
+                {% endif %}
+
+                {% if can_edit_leave_settings %}
+                <form method="post" action="{% url 'web:save_employee_leave_settings' employee.id %}"
+                      class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-lg border border-slate-200 bg-slate-50/80">
+                    {% csrf_token %}
+                    <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800 mb-1">الرصيد الافتتاحي (أيام)</label>
+                        <input type="number" step="0.01" min="0" name="opening_leave_days"
+                               value="{{ employee.opening_leave_days|input_decimal }}"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                               placeholder="0">
+                        <p class="text-[10px] text-slate-500 mt-1">المتبقي قبل تاريخ الاحتساب (إن وُجد).</p>
+                    </div>
+                    <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800 mb-1">تاريخ الاحتساب</label>
+                        <input type="date" name="leave_accrual_start_date"
+                               value="{{ employee.leave_accrual_start_date|date:'Y-m-d' }}"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        <p class="text-[10px] text-slate-500 mt-1">يُحسب التراكم من هذا التاريخ + الرصيد الافتتاحي.</p>
+                    </div>
+                    {% if not employee.leave_accrual_start_date %}
+                    <div class="hr-form-field sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-800 mb-1">الإجازات المستخدمة (يدوي)</label>
+                        <div class="flex items-center gap-2 max-w-xs">
+                            <input type="number" step="0.5" min="0" name="available_leave_balance"
+                                   value="{{ employee.available_leave_balance|input_decimal }}"
+                                   class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                            <span class="text-xs text-slate-600 shrink-0">يوم</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1">يُستخدم عند عدم تعبئة تاريخ الاحتساب.</p>
+                    </div>
+                    {% endif %}
+                    <div class="sm:col-span-2 flex justify-end">
+                        {% include "components/hr_btn.html" with type="submit" label="حفظ إعدادات الرصيد" variant="primary" icon="save" %}
+                    </div>
+                </form>
+                {% else %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-lg border border-slate-200 bg-slate-50/60">
+                    <div>
+                        <div class="text-xs font-bold text-slate-600 mb-1">الرصيد الافتتاحي (أيام)</div>
+                        <div class="text-sm font-bold text-slate-800">{{ employee.opening_leave_days|floatformat:2|default:"0.00" }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-600 mb-1">تاريخ الاحتساب</div>
+                        <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_start_date|date:"Y-m-d"|default:"—" }}</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if leave_breakdown.uses_migration %}
+                <div class="p-3 rounded-lg bg-sky-50 border border-sky-200 text-sky-900 text-xs space-y-1">
+                    <div class="font-bold flex items-center gap-2">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                        احتساب من تاريخ الاحتساب والرصيد الافتتاحي
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                        <div>
+                            <span class="text-sky-600 block">افتتاحي</span>
+                            <span class="font-bold">{{ leave_breakdown.opening_days|floatformat:2 }} يوم</span>
+                        </div>
+                        <div>
+                            <span class="text-sky-600 block">تراكم من {{ leave_breakdown.leave_accrual_start|date:"Y-m-d" }}</span>
+                            <span class="font-bold">{{ leave_breakdown.period_accrual_days|floatformat:2 }} يوم</span>
+                        </div>
+                        <div>
+                            <span class="text-sky-600 block">مستخدم</span>
+                            <span class="font-bold">{{ leave_breakdown.used_days|floatformat:2 }} يوم</span>
+                        </div>
+                        <div>
+                            <span class="text-sky-600 block">متبقي</span>
+                            <span class="font-bold text-primary-800">{{ leave_breakdown.remaining_days|floatformat:2 }} يوم</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-sky-700 mt-1">
+                        مكافأة نهاية الخدمة عند التصفية تُحسب من تاريخ المباشرة:
+                        <strong>{{ leave_breakdown.hire_date|date:"Y-m-d"|default:"—" }}</strong>
+                    </p>
                 </div>
                 {% endif %}
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                         <div class="text-xs font-bold text-emerald-700 mb-1">الرصيد المستحق</div>
                         <div class="text-lg font-bold text-emerald-800">{{ employee.accrued_leave_days|floatformat:2 }} يوم</div>
+                        <div class="text-[10px] text-emerald-600 mt-1">
+                            {% if employee.leave_accrual_start_date %}
+                            افتتاحي + تراكم من {{ employee.leave_accrual_start_date|date:"Y-m-d" }}
+                            {% elif employee.hire_date %}
+                            من تاريخ المباشرة {{ employee.hire_date|date:"Y-m-d" }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-3">
                         <div class="text-xs font-bold text-red-700 mb-1">الإجازات المستخدمة</div>
@@ -163,6 +251,9 @@
                                         <th class="px-3 py-2 text-center font-semibold w-16">الملاحظات</th>
                                         <th class="px-3 py-2 text-right font-semibold w-32">المنفّذ</th>
                                         <th class="px-3 py-2 text-right font-semibold w-24">الحالة</th>
+                                        {% if can_edit_leave or can_delete_leave %}
+                                        <th class="px-3 py-2 text-center font-semibold w-24">إجراءات</th>
+                                        {% endif %}
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -231,10 +322,43 @@
                                         <td class="px-3 py-2 align-top">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold {{ row.status_class }}">{{ row.status_label }}</span>
                                         </td>
+                                        {% if can_edit_leave or can_delete_leave %}
+                                        <td class="px-3 py-2 align-top text-center">
+                                            {% if row.leave_id %}
+                                            <div class="flex items-center justify-center gap-1">
+                                                {% if row.applied_to_payroll_id %}
+                                                <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">مُرحّل</span>
+                                                {% else %}
+                                                {% if can_edit_leave %}
+                                                <button type="button"
+                                                        class="hr-act hr-act--edit"
+                                                        title="تعديل الإجازة"
+                                                        aria-label="تعديل الإجازة"
+                                                        @click="$dispatch('open-leave-edit', {
+                                                            id: {{ row.leave_id }},
+                                                            leave_type: '{{ row.leave_type }}',
+                                                            date_from: '{% if row.date_from %}{{ row.date_from|date:'Y-m-d' }}{% endif %}',
+                                                            date_to: '{% if row.date_to %}{{ row.date_to|date:'Y-m-d' }}{% endif %}',
+                                                            notes: '{{ row.notes|escapejs }}'
+                                                        })">
+                                                    <i data-lucide="pencil" class="hr-act__icon"></i>
+                                                </button>
+                                                {% endif %}
+                                                {% if can_delete_leave %}
+                                                {% url 'web:delete_employee_leave' employee.id row.leave_id as leave_del_url %}
+                                                {% include "components/table_act_delete.html" with url=leave_del_url confirm="هل أنت متأكد من حذف سجل الإجازة؟" title="حذف الإجازة" %}
+                                                {% endif %}
+                                                {% endif %}
+                                            </div>
+                                            {% else %}
+                                            <span class="text-slate-300 text-xs">—</span>
+                                            {% endif %}
+                                        </td>
+                                        {% endif %}
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="7" class="px-3 py-12 text-center">
+                                        <td colspan="{% if can_edit_leave or can_delete_leave %}8{% else %}7{% endif %}" class="px-3 py-12 text-center">
                                             <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                                 <i data-lucide="calendar-x" class="w-10 h-10"></i>
                                                 <span class="text-sm">لا بيانات</span>
@@ -400,6 +524,9 @@
                                     <th class="px-3 py-2 text-right font-semibold">العنوان / التفاصيل</th>
                                     <th class="px-3 py-2 text-right font-semibold w-24">المرفق</th>
                                     <th class="px-3 py-2 text-right font-semibold w-32">المنفّذ</th>
+                                    {% if can_edit_statement or can_delete_statement %}
+                                    <th class="px-3 py-2 text-center font-semibold w-24">إجراءات</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody id="hr-archive-tbody-warnings" class="divide-y divide-slate-100" x-ref="archiveBody">
@@ -466,11 +593,41 @@
                                         <i data-lucide="user" class="w-3 h-3 inline-block"></i>
                                         {{ st.created_by.get_full_name|default:st.created_by.username|default:"—" }}
                                     </td>
+                                    {% if can_edit_statement or can_delete_statement %}
+                                    <td class="px-3 py-2 align-top text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                                            {% if st.applied_to_payroll_id %}
+                                            <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">مُرحّل</span>
+                                            {% else %}
+                                            {% if can_edit_statement %}
+                                            <button type="button"
+                                                    class="hr-act hr-act--edit"
+                                                    title="تعديل الإفادة"
+                                                    aria-label="تعديل الإفادة"
+                                                    @click="$dispatch('open-statement-edit', {
+                                                        id: {{ st.id }},
+                                                        statement_type: '{{ st.statement_type }}',
+                                                        title: '{{ st.title|escapejs }}',
+                                                        statement_date: '{{ st.statement_date|date:'Y-m-d' }}',
+                                                        content: '{{ st.content|escapejs }}',
+                                                        deduction_amount: '{{ st.deduction_amount|default:'0' }}'
+                                                    })">
+                                                <i data-lucide="pencil" class="hr-act__icon"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if can_delete_statement %}
+                                            {% url 'web:delete_employee_statement' st.id as stmt_del_url %}
+                                            {% include "components/table_act_delete.html" with url=stmt_del_url confirm="هل أنت متأكد من حذف هذه الإفادة؟" title="حذف الإفادة" %}
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    {% endif %}
                                 </tr>
                                 {% endif %}
                                 {% empty %}
                                 <tr>
-                                    <td colspan="5" class="px-3 py-12 text-center">
+                                    <td colspan="{% if can_edit_statement or can_delete_statement %}6{% else %}5{% endif %}" class="px-3 py-12 text-center">
                                         <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                             <i data-lucide="file-x" class="w-10 h-10"></i>
                                             <span class="text-sm">لا بيانات</span>
@@ -479,7 +636,7 @@
                                 </tr>
                                 {% endfor %}
                                 <tr class="archive-empty" x-show="archiveShowEmpty()" x-cloak>
-                                    <td colspan="5" class="px-3 py-10 text-center text-sm text-slate-500">لا نتائج مطابقة للبحث أو نوع الإفادة</td>
+                                    <td colspan="{% if can_edit_statement or can_delete_statement %}6{% else %}5{% endif %}" class="px-3 py-10 text-center text-sm text-slate-500">لا نتائج مطابقة للبحث أو نوع الإفادة</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -653,6 +810,9 @@
                                 <th class="px-3 py-2 text-right font-bold">بداية الخصم</th>
                                 <th class="px-3 py-2 text-right font-bold">الحالة</th>
                                 <th class="px-3 py-2 text-right font-bold">المستند</th>
+                                {% if can_edit_loan or can_delete_loan %}
+                                <th class="px-3 py-2 text-center font-bold w-24">إجراءات</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -693,6 +853,38 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2">{% if l.document %}{% include "components/table_act_file.html" with url=l.document.url title="عرض الملف" %}{% else %}—{% endif %}</td>
+                                {% if can_edit_loan or can_delete_loan %}
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center justify-center gap-1">
+                                        {% if l.is_financially_locked %}
+                                        <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5" title="أقساط مُحصّلة">مُحصّل</span>
+                                        {% endif %}
+                                        {% if can_edit_loan %}
+                                        <button type="button"
+                                                class="hr-act hr-act--edit"
+                                                title="تعديل السلفة"
+                                                aria-label="تعديل السلفة"
+                                                @click="$dispatch('open-loan-edit', {
+                                                    id: {{ l.id }},
+                                                    amount: '{{ l.amount }}',
+                                                    monthly_deduction: '{{ l.monthly_deduction }}',
+                                                    installments: {{ l.installments }},
+                                                    reason: '{{ l.reason|escapejs }}',
+                                                    notes: '{{ l.notes|escapejs }}',
+                                                    issued_at: '{{ l.issued_at|date:'Y-m-d' }}',
+                                                    first_deduction_date: '{{ l.first_deduction_date|date:'Y-m-d'|default:'' }}',
+                                                    locked: {% if l.is_financially_locked %}true{% else %}false{% endif %}
+                                                })">
+                                            <i data-lucide="pencil" class="hr-act__icon"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if can_delete_loan and not l.is_financially_locked %}
+                                        {% url 'web:delete_employee_loan' employee.id l.id as loan_del_url %}
+                                        {% include "components/table_act_delete.html" with url=loan_del_url confirm="هل أنت متأكد من حذف هذه السلفة؟" title="حذف السلفة" %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -739,6 +931,9 @@
                                 <th class="px-3 py-2 text-right font-bold">الخصم</th>
                                 <th class="px-3 py-2 text-center font-bold w-16">السبب</th>
                                 <th class="px-3 py-2 text-right font-bold">المستند</th>
+                                {% if can_edit_absence or can_delete_absence %}
+                                <th class="px-3 py-2 text-center font-bold w-24">إجراءات</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -771,6 +966,35 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-2">{% if a.document %}{% include "components/table_act_file.html" with url=a.document.url title="عرض الملف" %}{% else %}—{% endif %}</td>
+                                {% if can_edit_absence or can_delete_absence %}
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center justify-center gap-1">
+                                        {% if a.applied_to_payroll_id %}
+                                        <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5" title="مُطبّق على مسير رواتب">مُرحّل</span>
+                                        {% else %}
+                                        {% if can_edit_absence %}
+                                        <button type="button"
+                                                class="hr-act hr-act--edit"
+                                                title="تعديل الغياب"
+                                                aria-label="تعديل الغياب"
+                                                @click="$dispatch('open-absence-edit', {
+                                                    id: {{ a.id }},
+                                                    absence_date: '{{ a.absence_date|date:'Y-m-d' }}',
+                                                    days: {{ a.days }},
+                                                    reason: '{{ a.reason|escapejs }}',
+                                                    notes: '{{ a.notes|escapejs }}'
+                                                })">
+                                            <i data-lucide="pencil" class="hr-act__icon"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if can_delete_absence %}
+                                        {% url 'web:delete_employee_absence' employee.id a.id as absence_del_url %}
+                                        {% include "components/table_act_delete.html" with url=absence_del_url confirm="هل أنت متأكد من حذف سجل الغياب؟" title="حذف الغياب" %}
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -1105,6 +1329,8 @@
                         <span class="text-[10px] text-indigo-600 mt-1">
                             {% if accruals_balance.is_settled_snapshot and employee.end_date %}
                             حتى {{ employee.end_date }}
+                            {% elif employee.leave_accrual_start_date %}
+                            افتتاحي + تراكم من {{ employee.leave_accrual_start_date }}
                             {% else %}
                             منذ {{ employee.hire_date|default:"تاريخ المباشرة" }}
                             {% endif %}
@@ -1132,6 +1358,17 @@
                     {% endif %}
                 </div>
 
+                {% if employee.leave_accrual_start_date %}
+                <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+                    مخصص EOSB يتراكم من تاريخ المباشرة
+                    <strong dir="ltr">{{ employee.hire_date|date:"Y-m-d"|default:"—" }}</strong>
+                    — رصيد إجازة افتتاحي:
+                    <strong>{{ employee.opening_leave_days|floatformat:2 }}</strong> يوم
+                    — احتساب الإجازة من
+                    <strong dir="ltr">{{ employee.leave_accrual_start_date|date:"Y-m-d" }}</strong>
+                </p>
+                {% endif %}
+
                 <div class="hr-accruals-ledger border border-slate-200 rounded-lg bg-white shadow-sm">
                     <div class="hr-accruals-ledger__scroll overflow-x-auto">
                         <table class="w-full text-sm hr-accruals-ledger__table">
@@ -1144,6 +1381,9 @@
                                     <th class="px-4 py-3 text-center font-semibold border-l border-slate-200">مكافأة نهاية الخدمة</th>
                                     {% endif %}
                                     <th class="px-4 py-3 text-center font-semibold hr-ledger-notes-col">ملاحظات</th>
+                                    {% if can_edit_ledger or can_delete_ledger %}
+                                    <th class="px-4 py-3 text-center font-semibold w-24">إجراءات</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -1199,10 +1439,33 @@
                                             <i data-lucide="eye" class="hr-act__icon"></i>
                                         </button>
                                     </td>
+                                    {% if can_edit_ledger or can_delete_ledger %}
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                                            {% if a.is_locked %}
+                                            <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">مُقفل</span>
+                                            {% else %}
+                                            {% if can_edit_ledger %}
+                                            <button type="button"
+                                                    class="hr-act hr-act--edit"
+                                                    title="تعديل الملاحظات"
+                                                    aria-label="تعديل الملاحظات"
+                                                    @click="$dispatch('open-ledger-edit', { id: {{ a.id }}, notes: '{{ a.notes|escapejs }}' })">
+                                                <i data-lucide="pencil" class="hr-act__icon"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if can_delete_ledger %}
+                                            {% url 'web:delete_employee_ledger' employee.id a.id as ledger_del_url %}
+                                            {% include "components/table_act_delete.html" with url=ledger_del_url confirm="هل أنت متأكد من حذف هذا السجل؟ سيتم إعادة احتساب الأرصدة." title="حذف السجل" %}
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    {% endif %}
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="{% if employee.sponsorship_id %}6{% else %}5{% endif %}" class="px-4 py-12 text-center">
+                                    <td colspan="{% if employee.sponsorship_id %}{% if can_edit_ledger or can_delete_ledger %}7{% else %}6{% endif %}{% else %}{% if can_edit_ledger or can_delete_ledger %}6{% else %}5{% endif %}{% endif %}" class="px-4 py-12 text-center">
                                         <div class="inline-flex flex-col items-center gap-2 text-slate-400">
                                             <i data-lucide="calculator" class="w-10 h-10"></i>
                                             <span class="text-sm font-medium">لا بيانات</span>

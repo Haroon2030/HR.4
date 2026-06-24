@@ -381,6 +381,69 @@ def save_employee_biometric_settings(request, employee_id):
 @login_required
 @permission_required('employees.edit')
 @employee_branch_access_required
+def save_employee_leave_settings(request, employee_id):
+    """حفظ الرصيد الافتتاحي وتاريخ الاحتساب من تبويب الإجازات."""
+    from decimal import Decimal, InvalidOperation
+    from apps.employees.models import Employee
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+
+    def _parse_decimal(raw, *, field_label: str) -> Decimal | None:
+        text = (raw or '').strip()
+        if not text:
+            return Decimal('0')
+        try:
+            return Decimal(text).quantize(Decimal('0.01'))
+        except InvalidOperation:
+            messages.error(request, f'قيمة غير صالحة في {field_label}.')
+            return None
+
+    def _parse_date(raw):
+        text = (raw or '').strip()
+        if not text:
+            return None
+        try:
+            return datetime.strptime(text[:10], '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'تاريخ الاحتساب غير صالح.')
+            return False
+
+    opening = _parse_decimal(request.POST.get('opening_leave_days'), field_label='الرصيد الافتتاحي')
+    if opening is None:
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+
+    accrual_start = _parse_date(request.POST.get('leave_accrual_start_date'))
+    if accrual_start is False:
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+
+    if opening > 0 and not accrual_start:
+        messages.error(request, 'أدخل تاريخ الاحتساب عند تعبئة رصيد افتتاحي.')
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+
+    update_fields = ['opening_leave_days', 'leave_accrual_start_date', 'updated_at']
+    employee.opening_leave_days = opening
+    employee.leave_accrual_start_date = accrual_start
+
+    if not accrual_start:
+        used = _parse_decimal(
+            request.POST.get('available_leave_balance'),
+            field_label='الإجازات المستخدمة',
+        )
+        if used is None:
+            return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+        employee.available_leave_balance = used
+        update_fields.append('available_leave_balance')
+
+    employee.save(update_fields=update_fields)
+    messages.success(request, 'تم حفظ إعدادات رصيد الإجازة.')
+    return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves#employee-tab-panel')
+
+
+@login_required
+@permission_required('employees.edit')
+@employee_branch_access_required
 def edit_employee(request, employee_id):
     """تعديل ملف موظف - يكمل الأخصائي بقية الحقول"""
     from django.db.models import Prefetch

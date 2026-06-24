@@ -134,6 +134,26 @@ def employee_tab_nav_for_user(
     ]
 
 
+def _user_can_edit_employee_record(user, specific_code: str) -> bool:
+    from apps.core.decorators import has_permission
+
+    return (
+        has_permission(user, specific_code)
+        or has_permission(user, 'employees.edit')
+    )
+
+
+def _user_can_delete_employee_record(user, delete_code: str, edit_code: str) -> bool:
+    from apps.core.decorators import has_permission
+
+    return (
+        has_permission(user, delete_code)
+        or has_permission(user, 'employees.delete')
+        or has_permission(user, edit_code)
+        or has_permission(user, 'employees.edit')
+    )
+
+
 def enrich_employee_page_context(
     user,
     context: dict,
@@ -148,6 +168,28 @@ def enrich_employee_page_context(
     context['can_view_salary'] = user_can_view_salary(user)
     context['can_edit_salary'] = user_can_edit_salary(user)
     context['can_execute_settlement'] = user_can_execute_settlement(user)
+    from apps.core.decorators import has_permission
+    context['can_edit_leave_settings'] = has_permission(user, 'employees.edit')
+    context['can_edit_leave'] = _user_can_edit_employee_record(user, 'employees.edit_leave')
+    context['can_delete_leave'] = _user_can_delete_employee_record(
+        user, 'employees.delete_leave', 'employees.edit_leave',
+    )
+    context['can_edit_absence'] = _user_can_edit_employee_record(user, 'employees.edit_absence')
+    context['can_delete_absence'] = _user_can_delete_employee_record(
+        user, 'employees.delete_absence', 'employees.edit_absence',
+    )
+    context['can_edit_statement'] = _user_can_edit_employee_record(user, 'employees.edit_statement')
+    context['can_delete_statement'] = _user_can_delete_employee_record(
+        user, 'employees.delete_statement', 'employees.edit_statement',
+    )
+    context['can_edit_loan'] = _user_can_edit_employee_record(user, 'employees.edit_loan')
+    context['can_delete_loan'] = _user_can_delete_employee_record(
+        user, 'employees.delete_loan', 'employees.edit_loan',
+    )
+    context['can_edit_ledger'] = _user_can_edit_employee_record(user, 'employees.edit_ledger')
+    context['can_delete_ledger'] = _user_can_delete_employee_record(
+        user, 'employees.delete_ledger', 'employees.edit_ledger',
+    )
     context['hr_notification_email'] = (
         getattr(settings, 'HR_NOTIFICATION_EMAIL', '') or ''
     )

@@ -172,7 +172,9 @@ def load_employee_view_context(
         ctx['cash_shortages_total'] = total_amount
 
     if need('leaves'):
+        from apps.employees.services.leave_balance import leave_balance_breakdown
         ctx['leave_timeline'] = _load_leave_timeline(employee)
+        ctx['leave_breakdown'] = leave_balance_breakdown(employee)
 
     if need('contract') or need('main'):
         from apps.employees.services.contract_rules import (
@@ -195,6 +197,8 @@ def load_employee_view_context(
         accruals = _load_accruals_tab(employee, user)
         ctx['accruals'] = accruals
         ctx['accruals_balance'] = _accruals_balance_summary(employee, accruals)
+        from apps.employees.services.leave_balance import leave_balance_breakdown
+        ctx['leave_breakdown'] = leave_balance_breakdown(employee)
 
     if need('fingerprint') or request_get.get('fp_from') or request_get.get('fp_to'):
         ctx.update(_load_fingerprint_tab(employee, request_get))
@@ -306,6 +310,9 @@ def _load_leave_timeline(employee: Employee) -> list[dict]:
         ]
         rows.append({
             'sort_at': lv.created_at,
+            'leave_id': lv.id,
+            'is_pending': False,
+            'applied_to_payroll_id': lv.applied_to_payroll_id,
             'leave_type': lv.leave_type,
             'leave_type_display': lv.get_leave_type_display(),
             'date_from': lv.date_from,
@@ -354,6 +361,9 @@ def _load_leave_timeline(employee: Employee) -> list[dict]:
             status_class = 'bg-rose-100 text-rose-700'
         rows.append({
             'sort_at': action.requested_at,
+            'leave_id': None,
+            'is_pending': True,
+            'applied_to_payroll_id': None,
             'leave_type': leave_type,
             'leave_type_display': type_display,
             'date_from': d_from,
@@ -431,6 +441,10 @@ def _accruals_balance_summary(employee: Employee, accruals: list) -> dict:
 def _maybe_init_employee_ledger(employee: Employee, user) -> None:
     from apps.employees.models import EmployeeLedger
     from apps.employees.services.accrual_ledger_notes import build_initial_balance_notes
+    from apps.employees.services.migration_balance import employee_uses_migration_balance
+
+    if employee_uses_migration_balance(employee):
+        return
 
     from apps.core.salary_month import daily_rate_from_total, service_years_30day
     from apps.employees.services.leave_balance import (

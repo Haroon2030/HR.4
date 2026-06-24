@@ -60,11 +60,15 @@ urlpatterns = [
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)
     path('employees/<int:employee_id>/', web_views.view_employee, name='view_employee'),                      # عرض ملف الموظف
     path('employees/<int:employee_id>/biometric-settings/', web_views.save_employee_biometric_settings, name='save_employee_biometric_settings'),
+    path('employees/<int:employee_id>/leave-settings/', web_views.save_employee_leave_settings, name='save_employee_leave_settings'),
     path('employees/<int:employee_id>/edit/', web_views.edit_employee, name='edit_employee'),                  # تعديل بيانات الموظف
     path('employees/<int:employee_id>/delete/', web_views.delete_employee, name='delete_employee'),            # حذف الموظف (حذف ناعم)
     path('employees/<int:employee_id>/statements/add/', web_views.add_employee_statement, name='add_employee_statement'),  # إضافة إفادة
+    path('employees/<int:employee_id>/statements/<int:statement_id>/edit/', web_views.edit_employee_statement, name='edit_employee_statement'),
     path('employees/statements/<int:statement_id>/delete/', web_views.delete_employee_statement, name='delete_employee_statement'),  # حذف إفادة
     path('employees/<int:employee_id>/leaves/add/', web_views.add_employee_leave, name='add_employee_leave'),                  # تسجيل إجازة
+    path('employees/<int:employee_id>/leaves/<int:leave_id>/edit/', web_views.edit_employee_leave, name='edit_employee_leave'),
+    path('employees/<int:employee_id>/leaves/<int:leave_id>/delete/', web_views.delete_employee_leave, name='delete_employee_leave'),
     path('employees/<int:employee_id>/terminate/', web_views.terminate_employee, name='terminate_employee'),                    # طلب تصفية
     path('employees/<int:employee_id>/reactivate/', web_views.reactivate_employee, name='reactivate_employee'),                # إعادة تفعيل
     path('employees/<int:employee_id>/salary-adjust/', web_views.adjust_employee_salary, name='adjust_employee_salary'),        # تعديل راتب
@@ -74,10 +78,16 @@ urlpatterns = [
     path('employees/<int:employee_id>/custody/receive/', web_views.receive_employee_custody, name='receive_employee_custody'),  # استلام عهدة
     path('employees/<int:employee_id>/custody/clear/', web_views.clear_employee_custody, name='clear_employee_custody'),        # تصفية عهدة
     path('employees/<int:employee_id>/loan/add/', web_views.add_employee_loan, name='add_employee_loan'),                      # سلفة
+    path('employees/<int:employee_id>/loans/<int:loan_id>/edit/', web_views.edit_employee_loan, name='edit_employee_loan'),
+    path('employees/<int:employee_id>/loans/<int:loan_id>/delete/', web_views.delete_employee_loan, name='delete_employee_loan'),
     path('employees/<int:employee_id>/absence/add/', web_views.add_employee_absence, name='add_employee_absence'),              # تسجيل غياب
+    path('employees/<int:employee_id>/absences/<int:absence_id>/edit/', web_views.edit_employee_absence, name='edit_employee_absence'),
+    path('employees/<int:employee_id>/absences/<int:absence_id>/delete/', web_views.delete_employee_absence, name='delete_employee_absence'),
     path('employees/<int:employee_id>/cash-shortage/add/', web_views.add_employee_cash_shortage, name='add_employee_cash_shortage'),
     path('employees/<int:employee_id>/end-of-service/', web_views.end_of_service_employee, name='end_of_service_employee'), # تصفية نهاية خدمة أو استقالة
     path('employees/<int:employee_id>/ledger-init/', web_views.run_ledger_init, name='run_ledger_init'),        # تهيئة أرصدة الموظف
+    path('employees/<int:employee_id>/ledger/<int:ledger_id>/edit/', web_views.edit_employee_ledger, name='edit_employee_ledger'),
+    path('employees/<int:employee_id>/ledger/<int:ledger_id>/delete/', web_views.delete_employee_ledger, name='delete_employee_ledger'),
     path(
         'employees/<int:employee_id>/ledger/<int:ledger_id>/print/',
         web_views.print_ledger_settlement_detail,

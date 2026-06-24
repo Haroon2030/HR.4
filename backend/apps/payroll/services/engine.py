@@ -759,7 +759,13 @@ def lock_payroll_run(run: PayrollRun, user):
                 period_month=run.period_month,
                 eligible_for_eosb=bool(line.employee.sponsorship_id),
             )
-            leave_amount_change = calc['leave_amount']
+            from apps.employees.services.migration_balance import should_accrue_leave_in_period
+
+            if should_accrue_leave_in_period(line.employee, run.period_year, run.period_month):
+                leave_amount_change = calc['leave_amount']
+            else:
+                leave_days_change = Decimal('0')
+                leave_amount_change = Decimal('0.00')
             eosb_amount_change = calc['eosb']
             cum_leave_days = prev_leave_days + leave_days_change
             cum_leave_amt = prev_leave_amt + leave_amount_change

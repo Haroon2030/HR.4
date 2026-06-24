@@ -9,6 +9,28 @@
     var htmxBound = false;
     var formBound = false;
     var navSafetyTimer = null;
+    var PAGE_LOADING_KEY = 'hr-page-loading';
+    var PAGE_LOADING_LABEL = 'جاري تحميل الصفحة';
+
+    function hrMarkPageLoading() {
+        try {
+            sessionStorage.setItem(PAGE_LOADING_KEY, '1');
+        } catch (err) { /* ignore */ }
+        var boot = document.getElementById('hr-page-loading-boot');
+        if (boot) boot.hidden = false;
+    }
+
+    function hrClearPageLoadingBoot() {
+        var boot = document.getElementById('hr-page-loading-boot');
+        if (boot) boot.hidden = true;
+    }
+
+    function hrClearPageLoading() {
+        try {
+            sessionStorage.removeItem(PAGE_LOADING_KEY);
+        } catch (err) { /* ignore */ }
+        hrClearPageLoadingBoot();
+    }
 
     function hrTabLabel(el) {
         if (!el) return 'القسم';
@@ -24,6 +46,7 @@
     function hrHideGlassLoader() {
         clearTimeout(navSafetyTimer);
         navSafetyTimer = null;
+        hrClearPageLoading();
         hrDefineGlassLoaderStore();
         if (window.Alpine && Alpine.store('glassLoader')) {
             Alpine.store('glassLoader').hide();
@@ -41,8 +64,8 @@
 
         Alpine.store('glassLoader', {
             visible: false,
-            label: 'جاري التحميل',
-            hint: 'لحظة واحدة — يتم تجهيز البيانات',
+            label: PAGE_LOADING_LABEL,
+            hint: '',
             _seq: 0,
             _abort: null,
             _hideTimer: null,
@@ -129,8 +152,8 @@
                     var current = new URL(window.location.href);
                     if (url.origin !== window.location.origin) return;
                     if (hrSameDocumentUrl(url, current)) return;
-                    store.show('جاري تحميل ' + label);
-                    store.scheduleHide(350);
+                    hrMarkPageLoading();
+                    store.show(PAGE_LOADING_LABEL, '');
                     hrArmNavLoaderSafety(15000);
                 } catch (err) { /* ignore */ }
                 return;
@@ -141,7 +164,7 @@
             }
 
             if (tab.tagName === 'BUTTON' || tab.getAttribute('role') === 'tab') {
-                store.show('جاري تحميل ' + label);
+                store.show(PAGE_LOADING_LABEL, '');
                 store.scheduleHide(220);
             }
         }, true);
@@ -200,11 +223,17 @@
         hrBindTabGlassLoader();
         hrBindHtmxGlassLoader();
         hrBindFormGlassLoader();
-        hrHideGlassLoader();
+        try {
+            if (sessionStorage.getItem(PAGE_LOADING_KEY) === '1' && window.Alpine && Alpine.store('glassLoader')) {
+                Alpine.store('glassLoader').show(PAGE_LOADING_LABEL, '');
+            }
+        } catch (err) { /* ignore */ }
+        if (document.readyState === 'complete') {
+            hrHideGlassLoader();
+        }
     }
 
     document.addEventListener('alpine:init', hrInitGlassLoader);
-    document.addEventListener('DOMContentLoaded', hrHideGlassLoader);
 
     window.hrGlassLoader = {
         show: function (label, hint) {

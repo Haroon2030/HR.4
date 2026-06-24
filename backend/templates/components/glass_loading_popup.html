@@ -1,28 +1,31 @@
-{# نافذة تحميل زجاجية عامة — Alpine store: glassLoader #}
+{# نافذة تحميل تقنية — Alpine store: glassLoader #}
+<div id="hr-page-loading-boot" class="hr-page-loading-screen" hidden role="status" aria-live="polite">
+    <div class="hr-page-loading-screen__veil" aria-hidden="true"></div>
+    {% include "components/page_loading_disc.html" %}
+</div>
+<script>
+(function () {
+    try {
+        if (sessionStorage.getItem('hr-page-loading') === '1') {
+            var boot = document.getElementById('hr-page-loading-boot');
+            if (boot) boot.hidden = false;
+        }
+    } catch (e) { /* ignore */ }
+})();
+</script>
 <div x-data
      x-show="$store.glassLoader.visible"
      style="display: none;"
-     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter="transition ease-out duration-150"
      x-transition:enter-start="opacity-0"
      x-transition:enter-end="opacity-100"
      x-transition:leave="transition ease-in duration-100"
      x-transition:leave-start="opacity-100"
      x-transition:leave-end="opacity-0"
-     class="hr-glass-loading"
+     class="hr-glass-loading hr-page-loading-screen"
      role="status"
      aria-live="polite"
      :aria-busy="$store.glassLoader.visible ? 'true' : 'false'">
-    <div class="hr-glass-loading__veil" aria-hidden="true"></div>
-    <div class="hr-glass-loading__card hr-sidebar-panel">
-        <div class="hr-glass-loading__ring" aria-hidden="true">
-            <span class="hr-glass-loading-spinner"></span>
-        </div>
-        <p class="hr-glass-loading__title">
-            <span x-text="$store.glassLoader.label">جاري التحميل</span>
-            <span class="hr-glass-loading__dots" aria-hidden="true">
-                <span></span><span></span><span></span>
-            </span>
-        </p>
-        <p class="hr-glass-loading__hint" x-text="$store.glassLoader.hint">لحظة واحدة — يتم تجهيز البيانات</p>
-    </div>
+    <div class="hr-page-loading-screen__veil" aria-hidden="true"></div>
+    {% include "components/page_loading_disc.html" with loader_alpine=True %}
 </div>

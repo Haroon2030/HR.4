@@ -4314,42 +4314,40 @@ body.hr-app .hr-topbar-info-panel.hr-sidebar-panel .hr-topbar-info-panel__foot {
 
 .hr-glass-loading__card.hr-sidebar-panel,
 .hr-glass-loading__card {
-    border: 1px solid #fecaca;
-    background: #ffffff;
-    box-shadow:
-        0 28px 56px rgba(15, 23, 42, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    color: #dc2626;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    color: #16a34a;
 }
 
 .hr-glass-loading__title,
 .hr-glass-loading__hint {
-    color: #dc2626 !important;
+    color: #16a34a !important;
 }
 
 .hr-glass-loading__hint {
-    color: #b91c1c !important;
+    color: #15803d !important;
     opacity: 0.88;
 }
 
 .hr-glass-loading__ring::before {
-    border-color: rgba(220, 38, 38, 0.18);
-    border-top-color: #dc2626;
-    border-inline-end-color: #ef4444;
+    border-color: rgba(22, 163, 74, 0.18);
+    border-top-color: #16a34a;
+    border-inline-end-color: #22c55e;
 }
 
 .hr-glass-loading__ring .hr-glass-loading-spinner {
-    border-color: #fecaca;
-    border-top-color: #dc2626;
+    border-color: #bbf7d0;
+    border-top-color: #16a34a;
 }
 
 .hr-glass-loading__ring i,
 .hr-glass-loading__ring svg {
-    color: #dc2626 !important;
+    color: #16a34a !important;
 }
 
 .hr-glass-loading__dots span {
-    background: #dc2626;
+    background: #16a34a;
 }
 
 /* ── نافذة تفاصيل نصية — ثيم الشريط الجانبي (نص أبيض) ── */
@@ -10093,7 +10091,248 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     }
 }
 
-/* ─── نافذة تحميل زجاجية منبثقة ─────────────────────────────────────────── */
+/* ─── شاشة تحميل تقنية (نافذة دائرية في المنتصف) ─────────────────────────── */
+.hr-page-loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: transparent;
+    pointer-events: auto;
+}
+
+.hr-page-loading-screen[hidden] {
+    display: none !important;
+}
+
+.hr-page-loading-screen__veil {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(rgba(22, 163, 74, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22, 163, 74, 0.035) 1px, transparent 1px),
+        rgba(255, 255, 255, 0.82);
+    background-size: 22px 22px, 22px 22px, auto;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+.hr-page-loading-disc {
+    position: relative;
+    z-index: 1;
+    width: min(16.5rem, 84vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 30% 25%, #ffffff 0%, #f8fafc 55%, #f0fdf4 100%);
+    border: 1px solid rgba(22, 163, 74, 0.28);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+        0 24px 56px rgba(15, 23, 42, 0.14),
+        0 0 40px rgba(22, 163, 74, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.1rem;
+    overflow: hidden;
+    animation: hr-page-loading-disc-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hr-page-loading-disc__scan {
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(22, 163, 74, 0.14) 40deg,
+        transparent 80deg
+    );
+    animation: hr-page-loading-scan 2.4s linear infinite;
+    pointer-events: none;
+}
+
+.hr-page-loading-disc__orbit {
+    position: relative;
+    width: 4.5rem;
+    height: 4.5rem;
+    flex-shrink: 0;
+}
+
+.hr-page-loading-disc__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+
+.hr-page-loading-disc__ring--outer {
+    border-top-color: #16a34a;
+    border-inline-end-color: rgba(22, 163, 74, 0.35);
+    animation: hr-page-loading-spin 1.1s linear infinite;
+}
+
+.hr-page-loading-disc__ring--inner {
+    inset: 0.55rem;
+    border-bottom-color: #22c55e;
+    border-inline-start-color: rgba(34, 197, 94, 0.25);
+    animation: hr-page-loading-spin-rev 0.85s linear infinite;
+}
+
+.hr-page-loading-disc__core {
+    position: absolute;
+    inset: 1.15rem;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 18px rgba(22, 163, 74, 0.18);
+}
+
+.hr-page-loading-disc__core-pulse {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 50%;
+    background: #16a34a;
+    animation: hr-page-loading-pulse 1.2s ease-in-out infinite;
+}
+
+.hr-page-loading-disc__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    text-align: center;
+    width: 100%;
+    max-width: 10.5rem;
+    margin-top: 0.35rem;
+}
+
+.hr-page-loading-disc__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(22, 163, 74, 0.1);
+    border: 1px solid rgba(22, 163, 74, 0.22);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #15803d;
+    text-transform: uppercase;
+}
+
+.hr-page-loading-disc__chip-dot {
+    width: 0.38rem;
+    height: 0.38rem;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+    animation: hr-page-loading-dot-pulse 1.4s ease-out infinite;
+}
+
+.hr-page-loading-disc__title {
+    margin: 0;
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #14532d;
+    line-height: 1.4;
+}
+
+.hr-page-loading-disc__track {
+    width: 100%;
+    height: 0.28rem;
+    border-radius: 999px;
+    background: #dcfce7;
+    overflow: hidden;
+    border: 1px solid rgba(22, 163, 74, 0.15);
+}
+
+.hr-page-loading-disc__track-fill {
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #22c55e, #16a34a, #22c55e);
+    background-size: 200% 100%;
+    animation: hr-page-loading-track 1.15s ease-in-out infinite;
+}
+
+.hr-page-loading-disc__meta {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #16a34a;
+    opacity: 0.88;
+    text-transform: uppercase;
+}
+
+.hr-page-loading-disc__meta--pulse {
+    animation: hr-page-loading-meta-blink 1.6s ease-in-out infinite;
+}
+
+/* توافق أسماء قديمة */
+.hr-page-loading-screen__text,
+.hr-page-loading-screen__hint,
+.hr-page-loading-screen__spinner,
+.hr-page-loading-screen__dots { display: none; }
+
+@keyframes hr-page-loading-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes hr-page-loading-spin-rev {
+    to { transform: rotate(-360deg); }
+}
+
+@keyframes hr-page-loading-scan {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes hr-page-loading-track {
+    0% { transform: translateX(-120%); background-position: 0% 50%; }
+    100% { transform: translateX(220%); background-position: 100% 50%; }
+}
+
+@keyframes hr-page-loading-pulse {
+    0%, 100% { opacity: 0.55; transform: scale(0.92); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hr-page-loading-dot-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+    70% { box-shadow: 0 0 0 0.45rem rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes hr-page-loading-meta-blink {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}
+
+@keyframes hr-page-loading-disc-in {
+    from {
+        opacity: 0;
+        transform: scale(0.86);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ─── نافذة تحميل زجاجية منبثقة (توافق قديم) ───────────────────────────── */
 .hr-glass-loading {
     position: fixed;
     inset: 0;
@@ -10103,6 +10342,7 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     justify-content: center;
     padding: 1.25rem;
     pointer-events: none;
+    background: transparent;
 }
 
 .hr-glass-loading[aria-busy="true"] {
@@ -10118,10 +10358,8 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
 .hr-glass-loading__veil {
     position: absolute;
     inset: 0;
-    background: rgba(15, 23, 42, 0.12);
-    backdrop-filter: blur(6px) saturate(1.05);
-    -webkit-backdrop-filter: blur(6px) saturate(1.05);
-    animation: hr-glass-loading-veil-in 0.28s ease both;
+    background: #ffffff;
+    animation: hr-glass-loading-veil-in 0.2s ease both;
 }
 
 .hr-glass-loading__card {

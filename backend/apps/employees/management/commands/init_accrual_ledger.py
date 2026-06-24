@@ -10,6 +10,7 @@ from apps.core.salary_month import (
     service_years_30day,
 )
 from apps.employees.models import Employee, EmployeeLedger
+from apps.employees.services.migration_balance import employee_uses_migration_balance
 
 
 class Command(BaseCommand):
@@ -20,6 +21,12 @@ class Command(BaseCommand):
         count = 0
 
         for emp in employees:
+            if employee_uses_migration_balance(emp):
+                self.stdout.write(self.style.WARNING(
+                    f'الموظف {emp.name} مُرحّل — تخطّي (استخدم import_opening_balances).'
+                ))
+                continue
+
             if not emp.hire_date:
                 continue
 

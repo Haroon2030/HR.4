@@ -24,6 +24,7 @@ _SALARY_DECIMAL_FIELDS = (
     'meal_allowance',
     'insurance_deduction_rate',
     'available_leave_balance',
+    'opening_leave_days',
 )
 
 
@@ -97,6 +98,7 @@ _EMPLOYEE_FIELDS = [
     'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
     'bank', 'iban', 'account_type',
     # إجازات (leaves_archive و attendance_notes معروضة كـ textarea في edit.html)
+    'opening_leave_days', 'leave_accrual_start_date',
     'available_leave_balance', 'leaves_archive', 'attendance_notes',
     # ملفات
     'commencement_document', 'id_document', 'passport_document',
@@ -260,6 +262,18 @@ class EmployeeForm(forms.ModelForm):
         )
         normalize_salary_payment_fields(cleaned, instance)
         validate_salary_payment_fields(self, cleaned, instance)
+
+        if (
+            'leave_accrual_start_date' in self.fields
+            and 'opening_leave_days' in self.fields
+        ):
+            opening = cleaned.get('opening_leave_days')
+            start = cleaned.get('leave_accrual_start_date')
+            if opening and Decimal(str(opening)) > 0 and not start:
+                self.add_error(
+                    'leave_accrual_start_date',
+                    'أدخل تاريخ الاحتساب عند تعبئة رصيد افتتاحي.',
+                )
 
         return cleaned
 
@@ -441,6 +455,10 @@ class EmploymentRequestEditForm(forms.ModelForm):
             self.fields['sponsorship'].widget.attrs['@change'] = (
                 "if (!hasSponsorship() && activeTab === 'bank') activeTab = 'salary'"
             )
+        if 'opening_leave_days' in self.fields:
+            self.fields['opening_leave_days'].label = 'الرصيد الافتتاحي (أيام)'
+        if 'leave_accrual_start_date' in self.fields:
+            self.fields['leave_accrual_start_date'].label = 'تاريخ الاحتساب'
 
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة

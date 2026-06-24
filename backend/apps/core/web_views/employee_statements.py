@@ -16,7 +16,17 @@ from django.contrib import messages
 from apps.core.web_views._helpers import (
     employee_branch_access_required,
 )
-from apps.core.decorators import permission_required
+from apps.core.decorators import any_permission_required, permission_required
+
+EDITABLE_WARNING_TAB_TYPES = frozenset({
+    'statement', 'warning', 'final_warning', 'penalty', 'acknowledgment', 'other',
+})
+
+
+def _redirect_employee_warnings_tab(employee_id: int):
+    from django.urls import reverse
+    return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee_id})}?tab=warnings#employee-tab-panel')
+
 
 @login_required
 @permission_required('employees.edit')
@@ -154,19 +164,68 @@ def add_employee_statement(request, employee_id):
 
 
 @login_required
-@permission_required('employees.delete')
+@any_permission_required('employees.edit_statement', 'employees.edit')
+@employee_branch_access_required
+def edit_employee_statement(request, employee_id, statement_id):
+    """تعديل إفادة / إنذار من تبويب الإفادات."""
+    from apps.employees.models import Employee, EmployeeStatement
+    from apps.employees.forms import EmployeeStatementForm
+    from apps.employees.services.employee_record_locks import statement_is_editable
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    statement = get_object_or_404(EmployeeStatement, id=statement_id, employee_id=employee.id)
+
+    if statement.statement_type not in EDITABLE_WARNING_TAB_TYPES:
+        messages.error(request, 'لا يمكن تعديل هذا النوع من السجلات من الواجهة.')
+        return _redirect_employee_warnings_tab(employee.id)
+    if not statement_is_editable(statement):
+        messages.error(request, 'لا يمكن تعديل إفادة مُطبّقة على مسير رواتب مُرحّل.')
+        return _redirect_employee_warnings_tab(employee.id)
+
+    if request.method != 'POST':
+        return _redirect_employee_warnings_tab(employee.id)
+
+    files = request.FILES.copy()
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if renamed is not None:
+        files['document'] = renamed
+
+    form = EmployeeStatementForm(request.POST, files, instance=statement)
+    if not form.is_valid():
+        for err in form.errors.values():
+            messages.error(request, err[0])
+        return _redirect_employee_warnings_tab(employee.id)
+
+    statement = form.save(commit=False)
+    if files.get('document'):
+        statement.document = files['document']
+    statement.save()
+    messages.success(request, f'تم تحديث الإفادة [{statement.serial_number or statement.id}].')
+    return _redirect_employee_warnings_tab(employee.id)
+
+
+@login_required
+@any_permission_required(
+    'employees.delete_statement', 'employees.delete',
+    'employees.edit_statement', 'employees.edit',
+)
 @employee_branch_access_required
 def delete_employee_statement(request, statement_id):
     """حذف إفادة / إنذار."""
     from apps.employees.models import EmployeeStatement
+    from apps.employees.services.employee_record_locks import statement_is_editable
+
     statement = get_object_or_404(EmployeeStatement, id=statement_id)
     employee_id = statement.employee_id
     if request.method == 'POST':
-        if statement.applied_to_payroll_id:
+        if statement.statement_type not in EDITABLE_WARNING_TAB_TYPES:
+            messages.error(request, 'لا يمكن حذف هذا النوع من السجلات.')
+            return _redirect_employee_warnings_tab(employee_id)
+        if not statement_is_editable(statement):
             messages.error(request, 'لا يمكن حذف إفادة مُطبّقة على مسير رواتب مُرحّل.')
-            return redirect('web:edit_employee', employee_id=employee_id)
+            return _redirect_employee_warnings_tab(employee_id)
         statement.delete()
         messages.success(request, 'تم حذف الإفادة')
-    return redirect('web:edit_employee', employee_id=employee_id)
-
+    return _redirect_employee_warnings_tab(employee_id)
 

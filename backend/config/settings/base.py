@@ -410,6 +410,8 @@ HR_APP_DEVELOPER = env('HR_APP_DEVELOPER', default='شركة الحلول الت
 HR_SUPPORT_PHONE = env('HR_SUPPORT_PHONE', default='+966531847156')
 # رقم السجل التجاري للغرفة (C.R) — يظهر في ترويسة النماذج الرسمية تحت س.ت
 HR_LETTERHEAD_CHAMBER_CR = env('HR_LETTERHEAD_CHAMBER_CR', default='701806691')
+# تاريخ انتقال موحّد لاحتساب الإجازة بعد استيراد الأرصدة الافتتاحية (YYYY-MM-DD)
+HR_MIGRATION_CUTOVER_DATE = env('HR_MIGRATION_CUTOVER_DATE', default='')
 HR_APP_DESCRIPTION = env(
     'HR_APP_DESCRIPTION',
     default=(

@@ -6,11 +6,16 @@
 
 {% block content %}
 {{ employee_modal_js|json_script:"employee-modal-js" }}
-<div class="space-y-4" x-data="{ activeTab: '{{ default_employee_tab }}', quickModal: null, quickOpen: false }"
+<div class="space-y-4" x-data="{ activeTab: '{{ default_employee_tab }}', quickModal: null, quickOpen: false, absenceEdit: null, leaveEdit: null, statementEdit: null, loanEdit: null, ledgerEdit: null }"
      x-init="{% if tab_visible.fingerprint %}if (window.location.hash === '#fingerprint' && !window.location.search.includes('tab=fingerprint')) { var u = new URL(window.location.href); u.searchParams.set('tab', 'fingerprint'); window.location.replace(u.pathname + u.search + '#fingerprint'); } else if (window.location.hash === '#fingerprint') { activeTab = 'fingerprint'; }{% endif %}"
      x-effect="document.body.classList.toggle('hr-quick-modal-open', !!quickModal)"
      @open-schedule-modal.window="quickModal = 'schedule'"
-     @close-schedule-modal.window="quickModal = null">
+     @close-schedule-modal.window="quickModal = null"
+     @open-absence-edit.window="absenceEdit = $event.detail; quickModal = 'absence-edit'"
+     @open-leave-edit.window="leaveEdit = $event.detail; quickModal = 'leave-edit'"
+     @open-statement-edit.window="statementEdit = $event.detail; quickModal = 'statement-edit'"
+     @open-loan-edit.window="loanEdit = $event.detail; quickModal = 'loan-edit'"
+     @open-ledger-edit.window="ledgerEdit = $event.detail; quickModal = 'ledger-edit'">
 
     <!-- Header -->
     <div class="hr-employee-header hr-glass-panel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
@@ -1257,6 +1262,263 @@
                         ✓ إرسال للموافقة
                     </button>
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: تعديل إجازة -->
+    <div x-show="quickModal==='leave-edit' && leaveEdit" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null; leaveEdit=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-sky-600"></i>
+                    <span>تعديل إجازة</span>
+                </h3>
+                <button type="button" @click="quickModal=null; leaveEdit=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="p-4 space-y-3"
+                  :action="leaveEdit ? '{% url "web:edit_employee_leave" employee.id 0 %}'.replace('/0/', '/' + leaveEdit.id + '/') : '#'">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">نوع الإجازة</label>
+                    <select name="leave_type" x-model="leaveEdit.leave_type" class="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-white">
+                        <option value="annual">سنوية</option>
+                        <option value="sick">مرضية</option>
+                        <option value="unpaid">بدون راتب</option>
+                        <option value="emergency">طارئة</option>
+                        <option value="other">أخرى</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">من تاريخ</label>
+                        <input type="date" name="date_from" required x-model="leaveEdit.date_from" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">إلى تاريخ</label>
+                        <input type="date" name="date_to" required x-model="leaveEdit.date_to" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="3" x-model="leaveEdit.notes" class="w-full px-3 py-2 text-sm border border-slate-300 rounded"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" class="w-full text-xs">
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="button" @click="quickModal=null; leaveEdit=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--primary">حفظ التعديل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: تعديل غياب -->
+    <div x-show="quickModal==='absence-edit' && absenceEdit" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null; absenceEdit=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="pencil" class="w-5 h-5 text-orange-600"></i>
+                    <span>تعديل سجل غياب</span>
+                </h3>
+                <button type="button" @click="quickModal=null; absenceEdit=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="p-4 space-y-3"
+                  :action="absenceEdit ? '{% url "web:edit_employee_absence" employee.id 0 %}'.replace('/0/', '/' + absenceEdit.id + '/') : '#'">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الغياب <span class="text-red-500">*</span></label>
+                        <input type="date" name="absence_date" required x-model="absenceEdit.absence_date"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">عدد أيام الغياب <span class="text-red-500">*</span></label>
+                        <input type="number" name="days" required min="1" x-model.number="absenceEdit.days"
+                               class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">سبب الغياب</label>
+                    <select name="reason" x-model="absenceEdit.reason"
+                            class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500 bg-white">
+                        <option value="">— اختر سبباً —</option>
+                        <option value="غياب بدون عذر">غياب بدون عذر</option>
+                        <option value="مرض بدون تقرير طبي">مرض بدون تقرير طبي</option>
+                        <option value="مرض مع تقرير طبي">مرض مع تقرير طبي</option>
+                        <option value="ظرف عائلي طارئ">ظرف عائلي طارئ</option>
+                        <option value="تأخر متكرر يحتسب غياباً">تأخر متكرر يحتسب غياباً</option>
+                        <option value="مغادرة قبل انتهاء الدوام">مغادرة قبل انتهاء الدوام</option>
+                        <option value="عدم الالتزام بالجدول">عدم الالتزام بالجدول</option>
+                        <option value="إيقاف عن العمل">إيقاف عن العمل</option>
+                        <option value="إجازة بدون راتب">إجازة بدون راتب</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2" x-model="absenceEdit.notes"
+                              class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-orange-500 focus:border-orange-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري — يستبدل الحالي)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                           class="w-full text-xs file:px-3 file:py-1.5 file:text-xs file:bg-orange-50 file:border-0 file:text-orange-700 file:rounded">
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="button" @click="quickModal=null; absenceEdit=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--primary">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                        حفظ التعديل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: تعديل إفادة -->
+    <div x-show="quickModal==='statement-edit' && statementEdit" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null; statementEdit=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
+                    <span>تعديل إفادة / إنذار</span>
+                </h3>
+                <button type="button" @click="quickModal=null; statementEdit=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="p-4 space-y-3"
+                  :action="statementEdit ? '{% url "web:edit_employee_statement" employee.id 0 %}'.replace('/0/', '/' + statementEdit.id + '/') : '#'">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">النوع</label>
+                    <select name="statement_type" x-model="statementEdit.statement_type" class="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-white">
+                        <option value="statement">إفادة</option>
+                        <option value="warning">إنذار</option>
+                        <option value="final_warning">إنذار نهائي</option>
+                        <option value="penalty">مخالفة (خصم مالي)</option>
+                        <option value="acknowledgment">إقرار</option>
+                        <option value="other">أخرى</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">العنوان</label>
+                    <input type="text" name="title" required x-model="statementEdit.title" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">التاريخ</label>
+                    <input type="date" name="statement_date" required x-model="statementEdit.statement_date" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">التفاصيل</label>
+                    <textarea name="content" rows="4" x-model="statementEdit.content" class="w-full px-3 py-2 text-sm border border-slate-300 rounded"></textarea>
+                </div>
+                <div x-show="statementEdit && statementEdit.statement_type === 'penalty'">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مبلغ الخصم (ر.س)</label>
+                    <input type="number" step="0.01" min="0" name="deduction_amount" x-model="statementEdit.deduction_amount" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند مرفق (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" class="w-full text-xs">
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="button" @click="quickModal=null; statementEdit=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--primary">حفظ التعديل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: تعديل سلفة -->
+    <div x-show="quickModal==='loan-edit' && loanEdit" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null; loanEdit=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="coins" class="w-5 h-5 text-amber-600"></i>
+                    <span>تعديل سلفة</span>
+                </h3>
+                <button type="button" @click="quickModal=null; loanEdit=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="p-4 space-y-3"
+                  :action="loanEdit ? '{% url "web:edit_employee_loan" employee.id 0 %}'.replace('/0/', '/' + loanEdit.id + '/') : '#'">
+                {% csrf_token %}
+                <template x-if="loanEdit && loanEdit.locked">
+                    <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">يوجد أقساط مُحصّلة — يمكن تعديل السبب والملاحظات والمستند فقط.</p>
+                </template>
+                <div class="grid grid-cols-2 gap-3" x-show="loanEdit && !loanEdit.locked">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">مبلغ السلفة</label>
+                        <input type="number" name="amount" step="0.01" min="0.01" x-model="loanEdit.amount" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الخصم الشهري</label>
+                        <input type="number" name="monthly_deduction" step="0.01" min="0.01" x-model="loanEdit.monthly_deduction" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">عدد الأقساط</label>
+                        <input type="number" name="installments" min="1" x-model.number="loanEdit.installments" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الصرف</label>
+                        <input type="date" name="issued_at" x-model="loanEdit.issued_at" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">بداية الخصم</label>
+                        <input type="date" name="first_deduction_date" x-model="loanEdit.first_deduction_date" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">سبب السلفة</label>
+                    <input type="text" name="reason" x-model="loanEdit.reason" class="w-full px-3 py-2 text-sm border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea name="notes" rows="2" x-model="loanEdit.notes" class="w-full px-3 py-2 text-sm border border-slate-300 rounded"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">مستند (اختياري)</label>
+                    <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" class="w-full text-xs">
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="button" @click="quickModal=null; loanEdit=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--primary">حفظ التعديل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: تعديل سجل مخصصات -->
+    <div x-show="quickModal==='ledger-edit' && ledgerEdit" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null; ledgerEdit=null">
+        <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-5 h-5 text-indigo-600"></i>
+                    <span>تعديل ملاحظات السجل</span>
+                </h3>
+                <button type="button" @click="quickModal=null; ledgerEdit=null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form method="post" class="p-4 space-y-3"
+                  :action="ledgerEdit ? '{% url "web:edit_employee_ledger" employee.id 0 %}'.replace('/0/', '/' + ledgerEdit.id + '/') : '#'">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات / تفاصيل</label>
+                    <textarea name="notes" rows="6" x-model="ledgerEdit.notes" class="w-full px-3 py-2 text-sm border border-slate-300 rounded font-mono text-xs"></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
+                    <button type="button" @click="quickModal=null; ledgerEdit=null" class="hr-btn hr-btn--muted">إلغاء</button>
+                    <button type="submit" class="hr-btn hr-btn--primary">حفظ</button>
                 </div>
             </form>
         </div>

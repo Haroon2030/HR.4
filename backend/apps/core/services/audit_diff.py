@@ -83,6 +83,10 @@ FIELD_LABELS: dict[str, str] = {
     'nationality_id': 'الجنسية',
     'sponsorship_id': 'الكفالة',
     'available_leave_balance': 'رصيد الإجازة المستخدم',
+    'leave_accrual_start_date': 'تاريخ بدء احتساب الإجازة',
+    'opening_leave_days': 'رصيد إجازة افتتاحي',
+    'opening_eosb_amount': 'مخصص نهاية خدمة افتتاحي',
+    'migration_locked': 'اعتماد أرصدة الترحيل',
 }
 
 
