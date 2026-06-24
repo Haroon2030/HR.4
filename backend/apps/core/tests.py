@@ -777,7 +777,7 @@ class HRFormPrintViewTests(TestCase):
         html = r.content.decode()
         self.assertIn('hr-form-salary-cell', html)
         self.assertIn('hr-form-letterhead-name', html)
-        self.assertIn('C.R', html)
+        self.assertIn('س.ت', html)
         self.assertIn('نفيدكم نحن', html)
         self.assertIn('دون أدنى مسؤولية على الشركة', html)
         self.assertNotIn('4000,00', html)
