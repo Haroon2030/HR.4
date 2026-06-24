@@ -8,7 +8,7 @@
 
     <div class="clause" style="font-size:14.5px; line-height: 2.2;">
         تشهد <strong>{{ letterhead_name|default:"........................" }}</strong>
-        {% if letterhead_cr %}— سجل تجاري رقم ({{ letterhead_cr }}) —{% endif %}
+        {% if letterhead_cr %}— C.R ({{ letterhead_cr }}) —{% endif %}
         بأن الموظف/ة:
         <strong>{{ employee.name }}</strong>،
         يحمل/تحمل الجنسية <strong>{{ employee.nationality.name|default:"............" }}</strong>،

@@ -599,44 +599,11 @@ def hr_form_print(request, form_type, employee_id):
     context['form_employee_iban'] = (getattr(employee, 'iban', None) or '').strip()
 
     if form_type == 'salary_transfer_commitment':
-        from apps.employees.services.settlement_eosb import compute_transfer_commitment_eosb_amounts
-
-        # نموذج البنك: حقول قابلة للتعبئة — لا تُسحب تلقائياً من ملف الموظف (ما عدا الاسم)
-        context['form_work_id'] = (request.GET.get('work_id') or '').strip()
+        # نموذج البنك: حقول يدوية فارغة — لا تُسحب من ملف الموظف (ما عدا الاسم)
+        context['form_work_id'] = ''
         context['form_employee_iban'] = ''
-        if not request.GET.get('profession_id'):
-            context['profession'] = None
-        if not (request.GET.get('hire_date') or '').strip():
-            context['form_hire_date'] = None
-            context['eosb_entitlement'] = None
-            context['eosb_resignation'] = None
-        else:
-            eosb_amounts = compute_transfer_commitment_eosb_amounts(
-                employee,
-                hire_date=context['form_hire_date'],
-            )
-            context.update(eosb_amounts)
-        if employee.status == Employee.Status.TERMINATED:
-            stmt = (
-                employee.statements_log.filter(
-                    statement_type=EmployeeStatement.StatementType.TERMINATE,
-                )
-                .exclude(content='')
-                .order_by('-statement_date', '-id')
-                .first()
-            )
-            if stmt and (stmt.content or '').strip():
-                parsed = _parse_final_settlement_statement(stmt.content)
-                if parsed.get('eosb_amount') is not None:
-                    context['eosb_entitlement'] = parsed['eosb_amount']
-                # مستحقات الاستقالة تبقى من الحساب التقديري (معامل الاستقالة)
-
-    if form_type == 'salary_certificate':
-        context['other_fixed_allowances'] = (
-            (employee.other_allowance or Decimal('0'))
-            + (employee.cash_amount or Decimal('0'))
-            + (employee.meal_allowance or Decimal('0'))
-        )
+        context['eosb_entitlement'] = None
+        context['eosb_resignation'] = None
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)
 

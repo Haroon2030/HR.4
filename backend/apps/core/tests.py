@@ -748,41 +748,41 @@ class HRFormPrintViewTests(TestCase):
         )
         r = c.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, '— اختر المهنة —')
-        self.assertNotContains(r, 'value="2020-01-01"')
+        self.assertContains(r, 'hr-form-pen-field')
         self.assertContains(r, 'data-placeholder="................"')
         self.assertNotContains(r, emp.id_number)
+        self.assertNotContains(r, 'hr-form-profession-select')
         if emp.employee_number:
             self.assertNotContains(r, emp.employee_number)
 
-    def test_salary_transfer_commitment_fills_eosb_after_hire_date_selected(self):
-        from datetime import date
+    def test_salary_certificate_has_blank_salary_cells(self):
+        from decimal import Decimal
 
-        from apps.setup.models import Profession, Sponsorship
-
-        prof = Profession.objects.create(code='PR-EOSB', name='كاشير')
-        spons = Sponsorship.objects.create(code='SP-EOSB', company_name='كفالة٢')
         emp = Employee.objects.create(
-            name='موظف EOSB',
+            name='موظف تعريف راتب',
             branch=self.branch,
-            profession=prof,
-            sponsorship=spons,
-            hire_date=date(2019, 6, 1),
-            basic_salary=6000,
-            housing_allowance=1500,
+            basic_salary=Decimal('4000.00'),
+            housing_allowance=Decimal('200.00'),
             status=Employee.Status.ACTIVE,
+            id_number='1234567890',
         )
         c = Client()
         self.assertTrue(c.login(username='hrform_su', password='x'))
         url = reverse(
             'web:hr_form_print',
-            kwargs={'form_type': 'salary_transfer_commitment', 'employee_id': emp.id},
+            kwargs={'form_type': 'salary_certificate', 'employee_id': emp.id},
         )
-        r = c.get(url, {'hire_date': '2019-06-01', 'profession_id': str(prof.id)})
+        r = c.get(url)
         self.assertEqual(r.status_code, 200)
         html = r.content.decode()
-        self.assertIn('hr-form-amount', html)
-        self.assertNotIn('>0.00<', html)
+        self.assertIn('hr-form-salary-cell', html)
+        self.assertIn('hr-form-inline-pen', html)
+        self.assertIn('نفيدكم نحن', html)
+        self.assertIn('دون أدنى مسؤولية على الشركة', html)
+        self.assertNotIn('4000,00', html)
+        self.assertNotIn('4000.00', html)
+        self.assertNotIn(emp.id_number, html)
+        self.assertNotIn('فني كيمرات', html)
 
 
 class PasswordChangeViewTests(TestCase):

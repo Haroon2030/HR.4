@@ -10,32 +10,30 @@
         <tbody>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600; width:52%;">اسم الموظف</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;"><strong>{{ employee.name }}</strong></td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;" class="hr-form-table-cell--pen">{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الموظف" %}</td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">رقم بطاقة العمل / الرقم الوظيفي</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_employee_work_id_field.html" %}</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;" class="hr-form-table-cell--pen">{% include "pages/hr_forms/_employee_work_id_field.html" %}</td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مسمى الوظيفة</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_profession_field.html" with profession_select_id="hr-transfer-commit-profession" blank_employee_default=True %}</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;" class="hr-form-table-cell--pen">{% include "pages/hr_forms/_pen_field.html" with field_label="مسمى الوظيفة" %}</td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">تاريخ الالتحاق بالعمل</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_hire_date_field.html" with date_label="تاريخ الالتحاق بالعمل" %}</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;" class="hr-form-table-cell--pen">{% include "pages/hr_forms/_pen_field.html" with field_label="تاريخ الالتحاق بالعمل" placeholder="..../..../........" %}</td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مستحقات نهاية الخدمة (حتى تاريخه)</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;">
-                    {% include "pages/hr_forms/_eosb_amount_field.html" with amount=eosb_entitlement field_label="مستحقات نهاية الخدمة" %}
-                    {% if eosb_entitlement %}<span class="print-only"> ر.س</span>{% endif %}
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;" class="hr-form-table-cell--amount">
+                    {% include "pages/hr_forms/_eosb_amount_field.html" with amount="" field_label="مستحقات نهاية الخدمة" %}
                 </td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مستحقات نهاية الخدمة في حالة الاستقالة قبل نهاية العقد</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;">
-                    {% include "pages/hr_forms/_eosb_amount_field.html" with amount=eosb_resignation field_label="مستحقات الاستقالة" %}
-                    {% if eosb_resignation %}<span class="print-only"> ر.س</span>{% endif %}
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;" class="hr-form-table-cell--amount">
+                    {% include "pages/hr_forms/_eosb_amount_field.html" with amount="" field_label="مستحقات الاستقالة" %}
                 </td>
             </tr>
         </tbody>

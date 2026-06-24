@@ -343,6 +343,43 @@
             min-width: 140px;
             font-weight: 700;
         }
+        .hr-form-pen-field.blank,
+        input.blank.hr-form-pen-field {
+            min-width: 120px;
+            font-weight: 600;
+        }
+        .hr-form-inline-pen.blank,
+        input.blank.hr-form-inline-pen {
+            display: inline-block;
+            min-width: 100px;
+            font-weight: 700;
+            vertical-align: baseline;
+        }
+        table .hr-form-table-cell--pen input.blank,
+        table .hr-form-table-cell--amount input.blank {
+            display: block;
+            width: 100%;
+            min-height: 30px;
+            margin: 0 auto;
+            text-align: center;
+            border: none;
+            border-bottom: 1.5px dotted #94a3b8;
+            border-radius: 0;
+            background: #fffefb;
+            font-family: inherit;
+            font-size: 13.5px;
+            color: #0f172a;
+        }
+        table .hr-form-table-cell--pen input.blank {
+            text-align: right;
+        }
+        table .hr-form-table-cell--amount input.blank.hr-form-salary-cell {
+            font-weight: 700;
+        }
+        table .hr-form-table-cell--amount input.blank.hr-form-salary-cell--total {
+            font-weight: 800;
+            color: #166534;
+        }
 
         /* Print-only — صفحة واحدة A4 */
         @media print {
@@ -510,7 +547,7 @@
             <div class="company">
                 <h1 class="name">{% firstof letterhead_name company.name "........................" %}</h1>
                 <div class="meta">
-                    سجل تجاري رقم:
+                    C.R
                     <strong>{% firstof letterhead_cr company.commercial_record "................" %}</strong>
                 </div>
             </div>
@@ -548,12 +585,18 @@
         const DATE_HINTS = ['تاريخ', 'بتاريخ', 'بدء', 'انتهاء', 'إلى:', 'من:'];
         document.querySelectorAll('span.blank').forEach(el => {
             const labelText = (el.dataset.label || el.previousElementSibling?.textContent || '').trim();
-            const isDate = DATE_HINTS.some(h => labelText.includes(h));
+            const forceText = el.dataset.inputType === 'text' || el.classList.contains('hr-form-pen-field');
+            const isDate = !forceText && DATE_HINTS.some(h => labelText.includes(h));
             const inp = document.createElement('input');
             inp.type = isDate ? 'date' : 'text';
             inp.className = 'blank'
                 + (el.classList.contains('hr-form-iban') ? ' hr-form-iban' : '')
                 + (el.classList.contains('hr-form-amount') ? ' hr-form-amount' : '')
+                + (el.classList.contains('hr-form-work-id') ? ' hr-form-work-id' : '')
+                + (el.classList.contains('hr-form-pen-field') ? ' hr-form-pen-field' : '')
+                + (el.classList.contains('hr-form-inline-pen') ? ' hr-form-inline-pen' : '')
+                + (el.classList.contains('hr-form-salary-cell') ? ' hr-form-salary-cell' : '')
+                + (el.classList.contains('hr-form-salary-cell--total') ? ' hr-form-salary-cell--total' : '')
                 + (el.classList.contains('hr-form-bank-address__name') ? ' hr-form-bank-address__name' : '');
             inp.setAttribute('aria-label', labelText || 'حقل');
             if (el.classList.contains('hr-form-iban') || (el.getAttribute('dir') === 'ltr' && !el.classList.contains('hr-form-bank-address__name'))) {
@@ -563,13 +606,11 @@
             if (el.classList.contains('hr-form-amount')) {
                 inp.setAttribute('inputmode', 'decimal');
             }
+            let val = el.textContent.trim();
             const placeholder = el.dataset.placeholder;
             if (placeholder && !val) {
                 inp.placeholder = placeholder;
             }
-            
-            // Preserve existing value if any
-            let val = el.textContent.trim();
             if (val) {
                 if (isDate) {
                     // Try to format to YYYY-MM-DD if it's a date

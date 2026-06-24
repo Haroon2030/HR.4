@@ -1,2 +1,1 @@
-{# رقم بطاقة العمل / الرقم الوظيفي — يُعبَّأ يدوياً في النموذج (لا يُسحب تلقائياً من ملف الموظف) #}
-<span class="blank hr-form-work-id" dir="ltr" data-label="رقم بطاقة العمل" data-placeholder="................">{% if form_work_id %}{{ form_work_id }}{% endif %}</span>
+{% include "pages/hr_forms/_pen_field.html" with field_label="رقم بطاقة العمل" extra_class="hr-form-work-id" ltr=True value=form_work_id %}

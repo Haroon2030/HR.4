@@ -1,0 +1,6 @@
+{# حقل فارغ للتعبئة اليدوية (شاشة أو طباعة) — لا يُسحب من ملف الموظف #}
+<span class="blank hr-form-pen-field{% if extra_class %} {{ extra_class }}{% endif %}"
+      data-input-type="text"
+      data-label="{{ field_label|default:'' }}"
+      data-placeholder="{{ placeholder|default:'................' }}"
+      {% if ltr %}dir="ltr"{% endif %}>{% if value %}{{ value }}{% endif %}</span>
