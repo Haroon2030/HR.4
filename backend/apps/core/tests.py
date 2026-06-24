@@ -755,6 +755,34 @@ class HRFormPrintViewTests(TestCase):
         if emp.employee_number:
             self.assertNotContains(r, emp.employee_number)
 
+    def test_salary_certificate_shows_sponsorship_cr_in_letterhead(self):
+        from decimal import Decimal
+
+        from apps.setup.models import Sponsorship
+
+        spons = Sponsorship.objects.create(
+            code='SP-CR',
+            company_name='شركة الاختبار',
+            commercial_registration='1010999888',
+        )
+        emp = Employee.objects.create(
+            name='موظف سجل تجاري',
+            branch=self.branch,
+            sponsorship=spons,
+            basic_salary=Decimal('3000.00'),
+            status=Employee.Status.ACTIVE,
+        )
+        c = Client()
+        self.assertTrue(c.login(username='hrform_su', password='x'))
+        url = reverse(
+            'web:hr_form_print',
+            kwargs={'form_type': 'salary_certificate', 'employee_id': emp.id},
+        )
+        r = c.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'س.ت')
+        self.assertContains(r, '1010999888')
+
     def test_salary_certificate_has_blank_salary_cells(self):
         from decimal import Decimal
 
