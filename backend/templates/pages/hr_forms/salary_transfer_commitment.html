@@ -14,11 +14,11 @@
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">رقم بطاقة العمل / الرقم الوظيفي</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;"><strong>{{ employee.employee_number|default:employee.id_number|default:"................" }}</strong></td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_employee_work_id_field.html" %}</td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مسمى الوظيفة</td>
-                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_profession_field.html" with profession_select_id="hr-transfer-commit-profession" %}</td>
+                <td style="padding:8px 12px; border:1px solid #cbd5e1;">{% include "pages/hr_forms/_profession_field.html" with profession_select_id="hr-transfer-commit-profession" blank_employee_default=True %}</td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">تاريخ الالتحاق بالعمل</td>
@@ -28,14 +28,14 @@
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مستحقات نهاية الخدمة (حتى تاريخه)</td>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1;">
                     {% include "pages/hr_forms/_eosb_amount_field.html" with amount=eosb_entitlement field_label="مستحقات نهاية الخدمة" %}
-                    {% if eosb_entitlement is not None %}<span class="print-only"> ر.س</span>{% endif %}
+                    {% if eosb_entitlement %}<span class="print-only"> ر.س</span>{% endif %}
                 </td>
             </tr>
             <tr>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:600;">مستحقات نهاية الخدمة في حالة الاستقالة قبل نهاية العقد</td>
                 <td style="padding:8px 12px; border:1px solid #cbd5e1;">
                     {% include "pages/hr_forms/_eosb_amount_field.html" with amount=eosb_resignation field_label="مستحقات الاستقالة" %}
-                    {% if eosb_resignation is not None %}<span class="print-only"> ر.س</span>{% endif %}
+                    {% if eosb_resignation %}<span class="print-only"> ر.س</span>{% endif %}
                 </td>
             </tr>
         </tbody>

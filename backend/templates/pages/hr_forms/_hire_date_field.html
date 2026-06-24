@@ -3,6 +3,7 @@
     {% include "pages/hr_forms/_hr_form_preserve_params.html" with skip_hire_date=True %}
     <input type="date" name="hire_date"
            value="{% if form_hire_date %}{{ form_hire_date|date:'Y-m-d' }}{% endif %}"
+           placeholder="{% if not form_hire_date %}..../..../........{% endif %}"
            onchange="this.form.submit()"
            class="hr-form-date-field date-picker"
            aria-label="{{ date_label|default:'التاريخ' }}">

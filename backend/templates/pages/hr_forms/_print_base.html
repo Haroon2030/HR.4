@@ -336,6 +336,13 @@
             min-width: 100px;
             font-weight: 700;
         }
+        .hr-form-work-id.blank,
+        input.blank.hr-form-work-id {
+            direction: ltr;
+            text-align: left;
+            min-width: 140px;
+            font-weight: 700;
+        }
 
         /* Print-only — صفحة واحدة A4 */
         @media print {
@@ -555,6 +562,10 @@
             }
             if (el.classList.contains('hr-form-amount')) {
                 inp.setAttribute('inputmode', 'decimal');
+            }
+            const placeholder = el.dataset.placeholder;
+            if (placeholder && !val) {
+                inp.placeholder = placeholder;
             }
             
             // Preserve existing value if any

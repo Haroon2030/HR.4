@@ -601,11 +601,21 @@ def hr_form_print(request, form_type, employee_id):
     if form_type == 'salary_transfer_commitment':
         from apps.employees.services.settlement_eosb import compute_transfer_commitment_eosb_amounts
 
-        eosb_amounts = compute_transfer_commitment_eosb_amounts(
-            employee,
-            hire_date=context['form_hire_date'],
-        )
-        context.update(eosb_amounts)
+        # نموذج البنك: حقول قابلة للتعبئة — لا تُسحب تلقائياً من ملف الموظف (ما عدا الاسم)
+        context['form_work_id'] = (request.GET.get('work_id') or '').strip()
+        context['form_employee_iban'] = ''
+        if not request.GET.get('profession_id'):
+            context['profession'] = None
+        if not (request.GET.get('hire_date') or '').strip():
+            context['form_hire_date'] = None
+            context['eosb_entitlement'] = None
+            context['eosb_resignation'] = None
+        else:
+            eosb_amounts = compute_transfer_commitment_eosb_amounts(
+                employee,
+                hire_date=context['form_hire_date'],
+            )
+            context.update(eosb_amounts)
         if employee.status == Employee.Status.TERMINATED:
             stmt = (
                 employee.statements_log.filter(

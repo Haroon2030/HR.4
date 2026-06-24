@@ -301,7 +301,12 @@ def compute_transfer_commitment_eosb_amounts(
         settlement_type='employee',
         eligible=eligible,
     )
+
+    def _eosb_form_value(amount: Decimal) -> str | None:
+        q = amount.quantize(Decimal('0.01'))
+        return None if q <= 0 else f'{q:.2f}'
+
     return {
-        'eosb_entitlement': f'{eosb_company.quantize(Decimal("0.01")):.2f}',
-        'eosb_resignation': f'{eosb_resignation.quantize(Decimal("0.01")):.2f}',
+        'eosb_entitlement': _eosb_form_value(eosb_company),
+        'eosb_resignation': _eosb_form_value(eosb_resignation),
     }

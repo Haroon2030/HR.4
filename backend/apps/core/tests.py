@@ -723,6 +723,67 @@ class HRFormPrintViewTests(TestCase):
         self.assertGreaterEqual(data['total'], 1)
         self.assertTrue(any(x['id'] == self.employee.id for x in data['results']))
 
+    def test_salary_transfer_commitment_starts_with_blank_eosb_rows(self):
+        from datetime import date
+
+        from apps.setup.models import Profession, Sponsorship
+
+        prof = Profession.objects.create(code='PR-STC', name='محاسب')
+        spons = Sponsorship.objects.create(code='SP-STC', company_name='كفالة')
+        emp = Employee.objects.create(
+            name='موظف بنك',
+            branch=self.branch,
+            profession=prof,
+            sponsorship=spons,
+            hire_date=date(2020, 1, 1),
+            id_number='2533169484',
+            basic_salary=5000,
+            status=Employee.Status.ACTIVE,
+        )
+        c = Client()
+        self.assertTrue(c.login(username='hrform_su', password='x'))
+        url = reverse(
+            'web:hr_form_print',
+            kwargs={'form_type': 'salary_transfer_commitment', 'employee_id': emp.id},
+        )
+        r = c.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '— اختر المهنة —')
+        self.assertNotContains(r, 'value="2020-01-01"')
+        self.assertContains(r, 'data-placeholder="................"')
+        self.assertNotContains(r, emp.id_number)
+        if emp.employee_number:
+            self.assertNotContains(r, emp.employee_number)
+
+    def test_salary_transfer_commitment_fills_eosb_after_hire_date_selected(self):
+        from datetime import date
+
+        from apps.setup.models import Profession, Sponsorship
+
+        prof = Profession.objects.create(code='PR-EOSB', name='كاشير')
+        spons = Sponsorship.objects.create(code='SP-EOSB', company_name='كفالة٢')
+        emp = Employee.objects.create(
+            name='موظف EOSB',
+            branch=self.branch,
+            profession=prof,
+            sponsorship=spons,
+            hire_date=date(2019, 6, 1),
+            basic_salary=6000,
+            housing_allowance=1500,
+            status=Employee.Status.ACTIVE,
+        )
+        c = Client()
+        self.assertTrue(c.login(username='hrform_su', password='x'))
+        url = reverse(
+            'web:hr_form_print',
+            kwargs={'form_type': 'salary_transfer_commitment', 'employee_id': emp.id},
+        )
+        r = c.get(url, {'hire_date': '2019-06-01', 'profession_id': str(prof.id)})
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        self.assertIn('hr-form-amount', html)
+        self.assertNotIn('>0.00<', html)
+
 
 class PasswordChangeViewTests(TestCase):
     @classmethod

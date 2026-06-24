@@ -1,5 +1,9 @@
 {# عرض/اختيار المهنة من تبويب المهن — للجداول والحقول #}
+{% if blank_employee_default %}
+{% firstof profession.name as profession_label %}
+{% else %}
 {% firstof profession.name employee.profession.name as profession_label %}
+{% endif %}
 {% if professions %}
 <form method="get" class="no-print hr-form-profession-form" style="margin:0;">
     {% include "pages/hr_forms/_hr_form_preserve_params.html" with skip_profession_id=True %}
@@ -10,7 +14,7 @@
         {% for p in professions %}
         <option value="{{ p.id }}"
             {% if profession and profession.id == p.id %}selected
-            {% elif not profession and employee.profession_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+            {% elif not blank_employee_default and not profession and employee.profession_id == p.id %}selected{% endif %}>{{ p.name }}</option>
         {% endfor %}
     </select>
 </form>
