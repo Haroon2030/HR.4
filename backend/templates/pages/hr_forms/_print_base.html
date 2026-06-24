@@ -355,6 +355,27 @@
             font-weight: 700;
             vertical-align: baseline;
         }
+        .letterhead .company .name input.blank.hr-form-letterhead-name {
+            display: inline-block;
+            width: min(100%, 420px);
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e3a8a;
+            border: none;
+            border-bottom: 2px dotted #94a3b8;
+            border-radius: 0;
+            background: transparent;
+            padding: 0 4px 2px;
+        }
+        .letterhead .company .meta input.blank {
+            display: inline-block;
+            min-width: 90px;
+            font-weight: 700;
+            border: none;
+            border-bottom: 1px dotted #94a3b8;
+            background: transparent;
+            padding: 0 2px;
+        }
         table .hr-form-table-cell--pen input.blank,
         table .hr-form-table-cell--amount input.blank {
             display: block;
@@ -545,10 +566,11 @@
         {# Letterhead #}
         <div class="letterhead">
             <div class="company">
-                <h1 class="name">{% firstof letterhead_name company.name "........................" %}</h1>
+                <h1 class="name">{% block letterhead_company %}{% firstof letterhead_name company.name "........................" %}{% endblock %}</h1>
                 <div class="meta">
-                    C.R
-                    <strong>{% firstof letterhead_cr company.commercial_record "................" %}</strong>
+                    {% block letterhead_cr_meta %}
+                    C.R <strong>{% firstof letterhead_cr company.commercial_record "................" %}</strong>
+                    {% endblock %}
                 </div>
             </div>
         </div>

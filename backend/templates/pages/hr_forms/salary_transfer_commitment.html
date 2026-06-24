@@ -1,7 +1,16 @@
 {% extends "pages/hr_forms/_print_base.html" %}
+
+{% block letterhead_company %}
+{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الشركة" extra_class="hr-form-inline-pen hr-form-letterhead-name" %}
+{% endblock %}
+
+{% block letterhead_cr_meta %}
+C.R <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="C.R" extra_class="hr-form-inline-pen" ltr=True placeholder="................" %}</strong>
+{% endblock %}
+
 {% block body %}
 
-{% include "pages/hr_forms/_bank_salutation.html" with bank_select_id="hr-transfer-commit-bank" %}
+{% include "pages/hr_forms/_bank_salutation.html" with bank_select_id="hr-transfer-commit-bank" blank_bank=True %}
 
 <div class="section" style="margin-top: 8px;">
     <p style="font-size: 14.5px; margin: 0 0 24px;">السلام عليكم ورحمة الله وبركاته،</p>
@@ -44,7 +53,7 @@
         إلى حسابه الجاري رقم
         <strong>{% include "pages/hr_forms/_employee_iban_field.html" %}</strong>
         لأجل سداد الديون التي سوف تترتب عليه لصالح
-        <strong>{% if bank %}{{ bank.name }}{% else %}........................{% endif %}</strong>.
+        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="اسم البنك" extra_class="hr-form-inline-pen" %}</strong>.
         <br><br>
         لذا نود أن نؤكد لكم موافقتنا والتزامنا بهذا التحويل في مواعيده الشهرية واستمراره حتى نهاية علاقته الوظيفية معنا،
         مع التزامنا بعدم تسليم الموظف المذكور مستحقات نهاية الخدمة أو أي مستحقات أخرى حتى نحصل على مخالصة معتمدة منكم

@@ -1,6 +1,12 @@
 {# سطر «السادة / البنك المحترمين» — صف واحد (form لا داخل p لتفادي كسر HTML) #}
 <div class="hr-form-bank-address">
-    {% if banks %}
+    {% if blank_bank %}
+    <div class="hr-form-bank-address__line">
+        <span class="hr-form-bank-address__prefix">السادة /</span>
+        <span class="blank hr-form-bank-address__name" data-label="اسم البنك" data-placeholder="........................" data-input-type="text"></span>
+        <span class="hr-form-bank-address__suffix">المحترمين</span>
+    </div>
+    {% elif banks %}
     <form method="get" class="hr-form-bank-address__line hr-form-bank-address__form no-print">
         {% include "pages/hr_forms/_hr_form_preserve_params.html" with skip_bank_id=True %}
         <span class="hr-form-bank-address__prefix">السادة /</span>
