@@ -408,6 +408,8 @@ ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNAT
 # ── عن النظام (قائمة المعلومات في الشريط العلوي) ──
 HR_APP_DEVELOPER = env('HR_APP_DEVELOPER', default='شركة الحلول التقنية')
 HR_SUPPORT_PHONE = env('HR_SUPPORT_PHONE', default='+966531847156')
+# رقم السجل التجاري للغرفة (C.R) — يظهر في ترويسة النماذج الرسمية تحت س.ت
+HR_LETTERHEAD_CHAMBER_CR = env('HR_LETTERHEAD_CHAMBER_CR', default='701806691')
 HR_APP_DESCRIPTION = env(
     'HR_APP_DESCRIPTION',
     default=(

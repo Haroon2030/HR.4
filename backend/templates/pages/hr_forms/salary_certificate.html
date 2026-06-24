@@ -8,7 +8,7 @@
 
     <div class="clause" style="font-size: 14.5px; line-height: 2.15; text-align: justify;">
         نفيدكم نحن
-        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الشركة" extra_class="hr-form-inline-pen" %}</strong>
+        <strong>{{ letterhead_name|default:"........................" }}</strong>
         بأن الموظف/
         <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الموظف" extra_class="hr-form-inline-pen" %}</strong>،
         <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="الجنسية" extra_class="hr-form-inline-pen" %}</strong>

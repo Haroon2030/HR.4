@@ -407,8 +407,14 @@ def _resolve_employee_sponsorship(employee):
     return Sponsorship.all_objects.filter(pk=sid).first()
 
 
+def _letterhead_chamber_cr() -> str:
+    from django.conf import settings
+    return (getattr(settings, 'HR_LETTERHEAD_CHAMBER_CR', '') or '').strip()
+
+
 def _letterhead_context(employee, company) -> dict:
     """اسم المنشأة والسجل التجاري — من كفالة الموظف ثم شركة الفرع."""
+    chamber_cr = _letterhead_chamber_cr()
     sponsorship = _resolve_employee_sponsorship(employee)
     if sponsorship and not getattr(sponsorship, 'is_deleted', False):
         name = (sponsorship.company_name or '').strip()
@@ -426,6 +432,7 @@ def _letterhead_context(employee, company) -> dict:
             return {
                 'letterhead_name': name,
                 'letterhead_cr': cr,
+                'letterhead_chamber_cr': chamber_cr,
                 'letterhead_source': 'sponsorship',
                 'employee_sponsorship': sponsorship,
             }
@@ -443,6 +450,7 @@ def _letterhead_context(employee, company) -> dict:
             return {
                 'letterhead_name': name,
                 'letterhead_cr': (getattr(employer, 'commercial_record', None) or '').strip(),
+                'letterhead_chamber_cr': chamber_cr,
                 'letterhead_source': 'company',
                 'employee_sponsorship': sponsorship,
             }
@@ -450,6 +458,7 @@ def _letterhead_context(employee, company) -> dict:
     return {
         'letterhead_name': '',
         'letterhead_cr': '',
+        'letterhead_chamber_cr': chamber_cr,
         'letterhead_source': '',
         'employee_sponsorship': sponsorship,
     }

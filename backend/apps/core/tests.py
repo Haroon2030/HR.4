@@ -783,6 +783,9 @@ class HRFormPrintViewTests(TestCase):
         self.assertContains(r, 'س.ت')
         self.assertContains(r, '1010999888')
         self.assertContains(r, 'شركة الاختبار')
+        self.assertContains(r, 'نفيدكم نحن')
+        self.assertContains(r, 'C.R')
+        self.assertContains(r, '701806691')
 
     def test_salary_certificate_has_blank_salary_cells(self):
         from decimal import Decimal
@@ -806,6 +809,8 @@ class HRFormPrintViewTests(TestCase):
         html = r.content.decode()
         self.assertIn('hr-form-salary-cell', html)
         self.assertIn('س.ت', html)
+        self.assertIn('C.R', html)
+        self.assertIn('701806691', html)
         self.assertIn('نفيدكم نحن', html)
         self.assertIn('دون أدنى مسؤولية على الشركة', html)
         self.assertNotIn('4000,00', html)
