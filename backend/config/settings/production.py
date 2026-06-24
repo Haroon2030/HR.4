@@ -150,9 +150,7 @@ if DEBUG:
 # لا تُمرَّر الاستثناءات لـ Gunicorn — يُعرض قالب 500 العام للمستخدم
 DEBUG_PROPAGATE_EXCEPTIONS = False
 
-# قراءة بروتوكول HTTPS من ترويسة X-Forwarded-Proto (يرسلها البروكسي)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
+# SECURE_PROXY_SSL_HEADER و USE_X_FORWARDED_HOST — في base.py
 
 # HTTPS — إن كانت CSRF_TRUSTED_ORIGINS كلها http:// (مثل IP:8082 بدون شهادة) يُفعَّل وضع HTTP تلقائياً
 import os

@@ -385,6 +385,10 @@ RATELIMIT_HEALTH_IP = env('RATELIMIT_HEALTH_IP', default='120/m')
 # إعدادات أمنية متنوعة
 # ══════════════════════════════════════════════════════════════════════════════
 
+# HTTPS خلف reverse proxy (Dokploy / Traefik / Nginx) — يقرأ X-Forwarded-Proto
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 # تعطيل COOP header — يسبب تحذيرات على HTTP بدون HTTPS
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
