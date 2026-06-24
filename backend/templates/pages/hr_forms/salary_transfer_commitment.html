@@ -1,9 +1,5 @@
 {% extends "pages/hr_forms/_print_base.html" %}
 
-{% block letterhead_company %}
-{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الشركة" extra_class="hr-form-inline-pen hr-form-letterhead-name" %}
-{% endblock %}
-
 {% block body %}
 
 {% include "pages/hr_forms/_bank_salutation.html" with bank_select_id="hr-transfer-commit-bank" blank_bank=True %}
