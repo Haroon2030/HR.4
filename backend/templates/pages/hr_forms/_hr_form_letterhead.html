@@ -1,0 +1,18 @@
+{# ترويسة موحّدة — تعريف راتب، التزام تحويل، وجميع النماذج الرسمية #}
+<div class="letterhead">
+    <div class="letterhead__row">
+        <div class="letterhead__brand">
+            <h1 class="letterhead__name-ar">{% firstof letterhead_name company.name "........................" %}</h1>
+        </div>
+        {% with cr=letterhead_company_cr|default:letterhead_cr|default:company.commercial_record %}
+        <div class="letterhead__regs">
+            {% if letterhead_unified_national_number %}
+            <p class="line line--unified-nn"><strong>{{ letterhead_unified_national_number }}</strong></p>
+            {% endif %}
+            {% if cr %}
+            <p class="line">C.R <strong>{{ cr }}</strong></p>
+            {% endif %}
+        </div>
+        {% endwith %}
+    </div>
+</div>

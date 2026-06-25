@@ -408,8 +408,13 @@ ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNAT
 # ── عن النظام (قائمة المعلومات في الشريط العلوي) ──
 HR_APP_DEVELOPER = env('HR_APP_DEVELOPER', default='شركة الحلول التقنية')
 HR_SUPPORT_PHONE = env('HR_SUPPORT_PHONE', default='+966531847156')
-# رقم السجل التجاري للغرفة (C.R) — يظهر في ترويسة النماذج الرسمية تحت س.ت
-HR_LETTERHEAD_CHAMBER_CR = env('HR_LETTERHEAD_CHAMBER_CR', default='701806691')
+# الرقم الوطني الموحّد — يظهر في ترويسة النماذج الرسمية (السطر الأول)
+HR_LETTERHEAD_UNIFIED_NATIONAL_NUMBER = (
+    env('HR_LETTERHEAD_UNIFIED_NATIONAL_NUMBER', default='')
+    or env('HR_LETTERHEAD_CHAMBER_CR', default='701806691')
+)
+# توافق مع الإعدادات القديمة
+HR_LETTERHEAD_CHAMBER_CR = HR_LETTERHEAD_UNIFIED_NATIONAL_NUMBER
 # تاريخ انتقال موحّد لاحتساب الإجازة بعد استيراد الأرصدة الافتتاحية (YYYY-MM-DD)
 HR_MIGRATION_CUTOVER_DATE = env('HR_MIGRATION_CUTOVER_DATE', default='')
 HR_APP_DESCRIPTION = env(

@@ -760,6 +760,8 @@ class HRFormPrintViewTests(TestCase):
 
         from apps.setup.models import Sponsorship
 
+        self.company.commercial_record = '4030123456'
+        self.company.save(update_fields=['commercial_record'])
         spons = Sponsorship.objects.create(
             code='SP-CR',
             company_name='شركة الاختبار',
@@ -780,16 +782,17 @@ class HRFormPrintViewTests(TestCase):
         )
         r = c.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, 'س.ت')
-        self.assertContains(r, '1010999888')
+        self.assertContains(r, '701806691')
+        self.assertContains(r, 'C.R')
+        self.assertContains(r, '4030123456')
         self.assertContains(r, 'شركة الاختبار')
         self.assertContains(r, 'نفيدكم نحن')
-        self.assertContains(r, 'C.R')
-        self.assertContains(r, '701806691')
 
     def test_salary_certificate_has_blank_salary_cells(self):
         from decimal import Decimal
 
+        self.company.commercial_record = '4030999777'
+        self.company.save(update_fields=['commercial_record'])
         emp = Employee.objects.create(
             name='موظف تعريف راتب',
             branch=self.branch,
@@ -808,9 +811,8 @@ class HRFormPrintViewTests(TestCase):
         self.assertEqual(r.status_code, 200)
         html = r.content.decode()
         self.assertIn('hr-form-salary-cell', html)
-        self.assertIn('س.ت', html)
-        self.assertIn('C.R', html)
         self.assertIn('701806691', html)
+        self.assertIn('4030999777', html)
         self.assertIn('نفيدكم نحن', html)
         self.assertIn('دون أدنى مسؤولية على الشركة', html)
         self.assertNotIn('4000,00', html)

@@ -407,34 +407,46 @@ def _resolve_employee_sponsorship(employee):
     return Sponsorship.all_objects.filter(pk=sid).first()
 
 
-def _letterhead_chamber_cr() -> str:
+def _letterhead_unified_national_number() -> str:
     from django.conf import settings
+    val = (getattr(settings, 'HR_LETTERHEAD_UNIFIED_NATIONAL_NUMBER', '') or '').strip()
+    if val:
+        return val
     return (getattr(settings, 'HR_LETTERHEAD_CHAMBER_CR', '') or '').strip()
+
+
+def _linked_company_commercial_record(employee, company) -> str:
+    """السجل التجاري لشركة فرع الموظف (أو الشركة الافتراضية)."""
+    branch = getattr(employee, 'branch', None) if getattr(employee, 'branch_id', None) else None
+    if branch and getattr(branch, 'company_id', None):
+        cr = (getattr(branch.company, 'commercial_record', None) or '').strip()
+        if cr:
+            return cr
+    if company:
+        return (getattr(company, 'commercial_record', None) or '').strip()
+    return ''
 
 
 def _letterhead_context(employee, company) -> dict:
     """اسم المنشأة والسجل التجاري — من كفالة الموظف ثم شركة الفرع."""
-    chamber_cr = _letterhead_chamber_cr()
+    unified_national = _letterhead_unified_national_number()
+    company_cr = _linked_company_commercial_record(employee, company)
     sponsorship = _resolve_employee_sponsorship(employee)
+    letterhead_base = {
+        'letterhead_unified_national_number': unified_national,
+        'letterhead_chamber_cr': unified_national,
+        'letterhead_company_cr': company_cr,
+        'employee_sponsorship': sponsorship,
+    }
     if sponsorship and not getattr(sponsorship, 'is_deleted', False):
         name = (sponsorship.company_name or '').strip()
         if name:
-            cr = (sponsorship.commercial_registration or '').strip()
-            if not cr:
-                branch_co = None
-                if getattr(employee, 'branch_id', None):
-                    branch = getattr(employee, 'branch', None)
-                    if branch and getattr(branch, 'company_id', None):
-                        branch_co = branch.company
-                employer_co = branch_co or company
-                if employer_co:
-                    cr = (getattr(employer_co, 'commercial_record', None) or '').strip()
+            cr = (sponsorship.commercial_registration or '').strip() or company_cr
             return {
+                **letterhead_base,
                 'letterhead_name': name,
                 'letterhead_cr': cr,
-                'letterhead_chamber_cr': chamber_cr,
                 'letterhead_source': 'sponsorship',
-                'employee_sponsorship': sponsorship,
             }
 
     branch_company = None
@@ -448,19 +460,17 @@ def _letterhead_context(employee, company) -> dict:
         name = (employer.name or '').strip()
         if name:
             return {
+                **letterhead_base,
                 'letterhead_name': name,
-                'letterhead_cr': (getattr(employer, 'commercial_record', None) or '').strip(),
-                'letterhead_chamber_cr': chamber_cr,
+                'letterhead_cr': company_cr,
                 'letterhead_source': 'company',
-                'employee_sponsorship': sponsorship,
             }
 
     return {
+        **letterhead_base,
         'letterhead_name': '',
-        'letterhead_cr': '',
-        'letterhead_chamber_cr': chamber_cr,
+        'letterhead_cr': company_cr,
         'letterhead_source': '',
-        'employee_sponsorship': sponsorship,
     }
 
 
