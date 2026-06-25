@@ -27,10 +27,12 @@ DEBUG = env.bool('DEBUG', default=False)
 
 # النطاقات/العناوين المسموح لها بالوصول للسيرفر
 # يُفضّل ضبط ALLOWED_HOSTS في Dokploy/.env؛ الافتراضي للإنتاج أدناه
-ALLOWED_HOSTS = env.list(
-    'ALLOWED_HOSTS',
-    default=['hr.alrsheed.net', '127.0.0.1'],
-)
+_PRODUCTION_DEFAULT_HOSTS = ['hr.alrsheed.net', '72.61.107.230', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=_PRODUCTION_DEFAULT_HOSTS)
+# وكيل البصمة وطلبات داخلية عبر IP:port (مثال 72.61.107.230:8082) — Django يطابق الاسم بدون المنفذ
+_server_public_ip = env('SERVER_PUBLIC_IP', default='72.61.107.230').strip()
+if _server_public_ip and _server_public_ip not in ALLOWED_HOSTS and _server_public_ip != '*':
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, _server_public_ip]
 
 # النطاقات الموثوقة لحماية CSRF (مطلوبة لنماذج POST) — حدّد https:// في .env
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
