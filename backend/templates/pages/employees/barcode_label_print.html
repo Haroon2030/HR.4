@@ -6,6 +6,14 @@
     <link rel="preload" href="/static/fonts/cairo/SLXVc1nY6HkvangtZmpQdkhzfH5lkSscQyyS4J0.woff2" as="font" type="font/woff2" crossorigin>
     <link href="/static/fonts/cairo/cairo.css" rel="stylesheet">
     <style>
+        :root {
+            --label-w: {{ label_dims.width_mm }}mm;
+            --label-h: {{ label_dims.height_mm }}mm;
+            --label-pad: {{ label_dims.padding_mm }}mm;
+            --font-name: {{ label_dims.name_font_pt }}pt;
+            --font-number: {{ label_dims.number_font_pt }}pt;
+            --barcode-h: {{ label_dims.barcode_height_mm }}mm;
+        }
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -19,9 +27,9 @@
             z-index: 50;
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            gap: 10px;
+            gap: 12px;
             padding: 10px 16px;
             background: #fff;
             border-bottom: 1px solid #e2e8f0;
@@ -41,6 +49,33 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            align-items: center;
+        }
+        .size-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 8px 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .size-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .size-form input {
+            width: 4.5rem;
+            padding: 4px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: ui-monospace, monospace;
+            font-size: 12px;
         }
         .btn {
             padding: 7px 14px;
@@ -59,19 +94,18 @@
         .btn-primary:hover { background: #1d4ed8; }
         .btn-secondary { background: #fff; color: #475569; border-color: #e2e8f0; }
         .btn-secondary:hover { background: #f8fafc; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
 
         .preview-wrap {
             padding: 24px 16px 40px;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: center;
             gap: 16px;
-            justify-content: center;
-            align-items: flex-start;
         }
         .preview-note {
             width: 100%;
-            max-width: 520px;
-            margin: 0 auto 8px;
+            max-width: 36rem;
             padding: 10px 14px;
             background: #eff6ff;
             border: 1px solid #bfdbfe;
@@ -80,10 +114,8 @@
             color: #1e40af;
             text-align: center;
         }
-
-        /* ملصق Zebra 10 سم × 4 سم */
         @page {
-            size: 100mm 40mm;
+            size: var(--label-w) var(--label-h);
             margin: 0;
         }
         .label-sheet {
@@ -94,34 +126,36 @@
             width: 100%;
         }
         .zebra-label {
-            width: 100mm;
-            height: 40mm;
+            width: var(--label-w);
+            height: var(--label-h);
             background: #fff;
             border: 1px dashed #cbd5e1;
-            padding: 2mm 3mm;
+            padding: var(--label-pad);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: stretch;
+            justify-content: flex-start;
             text-align: center;
             overflow: hidden;
             page-break-after: always;
             break-after: page;
         }
         .zebra-label__name {
+            flex: 0 0 auto;
             width: 100%;
-            font-size: 11pt;
+            font-size: var(--font-name);
             font-weight: 800;
-            line-height: 1.2;
-            margin: 0 0 1mm;
+            line-height: 1.15;
+            margin: 0 0 0.5mm;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             direction: rtl;
         }
         .zebra-label__number {
+            flex: 0 0 auto;
             width: 100%;
-            font-size: 9pt;
+            font-size: var(--font-number);
             font-weight: 600;
             color: #334155;
             margin: 0 0 1mm;
@@ -129,17 +163,17 @@
             direction: ltr;
         }
         .zebra-label__barcode {
-            width: 92mm;
-            max-width: 100%;
-            height: 14mm;
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: var(--barcode-h);
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
+            overflow: hidden;
         }
         .zebra-label__barcode svg {
             width: 100% !important;
-            height: auto !important;
-            max-height: 14mm;
+            height: 100% !important;
             display: block;
         }
 
@@ -147,10 +181,7 @@
             body { background: #fff; }
             .toolbar, .preview-note { display: none !important; }
             .preview-wrap { padding: 0; margin: 0; }
-            .zebra-label {
-                border: none;
-                margin: 0;
-            }
+            .zebra-label { border: none; margin: 0; }
             .label-sheet { gap: 0; }
         }
     </style>
@@ -158,24 +189,34 @@
 <body>
     <div class="toolbar">
         <div>
-            <h1>ملصق باركود موظف — 10×4 سم</h1>
+            <h1>ملصق باركود — <span dir="ltr">{{ label_dims.width_mm }}×{{ label_dims.height_mm }}</span> مم</h1>
             <div class="meta">
                 {% if batch_mode %}{{ labels_batch|length }} ملصق{% else %}{{ copies }} نسخة{% endif %}
-                — اضبط الطابعة على 100×40 مم
             </div>
         </div>
         <div class="actions">
+            <form class="size-form" method="get" action="">
+                <input type="hidden" name="copies" value="{{ copies }}">
+                <label>العرض (مم)
+                    <input type="number" name="w" value="{{ label_dims.width_mm }}" min="30" max="150" step="0.5" required>
+                </label>
+                <label>الارتفاع (مم)
+                    <input type="number" name="h" value="{{ label_dims.height_mm }}" min="15" max="100" step="0.5" required>
+                </label>
+                <button type="submit" class="btn btn-secondary btn-sm">تطبيق المقاس</button>
+            </form>
             <button type="button" class="btn btn-primary" onclick="window.print()">طباعة</button>
             {% if zpl_download_url %}
-            <a href="{{ zpl_download_url }}" class="btn btn-secondary" download>تنزيل ZPL (Zebra)</a>
+            <a href="{{ zpl_download_url }}" class="btn btn-secondary" download>تنزيل ZPL</a>
             {% endif %}
-            <a href="{% url 'web:employee_barcode_labels' %}?employee_id={{ employee.id }}" class="btn btn-secondary">رجوع</a>
+            <a href="{% url 'web:employee_barcode_labels' %}?employee_id={{ employee.id }}&w={{ label_dims.width_mm }}&h={{ label_dims.height_mm }}" class="btn btn-secondary">رجوع</a>
         </div>
     </div>
 
     <div class="preview-wrap">
         <p class="preview-note">
-            للطابعة Zebra: اختر حجم الورق <strong>100 مم × 40 مم</strong>، أو استخدم «تنزيل ZPL» مع Zebra Setup Utilities / Browser Print.
+            المقاس الحالي: <strong dir="ltr">{{ label_dims.width_mm }} × {{ label_dims.height_mm }}</strong> مم —
+            عدّل الأبعاد أعلاه ثم «تطبيق المقاس» لإعادة توليد الباركود، أو اطبع مباشرة.
         </p>
         <div class="label-sheet" id="label-sheet">
             {% if batch_mode %}

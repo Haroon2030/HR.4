@@ -89,8 +89,11 @@
             {% include "components/hr_btn.html" with href=export_salary_href label="تصدير Excel" variant="glass-emerald" icon="file-spreadsheet" %}
             {% endif %}
 
-            {% url 'web:employee_barcode_print' employee.id as barcode_print_url %}
-            {% include "components/hr_btn.html" with href=barcode_print_url label="باركود Zebra" variant="glass-slate" icon="barcode" target="_blank" %}
+            <a href="{% url 'web:employee_barcode_labels' %}?employee_id={{ employee.id }}"
+               class="hr-btn hr-btn--glass-slate inline-flex items-center gap-2">
+                <i data-lucide="barcode" class="hr-btn__icon w-4 h-4"></i>
+                <span>باركود Zebra</span>
+            </a>
 
             {% url 'web:edit_employee' employee.id as edit_employee_url %}
             {% include "components/hr_btn.html" with href=edit_employee_url label="تعديل / إكمال البيانات" variant="glass-primary" icon="pencil" %}

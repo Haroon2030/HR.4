@@ -215,7 +215,7 @@
 
             Alpine.store('glassLoader').show('جاري الحفظ', 'لحظة — يتم تنفيذ العملية');
             hrArmNavLoaderSafety(90000);
-        }, true);
+        });
     }
 
     function hrInitGlassLoader() {
