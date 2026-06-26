@@ -1,0 +1,5 @@
+<div class="zebra-label" dir="rtl">
+    <p class="zebra-label__name" title="{{ label.name }}">{{ label.name }}</p>
+    <p class="zebra-label__number">{{ label.number_display }}</p>
+    <div class="zebra-label__barcode" role="img" aria-label="باركود {{ label.number_display }}">{{ label.barcode_svg|safe }}</div>
+</div>

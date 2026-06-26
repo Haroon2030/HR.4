@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ملصق باركود — {{ label.name }}</title>
+    <link rel="preload" href="/static/fonts/cairo/SLXVc1nY6HkvangtZmpQdkhzfH5lkSscQyyS4J0.woff2" as="font" type="font/woff2" crossorigin>
+    <link href="/static/fonts/cairo/cairo.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Cairo', sans-serif;
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,.05);
+        }
+        .toolbar h1 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #334155;
+        }
+        .toolbar .meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .toolbar .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #fff; color: #475569; border-color: #e2e8f0; }
+        .btn-secondary:hover { background: #f8fafc; }
+
+        .preview-wrap {
+            padding: 24px 16px 40px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .preview-note {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto 8px;
+            padding: 10px 14px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #1e40af;
+            text-align: center;
+        }
+
+        /* ملصق Zebra 10 سم × 4 سم */
+        @page {
+            size: 100mm 40mm;
+            margin: 0;
+        }
+        .label-sheet {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            width: 100%;
+        }
+        .zebra-label {
+            width: 100mm;
+            height: 40mm;
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            padding: 2mm 3mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            page-break-after: always;
+            break-after: page;
+        }
+        .zebra-label__name {
+            width: 100%;
+            font-size: 11pt;
+            font-weight: 800;
+            line-height: 1.2;
+            margin: 0 0 1mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            direction: rtl;
+        }
+        .zebra-label__number {
+            width: 100%;
+            font-size: 9pt;
+            font-weight: 600;
+            color: #334155;
+            margin: 0 0 1mm;
+            font-family: ui-monospace, monospace;
+            direction: ltr;
+        }
+        .zebra-label__barcode {
+            width: 92mm;
+            max-width: 100%;
+            height: 14mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .zebra-label__barcode svg {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 14mm;
+            display: block;
+        }
+
+        @media print {
+            body { background: #fff; }
+            .toolbar, .preview-note { display: none !important; }
+            .preview-wrap { padding: 0; margin: 0; }
+            .zebra-label {
+                border: none;
+                margin: 0;
+            }
+            .label-sheet { gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div>
+            <h1>ملصق باركود موظف — 10×4 سم</h1>
+            <div class="meta">
+                {% if batch_mode %}{{ labels_batch|length }} ملصق{% else %}{{ copies }} نسخة{% endif %}
+                — اضبط الطابعة على 100×40 مم
+            </div>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn btn-primary" onclick="window.print()">طباعة</button>
+            {% if zpl_download_url %}
+            <a href="{{ zpl_download_url }}" class="btn btn-secondary" download>تنزيل ZPL (Zebra)</a>
+            {% endif %}
+            <a href="{% url 'web:employee_barcode_labels' %}?employee_id={{ employee.id }}" class="btn btn-secondary">رجوع</a>
+        </div>
+    </div>
+
+    <div class="preview-wrap">
+        <p class="preview-note">
+            للطابعة Zebra: اختر حجم الورق <strong>100 مم × 40 مم</strong>، أو استخدم «تنزيل ZPL» مع Zebra Setup Utilities / Browser Print.
+        </p>
+        <div class="label-sheet" id="label-sheet">
+            {% if batch_mode %}
+                {% for item in labels_batch %}
+                {% include "pages/employees/_barcode_label.html" with label=item only %}
+                {% endfor %}
+            {% else %}
+                {% for _ in copy_range %}
+                {% include "pages/employees/_barcode_label.html" with label=label only %}
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

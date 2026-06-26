@@ -2,6 +2,7 @@
 from apps.core.web_views._helpers import *  # noqa: F401,F403
 from apps.core.web_views.auth import *  # noqa: F401,F403
 from apps.core.web_views.dashboard import *  # noqa: F401,F403
+from apps.core.web_views.employee_barcode import *  # noqa: F401,F403
 from apps.core.web_views.employees import *  # noqa: F401,F403
 from apps.core.web_views.employee_export import *  # noqa: F401,F403
 from apps.core.web_views.employment_requests import *  # noqa: F401,F403

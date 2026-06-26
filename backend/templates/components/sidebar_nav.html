@@ -24,6 +24,7 @@
     <div class="hr-nav-sub">
         {% if user|has_permission:'employees.view' %}
         <a href="{% url 'web:list_employees' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'view_employee' %}is-active{% endif %}">قائمة الموظفين</a>
+        <a href="{% url 'web:employee_barcode_labels' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'employee_barcode_labels' or request.resolver_match.url_name == 'employee_barcode_print' %}is-active{% endif %}">ملصق باركود Zebra</a>
         {% endif %}
         {% if user|has_permission:'employees.add' %}
         <a href="{% url 'web:add_employee' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'create_employee_full' %}is-active{% endif %}">إضافة موظف</a>
