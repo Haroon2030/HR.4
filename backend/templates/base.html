@@ -396,7 +396,9 @@
             if (tag === 'debug') { tag = 'info'; }
             if (!['success', 'error', 'warning', 'info'].includes(tag)) { tag = 'info'; }
             toast.className = 'hr-toast hr-toast--' + tag + ' flex items-center gap-2';
-            toast.innerHTML = '<span>' + message + '</span>';
+            var span = document.createElement('span');
+            span.textContent = message;
+            toast.appendChild(span);
             container.appendChild(toast);
             setTimeout(function () {
                 toast.classList.add('is-leaving');
