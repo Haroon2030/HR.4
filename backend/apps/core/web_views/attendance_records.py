@@ -27,6 +27,9 @@ from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids
 
+_VALID_PUNCH_TYPES = frozenset(AttendancePunch.PunchType.values)
+
+
 def _apply_default_date_filters(filters: dict) -> dict:
     """يُستخدم في تقرير البصمة فقط — فرض من/إلى افتراضيين عند غيابهما في الاستعلام."""
     if not filters.get('date_from') and not filters.get('date_to'):
@@ -47,7 +50,8 @@ def _parse_filters(request) -> dict:
     device_user_id = request.GET.get('device_user') or None
     date_from = request.GET.get('from') or None
     date_to = request.GET.get('to') or None
-    punch_type = request.GET.get('punch_type') or None
+    raw_punch_type = (request.GET.get('punch_type') or '').strip()
+    punch_type = raw_punch_type if raw_punch_type in _VALID_PUNCH_TYPES else None
     mapped = request.GET.get('mapped')
     mapped_only = None
     if mapped == '1':
@@ -61,7 +65,7 @@ def _parse_filters(request) -> dict:
         'device_user_id': int(device_user_id) if device_user_id and device_user_id.isdigit() else None,
         'date_from': date_from,
         'date_to': date_to,
-        'punch_type': punch_type if punch_type else None,
+        'punch_type': punch_type,
         'mapped_only': mapped_only,
         'search': (request.GET.get('q') or '').strip(),
     }

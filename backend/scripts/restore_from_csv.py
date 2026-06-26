@@ -8,6 +8,7 @@ import csv
 import sys
 import os
 import psycopg2
+from psycopg2 import sql
 from psycopg2.extras import execute_values
 
 DUMP_DIR = sys.argv[1] if len(sys.argv) > 1 else '/tmp/hrdb'
@@ -146,17 +147,20 @@ def load_table(table):
             print(f'  empty: {table}')
             return 0
         all_cols = keep_cols + extra_cols
-        col_list = ','.join(f'"{c}"' for c in all_cols)
-        sql = f'INSERT INTO "{table}" ({col_list}) VALUES %s ON CONFLICT DO NOTHING'
-        cur.execute(f'SAVEPOINT sp_{table}')
+        insert_sql = sql.SQL('INSERT INTO {} ({}) VALUES %s ON CONFLICT DO NOTHING').format(
+            sql.Identifier(table),
+            sql.SQL(', ').join(sql.Identifier(c) for c in all_cols),
+        )
+        savepoint = sql.Identifier(f'sp_{table}')
+        cur.execute(sql.SQL('SAVEPOINT {}').format(savepoint))
         try:
-            execute_values(cur, sql, rows, page_size=200)
-            cur.execute(f'RELEASE SAVEPOINT sp_{table}')
+            execute_values(cur, insert_sql.as_string(conn), rows, page_size=200)
+            cur.execute(sql.SQL('RELEASE SAVEPOINT {}').format(savepoint))
             print(f'  OK: {table} -> {len(rows)} rows')
             return len(rows)
         except Exception as e:
             print(f'  FAIL: {table}: {e}')
-            cur.execute(f'ROLLBACK TO SAVEPOINT sp_{table}')
+            cur.execute(sql.SQL('ROLLBACK TO SAVEPOINT {}').format(savepoint))
             return -1
 
 
@@ -174,8 +178,10 @@ def fix_sequences():
     for tbl, col in cur.fetchall():
         try:
             cur.execute(
-                f'SELECT setval(pg_get_serial_sequence(%s, %s), '
-                f'COALESCE((SELECT MAX("{col}") FROM "{tbl}"), 1), true)',
+                sql.SQL(
+                    'SELECT setval(pg_get_serial_sequence(%s, %s), '
+                    'COALESCE((SELECT MAX({col}) FROM {tbl}), 1), true)'
+                ).format(col=sql.Identifier(col), tbl=sql.Identifier(tbl)),
                 (tbl, col),
             )
         except Exception as e:
