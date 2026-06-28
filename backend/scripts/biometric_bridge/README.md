@@ -118,6 +118,14 @@ Attendance deduplication on the server is **per device** (same user + same secon
 - `DEVICE_ID` must match the device **ID** column in HR.
 - On Windows: `schtasks /query /fo LIST /v | findstr biometric` — remove duplicate tasks.
 
+### HTTP 413 Request Entity Too Large (first sync)
+
+The agent splits uploads into batches (`INGEST_BATCH_SIZE=500` in `config.env`). If you still see 413:
+
+1. Update `agent.py` from the server (copy `biometric_bridge` folder again).
+2. On nginx/Dokploy, raise `client_max_body_size` (e.g. `50m`) for the HR app proxy.
+3. Re-run: `run_agent.bat --once --force-sync`
+
 ## Central PC (optional)
 
 Multiple branches via VPN/Tailscale: `setup_central.ps1` + `devices.list.example` + `device_keys.env.example`.

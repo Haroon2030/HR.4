@@ -67,6 +67,7 @@ class AgentSettings:
     timeout_sec: int
     incremental: bool
     sync_on_request_only: bool = True
+    ingest_batch_size: int = 500
 
 
 @dataclass
@@ -187,6 +188,7 @@ def load_settings(path: Path) -> AgentSettings:
         incremental=data.get('INCREMENTAL', 'true').lower() in ('1', 'true', 'yes'),
         sync_on_request_only=data.get('SYNC_ON_REQUEST_ONLY', 'true').lower()
         in ('1', 'true', 'yes'),
+        ingest_batch_size=max(50, int(data.get('INGEST_BATCH_SIZE', '500'))),
     )
 
 
@@ -470,6 +472,67 @@ def push_to_server(
     return body
 
 
+def push_to_server_batched(
+    settings: AgentSettings,
+    device: DeviceTarget,
+    punches: list[dict],
+    users: list[dict],
+    *,
+    incremental: bool | None = None,
+) -> dict:
+    """يرفع البصمات على دفعات لتجاوز حد nginx (413 Request Entity Too Large)."""
+    batch_size = settings.ingest_batch_size
+    if len(punches) <= batch_size:
+        return push_to_server(
+            settings,
+            device,
+            punches,
+            users,
+            incremental=incremental,
+        )
+
+    total = len(punches)
+    batches = (total + batch_size - 1) // batch_size
+    LOG.info('تقسيم الرفع إلى %s دفعة (حتى %s سجل لكل دفعة)', batches, batch_size)
+
+    aggregated_imported = 0
+    aggregated_dup = 0
+    last_message = 'OK'
+    for index in range(batches):
+        start = index * batch_size
+        chunk = punches[start:start + batch_size]
+        chunk_users = users if index == 0 else []
+        LOG.info(
+            'دفعة %s/%s — رفع %s سجل%s ...',
+            index + 1,
+            batches,
+            len(chunk),
+            ' + مستخدمون' if chunk_users else '',
+        )
+        result = push_to_server(
+            settings,
+            device,
+            chunk,
+            chunk_users,
+            incremental=incremental,
+        )
+        data = result.get('data', {})
+        aggregated_imported += int(data.get('imported', 0) or 0)
+        aggregated_dup += int(data.get('skipped_duplicate', 0) or 0)
+        last_message = result.get('message', last_message)
+
+    return {
+        'success': True,
+        'message': last_message,
+        'data': {
+            'imported': aggregated_imported,
+            'skipped_duplicate': aggregated_dup,
+            'batches': batches,
+            'punches_uploaded': total,
+        },
+    }
+
+
 def _device_title(device: DeviceTarget) -> str:
     name = device.label or f'جهاز {device.device_id}'
     return f'{name} ({device.device_ip}:{device.device_port})'
@@ -548,7 +611,7 @@ def run_device_cycle(
         return True
 
     try:
-        result = push_to_server(
+        result = push_to_server_batched(
             settings,
             device,
             upload_punches,
@@ -560,11 +623,15 @@ def run_device_cycle(
         return False
 
     data = result.get('data', {})
+    batch_note = ''
+    if data.get('batches', 0) > 1:
+        batch_note = f' ({data["batches"]} دفعات)'
     LOG.info(
-        'تم: %s | مستورد %s | مكرر %s',
+        'تم: %s | مستورد %s | مكرر %s%s',
         result.get('message', 'OK'),
         data.get('imported', 0),
         data.get('skipped_duplicate', 0),
+        batch_note,
     )
     return True
 
