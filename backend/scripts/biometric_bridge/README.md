@@ -120,11 +120,20 @@ Attendance deduplication on the server is **per device** (same user + same secon
 
 ### HTTP 413 Request Entity Too Large (first sync)
 
-The agent splits uploads into batches (`INGEST_BATCH_SIZE=500` in `config.env`). If you still see 413:
+1. **تأكد أن PC الفرع يشغّل آخر `agent.py`** — في اللوج يجب أن يظهر:
+   `وكيل HR 2.2-batched-split`
+   و `تقسيم الرفع إلى ... دفعة` أو `حجم طلب الرفع: ... KB`
+   إن رأيت `رفع 15290` بدون «تقسيم» فأنت على نسخة قديمة — انسخ المجلد من GitHub من جديد.
 
-1. Update `agent.py` from the server (copy `biometric_bridge` folder again).
-2. On nginx/Dokploy, raise `client_max_body_size` (e.g. `50m`) for the HR app proxy.
-3. Re-run: `run_agent.bat --once --force-sync`
+2. في `config.env`:
+   ```env
+   INGEST_BATCH_SIZE=100
+   INGEST_MAX_BODY_KB=400
+   ```
+
+3. On nginx/Dokploy, raise `client_max_body_size` (e.g. `50m`) for the HR app proxy.
+
+4. Re-run: `run_agent.bat --once --force-sync`
 
 ## Central PC (optional)
 

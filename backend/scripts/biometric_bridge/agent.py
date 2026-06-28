@@ -37,6 +37,9 @@ except ImportError:
 
 LOG = logging.getLogger('biometric_bridge')
 
+# يظهر في اللوج — للتأكد أن PC الفرع يشغّل آخر نسخة من agent.py
+AGENT_BUILD = '2.2-batched-split'
+
 PUNCH_STATUS = {
     0: 'in',
     1: 'out',
@@ -67,7 +70,8 @@ class AgentSettings:
     timeout_sec: int
     incremental: bool
     sync_on_request_only: bool = True
-    ingest_batch_size: int = 500
+    ingest_batch_size: int = 150
+    ingest_max_body_bytes: int = 600_000
 
 
 @dataclass
@@ -188,7 +192,11 @@ def load_settings(path: Path) -> AgentSettings:
         incremental=data.get('INCREMENTAL', 'true').lower() in ('1', 'true', 'yes'),
         sync_on_request_only=data.get('SYNC_ON_REQUEST_ONLY', 'true').lower()
         in ('1', 'true', 'yes'),
-        ingest_batch_size=max(50, int(data.get('INGEST_BATCH_SIZE', '500'))),
+        ingest_batch_size=max(10, int(data.get('INGEST_BATCH_SIZE', '150'))),
+        ingest_max_body_bytes=max(
+            50_000,
+            int(float(data.get('INGEST_MAX_BODY_KB', '600')) * 1024),
+        ),
     )
 
 
@@ -430,6 +438,12 @@ def push_to_server(
         'users': users,
     }
     body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    LOG.info(
+        'حجم طلب الرفع: %.1f KB (%s سجل، %s مستخدم)',
+        len(body) / 1024,
+        len(punches),
+        len(users),
+    )
     api_key = _api_key_for(device, settings)
     signature = _ingest_signature(api_key, body)
     resp = requests.post(
@@ -468,8 +482,93 @@ def push_to_server(
                     ' — تحقق: AGENT_API_KEY = مفتاح هذا الجهاز من HR (مفتاح وكيل) '
                     'و DEVICE_ID يطابق id الجهاز. لا تستخدم ATTENDANCE_AGENT_API_KEY العام.'
                 )
+        elif resp.status_code == 413:
+            hint = (
+                ' — حد nginx صغير. حدّث agent.py (نسخة '
+                f'{AGENT_BUILD}) أو اضبط INGEST_BATCH_SIZE=50 في config.env'
+            )
         raise RuntimeError(f'HTTP {resp.status_code}: {body.get("message", body)}{hint}')
     return body
+
+
+def _merge_ingest_results(left: dict, right: dict) -> dict:
+    d1 = left.get('data', {}) or {}
+    d2 = right.get('data', {}) or {}
+    return {
+        'success': True,
+        'message': right.get('message', left.get('message', 'OK')),
+        'data': {
+            'imported': int(d1.get('imported', 0) or 0) + int(d2.get('imported', 0) or 0),
+            'skipped_duplicate': int(d1.get('skipped_duplicate', 0) or 0)
+            + int(d2.get('skipped_duplicate', 0) or 0),
+        },
+    }
+
+
+def push_to_server_resilient(
+    settings: AgentSettings,
+    device: DeviceTarget,
+    punches: list[dict],
+    users: list[dict],
+    *,
+    incremental: bool | None = None,
+) -> dict:
+    """يرفع مع تقسيم تلقائي عند HTTP 413 أو تجاوز حد الحجم."""
+    if not punches and not users:
+        return {'success': True, 'message': 'OK', 'data': {}}
+
+    payload = {
+        'device_id': device.device_id,
+        'agent_id': f'{settings.agent_id}:{device.label or device.device_id}',
+        'incremental': settings.incremental if incremental is None else incremental,
+        'punches': punches,
+        'users': users,
+    }
+    body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    if len(body) > settings.ingest_max_body_bytes and len(punches) > 1:
+        mid = max(1, len(punches) // 2)
+        LOG.warning(
+            'حجم %s KB > الحد %s KB — تقسيم %s سجل إلى %s + %s',
+            len(body) / 1024,
+            settings.ingest_max_body_bytes / 1024,
+            len(punches),
+            mid,
+            len(punches) - mid,
+        )
+        first = push_to_server_resilient(
+            settings, device, punches[:mid], users, incremental=incremental,
+        )
+        second = push_to_server_resilient(
+            settings, device, punches[mid:], [], incremental=incremental,
+        )
+        return _merge_ingest_results(first, second)
+
+    try:
+        return push_to_server(
+            settings,
+            device,
+            punches,
+            users,
+            incremental=incremental,
+        )
+    except RuntimeError as exc:
+        if '413' not in str(exc) or len(punches) <= 1:
+            raise
+        mid = max(1, len(punches) // 2)
+        LOG.warning(
+            'HTTP 413 — تقسيم %s سجل إلى %s + %s (تأكد من نسخة الوكيل %s)',
+            len(punches),
+            mid,
+            len(punches) - mid,
+            AGENT_BUILD,
+        )
+        first = push_to_server_resilient(
+            settings, device, punches[:mid], users, incremental=incremental,
+        )
+        second = push_to_server_resilient(
+            settings, device, punches[mid:], [], incremental=incremental,
+        )
+        return _merge_ingest_results(first, second)
 
 
 def push_to_server_batched(
@@ -483,7 +582,7 @@ def push_to_server_batched(
     """يرفع البصمات على دفعات لتجاوز حد nginx (413 Request Entity Too Large)."""
     batch_size = settings.ingest_batch_size
     if len(punches) <= batch_size:
-        return push_to_server(
+        return push_to_server_resilient(
             settings,
             device,
             punches,
@@ -509,7 +608,7 @@ def push_to_server_batched(
             len(chunk),
             ' + مستخدمون' if chunk_users else '',
         )
-        result = push_to_server(
+        result = push_to_server_resilient(
             settings,
             device,
             chunk,
@@ -986,6 +1085,12 @@ def main() -> int:
     )
 
     LOG.info('السيرفر: %s | أجهزة: %s', settings.server_url, len(devices))
+    LOG.info(
+        'وكيل HR %s | دفعة=%s سجل | حد ~%s KB/طلب',
+        AGENT_BUILD,
+        settings.ingest_batch_size,
+        int(settings.ingest_max_body_bytes / 1024),
+    )
     for d in devices:
         LOG.info('  • id=%s %s:%s comm_key=%s', d.device_id, d.device_ip, d.device_port, d.comm_key)
 
