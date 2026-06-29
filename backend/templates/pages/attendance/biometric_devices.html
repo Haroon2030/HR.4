@@ -77,6 +77,10 @@
                             <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>متصل</span>
                             {% elif d.connection_status == 'error' %}
                             <span class="inline-flex items-center gap-1 text-red-700" title="{{ d.last_error }}"><span class="w-2 h-2 rounded-full bg-red-500"></span>خطأ</span>
+                            {% elif d.agent_api_key and d.last_sync_at %}
+                            <span class="inline-flex items-center gap-1 text-sky-700" title="آخر مزامنة عبر وكيل الفرع"><span class="w-2 h-2 rounded-full bg-sky-500"></span>وكيل LAN</span>
+                            {% elif d.agent_api_key %}
+                            <span class="inline-flex items-center gap-1 text-amber-700" title="بانتظار أول مزامنة من PC الفرع"><span class="w-2 h-2 rounded-full bg-amber-400"></span>بانتظار وكيل</span>
                             {% else %}
                             <span class="text-slate-500">غير معروف</span>
                             {% endif %}

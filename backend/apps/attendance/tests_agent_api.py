@@ -59,12 +59,29 @@ class AttendanceAgentAPITests(TestCase):
         client = self._device_client()
         response = client.post(
             '/api/v1/attendance/agent/ingest/',
-            {'device_id': self.device.pk, 'punches': []},
+            {'device_id': self.device.pk, 'punches': [], 'sync_finalize': True},
             format='json',
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['data']['pull_acknowledged'])
         self.assertEqual(list_pending_pull_requests(device_id=self.device.pk), [])
+
+    def test_ingest_defers_pull_ack_until_finalize(self):
+        from apps.attendance.services.agent_pull_queue import (
+            list_pending_pull_requests,
+            queue_pull_request,
+        )
+
+        queue_pull_request(self.device.pk)
+        client = self._device_client()
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            {'device_id': self.device.pk, 'punches': [], 'sync_finalize': False},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['data']['pull_acknowledged'])
+        self.assertEqual(len(list_pending_pull_requests(device_id=self.device.pk)), 1)
 
     def test_ingest_imports_punch(self):
         client = self._device_client()

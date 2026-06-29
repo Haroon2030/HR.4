@@ -351,7 +351,10 @@ class AgentIngestView(APIView):
         if result.skipped_out_of_bounds:
             msg += f' — خارج النافذة {result.skipped_out_of_bounds}'
 
-        pull_acknowledged = acknowledge_pull_request_after_ingest(device.pk)
+        sync_finalize = payload.get('sync_finalize', True)
+        pull_acknowledged = False
+        if sync_finalize:
+            pull_acknowledged = acknowledge_pull_request_after_ingest(device.pk)
 
         log_ingest_attempt(
             request=request,

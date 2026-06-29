@@ -333,6 +333,12 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': False,
         },
+        # بوتات تفحص IP السيرفر بعناوين Host عشوائية — رفض 400 كافٍ بدون ضجيج
+        'django.security.DisallowedHost': {
+            'handlers': ['console'],
+            'level': 'CRITICAL',
+            'propagate': False,
+        },
     },
 }
 

@@ -121,9 +121,10 @@ Attendance deduplication on the server is **per device** (same user + same secon
 ### HTTP 413 Request Entity Too Large (first sync)
 
 1. **تأكد أن PC الفرع يشغّل آخر `agent.py`** — في اللوج يجب أن يظهر:
-   `وكيل HR 2.2-batched-split`
+   `وكيل HR 2.3-manual-full-sync`
    و `تقسيم الرفع إلى ... دفعة` أو `حجم طلب الرفع: ... KB`
-   إن رأيت `رفع 15290` بدون «تقسيم» فأنت على نسخة قديمة — انسخ المجلد من GitHub من جديد.
+   عند الضغط على «مزامنة» في HR يجب أن يظهر: `طلب مزامنة يدوي من الموقع — سحب كامل`
+   إن رأيت `مزامنة تزايدية` بعد ضغط «مزامنة» فأنت على نسخة قديمة.
 
 2. في `config.env`:
    ```env

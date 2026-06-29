@@ -26,6 +26,7 @@ class AgentIngestSerializer(serializers.Serializer):
     device_id = serializers.IntegerField(min_value=1)
     agent_id = serializers.CharField(max_length=64, required=False, allow_blank=True)
     incremental = serializers.BooleanField(default=True)
+    sync_finalize = serializers.BooleanField(default=True)
     punches = AgentPunchSerializer(many=True, allow_empty=True)
     users = AgentUserSerializer(many=True, required=False)
 

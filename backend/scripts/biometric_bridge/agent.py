@@ -38,7 +38,7 @@ except ImportError:
 LOG = logging.getLogger('biometric_bridge')
 
 # يظهر في اللوج — للتأكد أن PC الفرع يشغّل آخر نسخة من agent.py
-AGENT_BUILD = '2.2-batched-split'
+AGENT_BUILD = '2.3-manual-full-sync'
 
 PUNCH_STATUS = {
     0: 'in',
@@ -426,6 +426,7 @@ def push_to_server(
     users: list[dict],
     *,
     incremental: bool | None = None,
+    sync_finalize: bool = True,
 ) -> dict:
     url = f'{settings.server_url}/api/v1/attendance/agent/ingest/'
     agent_suffix = device.label or str(device.device_id)
@@ -434,6 +435,7 @@ def push_to_server(
         'device_id': device.device_id,
         'agent_id': f'{settings.agent_id}:{agent_suffix}',
         'incremental': use_incremental,
+        'sync_finalize': sync_finalize,
         'punches': punches,
         'users': users,
     }
@@ -512,6 +514,7 @@ def push_to_server_resilient(
     users: list[dict],
     *,
     incremental: bool | None = None,
+    sync_finalize: bool = True,
 ) -> dict:
     """يرفع مع تقسيم تلقائي عند HTTP 413 أو تجاوز حد الحجم."""
     if not punches and not users:
@@ -536,10 +539,20 @@ def push_to_server_resilient(
             len(punches) - mid,
         )
         first = push_to_server_resilient(
-            settings, device, punches[:mid], users, incremental=incremental,
+            settings,
+            device,
+            punches[:mid],
+            users,
+            incremental=incremental,
+            sync_finalize=False,
         )
         second = push_to_server_resilient(
-            settings, device, punches[mid:], [], incremental=incremental,
+            settings,
+            device,
+            punches[mid:],
+            [],
+            incremental=incremental,
+            sync_finalize=sync_finalize,
         )
         return _merge_ingest_results(first, second)
 
@@ -550,6 +563,7 @@ def push_to_server_resilient(
             punches,
             users,
             incremental=incremental,
+            sync_finalize=sync_finalize,
         )
     except RuntimeError as exc:
         if '413' not in str(exc) or len(punches) <= 1:
@@ -563,10 +577,20 @@ def push_to_server_resilient(
             AGENT_BUILD,
         )
         first = push_to_server_resilient(
-            settings, device, punches[:mid], users, incremental=incremental,
+            settings,
+            device,
+            punches[:mid],
+            users,
+            incremental=incremental,
+            sync_finalize=False,
         )
         second = push_to_server_resilient(
-            settings, device, punches[mid:], [], incremental=incremental,
+            settings,
+            device,
+            punches[mid:],
+            [],
+            incremental=incremental,
+            sync_finalize=sync_finalize,
         )
         return _merge_ingest_results(first, second)
 
@@ -614,6 +638,7 @@ def push_to_server_batched(
             chunk,
             chunk_users,
             incremental=incremental,
+            sync_finalize=(index == batches - 1),
         )
         data = result.get('data', {})
         aggregated_imported += int(data.get('imported', 0) or 0)
@@ -661,15 +686,29 @@ def run_device_cycle(
     use_incremental = settings.incremental
     date_from = None
     date_to = None
-    if pull_request and pull_request.device_id == device.device_id:
+    manual_pull = (
+        pull_request is not None
+        and pull_request.device_id == device.device_id
+    )
+    manual_full = manual_pull and not (pull_request.date_from or pull_request.date_to)
+
+    if manual_pull:
         date_from = pull_request.date_from
         date_to = pull_request.date_to
         if date_from or date_to:
             use_incremental = False
             LOG.info('طلب سحب بفترة: %s → %s', date_from or '—', date_to or '—')
+        else:
+            use_incremental = False
+            LOG.info(
+                'طلب مزامنة يدوي من الموقع — سحب كامل (حتى %s يوماً)',
+                MAX_PAST_DAYS_FULL_SYNC,
+            )
 
     watermark: datetime | None = None
-    if not (date_from or date_to):
+    if manual_full:
+        watermark = None
+    elif not (date_from or date_to):
         try:
             watermark = fetch_sync_watermark(settings, device)
         except Exception as exc:
