@@ -31,11 +31,18 @@
             </div>
             <div>
                 <label class="zk-modal-label">مقتطف config.env (PC الفرع)</label>
-                <textarea readonly dir="ltr" rows="8"
+                <textarea readonly dir="ltr" rows="12"
                     class="zk-modal-field w-full font-mono text-[10px] leading-relaxed resize-none"
                     x-text="agentKeyConfigSnippet"></textarea>
                 {% include "components/hr_btn.html" with label="نسخ إعدادات الوكيل" type="button" variant="ghost" size="xs" x_click="copyAgentConfig()" extra_class="mt-2" %}
             </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">
+                بعد حفظ <code dir="ltr" class="text-xs bg-slate-100 px-1 rounded">config.env</code>
+                شغّل على PC الفرع (كمسؤول):
+                <code dir="ltr" class="text-xs bg-slate-100 px-1 rounded block mt-1">install_task.bat</code>
+                للمزامنة التلقائية كل 5 دقائق. أول مرة:
+                <code dir="ltr" class="text-xs bg-slate-100 px-1 rounded">run_agent.bat --once --force-sync</code>
+            </p>
             <p class="text-[10px] text-slate-500">
                 على السيرفر: <code dir="ltr" class="text-xs bg-slate-100 px-1 rounded">python manage.py generate_attendance_agent_key --device-id=<span x-text="agentKeyDeviceId"></span></code>
             </p>

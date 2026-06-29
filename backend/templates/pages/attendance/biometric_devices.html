@@ -369,7 +369,11 @@ function biometricPage() {
                 `COMM_KEY=${data.comm_key || 0}`,
                 'AGENT_ID=branch-agent',
                 'POLL_INTERVAL_SEC=300',
+                'SYNC_ON_REQUEST_ONLY=false',
                 'INCREMENTAL=true',
+                'TIMEOUT_SEC=20',
+                'INGEST_BATCH_SIZE=150',
+                'INGEST_MAX_BODY_KB=600',
             ].join('\n');
         },
         async copyAgentKey() {

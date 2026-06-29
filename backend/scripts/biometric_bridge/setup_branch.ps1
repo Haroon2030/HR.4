@@ -65,7 +65,10 @@ $configPath = Join-Path $Here 'config.env'
     "DEVICE_LABEL=$BranchName",
     'POLL_INTERVAL_SEC=300',
     'TIMEOUT_SEC=20',
-    'INCREMENTAL=true'
+    'SYNC_ON_REQUEST_ONLY=false',
+    'INCREMENTAL=true',
+    'INGEST_BATCH_SIZE=150',
+    'INGEST_MAX_BODY_KB=600'
 ) -join "`n" | Set-Content -Path $configPath -Encoding UTF8
 
 $listPath = Join-Path $Here 'devices.list'
