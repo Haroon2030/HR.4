@@ -8,6 +8,7 @@ from apps.employees.services.barcode_label import (
     barcode_value_for_employee,
     build_employee_barcode_label,
     build_zpl_label,
+    compute_label_text_layout,
     parse_copies,
     parse_label_dimensions,
     sponsorship_company_for_employee,
@@ -84,3 +85,27 @@ class BarcodeLabelTests(TestCase):
         self.assertEqual(parse_copies('0'), 1)
         self.assertEqual(parse_copies('99'), 50)
         self.assertEqual(parse_copies('x', default=2), 2)
+
+    def test_long_text_fits_100x40_layout(self):
+        dims = parse_label_dimensions(DEFAULT_LABEL_WIDTH_MM, DEFAULT_LABEL_HEIGHT_MM)
+        company = 'مؤسسة فرحان بن حميد بن خلف الخريصي الشمري للمقاولات'
+        name = 'زين العابدين علي عبدالرحمن أبو بكر'
+        layout = compute_label_text_layout(
+            company_name=company,
+            employee_name=name,
+            number_display='459',
+            dims=dims,
+        )
+        self.assertLessEqual(layout.company_font_pt, dims.name_font_pt)
+        self.assertLessEqual(layout.company_lines, 2)
+        self.assertLessEqual(layout.name_lines, 2)
+        total_pt = (
+            layout.company_lines * layout.company_font_pt
+            + layout.name_lines * layout.name_font_pt
+            + layout.number_font_pt
+        )
+        self.assertLess(total_pt, 50)
+        label = build_employee_barcode_label(self.employee, dims=dims)
+        self.assertTrue(label.layout.company_text)
+        zpl = build_zpl_label(label, dims=dims)
+        self.assertIn('^FB', zpl)

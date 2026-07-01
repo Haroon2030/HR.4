@@ -10,9 +10,6 @@
             --label-w: {{ label_dims.width_mm }}mm;
             --label-h: {{ label_dims.height_mm }}mm;
             --label-pad: {{ label_dims.padding_mm }}mm;
-            --font-name: {{ label_dims.name_font_pt }}pt;
-            --font-company: {{ label_dims.company_font_pt }}pt;
-            --font-number: {{ label_dims.number_font_pt }}pt;
         }
         * { box-sizing: border-box; }
         body {
@@ -125,64 +122,71 @@
             justify-content: center;
             width: 100%;
         }
+        /* على الشاشة: المم لا تُعرض بحجمها الحقيقي — نستخدم بكسل 96 DPI للمعاينة */
+        @media screen {
+            .zebra-label {
+                width: {{ label_dims.preview_width_px }}px;
+                height: {{ label_dims.preview_height_px }}px;
+                max-width: {{ label_dims.preview_width_px }}px;
+                max-height: {{ label_dims.preview_height_px }}px;
+                padding: {{ label_dims.preview_padding_px }}px;
+                gap: var(--line-gap-px, 3px);
+            }
+        }
         .zebra-label {
             width: var(--label-w);
             height: var(--label-h);
+            max-width: var(--label-w);
+            max-height: var(--label-h);
             background: #fff;
             border: 1px dashed #cbd5e1;
             padding: var(--label-pad);
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
             text-align: center;
+            gap: var(--line-gap, 0.9mm);
             overflow: hidden;
             page-break-after: always;
             break-after: page;
         }
-        .zebra-label__company {
-            flex: 0 0 auto;
+        .zebra-label__company,
+        .zebra-label__name,
+        .zebra-label__number {
+            flex: 0 1 auto;
             width: 100%;
             max-width: 100%;
-            margin: 0 0 0.6mm;
-            font-size: var(--font-name);
-            font-weight: 800;
-            line-height: 1.15;
-            white-space: normal;
-            overflow-wrap: anywhere;
+            min-height: 0;
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
             word-break: break-word;
+            overflow-wrap: anywhere;
             text-align: center;
             direction: rtl;
+        }
+        .zebra-label__company {
+            font-size: var(--font-company-line);
+            font-weight: 800;
+            line-height: 1.15;
             color: #0f172a;
         }
         .zebra-label__name {
-            flex: 1 1 auto;
-            width: 100%;
-            max-width: 100%;
-            margin: 0 0 0.6mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: var(--font-company);
+            font-size: var(--font-name-line);
             font-weight: 700;
             line-height: 1.15;
-            white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            text-align: center;
-            direction: rtl;
             color: #475569;
         }
         .zebra-label__number {
-            flex: 0 0 auto;
-            width: 100%;
-            margin: 0;
-            font-size: var(--font-number);
+            font-size: var(--font-number-line);
             font-weight: 700;
-            line-height: 1.1;
+            line-height: 1.05;
             font-family: ui-monospace, monospace;
             direction: ltr;
-            text-align: center;
+            -webkit-line-clamp: 1;
             color: #334155;
             letter-spacing: 0.02em;
         }
@@ -191,7 +195,22 @@
             body { background: #fff; }
             .toolbar, .preview-note { display: none !important; }
             .preview-wrap { padding: 0; margin: 0; }
-            .zebra-label { border: none; margin: 0; }
+            .zebra-label {
+                width: var(--label-w) !important;
+                height: var(--label-h) !important;
+                max-width: var(--label-w) !important;
+                max-height: var(--label-h) !important;
+                padding: var(--label-pad);
+                gap: var(--line-gap, 0.9mm) !important;
+                border: none;
+                margin: 0;
+                overflow: hidden;
+            }
+            .zebra-label__company,
+            .zebra-label__name,
+            .zebra-label__number {
+                overflow: hidden;
+            }
             .label-sheet { gap: 0; }
         }
     </style>
@@ -226,8 +245,8 @@
 
     <div class="preview-wrap">
         <p class="preview-note">
-            المقاس الحالي: <strong dir="ltr">{{ label_dims.width_mm }} × {{ label_dims.height_mm }}</strong> مم —
-            يُطبع <strong>شركة الكفالة</strong> ثم <strong>الاسم</strong> ثم <strong>الرقم الوظيفي</strong> بثلاثة أسطر متمركزة.
+            المقاس الثابت للطباعة: <strong dir="ltr">{{ label_dims.width_mm }} × {{ label_dims.height_mm }}</strong> مم —
+            الخط يتصغّر تلقائياً ليبقى النص داخل الملصق دون تجاوز.
         </p>
         <div class="label-sheet" id="label-sheet">
             {% if batch_mode %}

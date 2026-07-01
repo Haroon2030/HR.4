@@ -15,6 +15,11 @@ MIN_LABEL_HEIGHT_MM = 15.0
 MAX_LABEL_HEIGHT_MM = 100.0
 MAX_COPIES = 50
 MAX_BARCODE_LEN = 48
+SCREEN_PX_PER_MM = 96 / 25.4
+PT_TO_MM = 25.4 / 72
+LINE_HEIGHT_FACTOR = 1.12
+MAX_COMPANY_LINES = 2
+MAX_NAME_LINES = 2
 
 
 @dataclass(frozen=True)
@@ -44,6 +49,23 @@ class LabelDimensions:
     @property
     def padding_mm(self) -> float:
         return max(1.2, min(3.0, self.height_mm * 0.05))
+
+    @property
+    def preview_width_px(self) -> float:
+        """عرض المعاينة على الشاشة (96 DPI) — الطباعة تبقى بالمم."""
+        return round(self.width_mm * SCREEN_PX_PER_MM, 1)
+
+    @property
+    def preview_height_px(self) -> float:
+        return round(self.height_mm * SCREEN_PX_PER_MM, 1)
+
+    @property
+    def preview_padding_px(self) -> float:
+        return round(self.padding_mm * SCREEN_PX_PER_MM, 1)
+
+    @property
+    def preview_line_gap_px(self) -> float:
+        return round(0.6 * SCREEN_PX_PER_MM, 1)
 
     @property
     def barcode_height_mm(self) -> float:
@@ -79,6 +101,21 @@ class LabelDimensions:
 
 
 @dataclass(frozen=True)
+class LabelTextLayout:
+    """أحجام خطوط وأسطر محسوبة لتناسب الملصق دون تجاوز."""
+    company_font_pt: float
+    name_font_pt: float
+    number_font_pt: float
+    company_lines: int
+    name_lines: int
+    company_text: str
+    name_text: str
+    number_text: str
+    line_gap_mm: float
+    line_gap_px: float
+
+
+@dataclass(frozen=True)
 class EmployeeBarcodeLabel:
     employee_id: int
     name: str
@@ -87,6 +124,7 @@ class EmployeeBarcodeLabel:
     barcode_value: str
     number_display: str
     barcode_svg: str
+    layout: LabelTextLayout
 
 
 def mm_to_dots(mm: float, *, dpi: int = ZEBRA_DPI) -> int:
@@ -166,6 +204,110 @@ def sponsorship_company_for_employee(employee: Employee) -> str:
     return '—'
 
 
+def _chars_per_line(width_mm: float, font_pt: float, padding_mm: float) -> int:
+    """تقدير عدد الأحرف العربية في السطر الواحد."""
+    usable_mm = max(8.0, width_mm - 2 * padding_mm)
+    char_w_mm = max(0.35, font_pt * 0.48 * PT_TO_MM)
+    return max(5, int(usable_mm / char_w_mm))
+
+
+def _default_line_gap_mm(height_mm: float) -> float:
+    """هامش بين الصفوف — يتناسب مع ارتفاع الملصق."""
+    return round(max(0.65, min(1.2, height_mm * 0.024)), 2)
+
+
+def _block_height_mm(lines: int, font_pt: float) -> float:
+    if lines <= 0 or font_pt <= 0:
+        return 0.0
+    return lines * font_pt * PT_TO_MM * LINE_HEIGHT_FACTOR
+
+
+def _fit_text_to_lines(text: str, *, chars_per_line: int, max_lines: int) -> tuple[int, str]:
+    cleaned = (text or '').strip() or '—'
+    needed = max(1, (len(cleaned) + chars_per_line - 1) // chars_per_line)
+    lines = min(max_lines, needed)
+    max_chars = chars_per_line * lines
+    if len(cleaned) <= max_chars:
+        return lines, cleaned
+    trimmed = cleaned[: max(1, max_chars - 1)].rstrip()
+    return lines, f'{trimmed}…'
+
+
+def compute_label_text_layout(
+    *,
+    company_name: str,
+    employee_name: str,
+    number_display: str,
+    dims: LabelDimensions,
+) -> LabelTextLayout:
+    """يضبط الخطوط والأسطر لتبقى داخل ارتفاع الملصق (مثلاً 100×40 مم)."""
+    pad = dims.padding_mm
+    avail_h = max(8.0, dims.height_mm - 2 * pad)
+    gap_mm = _default_line_gap_mm(dims.height_mm)
+    min_gap_mm = 0.4
+
+    company_pt = dims.name_font_pt
+    name_pt = dims.company_font_pt
+    number_pt = dims.number_font_pt
+    company_lines = 1
+    name_lines = 1
+    company_text = (company_name or '—').strip() or '—'
+    name_text = (employee_name or '—').strip() or '—'
+    number_text = (number_display or '—').strip() or '—'
+
+    for _ in range(40):
+        company_cpl = _chars_per_line(dims.width_mm, company_pt, pad)
+        name_cpl = _chars_per_line(dims.width_mm, name_pt, pad)
+        company_lines, company_text = _fit_text_to_lines(
+            company_text, chars_per_line=company_cpl, max_lines=MAX_COMPANY_LINES,
+        )
+        name_lines, name_text = _fit_text_to_lines(
+            name_text, chars_per_line=name_cpl, max_lines=MAX_NAME_LINES,
+        )
+        total_h = (
+            _block_height_mm(company_lines, company_pt)
+            + gap_mm
+            + _block_height_mm(name_lines, name_pt)
+            + gap_mm
+            + _block_height_mm(1, number_pt)
+        )
+        if total_h <= avail_h:
+            break
+        if total_h > avail_h and gap_mm > min_gap_mm:
+            gap_mm = round(max(min_gap_mm, gap_mm - 0.12), 2)
+            continue
+        if company_pt >= name_pt and company_pt > 5.0:
+            company_pt = round(max(5.0, company_pt - 0.4), 1)
+        elif name_pt > 5.0:
+            name_pt = round(max(5.0, name_pt - 0.4), 1)
+        else:
+            number_pt = round(max(5.5, number_pt - 0.3), 1)
+        if company_pt <= 5.0 and name_pt <= 5.0 and number_pt <= 5.5:
+            gap_mm = min_gap_mm
+            if total_h > avail_h and company_lines > 1:
+                company_lines, company_text = _fit_text_to_lines(
+                    company_name, chars_per_line=company_cpl, max_lines=1,
+                )
+            if total_h > avail_h and name_lines > 1:
+                name_lines, name_text = _fit_text_to_lines(
+                    employee_name, chars_per_line=name_cpl, max_lines=1,
+                )
+            break
+
+    return LabelTextLayout(
+        company_font_pt=company_pt,
+        name_font_pt=name_pt,
+        number_font_pt=number_pt,
+        company_lines=company_lines,
+        name_lines=name_lines,
+        company_text=company_text,
+        name_text=name_text,
+        number_text=number_text,
+        line_gap_mm=gap_mm,
+        line_gap_px=round(gap_mm * SCREEN_PX_PER_MM, 1),
+    )
+
+
 def build_employee_barcode_label(
     employee: Employee,
     *,
@@ -175,14 +317,23 @@ def build_employee_barcode_label(
     num = (employee.employee_number or '').strip()
     bc = barcode_value_for_employee(employee)
     display = num if num else bc
+    company = sponsorship_company_for_employee(employee)
+    name = (employee.name or '—').strip()
+    layout = compute_label_text_layout(
+        company_name=company,
+        employee_name=name,
+        number_display=display,
+        dims=size,
+    )
     return EmployeeBarcodeLabel(
         employee_id=employee.pk,
-        name=(employee.name or '—').strip(),
-        company_name=sponsorship_company_for_employee(employee),
+        name=name,
+        company_name=company,
         employee_number=num or '—',
         barcode_value=bc,
         number_display=display,
         barcode_svg=build_barcode_svg(bc, dims=size),
+        layout=layout,
     )
 
 
@@ -191,36 +342,39 @@ def _zpl_safe_text(value: str, *, max_len: int = 80) -> str:
     return cleaned.strip()[:max_len]
 
 
+def _pt_to_dots(font_pt: float, *, dpi: int = ZEBRA_DPI) -> int:
+    return max(10, int(round(font_pt * dpi / 72)))
+
+
 def build_zpl_label(
     label: EmployeeBarcodeLabel,
     *,
     dims: LabelDimensions,
     copies: int = 1,
 ) -> str:
-    """أوامر ZPL — شركة الكفالة + اسم الموظف + الرقم الوظيفي."""
+    """أوامر ZPL — شركة الكفالة + اسم الموظف + الرقم الوظيفي (ضمن المقاس)."""
     copies = max(1, min(int(copies or 1), MAX_COPIES))
-    name_line = _zpl_safe_text(label.name, max_len=60)
-    company_line = _zpl_safe_text(label.company_name, max_len=80)
-    num_line = _zpl_safe_text(label.number_display, max_len=40)
+    layout = label.layout
+    company_line = _zpl_safe_text(layout.company_text, max_len=80)
+    name_line = _zpl_safe_text(layout.name_text, max_len=60)
+    num_line = _zpl_safe_text(layout.number_text, max_len=40)
 
     margin_x = max(8, int(16 * (dims.width_mm / DEFAULT_LABEL_WIDTH_MM)))
     text_w = max(20, dims.width_dots - margin_x * 2)
-    company_h = max(14, int(dims.height_dots * 0.20))
-    name_h = max(12, int(dims.height_dots * 0.14))
-    num_h = max(14, int(dims.height_dots * 0.18))
-    gap = max(3, int(dims.height_dots * 0.03))
-    company_lines = max(1, min(2, int(len(company_line) / 22) + 1))
-    name_lines = 1 if len(name_line) <= 24 else 2
+    company_h = _pt_to_dots(layout.company_font_pt)
+    name_h = _pt_to_dots(layout.name_font_pt)
+    num_h = _pt_to_dots(layout.number_font_pt)
+    gap = max(2, mm_to_dots(layout.line_gap_mm))
     block_h = (
-        company_h * company_lines
+        company_h * layout.company_lines
         + gap
-        + name_h * name_lines
+        + name_h * layout.name_lines
         + gap
         + num_h
     )
     company_y = max(4, (dims.height_dots - block_h) // 2)
-    name_y = company_y + company_h * company_lines + gap
-    num_y = name_y + name_h * name_lines + gap
+    name_y = company_y + company_h * layout.company_lines + gap
+    num_y = name_y + name_h * layout.name_lines + gap
 
     lines = [
         '^XA',
@@ -232,12 +386,12 @@ def build_zpl_label(
     if company_line:
         lines.append(
             f'^FO{margin_x},{company_y}^A0N,{company_h},{company_h}'
-            f'^FB{text_w},{company_lines},0,C,0^FD{company_line}^FS'
+            f'^FB{text_w},{layout.company_lines},0,C,0^FD{company_line}^FS'
         )
     if name_line:
         lines.append(
             f'^FO{margin_x},{name_y}^A0N,{name_h},{name_h}'
-            f'^FB{text_w},{name_lines},0,C,0^FD{name_line}^FS'
+            f'^FB{text_w},{layout.name_lines},0,C,0^FD{name_line}^FS'
         )
     if num_line:
         lines.append(

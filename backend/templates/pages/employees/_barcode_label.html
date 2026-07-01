@@ -1,5 +1,9 @@
-<div class="zebra-label" dir="rtl">
-    <p class="zebra-label__company" title="{{ label.company_name }}">{{ label.company_name }}</p>
-    <p class="zebra-label__name" title="{{ label.name }}">{{ label.name }}</p>
-    <p class="zebra-label__number" title="{{ label.number_display }}">{{ label.number_display }}</p>
+{% load l10n %}
+<div class="zebra-label" dir="rtl"
+     style="--font-company-line: {% localize off %}{{ label.layout.company_font_pt }}{% endlocalize %}pt; --font-name-line: {% localize off %}{{ label.layout.name_font_pt }}{% endlocalize %}pt; --font-number-line: {% localize off %}{{ label.layout.number_font_pt }}{% endlocalize %}pt; --line-gap: {% localize off %}{{ label.layout.line_gap_mm }}{% endlocalize %}mm; --line-gap-px: {% localize off %}{{ label.layout.line_gap_px }}{% endlocalize %}px;">
+    <p class="zebra-label__company" title="{{ label.company_name }}"
+       style="-webkit-line-clamp: {{ label.layout.company_lines }};">{{ label.layout.company_text }}</p>
+    <p class="zebra-label__name" title="{{ label.name }}"
+       style="-webkit-line-clamp: {{ label.layout.name_lines }};">{{ label.layout.name_text }}</p>
+    <p class="zebra-label__number" title="{{ label.number_display }}">{{ label.layout.number_text }}</p>
 </div>
