@@ -35,10 +35,12 @@ except ImportError:
     print('ثبّت: pip install pyzk', file=sys.stderr)
     raise
 
+from zk_device_user_id import parse_device_user_id
+
 LOG = logging.getLogger('biometric_bridge')
 
 # يظهر في اللوج — للتأكد أن PC الفرع يشغّل آخر نسخة من agent.py
-AGENT_BUILD = '2.3-manual-full-sync'
+AGENT_BUILD = '2.3.1-parse-user-id'
 
 PUNCH_STATUS = {
     0: 'in',
@@ -316,11 +318,18 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
         conn = zk.connect()
         users_out: list[dict] = []
         for user in conn.get_users() or []:
-            user_id = getattr(user, 'user_id', None) or getattr(user, 'uid', None)
-            if user_id is None:
+            parsed_id = parse_device_user_id(
+                getattr(user, 'user_id', None),
+                uid_fallback=getattr(user, 'uid', None),
+            )
+            if parsed_id is None:
+                LOG.warning(
+                    'تخطي مستخدم — user_id غير صالح: %r',
+                    getattr(user, 'user_id', None),
+                )
                 continue
             users_out.append({
-                'device_user_id': int(user_id),
+                'device_user_id': parsed_id,
                 'name': (getattr(user, 'name', None) or '').strip(),
                 'card': str(getattr(user, 'card', None) or ''),
                 'privilege': getattr(user, 'privilege', None),
@@ -328,12 +337,22 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
 
         punches_out: list[dict] = []
         for rec in conn.get_attendance() or []:
+            parsed_id = parse_device_user_id(
+                getattr(rec, 'user_id', None),
+                uid_fallback=getattr(rec, 'uid', None),
+            )
+            if parsed_id is None:
+                LOG.warning(
+                    'تخطي بصمة — user_id غير صالح: %r',
+                    getattr(rec, 'user_id', None),
+                )
+                continue
             ts = rec.timestamp
             if ts.tzinfo is None:
                 ts = ts.replace(tzinfo=timezone.utc)
             status = getattr(rec, 'status', None)
             punches_out.append({
-                'device_user_id': int(rec.user_id),
+                'device_user_id': parsed_id,
                 'punched_at': ts.isoformat(),
                 'punch_type': punch_type_for_status(status),
                 'verify_mode': getattr(rec, 'punch', None),
@@ -341,7 +360,7 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
                 'device_record_uid': getattr(rec, 'uid', None),
             })
         return punches_out, users_out, None
-    except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError) as exc:
+    except (ZKNetworkError, ZKErrorResponse, OSError, TimeoutError, ValueError) as exc:
         return [], [], str(exc)
     finally:
         if conn:

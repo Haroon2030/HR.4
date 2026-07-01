@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 from apps.attendance.services.labels import punch_type_for_status, verify_mode_label
+from apps.attendance.services.zk_device_user_id import parse_device_user_id
 
 
 @dataclass
@@ -161,12 +162,20 @@ def fetch_device_snapshot(
         conn = zk.connect()
         users: list[DeviceUserRow] = []
         for user in conn.get_users() or []:
-            user_id = getattr(user, 'user_id', None) or getattr(user, 'uid', None)
-            if user_id is None:
+            parsed_id = parse_device_user_id(
+                getattr(user, 'user_id', None),
+                uid_fallback=getattr(user, 'uid', None),
+            )
+            if parsed_id is None:
+                logger.warning(
+                    'Skip device user with invalid user_id=%r on device %s',
+                    getattr(user, 'user_id', None),
+                    device.pk,
+                )
                 continue
             users.append(
                 DeviceUserRow(
-                    device_user_id=int(user_id),
+                    device_user_id=parsed_id,
                     name=(getattr(user, 'name', None) or '').strip(),
                     card=str(getattr(user, 'card', None) or ''),
                     privilege=getattr(user, 'privilege', None),
@@ -175,6 +184,17 @@ def fetch_device_snapshot(
 
         attendance: list[RawAttendanceRow] = []
         for rec in conn.get_attendance() or []:
+            parsed_id = parse_device_user_id(
+                getattr(rec, 'user_id', None),
+                uid_fallback=getattr(rec, 'uid', None),
+            )
+            if parsed_id is None:
+                logger.warning(
+                    'Skip attendance row with invalid user_id=%r on device %s',
+                    getattr(rec, 'user_id', None),
+                    device.pk,
+                )
+                continue
             ts = rec.timestamp
             if timezone.is_naive(ts):
                 ts = timezone.make_aware(ts, timezone.get_current_timezone())
@@ -182,7 +202,7 @@ def fetch_device_snapshot(
             punch_type, _ = punch_type_for_status(status)
             attendance.append(
                 RawAttendanceRow(
-                    device_user_id=int(rec.user_id),
+                    device_user_id=parsed_id,
                     punched_at=ts,
                     punch_type=punch_type,
                     verify_mode=getattr(rec, 'punch', None),
@@ -280,14 +300,22 @@ def fetch_device_users(
         conn = zk.connect()
         rows: list[DeviceUserRow] = []
         for user in conn.get_users() or []:
-            user_id = getattr(user, 'user_id', None) or getattr(user, 'uid', None)
-            if user_id is None:
+            parsed_id = parse_device_user_id(
+                getattr(user, 'user_id', None),
+                uid_fallback=getattr(user, 'uid', None),
+            )
+            if parsed_id is None:
+                logger.warning(
+                    'Skip device user with invalid user_id=%r on device %s',
+                    getattr(user, 'user_id', None),
+                    device.pk,
+                )
                 continue
             name = (getattr(user, 'name', None) or '').strip()
             card = str(getattr(user, 'card', None) or '')
             rows.append(
                 DeviceUserRow(
-                    device_user_id=int(user_id),
+                    device_user_id=parsed_id,
                     name=name,
                     card=card,
                     privilege=getattr(user, 'privilege', None),
