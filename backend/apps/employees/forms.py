@@ -339,7 +339,7 @@ EMPLOYMENT_REQUEST_REQUIRED_FIELDS = [
     'id_number', 'phone', 'employee_number',
     'nationality', 'profession', 'sponsorship',
     'hire_date',
-    'basic_salary', 'housing_allowance', 'transport_allowance',
+    'basic_salary', 'housing_allowance',
     'id_document',
 ]
 
@@ -459,6 +459,8 @@ class EmploymentRequestEditForm(forms.ModelForm):
             self.fields['opening_leave_days'].label = 'الرصيد الافتتاحي (أيام)'
         if 'leave_accrual_start_date' in self.fields:
             self.fields['leave_accrual_start_date'].label = 'تاريخ الاحتساب'
+        if 'transport_allowance' in self.fields:
+            self.fields['transport_allowance'].label = 'بدل النقل (اختياري)'
 
         # 🛡️ حماية ضد المسح غير المقصود (نفس نمط EmployeeForm):
         # احذف الحقول التي لم تُرسَل في POST وقيمتها الحالية غير فارغة

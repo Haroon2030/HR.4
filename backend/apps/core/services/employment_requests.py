@@ -47,7 +47,6 @@ _REQUIRED_EMPLOYEE_FIELDS = [
     # راتب (نقبل صفر، نتأكد فقط أنها ليست None)
     ('الراتب الأساسي', 'basic_salary', 'decimal'),
     ('بدل سكن', 'housing_allowance', 'decimal'),
-    ('بدل نقل', 'transport_allowance', 'decimal'),
     # مستندات
     ('صورة الهوية', 'id_document', 'file'),
 ]
@@ -101,7 +100,7 @@ EMP_REQ_TAB_REQUIRED = {
     }),
     'org': frozenset({'nationality', 'profession', 'sponsorship'}),
     'salary': frozenset({
-        'basic_salary', 'housing_allowance', 'transport_allowance',
+        'basic_salary', 'housing_allowance',
     }),
     'bank': frozenset({'bank', 'iban', 'account_type'}),
     'docs': frozenset({'id_document'}),
@@ -163,7 +162,6 @@ def employment_request_tab_status(req):
     salary_ok = all([
         _dec_ok('basic_salary'),
         _dec_ok('housing_allowance'),
-        _dec_ok('transport_allowance'),
     ])
     if is_saudi:
         salary_ok = salary_ok and is_valid_saudi_insurance_rate(
