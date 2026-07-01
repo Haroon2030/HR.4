@@ -23,16 +23,27 @@ class LabelDimensions:
     height_mm: float
 
     @property
-    def padding_mm(self) -> float:
-        return max(1.5, min(4.0, self.height_mm * 0.06))
+    def name_font_pt(self) -> float:
+        """حجم خط اسم الشركة (السطر الأول)."""
+        by_h = self.height_mm * 0.20
+        by_w = self.width_mm * 0.10
+        return round(max(6.5, min(14.0, min(by_h, by_w))), 1)
 
     @property
-    def name_font_pt(self) -> float:
-        return round(max(6.0, min(18.0, self.height_mm * 0.28)), 1)
+    def company_font_pt(self) -> float:
+        """حجم خط اسم الموظف (السطر الثاني)."""
+        by_h = self.height_mm * 0.17
+        by_w = self.width_mm * 0.085
+        return round(max(6.0, min(11.0, min(by_h, by_w))), 1)
 
     @property
     def number_font_pt(self) -> float:
-        return round(max(5.0, min(14.0, self.height_mm * 0.22)), 1)
+        """حجم خط الرقم الوظيفي."""
+        return round(max(7.0, min(14.0, self.height_mm * 0.22)), 1)
+
+    @property
+    def padding_mm(self) -> float:
+        return max(1.2, min(3.0, self.height_mm * 0.05))
 
     @property
     def barcode_height_mm(self) -> float:
@@ -71,6 +82,7 @@ class LabelDimensions:
 class EmployeeBarcodeLabel:
     employee_id: int
     name: str
+    company_name: str
     employee_number: str
     barcode_value: str
     number_display: str
@@ -142,6 +154,18 @@ def build_barcode_svg(value: str, *, dims: LabelDimensions) -> str:
     return svg
 
 
+def sponsorship_company_for_employee(employee: Employee) -> str:
+    """اسم شركة الكفالة المرتبطة بالموظف."""
+    sponsorship = getattr(employee, 'sponsorship', None)
+    if sponsorship and (sponsorship.company_name or '').strip():
+        return sponsorship.company_name.strip()
+    branch = getattr(employee, 'branch', None)
+    company = getattr(branch, 'company', None) if branch else None
+    if company and (company.name or '').strip():
+        return company.name.strip()
+    return '—'
+
+
 def build_employee_barcode_label(
     employee: Employee,
     *,
@@ -154,6 +178,7 @@ def build_employee_barcode_label(
     return EmployeeBarcodeLabel(
         employee_id=employee.pk,
         name=(employee.name or '—').strip(),
+        company_name=sponsorship_company_for_employee(employee),
         employee_number=num or '—',
         barcode_value=bc,
         number_display=display,
@@ -172,21 +197,30 @@ def build_zpl_label(
     dims: LabelDimensions,
     copies: int = 1,
 ) -> str:
-    """أوامر ZPL بمقاس ديناميكي (203 DPI)."""
+    """أوامر ZPL — شركة الكفالة + اسم الموظف + الرقم الوظيفي."""
     copies = max(1, min(int(copies or 1), MAX_COPIES))
-    bc = _zpl_safe_text(label.barcode_value, max_len=MAX_BARCODE_LEN)
+    name_line = _zpl_safe_text(label.name, max_len=60)
+    company_line = _zpl_safe_text(label.company_name, max_len=80)
     num_line = _zpl_safe_text(label.number_display, max_len=40)
-    name_line = _zpl_safe_text(label.name, max_len=40)
 
-    scale = dims.height_mm / DEFAULT_LABEL_HEIGHT_MM
-    margin_x = max(10, int(30 * (dims.width_mm / DEFAULT_LABEL_WIDTH_MM)))
-    name_y = max(8, int(18 * scale))
-    name_h = max(14, int(22 * scale))
-    num_y = name_y + name_h + max(4, int(6 * scale))
-    num_h = max(12, int(20 * scale))
-    bc_y = num_y + num_h + max(4, int(8 * scale))
-    bc_height = max(24, mm_to_dots(dims.barcode_height_mm) - 8)
-    bar_w = max(1, min(4, int(round(dims.width_mm / 40))))
+    margin_x = max(8, int(16 * (dims.width_mm / DEFAULT_LABEL_WIDTH_MM)))
+    text_w = max(20, dims.width_dots - margin_x * 2)
+    company_h = max(14, int(dims.height_dots * 0.20))
+    name_h = max(12, int(dims.height_dots * 0.14))
+    num_h = max(14, int(dims.height_dots * 0.18))
+    gap = max(3, int(dims.height_dots * 0.03))
+    company_lines = max(1, min(2, int(len(company_line) / 22) + 1))
+    name_lines = 1 if len(name_line) <= 24 else 2
+    block_h = (
+        company_h * company_lines
+        + gap
+        + name_h * name_lines
+        + gap
+        + num_h
+    )
+    company_y = max(4, (dims.height_dots - block_h) // 2)
+    name_y = company_y + company_h * company_lines + gap
+    num_y = name_y + name_h * name_lines + gap
 
     lines = [
         '^XA',
@@ -195,12 +229,22 @@ def build_zpl_label(
         '^LH0,0',
         '^CI28',
     ]
+    if company_line:
+        lines.append(
+            f'^FO{margin_x},{company_y}^A0N,{company_h},{company_h}'
+            f'^FB{text_w},{company_lines},0,C,0^FD{company_line}^FS'
+        )
     if name_line:
-        lines.append(f'^FO{margin_x},{name_y}^A0N,{name_h},{name_h}^FD{name_line}^FS')
+        lines.append(
+            f'^FO{margin_x},{name_y}^A0N,{name_h},{name_h}'
+            f'^FB{text_w},{name_lines},0,C,0^FD{name_line}^FS'
+        )
     if num_line:
-        lines.append(f'^FO{margin_x},{num_y}^A0N,{num_h},{num_h}^FD{num_line}^FS')
+        lines.append(
+            f'^FO{margin_x},{num_y}^A0N,{num_h},{num_h}'
+            f'^FB{text_w},1,0,C,0^FD{num_line}^FS'
+        )
     lines.extend([
-        f'^FO{margin_x},{bc_y}^BY{bar_w},2,{bc_height}^BCN,{bc_height},Y,N,N^FD{bc}^FS',
         f'^PQ{copies}',
         '^XZ',
     ])

@@ -26,6 +26,12 @@
 
      data-default-height="{{ default_height_mm }}"
 
+     data-initial-width="{{ label_dims.width_mm }}"
+
+     data-initial-height="{{ label_dims.height_mm }}"
+
+     data-url-has-size="{% if url_has_size %}1{% else %}0{% endif %}"
+
      data-min-w="{{ min_width_mm }}"
 
      data-max-w="{{ max_width_mm }}"
@@ -52,11 +58,11 @@
 
             <div>
 
-                <h2 class="text-lg font-bold text-slate-900">ملصق باركود للزيّ / Zebra</h2>
+                <h2 class="text-lg font-bold text-slate-900">ملصق موظف للزيّ / Zebra</h2>
 
                 <p class="text-sm text-slate-600 mt-1">
 
-                    اسم الموظف والرقم الوظيفي وباركود Code128 — <strong>المقاس قابل للتعديل</strong> والباركود يتمدد تلقائياً.
+                    <strong>شركة الكفالة</strong> + <strong>الاسم</strong> + <strong>الرقم الوظيفي</strong> — بدون باركود. المقاس قابل للتعديل.
 
                 </p>
 
@@ -118,15 +124,15 @@
 
                 <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
 
-                    <span>الافتراضي: <span dir="ltr">{{ default_width_mm }}×{{ default_height_mm }}</span> مم</span>
+                    <span>الافتراضي: <span dir="ltr">{{ default_width_mm }}×{{ default_height_mm }}</span> مم (Zebra شائع)</span>
 
-                    <button type="button" @click="resetSize()" class="text-primary-600 font-semibold hover:underline">استعادة الافتراضي</button>
+                    <button type="button" @click="resetSize()" class="text-primary-600 font-semibold hover:underline">100×40 مم</button>
 
                 </div>
 
                 <p class="text-[11px] text-slate-500">
 
-                    يُحفظ المقاس في المتصفح ويُمرَّر لشاشة الطباعة. الباركود والخطوط تتكيّف مع العرض والارتفاع.
+                    يُحفظ المقاس في المتصفح ويُمرَّر لشاشة الطباعة. الخط يتكيّف مع عرض اسم الشركة والرقم الوظيفي.
 
                 </p>
 
@@ -170,9 +176,9 @@
 
             <li>اضبط حجم الورق في Windows ليطابق <strong>العرض × الارتفاع</strong> المدخلين.</li>
 
-            <li>لطابعات Zebra: يمكن تنزيل ملف <strong>ZPL</strong> من شاشة المعاينة (بنفس المقاس).</li>
+            <li>لطابعات Zebra: ملف <strong>ZPL</strong> من المعاينة (اسم + شركة + رقم وظيفي).</li>
 
-            <li>إن لم يُعرَّف رقم وظيفي، يُستخدم رقم الهوية أو معرف السجل في الباركود.</li>
+            <li>اسم الشركة من <strong>الكفالة</strong> المرتبطة بالموظف — أو شركة الفرع إن لم تُحدَّد كفالة.</li>
 
         </ul>
 

@@ -11,8 +11,8 @@
             --label-h: {{ label_dims.height_mm }}mm;
             --label-pad: {{ label_dims.padding_mm }}mm;
             --font-name: {{ label_dims.name_font_pt }}pt;
+            --font-company: {{ label_dims.company_font_pt }}pt;
             --font-number: {{ label_dims.number_font_pt }}pt;
-            --barcode-h: {{ label_dims.barcode_height_mm }}mm;
         }
         * { box-sizing: border-box; }
         body {
@@ -133,48 +133,58 @@
             padding: var(--label-pad);
             display: flex;
             flex-direction: column;
-            align-items: stretch;
-            justify-content: flex-start;
+            align-items: center;
+            justify-content: center;
             text-align: center;
             overflow: hidden;
             page-break-after: always;
             break-after: page;
         }
-        .zebra-label__name {
+        .zebra-label__company {
             flex: 0 0 auto;
             width: 100%;
+            max-width: 100%;
+            margin: 0 0 0.6mm;
             font-size: var(--font-name);
             font-weight: 800;
             line-height: 1.15;
-            margin: 0 0 0.5mm;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            text-align: center;
             direction: rtl;
+            color: #0f172a;
+        }
+        .zebra-label__name {
+            flex: 1 1 auto;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 0 0.6mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-company);
+            font-weight: 700;
+            line-height: 1.15;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            text-align: center;
+            direction: rtl;
+            color: #475569;
         }
         .zebra-label__number {
             flex: 0 0 auto;
             width: 100%;
+            margin: 0;
             font-size: var(--font-number);
-            font-weight: 600;
-            color: #334155;
-            margin: 0 0 1mm;
+            font-weight: 700;
+            line-height: 1.1;
             font-family: ui-monospace, monospace;
             direction: ltr;
-        }
-        .zebra-label__barcode {
-            flex: 1 1 auto;
-            width: 100%;
-            min-height: var(--barcode-h);
-            display: flex;
-            align-items: stretch;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .zebra-label__barcode svg {
-            width: 100% !important;
-            height: 100% !important;
-            display: block;
+            text-align: center;
+            color: #334155;
+            letter-spacing: 0.02em;
         }
 
         @media print {
@@ -189,7 +199,7 @@
 <body>
     <div class="toolbar">
         <div>
-            <h1>ملصق باركود — <span dir="ltr">{{ label_dims.width_mm }}×{{ label_dims.height_mm }}</span> مم</h1>
+            <h1>ملصق موظف — <span dir="ltr">{{ label_dims.width_mm }}×{{ label_dims.height_mm }}</span> مم</h1>
             <div class="meta">
                 {% if batch_mode %}{{ labels_batch|length }} ملصق{% else %}{{ copies }} نسخة{% endif %}
             </div>
@@ -204,6 +214,7 @@
                     <input type="number" name="h" value="{{ label_dims.height_mm }}" min="15" max="100" step="0.5" required>
                 </label>
                 <button type="submit" class="btn btn-secondary btn-sm">تطبيق المقاس</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="applyDefaultSize()">100×40 مم</button>
             </form>
             <button type="button" class="btn btn-primary" onclick="window.print()">طباعة</button>
             {% if zpl_download_url %}
@@ -216,7 +227,7 @@
     <div class="preview-wrap">
         <p class="preview-note">
             المقاس الحالي: <strong dir="ltr">{{ label_dims.width_mm }} × {{ label_dims.height_mm }}</strong> مم —
-            عدّل الأبعاد أعلاه ثم «تطبيق المقاس» لإعادة توليد الباركود، أو اطبع مباشرة.
+            يُطبع <strong>شركة الكفالة</strong> ثم <strong>الاسم</strong> ثم <strong>الرقم الوظيفي</strong> بثلاثة أسطر متمركزة.
         </p>
         <div class="label-sheet" id="label-sheet">
             {% if batch_mode %}
@@ -230,5 +241,13 @@
             {% endif %}
         </div>
     </div>
+    <script>
+        function applyDefaultSize() {
+            var url = new URL(window.location.href);
+            url.searchParams.set('w', '100');
+            url.searchParams.set('h', '40');
+            window.location.href = url.toString();
+        }
+    </script>
 </body>
 </html>

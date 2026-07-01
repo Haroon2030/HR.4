@@ -29,7 +29,9 @@ from apps.employees.services.barcode_label import (
 
 
 def _employee_for_barcode(user, employee_id: int) -> Employee:
-    qs = Employee.objects.filter(is_deleted=False).select_related('branch', 'department')
+    qs = Employee.objects.filter(is_deleted=False).select_related(
+        'branch', 'branch__company', 'department', 'sponsorship',
+    )
     qs = filter_employees_queryset_for_user(user, qs)
     return get_object_or_404(qs, pk=employee_id)
 
@@ -55,12 +57,14 @@ def employee_barcode_labels_index(request):
             preselected = emp
 
     dims = parse_label_dimensions(request.GET.get('w'), request.GET.get('h'))
+    has_size_params = 'w' in request.GET or 'h' in request.GET
 
     return render(request, 'pages/employees/barcode_labels_index.html', {
         'employee_search_url': reverse('web:employee_picker_search'),
         'filter_employee': preselected,
         'default_copies': parse_copies(request.GET.get('copies'), default=1),
         'label_dims': dims,
+        'url_has_size': has_size_params,
         'min_width_mm': MIN_LABEL_WIDTH_MM,
         'max_width_mm': MAX_LABEL_WIDTH_MM,
         'min_height_mm': MIN_LABEL_HEIGHT_MM,
@@ -103,7 +107,7 @@ def employee_barcode_zpl(request, employee_id):
     dims, copies = _dims_from_request(request)
     label = build_employee_barcode_label(employee, dims=dims)
     zpl = build_zpl_label(label, dims=dims, copies=copies)
-    filename = f'employee-barcode-{label.barcode_value}.zpl'
+    filename = f'employee-name-{employee.pk}.zpl'
     response = HttpResponse(zpl, content_type='application/octet-stream')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
@@ -131,7 +135,9 @@ def employee_barcode_print_batch(request):
     dims, copies = _dims_from_request(request)
     qs = filter_employees_queryset_for_user(
         request.user,
-        Employee.objects.filter(is_deleted=False, pk__in=ids),
+        Employee.objects.filter(is_deleted=False, pk__in=ids).select_related(
+            'branch', 'branch__company', 'sponsorship',
+        ),
     )
     employees = list(qs.order_by('name'))
     if not employees:

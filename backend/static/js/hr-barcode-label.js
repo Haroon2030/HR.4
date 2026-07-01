@@ -84,21 +84,22 @@
 
             init: function () {
                 var ds = this.$el.dataset;
+                var defW = num(ds.defaultWidth, 100);
+                var defH = num(ds.defaultHeight, 40);
                 this.copies = intVal(ds.defaultCopies, 1);
-                this.widthMm = num(ds.defaultWidth, 100);
-                this.heightMm = num(ds.defaultHeight, 40);
                 this.minW = num(ds.minW, 30);
                 this.maxW = num(ds.maxW, 150);
                 this.minH = num(ds.minH, 15);
                 this.maxH = num(ds.maxH, 100);
                 var raw = ds.barcodePrintUrl || '';
                 this.printTpl = raw.replace('999999', '__ID__');
-                try {
-                    var w = localStorage.getItem('hr_barcode_label_w');
-                    var h = localStorage.getItem('hr_barcode_label_h');
-                    if (w && !isNaN(parseFloat(w))) this.widthMm = clamp(parseFloat(w), this.minW, this.maxW);
-                    if (h && !isNaN(parseFloat(h))) this.heightMm = clamp(parseFloat(h), this.minH, this.maxH);
-                } catch (e) { /* ignore */ }
+                if (ds.urlHasSize === '1') {
+                    this.widthMm = clamp(num(ds.initialWidth, defW), this.minW, this.maxW);
+                    this.heightMm = clamp(num(ds.initialHeight, defH), this.minH, this.maxH);
+                } else {
+                    this.widthMm = defW;
+                    this.heightMm = defH;
+                }
             },
 
             clamp: clamp,
@@ -107,6 +108,10 @@
                 var ds = this.$el.dataset;
                 this.widthMm = num(ds.defaultWidth, 100);
                 this.heightMm = num(ds.defaultHeight, 40);
+                try {
+                    localStorage.setItem('hr_barcode_label_w', String(this.widthMm));
+                    localStorage.setItem('hr_barcode_label_h', String(this.heightMm));
+                } catch (e) { /* ignore */ }
             },
 
             selectedEmployeeId: function () {
