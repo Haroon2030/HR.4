@@ -273,20 +273,24 @@
         </div>
 
         {% if device_users_page.has_other_pages %}
-        <div class="px-4 py-3 border-t border-slate-100 hr-pagination flex flex-wrap justify-center">
-            {% if device_users_page.has_previous %}
-            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.previous_page_number }}#device-users-table"
-               class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">السابق</a>
-            {% else %}
-            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">السابق</span>
-            {% endif %}
-            <span class="hr-pagination__status">{{ device_users_page.number }}/{{ device_users_page.paginator.num_pages }}</span>
-            {% if device_users_page.has_next %}
-            <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.next_page_number }}#device-users-table"
-               class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">التالي</a>
-            {% else %}
-            <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled">التالي</span>
-            {% endif %}
+        <div class="px-4 py-3 border-t border-slate-100 flex justify-center">
+            <nav class="hr-pagination__nav" aria-label="ترقيم مستخدمي البصمة">
+                <div class="hr-pagination__controls">
+                    {% if device_users_page.has_previous %}
+                    <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.previous_page_number }}#device-users-table"
+                       class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">السابق</a>
+                    {% else %}
+                    <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled" aria-disabled="true">السابق</span>
+                    {% endif %}
+                    <span class="hr-pagination__status">{{ device_users_page.number }}/{{ device_users_page.paginator.num_pages }}</span>
+                    {% if device_users_page.has_next %}
+                    <a href="?{% if users_querystring %}{{ users_querystring }}&{% endif %}users_page={{ device_users_page.next_page_number }}#device-users-table"
+                       class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">التالي</a>
+                    {% else %}
+                    <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled" aria-disabled="true">التالي</span>
+                    {% endif %}
+                </div>
+            </nav>
         </div>
         {% endif %}
     </div>
