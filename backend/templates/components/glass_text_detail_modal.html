@@ -392,17 +392,29 @@
 
         contentEl.classList.remove('hr-text-detail-modal__reason-text--html');
 
-        var hasLedger = !!(opts.html && opts.html.indexOf('hr-ledger-detail') !== -1);
+        var hasLedger = false;
 
-        if (opts.html) {
+        contentEl.replaceChildren();
 
-            contentEl.innerHTML = opts.html;
+        if (opts.htmlTemplateId) {
 
-            contentEl.classList.add('hr-text-detail-modal__reason-text--html');
+            var tpl = document.getElementById(opts.htmlTemplateId);
 
-            if (!hasLedger && contentEl.querySelector('.hr-ledger-detail')) {
+            if (tpl && tpl.content) {
 
-                hasLedger = true;
+                contentEl.appendChild(tpl.content.cloneNode(true));
+
+                contentEl.classList.add('hr-text-detail-modal__reason-text--html');
+
+                hasLedger = !!contentEl.querySelector('.hr-ledger-detail');
+
+            } else if (tpl) {
+
+                contentEl.textContent = tpl.textContent || '—';
+
+            } else {
+
+                contentEl.textContent = '—';
 
             }
 
@@ -506,17 +518,7 @@
 
 
 
-        var html = '';
-
-        var htmlId = trigger.getAttribute('data-hr-text-detail-html-id');
-
-        if (htmlId) {
-
-            var htmlTpl = document.getElementById(htmlId);
-
-            if (htmlTpl) html = htmlTpl.innerHTML;
-
-        }
+        var htmlTemplateId = trigger.getAttribute('data-hr-text-detail-html-id') || '';
 
 
 
@@ -524,7 +526,7 @@
 
         var contentId = trigger.getAttribute('data-hr-text-detail-content-id');
 
-        if (!html && contentId) {
+        if (!htmlTemplateId && contentId) {
 
             var tpl = document.getElementById(contentId);
 
@@ -548,7 +550,7 @@
 
             contentLabel: trigger.getAttribute('data-hr-text-detail-label') || 'السبب',
 
-            html: html,
+            htmlTemplateId: htmlTemplateId,
 
             content: content,
 

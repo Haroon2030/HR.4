@@ -5,6 +5,7 @@ import json
 import logging
 import secrets
 
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -44,6 +45,18 @@ def _extract_provided_api_key(request) -> str:
     return ''
 
 
+def _client_ip(request) -> str:
+    forwarded = (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')[0].strip()
+    return forwarded or (request.META.get('REMOTE_ADDR') or '').strip()
+
+
+def _webhook_ip_allowed(request) -> bool:
+    allowed = getattr(settings, 'EVOLUTION_WEBHOOK_ALLOWED_IPS', None) or []
+    if not allowed:
+        return True
+    return _client_ip(request) in allowed
+
+
 class EvolutionAPIKeyAuthentication(BaseAuthentication):
     """
     Header: apikey: <EVOLUTION_API_KEY>
@@ -53,6 +66,15 @@ class EvolutionAPIKeyAuthentication(BaseAuthentication):
     """
 
     def authenticate(self, request):
+        if not _webhook_ip_allowed(request):
+            remote = _client_ip(request) or '-'
+            logger.warning(
+                'Evolution webhook: IP غير مسموح | path=%s | ip=%s',
+                getattr(request, 'path', '-'),
+                remote,
+            )
+            raise AuthenticationFailed(_('عنوان IP غير مسموح لهذا الطلب.'))
+
         expected = (get_evolution_runtime_config().api_key or '').strip()
         if not expected:
             raise AuthenticationFailed(_('Evolution API غير مضبوط (مفتاح API مطلوب).'))

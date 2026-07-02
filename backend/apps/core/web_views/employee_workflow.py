@@ -17,6 +17,7 @@ from django.contrib import messages
 from apps.core.web_views._helpers import (
     employee_branch_access_required,
 )
+from apps.core.utils.user_errors import log_email_partial_failure
 from apps.core.decorators import any_permission_required, permission_required
 from apps.core.salary_access import salary_view_required
 from apps.core.services.pending_actions import create_and_execute_settlement_action, create_pending_action
@@ -495,9 +496,9 @@ def set_work_schedule(request, employee_id):
             )
             messages.success(request, f'تم حفظ الجدول وإرساله رسمياً (PDF) إلى: {", ".join(recipients)}')
         except (SmtpNotConfiguredError, SmtpConnectionError) as e:
-            messages.error(request, f'تم حفظ الجدول لكن فشل الإرسال: {e}')
+            messages.error(request, log_email_partial_failure('work_schedule_email', e))
         except Exception as e:
-            messages.error(request, f'تم حفظ الجدول لكن فشل الإرسال: {e}')
+            messages.error(request, log_email_partial_failure('work_schedule_email', e))
     else:
         schedule_action = (request.POST.get('schedule_action') or 'save').strip()
         deleted_label = (request.POST.get('deleted_month_label') or '').strip()

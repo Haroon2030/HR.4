@@ -17,6 +17,7 @@ from apps.core.web_views._helpers import (
     employee_branch_access_required,
 )
 from apps.core.decorators import any_permission_required, permission_required
+from apps.core.utils.user_errors import log_email_partial_failure
 
 EDITABLE_WARNING_TAB_TYPES = frozenset({
     'statement', 'warning', 'final_warning', 'penalty', 'acknowledgment', 'other',
@@ -155,7 +156,7 @@ def add_employee_statement(request, employee_id):
             statement.save(update_fields=['email_error'])
             messages.error(
                 request,
-                f'تم حفظ الإفادة [{statement.serial_number}] لكن فشل الإرسال: {e}'
+                log_email_partial_failure('employee_statement_email', e),
             )
     else:
         messages.success(request, f'تم تسجيل الإفادة برقم {statement.serial_number}')

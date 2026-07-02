@@ -96,16 +96,29 @@ class BarcodeLabelTests(TestCase):
             number_display='459',
             dims=dims,
         )
-        self.assertLessEqual(layout.company_font_pt, dims.name_font_pt)
         self.assertLessEqual(layout.company_lines, 2)
         self.assertLessEqual(layout.name_lines, 2)
-        total_pt = (
+        pad = dims.padding_mm
+        avail_h = dims.height_mm - 2 * pad
+        total_h = (
             layout.company_lines * layout.company_font_pt
             + layout.name_lines * layout.name_font_pt
             + layout.number_font_pt
-        )
-        self.assertLess(total_pt, 50)
+        ) * (25.4 / 72) * 1.12 + layout.line_gap_mm * 2
+        self.assertLessEqual(total_h, avail_h + 0.5)
         label = build_employee_barcode_label(self.employee, dims=dims)
         self.assertTrue(label.layout.company_text)
         zpl = build_zpl_label(label, dims=dims)
         self.assertIn('^FB', zpl)
+
+    def test_short_text_uses_larger_fonts_on_100x40(self):
+        dims = parse_label_dimensions(DEFAULT_LABEL_WIDTH_MM, DEFAULT_LABEL_HEIGHT_MM)
+        layout = compute_label_text_layout(
+            company_name='الشركة هارون الاهدل',
+            employee_name='محمد أحمد',
+            number_display='2533169484',
+            dims=dims,
+        )
+        self.assertGreaterEqual(layout.company_font_pt, 14.0)
+        self.assertGreaterEqual(layout.name_font_pt, 12.0)
+        self.assertGreaterEqual(layout.number_font_pt, 18.0)

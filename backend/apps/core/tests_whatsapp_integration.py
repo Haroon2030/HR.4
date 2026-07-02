@@ -95,6 +95,19 @@ class WhatsAppIntegrationViewTests(TestCase):
         self.assertIn('BBB', obj.last_qrcode_base64)
         self.assertEqual(obj.connection_status, EvolutionWhatsAppSettings.ConnectionStatus.CONNECTING)
 
+    @override_settings(EVOLUTION_WEBHOOK_ALLOWED_IPS=['10.0.0.5'])
+    def test_webhook_rejects_disallowed_ip(self):
+        url = reverse('web:evolution_webhook')
+        payload = {'event': 'qrcode.updated', 'data': {}}
+        resp = self.client.post(
+            url,
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_APIKEY='test-evolution-key',
+            REMOTE_ADDR='127.0.0.1',
+        )
+        self.assertEqual(resp.status_code, 403)
+
     @patch('apps.core.services.whatsapp.evolution_manager.urllib.request.urlopen')
     def test_status_endpoint_returns_json(self, mock_urlopen):
         mock_urlopen.return_value.__enter__.return_value = BytesIO(

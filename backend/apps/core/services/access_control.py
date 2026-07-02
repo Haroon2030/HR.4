@@ -154,6 +154,53 @@ def filter_branches_queryset(user, queryset: QuerySet) -> QuerySet:
     return queryset.filter(pk__in=branch_ids)
 
 
+def user_may_access_branch_id(user, branch_id: int | None) -> bool:
+    """هل يجوز للمستخدم الوصول لكيانات مرتبطة بهذا الفرع؟"""
+    if branch_id is None:
+        return False
+    branch_ids = get_accessible_branch_ids(user)
+    if branch_ids is None:
+        return True
+    return branch_id in branch_ids
+
+
+def filter_queryset_by_accessible_branch(
+    user,
+    queryset: QuerySet,
+    *,
+    branch_field: str = 'branch_id',
+) -> QuerySet:
+    """تقييد queryset بفروع المستخدم (بدون تغيير إن كان الوصول غير مقيّد)."""
+    branch_ids = get_accessible_branch_ids(user)
+    if branch_ids is None:
+        return queryset
+    return queryset.filter(**{f'{branch_field}__in': branch_ids})
+
+
+def validate_user_create_data(
+    actor,
+    *,
+    role: Role | None = None,
+    is_active: bool | None = None,
+    branch: Branch | None = None,
+    assigned_branch_ids: Iterable[int] | None = None,
+) -> str | None:
+    """التحقق من إنشاء مستخدم عبر API — يمنع تجاوز صلاحيات الإدارة."""
+    if role is not None and not can_assign_role(actor, role):
+        return 'لا يمكنك تعيين هذا الدور.'
+    if is_active is False and not is_privileged_actor(actor):
+        return 'لا يمكنك إنشاء حساب معطّل.'
+    accessible = get_accessible_branch_ids(actor)
+    if accessible is not None:
+        if branch is not None and branch.pk not in accessible:
+            return 'لا يمكنك تعيين فرع خارج نطاق صلاحياتك.'
+        if assigned_branch_ids is not None:
+            invalid = set(assigned_branch_ids) - accessible
+            if invalid:
+                return 'لا يمكنك تعيين فروع خارج نطاق صلاحياتك.'
+    return None
+
+
 def user_in_accessible_branches(user, target_user) -> bool:
     branch_ids = get_accessible_branch_ids(user)
     if branch_ids is None:

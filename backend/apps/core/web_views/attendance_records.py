@@ -21,6 +21,7 @@ from apps.attendance.services.punch_inference import reclassify_punches_by_seque
 from apps.attendance.selectors.biometric_devices import (
     filter_biometric_devices_for_user,
     get_biometric_devices_queryset,
+    get_device_for_user,
 )
 from apps.core.decorators import permission_required
 from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
@@ -264,16 +265,18 @@ def attendance_records_pull(request):
 @require_POST
 def attendance_records_reclassify(request):
     device_id = request.POST.get('device_id')
-    did = int(device_id) if device_id and str(device_id).isdigit() else None
+    if not device_id or not str(device_id).isdigit():
+        messages.error(request, 'يجب اختيار جهاز بصمة لإعادة التصنيف.')
+        return redirect('web:attendance_records')
+    device = get_device_for_user(request.user, int(device_id))
+    did = device.pk
     result = reclassify_punches_by_sequence(device_id=did, dry_run=False)
     messages.success(
         request,
         f'تم إعادة التصنيف بالتسلسل: دخول {result["inferred_in"]} · خروج {result["inferred_out"]} '
         f'(حدّث {result["updated"]} سجل)',
     )
-    url = reverse('web:attendance_records')
-    if did:
-        url = f'{url}?device={did}'
+    url = f'{reverse("web:attendance_records")}?device={did}'
     return redirect(url)
 
 

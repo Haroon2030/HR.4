@@ -22,6 +22,7 @@ from .services.access_control import (
     target_is_protected,
     validate_permission_grants,
     validate_user_admin_changes,
+    validate_user_create_data,
 )
 from .serializers import (
     RoleSerializer,
@@ -285,9 +286,15 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         actor = self.request.user
-        role = serializer.validated_data.get('role')
-        if role and not can_assign_role(actor, role):
-            raise PermissionDenied('لا يمكنك تعيين هذا الدور.')
+        validated = serializer.validated_data
+        role = validated.get('role')
+        err = validate_user_create_data(
+            actor,
+            role=role,
+            is_active=validated.get('is_active', True),
+        )
+        if err:
+            raise PermissionDenied(err)
         serializer.save()
 
     def perform_update(self, serializer):

@@ -159,7 +159,17 @@ def user_may_access_media_path(user, path: str) -> bool:
         profile = getattr(user, 'profile', None)
         if profile and profile.avatar and path in str(profile.avatar):
             return True
-        return has_permission(user, 'users.view')
+        from apps.core.models import UserProfile
+        from apps.core.services.access_control import can_view_user
+
+        owner = (
+            UserProfile.objects.filter(avatar=path)
+            .select_related('user')
+            .first()
+        )
+        if owner and has_permission(user, 'users.edit') and can_view_user(user, owner.user):
+            return True
+        return False
 
     if path.startswith('pending_actions/') or path.startswith('HR/pending_actions/'):
         if not (

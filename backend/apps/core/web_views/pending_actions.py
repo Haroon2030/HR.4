@@ -22,6 +22,7 @@ from django.urls import reverse
 from apps.core.models import PendingAction, Role
 from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
 from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations, can_delete_pending_action
+from apps.core.utils.user_errors import log_web_action_error
 from apps.core.web_views._helpers import (
     _can_act_at_stage,
     _can_return_at_stage,
@@ -438,7 +439,7 @@ def branch_approve_action(request, action_id):
         else:
             messages.success(request, 'تمت موافقتك. الطلب الآن بانتظار المدير العام.')
     except Exception as e:
-        messages.error(request, f'تعذّر التنفيذ: {e}')
+        messages.error(request, log_web_action_error('branch_approve_action', e))
     return redirect('web:pending_action_detail', action_id=action_id)
 
 
@@ -470,7 +471,7 @@ def gm_approve_action(request, action_id):
             gm_approve_and_assign(action, request.user, officer, notes)
         messages.success(request, 'تمت موافقتك. تم إسناد المهمة لموظف الموارد.')
     except Exception as e:
-        messages.error(request, f'تعذّر التنفيذ: {e}')
+        messages.error(request, log_web_action_error('branch_approve_action', e))
     return redirect('web:pending_action_detail', action_id=action_id)
 
 
@@ -489,7 +490,7 @@ def officer_approve_action(request, action_id):
             msg = officer_approve(action, request.user, notes)
         messages.success(request, f'تمت الموافقة وتنفيذ العملية: {msg}')
     except Exception as e:
-        messages.error(request, f'فشل تنفيذ العملية: {e}')
+        messages.error(request, log_web_action_error('officer_approve_action', e))
     return redirect('web:pending_action_detail', action_id=action_id)
 
 
@@ -513,7 +514,7 @@ def return_pending_action(request, action_id):
             return_action(action, request.user, notes)
         messages.success(request, 'تم إرجاع الطلب لمقدّم الطلب للتعديل.')
     except Exception as e:
-        messages.error(request, f'تعذّر التنفيذ: {e}')
+        messages.error(request, log_web_action_error('branch_approve_action', e))
     return redirect('web:pending_action_detail', action_id=action_id)
 
 
@@ -528,7 +529,7 @@ def resubmit_pending_action(request, action_id):
             resubmit_action(action, request.user)
         messages.success(request, 'تم إعادة إرسال الطلب لمدير الفرع.')
     except Exception as e:
-        messages.error(request, f'تعذّر التنفيذ: {e}')
+        messages.error(request, log_web_action_error('branch_approve_action', e))
     return redirect('web:pending_action_detail', action_id=action_id)
 
 

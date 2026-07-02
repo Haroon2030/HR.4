@@ -222,6 +222,15 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data.pop('is_superuser', None)
         return validated_data
 
+    def validate(self, attrs):
+        password = attrs.get('password')
+        if password:
+            from django.contrib.auth.password_validation import validate_password
+            request = self.context.get('request')
+            user = getattr(self, 'instance', None)
+            validate_password(password, user=user if user and user.pk else None)
+        return attrs
+
     def create(self, validated_data):
         validated_data = self._strip_privileged_fields(validated_data)
         role = validated_data.pop('role', None)

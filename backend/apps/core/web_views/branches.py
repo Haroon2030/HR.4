@@ -21,7 +21,7 @@ from apps.core.services.org_structure import (
     get_org_tab_context,
     resolve_org_tab,
 )
-from apps.core.services.access_control import get_accessible_branch_ids
+from apps.core.services.access_control import get_accessible_branch_ids, user_may_access_branch_id
 
 
 @login_required
@@ -75,7 +75,10 @@ def edit_branch(request, branch_id):
     """تعديل فرع"""
     from apps.core.forms import BranchForm
     branch = get_object_or_404(Branch, id=branch_id)
-    
+    if not user_may_access_branch_id(request.user, branch.id):
+        messages.error(request, 'لا تملك صلاحية تعديل هذا الفرع.')
+        return redirect('web:list_branches')
+
     if request.method == 'POST':
         form = BranchForm(request.POST, instance=branch)
         if form.is_valid():
@@ -133,6 +136,9 @@ def add_branch(request):
 def delete_branch(request, branch_id):
     """حذف فرع (soft delete)"""
     branch = get_object_or_404(Branch, id=branch_id)
+    if not user_may_access_branch_id(request.user, branch.id):
+        messages.error(request, 'لا تملك صلاحية حذف هذا الفرع.')
+        return redirect('web:list_branches')
     if request.method == 'POST':
         name = branch.name
         branch.delete()

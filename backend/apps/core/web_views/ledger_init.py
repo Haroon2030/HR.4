@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.core.decorators import permission_required
 from apps.core.web_views._helpers import employee_branch_access_required
+from apps.core.utils.user_errors import GENERIC_LEDGER_ERROR, log_web_action_error
 
 
 @login_required
@@ -98,6 +99,6 @@ def run_ledger_init(request, employee_id):
 
         messages.success(request, f'تمت تهيئة الرصيد الافتتاحي للموظف {emp.name} بنجاح.')
     except Exception as e:
-        messages.error(request, f'خطأ في تهيئة الرصيد: {e}')
+        messages.error(request, log_web_action_error('ledger_init', e, user_message=GENERIC_LEDGER_ERROR))
 
     return redirect('web:view_employee', employee_id=emp.id)

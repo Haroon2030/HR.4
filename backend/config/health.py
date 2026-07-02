@@ -26,6 +26,7 @@ def health(request):
     except Exception as exc:
         payload['status'] = 'degraded'
         payload['database'] = 'error'
-        payload['error'] = str(exc)[:200]
+        if settings.DEBUG:
+            payload['error'] = str(exc)[:200]
         return JsonResponse(payload, status=503)
     return JsonResponse(payload)

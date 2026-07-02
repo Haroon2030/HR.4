@@ -64,6 +64,9 @@ CORS_ALLOW_CREDENTIALS = True
 # وكيل البصمة — السماح للمفتاح العام بقائمة الأجهزة في التطوير
 AGENT_GLOBAL_KEY_LIST_DEVICES = True
 
+# توقيع HMAC للبصمة — معطّل في التطوير لتسهيل الاختبار المحلي
+ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=False)
+
 # ══════════════════════════════════════════════════════════════════════════════
 # REST Framework — يُورث من base.py (JWT، throttling، spectacular، معالج الأخطاء)
 # تخصيص التطوير فقط: ترقيم أوضح للقوائم عند التجربة اليدوية

@@ -157,8 +157,24 @@ class BranchScopeTests(TestCase):
                 'name': 'View branches',
             },
         )
+        edit_perm, _ = Permission.objects.get_or_create(
+            code='branches.edit',
+            defaults={
+                'module': branches_mod,
+                'operation': Permission.Operation.EDIT,
+                'name': 'Edit branches',
+            },
+        )
+        delete_perm, _ = Permission.objects.get_or_create(
+            code='branches.delete',
+            defaults={
+                'module': branches_mod,
+                'operation': Permission.Operation.DELETE,
+                'name': 'Delete branches',
+            },
+        )
         cls.role = Role.objects.create(name='Spec', role_type=Role.RoleType.SPECIALIST)
-        cls.role.permissions.add(view_perm)
+        cls.role.permissions.add(view_perm, edit_perm, delete_perm)
 
         cls.user = User.objects.create_user(username='scoped', password='Scoped-User-99!')
         p = cls.user.profile
@@ -176,6 +192,68 @@ class BranchScopeTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse('web:list_branches'), response.url)
+
+    def test_edit_branch_denied_outside_scope(self):
+        self.client.login(username='scoped', password='Scoped-User-99!')
+        url = reverse('web:edit_branch', kwargs={'branch_id': self.branch_b.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('web:list_branches'), response.url)
+
+    def test_delete_branch_denied_outside_scope(self):
+        self.client.login(username='scoped', password='Scoped-User-99!')
+        url = reverse('web:delete_branch', kwargs={'branch_id': self.branch_b.id})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('web:list_branches'), response.url)
+        self.branch_b.refresh_from_db()
+        self.assertFalse(self.branch_b.is_deleted)
+
+
+class AvatarMediaAccessTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(name='Co', tax_number='1', commercial_record='1')
+        cls.branch = Branch.objects.create(name='Main', code='M1', company=cls.company)
+
+        users_mod, _ = AppModule.objects.get_or_create(
+            code='users',
+            defaults={'name': 'Users', 'icon': 'shield', 'order': 5},
+        )
+        view_perm, _ = Permission.objects.get_or_create(
+            code='users.view',
+            defaults={
+                'module': users_mod,
+                'operation': Permission.Operation.VIEW,
+                'name': 'View users',
+            },
+        )
+        cls.viewer_role = Role.objects.create(name='Viewer', role_type=Role.RoleType.SPECIALIST)
+        cls.viewer_role.permissions.add(view_perm)
+
+        cls.owner = User.objects.create_user(username='avatar_owner', password='Owner-User-99!')
+        cls.owner.profile.avatar = 'avatars/owner.jpg'
+        cls.owner.profile.save(update_fields=['avatar'])
+
+        cls.viewer = User.objects.create_user(username='avatar_viewer', password='Viewer-User-99!')
+        vp = cls.viewer.profile
+        vp.role = cls.viewer_role
+        vp.branch = cls.branch
+        vp.save()
+
+    def test_users_view_cannot_access_other_user_avatar(self):
+        from apps.core.services.media_access import user_may_access_media_path
+
+        self.assertFalse(
+            user_may_access_media_path(self.viewer, 'avatars/owner.jpg')
+        )
+
+    def test_owner_can_access_own_avatar(self):
+        from apps.core.services.media_access import user_may_access_media_path
+
+        self.assertTrue(
+            user_may_access_media_path(self.owner, 'avatars/owner.jpg')
+        )
 
 
 class WorkflowPermissionTests(TestCase):

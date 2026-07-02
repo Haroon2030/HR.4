@@ -402,8 +402,11 @@ ATTENDANCE_AGENT_API_KEY = env('ATTENDANCE_AGENT_API_KEY', default='')
 # في الإنتاج: المفتاح العام لا يعرض قائمة الأجهزة/طلبات السحب (ingest يبقى مسموحاً)
 AGENT_GLOBAL_KEY_LIST_DEVICES = env.bool('AGENT_GLOBAL_KEY_LIST_DEVICES', default=False)
 AGENT_GLOBAL_KEY_ALLOW_INGEST = env.bool('AGENT_GLOBAL_KEY_ALLOW_INGEST', default=False)
-# توقيع HMAC لطلبات ingest — افتراضياً معطّل في التطوير
-ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=False)
+# توقيع HMAC لطلبات ingest — مفعّل افتراضياً (عطّله صراحة في التطوير فقط)
+ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=True)
+
+# عناوين IP مسموحة لـ Evolution webhook (فارغ = بدون تقييد — يُفضّل ضبطها في الإنتاج)
+EVOLUTION_WEBHOOK_ALLOWED_IPS = env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[])
 
 # ── عن النظام (قائمة المعلومات في الشريط العلوي) ──
 HR_APP_DEVELOPER = env('HR_APP_DEVELOPER', default='شركة الحلول التقنية')

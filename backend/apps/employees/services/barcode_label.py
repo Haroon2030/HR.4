@@ -29,22 +29,24 @@ class LabelDimensions:
 
     @property
     def name_font_pt(self) -> float:
-        """حجم خط اسم الشركة (السطر الأول)."""
-        by_h = self.height_mm * 0.20
-        by_w = self.width_mm * 0.10
-        return round(max(6.5, min(14.0, min(by_h, by_w))), 1)
+        """حجم خط شركة الكفالة (السطر الأول) — نقطة بداية قبل التكييف."""
+        by_h = self.height_mm * 0.30
+        by_w = self.width_mm * 0.13
+        return round(max(8.0, min(20.0, min(by_h, by_w))), 1)
 
     @property
     def company_font_pt(self) -> float:
-        """حجم خط اسم الموظف (السطر الثاني)."""
-        by_h = self.height_mm * 0.17
-        by_w = self.width_mm * 0.085
-        return round(max(6.0, min(11.0, min(by_h, by_w))), 1)
+        """حجم خط اسم الموظف (السطر الثاني) — نقطة بداية قبل التكييف."""
+        by_h = self.height_mm * 0.26
+        by_w = self.width_mm * 0.11
+        return round(max(7.0, min(17.0, min(by_h, by_w))), 1)
 
     @property
     def number_font_pt(self) -> float:
-        """حجم خط الرقم الوظيفي."""
-        return round(max(7.0, min(14.0, self.height_mm * 0.22)), 1)
+        """حجم خط الرقم الوظيفي — نقطة بداية قبل التكييف."""
+        by_h = self.height_mm * 0.32
+        by_w = self.width_mm * 0.12
+        return round(max(9.0, min(22.0, min(by_h, by_w))), 1)
 
     @property
     def padding_mm(self) -> float:
@@ -233,6 +235,49 @@ def _fit_text_to_lines(text: str, *, chars_per_line: int, max_lines: int) -> tup
     return lines, f'{trimmed}…'
 
 
+def _font_caps(dims: LabelDimensions) -> tuple[float, float, float]:
+    """أقصى أحجام خطوط مسموحة لهذا المقاس (شركة، اسم، رقم)."""
+    h, w = dims.height_mm, dims.width_mm
+    company_cap = round(min(h * 0.40, w * 0.16, 28.0), 1)
+    name_cap = round(min(h * 0.36, w * 0.14, 24.0), 1)
+    number_cap = round(min(h * 0.52, w * 0.20, 32.0), 1)
+    return (
+        max(9.0, company_cap),
+        max(8.0, name_cap),
+        max(10.0, number_cap),
+    )
+
+
+def _layout_block_height_mm(
+    *,
+    dims: LabelDimensions,
+    pad: float,
+    gap_mm: float,
+    company_pt: float,
+    name_pt: float,
+    number_pt: float,
+    company_name: str,
+    employee_name: str,
+    number_text: str,
+) -> tuple[int, str, int, str, float]:
+    company_cpl = _chars_per_line(dims.width_mm, company_pt, pad)
+    name_cpl = _chars_per_line(dims.width_mm, name_pt, pad)
+    company_lines, company_text = _fit_text_to_lines(
+        company_name, chars_per_line=company_cpl, max_lines=MAX_COMPANY_LINES,
+    )
+    name_lines, name_text = _fit_text_to_lines(
+        employee_name, chars_per_line=name_cpl, max_lines=MAX_NAME_LINES,
+    )
+    total_h = (
+        _block_height_mm(company_lines, company_pt)
+        + gap_mm
+        + _block_height_mm(name_lines, name_pt)
+        + gap_mm
+        + _block_height_mm(1, number_pt)
+    )
+    return company_lines, company_text, name_lines, name_text, total_h
+
+
 def compute_label_text_layout(
     *,
     company_name: str,
@@ -249,27 +294,21 @@ def compute_label_text_layout(
     company_pt = dims.name_font_pt
     name_pt = dims.company_font_pt
     number_pt = dims.number_font_pt
-    company_lines = 1
-    name_lines = 1
     company_text = (company_name or '—').strip() or '—'
     name_text = (employee_name or '—').strip() or '—'
     number_text = (number_display or '—').strip() or '—'
 
     for _ in range(40):
-        company_cpl = _chars_per_line(dims.width_mm, company_pt, pad)
-        name_cpl = _chars_per_line(dims.width_mm, name_pt, pad)
-        company_lines, company_text = _fit_text_to_lines(
-            company_text, chars_per_line=company_cpl, max_lines=MAX_COMPANY_LINES,
-        )
-        name_lines, name_text = _fit_text_to_lines(
-            name_text, chars_per_line=name_cpl, max_lines=MAX_NAME_LINES,
-        )
-        total_h = (
-            _block_height_mm(company_lines, company_pt)
-            + gap_mm
-            + _block_height_mm(name_lines, name_pt)
-            + gap_mm
-            + _block_height_mm(1, number_pt)
+        company_lines, company_text, name_lines, name_text, total_h = _layout_block_height_mm(
+            dims=dims,
+            pad=pad,
+            gap_mm=gap_mm,
+            company_pt=company_pt,
+            name_pt=name_pt,
+            number_pt=number_pt,
+            company_name=company_name,
+            employee_name=employee_name,
+            number_text=number_text,
         )
         if total_h <= avail_h:
             break
@@ -285,13 +324,50 @@ def compute_label_text_layout(
         if company_pt <= 5.0 and name_pt <= 5.0 and number_pt <= 5.5:
             gap_mm = min_gap_mm
             if total_h > avail_h and company_lines > 1:
+                company_cpl = _chars_per_line(dims.width_mm, company_pt, pad)
                 company_lines, company_text = _fit_text_to_lines(
                     company_name, chars_per_line=company_cpl, max_lines=1,
                 )
             if total_h > avail_h and name_lines > 1:
+                name_cpl = _chars_per_line(dims.width_mm, name_pt, pad)
                 name_lines, name_text = _fit_text_to_lines(
                     employee_name, chars_per_line=name_cpl, max_lines=1,
                 )
+            break
+
+    max_company_pt, max_name_pt, max_number_pt = _font_caps(dims)
+    target_h = avail_h * 0.90
+    step = 0.5 if dims.height_mm >= 35 else 0.4
+
+    for _ in range(50):
+        if total_h >= target_h * 0.92:
+            break
+        trial_company = round(min(max_company_pt, company_pt + step), 1)
+        trial_name = round(min(max_name_pt, name_pt + step), 1)
+        trial_number = round(min(max_number_pt, number_pt + step), 1)
+        if (
+            trial_company == company_pt
+            and trial_name == name_pt
+            and trial_number == number_pt
+        ):
+            break
+        t_lines, t_company, t_name_lines, t_name, t_total = _layout_block_height_mm(
+            dims=dims,
+            pad=pad,
+            gap_mm=gap_mm,
+            company_pt=trial_company,
+            name_pt=trial_name,
+            number_pt=trial_number,
+            company_name=company_name,
+            employee_name=employee_name,
+            number_text=number_text,
+        )
+        if t_total <= avail_h:
+            company_pt, name_pt, number_pt = trial_company, trial_name, trial_number
+            company_lines, company_text = t_lines, t_company
+            name_lines, name_text = t_name_lines, t_name
+            total_h = t_total
+        else:
             break
 
     return LabelTextLayout(

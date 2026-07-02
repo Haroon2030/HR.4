@@ -132,8 +132,15 @@ class UserBaseForm(forms.Form):
 
 
 class UserCreateForm(UserBaseForm):
-    password = forms.CharField(min_length=4, required=True,
+    password = forms.CharField(min_length=12, required=True,
                                error_messages={'required': 'كلمة المرور مطلوبة'})
+
+    def clean_password(self):
+        from django.contrib.auth.password_validation import validate_password
+        password = self.cleaned_data.get('password')
+        if password:
+            validate_password(password)
+        return password
 
     def clean_username(self):
         username = super().clean_username()
