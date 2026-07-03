@@ -110,10 +110,11 @@ if not _REDIS_URL:
     CELERY_RESULT_BACKEND = ''
 
 _evolution_url = (env('EVOLUTION_API_URL', default='') or '').strip()
-if _evolution_url and not env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[]):
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        'حدّد EVOLUTION_WEBHOOK_ALLOWED_IPS في الإنتاج عند تفعيل Evolution API.'
+_evolution_allowed_ips = env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[])
+if _evolution_url and not _evolution_allowed_ips:
+    _logging.getLogger(__name__).warning(
+        'EVOLUTION_API_URL مفعّل بدون EVOLUTION_WEBHOOK_ALLOWED_IPS — '
+        'يُقبل webhook من أي IP. حدّد عناوين Evolution في Dokploy للأمان.',
     )
 
 # استخدام التخزين المؤقت للجلسات أيضاً — يقلل الضغط على قاعدة البيانات
