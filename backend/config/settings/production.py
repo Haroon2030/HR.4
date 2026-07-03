@@ -91,14 +91,23 @@ else:
         }
     }
     # LocMemCache مع عدة workers Gunicorn لا يشارك الذاكرة بين العمليات —
-    # يُفضّل REDIS_URL عند التوسع؛ التحذير يُطبع من entrypoint.sh عند الإقلاع.
+    # يُفضّل REDIS_URL عند التوسع؛ التحذير يُطبع أدناه ولا يوقف migrate.
+
+import logging as _logging
 
 _gunicorn_workers = env.int('GUNICORN_WORKERS', default=1)
 if _gunicorn_workers > 1 and not _REDIS_URL:
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        'REDIS_URL مطلوب في الإنتاج عند تشغيل أكثر من worker واحد (GUNICORN_WORKERS > 1).'
+    _logging.getLogger(__name__).warning(
+        'GUNICORN_WORKERS=%s بدون REDIS_URL — الكاش محلي لكل عملية (LocMem). '
+        'أضف REDIS_URL في Dokploy لمشاركة الجلسات والكاش بين العمال.',
+        _gunicorn_workers,
     )
+
+# بدون Redis: Celery يعمل متزامناً داخل طلب HTTP (لا يتطلب عامل منفصل)
+if not _REDIS_URL:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_BROKER_URL = ''
+    CELERY_RESULT_BACKEND = ''
 
 _evolution_url = (env('EVOLUTION_API_URL', default='') or '').strip()
 if _evolution_url and not env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[]):
