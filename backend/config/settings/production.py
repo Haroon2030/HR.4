@@ -153,11 +153,18 @@ _validate_production_secret_key(SECRET_KEY)
 from django.core.exceptions import ImproperlyConfigured as _ImproperlyConfigured
 
 _jwt_secret = (env('JWT_SECRET', default='') or '').strip()
-if not _jwt_secret or len(_jwt_secret) < 32:
-    raise _ImproperlyConfigured(
-        'JWT_SECRET مطلوب في الإنتاج (32 حرفاً كحد أدنى)، منفصلاً عن SECRET_KEY. '
-        'أنشئ مفتاحاً عشوائياً وضعه في Environment فقط — لا تضعه في Git.'
-    )
+if len(_jwt_secret) < 32:
+    if len(SECRET_KEY) >= 32:
+        _logging.getLogger(__name__).warning(
+            'JWT_SECRET غير مضبوط أو قصير — يُستخدم SECRET_KEY لتوقيع JWT. '
+            'أضف JWT_SECRET منفصلاً (32+ حرفاً) في Dokploy.',
+        )
+        _jwt_secret = SECRET_KEY
+    else:
+        raise _ImproperlyConfigured(
+            'JWT_SECRET مطلوب في الإنتاج (32 حرفاً كحد أدنى)، منفصلاً عن SECRET_KEY. '
+            'أنشئ مفتاحاً عشوائياً وضعه في Environment فقط — لا تضعه في Git.'
+        )
 SIMPLE_JWT['SIGNING_KEY'] = _jwt_secret
 SIMPLE_JWT['VERIFYING_KEY'] = _jwt_secret
 
