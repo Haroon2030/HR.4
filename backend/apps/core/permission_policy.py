@@ -19,7 +19,6 @@ SALARY_REPORT_KEYS_STRICT = frozenset({
 })
 
 HR_FORMS_WITH_SALARY = frozenset({
-    'employment_letter',
     'salary_adjustment',
     'salary_certificate',
     'salary_transfer_commitment',

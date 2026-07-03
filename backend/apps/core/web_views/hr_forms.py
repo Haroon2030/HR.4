@@ -1,6 +1,6 @@
 """
 نماذج الموارد البشرية الرسمية — صفحات قابلة للطباعة
-Leave Request / Final Settlement / Absence Report / Employment Letter / Warning / Loan Request
+Leave Request / Final Settlement / Warning / Loan Request / Salary Certificate / …
 """
 import hashlib
 import re
@@ -35,8 +35,6 @@ FORM_CODE_MAP = {
     'evaluation': 'EV',
     'resumption_after_leave': 'RL',
     'contract_termination': 'CT',
-    'absence_report': 'AR',
-    'employment_letter': 'EL',
     'salary_certificate': 'SC',
     'salary_transfer_commitment': 'STC',
     'permission_request': 'PR',
@@ -381,19 +379,6 @@ def _resolve_hr_form_profession(request, employee):
     return None
 
 
-def _resolve_hr_form_hire_date(request, employee):
-    """تاريخ الالتحاق من ?hire_date= أو ملف الموظف."""
-    from datetime import date as date_cls
-
-    raw = (request.GET.get('hire_date') or '').strip()
-    if raw:
-        try:
-            return date_cls.fromisoformat(raw)
-        except ValueError:
-            pass
-    return getattr(employee, 'hire_date', None)
-
-
 def _resolve_employee_sponsorship(employee):
     """كفالة الموظف (حقل «الشركة» في ملف الموظف) — حتى لو لم تُحمَّل عبر select_related."""
     from apps.setup.models import Sponsorship
@@ -614,7 +599,6 @@ def hr_form_print(request, form_type, employee_id):
 
     context['profession'] = _resolve_hr_form_profession(request, employee)
     context['professions'] = _professions_for_hr_form(employee)
-    context['form_hire_date'] = _resolve_hr_form_hire_date(request, employee)
     context['form_employee_iban'] = (getattr(employee, 'iban', None) or '').strip()
 
     if form_type == 'salary_transfer_commitment':

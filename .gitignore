@@ -100,3 +100,8 @@ backend/scripts/biometric_bridge/devices.list
 backend/scripts/biometric_bridge/python_path.txt
 backend/scripts/biometric_bridge/*.bak.*
 backend/scripts/biometric_bridge/agent_scheduled.log
+
+testsprite_tests\tmp\config.json
+
+# Generated audit reports (local dev scripts)
+backend/scripts/reports/*.json
