@@ -216,9 +216,18 @@ class BranchAPITests(_SessionAuthenticatedAPIClient):
         self.assertEqual(response.json()['code'], 'API-NEW')
 
     def test_branch_employees_action(self):
+        from apps.employees.models import Employee
+
+        Employee.objects.create(
+            name='موظف API',
+            employee_number='API-1',
+            branch=self.branch,
+        )
         response = self.client.get(f'/api/v1/branches/{self.branch.pk}/employees/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.json(), list)
+        payload = response.json()
+        self.assertIsInstance(payload, list)
+        self.assertTrue(any(row.get('employee_number') == 'API-1' for row in payload))
 
 
 class RoleAPITests(_SessionAuthenticatedAPIClient):

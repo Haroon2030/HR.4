@@ -1,8 +1,7 @@
 """بحث موظفين لاختيار الواجهة — مصدر واحد لكل الصفحات."""
 from __future__ import annotations
 
-from django.db.models import Q
-
+from apps.core.selectors.employee_search import search_employees
 from apps.core.utils.employee_picker import employee_picker_dict
 from apps.core.web_views._helpers import filter_employees_queryset_for_user
 from apps.employees.models import Employee
@@ -21,19 +20,5 @@ def search_employees_for_picker(user, query: str, *, limit: int = 40) -> list[di
         return []
 
     qs = employee_picker_queryset(user)
-    terms = [t for t in q.split() if t]
-    if terms:
-        cond = Q()
-        for t in terms:
-            cond &= (
-                Q(name__icontains=t)
-                | Q(id_number__icontains=t)
-                | Q(employee_number__icontains=t)
-                | Q(phone__icontains=t)
-                | Q(branch__name__icontains=t)
-                | Q(department__name__icontains=t)
-                | Q(profession__name__icontains=t)
-            )
-        qs = qs.filter(cond)
-
-    return [employee_picker_dict(emp) for emp in qs[:limit]]
+    qs = search_employees(qs, q, limit=limit)
+    return [employee_picker_dict(emp) for emp in qs]

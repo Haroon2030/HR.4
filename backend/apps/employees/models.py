@@ -439,6 +439,8 @@ class Employee(BaseModel):
         indexes = [
             models.Index(fields=['branch', 'status'], name='emp_branch_status_idx'),
             models.Index(fields=['branch', 'is_deleted'], name='emp_branch_del_idx'),
+            models.Index(fields=['employee_number'], name='emp_number_idx'),
+            models.Index(fields=['id_number'], name='emp_id_number_idx'),
         ]
 
     def __str__(self):
@@ -573,6 +575,9 @@ class EmployeeStatement(BaseModel):
         verbose_name = "إفادة / إنذار"
         verbose_name_plural = "الإفادات والإنذارات"
         ordering = ['-statement_date', '-created_at']
+        indexes = [
+            models.Index(fields=['employee', 'statement_date'], name='empstmt_emp_date_idx'),
+        ]
 
     def __str__(self):
         return f"{self.employee.name} — {self.get_statement_type_display()}: {self.title}"
@@ -651,6 +656,10 @@ class EmployeeLeave(BaseModel):
         verbose_name = "إجازة موظف"
         verbose_name_plural = "إجازات الموظفين"
         ordering = ['-date_from', '-created_at']
+        indexes = [
+            models.Index(fields=['employee', 'date_from', 'date_to'], name='empleave_emp_dates_idx'),
+            models.Index(fields=['applied_to_payroll'], name='empleave_payroll_idx'),
+        ]
 
     def __str__(self):
         return f"{self.employee.name} — {self.get_leave_type_display()} ({self.date_from} → {self.date_to})"

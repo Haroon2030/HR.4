@@ -421,6 +421,13 @@ def _locked(action_id):
     return PendingAction.objects.select_for_update().get(id=action_id)
 
 
+def _deny_if_action_not_visible(request, action):
+    if _user_visible_actions(request.user).filter(pk=action.pk).exists():
+        return False
+    messages.error(request, 'لا تملك صلاحية رؤية هذا الطلب.')
+    return True
+
+
 @login_required
 def branch_approve_action(request, action_id):
     if request.method != 'POST':
@@ -429,6 +436,8 @@ def branch_approve_action(request, action_id):
     try:
         with transaction.atomic():
             action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
             if not _can_act_at_stage(request.user, action, PendingAction.Stage.BRANCH):
                 messages.error(request, 'لا تملك صلاحية الموافقة على هذا الطلب.')
                 return redirect('web:list_pending_actions')
@@ -456,6 +465,8 @@ def gm_approve_action(request, action_id):
     try:
         with transaction.atomic():
             action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
             if not _can_act_at_stage(request.user, action, PendingAction.Stage.GM):
                 messages.error(request, 'لا تملك صلاحية الموافقة كمدير عام.')
                 return redirect('web:list_pending_actions')
@@ -483,6 +494,8 @@ def officer_approve_action(request, action_id):
     try:
         with transaction.atomic():
             action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
             if not _can_act_at_stage(request.user, action, PendingAction.Stage.OFFICER):
                 messages.error(request, 'لا تملك صلاحية تنفيذ هذا الطلب.')
                 return redirect('web:list_pending_actions')
@@ -506,6 +519,8 @@ def return_pending_action(request, action_id):
     try:
         with transaction.atomic():
             action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
             stage = action.current_stage
             if not stage or not _can_return_at_stage(request.user, action, stage):
                 messages.error(request, 'لا تملك صلاحية إرجاع هذا الطلب.')
@@ -525,6 +540,8 @@ def resubmit_pending_action(request, action_id):
     try:
         with transaction.atomic():
             action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
             from apps.core.services.pending_actions import resubmit_action
             resubmit_action(action, request.user)
         messages.success(request, 'تم إعادة إرسال الطلب لمدير الفرع.')

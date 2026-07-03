@@ -29,7 +29,6 @@ from .serializers import (
     RoleListSerializer,
     UserSerializer,
     UserListSerializer,
-    UserProfileSerializer,
     BranchSerializer,
     BranchListSerializer,
     CompanySerializer,
@@ -40,10 +39,10 @@ User = get_user_model()
 
 class CompanyViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     """ViewSet للشركات"""
-    queryset = Company.objects.all()
+    queryset = Company.objects.filter(is_deleted=False)
     serializer_class = CompanySerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['is_deleted']
+    filterset_fields = []
     search_fields = ['name', 'tax_number', 'commercial_record']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
@@ -55,6 +54,12 @@ class CompanyViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         'partial_update': 'users.edit',
         'destroy': 'users.delete',
     }
+
+    def get_queryset(self):
+        return Company.objects.filter(is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.delete()
 
 
 class BranchViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
@@ -105,12 +110,33 @@ class BranchViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         )
         return filter_branches_queryset(self.request.user, queryset)
 
+    def _validate_branch_manager(self, manager):
+        if manager and not can_administer_user(self.request.user, manager):
+            raise PermissionDenied('لا يمكنك تعيين هذا المدير للفرع.')
+
+    def perform_create(self, serializer):
+        self._validate_branch_manager(serializer.validated_data.get('manager'))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        manager = serializer.validated_data.get('manager')
+        if manager is not None:
+            self._validate_branch_manager(manager)
+        serializer.save()
+
     @action(detail=True, methods=['get'])
     def employees(self, request, pk=None):
-        """الحصول على موظفي الفرع"""
+        """موظفو HR المرتبطون بالفرع (ليس مستخدمي النظام)."""
+        from apps.employees.models import Employee
+        from apps.employees.serializers import BranchEmployeeListSerializer
+
         branch = self.get_object()
-        employees = branch.employees.select_related('user', 'role').all()
-        return Response(UserProfileSerializer(employees, many=True).data)
+        qs = (
+            Employee.objects.filter(branch=branch, is_deleted=False)
+            .select_related('department', 'profession')
+            .order_by('name')
+        )
+        return Response(BranchEmployeeListSerializer(qs, many=True).data)
 
 
 class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
@@ -147,11 +173,13 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         return RoleSerializer
 
     def perform_create(self, serializer):
+        if serializer.validated_data.pop('is_system_role', False) and not self.request.user.is_superuser:
+            raise PermissionDenied('لا يمكن إنشاء دور نظامي.')
         role_type = serializer.validated_data.get('role_type')
         if role_type in (Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER):
             if not self.request.user.is_superuser:
                 raise PermissionDenied('لا يمكنك إنشاء دور بهذا المستوى.')
-        serializer.save()
+        serializer.save(is_system_role=False)
 
     def perform_update(self, serializer):
         role = serializer.instance
@@ -246,7 +274,7 @@ class UserViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     ).all()
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['is_active', 'is_staff', 'is_superuser']
+    filterset_fields = ['is_active']
     search_fields = ['username', 'email', 'first_name', 'last_name']
     ordering_fields = ['username', 'date_joined', 'last_login']
     ordering = ['username']

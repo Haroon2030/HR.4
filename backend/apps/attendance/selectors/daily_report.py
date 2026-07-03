@@ -5,7 +5,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from django.db.models import QuerySet
+from django.db.models import Count, Max, Min, Q, QuerySet
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch
@@ -131,22 +132,95 @@ def _fmt_employee_administration(employee) -> str:
 MAX_DAILY_ATTENDANCE_ROWS = 15_000
 
 
-def build_daily_attendance_rows(
-    qs: QuerySet,
-    *,
-    max_rows: int | None = MAX_DAILY_ATTENDANCE_ROWS,
-) -> list[DailyAttendanceRow]:
-    """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
-    device_ids = set(qs.values_list('device_id', flat=True).distinct())
-    enroll_map = load_enrollment_employee_map(device_ids)
+def _rows_from_linked_sql_aggregates(qs: QuerySet) -> list[DailyAttendanceRow]:
+    """تجميع SQL للبصمات المربوطة مباشرة بموظف HR — أسرع من التكرار في Python."""
+    linked = qs.filter(employee_id__isnull=False)
+    if not linked.exists():
+        return []
 
+    tz = timezone.get_current_timezone()
+    check_in = AttendancePunch.PunchType.CHECK_IN
+    check_out = AttendancePunch.PunchType.CHECK_OUT
+
+    agg = (
+        linked.annotate(day=TruncDate('punched_at', tzinfo=tz))
+        .values('day', 'employee_id')
+        .annotate(
+            check_in=Min('punched_at', filter=Q(punch_type=check_in)),
+            check_out=Max('punched_at', filter=Q(punch_type=check_out)),
+            punch_count=Count('id'),
+            device_id=Min('device_id'),
+        )
+    )
+
+    employee_ids = {row['employee_id'] for row in agg}
+    from apps.employees.models import Employee
+
+    employees = {
+        e.pk: e
+        for e in Employee.objects.filter(pk__in=employee_ids).select_related(
+            'branch', 'department', 'administration',
+        )
+    }
+    device_ids = {row['device_id'] for row in agg if row['device_id']}
+    from apps.attendance.models import BiometricDevice
+
+    devices = {
+        d.pk: d
+        for d in BiometricDevice.objects.filter(pk__in=device_ids).select_related('branch')
+    }
+
+    rows: list[DailyAttendanceRow] = []
+    for row in agg:
+        employee = employees.get(row['employee_id'])
+        if not employee:
+            continue
+        device = devices.get(row['device_id'])
+        check_in_dt = row['check_in']
+        check_out_dt = row['check_out']
+        duration = None
+        if check_in_dt and check_out_dt and check_out_dt > check_in_dt:
+            duration = check_out_dt - check_in_dt
+        punch_count = row['punch_count'] or 0
+        rows.append(
+            DailyAttendanceRow(
+                work_date=row['day'],
+                employee_id=employee.pk,
+                employee_name=employee.name,
+                employee_number=employee.employee_number or '—',
+                branch_name=employee.branch.name if employee.branch else '—',
+                department_name=employee.department.name if employee.department else '—',
+                administration_name=_fmt_employee_administration(employee),
+                device_name=device.name if device else '—',
+                device_id=row['device_id'] or 0,
+                device_user_id=0,
+                device_user_name='—',
+                check_in=check_in_dt,
+                check_out=check_out_dt,
+                punch_count=punch_count,
+                work_duration=duration,
+                status_label=_status_label(
+                    punch_count=punch_count,
+                    check_in=check_in_dt,
+                    check_out=check_out_dt,
+                    is_mapped=True,
+                ),
+                is_mapped=True,
+            ),
+        )
+    return rows
+
+
+def _rows_from_unlinked_python(
+    qs: QuerySet,
+    enroll_map: dict,
+    *,
+    max_rows: int | None,
+) -> list[DailyAttendanceRow]:
+    """تجميع Python للبصمات غير المربوطة أو المعتمدة على تسجيل الجهاز."""
     groups: dict[tuple, list[AttendancePunch]] = defaultdict(list)
-    for punch in qs.select_related(
-        'employee', 'employee__branch', 'employee__department',
-        'employee__administration', 'device',
-    ).iterator(
-        chunk_size=3000,
-    ):
+    unlinked = qs.filter(employee_id__isnull=True)
+    for punch in unlinked.select_related('device', 'device__branch').iterator(chunk_size=3000):
         day = timezone.localtime(punch.punched_at).date()
         groups[_day_group_key_resolved(punch, day, enroll_map)].append(punch)
 
@@ -156,29 +230,26 @@ def build_daily_attendance_rows(
         first = punches[0]
         work_date = timezone.localtime(first.punched_at).date()
         employee = _resolve_employee_for_punch(first, enroll_map)
+        if employee is not None:
+            continue
         device_names = sorted({p.device.name for p in punches if p.device})
         device_user_ids = sorted({p.device_user_id for p in punches})
         check_in, check_out = _pick_in_out_times(punches)
         duration = None
         if check_in and check_out and check_out > check_in:
             duration = check_out - check_in
-        is_mapped = employee is not None
         branch_name = '—'
-        if employee and employee.branch:
-            branch_name = employee.branch.name
-        elif first.device and first.device.branch:
+        if first.device and first.device.branch:
             branch_name = first.device.branch.name
         rows.append(
             DailyAttendanceRow(
                 work_date=work_date,
-                employee_id=employee.pk if employee else None,
-                employee_name=employee.name if employee else '—',
-                employee_number=employee.employee_number if employee and employee.employee_number else '—',
+                employee_id=None,
+                employee_name='—',
+                employee_number='—',
                 branch_name=branch_name,
-                department_name=(
-                    employee.department.name if employee and employee.department else '—'
-                ),
-                administration_name=_fmt_employee_administration(employee),
+                department_name='—',
+                administration_name='—',
                 device_name=', '.join(device_names) if device_names else '—',
                 device_id=first.device_id,
                 device_user_id=device_user_ids[0] if len(device_user_ids) == 1 else 0,
@@ -195,11 +266,27 @@ def build_daily_attendance_rows(
                     punch_count=len(punches),
                     check_in=check_in,
                     check_out=check_out,
-                    is_mapped=is_mapped,
+                    is_mapped=False,
                 ),
-                is_mapped=is_mapped,
+                is_mapped=False,
             ),
         )
+        if max_rows is not None and len(rows) >= max_rows:
+            break
+    return rows
+
+
+def build_daily_attendance_rows(
+    qs: QuerySet,
+    *,
+    max_rows: int | None = MAX_DAILY_ATTENDANCE_ROWS,
+) -> list[DailyAttendanceRow]:
+    """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
+    device_ids = set(qs.values_list('device_id', flat=True).distinct())
+    enroll_map = load_enrollment_employee_map(device_ids)
+
+    rows = _rows_from_linked_sql_aggregates(qs)
+    rows.extend(_rows_from_unlinked_python(qs, enroll_map, max_rows=max_rows))
 
     rows.sort(key=lambda r: r.sort_key, reverse=True)
     if max_rows is not None and len(rows) > max_rows:

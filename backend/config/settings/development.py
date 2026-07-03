@@ -61,6 +61,9 @@ else:
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
+# Celery — تنفيذ متزامن في التطوير (بدون عامل منفصل)
+CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=True)
+
 # وكيل البصمة — السماح للمفتاح العام بقائمة الأجهزة في التطوير
 AGENT_GLOBAL_KEY_LIST_DEVICES = True
 

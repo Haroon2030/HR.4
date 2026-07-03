@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch, BiometricDevice
@@ -85,13 +85,15 @@ def get_punch_stats(qs: QuerySet | None = None, *, device_id: int | None = None)
         inferred=Count('id', filter=Q(punch_type_source=AttendancePunch.PunchTypeSource.INFERRED)),
     )
     status_health = device_status_health(device_id)
-    first = stats_qs.order_by('punched_at').values_list('punched_at', flat=True).first()
-    last = stats_qs.order_by('-punched_at').values_list('punched_at', flat=True).first()
+    bounds = stats_qs.aggregate(
+        first_punch=Min('punched_at'),
+        last_punch=Max('punched_at'),
+    )
     devices = BiometricDevice.objects.filter(is_deleted=False, is_active=True).count()
     return {
         **agg,
-        'first_punch': first,
-        'last_punch': last,
+        'first_punch': bounds['first_punch'],
+        'last_punch': bounds['last_punch'],
         'devices_count': devices,
         'status_health': status_health,
     }

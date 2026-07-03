@@ -93,6 +93,20 @@ else:
     # LocMemCache مع عدة workers Gunicorn لا يشارك الذاكرة بين العمليات —
     # يُفضّل REDIS_URL عند التوسع؛ التحذير يُطبع من entrypoint.sh عند الإقلاع.
 
+_gunicorn_workers = env.int('GUNICORN_WORKERS', default=1)
+if _gunicorn_workers > 1 and not _REDIS_URL:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'REDIS_URL مطلوب في الإنتاج عند تشغيل أكثر من worker واحد (GUNICORN_WORKERS > 1).'
+    )
+
+_evolution_url = (env('EVOLUTION_API_URL', default='') or '').strip()
+if _evolution_url and not env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[]):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'حدّد EVOLUTION_WEBHOOK_ALLOWED_IPS في الإنتاج عند تفعيل Evolution API.'
+    )
+
 # استخدام التخزين المؤقت للجلسات أيضاً — يقلل الضغط على قاعدة البيانات
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
@@ -129,11 +143,13 @@ _validate_production_secret_key(SECRET_KEY)
 from django.core.exceptions import ImproperlyConfigured as _ImproperlyConfigured
 
 _jwt_secret = (env('JWT_SECRET', default='') or '').strip()
-if _jwt_secret and len(_jwt_secret) < 32:
+if not _jwt_secret or len(_jwt_secret) < 32:
     raise _ImproperlyConfigured(
-        'JWT_SECRET قصير جداً في الإنتاج (32 حرفاً كحد أدنى). '
+        'JWT_SECRET مطلوب في الإنتاج (32 حرفاً كحد أدنى)، منفصلاً عن SECRET_KEY. '
         'أنشئ مفتاحاً عشوائياً وضعه في Environment فقط — لا تضعه في Git.'
     )
+SIMPLE_JWT['SIGNING_KEY'] = _jwt_secret
+SIMPLE_JWT['VERIFYING_KEY'] = _jwt_secret
 
 _agent_global_key = (env('ATTENDANCE_AGENT_API_KEY', default='') or '').strip()
 if _agent_global_key and len(_agent_global_key) < 32:

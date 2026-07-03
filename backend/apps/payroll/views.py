@@ -704,7 +704,7 @@ def _validate_payroll_build(filters, scope: PayrollBranchScope):
     return None
 
 
-def _build_payroll_runs(request, filters, scope: PayrollBranchScope):
+def _build_payroll_runs(user, filters, scope: PayrollBranchScope):
     """بناء مسير موحّد (عدة فروع) أو مسير لكل فرع (فرع واحد)."""
     from django.db import transaction
 
@@ -728,7 +728,7 @@ def _build_payroll_runs(request, filters, scope: PayrollBranchScope):
                     for company_branches in _branches_by_company(branches):
                         try:
                             built = build_consolidated_payroll_run(
-                                company_branches, filters['year'], filters['month'], request.user,
+                                company_branches, filters['year'], filters['month'], user,
                                 salary_mode=filters['salary_mode'],
                                 sponsorship_id=sponsorship_id,
                             )
@@ -744,7 +744,7 @@ def _build_payroll_runs(request, filters, scope: PayrollBranchScope):
                         try:
                             runs_built.append(
                                 build_payroll_run(
-                                    branch, filters['year'], filters['month'], request.user,
+                                    branch, filters['year'], filters['month'], user,
                                     salary_mode=filters['salary_mode'],
                                     sponsorship_id=sponsorship_id,
                                 )
@@ -808,7 +808,7 @@ def _detailed_runs_for_filters(filters, user, scope: PayrollBranchScope):
     return [r for r in runs if r.sponsorship_id is None]
 
 
-def _build_detailed_payroll_runs(request, filters, scope: PayrollBranchScope):
+def _build_detailed_payroll_runs(user, filters, scope: PayrollBranchScope):
     from django.db import transaction
 
     branch_ids = _resolved_branch_ids(filters, scope)
@@ -845,7 +845,7 @@ def _build_detailed_payroll_runs(request, filters, scope: PayrollBranchScope):
                 branches,
                 filters['year'],
                 filters['month'],
-                request.user,
+                user,
                 salary_mode=filters['salary_mode'],
                 sponsorship_scope_ids=(
                     _effective_sponsorship_ids(filters)
@@ -967,10 +967,21 @@ def list_payroll_runs(request):
                             f'تم الإغلاق النهائي لـ {locked} مسير وربط بنود الخصم.',
                         )
             elif payroll_action == 'save' or build_kind == 'standard':
+                from apps.core.services.task_dispatch import celery_background_enabled, dispatch_task
+                from apps.payroll.tasks import build_payroll_runs_task
+
+                if celery_background_enabled():
+                    dispatch_task(build_payroll_runs_task, request.user.pk, filters)
+                    messages.info(
+                        request,
+                        'بدأ بناء المسير في الخلفية. حدّث الصفحة خلال دقيقة لرؤية النتيجة.',
+                    )
+                    return _redirect_payroll_list(request, filters)
+
                 had_standard_draft = bool(
                     _draft_runs_for_period(filters, request.user, scope),
                 )
-                runs_built, build_errors = _build_payroll_runs(request, filters, scope)
+                runs_built, build_errors = _build_payroll_runs(request.user, filters, scope)
                 for e in build_errors:
                     messages.error(request, e)
                 if runs_built:
@@ -1015,8 +1026,20 @@ def list_payroll_runs(request):
                         request, filters, open_run_id=runs_built[0].pk,
                     )
             elif build_kind == 'detailed':
+                from apps.core.services.task_dispatch import celery_background_enabled, dispatch_task
+                from apps.payroll.tasks import build_detailed_payroll_runs_task
+
+                if celery_background_enabled():
+                    dispatch_task(build_detailed_payroll_runs_task, request.user.pk, filters)
+                    messages.info(
+                        request,
+                        'بدأ بناء المسير التفصيلي في الخلفية. حدّث الصفحة خلال دقيقة.',
+                    )
+                    filters['payroll_view'] = 'detailed'
+                    return _redirect_payroll_list(request, filters)
+
                 runs_built, build_errors, had_detailed_draft = _build_detailed_payroll_runs(
-                    request, filters, scope,
+                    request.user, filters, scope,
                 )
                 for e in build_errors:
                     messages.error(request, e)

@@ -221,6 +221,20 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3')
 }
 
+# ── Celery (مهام خلفية) — يستخدم Redis عند توفر REDIS_URL ──
+_REDIS_URL = env('REDIS_URL', default='').strip()
+if _REDIS_URL and '/' in _REDIS_URL.rsplit(':', 1)[-1]:
+    _CELERY_BROKER_DEFAULT = _REDIS_URL.rsplit('/', 1)[0] + '/1'
+else:
+    _CELERY_BROKER_DEFAULT = 'redis://localhost:6379/1' if _REDIS_URL else ''
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default=_CELERY_BROKER_DEFAULT).strip()
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default=CELERY_BROKER_URL).strip()
+CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
+CELERY_TASK_TRACK_STARTED = True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
 # تخزين مؤقت افتراضي (يُستبدل بـ Redis في production عند REDIS_URL)
 CACHES = {
     'default': {
@@ -254,6 +268,7 @@ LANGUAGES = [
     ('ar', 'العربية'),
 ]
 TIME_ZONE = env('TIME_ZONE', default='Asia/Riyadh')
+CELERY_TIMEZONE = TIME_ZONE
 USE_I18N = True     # تفعيل الترجمة
 USE_TZ = True       # تفعيل المنطقة الزمنية
 
@@ -407,6 +422,9 @@ ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNAT
 
 # عناوين IP مسموحة لـ Evolution webhook (فارغ = بدون تقييد — يُفضّل ضبطها في الإنتاج)
 EVOLUTION_WEBHOOK_ALLOWED_IPS = env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[])
+
+# رمز اختياري لتفاصيل health الإضافية (?proxy=1&token=...)
+HEALTH_DETAIL_TOKEN = env('HEALTH_DETAIL_TOKEN', default='')
 
 # ── عن النظام (قائمة المعلومات في الشريط العلوي) ──
 HR_APP_DEVELOPER = env('HR_APP_DEVELOPER', default='شركة الحلول التقنية')

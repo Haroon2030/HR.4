@@ -9,11 +9,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework.throttling import AnonRateThrottle
+
 from apps.core.services.whatsapp import evolution_manager
 from apps.core.services.whatsapp.authentication import EvolutionAPIKeyAuthentication
 from apps.setup.models import EvolutionWhatsAppSettings
 
 logger = logging.getLogger(__name__)
+
+
+class EvolutionWebhookThrottle(AnonRateThrottle):
+    rate = '120/hour'
 
 
 class EvolutionWebhookView(APIView):
@@ -25,6 +31,7 @@ class EvolutionWebhookView(APIView):
 
     authentication_classes = [EvolutionAPIKeyAuthentication]
     permission_classes = [IsAuthenticated]
+    throttle_classes = [EvolutionWebhookThrottle]
 
     def post(self, request):
         payload = request.data if isinstance(request.data, dict) else {}

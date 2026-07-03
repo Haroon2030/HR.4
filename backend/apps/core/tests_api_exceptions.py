@@ -18,6 +18,17 @@ class CustomApiExceptionHandlerTests(TestCase):
         self.assertNotIn('errors', response.data)
         self.assertNotIn('secret', str(response.data))
 
+    @override_settings(DEBUG=False)
+    def test_403_hides_error_payload_in_production(self):
+        from rest_framework.exceptions import PermissionDenied
+
+        response = custom_api_exception_handler(PermissionDenied('internal detail'), {
+            'request': MagicMock(path='/api/v1/test/'),
+            'view': None,
+        })
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn('errors', response.data)
+
     @override_settings(DEBUG=True)
     def test_500_includes_exception_details_when_debug(self):
         response = self._call_handler(RuntimeError('dev-only-detail'))

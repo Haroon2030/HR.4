@@ -76,7 +76,8 @@ class WhatsAppIntegrationViewTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(resp.status_code, 403)
-        self.assertIn('apikey', str(resp.json().get('errors', '')).lower())
+        body = resp.json()
+        self.assertFalse(body.get('success', True))
 
     def test_webhook_accepts_qrcode_event(self):
         url = reverse('web:evolution_webhook')

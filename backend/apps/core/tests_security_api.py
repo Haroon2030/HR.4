@@ -108,3 +108,74 @@ class APIUserEscalationTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(custom_role.permissions.filter(pk=users_delete.pk).exists())
+
+    def test_create_role_cannot_set_system_role(self):
+        response = self.client.post(
+            '/api/v1/roles/',
+            {
+                'name': 'Fake System',
+                'role_type': Role.RoleType.SPECIALIST,
+                'is_system_role': True,
+                'is_active': True,
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        role_id = response.json()['id']
+        created = Role.objects.get(pk=role_id)
+        self.assertFalse(created.is_system_role)
+
+    def test_company_is_deleted_readonly_via_api(self):
+        response = self.client.patch(
+            f'/api/v1/companies/{self.company.pk}/',
+            {'is_deleted': True},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.company.refresh_from_db()
+        self.assertFalse(self.company.is_deleted)
+
+
+class BranchEmployeesAPITests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from apps.employees.models import Employee
+
+        cls.company = Company.objects.create(name='Co', tax_number='1', commercial_record='1')
+        cls.branch = Branch.objects.create(name='Main', code='M1', company=cls.company)
+        cls.role = Role.objects.create(name='Admin', role_type=Role.RoleType.ADMIN)
+        branches_mod, _ = AppModule.objects.get_or_create(
+            code='branches',
+            defaults={'name': 'Branches', 'icon': 'building', 'order': 2},
+        )
+        perm, _ = Permission.objects.get_or_create(
+            code='branches.view',
+            defaults={
+                'module': branches_mod,
+                'operation': Permission.Operation.VIEW,
+                'name': 'View branches',
+            },
+        )
+        cls.role.permissions.add(perm)
+        cls.user = User.objects.create_user(username='branch_api', password='Branch-Api-99!')
+        profile = cls.user.profile
+        profile.role = cls.role
+        profile.save()
+        cls.hr_employee = Employee.objects.create(
+            name='موظف HR',
+            employee_number='E-100',
+            branch=cls.branch,
+        )
+
+    def setUp(self):
+        self.client = APIClient()
+        self.assertTrue(self.client.login(username='branch_api', password='Branch-Api-99!'))
+
+    def test_branch_employees_returns_hr_records_not_user_profiles(self):
+        response = self.client.get(f'/api/v1/branches/{self.branch.pk}/employees/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['name'], 'موظف HR')
+        self.assertEqual(data[0]['employee_number'], 'E-100')
+        self.assertNotIn('username', data[0])

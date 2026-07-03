@@ -1,0 +1,19 @@
+{% if page_obj and page_obj.has_other_pages %}
+<nav class="hr-pagination__nav" aria-label="{{ aria_label|default:'ترقيم السجلات' }}">
+    <div class="hr-pagination__controls">
+        {% if page_obj.has_previous and page_obj.cursor_before %}
+        <a href="?{% if base_qs %}{{ base_qs }}&{% endif %}before={{ page_obj.cursor_before|urlencode }}"
+           class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">{{ prev_label|default:'السابق' }}</a>
+        {% else %}
+        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled" aria-disabled="true">{{ prev_label|default:'السابق' }}</span>
+        {% endif %}
+
+        {% if page_obj.has_next and page_obj.cursor_after %}
+        <a href="?{% if base_qs %}{{ base_qs }}&{% endif %}after={{ page_obj.cursor_after|urlencode }}"
+           class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn">{{ next_label|default:'التالي' }}</a>
+        {% else %}
+        <span class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__btn is-disabled" aria-disabled="true">{{ next_label|default:'التالي' }}</span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

@@ -83,6 +83,15 @@ def get_or_build_daily_attendance_rows(
 
 
 def invalidate_user_report_caches(user_id: int) -> None:
-    """إبطال تقارير مستخدم — best-effort (يتطلب Redis delete_pattern أو TTL)."""
-    # LocMem لا يدعم الأنماط؛ الاعتماد على TTL كافٍ لمعظم الحالات.
-    _ = user_id
+    """إبطال تقارير مستخدم — يستخدم delete_pattern عند Redis."""
+    patterns = (
+        f'*{CACHE_PREFIX_REPORT}{user_id}:*',
+        f'*{CACHE_PREFIX_ATTENDANCE_DAILY}{user_id}:*',
+    )
+    delete_pattern = getattr(cache, 'delete_pattern', None)
+    if callable(delete_pattern):
+        for pattern in patterns:
+            try:
+                delete_pattern(pattern)
+            except Exception:
+                pass

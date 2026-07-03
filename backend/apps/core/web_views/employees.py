@@ -165,8 +165,8 @@ def employee_picker_search(request):
 def list_employees(request):
     """قائمة الموظفين مع بحث ذكي وترقيم"""
     from apps.employees.models import Employee
-    from django.db.models import Q
     from django.core.paginator import Paginator
+    from apps.core.selectors.employee_search import apply_employee_search
 
     qs = Employee.objects.select_related(
         'branch', 'department', 'administration', 'cost_center', 'nationality', 'profession',
@@ -175,21 +175,7 @@ def list_employees(request):
 
     q = (request.GET.get('q') or '').strip()
     if q:
-        terms = [t for t in q.split() if t]
-        cond = Q()
-        for t in terms:
-            cond &= (
-                Q(name__icontains=t) |
-                Q(id_number__icontains=t) |
-                Q(phone__icontains=t) |
-                Q(branch__name__icontains=t) |
-                Q(department__name__icontains=t) |
-                Q(cost_center__name__icontains=t) |
-                Q(nationality__name__icontains=t) |
-                Q(profession__name__icontains=t) |
-                Q(status__icontains=t)
-            )
-        qs = qs.filter(cond)
+        qs = apply_employee_search(qs, q)
 
     qs = qs.order_by('-id')
     paginator = Paginator(qs, 10)

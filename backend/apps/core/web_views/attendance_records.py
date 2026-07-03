@@ -2,7 +2,6 @@
 from datetime import datetime, time
 
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -145,13 +144,15 @@ def attendance_records_list(request):
         qs = qs.filter(employee_id=filters['employee_id'])
     stats = get_punch_stats(qs, device_id=filters['device_id'])
     qs = qs.order_by(*PUNCH_LIST_ORDERING)
-    from apps.core.utils.pagination import clamp_page_size
+    from apps.core.utils.pagination import clamp_page_size, keyset_paginate_queryset
 
-    paginator = Paginator(
+    per_page = clamp_page_size(request.GET.get('per_page'), default=100, maximum=200)
+    page_obj = keyset_paginate_queryset(
         qs,
-        per_page=clamp_page_size(request.GET.get('per_page'), default=100, maximum=200),
+        per_page=per_page,
+        after=request.GET.get('after'),
+        before=request.GET.get('before'),
     )
-    page_obj = paginator.get_page(request.GET.get('page'))
 
     devices = get_biometric_devices_queryset(request.user)
     branches_qs = Branch.objects.filter(is_deleted=False, is_active=True).order_by('name')
@@ -177,7 +178,7 @@ def attendance_records_list(request):
         'qs_punch_all': _filters_to_querystring({**filters, 'punch_type': None}),
         'qs_punch_in': _filters_to_querystring({**filters, 'punch_type': 'in'}),
         'qs_punch_out': _filters_to_querystring({**filters, 'punch_type': 'out'}),
-        'per_page': paginator.per_page,
+        'per_page': per_page,
     })
 
 
@@ -299,12 +300,13 @@ def attendance_records_export(request):
         search=filters['search'] or None,
     ).filter(
         device_id__in=filter_biometric_devices_for_user(request.user).values('pk'),
-    ).order_by(*PUNCH_LIST_ORDERING)[:50000]
+    ).order_by(*PUNCH_LIST_ORDERING)
 
     from apps.attendance.selectors.punch_export import (
+        EXPORT_MAX_ROWS,
         punches_to_table_rows,
         punch_table_http_response,
     )
 
-    table = punches_to_table_rows(qs)
+    table = punches_to_table_rows(qs, max_rows=EXPORT_MAX_ROWS)
     return punch_table_http_response(table, filename_prefix='attendance_records')

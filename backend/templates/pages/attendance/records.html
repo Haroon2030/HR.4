@@ -160,7 +160,7 @@
                     <span class="zk-rec-code">LOG</span>
                     <h2>فلتر السجلات</h2>
                 </div>
-                <span class="zk-bio-stat zk-mono">{{ page_obj.start_index }}–{{ page_obj.end_index }}/{{ page_obj.paginator.count }}</span>
+                <span class="zk-bio-stat zk-mono">{{ page_obj.start_index }}–{{ page_obj.end_index }}{% if page_obj.paginator.count %}/{{ page_obj.paginator.count }}{% endif %}</span>
             </div>
             <div class="zk-rec-panel-body">
             <form method="get" class="zk-rec-filter-form">
@@ -223,7 +223,7 @@
                 <span class="zk-rec-code">TBL</span>
                 <h2 class="text-sm font-bold text-slate-800 m-0">جدول البصمات</h2>
             </div>
-            <span class="zk-bio-stat zk-mono">{{ page_obj.paginator.count }} سجل</span>
+            <span class="zk-bio-stat zk-mono">{% if page_obj.paginator.count %}{{ page_obj.paginator.count }}{% else %}{{ page_obj.end_index }}+{% endif %} سجل</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -273,7 +273,7 @@
 
         {% if page_obj.has_other_pages %}
         <div class="px-4 py-2.5 border-t border-slate-100 hr-pagination flex flex-wrap justify-center">
-            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True base_qs=querystring show_numbers=False prev_label="prev" next_label="next" %}
+            {% include "components/hr_keyset_pagination.html" with page_obj=page_obj base_qs=querystring prev_label="السابق" next_label="التالي" %}
         </div>
         {% endif %}
 

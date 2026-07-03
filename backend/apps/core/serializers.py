@@ -19,7 +19,7 @@ class CompanySerializer(serializers.ModelSerializer):
             'contact_email', 'contact_phone', 'address',
             'branches_count', 'is_deleted', 'deleted_at', 'created_at', 'updated_at',
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'is_deleted', 'deleted_at']
     
     def get_branches_count(self, obj):
         return obj.branches.count()
@@ -69,8 +69,8 @@ class RoleSerializer(serializers.ModelSerializer):
             'users_count', 'is_active', 'is_system_role',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
-    
+        read_only_fields = ['created_at', 'updated_at', 'is_system_role']
+
     def get_users_count(self, obj):
         return obj.users.count()
 
@@ -172,8 +172,7 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'is_active', 'is_staff', 'is_superuser',
-            'date_joined', 'last_login',
+            'is_active', 'date_joined',
             'profile', 'role_name', 'role_type',
         ]
         read_only_fields = fields

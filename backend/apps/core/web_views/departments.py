@@ -7,46 +7,39 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 
-from apps.core.models import Branch
 from apps.departments.models import Department
 
 
-# =============================================================================
-# Custom Decorators
-# =============================================================================
-
-
 from apps.core.decorators import permission_required
-from apps.core.services.access_control import (
-    filter_queryset_by_accessible_branch,
-    user_may_access_branch_id,
+from apps.core.web_views._branch_scoped import (
+    branch_for_scoped_view,
+    deny_branch_resource,
+    list_branch_scoped_queryset,
+    require_branch_access,
 )
 
 
 def _deny_department_branch(request, *, action: str):
-    messages.error(request, f'لا تملك صلاحية {action} الأقسام في هذا الفرع.')
-    return redirect('web:list_branches')
+    return deny_branch_resource(request, resource_label='الأقسام', action=action)
 
 
 @login_required
 @permission_required('departments.view')
 def list_departments(request, branch_id=None):
     """عرض قائمة الأقسام"""
-    branch = None
-    if branch_id:
-        branch = get_object_or_404(Branch, id=branch_id)
-        if not user_may_access_branch_id(request.user, branch.id):
-            return _deny_department_branch(request, action='عرض')
-        departments = Department.objects.filter(
-            branch=branch, is_deleted=False
-        ).select_related('cost_center', 'manager').order_by('code')
-    else:
-        departments = filter_queryset_by_accessible_branch(
-            request.user,
-            Department.objects.filter(is_deleted=False).select_related(
-                'branch', 'cost_center', 'manager',
-            ),
-        ).order_by('code')
+    branch, departments, denied = list_branch_scoped_queryset(
+        request,
+        branch_id,
+        resource_label='الأقسام',
+        all_queryset=Department.objects.filter(is_deleted=False).select_related(
+            'branch', 'cost_center', 'manager',
+        ),
+        branch_filter=lambda b: Department.objects.filter(
+            branch=b, is_deleted=False,
+        ).select_related('cost_center', 'manager').order_by('code'),
+    )
+    if denied:
+        return denied
 
     return render(request, 'pages/departments/list.html', {
         'branch': branch,
@@ -62,8 +55,11 @@ def view_department(request, department_id):
         Department.objects.select_related('branch', 'cost_center', 'manager'),
         id=department_id
     )
-    if not user_may_access_branch_id(request.user, department.branch_id):
-        return _deny_department_branch(request, action='عرض')
+    denied = require_branch_access(
+        request, department.branch_id, resource_label='الأقسام', action='عرض',
+    )
+    if denied:
+        return denied
     return render(request, 'pages/departments/detail.html', {'department': department})
 
 
@@ -72,9 +68,11 @@ def view_department(request, department_id):
 def add_department(request, branch_id=None):
     """إضافة قسم جديد"""
     from apps.core.forms import DepartmentForm
-    branch = get_object_or_404(Branch, id=branch_id) if branch_id else None
-    if branch and not user_may_access_branch_id(request.user, branch.id):
-        return _deny_department_branch(request, action='إضافة')
+    branch, denied = branch_for_scoped_view(
+        request, branch_id, resource_label='الأقسام', action='إضافة',
+    )
+    if denied:
+        return denied
 
     if request.method == 'POST':
         form = DepartmentForm(request.POST, branch=branch)
@@ -97,8 +95,11 @@ def edit_department(request, department_id):
     """تعديل قسم"""
     from apps.core.forms import DepartmentForm
     department = get_object_or_404(Department, id=department_id)
-    if not user_may_access_branch_id(request.user, department.branch_id):
-        return _deny_department_branch(request, action='تعديل')
+    denied = require_branch_access(
+        request, department.branch_id, resource_label='الأقسام', action='تعديل',
+    )
+    if denied:
+        return denied
 
     if request.method == 'POST':
         form = DepartmentForm(request.POST, instance=department, branch=department.branch)
@@ -124,8 +125,11 @@ def edit_department(request, department_id):
 def delete_department(request, department_id):
     """حذف قسم (soft delete)"""
     department = get_object_or_404(Department, id=department_id)
-    if not user_may_access_branch_id(request.user, department.branch_id):
-        return _deny_department_branch(request, action='حذف')
+    denied = require_branch_access(
+        request, department.branch_id, resource_label='الأقسام', action='حذف',
+    )
+    if denied:
+        return denied
     if request.method == 'POST':
         name = department.name
         department.delete()

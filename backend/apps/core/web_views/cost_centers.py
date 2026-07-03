@@ -7,7 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 
-from apps.core.models import Branch
 from apps.cost_centers.models import CostCenter
 
 
@@ -17,32 +16,33 @@ from apps.cost_centers.models import CostCenter
 
 
 from apps.core.decorators import permission_required
-from apps.core.services.access_control import (
-    filter_queryset_by_accessible_branch,
-    user_may_access_branch_id,
+from apps.core.web_views._branch_scoped import (
+    branch_for_scoped_view,
+    deny_branch_resource,
+    list_branch_scoped_queryset,
+    require_branch_access,
 )
 
 
 def _deny_cost_center_branch(request, *, action: str):
-    messages.error(request, f'لا تملك صلاحية {action} مراكز التكلفة في هذا الفرع.')
-    return redirect('web:list_branches')
+    return deny_branch_resource(request, resource_label='مراكز التكلفة', action=action)
 
 
 @login_required
 @permission_required('cost_centers.view')
 def list_cost_centers(request, branch_id=None):
     """عرض قائمة مراكز التكلفة"""
-    branch = None
-    if branch_id:
-        branch = get_object_or_404(Branch, id=branch_id)
-        if not user_may_access_branch_id(request.user, branch.id):
-            return _deny_cost_center_branch(request, action='عرض')
-        cost_centers = CostCenter.objects.filter(branch=branch, is_deleted=False).order_by('code')
-    else:
-        cost_centers = filter_queryset_by_accessible_branch(
-            request.user,
-            CostCenter.objects.filter(is_deleted=False).select_related('branch'),
-        ).order_by('code')
+    branch, cost_centers, denied = list_branch_scoped_queryset(
+        request,
+        branch_id,
+        resource_label='مراكز التكلفة',
+        all_queryset=CostCenter.objects.filter(is_deleted=False).select_related('branch'),
+        branch_filter=lambda b: CostCenter.objects.filter(
+            branch=b, is_deleted=False,
+        ).order_by('code'),
+    )
+    if denied:
+        return denied
     return render(request, 'pages/cost_centers/list.html', {
         'branch': branch,
         'cost_centers': cost_centers
@@ -57,8 +57,11 @@ def view_cost_center(request, cost_center_id):
         CostCenter.objects.select_related('branch'),
         id=cost_center_id
     )
-    if not user_may_access_branch_id(request.user, cost_center.branch_id):
-        return _deny_cost_center_branch(request, action='عرض')
+    denied = require_branch_access(
+        request, cost_center.branch_id, resource_label='مراكز التكلفة', action='عرض',
+    )
+    if denied:
+        return denied
     return render(request, 'pages/cost_centers/detail.html', {'cost_center': cost_center})
 
 
@@ -67,9 +70,11 @@ def view_cost_center(request, cost_center_id):
 def add_cost_center(request, branch_id=None):
     """إضافة مركز تكلفة جديد"""
     from apps.core.forms import CostCenterForm
-    branch = get_object_or_404(Branch, id=branch_id) if branch_id else None
-    if branch and not user_may_access_branch_id(request.user, branch.id):
-        return _deny_cost_center_branch(request, action='إضافة')
+    branch, denied = branch_for_scoped_view(
+        request, branch_id, resource_label='مراكز التكلفة', action='إضافة',
+    )
+    if denied:
+        return denied
 
     if request.method == 'POST':
         form = CostCenterForm(request.POST, branch=branch)
@@ -92,8 +97,11 @@ def edit_cost_center(request, cost_center_id):
     """تعديل مركز تكلفة"""
     from apps.core.forms import CostCenterForm
     cost_center = get_object_or_404(CostCenter, id=cost_center_id)
-    if not user_may_access_branch_id(request.user, cost_center.branch_id):
-        return _deny_cost_center_branch(request, action='تعديل')
+    denied = require_branch_access(
+        request, cost_center.branch_id, resource_label='مراكز التكلفة', action='تعديل',
+    )
+    if denied:
+        return denied
 
     if request.method == 'POST':
         form = CostCenterForm(request.POST, instance=cost_center, branch=cost_center.branch)
@@ -119,8 +127,11 @@ def edit_cost_center(request, cost_center_id):
 def delete_cost_center(request, cost_center_id):
     """حذف مركز تكلفة (soft delete)"""
     cost_center = get_object_or_404(CostCenter, id=cost_center_id)
-    if not user_may_access_branch_id(request.user, cost_center.branch_id):
-        return _deny_cost_center_branch(request, action='حذف')
+    denied = require_branch_access(
+        request, cost_center.branch_id, resource_label='مراكز التكلفة', action='حذف',
+    )
+    if denied:
+        return denied
     if request.method == 'POST':
         name = cost_center.name
         cost_center.delete()

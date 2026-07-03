@@ -9,6 +9,8 @@ from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch
 
+EXPORT_MAX_ROWS = 50_000
+
 if TYPE_CHECKING:
     from apps.attendance.services.attendance_pull import EnrichedPunch
 
@@ -107,9 +109,11 @@ def enriched_punch_to_row(
     )
 
 
-def punches_to_table_rows(qs, *, start_index: int = 1) -> dict:
+def punches_to_table_rows(qs, *, start_index: int = 1, max_rows: int | None = EXPORT_MAX_ROWS) -> dict:
     rows = []
     for offset, p in enumerate(qs.iterator(chunk_size=5000)):
+        if max_rows is not None and offset >= max_rows:
+            break
         rows.append(attendance_punch_to_row(p, start_index + offset))
     return {'columns': PUNCH_TABLE_COLUMNS, 'rows': rows}
 
