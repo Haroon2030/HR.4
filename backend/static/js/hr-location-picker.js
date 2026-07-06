@@ -206,9 +206,16 @@
                     });
             },
 
+            _setMapBodyLock: function (open) {
+                if (document.body) {
+                    document.body.classList.toggle('hr-quick-modal-open', !!open);
+                }
+            },
+
             openMap: function () {
                 var self = this;
                 this.mapOpen = true;
+                this._setMapBodyLock(true);
                 this.statusMsg = '';
                 this.$nextTick(function () {
                     ensureLeaflet().then(function () {
@@ -227,6 +234,7 @@
 
             closeMap: function () {
                 this.mapOpen = false;
+                this._setMapBodyLock(false);
                 if (this.map) {
                     this.map.remove();
                     this.map = null;

@@ -81,12 +81,18 @@
         <p class="hr-location-picker__hint hr-location-picker__hint--warn" x-show="statusMsg" x-text="statusMsg"></p>
     </div>
 
+    <template x-teleport="body">
     <div x-show="mapOpen"
          x-cloak
-         class="hr-glass-modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-3 overflow-y-auto overscroll-contain"
+         dir="rtl"
+         class="hr-location-picker__modal-overlay hr-glass-modal-overlay"
+         role="dialog"
+         aria-modal="true"
+         aria-label="محدّد الإحداثيات"
+         @click.self="closeMap()"
          @keydown.escape.window="closeMap()">
-        <div class="hr-glass-panel w-full max-w-lg p-4 space-y-3 shadow-xl hr-location-picker__modal"
-             @click.outside="closeMap()">
+        <div class="hr-location-picker__modal w-full max-w-lg p-4 space-y-3 shadow-xl"
+             @click.stop>
             <div class="flex items-center justify-between gap-2">
                 <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="map" class="w-4 h-4 text-primary-600"></i>
@@ -137,4 +143,5 @@
             </div>
         </div>
     </div>
+    </template>
 </div>

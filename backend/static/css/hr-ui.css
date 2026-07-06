@@ -13827,6 +13827,42 @@ body.hr-app .hr-location-picker__map .leaflet-container {
     font-family: inherit;
 }
 
+/* نافذة الخريطة — خارج بطاقة الصفحة (teleport) وخلفية معتمة */
+.hr-location-picker__modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10200 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hr-location-picker__modal-overlay[x-cloak],
+.hr-location-picker__modal-overlay[style*="display: none"] {
+    display: none !important;
+}
+
+body.hr-app .hr-location-picker__modal {
+    position: relative;
+    z-index: 1;
+    margin: auto;
+    width: 100%;
+    max-height: min(92vh, calc(100dvh - 2rem));
+    overflow-y: auto;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid var(--hr-glass-line, #e2e8f0);
+    border-radius: 0.75rem;
+    box-shadow:
+        0 24px 48px rgba(15, 23, 42, 0.14),
+        inset 0 1px 0 var(--hr-glass-border, rgba(255, 255, 255, 0.6));
+}
+
 /* ── تفاصيل طلب الصيانة ── */
 body.hr-app .hr-maint-detail {
     padding: 0;
