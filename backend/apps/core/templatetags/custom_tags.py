@@ -473,19 +473,8 @@ def role_badge_class(role_type):
 @register.filter
 def perm_op_short(op_code):
     """اختصار عمود العملية في مصفوفة الصلاحيات."""
-    labels = {
-        'view': 'عرض',
-        'add': 'إض',
-        'edit': 'تعد',
-        'delete': 'حذف',
-        'approve_branch': 'ف.فرع',
-        'approve_admin': 'ف.إد',
-        'approve_gm': 'ف.ع',
-        'approve_officer': 'ف.م',
-        'return': 'إرج',
-        'resubmit': 'إع',
-    }
-    return labels.get(op_code, op_code)
+    from apps.core.permissions_registry import OPERATION_SHORT_LABELS
+    return OPERATION_SHORT_LABELS.get(op_code, op_code)
 
 
 @register.filter

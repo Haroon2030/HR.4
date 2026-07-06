@@ -1,0 +1,63 @@
+{# جدول صلاحيات المستخدم — جدول واحد مع أعمدة ثابتة يمين RTL #}
+<div class="hr-perm-matrix__scroll hr-scroll-hover hr-perm-erp-scroll">
+    <table class="hr-perm-matrix__table hr-perm-erp-table">
+        <thead class="hr-perm-matrix__head">
+            <tr>
+                <th class="hr-perm-screen-no-col" scope="col">رقم</th>
+                <th class="hr-perm-screen-name-col" scope="col">اسم الشاشة</th>
+                {% for op_code, op_label, op_short in operations %}
+                <th class="hr-perm-op-col" scope="col" title="{{ op_label }}">
+                    <span class="hr-perm-op-col__title">{{ op_label }}</span>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in matrix %}
+            <tr class="hr-perm-erp-row"
+                data-group="{{ row.group_id }}"
+                x-show="activeGroupId === '{{ row.group_id }}'"
+                x-cloak>
+                <td class="hr-perm-screen-no-col">{{ row.module.order|default:forloop.counter }}</td>
+                <th class="hr-perm-screen-name-col" scope="row" title="{{ row.screen_name }}">
+                    <span class="hr-perm-screen-name">{{ row.screen_name }}</span>
+                </th>
+                {% for cell in row.cells %}
+                <td class="hr-perm-op-col">
+                    {% if not cell.available %}
+                        <span class="hr-perm-empty" aria-hidden="true">·</span>
+                    {% elif is_admin_user %}
+                        <span class="hr-perm-readonly hr-perm-readonly--allow" title="مفعّلة (أدمن)">✓</span>
+                    {% else %}
+                        <div class="hr-perm-toggle hr-perm-toggle--compact" role="group" aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
+                            <label class="hr-perm-toggle__opt hr-perm-toggle__opt--allow{% if cell.effective %} is-active{% endif %}">
+                                <input type="radio"
+                                       name="perm_{{ cell.perm.id }}"
+                                       value="allowed"
+                                       {% if cell.effective %}checked{% endif %}
+                                       class="sr-only hr-perm-toggle__input">
+                                <span aria-hidden="true">✓</span>
+                            </label>
+                            <label class="hr-perm-toggle__opt hr-perm-toggle__opt--deny{% if not cell.effective %} is-active{% endif %}">
+                                <input type="radio"
+                                       name="perm_{{ cell.perm.id }}"
+                                       value="denied"
+                                       {% if not cell.effective %}checked{% endif %}
+                                       class="sr-only hr-perm-toggle__input">
+                                <span aria-hidden="true">✕</span>
+                            </label>
+                        </div>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ operations|length|add:2 }}" class="hr-perm-matrix__empty">
+                    <p class="text-sm m-0">لا بيانات</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

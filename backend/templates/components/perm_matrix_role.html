@@ -1,0 +1,72 @@
+{# جدول صلاحيات الدور — جدول واحد مع أعمدة ثابتة يمين RTL #}
+<div class="hr-perm-matrix__scroll hr-scroll-hover hr-perm-erp-scroll">
+    <table class="hr-perm-matrix__table hr-perm-erp-table">
+        <thead class="hr-perm-matrix__head">
+            <tr>
+                <th class="hr-perm-screen-no-col" scope="col">رقم</th>
+                <th class="hr-perm-screen-name-col" scope="col">اسم الشاشة</th>
+                {% for op_code, op_label, op_short in operations %}
+                <th class="hr-perm-op-col" scope="col" title="{{ op_label }}">
+                    <span class="hr-perm-op-col__title">{{ op_label }}</span>
+                </th>
+                {% endfor %}
+                {% if not is_admin_role %}
+                <th class="hr-perm-op-col hr-perm-erp-row-toggle-col" scope="col">صف</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in matrix %}
+            <tr class="hr-perm-erp-row"
+                data-group="{{ row.group_id }}"
+                x-show="activeGroupId === '{{ row.group_id }}'"
+                x-cloak>
+                <td class="hr-perm-screen-no-col">{{ row.module.order|default:forloop.counter }}</td>
+                <th class="hr-perm-screen-name-col" scope="row" title="{{ row.screen_name }}">
+                    <span class="hr-perm-screen-name">{{ row.screen_name }}</span>
+                </th>
+                {% for cell in row.cells %}
+                <td class="hr-perm-op-col">
+                    {% if cell.available %}
+                    <input type="checkbox"
+                           name="permissions"
+                           value="{{ cell.perm.id }}"
+                           data-op="{{ cell.op_code }}"
+                           data-module="{{ row.module.code }}"
+                           data-group="{{ row.group_id }}"
+                           {% if cell.checked %}checked{% endif %}
+                           {% if is_admin_role %}disabled{% endif %}
+                           class="perm-cb hr-perm-erp-cb"
+                           aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
+                    {% else %}
+                    <span class="hr-perm-empty" aria-hidden="true">·</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+                {% if not is_admin_role %}
+                <td class="hr-perm-op-col hr-perm-erp-row-toggle-col">
+                    <button type="button"
+                            class="hr-perm-erp-row-all"
+                            @click="checkRow('{{ row.module.code }}', !rowAllChecked('{{ row.module.code }}'))"
+                            title="تحديد صف {{ row.screen_name }}">
+                        ⇄
+                    </button>
+                </td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ operations|length|add:3 }}" class="hr-perm-matrix__empty">
+                    <p class="text-sm m-0">لا بيانات — شغّل: <code>python manage.py setup_permissions_and_roles</code></p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<p class="hr-perm-tree-empty-hint"
+   x-show="activeGroupId && !groupHasVisibleRows()"
+   x-cloak>
+    لا توجد شاشات في هذا القسم.
+</p>

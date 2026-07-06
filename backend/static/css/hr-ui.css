@@ -7784,6 +7784,438 @@ body.hr-app .hr-main {
     padding-top: 0.15rem;
 }
 
+/* ── مصفوفة صلاحيات ERP — جدول واحد + sticky يمين RTL ── */
+.hr-perm-matrix--erp {
+    --perm-no-col-w: 3.25rem;
+    --perm-name-col-w: 12rem;
+    --perm-col-gap: 0.85rem;
+    border-radius: 0.5rem;
+}
+
+.hr-perm-erp-scroll {
+    max-height: min(72vh, calc(100dvh - 8.5rem));
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hr-perm-erp-table {
+    font-size: 0.82rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    min-width: 100%;
+}
+
+.hr-perm-erp-table .hr-perm-screen-no-col {
+    position: sticky;
+    right: 0;
+    left: auto;
+    z-index: 4;
+    width: var(--perm-no-col-w);
+    min-width: var(--perm-no-col-w);
+    max-width: var(--perm-no-col-w);
+    padding: 0.35rem 0.4rem;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 800;
+    color: #0f172a;
+    background: #ffffff;
+    box-shadow: -1px 0 0 #e2e8f0;
+}
+
+.hr-perm-erp-table .hr-perm-screen-name-col {
+    position: sticky;
+    right: calc(var(--perm-no-col-w) + var(--perm-col-gap));
+    left: auto;
+    z-index: 3;
+    width: var(--perm-name-col-w);
+    min-width: var(--perm-name-col-w);
+    max-width: var(--perm-name-col-w);
+    padding: 0.35rem 0.75rem;
+    text-align: right;
+    vertical-align: middle;
+    background: #ffffff;
+    border-inline-end: 3px solid #cbd5e1;
+    box-shadow: -8px 0 14px rgba(15, 23, 42, 0.08);
+}
+
+.hr-perm-erp-table .hr-perm-matrix__head .hr-perm-screen-no-col {
+    top: 0;
+    z-index: 6;
+    background: #eef2ff;
+    font-size: 0.84rem;
+}
+
+.hr-perm-erp-table .hr-perm-matrix__head .hr-perm-screen-name-col {
+    top: 0;
+    z-index: 5;
+    background: #eef2ff;
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.hr-perm-erp-table .hr-perm-screen-name {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(var(--perm-name-col-w) - 1rem);
+}
+
+.hr-perm-erp-table .hr-perm-matrix__head .hr-perm-op-col {
+    min-width: 4.25rem;
+    max-width: 5.5rem;
+    width: auto;
+    padding: 0.45rem 0.3rem;
+    background: #eef2ff;
+    vertical-align: bottom;
+    top: 0;
+    z-index: 2;
+}
+
+.hr-perm-erp-table .hr-perm-op-col__title {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    text-align: center;
+    min-height: 2.6rem;
+}
+
+.hr-perm-erp-table tbody .hr-perm-op-col {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    max-width: 2.75rem;
+    padding: 0.25rem 0.12rem;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.hr-perm-erp-table .hr-perm-erp-row {
+    height: 3rem;
+}
+
+.hr-perm-erp-cb {
+    width: 1rem;
+    height: 1rem;
+    margin: 0 auto;
+    display: block;
+    cursor: pointer;
+    accent-color: #2563eb;
+}
+
+.hr-perm-erp-col-all,
+.hr-perm-erp-row-all {
+    display: block;
+    width: 100%;
+    margin-top: 0.15rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #2563eb;
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.hr-perm-erp-col-all:hover,
+.hr-perm-erp-row-all:hover {
+    text-decoration: underline;
+}
+
+.hr-perm-erp-row-toggle-col {
+    width: 1.65rem !important;
+    min-width: 1.65rem !important;
+    max-width: 1.65rem !important;
+}
+
+.hr-perm-erp-row:nth-child(odd) .hr-perm-screen-no-col,
+.hr-perm-erp-row:nth-child(odd) .hr-perm-screen-name-col {
+    background: #f8fafc;
+}
+
+.hr-perm-erp-row:hover td,
+.hr-perm-erp-row:hover th.hr-perm-screen-name-col,
+.hr-perm-erp-row:hover .hr-perm-screen-no-col {
+    background: #eff6ff !important;
+}
+
+.hr-perm-erp-note {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #92400e;
+    background: #fffbeb;
+    border-bottom: 1px solid #fde68a;
+}
+
+/* ── شجرة أنظمة الصلاحيات ── */
+.hr-perm-tree-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.hr-perm-tree-layout__table {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+.hr-perm-tree {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 12rem;
+    overflow: hidden;
+    background: #ffffff;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.hr-perm-tree__header {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #334155;
+    background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%);
+    border-bottom: 1px solid #c7d2fe;
+}
+
+.hr-perm-tree__header-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    color: #4338ca;
+    flex-shrink: 0;
+}
+
+.hr-perm-tree__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.2rem 0;
+}
+
+.hr-perm-tree__system {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.hr-perm-tree__system:last-child {
+    border-bottom: none;
+}
+
+.hr-perm-tree__system-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    width: 100%;
+    padding: 0.38rem 0.5rem;
+    border: none;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-align: right;
+    cursor: pointer;
+    border-inline-start: 3px solid transparent;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.hr-perm-tree__system-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.hr-perm-tree__system-btn.is-open {
+    background: #eff6ff;
+    color: #1e40af;
+    border-inline-start-color: #60a5fa;
+}
+
+.hr-perm-tree__system-btn.has-active {
+    color: #1d4ed8;
+    font-weight: 800;
+    background: #dbeafe;
+    border-inline-start-color: #2563eb;
+}
+
+.hr-perm-tree__icon {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.hr-perm-tree__system-btn.is-open .hr-perm-tree__icon,
+.hr-perm-tree__system-btn.has-active .hr-perm-tree__icon {
+    opacity: 1;
+    color: #2563eb;
+}
+
+.hr-perm-tree__system-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hr-perm-tree__chevron {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.2rem;
+    background: #ffffff;
+    font-weight: 900;
+    font-size: 0.62rem;
+    line-height: 1;
+    color: #64748b;
+}
+
+.hr-perm-tree__system-btn.is-open .hr-perm-tree__chevron {
+    border-color: #93c5fd;
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.hr-perm-tree__children {
+    padding: 0.2rem 0.35rem 0.35rem;
+    background: #ffffff;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.hr-perm-tree__leaf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.34rem 0.5rem;
+    margin-bottom: 0.12rem;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
+    background: transparent;
+    color: #334155;
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-align: right;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hr-perm-tree__leaf:last-child {
+    margin-bottom: 0;
+}
+
+.hr-perm-tree__leaf:hover:not(.is-active) {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+
+.hr-perm-tree__leaf.is-active {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #1e40af;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
+
+.hr-perm-tree__leaf.is-active .hr-perm-tree__leaf-name {
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.hr-perm-tree__leaf-count {
+    flex-shrink: 0;
+    min-width: 1.15rem;
+    padding: 0.05rem 0.3rem;
+    border-radius: 0.3rem;
+    background: rgba(15, 23, 42, 0.08);
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-align: center;
+    color: #475569;
+}
+
+.hr-perm-tree__leaf.is-active .hr-perm-tree__leaf-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.hr-perm-tree__empty,
+.hr-perm-tree-empty-hint {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.65rem;
+    color: #64748b;
+    text-align: center;
+}
+
+.hr-perm-matrix__scroll--tree {
+    max-height: min(65vh, calc(100dvh - 12rem));
+}
+
+@media (min-width: 768px) {
+    .hr-perm-tree-layout {
+        flex-direction: row;
+        align-items: stretch;
+    }
+
+    .hr-perm-tree {
+        order: 0;
+        width: 12rem;
+        min-width: 12rem;
+        max-width: 12rem;
+        max-height: min(72vh, calc(100dvh - 8.5rem));
+        border-bottom: none;
+        border-inline-start: 1px solid #cbd5e1;
+    }
+
+    .hr-perm-tree-layout__table {
+        order: 1;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .hr-perm-erp-scroll {
+        max-height: min(72vh, calc(100dvh - 8.5rem));
+    }
+
+    .hr-perm-erp-table .hr-perm-matrix__head .hr-perm-op-col {
+        min-width: 4.5rem;
+        max-width: 5.75rem;
+    }
+
+    .hr-perm-erp-table .hr-perm-op-col__title {
+        font-size: 0.8rem;
+    }
+}
+
+.hr-perm-toggle--compact .hr-perm-toggle__opt {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.hr-perm-toggle--compact .hr-perm-toggle__opt span {
+    font-size: 0.62rem;
+}
+
 @media (min-width: 768px) {
     .hr-perm-matrix__toolbar {
         padding: 0.5rem 0.75rem;
@@ -7814,14 +8246,19 @@ body.hr-app .hr-main {
         max-width: 5.5rem;
     }
 
-    .hr-perm-op-col__label {
-        font-size: 0.62rem;
+    .hr-perm-erp-table .hr-perm-matrix__head .hr-perm-op-col {
+        min-width: 4.5rem;
+        max-width: 5.75rem;
     }
 
-    .hr-perm-matrix__table tbody .hr-perm-op-col {
-        width: 2.55rem;
-        min-width: 2.55rem;
-        max-width: 2.55rem;
+    .hr-perm-erp-table .hr-perm-op-col__title {
+        font-size: 0.8rem;
+    }
+
+    .hr-perm-erp-table tbody .hr-perm-op-col {
+        width: 2.75rem;
+        min-width: 2.75rem;
+        max-width: 2.75rem;
     }
 }
 

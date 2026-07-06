@@ -8,6 +8,7 @@ from django.contrib import messages
 
 from apps.core.models import AppModule, Permission, Role
 from apps.core.forms import RoleForm
+from apps.core.selectors.permission_matrix import build_role_permissions_matrix
 
 
 # =============================================================================
@@ -20,35 +21,7 @@ from apps.core.decorators import any_permission_required, permission_required
 
 def _build_role_permissions_matrix(role):
     """جدول وحدات × عمليات لنموذج/صفحة صلاحيات الدور."""
-    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
-    operations = list(Permission.Operation.choices)
-    is_admin_role = role.role_type == Role.RoleType.ADMIN
-    role_perm_ids = set(role.permissions.values_list('id', flat=True))
-
-    matrix = []
-    for m in modules:
-        cells = []
-        for op_code, op_label in operations:
-            perm = next(
-                (p for p in m.permissions.all() if p.operation == op_code and p.is_active),
-                None,
-            )
-            cells.append({
-                'op_code': op_code,
-                'op_label': op_label,
-                'perm': perm,
-                'checked': bool(perm and (is_admin_role or perm.id in role_perm_ids)),
-                'available': perm is not None,
-            })
-        matrix.append({'module': m, 'cells': cells})
-
-    return {
-        'role': role,
-        'is_admin_role': is_admin_role,
-        'operations': operations,
-        'matrix': matrix,
-        'role_type_choices': Role.RoleType.choices,
-    }
+    return build_role_permissions_matrix(role)
 
 
 def _role_form_context(role=None):
@@ -58,11 +31,14 @@ def _role_form_context(role=None):
         ctx = {
             'role': None,
             'is_admin_role': False,
-            'operations': list(Permission.Operation.choices),
+            'operations': [],
             'matrix': [],
+            'permission_tree': [],
+            'default_group_id': '',
         }
     ctx['role_type_choices'] = Role.RoleType.choices
     return ctx
+
 
 @login_required
 @permission_required('users.view')

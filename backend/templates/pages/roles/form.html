@@ -2,7 +2,7 @@
 {% load custom_tags %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-4">
+<div class="{% if role and matrix %}w-full max-w-full{% else %}max-w-4xl{% endif %} mx-auto space-y-4">
     <!-- Header -->
     <div class="flex items-center gap-3">
         {% url 'web:list_roles' as back_url %}
@@ -12,7 +12,8 @@
         </div>
     </div>
 
-    <form method="post" class="space-y-4" x-data="permsMatrix()">
+    <form method="post" class="space-y-4"
+          {% if role and matrix %}x-data="permsTreeMatrix('{{ default_group_id|escapejs }}')" x-init="initTree()"{% else %}x-data="permsMatrix()"{% endif %}>
         {% csrf_token %}
 
         <!-- Basic Information -->
@@ -80,84 +81,27 @@
 
         {# ============== Permissions Matrix (only when editing) ============== #}
         {% if role and matrix %}
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                    <div class="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
-                        <i data-lucide="shield-check" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-900">الصلاحيات</h2>
-                    </div>
+        <div class="hr-perm-matrix hr-perm-matrix--compact hr-perm-matrix--erp overflow-hidden border border-slate-200 rounded-xl">
+            <div class="hr-perm-matrix__toolbar border-b border-slate-200">
+                <div class="hr-perm-matrix__toolbar-main min-w-0">
+                    <h2 class="hr-perm-matrix__title m-0">الصلاحيات</h2>
                 </div>
-                <div class="flex items-center gap-2 text-xs">
-                    {% include "components/hr_btn.html" with label="تحديد الكل" type="button" variant="soft-emerald" icon="check" size="sm" x_click="checkAll(true)" disabled=is_admin_role %}
-                    {% include "components/hr_btn.html" with label="إلغاء الكل" type="button" variant="soft-slate" icon="x" size="sm" x_click="checkAll(false)" disabled=is_admin_role %}
-                    <span class="text-slate-500 mr-2">
-                        <span x-text="selectedCount()"></span> محددة
-                    </span>
+                <div class="hr-perm-matrix__toolbar-actions">
+                    {% if not is_admin_role %}
+                    {% include "components/hr_btn.html" with label="تحديد الكل" type="button" variant="soft-emerald" icon="check" size="sm" x_click="checkAll(true)" %}
+                    {% include "components/hr_btn.html" with label="إلغاء الكل" type="button" variant="soft-slate" icon="x" size="sm" x_click="checkAll(false)" %}
+                    <span class="text-xs text-slate-500"><span x-text="selectedCount()"></span> محددة</span>
+                    {% endif %}
                 </div>
             </div>
-
             {% if is_admin_role %}
-            <div class="bg-amber-50 border-b border-amber-200 text-amber-800 px-6 py-3 flex items-start gap-2 text-sm">
-                <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            </div>
+            <div class="hr-perm-erp-note">دور الأدمن يملك جميع الصلاحيات تلقائياً.</div>
             {% endif %}
-
-            <div class="hr-perm-matrix__scroll hr-scroll-hover border-t border-slate-100">
-                <table class="w-full min-w-max">
-                    <thead class="hr-perm-matrix__head bg-slate-50 border-b border-slate-200">
-                        <tr>
-                            <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 min-w-[9.5rem] whitespace-nowrap">الوحدة</th>
-                            {% for op_code, op_label in operations %}
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-24">
-                                <div class="flex flex-col items-center gap-1">
-                                    <span>{{ op_label }}</span>
-                                    <button type="button" @click="checkColumn('{{ op_code }}', true)"
-                                            class="text-[10px] text-primary-600 hover:underline"
-                                            {% if is_admin_role %}disabled{% endif %}>الكل</button>
-                                </div>
-                            </th>
-                            {% endfor %}
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 w-20">الكل</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for row in matrix %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3 whitespace-nowrap min-w-[9.5rem]">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
-                                        <i data-lucide="{{ row.module.icon }}" class="w-4 h-4"></i>
-                                    </div>
-                                    <span class="text-sm font-bold text-slate-800 whitespace-nowrap">{{ row.module.name }}</span>
-                                </div>
-                            </td>
-                            {% for cell in row.cells %}
-                            <td class="px-4 py-3 text-center">
-                                {% if cell.available %}
-                                <input type="checkbox" name="permissions" value="{{ cell.perm.id }}"
-                                       data-op="{{ cell.op_code }}" data-module="{{ row.module.code }}"
-                                       {% if cell.checked %}checked{% endif %}
-                                       {% if is_admin_role %}disabled{% endif %}
-                                       class="perm-cb w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer disabled:opacity-50">
-                                {% else %}
-                                <span class="text-slate-300 text-lg">—</span>
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                            <td class="px-4 py-3 text-center">
-                                <button type="button" @click="checkRow('{{ row.module.code }}', !rowAllChecked('{{ row.module.code }}'))"
-                                        class="text-[11px] text-primary-600 hover:underline font-semibold"
-                                        {% if is_admin_role %}disabled{% endif %}>
-                                    تبديل
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="hr-perm-tree-layout">
+                {% include "components/perm_tree_sidebar.html" %}
+                <div class="hr-perm-tree-layout__table">
+                    {% include "components/perm_matrix_role.html" %}
+                </div>
             </div>
         </div>
         {% endif %}
@@ -174,7 +118,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="/static/js/hr-perms-matrix.js?v=20260610-1"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () { if (window.lucide) lucide.createIcons(); });
 </script>

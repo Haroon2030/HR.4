@@ -1,0 +1,41 @@
+{# شجرة أنظمة الصلاحيات — جانب يمين RTL #}
+<aside class="hr-perm-tree" aria-label="أنظمة الصلاحيات">
+    <div class="hr-perm-tree__header">
+        <i data-lucide="folder-tree" class="hr-perm-tree__header-icon" aria-hidden="true"></i>
+        <span>أنظمة الصلاحيات</span>
+    </div>
+    <div class="hr-perm-tree__body">
+        {% for system in permission_tree %}
+        <div class="hr-perm-tree__system">
+            <button type="button"
+                    class="hr-perm-tree__system-btn"
+                    data-system-id="{{ system.id }}"
+                    :class="{
+                        'is-open': isSystemOpen('{{ system.id }}'),
+                        'has-active': isSystemActive('{{ system.id }}')
+                    }"
+                    @click="toggleSystem('{{ system.id }}')"
+                    :aria-expanded="isSystemOpen('{{ system.id }}')">
+                <span class="hr-perm-tree__chevron" x-text="isSystemOpen('{{ system.id }}') ? '−' : '+'" aria-hidden="true"></span>
+                <i data-lucide="{{ system.icon }}" class="hr-perm-tree__icon" aria-hidden="true"></i>
+                <span class="hr-perm-tree__system-name">{{ system.name }}</span>
+            </button>
+            <div class="hr-perm-tree__children" x-show="isSystemOpen('{{ system.id }}')" x-cloak>
+                {% for leaf in system.children %}
+                <button type="button"
+                        class="hr-perm-tree__leaf"
+                        data-group-id="{{ leaf.id }}"
+                        data-system-id="{{ system.id }}"
+                        :class="activeGroupId === '{{ leaf.id }}' ? 'is-active' : ''"
+                        @click="selectGroup('{{ leaf.id }}', '{{ system.id }}')">
+                    <span class="hr-perm-tree__leaf-name">{{ leaf.name }}</span>
+                    <span class="hr-perm-tree__leaf-count">{{ leaf.screen_count }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <p class="hr-perm-tree__empty">لا توجد وحدات صلاحيات.</p>
+        {% endfor %}
+    </div>
+</aside>

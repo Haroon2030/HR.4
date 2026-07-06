@@ -57,6 +57,28 @@ OPERATION_NAMES = {
     'workers_delete': 'حذف عامل صيانة',
 }
 
+# اختصارات رؤوس أعمدة المصفوفة (الاسم الكامل في title/tooltip)
+OPERATION_SHORT_LABELS = {
+    'view': 'عرض',
+    'add': 'إضافة',
+    'edit': 'تعديل',
+    'delete': 'حذف',
+    'manage': 'إدارة',
+    'assign': 'إسناد',
+    'confirm_branch': 'تأكيد فرع',
+    'approve_branch': 'موافقة فرع',
+    'approve_admin': 'موافقة إدارة',
+    'approve_gm': 'موافقة عام',
+    'approve_officer': 'موافقة HR',
+    'return': 'إرجاع',
+    'resubmit': 'إعادة',
+    'execute': 'تنفيذ',
+    'workers_view': 'عرض عمال',
+    'workers_add': 'إضافة عامل',
+    'workers_edit': 'تعديل عامل',
+    'workers_delete': 'حذف عامل',
+}
+
 # الـ registry الفعلي: {module_code: {'name', 'icon', 'order', 'operations': set()}}
 _REGISTRY: Dict[str, dict] = {}
 

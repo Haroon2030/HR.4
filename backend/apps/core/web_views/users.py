@@ -354,38 +354,18 @@ def manage_user_permissions(request, user_id):
         )
         return redirect('web:manage_user_permissions', user_id=user_obj.id)
 
-    modules = AppModule.objects.filter(is_active=True).prefetch_related('permissions')
-    operations = list(Permission.Operation.choices)
+    from apps.core.selectors.permission_matrix import build_user_permissions_matrix
+
     role_perm_ids = set(role.permissions.values_list('id', flat=True)) if role else set()
     extra_ids = set(profile.extra_permissions.values_list('id', flat=True))
     denied_ids = set(profile.denied_permissions.values_list('id', flat=True))
-
-    matrix = []
-    for m in modules:
-        cells = []
-        for op_code, op_label in operations:
-            perm = next((p for p in m.permissions.all() if p.operation == op_code and p.is_active), None)
-            if not perm:
-                cells.append({'op_code': op_code, 'op_label': op_label, 'available': False})
-                continue
-            in_role = perm.id in role_perm_ids
-            if perm.id in denied_ids:
-                state = 'deny'
-            elif perm.id in extra_ids:
-                state = 'grant'
-            else:
-                state = 'inherit'
-            effective = is_admin_user or (state == 'grant') or (state == 'inherit' and in_role)
-            cells.append({
-                'op_code': op_code,
-                'op_label': op_label,
-                'perm': perm,
-                'available': True,
-                'in_role': in_role,
-                'state': state,
-                'effective': effective,
-            })
-        matrix.append({'module': m, 'cells': cells})
+    matrix_ctx = build_user_permissions_matrix(
+        role=role,
+        is_admin_user=is_admin_user,
+        role_perm_ids=role_perm_ids,
+        extra_ids=extra_ids,
+        denied_ids=denied_ids,
+    )
 
     from django.urls import reverse
 
@@ -413,7 +393,9 @@ def manage_user_permissions(request, user_id):
         'profile': profile,
         'role': role,
         'is_admin_user': is_admin_user,
-        'operations': operations,
-        'matrix': matrix,
+        'operations': matrix_ctx['operations'],
+        'matrix': matrix_ctx['matrix'],
+        'permission_tree': matrix_ctx['permission_tree'],
+        'default_group_id': matrix_ctx['default_group_id'],
         'breadcrumb_items': breadcrumb_items,
     })
