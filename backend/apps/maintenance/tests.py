@@ -128,3 +128,36 @@ class MaintenanceWorkflowTests(TestCase):
         self.assertNotIn(inactive.pk, assignable_maintenance_workers_qs().values_list('pk', flat=True))
         no_phone = MaintenanceWorker.objects.create(name='بلا جوال', phone='', trade=self.trade)
         self.assertNotIn(no_phone.pk, assignable_maintenance_workers_qs().values_list('pk', flat=True))
+
+    def test_maintenance_sub_permission_expansion(self):
+        from apps.core.decorators import get_user_permissions
+        from apps.core.models import AppModule, Permission, UserProfile
+
+        mod, _ = AppModule.objects.get_or_create(
+            code='maintenance_screen_assign',
+            defaults={'name': 'صيانة — إسناد الطلبات', 'icon': 'wrench', 'order': 143, 'is_active': True},
+        )
+        perm, _ = Permission.objects.get_or_create(
+            code='maintenance_screen_assign.view',
+            defaults={
+                'name': 'صيانة — إسناد الطلبات',
+                'module': mod,
+                'operation': 'view',
+                'is_active': True,
+            },
+        )
+
+        limited = User.objects.create_user(username='maint_assign_only', password='pass')
+        limited_role = Role.objects.create(
+            name='محدود صيانة اختبار',
+            role_type=Role.RoleType.EMPLOYEE,
+            is_system_role=False,
+        )
+        limited_role.permissions.set([perm])
+        UserProfile.objects.update_or_create(user=limited, defaults={'role': limited_role})
+        limited = User.objects.select_related('profile__role').get(pk=limited.pk)
+
+        codes = get_user_permissions(limited)
+        self.assertIn('maintenance_screen_assign.view', codes)
+        self.assertIn('maintenance.assign', codes)
+        self.assertNotIn('maintenance.view', codes)

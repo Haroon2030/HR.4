@@ -129,6 +129,18 @@ class Command(BaseCommand):
             {'code': 'maintenance.workers_add', 'name': 'إضافة عامل صيانة', 'module': 'maintenance'},
             {'code': 'maintenance.workers_edit', 'name': 'تعديل عامل صيانة', 'module': 'maintenance'},
             {'code': 'maintenance.workers_delete', 'name': 'حذف عامل صيانة', 'module': 'maintenance'},
+
+            # شاشات فرعية — مصفوفة الصلاحيات (كل شاشة صف مستقل)
+            {'code': 'maintenance_screen_requests.view', 'name': 'صيانة — طلبات الصيانة', 'module': 'maintenance_screen_requests'},
+            {'code': 'maintenance_screen_request_add.view', 'name': 'صيانة — طلب سريع', 'module': 'maintenance_screen_request_add'},
+            {'code': 'maintenance_screen_assign.view', 'name': 'صيانة — إسناد الطلبات', 'module': 'maintenance_screen_assign'},
+            {'code': 'maintenance_screen_manager_close.view', 'name': 'صيانة — إغلاق مدير الصيانة', 'module': 'maintenance_screen_manager_close'},
+            {'code': 'maintenance_screen_branch_confirm.view', 'name': 'صيانة — تأكيد الفرع', 'module': 'maintenance_screen_branch_confirm'},
+            {'code': 'maintenance_screen_return.view', 'name': 'صيانة — إرجاع الطلب', 'module': 'maintenance_screen_return'},
+            {'code': 'maintenance_setup.view', 'name': 'صيانة — تهيئة (عرض)', 'module': 'maintenance_setup'},
+            {'code': 'maintenance_setup.add', 'name': 'صيانة — تهيئة (إضافة)', 'module': 'maintenance_setup'},
+            {'code': 'maintenance_setup.edit', 'name': 'صيانة — تهيئة (تعديل)', 'module': 'maintenance_setup'},
+            {'code': 'maintenance_setup.delete', 'name': 'صيانة — تهيئة (حذف)', 'module': 'maintenance_setup'},
         ]
         
         created_permissions = {}

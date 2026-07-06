@@ -335,6 +335,13 @@ def has_permission(user, permission_code):
 
 
 @register.filter
+def has_maintenance_nav(user):
+    """هل يظهر قسم إدارة الصيانة في الشريط الجانبي؟"""
+    from apps.maintenance.sub_permissions import user_has_maintenance_nav
+    return user_has_maintenance_nav(user)
+
+
+@register.filter
 def is_private_lan_ip(value):
     """True إن كان IP شبكة محلية — السحب من السيرفر السحابي غير ممكن."""
     from apps.attendance.validators import is_private_lan_ip as _check

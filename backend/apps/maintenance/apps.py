@@ -8,6 +8,7 @@ class MaintenanceConfig(AppConfig):
 
     def ready(self):
         from apps.core.permissions_registry import register_module, register_permission
+        from apps.maintenance.sub_permissions import register_maintenance_sub_permissions
 
         register_module('maintenance', name='إدارة الصيانة', icon='wrench', order=14)
         for code in (
@@ -23,3 +24,4 @@ class MaintenanceConfig(AppConfig):
             'maintenance.workers_delete',
         ):
             register_permission(code)
+        register_maintenance_sub_permissions()
