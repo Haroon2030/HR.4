@@ -25,6 +25,7 @@ from apps.employees.status_ui import (
     employee_status_dist_palette,
     get_employee_status_ui,
 )
+from apps.maintenance.status_ui import get_maintenance_status_ui
 
 _DIST_PALETTE = employee_status_dist_palette()
 
@@ -88,6 +89,12 @@ def employee_status_badge(employee=None, status=None, size='sm'):
         'ui': get_employee_status_ui(raw_status),
         'size': size,
     }
+
+
+@register.inclusion_tag('components/maintenance_status_badge.html')
+def maintenance_status_badge(request=None, status=None):
+    raw_status = status if status is not None else getattr(request, 'status', '')
+    return {'ui': get_maintenance_status_ui(raw_status)}
 
 
 @register.filter

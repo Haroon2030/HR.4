@@ -59,7 +59,7 @@
                             <td class="px-3 py-2">{{ r.branch.name }}</td>
                             <td class="px-3 py-2 font-medium">{{ r.title }}</td>
                             <td class="px-3 py-2">{% if r.priority == 'urgent' %}<span class="text-rose-600 font-semibold">عاجل</span>{% else %}عادي{% endif %}</td>
-                            <td class="px-3 py-2">{{ r.get_status_display }}</td>
+                            <td class="px-3 py-2">{% maintenance_status_badge r %}</td>
                             <td class="px-3 py-2">{{ r.assigned_worker.effective_name|default:"—" }}</td>
                             <td class="px-3 py-2 text-slate-500">{{ r.requested_at|date:"Y-m-d H:i" }}</td>
                             <td class="px-3 py-2">

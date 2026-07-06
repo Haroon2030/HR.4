@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_tags %}
 
 {% block title %}طلب صيانة #{{ req.id }}{% endblock %}
 
@@ -12,7 +13,7 @@
             <h1 class="text-2xl font-bold text-slate-900">طلب #{{ req.id }} — {{ req.title }}</h1>
             <p class="text-sm text-slate-500">{{ req.branch.name }} • {{ req.requested_at|date:"Y/m/d H:i" }}</p>
         </div>
-        <span class="px-3 py-1 rounded-lg bg-slate-100 text-slate-800 text-sm font-semibold">{{ req.get_status_display }}</span>
+        {% maintenance_status_badge req %}
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
