@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}مهن الصيانة{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4" dir="rtl">
+  <div class="flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-slate-800">مهن الصيانة</h1>
+    {% if can_add %}<a href="{% url 'web:add_maintenance_trade' %}" class="hr-btn hr-btn--primary">إضافة مهنة</a>{% endif %}
+  </div>
+  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50"><tr>
+        <th class="px-3 py-2 text-right">الرمز</th>
+        <th class="px-3 py-2 text-right">الاسم</th>
+        <th class="px-3 py-2 text-right">نشط</th>
+        <th class="px-3 py-2"></th>
+      </tr></thead>
+      <tbody>
+        {% for t in trades %}
+        <tr class="border-t">
+          <td class="px-3 py-2">{{ t.code }}</td>
+          <td class="px-3 py-2">{{ t.name }}</td>
+          <td class="px-3 py-2">{% if t.is_active %}نعم{% else %}لا{% endif %}</td>
+          <td class="px-3 py-2">
+            {% if can_edit %}<a href="{% url 'web:edit_maintenance_trade' t.id %}" class="text-primary-600">تعديل</a>{% endif %}
+            {% if can_delete %}
+            <form method="post" action="{% url 'web:delete_maintenance_trade' t.id %}" class="inline">{% csrf_token %}
+              <button type="submit" class="text-rose-600 mr-2" onclick="return confirm('حذف؟')">حذف</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="p-6 text-center text-slate-400">لا توجد مهن.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

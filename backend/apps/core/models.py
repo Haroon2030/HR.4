@@ -226,6 +226,7 @@ class Role(BaseModel):
         BRANCH_ACCOUNTANT = 'branch_accountant', 'BRANCH_ACCOUNTANT — محاسب الفرع'
         SPECIALIST = 'specialist', 'DATA_SPECIALIST — أخصائي إدخال البيانات'
         EMPLOYEE = 'employee', 'EMPLOYEE — موظف (صلاحيات ذاتية)'
+        MAINTENANCE_MANAGER = 'maintenance_manager', 'MAINTENANCE_MANAGER — مدير الصيانة'
     
     name = models.CharField("اسم الدور", max_length=100, unique=True)
     role_type = models.CharField(

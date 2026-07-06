@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}طلب صيانة #{{ req.id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4" dir="rtl">
+    {% url 'web:list_maintenance_requests' as back_url %}
+    {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع للقائمة' %}
+
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">طلب #{{ req.id }} — {{ req.title }}</h1>
+            <p class="text-sm text-slate-500">{{ req.branch.name }} • {{ req.requested_at|date:"Y/m/d H:i" }}</p>
+        </div>
+        <span class="px-3 py-1 rounded-lg bg-slate-100 text-slate-800 text-sm font-semibold">{{ req.get_status_display }}</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2 space-y-4">
+            <div class="hr-glass-panel hr-maint-detail">
+                <div class="hr-maint-detail__head">
+                    <h2 class="hr-maint-detail__title">
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                        تفاصيل الطلب
+                    </h2>
+                </div>
+
+                <div class="hr-maint-detail__grid">
+                    <div class="hr-maint-detail__item hr-maint-detail__item--wide">
+                        <span class="hr-maint-detail__icon" aria-hidden="true"><i data-lucide="map-pin" class="w-4 h-4"></i></span>
+                        <div class="hr-maint-detail__body">
+                            <span class="hr-maint-detail__label">الموقع</span>
+                            <div class="hr-maint-detail__value">
+                                {% include 'components/maintenance_location_display.html' with location=req.location %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hr-maint-detail__item">
+                        <span class="hr-maint-detail__icon" aria-hidden="true"><i data-lucide="box" class="w-4 h-4"></i></span>
+                        <div class="hr-maint-detail__body">
+                            <span class="hr-maint-detail__label">الأصل</span>
+                            <span class="hr-maint-detail__value">{{ req.asset.name|default:"—" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="hr-maint-detail__item">
+                        <span class="hr-maint-detail__icon" aria-hidden="true"><i data-lucide="user" class="w-4 h-4"></i></span>
+                        <div class="hr-maint-detail__body">
+                            <span class="hr-maint-detail__label">مُقدّم الطلب</span>
+                            <span class="hr-maint-detail__value">{{ req.requested_by.get_full_name|default:req.requested_by.username }}</span>
+                        </div>
+                    </div>
+
+                    <div class="hr-maint-detail__item">
+                        <span class="hr-maint-detail__icon" aria-hidden="true"><i data-lucide="building-2" class="w-4 h-4"></i></span>
+                        <div class="hr-maint-detail__body">
+                            <span class="hr-maint-detail__label">الفرع</span>
+                            <span class="hr-maint-detail__value">{{ req.branch.name }}</span>
+                        </div>
+                    </div>
+
+                    <div class="hr-maint-detail__item">
+                        <span class="hr-maint-detail__icon" aria-hidden="true"><i data-lucide="flag" class="w-4 h-4"></i></span>
+                        <div class="hr-maint-detail__body">
+                            <span class="hr-maint-detail__label">الأولوية</span>
+                            <span class="hr-maint-detail__value">{{ req.get_priority_display }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-maint-detail__desc">
+                    <span class="hr-maint-detail__label">وصف المشكلة</span>
+                    <p class="hr-maint-detail__desc-text">{{ req.description }}</p>
+                </div>
+
+                {% if req.attachment %}
+                <div class="hr-maint-detail__attach">
+                    <a href="{{ req.attachment.url }}" target="_blank" rel="noopener noreferrer" class="hr-maint-detail__attach-link">
+                        <i data-lucide="paperclip" class="w-4 h-4"></i>
+                        <span>عرض المرفق</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if req.assigned_worker %}
+            <div class="hr-glass-panel p-4">
+                <h2 class="text-sm font-bold text-slate-800 mb-2">العامل المُسند</h2>
+                <p class="text-sm">{{ req.assigned_worker.effective_name }} — {{ req.assigned_worker.trade.name }}</p>
+                {% if req.worker_report_notes %}
+                <p class="text-sm text-slate-600 mt-2"><span class="font-medium">بلاغ العامل:</span> {{ req.worker_report_notes }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if req.return_notes %}
+            <div class="hr-glass-panel p-4 border border-rose-200">
+                <p class="text-sm text-rose-700"><span class="font-bold">ملاحظات الإرجاع:</span> {{ req.return_notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="space-y-4">
+            {% if can_assign %}
+            <div class="hr-glass-panel p-4">
+                <h2 class="text-sm font-bold text-slate-800 mb-3">إسناد لعامل</h2>
+                <form method="post" action="{% url 'web:assign_maintenance_request' req.id %}">
+                    {% csrf_token %}
+                    <select name="worker_id" required class="hr-search-field__input w-full bg-white mb-3">
+                        <option value="">— اختر عامل —</option>
+                        {% for w in workers %}
+                        <option value="{{ w.id }}">{{ w.effective_name }} — {{ w.trade.name }} ({{ w.effective_phone }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="hr-btn hr-btn--primary w-full">إسناد + واتساب</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if can_manage %}
+            <div class="hr-glass-panel p-4">
+                <h2 class="text-sm font-bold text-slate-800 mb-3">إغلاق مدير الصيانة</h2>
+                <form method="post" action="{% url 'web:manager_close_maintenance_request' req.id %}">
+                    {% csrf_token %}
+                    <textarea name="manager_notes" rows="2" class="hr-search-field__input w-full mb-3" placeholder="ملاحظات (اختياري)"></textarea>
+                    <button type="submit" class="hr-btn hr-btn--primary w-full">إغلاق وإرسال للفرع</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if can_confirm %}
+            <div class="hr-glass-panel p-4">
+                <h2 class="text-sm font-bold text-slate-800 mb-3">تأكيد مدير الفرع</h2>
+                <form method="post" action="{% url 'web:branch_confirm_maintenance_request' req.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="hr-btn hr-btn--emerald w-full">تأكيد الإنجاز</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if can_return %}
+            <div class="hr-glass-panel p-4">
+                <h2 class="text-sm font-bold text-slate-800 mb-3">إرجاع الطلب</h2>
+                <form method="post" action="{% url 'web:return_maintenance_request' req.id %}">
+                    {% csrf_token %}
+                    <textarea name="return_notes" rows="2" required class="hr-search-field__input w-full mb-3" placeholder="سبب الإرجاع"></textarea>
+                    <button type="submit" class="hr-btn hr-btn--rose w-full">إرجاع</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if can_resubmit %}
+            <div class="hr-glass-panel p-4">
+                <form method="post" action="{% url 'web:resubmit_maintenance_request' req.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="hr-btn hr-btn--primary w-full">إعادة إرسال الطلب</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

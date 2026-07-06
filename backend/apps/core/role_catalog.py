@@ -30,6 +30,7 @@ ROLE_TYPE_ORDER = [
     Role.RoleType.BRANCH_ACCOUNTANT,
     Role.RoleType.SPECIALIST,
     Role.RoleType.EMPLOYEE,
+    Role.RoleType.MAINTENANCE_MANAGER,
 ]
 
 ROLE_CATALOG: dict[str, dict[str, str]] = {
@@ -95,6 +96,15 @@ ROLE_CATALOG: dict[str, dict[str, str]] = {
         'name': 'EMPLOYEE — موظف',
         'type_label': 'EMPLOYEE — موظف (صلاحيات ذاتية)',
         'description': 'عرض البيانات الشخصية وطلب الإجازات فقط.',
+    },
+    Role.RoleType.MAINTENANCE_MANAGER: {
+        'code': 'MAINTENANCE_MANAGER',
+        'name': 'MAINTENANCE_MANAGER — مدير الصيانة',
+        'type_label': 'MAINTENANCE_MANAGER — مدير الصيانة',
+        'description': (
+            'استلام طلبات الصيانة من الفروع، إسنادها لعمال الصيانة، '
+            'وإغلاق الطلبات بعد التنفيذ.'
+        ),
     },
 }
 

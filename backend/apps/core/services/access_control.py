@@ -20,6 +20,7 @@ ROLE_RANK = {
     Role.RoleType.HR_OFFICER: 30,
     Role.RoleType.MANAGER: 40,
     Role.RoleType.BRANCH_ACCOUNTANT: 42,
+    Role.RoleType.MAINTENANCE_MANAGER: 43,
     Role.RoleType.ADMIN_MANAGER: 45,
     Role.RoleType.HR_MANAGER: 90,
     Role.RoleType.ADMIN: 100,

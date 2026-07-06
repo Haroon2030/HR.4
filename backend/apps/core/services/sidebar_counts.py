@@ -84,6 +84,7 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
             'unread_notifications_count': Notification.objects.filter(
                 recipient=user, is_read=False,
             ).count(),
+            'maintenance_open_count': _maintenance_open_count(user),
         }
 
     managed_ids = _managed_branch_ids(user)
@@ -167,7 +168,17 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
         'pending_actions_count': pending_actions_count,
         'pending_for_me_count': pa_for_me + hire_for_me,
         'unread_notifications_count': unread,
+        'maintenance_open_count': _maintenance_open_count(user),
     }
+
+
+def _maintenance_open_count(user) -> int:
+    try:
+        from apps.maintenance.services.sidebar_counts import maintenance_open_requests_count
+        return maintenance_open_requests_count(user)
+    except Exception as exc:
+        logger.warning('maintenance_open_count failed: %s', exc)
+        return 0
 
 
 def get_sidebar_counts(user) -> dict[str, int]:
@@ -187,4 +198,5 @@ def get_sidebar_counts(user) -> dict[str, int]:
             'pending_actions_count': 0,
             'pending_for_me_count': 0,
             'unread_notifications_count': 0,
+            'maintenance_open_count': 0,
         }

@@ -783,6 +783,16 @@ body.hr-app .hr-sidebar-panel .hr-nav-dropdown .hr-nav-sublink.is-active {
     border: 2px solid #fff;
 }
 
+.hr-nav-sublink__label {
+    flex: 1;
+    min-width: 0;
+}
+
+.hr-nav-sublink .hr-nav-sublink__badge {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+}
+
 /* شريط مطوي — أيقونات كبسولية */
 .hr-sidebar--collapsed .hr-nav {
     padding-inline: 0.35rem;
@@ -5701,6 +5711,48 @@ body.hr-app .hr-main :where(
 body.hr-app .hr-main .hr-btn span,
 body.hr-app .hr-main .hr-btn .hr-btn__icon {
     color: inherit !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__action,
+body.hr-app .hr-main .hr-location-picker__action span {
+    color: #ffffff !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__action:hover:not(:disabled) span {
+    color: #ffffff !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status,
+body.hr-app .hr-main .hr-location-picker__status span {
+    color: inherit;
+}
+
+body.hr-app .hr-main .hr-location-picker__status-text {
+    color: #f1f5f9 !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status-code {
+    color: #94a3b8 !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status.is-loading .hr-location-picker__status-code {
+    color: #fbbf24 !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status.is-active .hr-location-picker__status-code {
+    color: #34d399 !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status-chip {
+    color: #64748b !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status.is-loading .hr-location-picker__status-chip {
+    color: #fbbf24 !important;
+}
+
+body.hr-app .hr-main .hr-location-picker__status.is-active .hr-location-picker__status-chip {
+    color: #34d399 !important;
 }
 
 body.hr-app .hr-sidebar .hr-nav-link,
@@ -13400,3 +13452,556 @@ body.hr-app .hr-schedule-roster-modal.hr-glass-modal--sidebar .hr-schedule-modal
     color: #ef4444 !important;
     stroke: #ef4444 !important;
 }
+
+/* ── منتقي الموقع (GPS / WGS84) ── */
+body.hr-app .hr-location-picker__panel {
+    border: 1px solid var(--hr-glass-line, #cbd5e1);
+    border-radius: 0.625rem;
+    background: linear-gradient(145deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.88) 100%);
+    padding: 0.65rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+body.hr-app .hr-location-picker__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+body.hr-app .hr-location-picker__status {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.55rem 0.4rem 0.45rem;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+    background: linear-gradient(165deg, #1e293b 0%, #0f172a 55%, #111827 100%);
+    color: #e2e8f0;
+    min-width: 11.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+body.hr-app .hr-location-picker__status::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(148, 163, 184, 0.03) 2px,
+        rgba(148, 163, 184, 0.03) 3px
+    );
+    pointer-events: none;
+}
+
+body.hr-app .hr-location-picker__status-led {
+    position: relative;
+    width: 0.65rem;
+    height: 0.65rem;
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+body.hr-app .hr-location-picker__status-dot {
+    position: absolute;
+    inset: 0.15rem;
+    border-radius: 50%;
+    background: #64748b;
+    box-shadow: 0 0 4px rgba(100, 116, 139, 0.5);
+}
+
+body.hr-app .hr-location-picker__status-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    opacity: 0;
+}
+
+body.hr-app .hr-location-picker__status-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    z-index: 1;
+}
+
+body.hr-app .hr-location-picker__status-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    color: #94a3b8;
+}
+
+body.hr-app .hr-location-picker__status-text {
+    font-size: 0.64rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #f1f5f9;
+    white-space: nowrap;
+}
+
+body.hr-app .hr-location-picker__status-chip {
+    margin-inline-start: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.52rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #64748b;
+    border: 1px solid #334155;
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.3rem;
+    background: rgba(15, 23, 42, 0.65);
+    z-index: 1;
+}
+
+body.hr-app .hr-location-picker__signal {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 0.75rem;
+    padding-inline: 0.15rem;
+    z-index: 1;
+}
+
+body.hr-app .hr-location-picker__signal span {
+    display: block;
+    width: 3px;
+    border-radius: 1px;
+    background: #475569;
+    animation: hr-loc-signal 1.1s ease-in-out infinite;
+}
+
+body.hr-app .hr-location-picker__signal span:nth-child(1) { height: 35%; animation-delay: 0s; }
+body.hr-app .hr-location-picker__signal span:nth-child(2) { height: 55%; animation-delay: 0.15s; }
+body.hr-app .hr-location-picker__signal span:nth-child(3) { height: 75%; animation-delay: 0.3s; }
+body.hr-app .hr-location-picker__signal span:nth-child(4) { height: 100%; animation-delay: 0.45s; }
+
+body.hr-app .hr-location-picker__status.is-idle .hr-location-picker__status-code {
+    color: #94a3b8;
+}
+
+body.hr-app .hr-location-picker__status.is-idle .hr-location-picker__status-chip {
+    color: #64748b;
+}
+
+body.hr-app .hr-location-picker__status.is-loading .hr-location-picker__status-code {
+    color: #fbbf24;
+}
+
+body.hr-app .hr-location-picker__status.is-loading .hr-location-picker__status-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.75);
+    animation: hr-loc-pulse 1.2s ease-in-out infinite;
+}
+
+body.hr-app .hr-location-picker__status.is-loading .hr-location-picker__status-ring {
+    opacity: 1;
+    border-color: rgba(245, 158, 11, 0.45);
+    animation: hr-loc-ring 1.4s ease-out infinite;
+}
+
+body.hr-app .hr-location-picker__status.is-loading .hr-location-picker__status-chip {
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+body.hr-app .hr-location-picker__status.is-loading .hr-location-picker__signal span {
+    background: #fbbf24;
+}
+
+body.hr-app .hr-location-picker__status.is-active .hr-location-picker__status-code {
+    color: #34d399;
+}
+
+body.hr-app .hr-location-picker__status.is-active .hr-location-picker__status-dot {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.85);
+}
+
+body.hr-app .hr-location-picker__status.is-active .hr-location-picker__status-chip {
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.35);
+    background: rgba(6, 78, 59, 0.35);
+}
+
+@keyframes hr-loc-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.88); }
+}
+
+@keyframes hr-loc-ring {
+    0% { transform: scale(0.85); opacity: 0.85; }
+    100% { transform: scale(1.65); opacity: 0; }
+}
+
+@keyframes hr-loc-signal {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+}
+
+body.hr-app .hr-location-picker__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-inline-start: auto;
+}
+
+body.hr-app .hr-location-picker__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border-radius: 0.375rem;
+    border: 1px solid #2563eb;
+    background: #2563eb;
+    color: #ffffff !important;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+body.hr-app .hr-location-picker__action i[data-lucide],
+body.hr-app .hr-location-picker__action svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+body.hr-app .hr-location-picker__action:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff !important;
+}
+
+body.hr-app .hr-location-picker__action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+body.hr-app .hr-location-picker__coords {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.45rem;
+    border: 1px dashed #cbd5e1;
+    background: rgba(15, 23, 42, 0.03);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body.hr-app .hr-location-picker__coords--modal {
+    margin-top: 0;
+}
+
+body.hr-app .hr-location-picker__coord {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+body.hr-app .hr-location-picker__coord-key {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    min-width: 1.75rem;
+}
+
+body.hr-app .hr-location-picker__coord-val {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0f172a;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.3rem;
+    padding: 0.12rem 0.4rem;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+body.hr-app .hr-location-picker__maps-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-inline-start: auto;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #2563eb;
+    text-decoration: none;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.3rem;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+}
+
+body.hr-app .hr-location-picker__maps-link:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+body.hr-app .hr-location-picker__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    width: 100%;
+    min-width: 0;
+}
+
+body.hr-app .hr-location-picker__field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+body.hr-app .hr-location-picker__field-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+body.hr-app .hr-location-picker__field-tag {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #047857;
+    background: #d1fae5;
+    border: 1px solid #a7f3d0;
+    border-radius: 0.25rem;
+    padding: 0.05rem 0.35rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body.hr-app .hr-location-picker__input {
+    width: 100% !important;
+    min-width: 0;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    border-color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.hr-app .hr-location-picker__input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+body.hr-app .hr-location-picker__hint {
+    margin: 0;
+    font-size: 0.65rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+body.hr-app .hr-location-picker__hint--warn {
+    color: #b45309;
+}
+
+body.hr-app .hr-location-picker__map {
+    height: 17.5rem;
+    min-height: 15rem;
+    width: 100%;
+    z-index: 0;
+    border: 1px solid #cbd5e1;
+}
+
+body.hr-app .hr-location-picker__map .leaflet-container {
+    height: 100%;
+    width: 100%;
+    font-family: inherit;
+}
+
+/* ── تفاصيل طلب الصيانة ── */
+body.hr-app .hr-maint-detail {
+    padding: 0;
+    overflow: hidden;
+}
+
+body.hr-app .hr-maint-detail__head {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--hr-glass-line, #e2e8f0);
+    background: rgba(255, 255, 255, 0.45);
+}
+
+body.hr-app .hr-maint-detail__title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+body.hr-app .hr-maint-detail__title i[data-lucide],
+body.hr-app .hr-maint-detail__title svg {
+    color: #2563eb;
+    stroke: #2563eb;
+}
+
+body.hr-app .hr-maint-detail__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0.35rem 0;
+}
+
+@media (min-width: 640px) {
+    body.hr-app .hr-maint-detail__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+body.hr-app .hr-maint-detail__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.65);
+}
+
+body.hr-app .hr-maint-detail__item--wide {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 640px) {
+    body.hr-app .hr-maint-detail__item:nth-last-child(-n+2) {
+        border-bottom: none;
+    }
+}
+
+body.hr-app .hr-maint-detail__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: rgba(37, 99, 235, 0.08);
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+body.hr-app .hr-maint-detail__icon i[data-lucide],
+body.hr-app .hr-maint-detail__icon svg {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
+}
+
+body.hr-app .hr-maint-detail__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+body.hr-app .hr-maint-detail__label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+body.hr-app .hr-maint-detail__value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+body.hr-app .hr-maint-detail__desc {
+    padding: 0.85rem 1rem 1rem;
+    border-top: 1px solid var(--hr-glass-line, #e2e8f0);
+    background: rgba(248, 250, 252, 0.55);
+}
+
+body.hr-app .hr-maint-detail__desc-text {
+    margin: 0.35rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: #334155;
+    white-space: pre-wrap;
+}
+
+body.hr-app .hr-maint-detail__attach {
+    padding: 0 1rem 1rem;
+}
+
+body.hr-app .hr-maint-detail__attach-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #2563eb;
+    text-decoration: none;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.45rem;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+}
+
+body.hr-app .hr-maint-detail__attach-link:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+body.hr-app .hr-maint-location {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+}
+
+body.hr-app .hr-maint-location__text {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.5;
+}
+
+body.hr-app .hr-maint-location__maps {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #2563eb;
+    text-decoration: none;
+    padding: 0.25rem 0.55rem;
+    border-radius: 0.35rem;
+    border: 1px solid #bfdbfe;
+    background: #fff;
+}
+
+body.hr-app .hr-maint-location__maps:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+body.hr-app .hr-maint-location__maps i[data-lucide],
+body.hr-app .hr-maint-location__maps svg {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
+}
+

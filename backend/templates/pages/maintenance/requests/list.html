@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block title %}طلبات الصيانة{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4" dir="rtl">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <i data-lucide="wrench" class="w-7 h-7 text-primary-600"></i>
+                طلبات الصيانة
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">متابعة طلبات الصيانة من الفروع وإسنادها للعمال.</p>
+        </div>
+        {% if can_add %}
+        <a href="{% url 'web:add_maintenance_request' %}" class="hr-btn hr-btn--primary">
+            <i data-lucide="plus" class="hr-btn__icon"></i>
+            <span>طلب سريع</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="hr-glass-panel hr-page-tabs">
+        <nav class="hr-page-tabs__bar" role="tablist">
+            <a href="?tab=all" class="hr-tab-btn hr-tab-btn--slate {% if tab == 'all' %}is-active{% endif %}" role="tab">الكل ({{ counts.all }})</a>
+            <a href="?tab=pending" class="hr-tab-btn hr-tab-btn--amber {% if tab == 'pending' %}is-active{% endif %}" role="tab">بانتظار الإسناد ({{ counts.pending }})</a>
+            <a href="?tab=assigned" class="hr-tab-btn hr-tab-btn--indigo {% if tab == 'assigned' %}is-active{% endif %}" role="tab">عند العامل ({{ counts.assigned }})</a>
+            <a href="?tab=worker_reported" class="hr-tab-btn hr-tab-btn--purple {% if tab == 'worker_reported' %}is-active{% endif %}" role="tab">بانتظار الإغلاق ({{ counts.worker_reported }})</a>
+            <a href="?tab=manager_closed" class="hr-tab-btn hr-tab-btn--primary {% if tab == 'manager_closed' %}is-active{% endif %}" role="tab">تأكيد الفرع ({{ counts.manager_closed }})</a>
+            <a href="?tab=branch_confirmed" class="hr-tab-btn hr-tab-btn--emerald {% if tab == 'branch_confirmed' %}is-active{% endif %}" role="tab">مكتملة ({{ counts.branch_confirmed }})</a>
+            <a href="?tab=returned" class="hr-tab-btn hr-tab-btn--rose {% if tab == 'returned' %}is-active{% endif %}" role="tab">مرتجعة ({{ counts.returned }})</a>
+        </nav>
+        <div class="hr-page-tabs__body p-4 space-y-4">
+            <form method="get" class="flex gap-2">
+                <input type="hidden" name="tab" value="{{ tab }}">
+                {% include "components/search_field.html" with name="q" value=query placeholder="بحث بالعنوان أو الفرع..." extra_class="flex-1" aria_label="بحث طلبات الصيانة" %}
+                <button type="submit" class="hr-btn hr-btn--soft-slate">بحث</button>
+            </form>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th class="px-3 py-2 text-right">#</th>
+                            <th class="px-3 py-2 text-right">الفرع</th>
+                            <th class="px-3 py-2 text-right">العنوان</th>
+                            <th class="px-3 py-2 text-right">الأولوية</th>
+                            <th class="px-3 py-2 text-right">الحالة</th>
+                            <th class="px-3 py-2 text-right">العامل</th>
+                            <th class="px-3 py-2 text-right">التاريخ</th>
+                            <th class="px-3 py-2 text-right"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in requests %}
+                        <tr class="border-t border-slate-100 hover:bg-slate-50">
+                            <td class="px-3 py-2">{{ r.id }}</td>
+                            <td class="px-3 py-2">{{ r.branch.name }}</td>
+                            <td class="px-3 py-2 font-medium">{{ r.title }}</td>
+                            <td class="px-3 py-2">{% if r.priority == 'urgent' %}<span class="text-rose-600 font-semibold">عاجل</span>{% else %}عادي{% endif %}</td>
+                            <td class="px-3 py-2">{{ r.get_status_display }}</td>
+                            <td class="px-3 py-2">{{ r.assigned_worker.effective_name|default:"—" }}</td>
+                            <td class="px-3 py-2 text-slate-500">{{ r.requested_at|date:"Y-m-d H:i" }}</td>
+                            <td class="px-3 py-2">
+                                <a href="{% url 'web:maintenance_request_detail' r.id %}" class="hr-btn hr-btn--soft-slate hr-btn--sm">عرض</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="px-3 py-8 text-center text-slate-400">لا توجد طلبات.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if page_obj.has_other_pages %}
+            <div class="flex justify-center gap-2 text-sm">
+                {% if page_obj.has_previous %}<a href="?tab={{ tab }}&q={{ query }}&page={{ page_obj.previous_page_number }}" class="hr-btn hr-btn--soft-slate hr-btn--sm">السابق</a>{% endif %}
+                <span class="py-2 text-slate-500">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}<a href="?tab={{ tab }}&q={{ query }}&page={{ page_obj.next_page_number }}" class="hr-btn hr-btn--soft-slate hr-btn--sm">التالي</a>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

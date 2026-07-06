@@ -1,0 +1,19 @@
+{# عرض الموقع — نسخة مبسطة لتفاصيل طلب الصيانة #}
+{% load custom_tags %}
+{% with loc=location|split_location %}
+{% if loc.text or loc.url %}
+<div class="hr-maint-location">
+    {% if loc.text %}
+    <p class="hr-maint-location__text">{{ loc.text }}</p>
+    {% endif %}
+    {% if loc.url %}
+    <a href="{{ loc.url }}" target="_blank" rel="noopener noreferrer" class="hr-maint-location__maps">
+        <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+        <span>فتح في الخريطة</span>
+    </a>
+    {% endif %}
+</div>
+{% else %}
+<span class="text-slate-400">—</span>
+{% endif %}
+{% endwith %}

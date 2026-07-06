@@ -1,0 +1,27 @@
+{% extends "base_public.html" %}
+
+{% block title %}تأكيد تنفيذ صيانة{% endblock %}
+
+{% block content %}
+<div class="login-shell" dir="rtl">
+    <div class="login-stage max-w-lg mx-auto" style="grid-template-columns:1fr;">
+        <section class="login-stage__form p-6">
+            <h1 class="login-stage__title text-xl mb-2">تأكيد تنفيذ الصيانة</h1>
+            <p class="text-sm text-slate-600 mb-4">طلب #{{ req.id }} — {{ req.title }}</p>
+            <dl class="text-sm space-y-2 mb-4 text-slate-700">
+                <div><span class="text-slate-500">الفرع:</span> {{ req.branch.name }}</div>
+                <div><span class="text-slate-500">الموقع:</span> {% include 'components/location_display.html' with location=req.location %}</div>
+                <div><span class="text-slate-500">الوصف:</span> {{ req.description|truncatechars:300 }}</div>
+            </dl>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                </div>
+                <button type="submit" class="login-submit-pill w-full">تم التنفيذ</button>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}

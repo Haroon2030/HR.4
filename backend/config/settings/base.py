@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'apps.employees',                # الموظفين (ملفات، إجازات، عهد، سلف)
     'apps.payroll',                  # مسير الرواتب الشهري
     'apps.attendance.apps.AttendanceConfig',  # أجهزة البصمة والحضور
+    'apps.maintenance.apps.MaintenanceConfig',  # إدارة الصيانة
 ]
 
 # ══════════════════════════════════════════════════════════════════════════════

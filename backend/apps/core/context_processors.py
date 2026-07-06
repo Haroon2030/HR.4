@@ -16,6 +16,7 @@ def sidebar_context(request):
       - pending_actions_count
       - pending_for_me_count
       - unread_notifications_count
+      - maintenance_open_count
     """
     user = getattr(request, 'user', None)
     if not user or not user.is_authenticated:

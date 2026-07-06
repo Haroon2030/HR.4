@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}تهيئة الصيانة{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4"
+     data-hr-tab-lazy
+     x-data="{
+        activeTab: '{{ active_tab|default:'assets' }}',
+        setupTabs: ['assets', 'trades', 'workers'],
+        setupTabLabels: {
+            assets: 'أسماء الأصول',
+            trades: 'مهن الصيانة',
+            workers: 'عمال الصيانة',
+        },
+        setupTabUrl: '{{ setup_tab_url }}',
+        loadSetupTab(tab) {
+            if (!this.setupTabs.includes(tab)) return;
+            const label = 'جاري تحميل ' + (this.setupTabLabels[tab] || 'البيانات');
+            const url = this.setupTabUrl + '?tab=' + encodeURIComponent(tab);
+            if (window.hrGlassLoader) {
+                window.hrGlassLoader.fetchHtml(url, 'maintenance-setup-tab-content', label);
+                return;
+            }
+            const store = window.Alpine && Alpine.store('glassLoader');
+            if (store) store.fetchHtml(url, 'maintenance-setup-tab-content', label);
+        },
+        switchSetupTab(tab) {
+            if (!this.setupTabs.includes(tab)) return;
+            this.activeTab = tab;
+            const u = new URL(window.location.href);
+            u.searchParams.set('tab', tab);
+            u.hash = tab;
+            history.replaceState(null, '', u.pathname + u.search + u.hash);
+            this.loadSetupTab(tab);
+            if (window.lucide) lucide.createIcons();
+        }
+     }"
+     x-init="
+        const h = (window.location.hash || '').replace('#', '');
+        const q = new URL(window.location.href).searchParams.get('tab');
+        if (h && setupTabs.includes(h)) activeTab = h;
+        else if (q && setupTabs.includes(q)) activeTab = q;
+        loadSetupTab(activeTab);
+     "
+     dir="rtl">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="settings-2" class="w-7 h-7 text-primary-600"></i>
+            تهيئة الصيانة
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">إدارة أسماء الأصول، المهن، وعمال الصيانة.</p>
+    </div>
+
+    <div class="hr-tabs hr-glass-panel hr-page-tabs rounded-xl overflow-hidden">
+        <nav class="hr-page-tabs__bar" role="tablist" aria-label="تهيئة الصيانة">
+            <button type="button" role="tab"
+                    class="hr-tab-btn hr-tab-btn--indigo"
+                    :class="activeTab === 'assets' ? 'is-active' : ''"
+                    @click="switchSetupTab('assets')">أسماء الأصول</button>
+            <button type="button" role="tab"
+                    class="hr-tab-btn hr-tab-btn--amber"
+                    :class="activeTab === 'trades' ? 'is-active' : ''"
+                    @click="switchSetupTab('trades')">مهن الصيانة</button>
+            <button type="button" role="tab"
+                    class="hr-tab-btn hr-tab-btn--emerald"
+                    :class="activeTab === 'workers' ? 'is-active' : ''"
+                    @click="switchSetupTab('workers')">عمال الصيانة</button>
+        </nav>
+        <div id="maintenance-setup-tab-panel" class="relative min-h-[12rem]">
+            <div id="maintenance-setup-tab-content"
+                 class="transition-opacity duration-200"
+                 :class="$store.glassLoader && $store.glassLoader.visible ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

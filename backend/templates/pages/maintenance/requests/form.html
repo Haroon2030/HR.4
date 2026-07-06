@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}طلب صيانة جديد{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-4" dir="rtl">
+    {% url 'web:list_maintenance_requests' as back_url %}
+    {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع للقائمة' %}
+
+    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+        <i data-lucide="wrench" class="w-7 h-7 text-primary-600"></i>
+        طلب صيانة سريع
+    </h1>
+
+    <div class="hr-glass-panel p-5">
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">الفرع *</label>
+                {{ form.branch }}
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">الأصل</label>
+                {{ form.asset }}
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">عنوان الطلب *</label>
+                {{ form.title }}
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">وصف المشكلة *</label>
+                {{ form.description }}
+            </div>
+            <div>
+                {% include 'components/location_picker.html' with field=form.location label='الموقع' %}
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">الأولوية</label>
+                {{ form.priority }}
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">صورة (اختياري)</label>
+                {{ form.attachment }}
+            </div>
+            <button type="submit" class="hr-btn hr-btn--primary w-full sm:w-auto">إرسال إلى مدير الصيانة</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

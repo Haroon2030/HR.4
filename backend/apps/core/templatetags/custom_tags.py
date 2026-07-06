@@ -481,6 +481,23 @@ def perm_op_short(op_code):
     return labels.get(op_code, op_code)
 
 
+@register.filter
+def split_location(value):
+    """يفصل نص الموقع عن رابط خرائط Google المخزّن معه."""
+    text = (value or '').strip()
+    if not text:
+        return {'text': '', 'url': ''}
+    sep = ' | '
+    idx = text.find(sep)
+    if idx > -1:
+        tail = text[idx + len(sep):].strip()
+        if tail.startswith('http'):
+            return {'text': text[:idx].strip(), 'url': tail}
+    if 'google.com/maps' in text or 'maps.google' in text:
+        return {'text': '', 'url': text}
+    return {'text': text, 'url': ''}
+
+
 @register.simple_tag(takes_context=True)
 def user_permissions(context):
     """

@@ -115,6 +115,20 @@ class Command(BaseCommand):
             {'code': 'operations.approve_officer', 'name': 'تنفيذ موظف الموارد', 'module': 'operations'},
             {'code': 'operations.return', 'name': 'إرجاع طلب للتعديل', 'module': 'operations'},
             {'code': 'operations.resubmit', 'name': 'إعادة إرسال طلب', 'module': 'operations'},
+
+            # ═══════════════════════════════════════════════════════════
+            # إدارة الصيانة
+            # ═══════════════════════════════════════════════════════════
+            {'code': 'maintenance.view', 'name': 'عرض طلبات الصيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.add', 'name': 'رفع طلب صيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.assign', 'name': 'إسناد طلب صيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.manage', 'name': 'إغلاق طلب صيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.confirm_branch', 'name': 'تأكيد صيانة الفرع', 'module': 'maintenance'},
+            {'code': 'maintenance.return', 'name': 'إرجاع طلب صيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.workers_view', 'name': 'عرض عمال الصيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.workers_add', 'name': 'إضافة عامل صيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.workers_edit', 'name': 'تعديل عامل صيانة', 'module': 'maintenance'},
+            {'code': 'maintenance.workers_delete', 'name': 'حذف عامل صيانة', 'module': 'maintenance'},
         ]
         
         created_permissions = {}
@@ -182,6 +196,9 @@ class Command(BaseCommand):
                     'operations.view',
                     'operations.approve_branch',
                     'operations.return',
+                    'maintenance.view',
+                    'maintenance.add',
+                    'maintenance.confirm_branch',
                 ],
             },
 
@@ -261,6 +278,36 @@ class Command(BaseCommand):
                     'operations.approve_officer',
                     'operations.return',
                     'operations.resubmit',
+                    'maintenance.view',
+                    'maintenance.add',
+                    'maintenance.assign',
+                    'maintenance.manage',
+                    'maintenance.confirm_branch',
+                    'maintenance.return',
+                    'maintenance.workers_view',
+                    'maintenance.workers_add',
+                    'maintenance.workers_edit',
+                    'maintenance.workers_delete',
+                ],
+            },
+
+            # ═══════════════════════════════════════════════════════════
+            # 3b مدير الصيانة
+            # ═══════════════════════════════════════════════════════════
+            {
+                **_role_meta(Role.RoleType.MAINTENANCE_MANAGER),
+                'permissions': [
+                    'maintenance.view',
+                    'maintenance.add',
+                    'maintenance.assign',
+                    'maintenance.manage',
+                    'maintenance.confirm_branch',
+                    'maintenance.return',
+                    'maintenance.workers_view',
+                    'maintenance.workers_add',
+                    'maintenance.workers_edit',
+                    'maintenance.workers_delete',
+                    'branches.view',
                 ],
             },
             

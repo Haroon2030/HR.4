@@ -32,6 +32,7 @@ DEFAULT_MODULE_META: Dict[str, dict] = {
     'leaves':       {'name': 'الإجازات',            'icon': 'calendar-days', 'order': 10},
     'attendance':   {'name': 'الحضور والبصمة',      'icon': 'fingerprint',   'order': 11},
     'operations':   {'name': 'طلبات العمليات',      'icon': 'list-checks',   'order': 12},
+    'maintenance':  {'name': 'إدارة الصيانة',        'icon': 'wrench',        'order': 14},
 }
 
 # تسميات العمليات
@@ -48,6 +49,12 @@ OPERATION_NAMES = {
     'return': 'إرجاع',
     'resubmit': 'إعادة إرسال',
     'execute': 'تنفيذ',
+    'assign': 'إسناد',
+    'confirm_branch': 'تأكيد الفرع',
+    'workers_view': 'عرض عمال الصيانة',
+    'workers_add': 'إضافة عامل صيانة',
+    'workers_edit': 'تعديل عامل صيانة',
+    'workers_delete': 'حذف عامل صيانة',
 }
 
 # الـ registry الفعلي: {module_code: {'name', 'icon', 'order', 'operations': set()}}

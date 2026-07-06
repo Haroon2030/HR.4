@@ -81,11 +81,11 @@ class Command(BaseCommand):
                     'operations.view',
                     'operations.approve_branch',
                     'operations.return',
+                    'maintenance.view',
+                    'maintenance.add',
+                    'maintenance.confirm_branch',
                 ],
             },
-
-            # ═══════════════════════════════════════════════════════════
-            # 2b مدير إدارة — الموافقة الأولى لموظفي إدارته
             # ═══════════════════════════════════════════════════════════
             {
                 **_role_meta(Role.RoleType.ADMIN_MANAGER),
@@ -156,6 +156,33 @@ class Command(BaseCommand):
                     'operations.resubmit',
                     'cash_shortages.view',
                     'cash_shortages.add',
+                    'maintenance.view',
+                    'maintenance.add',
+                    'maintenance.assign',
+                    'maintenance.manage',
+                    'maintenance.confirm_branch',
+                    'maintenance.return',
+                    'maintenance.workers_view',
+                    'maintenance.workers_add',
+                    'maintenance.workers_edit',
+                    'maintenance.workers_delete',
+                ],
+            },
+
+            {
+                **_role_meta(Role.RoleType.MAINTENANCE_MANAGER),
+                'permissions': [
+                    'maintenance.view',
+                    'maintenance.add',
+                    'maintenance.assign',
+                    'maintenance.manage',
+                    'maintenance.confirm_branch',
+                    'maintenance.return',
+                    'maintenance.workers_view',
+                    'maintenance.workers_add',
+                    'maintenance.workers_edit',
+                    'maintenance.workers_delete',
+                    'branches.view',
                 ],
             },
             

@@ -1,0 +1,18 @@
+{# عرض الموقع مع رابط خرائط إن وُجد #}
+{% load custom_tags %}
+{% with loc=location|split_location %}
+{% if loc.text or loc.url %}
+<div class="space-y-1">
+    {% if loc.text %}<span>{{ loc.text }}</span>{% endif %}
+    {% if loc.url %}
+    <a href="{{ loc.url }}" target="_blank" rel="noopener noreferrer"
+       class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-xs font-medium {% if loc.text %}mt-1{% endif %}">
+        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        فتح في الخريطة
+    </a>
+    {% endif %}
+</div>
+{% else %}
+<span>—</span>
+{% endif %}
+{% endwith %}

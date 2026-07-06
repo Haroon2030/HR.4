@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto space-y-4" dir="rtl">
+  {% url 'web:maintenance_setup' as back_url %}
+  {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع للتهيئة' %}
+  <h1 class="text-xl font-bold">{{ title }}</h1>
+  <div class="hr-glass-panel p-5">
+    <form method="post" class="space-y-4">{% csrf_token %}
+      <div><label class="text-xs text-slate-600">الرمز *</label>{{ form.code }}</div>
+      <div><label class="text-xs text-slate-600">اسم الأصل *</label>{{ form.name }}</div>
+      <div class="flex items-center gap-2">{{ form.is_active }} <label>نشط</label></div>
+      <button type="submit" class="hr-btn hr-btn--primary">حفظ</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

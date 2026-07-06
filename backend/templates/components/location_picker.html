@@ -1,0 +1,140 @@
+{# منتقي موقع — واجهة تقنية GPS + إحداثيات + خريطة #}
+<div class="hr-location-picker"
+     x-data="locationPicker()"
+     x-init="init()"
+     data-geocode-url="{% url 'web:maintenance_reverse_geocode' %}"
+     dir="rtl">
+    <label class="block text-xs font-medium text-slate-600 mb-1.5">{{ label|default:"الموقع" }}</label>
+    <input type="hidden" name="location_lat" value="">
+    <input type="hidden" name="location_lng" value="">
+
+    <div class="hr-location-picker__panel">
+        <div class="hr-location-picker__toolbar">
+            <div class="hr-location-picker__status"
+                 :class="hasCoords ? 'is-active' : (loading || geoLoading ? 'is-loading' : 'is-idle')"
+                 role="status"
+                 :aria-live="(loading || geoLoading) ? 'polite' : 'off'">
+                <div class="hr-location-picker__status-led" aria-hidden="true">
+                    <span class="hr-location-picker__status-dot"></span>
+                    <span class="hr-location-picker__status-ring"></span>
+                </div>
+                <div class="hr-location-picker__status-body">
+                    <span class="hr-location-picker__status-code"
+                          x-text="geoLoading ? 'ACQUIRING' : (loading ? 'GEOCODING' : (hasCoords ? 'LOCKED' : 'STANDBY'))"></span>
+                    <span class="hr-location-picker__status-text"
+                          x-text="geoLoading ? 'تحديد إشارة GNSS' : (loading ? 'تحليل العنوان الجغرافي' : (hasCoords ? 'WGS84 — إحداثيات مُثبتة' : 'بانتظار مصدر الإحداثيات'))"></span>
+                </div>
+                <div class="hr-location-picker__signal"
+                     x-show="geoLoading || loading"
+                     x-cloak
+                     aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                </div>
+                <span class="hr-location-picker__status-chip">GNSS</span>
+            </div>
+            <div class="hr-location-picker__actions">
+                <button type="button"
+                        class="hr-location-picker__action"
+                        :disabled="geoLoading"
+                        @click="fetchMyLocationQuick()">
+                    <i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i>
+                    <span x-text="geoLoading ? 'GPS...' : 'GPS حالي'"></span>
+                </button>
+                <button type="button"
+                        class="hr-location-picker__action"
+                        @click="openMap()">
+                    <i data-lucide="map" class="w-3.5 h-3.5"></i>
+                    <span>الخريطة</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="hr-location-picker__coords" x-show="hasCoords" x-cloak>
+            <div class="hr-location-picker__coord">
+                <span class="hr-location-picker__coord-key">LAT</span>
+                <code class="hr-location-picker__coord-val" x-text="lat.toFixed(6)"></code>
+            </div>
+            <div class="hr-location-picker__coord">
+                <span class="hr-location-picker__coord-key">LNG</span>
+                <code class="hr-location-picker__coord-val" x-text="lng.toFixed(6)"></code>
+            </div>
+            <a class="hr-location-picker__maps-link"
+               :href="'https://www.google.com/maps?q=' + lat.toFixed(6) + ',' + lng.toFixed(6)"
+               target="_blank"
+               rel="noopener noreferrer">
+                <i data-lucide="external-link" class="w-3 h-3"></i>
+                Maps
+            </a>
+        </div>
+
+        <div class="hr-location-picker__field">
+            <div class="hr-location-picker__field-head">
+                <span class="hr-location-picker__field-label">العنوان الجغرافي</span>
+                <span class="hr-location-picker__field-tag" x-show="hasCoords">WGS84</span>
+            </div>
+            {{ field }}
+        </div>
+
+        <p class="hr-location-picker__hint" x-show="!hasCoords && !loading && !geoLoading">
+            حدّد الموقع عبر GPS أو الخريطة — يُملأ العنوان والإحداثيات تلقائياً.
+        </p>
+        <p class="hr-location-picker__hint hr-location-picker__hint--warn" x-show="statusMsg" x-text="statusMsg"></p>
+    </div>
+
+    <div x-show="mapOpen"
+         x-cloak
+         class="hr-glass-modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-3 overflow-y-auto overscroll-contain"
+         @keydown.escape.window="closeMap()">
+        <div class="hr-glass-panel w-full max-w-lg p-4 space-y-3 shadow-xl hr-location-picker__modal"
+             @click.outside="closeMap()">
+            <div class="flex items-center justify-between gap-2">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="map" class="w-4 h-4 text-primary-600"></i>
+                    محدّد الإحداثيات
+                </h3>
+                <button type="button" class="text-slate-400 hover:text-slate-600" @click="closeMap()" aria-label="إغلاق">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="hr-location-picker__coords hr-location-picker__coords--modal" x-show="hasCoords">
+                <div class="hr-location-picker__coord">
+                    <span class="hr-location-picker__coord-key">LAT</span>
+                    <code class="hr-location-picker__coord-val" x-text="lat.toFixed(6)"></code>
+                </div>
+                <div class="hr-location-picker__coord">
+                    <span class="hr-location-picker__coord-key">LNG</span>
+                    <code class="hr-location-picker__coord-val" x-text="lng.toFixed(6)"></code>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="button"
+                        class="hr-location-picker__action"
+                        :disabled="geoLoading"
+                        @click="useMyLocation()">
+                    <i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i>
+                    <span x-text="geoLoading ? 'جاري التحديد...' : 'مزامنة GPS'"></span>
+                </button>
+            </div>
+
+            <div x-ref="mapBox" class="hr-location-picker__map rounded-lg overflow-hidden"></div>
+
+            <div class="text-xs space-y-1">
+                <p x-show="loading" class="text-slate-400 font-mono">reverse_geocode...</p>
+                <p x-show="address && !loading" class="text-slate-800 font-medium text-sm leading-relaxed" x-text="address"></p>
+                <p x-show="statusMsg" class="text-amber-700" x-text="statusMsg"></p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 justify-end pt-1">
+                <button type="button" class="hr-btn hr-btn--secondary" @click="closeMap()">إلغاء</button>
+                <button type="button"
+                        class="hr-btn hr-btn--primary"
+                        :disabled="loading || !hasCoords"
+                        @click="confirmLocation()">
+                    تثبيت الإحداثيات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

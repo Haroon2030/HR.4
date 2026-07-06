@@ -1,0 +1,110 @@
+{% load custom_tags %}
+<div class="hr-tabs__panel">
+{% if tab == "assets" %}
+<div class="p-4" data-hr-table-search-panel>
+    {% url 'web:add_maintenance_asset' as add_asset_url %}
+    {% include "components/org_tab_toolbar.html" with search_placeholder="بحث: اسم الأصل أو الرمز..." search_aria_label="بحث الأصول" add_url=add_asset_url add_label="إضافة أصل" show_add=setup_perms.can_add %}
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y divide-slate-200 text-sm" data-hr-table-search>
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-3 py-2 text-right">الرمز</th>
+                    <th class="px-3 py-2 text-right">اسم الأصل</th>
+                    <th class="px-3 py-2 text-right">نشط</th>
+                    <th class="px-3 py-2 text-left">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100">
+                {% for a in assets %}
+                <tr class="hover:bg-slate-50" data-search="{{ a.code }} {{ a.name }} {% if a.is_active %}نشط{% else %}معطل{% endif %}">
+                    <td class="px-3 py-2 font-mono text-xs">{{ a.code }}</td>
+                    <td class="px-3 py-2 font-medium">{{ a.name }}</td>
+                    <td class="px-3 py-2">{% if a.is_active %}<span class="text-emerald-700">نشط</span>{% else %}معطل{% endif %}</td>
+                    <td class="px-3 py-2 text-left">
+                        {% url 'web:edit_maintenance_asset' a.id as act_edit %}
+                        {% url 'web:delete_maintenance_asset' a.id as act_del %}
+                        {% guarded_table_actions edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=setup_perms.can_edit can_delete=setup_perms.can_delete delete_confirm="حذف هذا الأصل؟" %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">لا توجد أصول — أضف أول أصل.</td></tr>
+                {% endfor %}
+                {% include "components/table_search_empty_row.html" with colspan=4 message="لا توجد أصول مطابقة للبحث" %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif tab == "trades" %}
+<div class="p-4" data-hr-table-search-panel>
+    {% url 'web:add_maintenance_trade' as add_trade_url %}
+    {% include "components/org_tab_toolbar.html" with search_placeholder="بحث: اسم المهنة أو الرمز..." search_aria_label="بحث المهن" add_url=add_trade_url add_label="إضافة مهنة" show_add=setup_perms.can_add %}
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y divide-slate-200 text-sm" data-hr-table-search>
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-3 py-2 text-right">الرمز</th>
+                    <th class="px-3 py-2 text-right">اسم المهنة</th>
+                    <th class="px-3 py-2 text-right">نشط</th>
+                    <th class="px-3 py-2 text-left">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100">
+                {% for t in trades %}
+                <tr class="hover:bg-slate-50" data-search="{{ t.code }} {{ t.name }}">
+                    <td class="px-3 py-2 font-mono text-xs">{{ t.code }}</td>
+                    <td class="px-3 py-2">{{ t.name }}</td>
+                    <td class="px-3 py-2">{% if t.is_active %}نشط{% else %}معطل{% endif %}</td>
+                    <td class="px-3 py-2 text-left">
+                        {% url 'web:edit_maintenance_trade' t.id as act_edit %}
+                        {% url 'web:delete_maintenance_trade' t.id as act_del %}
+                        {% guarded_table_actions edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=setup_perms.can_edit can_delete=setup_perms.can_delete delete_confirm="حذف المهنة؟" %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">لا توجد مهن.</td></tr>
+                {% endfor %}
+                {% include "components/table_search_empty_row.html" with colspan=4 message="لا توجد مهن مطابقة" %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif tab == "workers" %}
+<div class="p-4" data-hr-table-search-panel>
+    {% url 'web:add_maintenance_worker' as add_worker_url %}
+    {% include "components/org_tab_toolbar.html" with search_placeholder="بحث: اسم العامل، الجوال، المهنة..." search_aria_label="بحث العمال" add_url=add_worker_url add_label="إضافة عامل" show_add=setup_perms.can_add %}
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y divide-slate-200 text-sm" data-hr-table-search>
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-3 py-2 text-right">الاسم</th>
+                    <th class="px-3 py-2 text-right">الجوال</th>
+                    <th class="px-3 py-2 text-right">المهنة</th>
+                    <th class="px-3 py-2 text-right">موظف HR</th>
+                    <th class="px-3 py-2 text-right">نشط</th>
+                    <th class="px-3 py-2 text-left">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100">
+                {% for w in workers %}
+                <tr class="hover:bg-slate-50" data-search="{{ w.effective_name }} {{ w.effective_phone }} {{ w.trade.name }}">
+                    <td class="px-3 py-2 font-medium">{{ w.effective_name }}</td>
+                    <td class="px-3 py-2">{{ w.effective_phone }}</td>
+                    <td class="px-3 py-2">{{ w.trade.name }}</td>
+                    <td class="px-3 py-2">{% if w.employee %}{{ w.employee.name }}{% else %}—{% endif %}</td>
+                    <td class="px-3 py-2">{% if w.is_active %}نشط{% else %}معطل{% endif %}</td>
+                    <td class="px-3 py-2 text-left">
+                        {% url 'web:edit_maintenance_worker' w.id as act_edit %}
+                        {% url 'web:delete_maintenance_worker' w.id as act_del %}
+                        {% guarded_table_actions edit_url=act_edit edit_title="تعديل" delete_url=act_del can_edit=setup_perms.can_edit can_delete=setup_perms.can_delete delete_confirm="حذف العامل؟" %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">لا يوجد عمال.</td></tr>
+                {% endfor %}
+                {% include "components/table_search_empty_row.html" with colspan=6 message="لا يوجد عمال مطابقون" %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+</div>

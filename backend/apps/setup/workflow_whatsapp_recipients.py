@@ -68,6 +68,15 @@ WORKFLOW_WHATSAPP_RECIPIENT_META: tuple[WorkflowRecipientMeta, ...] = (
             {'code': 'workflow.*.first_stage.accountant', 'when': 'طلبات عجز الكاشير فقط'},
         ),
     },
+    {
+        'key': 'maintenance_manager',
+        'label': 'مدير الصيانة',
+        'role_type': 'MAINTENANCE_MANAGER',
+        'events': (
+            {'code': 'maintenance.request.created', 'when': 'طلب صيانة جديد من فرع'},
+            {'code': 'maintenance.request.worker_reported', 'when': 'بلاغ تنفيذ من العامل'},
+        ),
+    },
 )
 
 WORKFLOW_WHATSAPP_RECIPIENT_ROLES: tuple[tuple[str, str], ...] = tuple(
@@ -85,7 +94,7 @@ WORKFLOW_WHATSAPP_ROLE_GROUPS: tuple[tuple[str, str, str, tuple[str, ...]], ...]
         'موافقة أولى وتنفيذ',
         'تنبيهات المعتمد الأول والأخصائي والمحاسب — مع بديل من الرقم الثابت',
         'git-branch',
-        ('admin_manager', 'branch_manager', 'hr_officer', 'branch_accountant'),
+        ('admin_manager', 'branch_manager', 'hr_officer', 'branch_accountant', 'maintenance_manager'),
     ),
 )
 
