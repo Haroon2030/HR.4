@@ -154,8 +154,9 @@ class WorkerReportForm(forms.Form):
         required=False,
         label='ملاحظات التنفيذ',
         widget=forms.Textarea(attrs={
-            'class': 'hr-search-field__input w-full',
-            'rows': 3,
+            'class': 'maint-report__textarea',
+            'rows': 4,
             'placeholder': 'وصف ما تم إنجازه (اختياري)',
+            'id': 'id_notes',
         }),
     )

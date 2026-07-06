@@ -1,0 +1,18 @@
+{# موقع طلب الصيانة — صفحة عامة بدون Tailwind #}
+{% load custom_tags %}
+{% with loc=location|split_location %}
+{% if loc.text or loc.url %}
+<div class="maint-report__location">
+    {% if loc.text %}
+    <p class="maint-report__location-text">{{ loc.text }}</p>
+    {% endif %}
+    {% if loc.url %}
+    <a href="{{ loc.url }}" target="_blank" rel="noopener noreferrer" class="maint-report__maps-link">
+        فتح في الخريطة
+    </a>
+    {% endif %}
+</div>
+{% else %}
+<span>—</span>
+{% endif %}
+{% endwith %}

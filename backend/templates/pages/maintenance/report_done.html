@@ -1,19 +1,26 @@
 {% extends "base_public.html" %}
+{% load static %}
 
 {% block title %}بلاغ الصيانة{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/maintenance-report.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="login-shell" dir="rtl">
-    <div class="login-stage max-w-lg mx-auto" style="grid-template-columns:1fr;">
-        <section class="login-stage__form p-6 text-center">
+<div class="maint-report" dir="rtl">
+    <div class="maint-report__card">
+        <div class="maint-report__done">
             {% if success %}
-            <h1 class="login-stage__title text-xl mb-2 text-emerald-700">تم تسجيل التنفيذ</h1>
-            <p class="text-sm text-slate-600">شكراً — تم إبلاغ مدير الصيانة بطلب #{{ req.id }}.</p>
+            <div class="maint-report__done-icon maint-report__done-icon--success" aria-hidden="true">✓</div>
+            <h1 class="maint-report__done-title maint-report__done-title--success">تم تسجيل التنفيذ</h1>
+            <p class="maint-report__done-text">شكراً — تم إبلاغ مدير الصيانة بطلب #{{ req.id }}.</p>
             {% else %}
-            <h1 class="login-stage__title text-xl mb-2">{{ message|default:"تمت معالجة الطلب" }}</h1>
-            <p class="text-sm text-slate-600">طلب #{{ req.id }} — {{ req.get_status_display }}</p>
+            <div class="maint-report__done-icon maint-report__done-icon--info" aria-hidden="true">i</div>
+            <h1 class="maint-report__done-title">{{ message|default:"تمت معالجة الطلب" }}</h1>
+            <p class="maint-report__done-text">طلب #{{ req.id }} — {{ req.get_status_display }}</p>
             {% endif %}
-        </section>
+        </div>
     </div>
 </div>
 {% endblock %}
