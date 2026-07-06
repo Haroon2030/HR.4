@@ -111,6 +111,8 @@ class MaintenanceWorkerForm(forms.ModelForm):
         ).order_by('name')
         if self.instance and self.instance.employee_id:
             self.fields['employee_id'].initial = self.instance.employee_id
+        if not self.instance.pk:
+            self.fields['is_active'].initial = True
 
     def clean(self):
         cleaned = super().clean()
@@ -140,6 +142,8 @@ class MaintenanceWorkerForm(forms.ModelForm):
         instance = super().save(commit=False)
         employee = self.cleaned_data.get('_employee')
         instance.employee = employee
+        if not instance.pk:
+            instance.is_active = True
         if commit:
             instance.save()
         return instance

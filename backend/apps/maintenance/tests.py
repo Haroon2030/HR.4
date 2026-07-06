@@ -5,6 +5,7 @@ from django.test import TestCase
 from apps.core.models import Branch, Company, Role
 from apps.maintenance.models import MaintenanceRequest, MaintenanceTrade, MaintenanceWorker
 from apps.maintenance.services.access import filter_requests_for_user
+from apps.maintenance.selectors.workers import assignable_maintenance_workers_qs
 from apps.maintenance.services.requests import (
     MaintenanceWorkflowError,
     assign_maintenance_request,
@@ -117,3 +118,13 @@ class MaintenanceWorkflowTests(TestCase):
         bad_worker = MaintenanceWorker.objects.create(name='بدون جوال', phone='', trade=self.trade)
         with self.assertRaises(MaintenanceWorkflowError):
             assign_maintenance_request(request=req, worker=bad_worker, assigned_by=self.maint_mgr)
+
+    def test_assignable_workers_queryset(self):
+        self.assertEqual(assignable_maintenance_workers_qs().count(), 1)
+        inactive = MaintenanceWorker.objects.create(
+            name='غير نشط', phone='0599999999', trade=self.trade, is_active=False,
+        )
+        self.assertEqual(assignable_maintenance_workers_qs().count(), 1)
+        self.assertNotIn(inactive.pk, assignable_maintenance_workers_qs().values_list('pk', flat=True))
+        no_phone = MaintenanceWorker.objects.create(name='بلا جوال', phone='', trade=self.trade)
+        self.assertNotIn(no_phone.pk, assignable_maintenance_workers_qs().values_list('pk', flat=True))

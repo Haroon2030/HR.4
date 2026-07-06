@@ -19,6 +19,7 @@ from apps.maintenance.forms import (
     WorkerReportForm,
 )
 from apps.maintenance.models import MaintenanceAsset, MaintenanceRequest, MaintenanceTrade, MaintenanceWorker
+from apps.maintenance.selectors.workers import assignable_maintenance_workers_qs
 from apps.maintenance.services.access import filter_requests_for_user, user_sees_all_maintenance
 from apps.maintenance.services.geocoding import reverse_geocode as reverse_geocode_coords
 from apps.maintenance.services.setup import get_maintenance_setup_tab_context, resolve_setup_tab
@@ -161,13 +162,23 @@ def maintenance_request_detail(request, request_id):
     qs = filter_requests_for_user(request.user, _requests_queryset())
     req = get_object_or_404(qs, pk=request_id)
 
-    workers = MaintenanceWorker.objects.filter(
-        is_deleted=False, is_active=True,
-    ).select_related('trade', 'employee').order_by('name')
+    workers = list(assignable_maintenance_workers_qs())
+    inactive_workers = MaintenanceWorker.objects.filter(is_active=False).count()
+    workers_missing_phone = (
+        MaintenanceWorker.objects.filter(
+            is_active=True,
+            trade__is_deleted=False,
+            trade__is_active=True,
+        )
+        .exclude(Q(phone__gt='') | Q(employee__phone__gt=''))
+        .count()
+    )
 
     return render(request, 'pages/maintenance/requests/detail.html', {
         'req': req,
         'workers': workers,
+        'inactive_workers_count': inactive_workers,
+        'workers_missing_phone_count': workers_missing_phone,
         'can_assign': _can_assign(request.user) and req.status in (
             MaintenanceRequest.Status.PENDING, MaintenanceRequest.Status.RETURNED,
         ),
@@ -194,10 +205,7 @@ def assign_maintenance_request_view(request, request_id):
         messages.error(request, 'اختر عامل صيانة.')
         return redirect('web:maintenance_request_detail', request_id=req.id)
 
-    worker = get_object_or_404(
-        MaintenanceWorker.objects.filter(is_deleted=False, is_active=True),
-        pk=int(worker_id),
-    )
+    worker = get_object_or_404(assignable_maintenance_workers_qs(), pk=int(worker_id))
     try:
         assign_maintenance_request(request=req, worker=worker, assigned_by=request.user)
         messages.success(request, f'تم إسناد الطلب إلى {worker.effective_name} وإرسال واتساب.')

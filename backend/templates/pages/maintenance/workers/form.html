@@ -19,7 +19,11 @@
       <div><label class="text-xs text-slate-600">الاسم *</label>{{ form.name }}</div>
       <div><label class="text-xs text-slate-600">الجوال *</label>{{ form.phone }}</div>
       <div><label class="text-xs text-slate-600">المهنة *</label>{{ form.trade }}</div>
-      <div class="flex items-center gap-2">{{ form.is_active }} <label>نشط</label></div>
+      {% if worker %}
+      <div class="flex items-center gap-2">{{ form.is_active }} <label>نشط (يظهر في الإسناد عند التفعيل)</label></div>
+      {% else %}
+      {{ form.is_active.as_hidden }}
+      {% endif %}
       <button type="submit" class="hr-btn hr-btn--primary">حفظ</button>
     </form>
   </div>
