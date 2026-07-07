@@ -1,12 +1,13 @@
 """عرض بصمات موظف واحد مع فلترة وقت الدخول والتأخير."""
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time
 
 from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.attendance.models import AttendancePunch, EmployeeBiometricSettings
+from apps.attendance.services.attendance_evaluation import punch_counts_as_late_entry
 from apps.attendance.selectors.employee_enrollment import (
     effective_biometric_links,
     enrollment_filter_q,
@@ -59,37 +60,22 @@ def base_punches_queryset(
     return qs
 
 
-def _local_cutoff_for_day(day: date, check_in: time, grace_minutes: int) -> datetime:
-    tz = timezone.get_current_timezone()
-    base = datetime.combine(day, check_in)
-    if timezone.is_naive(base):
-        base = timezone.make_aware(base, tz)
-    return timezone.localtime(base) + timedelta(minutes=grace_minutes)
-
-
 def apply_late_checkin_filter(
     punches: list[AttendancePunch],
     settings: EmployeeBiometricSettings | None,
 ) -> tuple[list[AttendancePunch], int]:
     """
-    إخفاء بصمات الدخول بعد (وقت الدخول + نصف ساعة افتراضياً).
+    إخفاء بصمات الدخول بعد (وقت الدخول + سماح التأخير).
     بصمات الخروج والاستراحة تبقى ظاهرة.
     """
     if not settings or not settings.expected_check_in:
         return punches, 0
 
-    grace = settings.late_grace_minutes or 30
     hidden = 0
     visible: list[AttendancePunch] = []
-    entry_types = {
-        AttendancePunch.PunchType.CHECK_IN,
-        AttendancePunch.PunchType.UNKNOWN,
-    }
 
     for punch in punches:
-        local = timezone.localtime(punch.punched_at)
-        cutoff = _local_cutoff_for_day(local.date(), settings.expected_check_in, grace)
-        if punch.punch_type in entry_types and local > cutoff:
+        if punch_counts_as_late_entry(punch, settings):
             hidden += 1
             continue
         visible.append(punch)

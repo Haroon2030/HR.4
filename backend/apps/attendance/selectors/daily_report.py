@@ -276,12 +276,23 @@ def _rows_from_unlinked_python(
     return rows
 
 
-def build_daily_attendance_rows(
+@dataclass(frozen=True)
+class DailyAttendanceBuildResult:
+    rows: list[DailyAttendanceRow]
+    truncated: bool
+
+
+def build_daily_attendance_result(
     qs: QuerySet,
     *,
     max_rows: int | None = MAX_DAILY_ATTENDANCE_ROWS,
-) -> list[DailyAttendanceRow]:
-    """يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم)."""
+) -> DailyAttendanceBuildResult:
+    """
+    يجمع سجلات البصمة إلى صفوف يومية (موظف/يوم أو مستخدم جهاز/يوم).
+
+    وقت الدخول = أول بصمة CHECK_IN في اليوم (Min في SQL)؛
+    إن لم توجد، يُستخدم أول بصمة في اليوم (_pick_in_out_times).
+  """
     device_ids = set(qs.values_list('device_id', flat=True).distinct())
     enroll_map = load_enrollment_employee_map(device_ids)
 
@@ -289,9 +300,19 @@ def build_daily_attendance_rows(
     rows.extend(_rows_from_unlinked_python(qs, enroll_map, max_rows=max_rows))
 
     rows.sort(key=lambda r: r.sort_key, reverse=True)
-    if max_rows is not None and len(rows) > max_rows:
+    truncated = max_rows is not None and len(rows) > max_rows
+    if truncated:
         rows = rows[:max_rows]
-    return rows
+    return DailyAttendanceBuildResult(rows=rows, truncated=truncated)
+
+
+def build_daily_attendance_rows(
+    qs: QuerySet,
+    *,
+    max_rows: int | None = MAX_DAILY_ATTENDANCE_ROWS,
+) -> list[DailyAttendanceRow]:
+    """يجمع سجلات البصمة إلى صفوف يومية — انظر build_daily_attendance_result للتفاصيل."""
+    return build_daily_attendance_result(qs, max_rows=max_rows).rows
 
 
 def summarize_daily_rows(rows: list[DailyAttendanceRow], *, punch_total: int = 0) -> dict:

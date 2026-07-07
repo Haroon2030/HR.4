@@ -2,15 +2,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date
 
 from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.attendance.models import EmployeeBiometricSettings
 from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
-from apps.attendance.selectors.daily_report import build_daily_attendance_rows
+from apps.attendance.selectors.daily_report import build_daily_attendance_result
 from apps.attendance.selectors.punch_records import get_punch_queryset
+from apps.attendance.services.attendance_evaluation import evaluate_daily_checkin
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,12 @@ class LateCheckinAlert:
     @property
     def sort_key(self) -> tuple:
         return (self.work_date, self.late_minutes, self.employee_name)
+
+
+@dataclass(frozen=True)
+class LateCheckinAlertsResult:
+    alerts: list[LateCheckinAlert]
+    truncated: bool
 
 
 def _parse_filter_dates(filters: dict) -> tuple[date | None, date | None]:
@@ -73,13 +80,14 @@ def punches_queryset_for_late_alerts(user, filters: dict) -> QuerySet:
     return qs
 
 
-def build_late_checkin_alerts(user, filters: dict) -> list[LateCheckinAlert]:
+def build_late_checkin_alerts(user, filters: dict) -> LateCheckinAlertsResult:
     """
     صفوف تأخير الدخول: موظف لديه وقت دخول متوقع في إعدادات البصمة
     وبصمة دخول فعلية بعد (المتوقع + سماح التأخير).
     """
     qs = punches_queryset_for_late_alerts(user, filters)
-    daily_rows = build_daily_attendance_rows(qs)
+    build_result = build_daily_attendance_result(qs)
+    daily_rows = build_result.rows
     employee_ids = [r.employee_id for r in daily_rows if r.employee_id]
     settings_map = {
         s.employee_id: s
@@ -90,27 +98,16 @@ def build_late_checkin_alerts(user, filters: dict) -> list[LateCheckinAlert]:
     }
 
     alerts: list[LateCheckinAlert] = []
-    tz = timezone.get_current_timezone()
 
     for row in daily_rows:
         if not row.employee_id or not row.is_mapped or not row.check_in:
             continue
         settings = settings_map.get(row.employee_id)
-        if not settings or not settings.expected_check_in:
+        evaluation = evaluate_daily_checkin(row.work_date, row.check_in, settings)
+        if not evaluation or not evaluation.is_late:
             continue
 
-        expected_dt = timezone.make_aware(
-            datetime.combine(row.work_date, settings.expected_check_in),
-            tz,
-        )
         check_in_local = timezone.localtime(row.check_in)
-        grace = settings.late_grace_minutes or 30
-        cutoff = expected_dt + timedelta(minutes=grace)
-        if check_in_local <= cutoff:
-            continue
-
-        late_total = int((check_in_local - expected_dt).total_seconds() // 60)
-        late_after_grace = int((check_in_local - cutoff).total_seconds() // 60)
         alerts.append(
             LateCheckinAlert(
                 work_date=row.work_date,
@@ -118,17 +115,17 @@ def build_late_checkin_alerts(user, filters: dict) -> list[LateCheckinAlert]:
                 employee_name=row.employee_name,
                 branch_name=row.branch_name,
                 department_name=row.department_name,
-                expected_check_in=settings.expected_check_in.strftime('%H:%M'),
-                grace_minutes=grace,
+                expected_check_in=evaluation.expected_check_in.strftime('%H:%M'),
+                grace_minutes=evaluation.grace_minutes,
                 check_in_time=check_in_local.strftime('%H:%M'),
-                late_minutes=late_total,
-                late_after_grace_minutes=late_after_grace,
-                note=f'تأخر {late_total} د (بعد سماح {grace} د)',
+                late_minutes=evaluation.late_minutes,
+                late_after_grace_minutes=evaluation.late_after_grace_minutes,
+                note=f'تأخر {evaluation.late_minutes} د (بعد سماح {evaluation.grace_minutes} د)',
             )
         )
 
     alerts.sort(key=lambda a: a.sort_key, reverse=True)
-    return alerts
+    return LateCheckinAlertsResult(alerts=alerts, truncated=build_result.truncated)
 
 
 def summarize_late_alerts(alerts: list[LateCheckinAlert]) -> dict:

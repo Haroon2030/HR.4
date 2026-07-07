@@ -295,7 +295,7 @@ class LinkedEnrollmentDisplayTests(TestCase):
             'date_from': day.isoformat(),
             'date_to': day.isoformat(),
         }
-        alerts = build_late_checkin_alerts(user, filters)
+        alerts = build_late_checkin_alerts(user, filters).alerts
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0].employee_id, emp.pk)
         self.assertEqual(alerts[0].late_minutes, 60)
@@ -353,7 +353,7 @@ class LinkedEnrollmentDisplayTests(TestCase):
         )
 
         filters = {'date_from': day.isoformat(), 'date_to': day.isoformat()}
-        alerts = build_late_checkin_alerts(user, filters)
+        alerts = build_late_checkin_alerts(user, filters).alerts
         self.assertEqual(alerts, [])
 
 

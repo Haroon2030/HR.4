@@ -29,8 +29,16 @@ def attendance_late_alerts(request):
             'تم تقييد الفترة إلى 93 يوماً كحد أقصى لاستعلامات البصمة.',
         )
 
-    alerts = build_late_checkin_alerts(request.user, filters)
+    alerts_result = build_late_checkin_alerts(request.user, filters)
+    alerts = alerts_result.alerts
     summary = summarize_late_alerts(alerts)
+
+    if alerts_result.truncated:
+        from apps.attendance.selectors.daily_report import MAX_DAILY_ATTENDANCE_ROWS
+        messages.warning(
+            request,
+            f'تم اقتطاع النتائج عند {MAX_DAILY_ATTENDANCE_ROWS:,} يوم-موظف — ضيّق الفترة أو الفلاتر لرؤية الكل.',
+        )
 
     paginator = Paginator(alerts, 50)
     page_obj = paginator.get_page(request.GET.get('page'))

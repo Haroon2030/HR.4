@@ -654,6 +654,10 @@ def _build_attendance_late(req):
     from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
     from apps.attendance.selectors.daily_report import build_daily_attendance_rows
     from apps.attendance.selectors.punch_records import get_punch_queryset
+    from apps.attendance.services.attendance_evaluation import (
+        evaluate_daily_checkin,
+        evaluate_daily_checkout,
+    )
     from apps.core.utils.attendance_filters import clamp_attendance_date_range
 
     filters = _report_filters(req)
@@ -684,7 +688,6 @@ def _build_attendance_late(req):
         'تأخير الدخول (د)', 'الخروج المتوقع', 'وقت الخروج', 'خروج مبكر (د)', 'الملاحظة',
     ]
     table_rows = []
-    tz = timezone.get_current_timezone()
 
     for row in daily_rows:
         if not row.employee_id or not row.is_mapped:
@@ -702,22 +705,15 @@ def _build_attendance_late(req):
         act_in = timezone.localtime(row.check_in).strftime('%H:%M') if row.check_in else '—'
         act_out = timezone.localtime(row.check_out).strftime('%H:%M') if row.check_out else '—'
 
-        if settings.expected_check_in and row.check_in:
-            expected_dt = timezone.make_aware(datetime.combine(row.work_date, settings.expected_check_in), tz)
-            check_in_local = timezone.localtime(row.check_in)
-            grace = settings.late_grace_minutes or 30
-            if check_in_local > expected_dt + timedelta(minutes=grace):
-                mins = int((check_in_local - expected_dt).total_seconds() // 60)
-                late_in = str(mins)
-                notes.append(f'تأخر دخول {mins} د')
+        checkin_eval = evaluate_daily_checkin(row.work_date, row.check_in, settings)
+        if checkin_eval and checkin_eval.is_late:
+            late_in = str(checkin_eval.late_minutes)
+            notes.append(f'تأخر دخول {checkin_eval.late_minutes} د')
 
-        if settings.expected_check_out and row.check_out:
-            expected_out = timezone.make_aware(datetime.combine(row.work_date, settings.expected_check_out), tz)
-            check_out_local = timezone.localtime(row.check_out)
-            if check_out_local < expected_out:
-                mins = int((expected_out - check_out_local).total_seconds() // 60)
-                early_out = str(mins)
-                notes.append(f'خروج مبكر {mins} د')
+        checkout_eval = evaluate_daily_checkout(row.work_date, row.check_out, settings)
+        if checkout_eval and checkout_eval.is_early:
+            early_out = str(checkout_eval.early_minutes)
+            notes.append(f'خروج مبكر {checkout_eval.early_minutes} د')
 
         if not notes:
             continue
