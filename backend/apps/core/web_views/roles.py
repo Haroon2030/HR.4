@@ -9,6 +9,7 @@ from django.contrib import messages
 from apps.core.models import AppModule, Permission, Role
 from apps.core.forms import RoleForm
 from apps.core.selectors.permission_matrix import build_role_permissions_matrix
+from apps.core.services.access_control import assignable_roles_queryset, order_roles_queryset
 
 
 # =============================================================================
@@ -44,7 +45,9 @@ def _role_form_context(role=None):
 @permission_required('users.view')
 def list_roles(request):
     """قائمة الأدوار"""
-    roles = Role.objects.all().prefetch_related('users')
+    roles = order_roles_queryset(
+        assignable_roles_queryset(request.user),
+    ).prefetch_related('users')
     return render(request, 'pages/roles/list.html', {'roles': roles})
 
 @login_required
@@ -65,7 +68,7 @@ def edit_role(request, role_id):
     is_admin_role = role.role_type == Role.RoleType.ADMIN
 
     if request.method == 'POST':
-        form = RoleForm(request.POST, instance=role)
+        form = RoleForm(request.POST, instance=role, actor=request.user)
         if form.is_valid():
             role = form.save()
             # حفظ الصلاحيات (إلا للأدمن — صلاحياته ثابتة)
@@ -104,7 +107,7 @@ def edit_role(request, role_id):
 def add_role(request):
     """إضافة دور جديد"""
     if request.method == 'POST':
-        form = RoleForm(request.POST)
+        form = RoleForm(request.POST, actor=request.user)
         if form.is_valid():
             role = form.save(commit=False)
             role.is_system_role = False

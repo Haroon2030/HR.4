@@ -40,6 +40,10 @@ class RoleForm(forms.ModelForm):
         model = Role
         fields = ['name', 'role_type', 'description', 'is_active']
 
+    def __init__(self, *args, actor=None, **kwargs):
+        self.actor = actor
+        super().__init__(*args, **kwargs)
+
     def clean_is_active(self):
         # خانة الاختيار في القالب ترسل '1' عند التفعيل
         v = self.data.get('is_active')
@@ -50,6 +54,15 @@ class RoleForm(forms.ModelForm):
         valid = {choice[0] for choice in Role.RoleType.choices}
         if role_type not in valid:
             raise ValidationError('نوع الدور غير صالح')
+        if self.actor:
+            from apps.core.services.access_control import validate_role_type_change
+            err = validate_role_type_change(
+                self.actor,
+                role_type,
+                instance=self.instance if self.instance and self.instance.pk else None,
+            )
+            if err:
+                raise ValidationError(err)
         return role_type
 
 

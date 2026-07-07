@@ -70,10 +70,8 @@ def expand_attendance_sub_permissions(codes: set[str]) -> set[str]:
 
 def user_has_attendance_nav(user) -> bool:
     """هل يظهر قسم الحضور والبصمة في الشريط الجانبي؟"""
-    from apps.core.decorators import get_user_permissions
+    from apps.core.decorators import has_permission
 
     if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
         return False
-    perms = get_user_permissions(user)
-    prefixes = ('attendance.', 'attendance_screen_')
-    return any(any(p.startswith(pref) for pref in prefixes) for p in perms)
+    return any(has_permission(user, code) for code in ATTENDANCE_SCREEN_VIEW_CODES)

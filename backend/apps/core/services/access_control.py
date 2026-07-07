@@ -396,3 +396,24 @@ def validate_permission_grants(actor, permission_codes: Iterable[str]) -> str | 
     if blocked:
         return 'لا يمكنك منح صلاحيات إدارة المستخدمين.'
     return None
+
+
+def validate_role_type_change(actor, role_type: str, *, instance: Role | None = None) -> str | None:
+    """
+    Validate role_type on create/update.
+    Returns Arabic error message, or None if allowed.
+    """
+    if actor.is_superuser:
+        return None
+
+    if role_type in PRIVILEGED_ROLE_TYPES:
+        return 'لا يمكنك إنشاء أو تعديل دور بهذا المستوى إلا من مدير النظام.'
+
+    if instance and instance.is_system_role and role_type != instance.role_type:
+        return 'لا يمكن تغيير نوع دور نظامي.'
+
+    actor_r = actor_role(actor)
+    if instance and instance.pk and role_rank(instance) > role_rank(actor_r):
+        return 'لا يمكنك تعديل دور أعلى من مستواك.'
+
+    return None

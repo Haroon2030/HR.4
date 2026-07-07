@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.backup_download import stream_database_backup_file
+from apps.core.decorators import permission_required
 from apps.core.models import DatabaseBackupLog
 
 
@@ -239,13 +240,10 @@ def dashboard_view(request):
 
 
 @login_required
+@permission_required('settings.manage')
 def download_database_backup(request, backup_id: int):
     """تحميل ملف نسخة احتياطية من واجهة الويب (بدون الدخول إلى /admin/)."""
-    from apps.core.web_views._helpers import _is_general_manager
-
-    if not (request.user.is_superuser or _is_general_manager(request.user)):
-        messages.error(request, 'ليس لديك صلاحية تحميل النسخ الاحتياطية.')
-        return redirect('web:dashboard')
+    from apps.core.models import DatabaseBackupLog
 
     obj = get_object_or_404(DatabaseBackupLog, pk=backup_id)
 

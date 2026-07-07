@@ -91,20 +91,19 @@ def get_user_permissions(user):
 
     from apps.core.models import Permission, Role
 
+    profile = getattr(user, 'profile', None)
     denied_codes: set[str] = set()
+
     if user.is_superuser:
-        # السوبر يوزر → كل الصلاحيات
         codes = set(Permission.objects.filter(is_active=True).values_list('code', flat=True))
-    elif not hasattr(user, 'profile') or not user.profile or not user.profile.role:
-        # بدون ملف أو دور → بدون صلاحيات
+    elif not profile or not profile.role:
         codes = set()
-    elif user.profile.role.role_type == Role.RoleType.ADMIN:
-        # الأدمن → كل الصلاحيات (مثل السوبر يوزر)
+    elif profile.role.role_type == Role.RoleType.ADMIN:
         codes = set(Permission.objects.filter(is_active=True).values_list('code', flat=True))
+        denied_codes = set(
+            profile.denied_permissions.filter(is_active=True).values_list('code', flat=True)
+        )
     else:
-        # المستخدم العادي → (دور + إضافية) − محرومة
-        profile = user.profile
-        # 3 استعلامات فقط — ثم لا استعلامات إضافية لبقية الـ request
         role_codes = set(profile.role.permissions.filter(is_active=True).values_list('code', flat=True))
         extra_codes = set(profile.extra_permissions.filter(is_active=True).values_list('code', flat=True))
         denied_codes = set(profile.denied_permissions.filter(is_active=True).values_list('code', flat=True))
@@ -204,10 +203,6 @@ def permission_required(permission_code, raise_exception=False):
             if not hasattr(profile_or_resp, 'role'):  # يعني أنه response
                 return profile_or_resp
 
-            # الأدمن يمر مباشرة
-            if _is_super_or_admin(request.user):
-                return view_func(request, *args, **kwargs)
-
             # فحص الصلاحية المطلوبة
             resp = _check_or_redirect(
                 request,
@@ -244,9 +239,6 @@ def any_permission_required(*permission_codes, raise_exception=False):
             if not hasattr(profile_or_resp, 'role'):
                 return profile_or_resp
 
-            if _is_super_or_admin(request.user):
-                return view_func(request, *args, **kwargs)
-
             user_perms = get_user_permissions(request.user)
             resp = _check_or_redirect(
                 request,
@@ -282,9 +274,6 @@ def all_permissions_required(*permission_codes, raise_exception=False):
             profile_or_resp = _ensure_profile_role(request, raise_exception)
             if not hasattr(profile_or_resp, 'role'):
                 return profile_or_resp
-
-            if _is_super_or_admin(request.user):
-                return view_func(request, *args, **kwargs)
 
             user_perms = get_user_permissions(request.user)
             missing = [c for c in permission_codes if c not in user_perms]

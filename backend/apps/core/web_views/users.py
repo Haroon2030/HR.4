@@ -134,8 +134,8 @@ def edit_user(request, user_id):
     )
     profile, _ = UserProfile.objects.get_or_create(user=user)
 
-    if not can_view_user(request.user, user):
-        messages.error(request, 'لا تملك صلاحية عرض هذا المستخدم.')
+    if not can_administer_user(request.user, user):
+        messages.error(request, 'لا تملك صلاحية إدارة هذا المستخدم.')
         return redirect('web:list_users')
 
     roles = assignable_roles_queryset(request.user)

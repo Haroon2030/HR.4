@@ -182,9 +182,19 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
         serializer.save(is_system_role=False)
 
     def perform_update(self, serializer):
+        from apps.core.services.access_control import validate_role_type_change
+
         role = serializer.instance
         if role.is_system_role and not self.request.user.is_superuser:
             raise PermissionDenied('لا يمكن تعديل دور نظامي.')
+        role_type = serializer.validated_data.get('role_type', role.role_type)
+        err = validate_role_type_change(
+            self.request.user,
+            role_type,
+            instance=role,
+        )
+        if err:
+            raise PermissionDenied(err)
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -248,6 +258,8 @@ class RoleViewSet(ActionPermissionMixin, viewsets.ModelViewSet):
     def remove_permission(self, request, pk=None):
         """إزالة صلاحية من الدور"""
         role = self.get_object()
+        if role.is_system_role or role.role_type == Role.RoleType.ADMIN:
+            raise PermissionDenied('لا يمكن تعديل صلاحيات هذا الدور.')
         permission_id = request.data.get('permission_id')
         try:
             permission = Permission.objects.get(id=permission_id)

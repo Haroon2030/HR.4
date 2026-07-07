@@ -10,13 +10,25 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
 
-from apps.core.decorators import has_permission, permission_required
+from apps.core.decorators import all_permissions_required, has_permission, permission_required
 from apps.maintenance.forms import (
     MaintenanceAssetForm,
     MaintenanceRequestForm,
     MaintenanceTradeForm,
     MaintenanceWorkerForm,
     WorkerReportForm,
+)
+from apps.maintenance.sub_permissions import (
+    MAINTENANCE_SCREEN_ASSIGN_VIEW,
+    MAINTENANCE_SCREEN_BRANCH_CONFIRM_VIEW,
+    MAINTENANCE_SCREEN_MANAGER_CLOSE_VIEW,
+    MAINTENANCE_SCREEN_REQUEST_ADD_VIEW,
+    MAINTENANCE_SCREEN_REQUESTS_VIEW,
+    MAINTENANCE_SCREEN_RETURN_VIEW,
+    MAINTENANCE_SETUP_ADD,
+    MAINTENANCE_SETUP_DELETE,
+    MAINTENANCE_SETUP_EDIT,
+    MAINTENANCE_SETUP_VIEW,
 )
 from apps.maintenance.models import MaintenanceAsset, MaintenanceRequest, MaintenanceTrade, MaintenanceWorker
 from apps.maintenance.selectors.workers import assignable_maintenance_workers_qs
@@ -59,15 +71,15 @@ def _requests_queryset():
 
 
 def _can_assign(user) -> bool:
-    return user.is_superuser or has_permission(user, 'maintenance.assign')
+    return user.is_superuser or has_permission(user, MAINTENANCE_SCREEN_ASSIGN_VIEW)
 
 
 def _can_manage(user) -> bool:
-    return user.is_superuser or has_permission(user, 'maintenance.manage')
+    return user.is_superuser or has_permission(user, MAINTENANCE_SCREEN_MANAGER_CLOSE_VIEW)
 
 
 def _can_confirm_branch(user, req) -> bool:
-    if not (user.is_superuser or has_permission(user, 'maintenance.confirm_branch')):
+    if not (user.is_superuser or has_permission(user, MAINTENANCE_SCREEN_BRANCH_CONFIRM_VIEW)):
         return False
     if user_sees_all_maintenance(user):
         return True
@@ -79,11 +91,11 @@ def _can_confirm_branch(user, req) -> bool:
 
 
 def _can_return(user) -> bool:
-    return user.is_superuser or has_permission(user, 'maintenance.return')
+    return user.is_superuser or has_permission(user, MAINTENANCE_SCREEN_RETURN_VIEW)
 
 
 @login_required
-@permission_required('maintenance.view')
+@permission_required(MAINTENANCE_SCREEN_REQUESTS_VIEW)
 def list_maintenance_requests(request):
     tab = (request.GET.get('tab') or 'all').strip()
     if tab not in TAB_STATUS_MAP:
@@ -125,13 +137,13 @@ def list_maintenance_requests(request):
         'tab': tab,
         'query': query,
         'counts': counts,
-        'can_add': has_permission(request.user, 'maintenance.add'),
+        'can_add': has_permission(request.user, MAINTENANCE_SCREEN_REQUEST_ADD_VIEW),
         'can_assign': _can_assign(request.user),
     })
 
 
 @login_required
-@permission_required('maintenance.add')
+@permission_required(MAINTENANCE_SCREEN_REQUEST_ADD_VIEW)
 def add_maintenance_request(request):
     if request.method == 'POST':
         form = MaintenanceRequestForm(request.POST, request.FILES, user=request.user)
@@ -157,7 +169,7 @@ def add_maintenance_request(request):
 
 
 @login_required
-@permission_required('maintenance.view')
+@permission_required(MAINTENANCE_SCREEN_REQUESTS_VIEW)
 def maintenance_request_detail(request, request_id):
     qs = filter_requests_for_user(request.user, _requests_queryset())
     req = get_object_or_404(qs, pk=request_id)
@@ -195,7 +207,7 @@ def maintenance_request_detail(request, request_id):
 
 
 @login_required
-@permission_required('maintenance.assign')
+@all_permissions_required(MAINTENANCE_SCREEN_REQUESTS_VIEW, MAINTENANCE_SCREEN_ASSIGN_VIEW)
 @require_http_methods(['POST'])
 def assign_maintenance_request_view(request, request_id):
     qs = filter_requests_for_user(request.user, MaintenanceRequest.objects.all())
@@ -215,7 +227,7 @@ def assign_maintenance_request_view(request, request_id):
 
 
 @login_required
-@permission_required('maintenance.manage')
+@all_permissions_required(MAINTENANCE_SCREEN_REQUESTS_VIEW, MAINTENANCE_SCREEN_MANAGER_CLOSE_VIEW)
 @require_http_methods(['POST'])
 def manager_close_maintenance_request(request, request_id):
     qs = filter_requests_for_user(request.user, MaintenanceRequest.objects.all())
@@ -230,7 +242,7 @@ def manager_close_maintenance_request(request, request_id):
 
 
 @login_required
-@permission_required('maintenance.confirm_branch')
+@all_permissions_required(MAINTENANCE_SCREEN_REQUESTS_VIEW, MAINTENANCE_SCREEN_BRANCH_CONFIRM_VIEW)
 @require_http_methods(['POST'])
 def branch_confirm_maintenance_request(request, request_id):
     qs = filter_requests_for_user(request.user, MaintenanceRequest.objects.all())
@@ -247,7 +259,7 @@ def branch_confirm_maintenance_request(request, request_id):
 
 
 @login_required
-@permission_required('maintenance.return')
+@all_permissions_required(MAINTENANCE_SCREEN_REQUESTS_VIEW, MAINTENANCE_SCREEN_RETURN_VIEW)
 @require_http_methods(['POST'])
 def return_maintenance_request_view(request, request_id):
     qs = filter_requests_for_user(request.user, MaintenanceRequest.objects.all())
@@ -262,7 +274,7 @@ def return_maintenance_request_view(request, request_id):
 
 
 @login_required
-@permission_required('maintenance.add')
+@all_permissions_required(MAINTENANCE_SCREEN_REQUESTS_VIEW, MAINTENANCE_SCREEN_REQUEST_ADD_VIEW)
 @require_http_methods(['POST'])
 def resubmit_maintenance_request_view(request, request_id):
     qs = filter_requests_for_user(request.user, MaintenanceRequest.objects.all())
@@ -325,7 +337,7 @@ def worker_report_maintenance(request, token):
 # ── تهيئة الصيانة (تبويبات) ─────────────────────────────────────────────────
 
 @login_required
-@permission_required('maintenance.workers_view')
+@permission_required(MAINTENANCE_SETUP_VIEW)
 def maintenance_setup(request):
     tab = resolve_setup_tab(request.GET.get('tab'))
     return render(request, 'pages/maintenance/setup/list.html', {
@@ -335,7 +347,7 @@ def maintenance_setup(request):
 
 
 @login_required
-@permission_required('maintenance.workers_view')
+@permission_required(MAINTENANCE_SETUP_VIEW)
 def maintenance_setup_tab(request):
     tab = resolve_setup_tab(request.GET.get('tab'))
     ctx = get_maintenance_setup_tab_context(request.user, tab)
@@ -345,7 +357,7 @@ def maintenance_setup_tab(request):
 # ── أصول الصيانة ───────────────────────────────────────────────────────────
 
 @login_required
-@permission_required('maintenance.workers_add')
+@permission_required(MAINTENANCE_SETUP_ADD)
 def add_maintenance_asset(request):
     if request.method == 'POST':
         form = MaintenanceAssetForm(request.POST)
@@ -362,7 +374,7 @@ def add_maintenance_asset(request):
 
 
 @login_required
-@permission_required('maintenance.workers_edit')
+@permission_required(MAINTENANCE_SETUP_EDIT)
 def edit_maintenance_asset(request, asset_id):
     asset = get_object_or_404(MaintenanceAsset, pk=asset_id, is_deleted=False)
     if request.method == 'POST':
@@ -381,7 +393,7 @@ def edit_maintenance_asset(request, asset_id):
 
 
 @login_required
-@permission_required('maintenance.workers_delete')
+@permission_required(MAINTENANCE_SETUP_DELETE)
 @require_http_methods(['POST'])
 def delete_maintenance_asset(request, asset_id):
     asset = get_object_or_404(MaintenanceAsset, pk=asset_id, is_deleted=False)
@@ -396,13 +408,13 @@ def delete_maintenance_asset(request, asset_id):
 # ── تهيئة المهن ─────────────────────────────────────────────────────────────
 
 @login_required
-@permission_required('maintenance.workers_view')
+@permission_required(MAINTENANCE_SETUP_VIEW)
 def list_maintenance_trades(request):
     return redirect(_setup_url('trades'))
 
 
 @login_required
-@permission_required('maintenance.workers_add')
+@permission_required(MAINTENANCE_SETUP_ADD)
 def add_maintenance_trade(request):
     if request.method == 'POST':
         form = MaintenanceTradeForm(request.POST)
@@ -420,7 +432,7 @@ def add_maintenance_trade(request):
 
 
 @login_required
-@permission_required('maintenance.workers_edit')
+@permission_required(MAINTENANCE_SETUP_EDIT)
 def edit_maintenance_trade(request, trade_id):
     trade = get_object_or_404(MaintenanceTrade, pk=trade_id, is_deleted=False)
     if request.method == 'POST':
@@ -440,7 +452,7 @@ def edit_maintenance_trade(request, trade_id):
 
 
 @login_required
-@permission_required('maintenance.workers_delete')
+@permission_required(MAINTENANCE_SETUP_DELETE)
 @require_http_methods(['POST'])
 def delete_maintenance_trade(request, trade_id):
     trade = get_object_or_404(MaintenanceTrade, pk=trade_id, is_deleted=False)
@@ -455,13 +467,13 @@ def delete_maintenance_trade(request, trade_id):
 # ── تهيئة العمال ────────────────────────────────────────────────────────────
 
 @login_required
-@permission_required('maintenance.workers_view')
+@permission_required(MAINTENANCE_SETUP_VIEW)
 def list_maintenance_workers(request):
     return redirect(_setup_url('workers'))
 
 
 @login_required
-@permission_required('maintenance.workers_add')
+@permission_required(MAINTENANCE_SETUP_ADD)
 def add_maintenance_worker(request):
     if request.method == 'POST':
         form = MaintenanceWorkerForm(request.POST)
@@ -480,7 +492,7 @@ def add_maintenance_worker(request):
 
 
 @login_required
-@permission_required('maintenance.workers_edit')
+@permission_required(MAINTENANCE_SETUP_EDIT)
 def edit_maintenance_worker(request, worker_id):
     worker = get_object_or_404(MaintenanceWorker, pk=worker_id, is_deleted=False)
     if request.method == 'POST':
@@ -501,7 +513,7 @@ def edit_maintenance_worker(request, worker_id):
 
 
 @login_required
-@permission_required('maintenance.add')
+@permission_required(MAINTENANCE_SCREEN_REQUEST_ADD_VIEW)
 @require_http_methods(['GET'])
 @ratelimit(key='user', rate='30/m', block=True)
 def maintenance_reverse_geocode(request):
@@ -519,7 +531,7 @@ def maintenance_reverse_geocode(request):
 
 
 @login_required
-@permission_required('maintenance.workers_delete')
+@permission_required(MAINTENANCE_SETUP_DELETE)
 @require_http_methods(['POST'])
 def delete_maintenance_worker(request, worker_id):
     worker = get_object_or_404(MaintenanceWorker, pk=worker_id, is_deleted=False)

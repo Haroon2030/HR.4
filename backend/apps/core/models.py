@@ -362,7 +362,10 @@ class UserProfile(BaseModel):
         return set(manager.filter(is_active=True).values_list('code', flat=True))
 
     def get_permissions(self):
-        """صلاحيات فعلية للمستخدم = (صلاحيات الدور ∪ extra) − denied"""
+        """صلاحيات فعلية للمستخدم — مع التوسيع ومنع الصلاحيات المحرومة."""
+        if self.user_id:
+            from apps.core.decorators import get_user_permissions
+            return sorted(get_user_permissions(self.user))
         if not self.role:
             extra = self._active_permission_codes('extra_permissions') if self.pk else set()
             denied = self._active_permission_codes('denied_permissions') if self.pk else set()

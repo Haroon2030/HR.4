@@ -91,16 +91,16 @@
         {% endif %}
     </button>
     <div class="hr-nav-sub">
-        {% if user|has_permission:'maintenance.view' or user|has_permission:'maintenance_screen_requests.view' %}
+        {% if user|has_permission:'maintenance_screen_requests.view' %}
         <a href="{% url 'web:list_maintenance_requests' %}" class="hr-nav-sublink {% if '/maintenance/requests' in request.path %}is-active{% endif %}">
             <span class="hr-nav-sublink__label">طلبات الصيانة</span>
             {% if maintenance_open_count %}<span class="hr-sidebar-panel__pending-badge hr-nav-sublink__badge">{{ maintenance_open_count }}</span>{% endif %}
         </a>
         {% endif %}
-        {% if user|has_permission:'maintenance.add' or user|has_permission:'maintenance_screen_request_add.view' %}
+        {% if user|has_permission:'maintenance_screen_request_add.view' %}
         <a href="{% url 'web:add_maintenance_request' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'add_maintenance_request' %}is-active{% endif %}">طلب سريع</a>
         {% endif %}
-        {% if user|has_permission:'maintenance.workers_view' or user|has_permission:'maintenance_setup.view' %}
+        {% if user|has_permission:'maintenance_setup.view' %}
         <a href="{% url 'web:maintenance_setup' %}" class="hr-nav-sublink {% if '/maintenance/setup' in request.path or '/maintenance/assets' in request.path or '/maintenance/trades' in request.path or '/maintenance/workers' in request.path %}is-active{% endif %}">تهيئة الصيانة</a>
         {% endif %}
     </div>

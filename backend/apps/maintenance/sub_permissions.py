@@ -2,11 +2,39 @@
 شاشات فرعية لإدارة الصيانة — وحدة مستقلة لكل شاشة في مصفوفة الصلاحيات.
 
 الصلاحيات الجديدة (maintenance_screen_*.view / maintenance_setup.*) تُوسَّع تلقائياً
-إلى أكواد maintenance.* الحالية حتى تبقى الـ views والتحققات كما هي.
+إلى أكواد maintenance.* الحالية. أكواد maintenance.* الأصلية تُوسَّع إلى شاشاتها
+لتمكين منع شاشة فرعية مع الاحتفاظ بصلاحيات أخرى.
 """
 from __future__ import annotations
 
 from apps.core.permissions_registry import register_module, register_permission
+
+MAINTENANCE_SCREEN_REQUESTS_VIEW = 'maintenance_screen_requests.view'
+MAINTENANCE_SCREEN_REQUEST_ADD_VIEW = 'maintenance_screen_request_add.view'
+MAINTENANCE_SCREEN_ASSIGN_VIEW = 'maintenance_screen_assign.view'
+MAINTENANCE_SCREEN_MANAGER_CLOSE_VIEW = 'maintenance_screen_manager_close.view'
+MAINTENANCE_SCREEN_BRANCH_CONFIRM_VIEW = 'maintenance_screen_branch_confirm.view'
+MAINTENANCE_SCREEN_RETURN_VIEW = 'maintenance_screen_return.view'
+
+MAINTENANCE_SETUP_VIEW = 'maintenance_setup.view'
+MAINTENANCE_SETUP_ADD = 'maintenance_setup.add'
+MAINTENANCE_SETUP_EDIT = 'maintenance_setup.edit'
+MAINTENANCE_SETUP_DELETE = 'maintenance_setup.delete'
+
+MAINTENANCE_SCREEN_VIEW_CODES: frozenset[str] = frozenset({
+    MAINTENANCE_SCREEN_REQUESTS_VIEW,
+    MAINTENANCE_SCREEN_REQUEST_ADD_VIEW,
+    MAINTENANCE_SCREEN_ASSIGN_VIEW,
+    MAINTENANCE_SCREEN_MANAGER_CLOSE_VIEW,
+    MAINTENANCE_SCREEN_BRANCH_CONFIRM_VIEW,
+    MAINTENANCE_SCREEN_RETURN_VIEW,
+})
+
+MAINTENANCE_NAV_SCREEN_CODES: frozenset[str] = frozenset({
+    MAINTENANCE_SCREEN_REQUESTS_VIEW,
+    MAINTENANCE_SCREEN_REQUEST_ADD_VIEW,
+    MAINTENANCE_SETUP_VIEW,
+})
 
 _SCREEN_MODULES = (
     {
@@ -61,6 +89,15 @@ _SETUP_MODULE = {
 
 SUB_TO_LEGACY: dict[str, str] = {}
 
+_LEGACY_TO_SCREEN: dict[str, str] = {
+    screen['legacy']: f"{screen['code']}.view" for screen in _SCREEN_MODULES
+}
+
+_SETUP_LEGACY_TO_SCREEN: dict[str, str] = {
+    legacy: f"{_SETUP_MODULE['code']}.{op}"
+    for op, legacy in _SETUP_MODULE['ops'].items()
+}
+
 
 def register_maintenance_sub_permissions() -> None:
     """تسجيل وحدات الشاشات الفرعية في permissions_registry."""
@@ -85,20 +122,24 @@ def register_maintenance_sub_permissions() -> None:
 
 
 def expand_maintenance_sub_permissions(codes: set[str]) -> set[str]:
-    """إضافة أكواد maintenance.* المقابلة للشاشات الفرعية الممنوحة."""
+    """شاشة → legacy، و legacy أصلي → شاشة (للتوافق مع الأدوار الحالية)."""
     expanded = set(codes)
     for sub_code, legacy_code in SUB_TO_LEGACY.items():
         if sub_code in expanded:
             expanded.add(legacy_code)
+    for legacy_code, screen_code in _LEGACY_TO_SCREEN.items():
+        if legacy_code in expanded:
+            expanded.add(screen_code)
+    for legacy_code, screen_code in _SETUP_LEGACY_TO_SCREEN.items():
+        if legacy_code in expanded:
+            expanded.add(screen_code)
     return expanded
 
 
 def user_has_maintenance_nav(user) -> bool:
     """هل يظهر قسم الصيانة في الشريط الجانبي؟"""
-    from apps.core.decorators import get_user_permissions
+    from apps.core.decorators import has_permission
 
     if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
         return False
-    perms = get_user_permissions(user)
-    prefixes = ('maintenance.', 'maintenance_screen_', 'maintenance_setup.')
-    return any(any(p.startswith(pref) for pref in prefixes) for p in perms)
+    return any(has_permission(user, code) for code in MAINTENANCE_NAV_SCREEN_CODES)
