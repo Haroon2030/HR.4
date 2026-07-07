@@ -132,8 +132,10 @@ def _expand_implied_permissions(codes: set) -> set:
     for manage_code, implied in _MANAGE_IMPLIES.items():
         if manage_code in expanded:
             expanded |= implied
+    from apps.attendance.sub_permissions import expand_attendance_sub_permissions
     from apps.maintenance.sub_permissions import expand_maintenance_sub_permissions
     expanded = expand_maintenance_sub_permissions(expanded)
+    expanded = expand_attendance_sub_permissions(expanded)
     return expanded
 
 

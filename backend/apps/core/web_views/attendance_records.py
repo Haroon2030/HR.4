@@ -22,7 +22,8 @@ from apps.attendance.selectors.biometric_devices import (
     get_biometric_devices_queryset,
     get_device_for_user,
 )
-from apps.core.decorators import permission_required
+from apps.core.decorators import permission_required, any_permission_required
+from apps.attendance.sub_permissions import ATTENDANCE_SCREEN_RECORDS_VIEW
 from apps.core.filter_utils import append_multi_param, parse_multi_filter_ids
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids
@@ -101,7 +102,7 @@ def _filters_to_querystring(filters: dict, *, extra: dict | None = None) -> str:
     return urlencode(params, doseq=True)
 
 
-@permission_required('attendance.view')
+@any_permission_required('attendance.view', ATTENDANCE_SCREEN_RECORDS_VIEW)
 def attendance_records_list(request):
     filters = _parse_filters(request)
     filter_employee = None
@@ -281,7 +282,7 @@ def attendance_records_reclassify(request):
     return redirect(url)
 
 
-@permission_required('attendance.view')
+@any_permission_required('attendance.view', ATTENDANCE_SCREEN_RECORDS_VIEW)
 @require_GET
 def attendance_records_export(request):
     filters = _parse_filters(request)

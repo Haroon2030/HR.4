@@ -349,6 +349,13 @@ def has_maintenance_nav(user):
 
 
 @register.filter
+def has_attendance_nav(user):
+    """هل يظهر قسم الحضور والبصمة في الشريط الجانبي؟"""
+    from apps.attendance.sub_permissions import user_has_attendance_nav
+    return user_has_attendance_nav(user)
+
+
+@register.filter
 def is_private_lan_ip(value):
     """True إن كان IP شبكة محلية — السحب من السيرفر السحابي غير ممكن."""
     from apps.attendance.validators import is_private_lan_ip as _check

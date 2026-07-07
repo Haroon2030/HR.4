@@ -33,7 +33,8 @@ from apps.attendance.services.zk_client import (
     sync_device_users,
 )
 from apps.attendance.validators import cloud_pull_blocked_message
-from apps.core.decorators import permission_required
+from apps.core.decorators import permission_required, any_permission_required
+from apps.attendance.sub_permissions import ATTENDANCE_SCREEN_DEVICES_VIEW
 from apps.core.models import Branch
 from apps.core.filter_utils import parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids, filter_employees_queryset_for_user
@@ -91,7 +92,7 @@ def _device_users_querystring(filters: dict, *, extra: dict | None = None) -> st
     return urlencode(pairs, doseq=True)
 
 
-@permission_required('attendance.view')
+@any_permission_required('attendance.view', ATTENDANCE_SCREEN_DEVICES_VIEW)
 def biometric_devices_dashboard(request):
     branch_filter_ids = _parse_branch_filter(request)
     devices = list(get_biometric_devices_queryset(request.user, branch_ids=branch_filter_ids))

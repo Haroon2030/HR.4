@@ -43,11 +43,17 @@ def get_cached_queryset_count(
 ) -> int:
     """COUNT مع تخزين مؤقت قصير — يقلل ضغط COUNT(*) على الجداول الكبيرة."""
     key = queryset_count_cache_key(qs, prefix=prefix)
-    cached = cache.get(key)
+    try:
+        cached = cache.get(key)
+    except Exception:
+        cached = None
     if cached is not None:
         return int(cached)
     count = qs.count()
-    cache.set(key, count, ttl)
+    try:
+        cache.set(key, count, ttl)
+    except Exception:
+        pass
     return count
 
 

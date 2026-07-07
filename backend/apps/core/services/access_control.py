@@ -31,6 +31,11 @@ PRIVILEGED_ROLE_TYPES = frozenset({
     Role.RoleType.HR_MANAGER,
 })
 
+# أدوار تعمل على مستوى الشركة (كل الفروع) — أخصائي/منفّذ الموارد البشرية
+COMPANY_WIDE_BRANCH_ROLE_TYPES = frozenset({
+    Role.RoleType.HR_OFFICER,
+})
+
 # صلاحيات توسّع نطاق الفروع لكل الموظفين (مالية / رواتب / تقارير شاملة)
 COMPANY_WIDE_BRANCH_PERMISSIONS = frozenset({
     'payroll.process',
@@ -103,6 +108,10 @@ def get_accessible_branch_ids(user) -> set[int] | None:
         Role.RoleType.ADMIN,
         Role.RoleType.HR_MANAGER,
     ):
+        user._accessible_branch_ids_cache = None
+        return None
+
+    if profile and profile.role and profile.role.role_type in COMPANY_WIDE_BRANCH_ROLE_TYPES:
         user._accessible_branch_ids_cache = None
         return None
 

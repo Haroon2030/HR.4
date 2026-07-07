@@ -212,6 +212,8 @@ class Command(BaseCommand):
                     'leaves.manage',
                     'operations.view',
                     'operations.approve_officer',
+                    'attendance.view',
+                    'branches.view',
                 ],
             },
             {

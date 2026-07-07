@@ -74,6 +74,16 @@ class Command(BaseCommand):
             {'code': 'leaves.request', 'name': 'طلب إجازة', 'module': 'leaves'},
             {'code': 'leaves.approve', 'name': 'الموافقة على الإجازات', 'module': 'leaves'},
             {'code': 'leaves.manage', 'name': 'إدارة الإجازات', 'module': 'leaves'},
+
+            # ═══════════════════════════════════════════════════════════
+            # الحضور والبصمة
+            # ═══════════════════════════════════════════════════════════
+            {'code': 'attendance.view', 'name': 'عرض الحضور والبصمة', 'module': 'attendance'},
+            {'code': 'attendance.manage', 'name': 'إدارة أجهزة البصمة', 'module': 'attendance'},
+            {'code': 'attendance_screen_devices.view', 'name': 'الحضور — أجهزة البصمة', 'module': 'attendance_screen_devices'},
+            {'code': 'attendance_screen_report.view', 'name': 'الحضور — تقرير البصمة', 'module': 'attendance_screen_report'},
+            {'code': 'attendance_screen_late_alerts.view', 'name': 'الحضور — إنذار تأخير البصمة', 'module': 'attendance_screen_late_alerts'},
+            {'code': 'attendance_screen_records.view', 'name': 'الحضور — سجلات الحضور', 'module': 'attendance_screen_records'},
             
             # ═══════════════════════════════════════════════════════════
             # الرواتب (Payroll)

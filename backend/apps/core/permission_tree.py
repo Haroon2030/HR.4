@@ -15,7 +15,17 @@ PERMISSION_TREE_CONFIG: list[dict] = [
             {'id': 'hr_employees', 'name': 'الموظفين', 'module_codes': ['employees']},
             {'id': 'hr_tabs', 'name': 'تبويبات ملف الموظف', 'module_prefix': 'employee_tab_'},
             {'id': 'hr_leaves', 'name': 'الإجازات', 'module_codes': ['leaves']},
-            {'id': 'hr_attendance', 'name': 'الحضور والبصمة', 'module_codes': ['attendance']},
+            {
+                'id': 'hr_attendance',
+                'name': 'الحضور والبصمة',
+                'module_codes': [
+                    'attendance',
+                    'attendance_screen_devices',
+                    'attendance_screen_report',
+                    'attendance_screen_late_alerts',
+                    'attendance_screen_records',
+                ],
+            },
             {'id': 'hr_payroll', 'name': 'مسير الرواتب', 'module_codes': ['payroll']},
             {'id': 'hr_cash_shortages', 'name': 'عجز الكاشير', 'module_codes': ['cash_shortages']},
         ],
