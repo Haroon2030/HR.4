@@ -87,3 +87,37 @@ class AttendanceSubPermissionsTests(TestCase):
         self.assertIn('attendance_screen_report.view', codes)
         self.assertIn('attendance_screen_late_alerts.view', codes)
         self.assertIn('attendance_screen_records.view', codes)
+
+    def test_denied_attendance_screen_removed_after_expand(self):
+        mod, _ = AppModule.objects.get_or_create(
+            code='attendance',
+            defaults={'name': 'الحضور والبصمة', 'icon': 'fingerprint', 'order': 11, 'is_active': True},
+        )
+        base_perm, _ = Permission.objects.get_or_create(
+            code='attendance.view',
+            defaults={'name': 'عرض الحضور', 'module': mod, 'operation': 'view', 'is_active': True},
+        )
+        devices_mod, _ = AppModule.objects.get_or_create(
+            code='attendance_screen_devices',
+            defaults={'name': 'أجهزة', 'icon': 'fingerprint', 'order': 111, 'is_active': True},
+        )
+        devices_perm, _ = Permission.objects.get_or_create(
+            code='attendance_screen_devices.view',
+            defaults={'name': 'أجهزة', 'module': devices_mod, 'operation': 'view', 'is_active': True},
+        )
+        role = Role.objects.create(
+            name='حضور مع حرمان',
+            role_type=Role.RoleType.HR_OFFICER,
+            is_system_role=False,
+        )
+        role.permissions.set([base_perm, devices_perm])
+        user = User.objects.create_user(username='att_denied_devices', password='pass')
+        profile = user.profile
+        profile.role = role
+        profile.branch = self.branch
+        profile.save(update_fields=['role', 'branch'])
+        profile.denied_permissions.set([devices_perm])
+        user = User.objects.select_related('profile__role').get(pk=user.pk)
+
+        self.assertTrue(has_permission(user, 'attendance.view'))
+        self.assertFalse(has_permission(user, 'attendance_screen_devices.view'))

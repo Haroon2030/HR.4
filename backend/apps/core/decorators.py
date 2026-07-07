@@ -91,6 +91,7 @@ def get_user_permissions(user):
 
     from apps.core.models import Permission, Role
 
+    denied_codes: set[str] = set()
     if user.is_superuser:
         # السوبر يوزر → كل الصلاحيات
         codes = set(Permission.objects.filter(is_active=True).values_list('code', flat=True))
@@ -110,6 +111,8 @@ def get_user_permissions(user):
         codes = (role_codes | extra_codes) - denied_codes
 
     codes = _expand_implied_permissions(codes)
+    if denied_codes:
+        codes -= denied_codes
 
     # حفظ في الكاش
     user._perm_codes_cache = codes

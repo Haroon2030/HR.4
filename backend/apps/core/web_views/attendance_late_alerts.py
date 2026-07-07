@@ -6,7 +6,7 @@ from django.views.decorators.http import require_GET
 
 from apps.attendance.selectors.biometric_devices import get_biometric_devices_queryset
 from apps.attendance.selectors.late_alerts import build_late_checkin_alerts, summarize_late_alerts
-from apps.core.decorators import any_permission_required
+from apps.core.decorators import permission_required
 from apps.attendance.sub_permissions import ATTENDANCE_SCREEN_LATE_ALERTS_VIEW
 from apps.core.models import Branch
 from apps.core.utils.attendance_filters import clamp_attendance_date_range
@@ -19,7 +19,7 @@ from apps.core.web_views.attendance_records import (
 from apps.employees.models import Employee
 
 
-@any_permission_required('attendance.view', ATTENDANCE_SCREEN_LATE_ALERTS_VIEW)
+@permission_required(ATTENDANCE_SCREEN_LATE_ALERTS_VIEW)
 @require_GET
 def attendance_late_alerts(request):
     filters = _apply_default_date_filters(_parse_filters(request))

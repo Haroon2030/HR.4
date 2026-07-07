@@ -21,7 +21,7 @@ from apps.attendance.selectors.biometric_devices import (
     filter_biometric_devices_for_user,
     get_biometric_devices_queryset,
 )
-from apps.core.decorators import permission_required, any_permission_required
+from apps.core.decorators import permission_required
 from apps.attendance.sub_permissions import ATTENDANCE_SCREEN_REPORT_VIEW
 from apps.core.models import Branch
 from apps.core.web_views._helpers import _user_accessible_branch_ids
@@ -70,7 +70,7 @@ def _punches_for_report(request, filters: dict):
     return qs
 
 
-@any_permission_required('attendance.view', ATTENDANCE_SCREEN_REPORT_VIEW)
+@permission_required(ATTENDANCE_SCREEN_REPORT_VIEW)
 def attendance_report(request):
     from apps.core.utils.attendance_filters import clamp_attendance_date_range
 
@@ -164,7 +164,7 @@ def attendance_report(request):
     })
 
 
-@any_permission_required('attendance.view', ATTENDANCE_SCREEN_REPORT_VIEW)
+@permission_required(ATTENDANCE_SCREEN_REPORT_VIEW)
 @require_GET
 def attendance_report_export(request):
     try:
