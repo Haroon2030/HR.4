@@ -13,7 +13,13 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 
 from apps.core.models import Role, Branch
-from apps.core.validators import DOCUMENT_VALIDATORS
+from apps.core.validators import (
+    DOCUMENT_VALIDATORS,
+    USER_PASSWORD_HELP_TEXT,
+    USER_PASSWORD_LENGTH,
+    USER_PASSWORD_WIDGET_ATTRS,
+    validate_user_password,
+)
 from apps.core.widgets import apply_decimal_number_widgets
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
@@ -145,14 +151,18 @@ class UserBaseForm(forms.Form):
 
 
 class UserCreateForm(UserBaseForm):
-    password = forms.CharField(min_length=12, required=True,
-                               error_messages={'required': 'كلمة المرور مطلوبة'})
+    password = forms.CharField(
+        min_length=USER_PASSWORD_LENGTH,
+        max_length=USER_PASSWORD_LENGTH,
+        required=True,
+        widget=forms.PasswordInput(attrs=USER_PASSWORD_WIDGET_ATTRS),
+        error_messages={'required': 'كلمة المرور مطلوبة'},
+    )
 
     def clean_password(self):
-        from django.contrib.auth.password_validation import validate_password
         password = self.cleaned_data.get('password')
         if password:
-            validate_password(password)
+            validate_user_password(password)
         return password
 
     def clean_username(self):
@@ -163,11 +173,23 @@ class UserCreateForm(UserBaseForm):
 
 
 class UserEditForm(UserBaseForm):
-    password = forms.CharField(required=False)  # اختياري عند التعديل
+    password = forms.CharField(
+        required=False,
+        min_length=USER_PASSWORD_LENGTH,
+        max_length=USER_PASSWORD_LENGTH,
+        widget=forms.PasswordInput(attrs=USER_PASSWORD_WIDGET_ATTRS),
+    )
 
     def __init__(self, *args, instance=None, **kwargs):
         self.instance = instance
         super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = (self.cleaned_data.get('password') or '').strip()
+        if not password:
+            return ''
+        validate_user_password(password)
+        return password
 
     def clean_username(self):
         username = super().clean_username()
@@ -560,6 +582,9 @@ class ArabicPasswordChangeForm(PasswordChangeForm):
             'required': 'أكد كلمة المرور الجديدة.',
         }
         self.fields['new_password2'].help_text = 'أعد إدخال كلمة المرور الجديدة للتأكيد.'
+        for field_name in ('new_password1', 'new_password2'):
+            self.fields[field_name].widget.attrs.update(USER_PASSWORD_WIDGET_ATTRS)
+            self.fields[field_name].help_text = USER_PASSWORD_HELP_TEXT
 
     def clean_old_password(self):
         try:

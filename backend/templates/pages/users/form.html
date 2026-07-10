@@ -56,8 +56,13 @@
                         name="password"
                         class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                         {% if not user_obj %}required{% endif %}
-                        placeholder="{% if user_obj %}اتركه فارغاً إذا لم ترد تغييره{% else %}••••••••{% endif %}"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="new-password"
+                        placeholder="{% if user_obj %}اتركه فارغاً أو 6 أرقام{% else %}6 أرقام{% endif %}"
                     >
+                    <p class="text-xs text-slate-500">كلمة المرور: 6 أرقام</p>
                 </div>
 
                 <!-- الدور -->

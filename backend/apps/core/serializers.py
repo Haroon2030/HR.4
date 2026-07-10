@@ -4,6 +4,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Role, UserProfile, Branch, Company
+from apps.core.validators import validate_user_password
 
 User = get_user_model()
 
@@ -224,10 +225,7 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         password = attrs.get('password')
         if password:
-            from django.contrib.auth.password_validation import validate_password
-            request = self.context.get('request')
-            user = getattr(self, 'instance', None)
-            validate_password(password, user=user if user and user.pk else None)
+            validate_user_password(password)
         return attrs
 
     def create(self, validated_data):

@@ -17,7 +17,11 @@
         <div class="hr-stat-card__content">
             <p class="hr-stat-card__label">{{ label }}</p>
             <p class="hr-stat-card__value">{{ value|default:0 }}</p>
-            {% if hint %}
+            {% if delta %}
+            <p class="hr-stat-card__delta{% if delta_negative %} hr-stat-card__delta--down{% else %} hr-stat-card__delta--up{% endif %}">
+                {% if delta_label %}{{ delta_label }}{% else %}{{ delta }}{% endif %}
+            </p>
+            {% elif hint %}
             <p class="hr-stat-card__hint">{{ hint }}</p>
             {% endif %}
         </div>

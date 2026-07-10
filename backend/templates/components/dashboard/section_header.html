@@ -1,0 +1,17 @@
+{% comment %}
+  رأس قسم لوحة التحكم — icon, title, subtitle, heading_id, tag (اختياري)
+{% endcomment %}
+<header class="hr-dashboard-section__head">
+    <div class="hr-dashboard-section__head-row">
+        <h2 id="{{ heading_id }}" class="hr-dashboard-section__title">
+            <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+            {{ title }}
+        </h2>
+        {% if tag %}
+        <span class="hr-dashboard-section__tag">{{ tag }}</span>
+        {% endif %}
+    </div>
+    {% if subtitle %}
+    <p class="hr-dashboard-section__subtitle">{{ subtitle }}</p>
+    {% endif %}
+</header>

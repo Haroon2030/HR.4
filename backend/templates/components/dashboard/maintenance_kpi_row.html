@@ -1,0 +1,10 @@
+{% comment %}صف KPI مضغوط — الصيانة{% endcomment %}
+{% with kpis=maintenance_dashboard.kpis links=maintenance_dashboard.kpi_links %}
+<div class="hr-dashboard-kpi-strip hr-stat-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+    {% include 'components/kpi_stat_card.html' with label='مفتوحة' value=kpis.open_total theme='amber' icon='wrench' href=links.open_total %}
+    {% include 'components/kpi_stat_card.html' with label='بانتظار الإسناد' value=kpis.pending theme='orange' icon='clock' href=links.pending %}
+    {% include 'components/kpi_stat_card.html' with label='عند العامل' value=kpis.assigned theme='indigo' icon='user-cog' href=links.assigned %}
+    {% include 'components/kpi_stat_card.html' with label='بانتظار الإغلاق' value=kpis.awaiting_close theme='purple' icon='clipboard-check' href=links.awaiting_close %}
+    {% include 'components/kpi_stat_card.html' with label='مكتمل الشهر' value=kpis.completed_month theme='emerald' icon='check-circle-2' href=links.completed_month %}
+</div>
+{% endwith %}

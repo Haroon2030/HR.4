@@ -1,6 +1,7 @@
 """Validators مشتركة للحقول."""
 import io
 import os
+import re
 import zipfile
 
 from django.core.exceptions import ValidationError
@@ -168,3 +169,32 @@ IMAGE_VALIDATORS = [
     validate_image_size,
     validate_upload_magic_bytes,
 ]
+
+# ── كلمة مرور المستخدم (6 أرقام) ────────────────────────────────────────────
+
+USER_PASSWORD_LENGTH = 6
+USER_PASSWORD_HELP_TEXT = 'كلمة المرور يجب أن تكون 6 أرقام'
+_USER_PASSWORD_RE = re.compile(r'^\d{6}$')
+
+USER_PASSWORD_WIDGET_ATTRS = {
+    'maxlength': '6',
+    'pattern': r'[0-9]{6}',
+    'inputmode': 'numeric',
+    'autocomplete': 'new-password',
+}
+
+
+def validate_user_password(value: str) -> None:
+    """التحقق من كلمة مرور المستخدم — 6 أرقام بالضبط."""
+    if not value or not _USER_PASSWORD_RE.fullmatch(value):
+        raise ValidationError(USER_PASSWORD_HELP_TEXT)
+
+
+class SixDigitPasswordValidator:
+    """Validator لـ AUTH_PASSWORD_VALIDATORS — 6 أرقام."""
+
+    def validate(self, password, user=None):
+        validate_user_password(password)
+
+    def get_help_text(self):
+        return USER_PASSWORD_HELP_TEXT

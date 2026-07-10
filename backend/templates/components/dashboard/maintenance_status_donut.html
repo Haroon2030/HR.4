@@ -1,0 +1,39 @@
+{% load custom_tags %}
+{% comment %}توزيع حالات طلبات الصيانة — دونات{% endcomment %}
+<div class="hr-dist-card hr-dist-card--status-donut">
+    {% include "components/dashboard_dist_card_head.html" with icon="pie-chart" title="توزيع حالات الصيانة" subtitle="نظرة على سير الطلبات" %}
+
+    {% if maintenance_dashboard.total_requests %}
+    <div class="hr-dist-card__body hr-dist-card__body--donut">
+        <div class="hr-dist-card__donut-wrap" aria-hidden="true">
+            <div class="hr-dist-card__donut" style="--hr-dist-donut-gradient: {{ maintenance_dashboard.status_rows|maintenance_status_donut_style }};">
+                <div class="hr-dist-card__donut-ring"></div>
+                <div class="hr-dist-card__donut-hole">
+                    <span class="hr-dist-card__donut-value">{{ maintenance_dashboard.total_requests }}</span>
+                    <span class="hr-dist-card__donut-label">إجمالي</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hr-dist-card__legend" role="list" aria-label="تفاصيل توزيع حالات الصيانة">
+            {% for row in maintenance_dashboard.status_rows %}
+            {% if row.count %}
+            <div class="hr-dist-card__legend-item hr-dist-card__legend-item--{{ row.color }}" role="listitem">
+                <span class="hr-dist-card__legend-dot" aria-hidden="true"></span>
+                <span class="hr-dist-card__legend-label">{{ row.label }}</span>
+                <span class="hr-dist-card__legend-meta">
+                    <strong>{{ row.count }}</strong>
+                    <span>{{ row.percent }}%</span>
+                </span>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="hr-dist-card__empty">
+        <i data-lucide="wrench" class="w-8 h-8"></i>
+        <p>لا طلبات صيانة للعرض</p>
+    </div>
+    {% endif %}
+</div>

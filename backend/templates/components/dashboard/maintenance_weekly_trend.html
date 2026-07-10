@@ -1,0 +1,24 @@
+{% comment %}اتجاه طلبات الصيانة — آخر 7 أيام{% endcomment %}
+<div class="hr-dist-card hr-dist-card--chart-vbars">
+    {% include "components/dashboard_dist_card_head.html" with icon="trending-up" title="طلبات آخر 7 أيام" subtitle="عدد الطلبات الجديدة يومياً" %}
+
+    {% if maintenance_dashboard.weekly_trend %}
+    <div class="hr-dist-card__vchart" role="img" aria-label="مخطط أعمدة — طلبات الصيانة آخر 7 أيام">
+        {% for day in maintenance_dashboard.weekly_trend %}
+        {% widthratio day.count maintenance_dashboard.max_weekly 100 as bar_h %}
+        <div class="hr-dist-card__vbar-col">
+            <span class="hr-dist-card__vbar-value">{{ day.count }}</span>
+            <div class="hr-dist-card__vbar-track" aria-hidden="true">
+                <span class="hr-dist-card__vbar-fill hr-dist-card__vbar-fill--indigo" style="height: {% if day.count and bar_h < 8 %}8{% elif day.count %}{{ bar_h }}{% else %}0{% endif %}%;"></span>
+            </div>
+            <span class="hr-dist-card__vbar-label" title="{{ day.date }}">{{ day.label }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="hr-dist-card__empty">
+        <i data-lucide="trending-up" class="w-8 h-8"></i>
+        <p>لا بيانات للعرض</p>
+    </div>
+    {% endif %}
+</div>

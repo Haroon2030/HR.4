@@ -5,43 +5,46 @@
 {% block page_title %}لوحة التحكم{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+{% if show_overview %}
+<div class="hr-dashboard hr-dashboard--compact space-y-3">
+    {% include "components/dashboard_hero_compact.html" %}
 
-    <!-- ═══ Welcome Header ═══ -->
-    {% include "components/dashboard_hero.html" %}
+    <section class="hr-dashboard-section" aria-labelledby="hr-dashboard-hr-heading">
+        {% include "components/dashboard/section_header.html" with heading_id="hr-dashboard-hr-heading" icon="users" title="الموارد البشرية" subtitle="KPI · توزيعات" tag="HR" %}
+        <div class="hr-dashboard-section__body">
+            {% include "components/dashboard/hr_kpi_strip.html" %}
+            <div class="hr-dashboard-analytics-row grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                {% include "components/dashboard_status_distribution.html" %}
+                {% include "components/dashboard_gender_distribution.html" %}
+                {% include "components/dashboard/hr_top_branches.html" %}
+            </div>
+            <div class="hr-dashboard-analytics-row hr-dashboard-analytics-row--secondary grid grid-cols-1 md:grid-cols-2 gap-2">
+                {% include "components/dashboard_branch_distribution.html" %}
+                {% include "components/dashboard_nationality_distribution.html" %}
+            </div>
+        </div>
+    </section>
 
-    {% if show_overview %}
-    <!-- ═══ KPI Stats Cards ═══ -->
-    <div class="hr-stat-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {% url 'web:list_employees' as list_employees_url %}
-        {% include 'components/kpi_stat_card.html' with label='إجمالي الموظفين' value=stats.employees_total theme='primary' icon='users' href=list_employees_url %}
-        {% for row in employee_status_rows %}
-        {% if row.status != 'terminated' %}
-        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme=row.theme icon=row.icon %}
-        {% endif %}
-        {% endfor %}
-        {% url 'web:list_employment_requests' as employment_requests_url %}
-        {% include 'components/kpi_stat_card.html' with label='طلبات توظيف معلّقة' value=stats.employment_requests_open theme='orange' icon='file-plus' href=employment_requests_url %}
-        {% url 'web:list_pending_actions' as pending_actions_url %}
-        {% include 'components/kpi_stat_card.html' with label='عمليات معلّقة' value=stats.pending_actions_open theme='indigo' icon='clipboard-list' href=pending_actions_url %}
-        {% for row in employee_status_rows %}
-        {% if row.status == 'terminated' %}
-        {% include 'components/kpi_stat_card.html' with label=row.label value=row.count theme=row.theme icon=row.icon %}
-        {% endif %}
-        {% endfor %}
-        {% include 'components/kpi_stat_card.html' with label='قيد التصفية' value=stats.clearance_open theme='purple' icon='calculator' %}
-    </div>
+    {% if maintenance_dashboard %}
+    <section class="hr-dashboard-section" aria-labelledby="hr-dashboard-maint-heading">
+        {% include "components/dashboard/section_header.html" with heading_id="hr-dashboard-maint-heading" icon="wrench" title="الصيانة" subtitle="KPI · اتجاه" tag="MAINT" %}
+        <div class="hr-dashboard-section__body">
+            {% include "components/dashboard/maintenance_kpi_row.html" %}
+            <div class="hr-dashboard-analytics-row grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                {% include "components/dashboard/maintenance_status_donut.html" %}
+                {% include "components/dashboard/maintenance_weekly_trend.html" %}
+                {% include "components/dashboard/maintenance_top_branches.html" %}
+            </div>
+        </div>
+    </section>
     {% endif %}
-
-    <!-- ═══ Main Grid: Tasks + Charts ═══ -->
-    <div class="grid grid-cols-1 {% if show_overview %}lg:grid-cols-2{% endif %} gap-6">
-
-        {% if not show_overview %}
-        <!-- Tasks column -->
+</div>
+{% else %}
+<div class="space-y-6">
+    {% include "components/dashboard_hero.html" %}
+    <div class="grid grid-cols-1 gap-6">
         <div class="space-y-6">
-
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <!-- Header + Search -->
                 <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-primary-500"></span>
@@ -57,7 +60,6 @@
                         {% endif %}
                     </form>
                 </div>
-
                 {% if inbox_page.object_list %}
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -89,8 +91,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Pagination -->
                 {% if inbox_page.paginator.num_pages > 1 %}
                 <div class="px-5 py-3 border-t border-slate-100 hr-pagination hr-pagination--bar">
                     <div class="hr-pagination__summary">صفحة {{ inbox_page.number }} من {{ inbox_page.paginator.num_pages }} • إجمالي {{ inbox_total }}</div>
@@ -105,26 +105,8 @@
                 <div class="p-10 text-center text-sm font-semibold text-slate-500">لا بيانات</div>
                 {% endif %}
             </div>
-
         </div>
-        {% endif %}
-
-        {% if show_overview %}
-        <!-- Charts (Admin/Manager View) -->
-
-            <!-- توزيع حالة الموظفين -->
-            {% include "components/dashboard_status_distribution.html" %}
-
-            <!-- توزيع حسب الفرع -->
-            {% include "components/dashboard_branch_distribution.html" %}
-
-            <!-- توزيع حسب الجنس -->
-            {% include "components/dashboard_gender_distribution.html" %}
-
-            <!-- توزيع حسب الجنسية -->
-            {% include "components/dashboard_nationality_distribution.html" %}
-
-        {% endif %}
     </div>
 </div>
+{% endif %}
 {% endblock %}

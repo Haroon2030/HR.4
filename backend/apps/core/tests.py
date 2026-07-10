@@ -826,7 +826,7 @@ class PasswordChangeViewTests(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create_user(
             username='pw_ch_user',
-            password='OldPwd29!xYz',
+            password='654321',
             is_active=True,
         )
 
@@ -837,18 +837,18 @@ class PasswordChangeViewTests(TestCase):
 
     def test_get_form_when_logged_in(self):
         c = Client()
-        self.assertTrue(c.login(username='pw_ch_user', password='OldPwd29!xYz'))
+        self.assertTrue(c.login(username='pw_ch_user', password='654321'))
         r = c.get(reverse('web:auth:password_change'))
         self.assertEqual(r.status_code, 200)
 
     def test_post_changes_password(self):
         c = Client()
-        self.assertTrue(c.login(username='pw_ch_user', password='OldPwd29!xYz'))
-        new_pw = 'QazWsx#9mKp2vLx8'
+        self.assertTrue(c.login(username='pw_ch_user', password='654321'))
+        new_pw = '112233'
         r = c.post(
             reverse('web:auth:password_change'),
             {
-                'old_password': 'OldPwd29!xYz',
+                'old_password': '654321',
                 'new_password1': new_pw,
                 'new_password2': new_pw,
             },
@@ -905,7 +905,7 @@ class UserFormsTests(TestCase):
         cls.existing = User.objects.create_user(username='taken', password='x')
 
     def test_create_duplicate_username(self):
-        f = UserCreateForm(data={'username': 'taken', 'password': 'pass1234'})
+        f = UserCreateForm(data={'username': 'taken', 'password': '123456'})
         self.assertFalse(f.is_valid())
         self.assertIn('username', f.errors)
 
@@ -915,8 +915,18 @@ class UserFormsTests(TestCase):
         self.assertIn('password', f.errors)
 
     def test_create_valid(self):
-        f = UserCreateForm(data={'username': 'newone', 'password': 'pass1234', 'is_active': '1'})
+        f = UserCreateForm(data={'username': 'newone', 'password': '123456', 'is_active': '1'})
         self.assertTrue(f.is_valid(), f.errors)
+
+    def test_create_rejects_non_numeric_password(self):
+        f = UserCreateForm(data={'username': 'newone2', 'password': 'abcdef', 'is_active': '1'})
+        self.assertFalse(f.is_valid())
+        self.assertIn('password', f.errors)
+
+    def test_edit_validates_six_digit_password(self):
+        f = UserEditForm(data={'username': 'taken', 'password': '12345'}, instance=self.existing)
+        self.assertFalse(f.is_valid())
+        self.assertIn('password', f.errors)
 
     def test_edit_allows_same_username(self):
         f = UserEditForm(data={'username': 'taken'}, instance=self.existing)

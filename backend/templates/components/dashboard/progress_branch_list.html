@@ -1,0 +1,28 @@
+{% comment %}
+  قائمة فروع بشريط تقدم — rows (branch__name, c), max_value, icon, title, subtitle, empty_text
+{% endcomment %}
+<div class="hr-dist-card hr-dist-card--progress-list">
+    {% include "components/dashboard_dist_card_head.html" with icon=icon title=title subtitle=subtitle %}
+
+    {% if rows %}
+    <div class="hr-dashboard-progress-list" role="list" aria-label="{{ title }}">
+        {% for row in rows %}
+        {% widthratio row.c max_value 100 as pct %}
+        <div class="hr-dashboard-progress-row" role="listitem">
+            <div class="hr-dashboard-progress-row__head">
+                <span class="hr-dashboard-progress-row__label">{{ row.branch__name|default:"بدون فرع" }}</span>
+                <span class="hr-dashboard-progress-row__value">{{ row.c }}</span>
+            </div>
+            <div class="hr-dashboard-progress-row__track" aria-hidden="true">
+                <span class="hr-dashboard-progress-row__fill" style="width: {% if pct < 4 and row.c %}4{% else %}{{ pct }}{% endif %}%;"></span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="hr-dist-card__empty">
+        <i data-lucide="{{ icon }}" class="w-8 h-8"></i>
+        <p>{{ empty_text|default:"لا بيانات للعرض" }}</p>
+    </div>
+    {% endif %}
+</div>

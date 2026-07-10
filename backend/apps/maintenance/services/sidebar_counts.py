@@ -34,3 +34,5 @@ def invalidate_maintenance_sidebar_caches(request: MaintenanceRequest) -> None:
     for manager in maintenance_manager_users().only('pk'):
         user_ids.add(manager.pk)
     invalidate_user_navigation_caches(*user_ids)
+    from apps.core.services.dashboard_cache import invalidate_maintenance_dashboard_cache
+    invalidate_maintenance_dashboard_cache()

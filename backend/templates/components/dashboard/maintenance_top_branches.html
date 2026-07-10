@@ -1,0 +1,2 @@
+{% comment %}أعلى الفروع — طلبات صيانة مفتوحة{% endcomment %}
+{% include "components/dashboard/progress_branch_list.html" with rows=maintenance_dashboard.top_branches max_value=maintenance_dashboard.max_branch_open icon="building-2" title="أعلى الفروع" subtitle="طلبات مفتوحة حسب الفرع" empty_text="لا طلبات مفتوحة" %}

@@ -10,6 +10,8 @@ from django.db.models import Count, Q
 
 CACHE_PREFIX = 'hr:dashboard_overview:v2:'
 OVERVIEW_VER_PREFIX = 'hr:dashboard_overview_ver:'
+MAINTENANCE_DASHBOARD_PREFIX = 'hr:maintenance_dashboard:v1:'
+MAINTENANCE_DASHBOARD_VER_PREFIX = 'hr:maintenance_dashboard_ver:'
 DEFAULT_TTL = 120
 
 
@@ -45,6 +47,37 @@ def invalidate_dashboard_overview(*user_ids: int | None) -> None:
             cache.incr(vkey)
         except ValueError:
             cache.set(vkey, 1, timeout=None)
+
+
+def _maintenance_dashboard_version() -> int:
+    return int(cache.get(MAINTENANCE_DASHBOARD_VER_PREFIX) or 0)
+
+
+def maintenance_dashboard_cache_key() -> str:
+    return f'{MAINTENANCE_DASHBOARD_PREFIX}{_maintenance_dashboard_version()}'
+
+
+def invalidate_maintenance_dashboard_cache() -> None:
+    """يبطّل كاش لوحة الصيانة (عالمي — Admin/GM)."""
+    try:
+        cache.incr(MAINTENANCE_DASHBOARD_VER_PREFIX)
+    except ValueError:
+        cache.set(MAINTENANCE_DASHBOARD_VER_PREFIX, 1, timeout=None)
+
+
+def get_maintenance_dashboard_overview(*, bypass: bool = False) -> tuple[dict[str, Any], bool]:
+    """يُرجع (maintenance_dashboard_dict, from_cache)."""
+    key = maintenance_dashboard_cache_key()
+    if not bypass:
+        cached = cache.get(key)
+        if cached is not None:
+            return cached, True
+
+    from apps.maintenance.selectors.dashboard import build_maintenance_dashboard
+
+    data = build_maintenance_dashboard()
+    cache.set(key, data, _cache_ttl())
+    return data, False
 
 
 def cache_bypass_requested(request) -> bool:

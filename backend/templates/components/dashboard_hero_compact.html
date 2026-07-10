@@ -1,0 +1,27 @@
+{% comment %}شريط ترحيب مضغوط — لوحة التحكم{% endcomment %}
+{% load custom_tags %}
+<div class="hr-hero hr-hero--compact" dir="rtl">
+    <div class="hr-hero__inner hr-hero__inner--compact">
+        <div class="hr-hero__identity hr-hero__identity--compact">
+            <span class="hr-hero__avatar hr-hero__avatar--compact" aria-hidden="true">
+                <i data-lucide="user-round" class="w-4 h-4"></i>
+            </span>
+            <div class="hr-hero__content min-w-0">
+                <p class="hr-hero__line">
+                    <span class="hr-hero__name hr-hero__name--compact">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    {% if request.user.profile.role %}
+                    <span class="hr-hero__role-chip hr-hero__role-chip--compact">{{ request.user.profile.role|role_arabic_name }}</span>
+                    {% endif %}
+                    <span class="hr-hero__online hr-hero__online--compact">
+                        <span class="hr-hero__online-dot" aria-hidden="true"></span>
+                        LIVE
+                    </span>
+                </p>
+            </div>
+        </div>
+        <div class="hr-hero__date-card hr-hero__date-card--compact" aria-label="التاريخ">
+            <i data-lucide="calendar-days" class="w-3.5 h-3.5" aria-hidden="true"></i>
+            <span class="hr-hero__date-full" dir="ltr">{% now "Y-m-d" %}</span>
+        </div>
+    </div>
+</div>

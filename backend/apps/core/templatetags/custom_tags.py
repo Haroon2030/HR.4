@@ -44,6 +44,12 @@ def employee_status_donut_style(rows):
     return build_employee_status_donut_style(rows or [])
 
 
+@register.filter
+def maintenance_status_donut_style(rows):
+    from apps.maintenance.selectors.dashboard import build_maintenance_status_donut_style
+    return build_maintenance_status_donut_style(rows or [])
+
+
 _GENDER_DONUT_FILL = {
     'leave': '#0ea5e9',
     'terminated': '#f43f5e',

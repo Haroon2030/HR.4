@@ -43,18 +43,30 @@ def dashboard_view(request):
     from apps.core.services.dashboard_cache import (
         cache_bypass_requested,
         get_dashboard_overview,
+        get_maintenance_dashboard_overview,
     )
 
+    bypass_cache = cache_bypass_requested(request)
     overview, _overview_cached = get_dashboard_overview(
         request.user,
         branch_scope,
-        bypass=cache_bypass_requested(request),
+        bypass=bypass_cache,
     )
+
+    show_overview = bool(request.user.is_superuser or _is_general_manager(request.user))
+    maintenance_dashboard = None
+    maintenance_dashboard_cached = False
+    if show_overview:
+        maintenance_dashboard, maintenance_dashboard_cached = get_maintenance_dashboard_overview(
+            bypass=bypass_cache,
+        )
 
     context = {
         **overview,
         'dashboard_overview_cached': _overview_cached,
-        'show_overview': bool(request.user.is_superuser or _is_general_manager(request.user)),
+        'show_overview': show_overview,
+        'maintenance_dashboard': maintenance_dashboard,
+        'maintenance_dashboard_cached': maintenance_dashboard_cached,
         'is_branch_manager': False,
         'pending_requests': [],
         'is_hr_officer': False,
