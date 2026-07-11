@@ -13,7 +13,7 @@
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">IP</th>
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">بدء الجلسة</th>
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">آخر نشاط</th>
-                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500">إجراء</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500 uppercase tracking-wider">الإجراءات</th>
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-slate-100">
@@ -40,19 +40,18 @@
                 <td class="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">{{ session.created_at|date:"d/m/Y H:i" }}</td>
                 <td class="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">{{ session.last_seen_at|date:"d/m/Y H:i" }}</td>
                 <td class="px-3 py-2 text-left">
-                    {% if current_session_key and session.session_key == current_session_key %}
-                    <span class="text-xs text-slate-400">—</span>
-                    {% else %}
-                    <form method="post" action="{% url 'web:revoke_session' session.pk %}" class="inline">
-                        {% csrf_token %}
-                        {% if revoke_next %}<input type="hidden" name="next" value="{{ revoke_next }}">{% endif %}
-                        <button type="submit" class="hr-btn hr-btn--ghost hr-btn--xs text-rose-700 hover:bg-rose-50"
-                                onclick="return confirm('إنهاء هذه الجلسة؟ سيُطلب من المستخدم تسجيل الدخول مجدداً.');">
-                            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                            <span>إنهاء</span>
-                        </button>
-                    </form>
-                    {% endif %}
+                    <div class="hr-tbl-actions">
+                        {% if show_user_column %}
+                        {% url 'web:list_user_sessions' session.user_id as user_sessions_url %}
+                        {% include "components/table_act_view.html" with url=user_sessions_url title="عرض جلسات المستخدم" icon="monitor-smartphone" %}
+                        {% endif %}
+                        {% if current_session_key and session.session_key == current_session_key %}
+                        {% include "components/table_act_revoke_session_disabled.html" with title="الجلسة الحالية — استخدم تسجيل الخروج" %}
+                        {% else %}
+                        {% url 'web:revoke_session' session.pk as revoke_url %}
+                        {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next title="إنهاء الجلسة" %}
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% empty %}

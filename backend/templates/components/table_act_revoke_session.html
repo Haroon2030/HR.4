@@ -1,0 +1,9 @@
+{% load custom_tags %}
+<form method="post" action="{{ url }}" class="inline"
+      onsubmit="return confirm('{% if confirm %}{{ confirm|escapejs }}{% else %}إنهاء هذه الجلسة؟ سيُطلب من المستخدم تسجيل الدخول مجدداً.{% endif %}');">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <button type="submit" class="hr-act hr-act--revoke" title="{{ title|default:'إنهاء الجلسة' }}" aria-label="{{ title|default:'إنهاء الجلسة' }}">
+        <i data-lucide="log-out" class="hr-act__icon"></i>
+    </button>
+</form>

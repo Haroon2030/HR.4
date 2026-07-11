@@ -101,6 +101,15 @@ class UserSessionManagementTests(TestCase):
         response = self.admin_client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'sess_target')
+        self.assertContains(response, 'hr-act--revoke')
+
+    def test_list_all_sessions_shows_revoke_action(self):
+        self._login_target_via_web()
+        self.admin_client.login(username='sess_admin', password='654321')
+        response = self.admin_client.get(reverse('web:list_all_sessions'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'hr-act--revoke')
+        self.assertContains(response, reverse('web:revoke_session', kwargs={'pk': UserSession.objects.get(user=self.target_user).pk}))
 
     def test_user_without_edit_permission_cannot_list_sessions(self):
         self.admin_client.login(username='sess_viewer', password='654321')

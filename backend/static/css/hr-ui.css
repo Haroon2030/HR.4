@@ -1223,6 +1223,23 @@ body.hr-app .hr-required-mark {
     background: rgba(254, 242, 242, 0.95) !important;
 }
 
+.hr-act--revoke {
+    color: #c2410c !important;
+    border-color: rgba(234, 88, 12, 0.3);
+    background: rgba(255, 247, 237, 0.88) !important;
+}
+
+.hr-act--revoke:hover:not(:disabled) {
+    color: #ea580c !important;
+    border-color: rgba(234, 88, 12, 0.35);
+    background: rgba(255, 237, 213, 0.95) !important;
+}
+
+.hr-act--revoke:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .hr-act--perm {
     color: #7c3aed !important;
     border-color: rgba(124, 58, 237, 0.3);
