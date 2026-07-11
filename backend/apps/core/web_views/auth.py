@@ -60,9 +60,28 @@ def login_view(request):
 
             invalidate_user_navigation_caches(user.pk)
             login(request, user)
-            if not remember:
+            if 'remember' in request.POST and not remember:
                 request.session.set_expiry(0)
-            messages.success(request, f'مرحباً {user.get_full_name() or user.username}')
+            from apps.core.models import SystemAuditLog
+            from apps.core.services.system_audit import log_system_audit
+            from apps.core.services.user_sessions import parse_device_label, register_session
+
+            register_session(request, user)
+            ua = (request.META.get('HTTP_USER_AGENT') or '')[:256]
+            log_system_audit(
+                request=request,
+                action=SystemAuditLog.Action.USER_LOGIN,
+                summary=f'تسجيل دخول — {user.get_username()}',
+                details=f'جهاز: {parse_device_label(ua)}',
+                target_user=user,
+            )
+            display_name = user.get_full_name() or user.username
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                display_name,
+                extra_tags='welcome',
+            )
             return redirect('web:dashboard')
 
         messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
@@ -77,6 +96,11 @@ def logout_view(request):
         return redirect('web:dashboard')
     if not request.user.is_authenticated:
         return redirect('web:auth:login')
+    from apps.core.services.user_sessions import revoke_session_by_key
+
+    session_key = getattr(request.session, 'session_key', None)
+    if session_key:
+        revoke_session_by_key(session_key, actor=request.user, request=request, log=False)
     logout(request)
     messages.success(request, 'تم تسجيل الخروج بنجاح')
     return redirect('web:auth:login')
@@ -108,6 +132,17 @@ def password_change_view(request):
                 ),
                 target_user=user,
             )
+            from apps.core.services.user_sessions import revoke_all_sessions
+
+            current_key = getattr(request.session, 'session_key', None)
+            revoked = revoke_all_sessions(
+                user,
+                actor=user,
+                request=request,
+                except_session_key=current_key,
+            )
+            if revoked:
+                messages.info(request, f'تم إنهاء {revoked} جلسة أخرى على حسابك.')
             messages.success(request, 'تم تغيير كلمة المرور بنجاح.')
             return redirect('web:dashboard')
         for errs in form.errors.values():

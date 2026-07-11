@@ -30,3 +30,4 @@ from apps.core.web_views.attendance_report import *  # noqa: F401,F403
 from apps.core.web_views.attendance_late_alerts import *  # noqa: F401,F403
 from apps.core.web_views.cash_shortages import *  # noqa: F401,F403
 from apps.core.web_views.maintenance import *  # noqa: F401,F403
+from apps.core.web_views.user_sessions import *  # noqa: F401,F403

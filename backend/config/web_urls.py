@@ -229,6 +229,10 @@ urlpatterns = [
     # 9. إدارة المستخدمين
     # ══════════════════════════════════════════════════════════════
     path('users/', web_views.list_users, name='list_users'),
+    path('users/sessions/', web_views.list_all_sessions, name='list_all_sessions'),
+    path('users/sessions/<int:pk>/revoke/', web_views.revoke_session_view, name='revoke_session'),
+    path('users/<int:user_id>/sessions/', web_views.list_user_sessions, name='list_user_sessions'),
+    path('users/<int:user_id>/sessions/revoke-all/', web_views.revoke_all_user_sessions_view, name='revoke_all_user_sessions'),
     path('users/add/', web_views.add_user, name='add_user'),
     path('users/<int:user_id>/', web_views.view_user, name='view_user'),
     path('users/<int:user_id>/edit/', web_views.edit_user, name='edit_user'),

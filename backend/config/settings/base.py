@@ -112,6 +112,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',              # معالجة مشتركة
     'django.middleware.csrf.CsrfViewMiddleware',              # حماية CSRF
     'django.contrib.auth.middleware.AuthenticationMiddleware', # ربط المستخدم بالطلب
+    'apps.core.middleware.UserSessionActivityMiddleware',    # تتبع نشاط جلسات الويب
     'django.contrib.messages.middleware.MessageMiddleware',    # رسائل المستخدم
     'django.middleware.clickjacking.XFrameOptionsMiddleware',  # حماية من Clickjacking
     'simple_history.middleware.HistoryRequestMiddleware',      # التقاط المستخدم لسجل التدقيق

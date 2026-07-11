@@ -105,3 +105,32 @@ class AccessControlMiddleware:
 
         # إذا لم يمر الطلب بأي حالة رفض، اتركه يمر بسلام
         return None
+
+
+_SKIP_SESSION_TOUCH_PREFIXES = (
+    '/static/',
+    '/health/',
+    '/api/',
+    '/media/',
+)
+
+
+class UserSessionActivityMiddleware:
+    """تحديث last_seen_at لجلسات الويب النشطة (مع throttling في الخدمة)."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        path = request.path or ''
+        if any(path.startswith(prefix) for prefix in _SKIP_SESSION_TOUCH_PREFIXES):
+            return response
+        if getattr(request, 'user', None) and request.user.is_authenticated:
+            try:
+                from apps.core.services.user_sessions import touch_session
+
+                touch_session(request)
+            except Exception:
+                logger.exception('UserSessionActivityMiddleware touch failed')
+        return response

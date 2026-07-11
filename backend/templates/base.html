@@ -225,7 +225,7 @@
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
     <link href="/static/css/hr-ui.css?v=20260711-compact-1_5x" rel="stylesheet">
-    <link href="/static/css/hr-motion.css?v=20260620-toast-z" rel="stylesheet">
+    <link href="/static/css/hr-motion.css?v=20260711-welcome" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="hr-app min-h-screen">
@@ -368,7 +368,7 @@
     {% if messages %}
     <div id="django-messages" style="display: none;">
         {% for message in messages %}
-        <div data-message="{{ message }}" data-type="{{ message.tags }}"></div>
+        <div data-message="{{ message }}" data-type="{{ message.tags }}"{% if 'welcome' in message.tags %} data-welcome="1"{% endif %}></div>
         {% endfor %}
     </div>
     {% endif %}
@@ -407,6 +407,39 @@
                 toast.classList.add('is-leaving');
                 setTimeout(function () { toast.remove(); }, 220);
             }, 4000);
+        }
+
+        function showWelcomeToast(name, durationMs) {
+            var container = document.getElementById('toast-container');
+            if (!container || !name) return;
+            durationMs = durationMs || 3500;
+
+            var toast = document.createElement('div');
+            toast.className = 'hr-toast hr-toast--welcome';
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+
+            var icon = document.createElement('span');
+            icon.className = 'hr-toast-welcome__icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+            var text = document.createElement('span');
+            text.className = 'hr-toast-welcome__text';
+            text.appendChild(document.createTextNode('مرحباً '));
+            var strong = document.createElement('strong');
+            strong.className = 'hr-toast-welcome__name';
+            strong.textContent = name;
+            text.appendChild(strong);
+
+            toast.appendChild(icon);
+            toast.appendChild(text);
+            container.appendChild(toast);
+
+            setTimeout(function () {
+                toast.classList.add('is-leaving');
+                setTimeout(function () { toast.remove(); }, 280);
+            }, durationMs);
         }
 
         function hrDisableBoostOnForms() {
@@ -511,7 +544,11 @@
                 var toastContainer = document.getElementById('toast-container');
                 if (toastContainer) toastContainer.innerHTML = '';
                 messagesContainer.querySelectorAll('[data-message]').forEach(function (msg) {
-                    showToast(msg.dataset.message, msg.dataset.type);
+                    if (msg.dataset.welcome === '1') {
+                        showWelcomeToast(msg.dataset.message);
+                    } else {
+                        showToast(msg.dataset.message, msg.dataset.type);
+                    }
                 });
             }
         });

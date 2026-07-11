@@ -23,7 +23,11 @@
         <!-- Tab 1: المستخدمون -->
         <div x-show="activeTab === 'users'" x-cloak>
             <div class="p-4">
-                <div class="flex justify-end mb-4">
+                <div class="flex justify-end mb-4 gap-2 flex-wrap">
+                    {% if request.user|has_permission:'users.edit' %}
+                    {% url 'web:list_all_sessions' as sessions_url %}
+                    {% include "components/hr_btn.html" with href=sessions_url label="إدارة الجلسات" icon="monitor-smartphone" size="xs" variant="ghost" %}
+                    {% endif %}
                     {% url 'web:add_user' as add_user_url %}
                     {% include "components/hr_btn.html" with href=add_user_url label="إضافة مستخدم جديد" icon="plus" size="xs" %}
                 </div>

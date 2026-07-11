@@ -17,6 +17,7 @@ from .models import (
     Branch,
     DatabaseBackupLog,
     WhatsAppMessageLog,
+    UserSession,
 )
 
 
@@ -329,4 +330,25 @@ class WhatsAppMessageLogAdmin(SuperuserOnlyAdminMixin, admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(UserSession)
+class UserSessionAdmin(SuperuserOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ('user', 'device_label', 'ip_address', 'created_at', 'last_seen_at', 'revoked_at')
+    list_filter = ('revoked_at',)
+    search_fields = ('user__username', 'user__email', 'device_label', 'ip_address', 'session_key')
+    readonly_fields = (
+        'user', 'session_key', 'ip_address', 'user_agent', 'device_label',
+        'created_at', 'last_seen_at', 'revoked_at', 'revoked_by',
+    )
+    ordering = ('-last_seen_at',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

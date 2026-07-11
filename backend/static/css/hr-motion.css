@@ -48,7 +48,7 @@
 /* ── Toast ── */
 #toast-container {
     position: fixed;
-    top: 1rem;
+    top: calc(var(--hr-chrome-height, 4.25rem) + 0.65rem);
     left: 50%;
     transform: translateX(-50%);
     z-index: 10080;
@@ -110,6 +110,57 @@
     background: rgba(239, 246, 255, 0.92) !important;
     border-color: rgba(37, 99, 235, 0.4) !important;
     color: #1d4ed8 !important;
+}
+
+@keyframes hr-welcome-in {
+    from {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.hr-toast--welcome {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.9rem 1.4rem;
+    min-width: 15rem;
+    max-width: 28rem;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #065f46 !important;
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.96), rgba(209, 250, 229, 0.94)) !important;
+    border-color: rgba(16, 185, 129, 0.45) !important;
+    box-shadow:
+        0 14px 32px rgba(5, 150, 105, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    animation: hr-welcome-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hr-toast-welcome__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.14);
+    color: #059669;
+}
+
+.hr-toast-welcome__icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.hr-toast-welcome__name {
+    color: #047857;
+    font-weight: 900;
 }
 
 /* ── الرأس عند التمرير (بدون blur) ── */

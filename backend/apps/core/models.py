@@ -732,6 +732,8 @@ class SystemAuditLog(models.Model):
         PASSWORD_CHANGE_SELF = 'password_change_self', 'تغيير كلمة المرور (ذاتي)'
         PASSWORD_CHANGE_ADMIN = 'password_change_admin', 'تعيين كلمة مرور (مدير)'
         USER_LOGIN = 'user_login', 'تسجيل دخول'
+        SESSION_REVOKE = 'session_revoke', 'إنهاء جلسة'
+        SESSION_REVOKE_ALL = 'session_revoke_all', 'إنهاء كل الجلسات'
 
     created_at = models.DateTimeField('الوقت', auto_now_add=True, db_index=True)
     actor = models.ForeignKey(
@@ -762,6 +764,48 @@ class SystemAuditLog(models.Model):
 
     def __str__(self):
         return f'{self.created_at:%Y-%m-%d %H:%M} — {self.summary}'
+
+
+class UserSession(models.Model):
+    """تتبع جلسات الويب (django_session) — للأدمن فقط."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='web_sessions',
+        verbose_name='المستخدم',
+    )
+    session_key = models.CharField('مفتاح الجلسة', max_length=40, unique=True, db_index=True)
+    ip_address = models.GenericIPAddressField('عنوان IP', null=True, blank=True)
+    user_agent = models.CharField('User-Agent', max_length=512, blank=True, default='')
+    device_label = models.CharField('الجهاز', max_length=120, blank=True, default='')
+    created_at = models.DateTimeField('بدء الجلسة', auto_now_add=True, db_index=True)
+    last_seen_at = models.DateTimeField('آخر نشاط', auto_now=True, db_index=True)
+    revoked_at = models.DateTimeField('وقت الإنهاء', null=True, blank=True, db_index=True)
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='revoked_web_sessions',
+        verbose_name='أُنهيت بواسطة',
+    )
+
+    class Meta:
+        verbose_name = 'جلسة ويب'
+        verbose_name_plural = 'جلسات الويب'
+        ordering = ['-last_seen_at']
+        indexes = [
+            models.Index(fields=['user', 'revoked_at', '-last_seen_at']),
+        ]
+
+    def __str__(self):
+        status = 'منتهية' if self.revoked_at else 'نشطة'
+        return f'{self.user_id} — {self.device_label or self.session_key[:8]} ({status})'
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
 
 
 # ══════════════════════════════════════════════════════════════════════════════

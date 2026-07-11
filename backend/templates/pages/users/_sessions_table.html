@@ -1,0 +1,67 @@
+{% comment %}
+جدول جلسات الويب النشطة — partial
+المتغيرات: sessions, current_session_key (optional), revoke_next ('all'|user)
+{% endcomment %}
+<div class="overflow-x-auto">
+    <table class="w-full min-w-[640px] divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+            <tr>
+                {% if show_user_column %}
+                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">المستخدم</th>
+                {% endif %}
+                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">الجهاز</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">IP</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">بدء الجلسة</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">آخر نشاط</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-slate-500">إجراء</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-100">
+            {% for session in sessions %}
+            <tr class="hover:bg-slate-50">
+                {% if show_user_column %}
+                <td class="px-3 py-2 text-sm text-slate-900">
+                    <a href="{% url 'web:view_user' session.user_id %}" class="font-semibold hover:text-primary-700">
+                        {{ session.user.get_full_name|default:session.user.username }}
+                    </a>
+                    <div class="text-[11px] text-slate-500 font-mono" dir="ltr">@{{ session.user.username }}</div>
+                </td>
+                {% endif %}
+                <td class="px-3 py-2 text-sm text-slate-800">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="monitor-smartphone" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                        <span>{{ session.device_label|default:"—" }}</span>
+                        {% if current_session_key and session.session_key == current_session_key %}
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary-100 text-primary-800">الجلسة الحالية</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-3 py-2 text-sm text-slate-700 font-mono" dir="ltr">{{ session.ip_address|default:"—" }}</td>
+                <td class="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">{{ session.created_at|date:"d/m/Y H:i" }}</td>
+                <td class="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">{{ session.last_seen_at|date:"d/m/Y H:i" }}</td>
+                <td class="px-3 py-2 text-left">
+                    {% if current_session_key and session.session_key == current_session_key %}
+                    <span class="text-xs text-slate-400">—</span>
+                    {% else %}
+                    <form method="post" action="{% url 'web:revoke_session' session.pk %}" class="inline">
+                        {% csrf_token %}
+                        {% if revoke_next %}<input type="hidden" name="next" value="{{ revoke_next }}">{% endif %}
+                        <button type="submit" class="hr-btn hr-btn--ghost hr-btn--xs text-rose-700 hover:bg-rose-50"
+                                onclick="return confirm('إنهاء هذه الجلسة؟ سيُطلب من المستخدم تسجيل الدخول مجدداً.');">
+                            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                            <span>إنهاء</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if show_user_column %}6{% else %}5{% endif %}" class="px-4 py-10 text-center text-sm text-slate-500">
+                    لا توجد جلسات نشطة
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
