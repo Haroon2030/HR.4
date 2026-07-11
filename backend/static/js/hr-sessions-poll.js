@@ -27,6 +27,20 @@
         }
     };
 
+    document.body.addEventListener('htmx:beforeSwap', function (evt) {
+        var detail = evt.detail || {};
+        var target = detail.target;
+        if (!target || target.id !== 'hr-sessions-live') {
+            return;
+        }
+        var xhr = detail.xhr;
+        var responseUrl = xhr && xhr.responseURL ? xhr.responseURL : '';
+        if (responseUrl.indexOf('/auth/login') !== -1) {
+            detail.shouldSwap = false;
+            window.location.replace(responseUrl);
+        }
+    });
+
     document.body.addEventListener('htmx:afterSwap', function (evt) {
         var target = evt.detail && evt.detail.target;
         if (!target || target.id !== 'hr-sessions-live') {

@@ -223,6 +223,24 @@ class UserSessionManagementTests(TestCase):
         self.assertContains(response, 'hr-presence-badge')
         self.assertNotContains(response, '<html', status_code=200)
 
+    def test_sessions_poll_does_not_reset_idle_clock(self):
+        from django.utils import timezone
+        from datetime import timedelta
+
+        self._login_target_via_web()
+        record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)
+        stale = timezone.now() - timedelta(minutes=9)
+        UserSession.objects.filter(pk=record.pk).update(last_seen_at=stale)
+
+        self.admin_client.login(username='sess_admin', password='654321')
+        self.admin_client.get(
+            reverse('web:list_all_sessions'),
+            HTTP_HX_REQUEST='true',
+            HTTP_X_SESSIONS_POLL='1',
+        )
+        record.refresh_from_db()
+        self.assertLess(record.last_seen_at, timezone.now() - timedelta(minutes=8))
+
     def test_admin_revoke_logs_out_target_session(self):
         self._login_target_via_web()
         record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)

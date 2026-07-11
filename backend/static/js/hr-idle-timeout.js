@@ -11,8 +11,9 @@
         return;
     }
 
-    var timer = null;
     var loggingOut = false;
+    var lastActivityAt = Date.now();
+    var timer = null;
 
     function getCsrfToken() {
         var meta = document.querySelector('meta[name="csrf-token"]');
@@ -20,11 +21,15 @@
     }
 
     function redirectToLogin() {
-        window.location.href = '/auth/login/?idle=1';
+        window.location.replace('/auth/login/?idle=1');
     }
 
     function onIdle() {
         if (loggingOut) {
+            return;
+        }
+        if (Date.now() - lastActivityAt < idleMs) {
+            scheduleCheck();
             return;
         }
         loggingOut = true;
@@ -38,23 +43,35 @@
         }).finally(redirectToLogin);
     }
 
-    function resetTimer() {
+    function markActivity() {
         if (loggingOut) {
             return;
         }
+        lastActivityAt = Date.now();
+        scheduleCheck();
+    }
+
+    function scheduleCheck() {
         clearTimeout(timer);
-        timer = setTimeout(onIdle, idleMs);
+        var remaining = idleMs - (Date.now() - lastActivityAt);
+        timer = setTimeout(onIdle, Math.max(remaining, 1000));
     }
 
     ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function (eventName) {
-        document.addEventListener(eventName, resetTimer, { passive: true, capture: true });
+        document.addEventListener(eventName, markActivity, { passive: true, capture: true });
     });
 
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') {
-            resetTimer();
+            onIdle();
         }
     });
 
-    resetTimer();
+    setInterval(function () {
+        if (Date.now() - lastActivityAt >= idleMs) {
+            onIdle();
+        }
+    }, 60000);
+
+    scheduleCheck();
 })();

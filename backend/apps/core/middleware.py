@@ -115,6 +115,11 @@ def _is_api_request(request) -> bool:
     return 'application/json' in accept and 'text/html' not in accept
 
 
+def _is_background_session_poll(request) -> bool:
+    """طلبات تحديث جدول الجلسات — لا تُمدّد مهلة الخمول."""
+    return request.headers.get('X-Sessions-Poll') == '1'
+
+
 class UserSessionActivityMiddleware:
     """مهلة خمول الجلسة + تحديث last_seen_at."""
 
@@ -152,7 +157,8 @@ class UserSessionActivityMiddleware:
             try:
                 from apps.core.services.user_sessions import touch_session
 
-                touch_session(request)
+                if not _is_background_session_poll(request):
+                    touch_session(request)
             except Exception:
                 logger.exception('UserSessionActivityMiddleware touch failed')
         return response
