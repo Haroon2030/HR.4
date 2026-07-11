@@ -241,6 +241,16 @@ class UserSessionManagementTests(TestCase):
         record.refresh_from_db()
         self.assertLess(record.last_seen_at, timezone.now() - timedelta(minutes=8))
 
+    def test_idle_message_not_shown_after_successful_login(self):
+        self.client.get(reverse('web:auth:login') + '?idle=1')
+        response = self.client.post(
+            reverse('web:auth:login'),
+            {'username': 'sess_admin', 'password': '654321'},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'بدون نشاط')
+
     def test_admin_revoke_logs_out_target_session(self):
         self._login_target_via_web()
         record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)

@@ -1,6 +1,5 @@
 import logging
 
-from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -143,7 +142,6 @@ class UserSessionActivityMiddleware:
                             {'detail': idle_timeout_message()},
                             status=401,
                         )
-                    messages.warning(request, idle_timeout_message())
                     return redirect(f"{reverse('web:auth:login')}?idle=1")
             except Exception:
                 logger.exception('UserSessionActivityMiddleware idle check failed')

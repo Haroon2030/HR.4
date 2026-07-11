@@ -9,7 +9,13 @@
             <div class="login-stage__form-inner">
                 <h2 class="login-stage__title">تسجيل الدخول</h2>
 
-                {% if form.errors %}
+                {% if idle_expired %}
+                <div class="login-alert login-alert--idle" role="alert">
+                    <p>{{ idle_timeout_message }}</p>
+                </div>
+                {% endif %}
+
+                {% if form and form.errors %}
                 <div class="login-alert" role="alert">
                     <p>اسم المستخدم أو كلمة المرور غير صحيحة</p>
                 </div>

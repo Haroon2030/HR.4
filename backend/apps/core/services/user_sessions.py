@@ -162,6 +162,7 @@ def register_session(request, user) -> None:
             'device_label': parse_device_label(ua),
             'revoked_at': None,
             'revoked_by_id': None,
+            'last_seen_at': timezone.now(),
         },
     )
     apply_session_idle_expiry(request)

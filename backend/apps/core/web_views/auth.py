@@ -16,6 +16,28 @@ _RATE_LIMIT_MESSAGE = 'تم تجاوز عدد محاولات تسجيل الدخ
 _PASSWORD_RATE_LIMIT_MESSAGE = 'تجاوزت عدد محاولات تغيير كلمة المرور. حاول لاحقاً.'
 
 
+def _clear_idle_timeout_messages(request) -> None:
+    """إزالة رسائل انتهاء الجلسة القديمة — لا تُعرض بعد تسجيل دخول ناجح."""
+    storage = messages.get_messages(request)
+    for message in storage:
+        if 'بدون نشاط' in str(message):
+            continue
+        extra_tags = getattr(message, 'extra_tags', '') or ''
+        messages.add_message(request, message.level, message.message, extra_tags=extra_tags)
+
+
+def _login_page_context(request, *, form=None):
+    from apps.core.services.user_sessions import idle_timeout_message
+
+    ctx = {
+        'idle_expired': request.GET.get('idle') == '1',
+        'idle_timeout_message': idle_timeout_message(),
+    }
+    if form is not None:
+        ctx['form'] = form
+    return ctx
+
+
 # =============================================================================
 # Custom Decorators
 # =============================================================================
@@ -30,22 +52,17 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('web:dashboard')
 
-    if request.GET.get('idle'):
-        from apps.core.services.user_sessions import idle_timeout_message
-
-        messages.warning(request, idle_timeout_message())
-
     if request.method == 'POST':
         if getattr(request, 'limited', False):
             messages.error(request, _RATE_LIMIT_MESSAGE)
-            return render(request, 'auth/login.html')
+            return render(request, 'auth/login.html', _login_page_context(request))
 
         form = LoginForm(request.POST)
 
         if not form.is_valid():
             for err in form.errors.values():
                 messages.error(request, err[0])
-            return render(request, 'auth/login.html')
+            return render(request, 'auth/login.html', _login_page_context(request, form=form))
 
         cd = form.cleaned_data
         username = cd['username']
@@ -81,6 +98,7 @@ def login_view(request):
                 target_user=user,
             )
             display_name = user.get_full_name() or user.username
+            _clear_idle_timeout_messages(request)
             messages.add_message(
                 request,
                 messages.SUCCESS,
@@ -91,7 +109,7 @@ def login_view(request):
 
         messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
 
-    return render(request, 'auth/login.html')
+    return render(request, 'auth/login.html', _login_page_context(request))
 
 
 @require_http_methods(['POST'])
