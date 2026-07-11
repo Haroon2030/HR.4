@@ -30,6 +30,11 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('web:dashboard')
 
+    if request.GET.get('idle'):
+        from apps.core.services.user_sessions import idle_timeout_message
+
+        messages.warning(request, idle_timeout_message())
+
     if request.method == 'POST':
         if getattr(request, 'limited', False):
             messages.error(request, _RATE_LIMIT_MESSAGE)
@@ -45,7 +50,6 @@ def login_view(request):
         cd = form.cleaned_data
         username = cd['username']
         password = cd['password']
-        remember = cd.get('remember')
 
         user = authenticate(request, username=username, password=password)
         if user is None and username:
@@ -60,13 +64,14 @@ def login_view(request):
 
             invalidate_user_navigation_caches(user.pk)
             login(request, user)
-            if 'remember' in request.POST and not remember:
-                request.session.set_expiry(0)
-            from apps.core.models import SystemAuditLog
-            from apps.core.services.system_audit import log_system_audit
-            from apps.core.services.user_sessions import parse_device_label, register_session
+            from apps.core.services.user_sessions import apply_session_idle_expiry, register_session
 
             register_session(request, user)
+            from apps.core.models import SystemAuditLog
+            from apps.core.services.system_audit import log_system_audit
+            from apps.core.services.user_sessions import parse_device_label
+
+            apply_session_idle_expiry(request)
             ua = (request.META.get('HTTP_USER_AGENT') or '')[:256]
             log_system_audit(
                 request=request,
@@ -87,6 +92,20 @@ def login_view(request):
         messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
 
     return render(request, 'auth/login.html')
+
+
+@require_http_methods(['POST'])
+def idle_logout_view(request):
+    """تسجيل خروج تلقائي — خمول المتصفح."""
+    if not request.user.is_authenticated:
+        return redirect('web:auth:login')
+    from apps.core.services.user_sessions import revoke_session_by_key
+
+    session_key = getattr(request.session, 'session_key', None)
+    if session_key:
+        revoke_session_by_key(session_key, actor=request.user, request=request, log=False)
+    logout(request)
+    return redirect('web:auth:login?idle=1')
 
 
 @require_http_methods(['GET', 'POST'])

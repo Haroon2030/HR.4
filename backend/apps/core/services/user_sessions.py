@@ -9,7 +9,61 @@ from django.utils import timezone
 
 from apps.core.services.system_audit import _client_ip, log_system_audit
 
-_TOUCH_INTERVAL = timedelta(minutes=5)
+
+def get_idle_timeout() -> timedelta:
+    from django.conf import settings
+
+    seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)
+    return timedelta(seconds=max(seconds, 60))
+
+
+def apply_session_idle_expiry(request) -> None:
+    """ضبط مدة جلسة django_session حسب مهلة الخمول."""
+    from django.conf import settings
+
+    timeout = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)
+    request.session.set_expiry(max(timeout, 60))
+
+
+def idle_timeout_message() -> str:
+    from django.conf import settings
+
+    minutes = max(int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600) // 60, 1)
+    return f'انتهت جلستك بسبب {minutes} دقائق بدون نشاط. يُرجى تسجيل الدخول مجدداً.'
+
+
+def enforce_idle_timeout(request) -> bool:
+    """إنهاء الجلسة إذا تجاوزت مهلة الخمول. يُرجع True إذا تم تسجيل الخروج."""
+    if not getattr(request, 'user', None) or not request.user.is_authenticated:
+        return False
+
+    session_key = getattr(request.session, 'session_key', None)
+    if not session_key:
+        return False
+
+    from apps.core.models import UserSession
+
+    record = UserSession.objects.filter(
+        session_key=session_key,
+        revoked_at__isnull=True,
+    ).only('pk', 'session_key', 'last_seen_at', 'user_id', 'device_label', 'ip_address').first()
+
+    now = timezone.now()
+    idle_limit = get_idle_timeout()
+
+    if record is None:
+        register_session(request, request.user)
+        apply_session_idle_expiry(request)
+        return False
+
+    if record.last_seen_at > now - idle_limit:
+        return False
+
+    from django.contrib.auth import logout
+
+    revoke_session_record(record, actor=request.user, request=request, log=False)
+    logout(request)
+    return True
 
 
 def parse_device_label(user_agent: str) -> str:
@@ -72,10 +126,11 @@ def register_session(request, user) -> None:
             'revoked_by_id': None,
         },
     )
+    apply_session_idle_expiry(request)
 
 
 def touch_session(request) -> None:
-    """تحديث last_seen_at مع throttling."""
+    """تحديث last_seen_at عند كل طلب نشط."""
     if not getattr(request, 'user', None) or not request.user.is_authenticated:
         return
 
@@ -86,12 +141,12 @@ def touch_session(request) -> None:
     from apps.core.models import UserSession
 
     now = timezone.now()
-    threshold = now - _TOUCH_INTERVAL
-    UserSession.objects.filter(
+    updated = UserSession.objects.filter(
         session_key=session_key,
         revoked_at__isnull=True,
-        last_seen_at__lt=threshold,
     ).update(last_seen_at=now)
+    if not updated:
+        register_session(request, request.user)
 
 
 def _purge_orphan_sessions(queryset) -> None:

@@ -32,8 +32,7 @@ CSRF_TRUSTED_ORIGINS = env.list(
 
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
-# HTTP محلي — الجلسة تنتهي عند إغلاق المتصفح (مثل الإنتاج)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# انتهاء الجلسة بعد SESSION_IDLE_TIMEOUT (من base.py) — لا جلسة دائمة حتى إغلاق المتصفح
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Database - DATABASE_URL from .env (Neon Postgres) or fallback to SQLite

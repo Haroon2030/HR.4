@@ -52,3 +52,13 @@ def app_info(request):
     from apps.core.services.app_info import get_app_info
 
     return {'hr_app_info': get_app_info()}
+
+
+def session_idle_timeout(request):
+    """مهلة خمول الجلسة (ثوانٍ) — للمراقبة في المتصفح."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return {}
+    from django.conf import settings
+
+    return {'session_idle_timeout': int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)}

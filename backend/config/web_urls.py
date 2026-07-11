@@ -33,7 +33,9 @@ app_name = 'web'
 auth_patterns = [
     path('login/', web_views.login_view, name='login'),       # صفحة تسجيل الدخول
     path('logout/', web_views.logout_view, name='logout'),     # تسجيل الخروج
+    path('idle-logout/', web_views.idle_logout_view, name='idle_logout'),
     path('password/change/', web_views.password_change_view, name='password_change'),
+    path('sessions/', web_views.my_sessions, name='my_sessions'),
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────

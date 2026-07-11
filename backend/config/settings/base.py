@@ -112,8 +112,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',              # معالجة مشتركة
     'django.middleware.csrf.CsrfViewMiddleware',              # حماية CSRF
     'django.contrib.auth.middleware.AuthenticationMiddleware', # ربط المستخدم بالطلب
-    'apps.core.middleware.UserSessionActivityMiddleware',    # تتبع نشاط جلسات الويب
     'django.contrib.messages.middleware.MessageMiddleware',    # رسائل المستخدم
+    'apps.core.middleware.UserSessionActivityMiddleware',    # مهلة خمول + تتبع جلسات الويب
     'django.middleware.clickjacking.XFrameOptionsMiddleware',  # حماية من Clickjacking
     'simple_history.middleware.HistoryRequestMiddleware',      # التقاط المستخدم لسجل التدقيق
     'apps.core.middleware.AccessControlMiddleware',            # التحكم في الوصول للروابط
@@ -208,6 +208,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',      # messages في كل قالب
                 'apps.core.context_processors.sidebar_context',             # عدّادات sidebar (مخزّنة مؤقتاً)
                 'apps.core.context_processors.app_info',                    # عن النظام (شركة / دعم / مطوّر)
+                'apps.core.context_processors.session_idle_timeout',          # مهلة خمول الجلسة
             ],
         },
     },
@@ -315,11 +316,11 @@ LOGIN_URL = '/auth/login/'                          # صفحة تسجيل الد
 LOGIN_REDIRECT_URL = '/'                            # بعد تسجيل الدخول → لوحة التحكم
 LOGOUT_REDIRECT_URL = '/auth/login/'                # بعد تسجيل الخروج → صفحة الدخول
 
-# إعدادات الجلسة — حماية افتراضية (يُشدَّد في production.py)
+# إعدادات الجلسة — انتهاء تلقائي بعد خمول (افتراضي 10 دقائق)
+SESSION_IDLE_TIMEOUT = env.int('SESSION_IDLE_TIMEOUT', default=600)
 SESSION_COOKIE_HTTPONLY = True
-SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=True)
-# يُستخدم فقط عند SESSION_EXPIRE_AT_BROWSER_CLOSE=False
-SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=28800)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=False)
+SESSION_COOKIE_AGE = SESSION_IDLE_TIMEOUT
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE = env('SESSION_COOKIE_SAMESITE', default='Lax')
 CSRF_COOKIE_HTTPONLY = env.bool('CSRF_COOKIE_HTTPONLY', default=True)

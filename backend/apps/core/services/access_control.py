@@ -335,6 +335,17 @@ def can_administer_user(actor, target_user) -> bool:
     return role_rank(actor_r) > role_rank(target_r)
 
 
+def can_manage_user_sessions(actor, target_user) -> bool:
+    """May view/revoke web sessions for target (self or administered user)."""
+    if actor.pk == target_user.pk:
+        return True
+    from apps.core.decorators import has_permission
+
+    if not has_permission(actor, 'users.edit'):
+        return False
+    return can_administer_user(actor, target_user)
+
+
 def can_manage_user_permissions(actor, target_user) -> bool:
     if not can_administer_user(actor, target_user):
         return False

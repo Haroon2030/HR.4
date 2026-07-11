@@ -250,9 +250,10 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
-# حماية الجلسات — HttpOnly + انتهاء عند إغلاق المتصفح (تعمل على HTTP و HTTPS)
+# حماية الجلسات — HttpOnly + انتهاء بعد خمول (SESSION_IDLE_TIMEOUT)
 SESSION_COOKIE_HTTPONLY = True
-SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=True)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=False)
+SESSION_COOKIE_AGE = SESSION_IDLE_TIMEOUT
 
 # استثناء فحص الصحة وواجهة وكيل البصمة من إعادة التوجيه إلى HTTPS
 # (الوكيل يرسل POST — تحويل 301 يكسر المزامنة إذا كان SERVER_URL=http://)
@@ -302,9 +303,6 @@ SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 # منع تحميل الموقع داخل iframe من مواقع خارجية
 X_FRAME_OPTIONS = 'DENY'
-
-# عند SESSION_EXPIRE_AT_BROWSER_CLOSE=true يُتجاهل SESSION_COOKIE_AGE (جلسة متصفح فقط)
-SESSION_COOKIE_AGE = env.int('SESSION_COOKIE_AGE', default=28800)
 
 # تقييد أقوى لمحاولات تسجيل الدخول عبر API
 REST_FRAMEWORK = {

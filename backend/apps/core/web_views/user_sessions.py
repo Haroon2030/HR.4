@@ -1,14 +1,14 @@
-"""إدارة جلسات الويب — للأدمن فقط."""
+"""إدارة جلسات الويب — للمستخدم (جلساته) أو للأدمن."""
 from django.contrib import messages
+from django.contrib.auth import get_user_model, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.core.decorators import permission_required
 from apps.core.models import UserSession
 from apps.core.services.access_control import (
-    can_administer_user,
+    can_manage_user_sessions,
     filter_users_queryset,
 )
 from apps.core.services.user_sessions import (
@@ -21,9 +21,32 @@ from apps.core.services.user_sessions import (
 User = get_user_model()
 
 
-def _deny_administration(request, target_user):
+def _deny_session_management(request, target_user):
     messages.error(request, 'لا تملك صلاحية إدارة جلسات هذا المستخدم.')
+    if request.user.pk == target_user.pk:
+        return redirect('web:auth:my_sessions')
     return redirect('web:list_users')
+
+
+def _sessions_redirect(request, user, *, next_url=''):
+    if next_url == 'mine':
+        return redirect('web:auth:my_sessions')
+    if next_url == 'all':
+        return redirect('web:list_all_sessions')
+    return redirect('web:list_user_sessions', user_id=user.pk)
+
+
+@login_required
+def my_sessions(request):
+    """جلسات المتصفح النشطة للمستخدم الحالي."""
+    sessions = list_active_sessions(request.user)
+    current_key = getattr(request.session, 'session_key', None)
+    return render(request, 'pages/users/sessions_my.html', {
+        'sessions': sessions,
+        'current_session_key': current_key,
+        'active_session_count': sessions.count(),
+        'page_title': 'جلساتي',
+    })
 
 
 @login_required
@@ -45,28 +68,28 @@ def list_all_sessions(request):
 
 
 @login_required
-@permission_required('users.edit')
 def list_user_sessions(request, user_id):
-    """جلسات مستخدم محدد."""
+    """جلسات مستخدم محدد — للأدمن أو للمستخدم نفسه."""
     target = get_object_or_404(
         User.objects.select_related('profile__role'),
         pk=user_id,
     )
-    if not can_administer_user(request.user, target):
-        return _deny_administration(request, target)
+    if not can_manage_user_sessions(request.user, target):
+        return _deny_session_management(request, target)
 
     sessions = list_active_sessions(target)
     current_key = getattr(request.session, 'session_key', None)
+    is_self = request.user.pk == target.pk
     return render(request, 'pages/users/sessions_user.html', {
         'target_user': target,
         'sessions': sessions,
         'current_session_key': current_key,
         'active_session_count': sessions.count(),
+        'is_self_sessions': is_self,
     })
 
 
 @login_required
-@permission_required('users.edit')
 @require_http_methods(['POST'])
 def revoke_session_view(request, pk):
     """إنهاء جلسة واحدة."""
@@ -75,30 +98,31 @@ def revoke_session_view(request, pk):
         pk=pk,
         revoked_at__isnull=True,
     )
-    if not can_administer_user(request.user, record.user):
-        return _deny_administration(request, record.user)
+    if not can_manage_user_sessions(request.user, record.user):
+        return _deny_session_management(request, record.user)
 
     current_key = getattr(request.session, 'session_key', None)
-    if current_key and record.session_key == current_key:
-        messages.error(request, 'لا يمكنك إنهاء جلسة المتصفح الحالية من هنا — استخدم تسجيل الخروج.')
-        return redirect('web:list_user_sessions', user_id=record.user_id)
+    is_current = bool(current_key and record.session_key == current_key)
 
     revoke_session_record(record, actor=request.user, request=request)
-    messages.success(request, f'تم إنهاء الجلسة ({record.device_label or "جهاز"}) بنجاح.')
     next_url = request.POST.get('next') or ''
-    if next_url == 'all':
-        return redirect('web:list_all_sessions')
-    return redirect('web:list_user_sessions', user_id=record.user_id)
+
+    if is_current:
+        logout(request)
+        messages.success(request, 'تم إنهاء جلسة المتصفح الحالية. يُرجى تسجيل الدخول مجدداً.')
+        return redirect('web:auth:login')
+
+    messages.success(request, f'تم إنهاء الجلسة ({record.device_label or "جهاز"}) بنجاح.')
+    return _sessions_redirect(request, record.user, next_url=next_url)
 
 
 @login_required
-@permission_required('users.edit')
 @require_http_methods(['POST'])
 def revoke_all_user_sessions_view(request, user_id):
     """إنهاء كل جلسات مستخدم."""
     target = get_object_or_404(User, pk=user_id)
-    if not can_administer_user(request.user, target):
-        return _deny_administration(request, target)
+    if not can_manage_user_sessions(request.user, target):
+        return _deny_session_management(request, target)
 
     except_key = None
     if target.pk == request.user.pk:
@@ -113,5 +137,8 @@ def revoke_all_user_sessions_view(request, user_id):
     if count:
         messages.success(request, f'تم إنهاء {count} جلسة نشطة.')
     else:
-        messages.info(request, 'لا توجد جلسات نشطة لإنهائها.')
+        messages.info(request, 'لا توجد جلسات أخرى لإنهائها.')
+    next_url = request.POST.get('next') or ''
+    if next_url == 'mine':
+        return redirect('web:auth:my_sessions')
     return redirect('web:list_user_sessions', user_id=target.pk)

@@ -46,10 +46,11 @@
                         {% include "components/table_act_view.html" with url=user_sessions_url title="عرض جلسات المستخدم" icon="monitor-smartphone" %}
                         {% endif %}
                         {% if current_session_key and session.session_key == current_session_key %}
-                        {% include "components/table_act_revoke_session_disabled.html" with title="الجلسة الحالية — استخدم تسجيل الخروج" %}
+                        {% url 'web:revoke_session' session.pk as revoke_url %}
+                        {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next confirm="إنهاء جلسة المتصفح الحالي؟ سيتم تسجيل خروجك." title="فصل الجلسة الحالية" %}
                         {% else %}
                         {% url 'web:revoke_session' session.pk as revoke_url %}
-                        {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next title="إنهاء الجلسة" %}
+                        {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next title="فصل الجلسة" %}
                         {% endif %}
                     </div>
                 </td>

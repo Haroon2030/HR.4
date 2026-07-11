@@ -13,6 +13,7 @@ from apps.core.services.access_control import (
     can_administer_user,
     can_assign_role,
     can_manage_user_permissions,
+    can_manage_user_sessions,
     can_view_user,
     filter_branches_queryset,
     filter_users_queryset,
@@ -22,6 +23,7 @@ from apps.core.services.access_control import (
     validate_permission_grants,
     validate_user_admin_changes,
 )
+from apps.core.services.user_sessions import count_active_sessions
 
 
 # =============================================================================
@@ -91,13 +93,7 @@ def view_user(request, user_id):
         return redirect('web:list_users')
     role = getattr(user.profile, 'role', None) if hasattr(user, 'profile') else None
 
-    from apps.core.decorators import has_permission as check_perm
-    from apps.core.services.user_sessions import count_active_sessions
-
-    can_manage_sessions = (
-        check_perm(request.user, 'users.edit')
-        and can_administer_user(request.user, user)
-    )
+    can_manage_sessions = can_manage_user_sessions(request.user, user)
     active_session_count = count_active_sessions(user) if can_manage_sessions else 0
 
     return render(request, 'pages/users/detail.html', {

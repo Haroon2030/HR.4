@@ -193,6 +193,9 @@
     <script defer src="/static/js/hr-table-smart-search.js?v=20260621"></script>
     <script defer src="/static/js/hr-glass-loader.js?v=20260626-form-loader"></script>
     <script defer src="/static/js/hr-shell.js?v=20260620c"></script>
+    {% if user.is_authenticated %}
+    <script defer src="/static/js/hr-idle-timeout.js?v=20260711"></script>
+    {% endif %}
     <script defer src="/static/js/hr-date-picker.js?v=20260621-sidebar-panels"></script>
     <script defer src="/static/js/hr-barcode-label.js?v=20260626"></script>
     <script defer src="/static/js/hr-location-picker.js?v=20260706c"></script>
@@ -228,7 +231,7 @@
     <link href="/static/css/hr-motion.css?v=20260711-welcome" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="hr-app min-h-screen">
+<body class="hr-app min-h-screen"{% if user.is_authenticated and session_idle_timeout %} data-session-idle-seconds="{{ session_idle_timeout }}"{% endif %}>
 
     <div class="hr-app-shell flex flex-col h-screen min-h-0 overflow-hidden"
          x-data="hrShellState()"
@@ -325,6 +328,9 @@
                                             <i data-lucide="x" class="w-4 h-4"></i>
                                         </button>
                                     </div>
+                                    <a href="{% url 'web:auth:my_sessions' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50">
+                                        <i data-lucide="monitor-smartphone" class="h-4 w-4 text-slate-500"></i> جلساتي
+                                    </a>
                                     <a href="{% url 'web:auth:password_change' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-50">
                                         <i data-lucide="key" class="h-4 w-4 text-slate-500"></i> تغيير كلمة المرور
                                     </a>

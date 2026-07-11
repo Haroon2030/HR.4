@@ -1,9 +1,13 @@
 import logging
+
+from django.contrib import messages
 from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.urls import reverse
 from rest_framework import status
 
-# إعداد الـ Logger المركزي لتسجيل محاولات الوصول المرفوضة
 logger = logging.getLogger(__name__)
+
 
 class AccessControlMiddleware:
     """
@@ -15,36 +19,24 @@ class AccessControlMiddleware:
     3. قراءة الصلاحية المطلوبة (required_permission) من الـ View والتحقق منها.
     4. إعطاء تصريح عبور تلقائي لمدير النظام الشامل (Admin).
     """
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # هذا الكود ينفذ قبل الوصول إلى الروابط (Views)
         response = self.get_response(request)
-        # هذا الكود ينفذ بعد الرد (Response)
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        """
-        يتم تنفيذ هذه الدالة قبل أن يقرر النظام أي View سيتم تشغيله مباشرة.
-        وهنا نقوم بفحص الصلاحيات بذكاء.
-        """
-        
-        # 1. تخطي الفحص إذا لم يكن الطلب ضمن مسارات الـ API
-        # (حتى لا نؤثر على لوحة تحكم الإدمن الافتراضية أو الشاشات العادية)
         if not request.path.startswith('/api/'):
             return None
 
-        # 2. تخطي مسارات التوثيق وتسجيل الدخول
         if request.path.startswith('/api/auth/') or request.path.startswith('/api/token/'):
             return None
 
-        # 2b. وكيل البصمة المحلي — مصادقة بمفتاح API داخل DRF (ليس JWT)
         if request.path.startswith('/api/v1/attendance/agent/'):
             return None
 
-        # 3. المصادقة — جلسة أو JWT Bearer
         if not request.user.is_authenticated:
             try:
                 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -61,8 +53,6 @@ class AccessControlMiddleware:
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        # 4. محاولة قراءة 'الصلاحية المطلوبة' المربوطة بالـ View
-        # مستقبلاً، في أي View نقوم بإنشائه سنكتب داخله: required_permission = 'view_employees'
         required_permission = None
         if hasattr(view_func, 'view_class'):
             required_permission = getattr(view_func.view_class, 'required_permission', None)
@@ -71,61 +61,93 @@ class AccessControlMiddleware:
 
         if required_permission:
             try:
-                # محاولة جلب ملف المستخدم (Profile) الذي يحتوي على الأدوار
                 profile = getattr(request.user, 'profile', None)
                 if not profile:
                     return JsonResponse(
-                        {'detail': 'ملف المستخدم غير مكتمل في النظام.'}, 
-                        status=status.HTTP_403_FORBIDDEN
+                        {'detail': 'ملف المستخدم غير مكتمل في النظام.'},
+                        status=status.HTTP_403_FORBIDDEN,
                     )
 
-                # 5. القاعدة الذهبية: مدير النظام (Admin) لديه وصول كامل دائماً
                 if profile.is_admin:
                     return None
 
-                # 6. التحقق من وجود الصلاحية المطلوبة لدى المستخدم
                 user_permissions = profile.get_permissions()
                 if required_permission not in user_permissions:
-                    # تسجيل الحادثة للأمان (Audit/Log)
                     logger.warning(
                         f"محاولة وصول مرفوضة: المستخدم {request.user.username} "
                         f"حاول فتح {request.path} وكان يفتقد لصلاحية '{required_permission}'."
                     )
                     return JsonResponse(
-                        {'detail': f"عذراً، ليس لديك الصلاحية الكافية للقيام بهذا الإجراء. مطلوب صلاحية: {required_permission}"}, 
-                        status=status.HTTP_403_FORBIDDEN
+                        {
+                            'detail': (
+                                f"عذراً، ليس لديك الصلاحية الكافية للقيام بهذا الإجراء. "
+                                f"مطلوب صلاحية: {required_permission}"
+                            )
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
                     )
-            
+
             except Exception as e:
                 logger.error(f"خطأ غير متوقع أثناء التحقق من الصلاحيات: {str(e)}")
                 return JsonResponse(
-                    {'detail': 'حدث خطأ داخلي أثناء التحقق من صلاحياتك.'}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {'detail': 'حدث خطأ داخلي أثناء التحقق من صلاحياتك.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-        # إذا لم يمر الطلب بأي حالة رفض، اتركه يمر بسلام
         return None
 
 
-_SKIP_SESSION_TOUCH_PREFIXES = (
+_SKIP_SESSION_ACTIVITY_PREFIXES = (
     '/static/',
     '/health/',
-    '/api/',
     '/media/',
+    '/auth/login',
+    '/auth/logout',
+    '/auth/idle-logout',
 )
 
 
+def _is_api_request(request) -> bool:
+    path = request.path or ''
+    if path.startswith('/api/'):
+        return True
+    accept = request.headers.get('Accept', '')
+    return 'application/json' in accept and 'text/html' not in accept
+
+
 class UserSessionActivityMiddleware:
-    """تحديث last_seen_at لجلسات الويب النشطة (مع throttling في الخدمة)."""
+    """مهلة خمول الجلسة + تحديث last_seen_at."""
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
         path = request.path or ''
-        if any(path.startswith(prefix) for prefix in _SKIP_SESSION_TOUCH_PREFIXES):
+        skip = any(path.startswith(prefix) for prefix in _SKIP_SESSION_ACTIVITY_PREFIXES)
+
+        if not skip and getattr(request, 'user', None) and request.user.is_authenticated:
+            try:
+                from apps.core.services.user_sessions import (
+                    enforce_idle_timeout,
+                    idle_timeout_message,
+                )
+
+                if enforce_idle_timeout(request):
+                    if _is_api_request(request):
+                        return JsonResponse(
+                            {'detail': idle_timeout_message()},
+                            status=401,
+                        )
+                    messages.warning(request, idle_timeout_message())
+                    return redirect(f"{reverse('web:auth:login')}?idle=1")
+            except Exception:
+                logger.exception('UserSessionActivityMiddleware idle check failed')
+
+        response = self.get_response(request)
+
+        if skip:
             return response
+
         if getattr(request, 'user', None) and request.user.is_authenticated:
             try:
                 from apps.core.services.user_sessions import touch_session

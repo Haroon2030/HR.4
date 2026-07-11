@@ -117,6 +117,77 @@ class UserSessionManagementTests(TestCase):
         response = self.admin_client.get(url)
         self.assertEqual(response.status_code, 302)
 
+    def test_user_can_access_my_sessions(self):
+        self._login_target_via_web()
+        response = self.target_client.get(reverse('web:auth:my_sessions'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'جلساتي')
+        self.assertContains(response, 'hr-act--revoke')
+
+    def test_user_can_revoke_own_other_session(self):
+        self._login_target_via_web()
+        live = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)
+        from django.contrib.sessions.backends.db import SessionStore
+
+        other = SessionStore()
+        other.create()
+        other_record = UserSession.objects.create(
+            user=self.target_user,
+            session_key=other.session_key,
+            device_label='Other device',
+        )
+
+        revoke_url = reverse('web:revoke_session', kwargs={'pk': other_record.pk})
+        response = self.target_client.post(revoke_url, {'next': 'mine'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('web:auth:my_sessions'))
+        other_record.refresh_from_db()
+        self.assertIsNotNone(other_record.revoked_at)
+        self.assertFalse(Session.objects.filter(session_key=other.session_key).exists())
+
+        dashboard = self.target_client.get(reverse('web:dashboard'))
+        self.assertEqual(dashboard.status_code, 200)
+        live.refresh_from_db()
+        self.assertIsNone(live.revoked_at)
+
+    def test_revoke_current_session_logs_out(self):
+        self._login_target_via_web()
+        record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)
+        revoke_url = reverse('web:revoke_session', kwargs={'pk': record.pk})
+        response = self.target_client.post(revoke_url, {'next': 'mine'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('web:auth:login'))
+        record.refresh_from_db()
+        self.assertIsNotNone(record.revoked_at)
+
+    def test_admin_can_list_own_sessions(self):
+        self.admin_client.login(username='sess_admin', password='654321')
+        url = reverse('web:list_user_sessions', kwargs={'user_id': self.admin_user.pk})
+        response = self.admin_client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sess_admin')
+
+    def test_idle_timeout_logs_out_on_next_request(self):
+        self._login_target_via_web()
+        record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)
+        from django.utils import timezone
+        from datetime import timedelta
+
+        UserSession.objects.filter(pk=record.pk).update(
+            last_seen_at=timezone.now() - timedelta(minutes=11),
+        )
+        response = self.target_client.get(reverse('web:dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('idle=1', response.url)
+
+        record.refresh_from_db()
+        self.assertIsNotNone(record.revoked_at)
+
+    def test_active_session_not_logged_out_before_idle_limit(self):
+        self._login_target_via_web()
+        response = self.target_client.get(reverse('web:dashboard'))
+        self.assertEqual(response.status_code, 200)
+
     def test_admin_revoke_logs_out_target_session(self):
         self._login_target_via_web()
         record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)
