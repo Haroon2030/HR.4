@@ -9915,6 +9915,64 @@ body.hr-app .employee-search-picker > label > i[data-lucide="search"] {
     50% { opacity: 0.65; transform: scale(0.92); }
 }
 
+.hr-presence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.62rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700 !important;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.hr-presence-badge--compact {
+    padding: 0.18rem 0.45rem;
+    font-size: 0.625rem;
+}
+
+.hr-presence-badge__dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+
+.hr-presence-badge--online {
+    color: #047857 !important;
+    background: rgba(236, 253, 245, 0.95);
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.hr-presence-badge--online .hr-presence-badge__dot {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+    animation: hr-hero-online-pulse 2s ease-in-out infinite;
+}
+
+.hr-presence-badge--offline {
+    color: #64748b !important;
+    background: rgba(248, 250, 252, 0.95);
+    border-color: rgba(148, 163, 184, 0.45);
+}
+
+.hr-presence-badge--offline .hr-presence-badge__dot {
+    background: #94a3b8;
+    box-shadow: none;
+}
+
+.hr-topbar-user .hr-presence-badge--compact {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .hr-topbar-user .hr-presence-badge--compact {
+        display: inline-flex;
+    }
+}
+
 .hr-hero__aside {
     flex-shrink: 0;
 }

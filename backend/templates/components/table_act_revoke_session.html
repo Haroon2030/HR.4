@@ -1,5 +1,6 @@
 {% load custom_tags %}
 <form method="post" action="{{ url }}" class="inline"
+      {% if hx_target %}hx-post="{{ url }}" hx-target="{{ hx_target }}" hx-swap="innerHTML" hx-indicator="none"{% endif %}
       onsubmit="return confirm('{% if confirm %}{{ confirm|escapejs }}{% else %}إنهاء هذه الجلسة؟ سيُطلب من المستخدم تسجيل الدخول مجدداً.{% endif %}');">
     {% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}

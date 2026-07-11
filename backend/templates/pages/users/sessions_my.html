@@ -10,31 +10,33 @@
             {% include 'components/glass_back_link.html' with back_url=back_url aria_label='رجوع للوحة التحكم' %}
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">جلساتي</h1>
-                <p class="text-sm text-slate-500 mt-0.5">الأجهزة والمتصفحات المتصلة بحسابك — يمكنك فصل أي جلسة</p>
+                <p class="text-sm text-slate-500 mt-0.5">الأجهزة المتصلة — تُحدَّث تلقائياً في الخلفية</p>
             </div>
         </div>
-        {% if sessions %}
-        <form method="post" action="{% url 'web:revoke_all_user_sessions' request.user.id %}"
-              onsubmit="return confirm('إنهاء كل الجلسات الأخرى؟ ستبقى جلسة المتصفح الحالي فقط.');">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="mine">
-            <button type="submit" class="hr-btn hr-btn--ghost text-rose-700 border border-rose-200 hover:bg-rose-50">
-                <i data-lucide="shield-off" class="w-4 h-4"></i>
-                <span>إنهاء الجلسات الأخرى</span>
-            </button>
-        </form>
-        {% endif %}
+        <div id="hr-sessions-revoke-all-wrap">
+            {% if active_session_count %}
+            <form method="post" action="{% url 'web:revoke_all_user_sessions' request.user.id %}"
+                  hx-post="{% url 'web:revoke_all_user_sessions' request.user.id %}"
+                  hx-target="#hr-sessions-live"
+                  hx-swap="innerHTML"
+                  hx-indicator="none"
+                  onsubmit="return confirm('إنهاء كل الجلسات الأخرى؟ ستبقى جلسة المتصفح الحالي فقط.');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="mine">
+                <button type="submit" class="hr-btn hr-btn--ghost text-rose-700 border border-rose-200 hover:bg-rose-50">
+                    <i data-lucide="shield-off" class="w-4 h-4"></i>
+                    <span>إنهاء الجلسات الأخرى</span>
+                </button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-            <i data-lucide="monitor-smartphone" class="w-5 h-5 text-primary-600"></i>
-            <h2 class="text-sm font-bold text-slate-800">الجلسات النشطة</h2>
-            <span class="px-2 py-0.5 text-xs font-bold bg-primary-100 text-primary-800 rounded-full">{{ active_session_count }}</span>
-        </div>
-        <div class="p-4">
-            {% include "pages/users/_sessions_table.html" with sessions=sessions current_session_key=current_session_key show_user_column=False revoke_next="mine" %}
-        </div>
-    </div>
+    {% url 'web:auth:my_sessions' as poll_url %}
+    {% include "pages/users/_sessions_live_card.html" with poll_url=poll_url poll_interval=poll_interval sessions=sessions current_session_key=current_session_key active_session_count=active_session_count show_user_column=False revoke_next="mine" %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="/static/js/hr-sessions-poll.js?v=20260711"></script>
 {% endblock %}

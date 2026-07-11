@@ -1,0 +1,12 @@
+{% comment %}
+حاوية التحديث الصامت لجدول الجلسات — HTMX
+{% endcomment %}
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div id="hr-sessions-live"
+         hx-get="{{ poll_url }}"
+         hx-trigger="every {{ poll_interval|default:'30s' }} [document.visibilityState==='visible'], sessions-refresh from:body"
+         hx-swap="innerHTML"
+         hx-indicator="none">
+        {% include "pages/users/_sessions_panel.html" with sessions=sessions current_session_key=current_session_key active_session_count=active_session_count show_user_column=show_user_column revoke_next=revoke_next %}
+    </div>
+</div>

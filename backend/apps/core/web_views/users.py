@@ -23,7 +23,7 @@ from apps.core.services.access_control import (
     validate_permission_grants,
     validate_user_admin_changes,
 )
-from apps.core.services.user_sessions import count_active_sessions
+from apps.core.services.user_sessions import count_active_sessions, get_online_user_ids
 
 
 # =============================================================================
@@ -67,6 +67,8 @@ def list_users(request):
     )
     users_paginator = Paginator(users_qs, 25)
     users_page = users_paginator.get_page(request.GET.get('users_page'))
+    page_user_ids = [u.pk for u in users_page.object_list]
+    online_user_ids = get_online_user_ids(page_user_ids)
     roles = order_roles_queryset(
         Role.objects.filter(is_active=True).prefetch_related('users')
     )
@@ -74,6 +76,7 @@ def list_users(request):
         'users': users_page.object_list,
         'users_page': users_page,
         'users_total': users_paginator.count,
+        'online_user_ids': online_user_ids,
         'roles': roles,
     })
 
@@ -95,12 +98,14 @@ def view_user(request, user_id):
 
     can_manage_sessions = can_manage_user_sessions(request.user, user)
     active_session_count = count_active_sessions(user) if can_manage_sessions else 0
+    user_is_online = user.pk in get_online_user_ids([user.pk]) if can_manage_sessions else False
 
     return render(request, 'pages/users/detail.html', {
         'user_obj': user,
         'show_assigned_branches': not (role and role.role_type == Role.RoleType.EMPLOYEE),
         'can_manage_sessions': can_manage_sessions,
         'active_session_count': active_session_count,
+        'user_is_online': user_is_online,
     })
 
 

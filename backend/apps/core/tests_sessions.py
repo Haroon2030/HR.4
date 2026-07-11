@@ -188,6 +188,41 @@ class UserSessionManagementTests(TestCase):
         response = self.target_client.get(reverse('web:dashboard'))
         self.assertEqual(response.status_code, 200)
 
+    def test_session_presence_online_and_offline(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.core.services.user_sessions import is_session_online, get_online_user_ids
+
+        self._login_target_via_web()
+        record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)
+        self.assertTrue(is_session_online(record.last_seen_at))
+
+        UserSession.objects.filter(pk=record.pk).update(
+            last_seen_at=timezone.now() - timedelta(minutes=5),
+        )
+        record.refresh_from_db()
+        self.assertFalse(is_session_online(record.last_seen_at))
+        self.assertNotIn(self.target_user.pk, get_online_user_ids([self.target_user.pk]))
+
+    def test_list_users_shows_presence_badge(self):
+        self._login_target_via_web()
+        self.admin_client.login(username='sess_admin', password='654321')
+        response = self.admin_client.get(reverse('web:list_users'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'hr-presence-badge--online')
+        self.assertContains(response, 'hr-presence-badge--offline')
+
+    def test_list_all_sessions_poll_partial(self):
+        self._login_target_via_web()
+        self.admin_client.login(username='sess_admin', password='654321')
+        response = self.admin_client.get(
+            reverse('web:list_all_sessions'),
+            HTTP_HX_REQUEST='true',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'hr-presence-badge')
+        self.assertNotContains(response, '<html', status_code=200)
+
     def test_admin_revoke_logs_out_target_session(self):
         self._login_target_via_web()
         record = UserSession.objects.get(user=self.target_user, revoked_at__isnull=True)

@@ -17,6 +17,44 @@ def get_idle_timeout() -> timedelta:
     return timedelta(seconds=max(seconds, 60))
 
 
+def get_presence_threshold() -> timedelta:
+    """نافذة «متصل» — نشاط خلال آخر N ثانية (افتراضي 3 دقائق)."""
+    from django.conf import settings
+
+    configured = getattr(settings, 'SESSION_PRESENCE_TIMEOUT', None)
+    if configured is not None:
+        seconds = int(configured or 180)
+    else:
+        idle_seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)
+        seconds = min(max(idle_seconds // 3, 60), 180)
+    return timedelta(seconds=max(seconds, 30))
+
+
+def is_session_online(last_seen_at, *, now=None) -> bool:
+    """هل الجلسة متصلة (نشاط حديث)؟"""
+    if last_seen_at is None:
+        return False
+    now = now or timezone.now()
+    return last_seen_at >= now - get_presence_threshold()
+
+
+def get_online_user_ids(user_ids=None) -> set[int]:
+    """معرّفات المستخدمين الذين لديهم جلسة ويب نشطة مؤخراً."""
+    from apps.core.models import UserSession
+
+    now = timezone.now()
+    threshold = now - get_presence_threshold()
+    qs = UserSession.objects.filter(
+        revoked_at__isnull=True,
+        last_seen_at__gte=threshold,
+    )
+    if user_ids is not None:
+        if not user_ids:
+            return set()
+        qs = qs.filter(user_id__in=user_ids)
+    return set(qs.values_list('user_id', flat=True).distinct())
+
+
 def apply_session_idle_expiry(request) -> None:
     """ضبط مدة جلسة django_session حسب مهلة الخمول."""
     from django.conf import settings

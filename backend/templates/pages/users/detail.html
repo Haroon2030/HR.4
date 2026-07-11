@@ -206,10 +206,11 @@
     {% if can_manage_sessions %}
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <i data-lucide="monitor-smartphone" class="w-5 h-5 text-primary-600"></i>
                 <h2 class="text-lg font-bold text-slate-900">جلسات الويب النشطة</h2>
                 <span class="px-2 py-0.5 text-xs font-bold bg-primary-100 text-primary-800 rounded-full">{{ active_session_count }}</span>
+                {% include "components/presence_badge.html" with online=user_is_online %}
             </div>
             <a href="{% url 'web:list_user_sessions' user_obj.id %}" class="hr-btn hr-btn--ghost hr-btn--xs">
                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>

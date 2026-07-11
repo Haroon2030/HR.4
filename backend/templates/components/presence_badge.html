@@ -1,0 +1,17 @@
+{% comment %}
+شارة متصل / غير متصل
+المتغيرات: online (bool), compact (optional), title (optional)
+{% endcomment %}
+{% if online %}
+<span class="hr-presence-badge hr-presence-badge--online{% if compact %} hr-presence-badge--compact{% endif %}"
+      title="{{ title|default:'متصل — نشاط حديث على النظام' }}">
+    <span class="hr-presence-badge__dot" aria-hidden="true"></span>
+    <span class="hr-presence-badge__label">متصل</span>
+</span>
+{% else %}
+<span class="hr-presence-badge hr-presence-badge--offline{% if compact %} hr-presence-badge--compact{% endif %}"
+      title="{{ title|default:'غير متصل — لا نشاط حديث' }}">
+    <span class="hr-presence-badge__dot" aria-hidden="true"></span>
+    <span class="hr-presence-badge__label">غير متصل</span>
+</span>
+{% endif %}

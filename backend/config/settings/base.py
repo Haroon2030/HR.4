@@ -318,6 +318,7 @@ LOGOUT_REDIRECT_URL = '/auth/login/'                # بعد تسجيل الخر
 
 # إعدادات الجلسة — انتهاء تلقائي بعد خمول (افتراضي 10 دقائق)
 SESSION_IDLE_TIMEOUT = env.int('SESSION_IDLE_TIMEOUT', default=600)
+SESSION_PRESENCE_TIMEOUT = env.int('SESSION_PRESENCE_TIMEOUT', default=180)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=False)
 SESSION_COOKIE_AGE = SESSION_IDLE_TIMEOUT

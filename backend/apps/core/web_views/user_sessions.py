@@ -20,6 +20,8 @@ from apps.core.services.user_sessions import (
 
 User = get_user_model()
 
+SESSIONS_POLL_INTERVAL = '30s'
+
 
 def _deny_session_management(request, target_user):
     messages.error(request, 'لا تملك صلاحية إدارة جلسات هذا المستخدم.')
@@ -36,17 +38,51 @@ def _sessions_redirect(request, user, *, next_url=''):
     return redirect('web:list_user_sessions', user_id=user.pk)
 
 
+def _sessions_panel_context(
+    *,
+    sessions,
+    current_key,
+    show_user_column=False,
+    revoke_next='',
+):
+    return {
+        'sessions': sessions,
+        'current_session_key': current_key,
+        'active_session_count': sessions.count() if hasattr(sessions, 'count') else len(sessions),
+        'show_user_column': show_user_column,
+        'revoke_next': revoke_next,
+    }
+
+
+def _render_sessions_panel(request, context):
+    return render(request, 'pages/users/_sessions_panel.html', context)
+
+
+def _respond_sessions_page(request, *, page_template, page_context):
+    if request.headers.get('HX-Request'):
+        panel_keys = (
+            'sessions', 'current_session_key', 'active_session_count',
+            'show_user_column', 'revoke_next',
+        )
+        return _render_sessions_panel(request, {k: page_context[k] for k in panel_keys})
+    return render(request, page_template, page_context)
+
+
 @login_required
 def my_sessions(request):
     """جلسات المتصفح النشطة للمستخدم الحالي."""
     sessions = list_active_sessions(request.user)
     current_key = getattr(request.session, 'session_key', None)
-    return render(request, 'pages/users/sessions_my.html', {
-        'sessions': sessions,
-        'current_session_key': current_key,
-        'active_session_count': sessions.count(),
+    context = {
+        **_sessions_panel_context(
+            sessions=sessions,
+            current_key=current_key,
+            revoke_next='mine',
+        ),
         'page_title': 'جلساتي',
-    })
+        'poll_interval': SESSIONS_POLL_INTERVAL,
+    }
+    return _respond_sessions_page(request, page_template='pages/users/sessions_my.html', page_context=context)
 
 
 @login_required
@@ -60,11 +96,17 @@ def list_all_sessions(request):
     user_ids = list(accessible_users.values_list('pk', flat=True))
     sessions = list_active_sessions_for_users(user_ids)
     current_key = getattr(request.session, 'session_key', None)
-    return render(request, 'pages/users/sessions_list.html', {
-        'sessions': sessions,
-        'current_session_key': current_key,
+    context = {
+        **_sessions_panel_context(
+            sessions=sessions,
+            current_key=current_key,
+            show_user_column=True,
+            revoke_next='all',
+        ),
         'page_title': 'إدارة الجلسات',
-    })
+        'poll_interval': SESSIONS_POLL_INTERVAL,
+    }
+    return _respond_sessions_page(request, page_template='pages/users/sessions_list.html', page_context=context)
 
 
 @login_required
@@ -80,13 +122,17 @@ def list_user_sessions(request, user_id):
     sessions = list_active_sessions(target)
     current_key = getattr(request.session, 'session_key', None)
     is_self = request.user.pk == target.pk
-    return render(request, 'pages/users/sessions_user.html', {
+    context = {
+        **_sessions_panel_context(
+            sessions=sessions,
+            current_key=current_key,
+            revoke_next='mine' if is_self else '',
+        ),
         'target_user': target,
-        'sessions': sessions,
-        'current_session_key': current_key,
-        'active_session_count': sessions.count(),
         'is_self_sessions': is_self,
-    })
+        'poll_interval': SESSIONS_POLL_INTERVAL,
+    }
+    return _respond_sessions_page(request, page_template='pages/users/sessions_user.html', page_context=context)
 
 
 @login_required
@@ -113,7 +159,18 @@ def revoke_session_view(request, pk):
         return redirect('web:auth:login')
 
     messages.success(request, f'تم إنهاء الجلسة ({record.device_label or "جهاز"}) بنجاح.')
+    if request.headers.get('HX-Request'):
+        return _respond_sessions_page_after_revoke(request, record.user, next_url=next_url)
     return _sessions_redirect(request, record.user, next_url=next_url)
+
+
+def _respond_sessions_page_after_revoke(request, user, *, next_url=''):
+    """تحديث لوحة الجلسات بعد إنهاء جلسة (بدون إعادة تحميل كاملة)."""
+    if next_url == 'all':
+        return list_all_sessions(request)
+    if next_url == 'mine' or request.user.pk == user.pk:
+        return my_sessions(request)
+    return list_user_sessions(request, user_id=user.pk)
 
 
 @login_required
@@ -139,6 +196,8 @@ def revoke_all_user_sessions_view(request, user_id):
     else:
         messages.info(request, 'لا توجد جلسات أخرى لإنهائها.')
     next_url = request.POST.get('next') or ''
+    if request.headers.get('HX-Request'):
+        return _respond_sessions_page_after_revoke(request, target, next_url=next_url)
     if next_url == 'mine':
         return redirect('web:auth:my_sessions')
     return redirect('web:list_user_sessions', user_id=target.pk)

@@ -2,6 +2,7 @@
 جدول جلسات الويب النشطة — partial
 المتغيرات: sessions, current_session_key (optional), revoke_next ('all'|user)
 {% endcomment %}
+{% load custom_tags %}
 <div class="overflow-x-auto">
     <table class="w-full min-w-[640px] divide-y divide-slate-200">
         <thead class="bg-slate-50">
@@ -10,6 +11,7 @@
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">المستخدم</th>
                 {% endif %}
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">الجهاز</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">الاتصال</th>
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">IP</th>
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">بدء الجلسة</th>
                 <th class="px-3 py-2 text-right text-sm font-semibold text-slate-500">آخر نشاط</th>
@@ -36,6 +38,9 @@
                         {% endif %}
                     </div>
                 </td>
+                <td class="px-3 py-2">
+                    {% include "components/presence_badge.html" with online=session.last_seen_at|session_is_online compact=True %}
+                </td>
                 <td class="px-3 py-2 text-sm text-slate-700 font-mono" dir="ltr">{{ session.ip_address|default:"—" }}</td>
                 <td class="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">{{ session.created_at|date:"d/m/Y H:i" }}</td>
                 <td class="px-3 py-2 text-sm text-slate-700 whitespace-nowrap">{{ session.last_seen_at|date:"d/m/Y H:i" }}</td>
@@ -50,14 +55,14 @@
                         {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next confirm="إنهاء جلسة المتصفح الحالي؟ سيتم تسجيل خروجك." title="فصل الجلسة الحالية" %}
                         {% else %}
                         {% url 'web:revoke_session' session.pk as revoke_url %}
-                        {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next title="فصل الجلسة" %}
+                        {% include "components/table_act_revoke_session.html" with url=revoke_url next=revoke_next title="فصل الجلسة" hx_target="#hr-sessions-live" %}
                         {% endif %}
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="{% if show_user_column %}6{% else %}5{% endif %}" class="px-4 py-10 text-center text-sm text-slate-500">
+                <td colspan="{% if show_user_column %}7{% else %}6{% endif %}" class="px-4 py-10 text-center text-sm text-slate-500">
                     لا توجد جلسات نشطة
                 </td>
             </tr>

@@ -348,6 +348,13 @@ def has_permission(user, permission_code):
 
 
 @register.filter
+def session_is_online(last_seen_at):
+    """هل آخر نشاط للجلسة يُعتبر «متصل»؟"""
+    from apps.core.services.user_sessions import is_session_online
+    return is_session_online(last_seen_at)
+
+
+@register.filter
 def has_maintenance_nav(user):
     """هل يظهر قسم إدارة الصيانة في الشريط الجانبي؟"""
     from apps.maintenance.sub_permissions import user_has_maintenance_nav
