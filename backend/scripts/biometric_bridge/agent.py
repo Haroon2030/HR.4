@@ -21,6 +21,7 @@ import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 try:
     import requests
@@ -40,7 +41,8 @@ from zk_device_user_id import parse_device_user_id
 LOG = logging.getLogger('biometric_bridge')
 
 # يظهر في اللوج — للتأكد أن PC الفرع يشغّل آخر نسخة من agent.py
-AGENT_BUILD = '2.3.1-parse-user-id'
+AGENT_BUILD = '2.3.2-device-timezone'
+DEFAULT_DEVICE_TIMEZONE = 'Asia/Riyadh'
 
 PUNCH_STATUS = {
     0: 'in',
@@ -74,6 +76,19 @@ class AgentSettings:
     sync_on_request_only: bool = True
     ingest_batch_size: int = 150
     ingest_max_body_bytes: int = 600_000
+    device_timezone: str = DEFAULT_DEVICE_TIMEZONE
+
+    @property
+    def device_tz(self) -> ZoneInfo:
+        try:
+            return ZoneInfo(self.device_timezone)
+        except Exception:
+            LOG.warning(
+                'DEVICE_TIMEZONE غير صالح (%s) — استخدام %s',
+                self.device_timezone,
+                DEFAULT_DEVICE_TIMEZONE,
+            )
+            return ZoneInfo(DEFAULT_DEVICE_TIMEZONE)
 
 
 @dataclass
@@ -199,6 +214,11 @@ def load_settings(path: Path) -> AgentSettings:
             50_000,
             int(float(data.get('INGEST_MAX_BODY_KB', '600')) * 1024),
         ),
+        device_timezone=(
+            data.get('DEVICE_TIMEZONE')
+            or data.get('TIME_ZONE')
+            or DEFAULT_DEVICE_TIMEZONE
+        ).strip() or DEFAULT_DEVICE_TIMEZONE,
     )
 
 
@@ -304,7 +324,20 @@ def punch_type_for_status(status: int | None) -> str:
     return PUNCH_STATUS.get(status, 'unknown')
 
 
-def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[dict], list[dict], str | None]:
+def _as_device_local(ts: datetime, device_tz: ZoneInfo) -> datetime:
+    """وقت الجهاز بدون منطقة = ساعة حائط محلية (مثل الرياض)، وليست UTC."""
+    if ts.tzinfo is None:
+        return ts.replace(tzinfo=device_tz)
+    return ts.astimezone(device_tz)
+
+
+def fetch_from_device(
+    device: DeviceTarget,
+    *,
+    timeout_sec: int,
+    device_tz: ZoneInfo | None = None,
+) -> tuple[list[dict], list[dict], str | None]:
+    tz = device_tz or ZoneInfo(DEFAULT_DEVICE_TIMEZONE)
     conn = None
     try:
         zk = ZK(
@@ -347,9 +380,7 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
                     getattr(rec, 'user_id', None),
                 )
                 continue
-            ts = rec.timestamp
-            if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+            ts = _as_device_local(rec.timestamp, tz)
             status = getattr(rec, 'status', None)
             punches_out.append({
                 'device_user_id': parsed_id,
@@ -373,7 +404,8 @@ def fetch_from_device(device: DeviceTarget, *, timeout_sec: int) -> tuple[list[d
 def _parse_punch_time(value: str) -> datetime:
     dt = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        # توافق خلفي: وقت بلا منطقة = محلي الجهاز (الرياض)
+        dt = dt.replace(tzinfo=ZoneInfo(DEFAULT_DEVICE_TIMEZONE))
     return dt
 
 
@@ -384,6 +416,7 @@ def filter_punches_for_upload(
     watermark: datetime | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    device_tz: ZoneInfo | None = None,
 ) -> tuple[list[dict], int]:
     """
     يُبقي البصمات الجديدة فقط قبل الرفع للسيرفر.
@@ -392,7 +425,8 @@ def filter_punches_for_upload(
     - طلب سحب بفترة: ضمن date_from/date_to فقط.
     - أول مزامنة بدون watermark: آخر 93 يوماً كحد أقصى.
     """
-    now = datetime.now(timezone.utc)
+    tz = device_tz or ZoneInfo(DEFAULT_DEVICE_TIMEZONE)
+    now = datetime.now(tz)
     max_past = MAX_PAST_DAYS_INCREMENTAL if incremental else MAX_PAST_DAYS_FULL_SYNC
     cutoff = now - timedelta(days=max_past)
     future_limit = now + timedelta(minutes=MAX_FUTURE_MINUTES)
@@ -400,15 +434,15 @@ def filter_punches_for_upload(
     time_cut: datetime | None = None
     if date_from or date_to:
         if date_from:
-            start = datetime.combine(date_from, datetime.min.time(), tzinfo=timezone.utc)
+            start = datetime.combine(date_from, datetime.min.time(), tzinfo=tz)
             time_cut = start if time_cut is None else max(time_cut, start)
         if date_to:
-            end = datetime.combine(date_to, datetime.max.time(), tzinfo=timezone.utc)
+            end = datetime.combine(date_to, datetime.max.time(), tzinfo=tz)
             future_limit = min(future_limit, end)
     elif incremental and watermark is not None:
         wm = watermark
         if wm.tzinfo is None:
-            wm = wm.replace(tzinfo=timezone.utc)
+            wm = wm.replace(tzinfo=tz)
         time_cut = wm - timedelta(seconds=WATERMARK_BUFFER_SECONDS)
 
     kept: list[dict] = []
@@ -696,8 +730,12 @@ def run_device_cycle(
             device.device_id,
         )
         return False
-    LOG.info('سحب من %s:%s (id=%s) ...', device.device_ip, device.device_port, device.device_id)
-    punches, users, err = fetch_from_device(device, timeout_sec=settings.timeout_sec)
+    LOG.info('سحب من %s:%s (id=%s) tz=%s ...', device.device_ip, device.device_port, device.device_id, settings.device_timezone)
+    punches, users, err = fetch_from_device(
+        device,
+        timeout_sec=settings.timeout_sec,
+        device_tz=settings.device_tz,
+    )
     if err:
         LOG.error('فشل السحب: %s', err)
         return False
@@ -749,6 +787,7 @@ def run_device_cycle(
         watermark=watermark,
         date_from=date_from,
         date_to=date_to,
+        device_tz=settings.device_tz,
     )
     if skipped_bounds:
         LOG.info(
@@ -1085,7 +1124,11 @@ def probe_devices(settings: AgentSettings, devices: list[DeviceTarget]) -> int:
         finally:
             sock.close()
 
-        punches, users, err = fetch_from_device(device, timeout_sec=settings.timeout_sec)
+        punches, users, err = fetch_from_device(
+            device,
+            timeout_sec=settings.timeout_sec,
+            device_tz=settings.device_tz,
+        )
         if err:
             LOG.error('  ZK فشل: %s', err)
             failed += 1

@@ -130,7 +130,14 @@ class Branch(BaseModel):
         verbose_name = "فرع"
         verbose_name_plural = "الفروع"
         ordering = ['name']
-    
+
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = self.name.strip()
+        if self.code:
+            self.code = self.code.strip()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.name} ({self.code})"
     

@@ -531,7 +531,14 @@ def biometric_enrollment_save(request):
         if not force:
             # إعادة إرسال النموذج مع force_relink لتخطي التحقق
             from django.http import HttpResponse
-            prev_name = existing_user_link.employee.name
+            from django.urls import reverse
+            from django.utils.html import escape
+
+            prev_name = escape(existing_user_link.employee.name)
+            new_name = escape(employee.name)
+            cancel_url = reverse('web:biometric_devices')
+            save_url = reverse('web:biometric_enrollment_save')
+            csrf = escape(request.POST.get('csrfmiddlewaretoken', ''))
             return HttpResponse(
                 f'''<!doctype html><html dir="rtl" lang="ar">
 <head><meta charset="utf-8"><title>تأكيد إعادة الربط</title>
@@ -542,19 +549,19 @@ def biometric_enrollment_save(request):
 <div class="box">
   <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 1rem">تأكيد إعادة الربط</h2>
   <p style="font-size:.9rem;color:#475569;margin:0 0 1.5rem">
-    رقم المستخدم <strong>{device_user_id}</strong> مربوط حالياً بالموظف
+    رقم المستخدم <strong>{escape(str(device_user_id))}</strong> مربوط حالياً بالموظف
     «<strong>{prev_name}</strong>».<br>
-    هل تريد إعادة ربطه بـ «<strong>{employee.name}</strong>»؟<br>
+    هل تريد إعادة ربطه بـ «<strong>{new_name}</strong>»؟<br>
     <span style="color:#dc2626;font-size:.8rem">سيُحذف الربط السابق نهائياً.</span>
   </p>
-  <form method="post" action="">
-    <input type="hidden" name="csrfmiddlewaretoken" value="{request.POST.get("csrfmiddlewaretoken", "")}">
-    <input type="hidden" name="employee_id" value="{employee_id}">
-    <input type="hidden" name="device_id" value="{device_id}">
-    <input type="hidden" name="device_user_id" value="{device_user_id}">
+  <form method="post" action="{save_url}">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf}">
+    <input type="hidden" name="employee_id" value="{escape(str(employee_id))}">
+    <input type="hidden" name="device_id" value="{escape(str(device_id))}">
+    <input type="hidden" name="device_user_id" value="{escape(str(device_user_id))}">
     <input type="hidden" name="force_relink" value="1">
     <div style="display:flex;gap:.75rem;justify-content:flex-end">
-      <a href="/attendance/biometric-devices/" style="padding:.5rem 1.25rem;border-radius:.5rem;border:1px solid #e2e8f0;color:#475569;font-size:.875rem;text-decoration:none">إلغاء</a>
+      <a href="{cancel_url}" style="padding:.5rem 1.25rem;border-radius:.5rem;border:1px solid #e2e8f0;color:#475569;font-size:.875rem;text-decoration:none">إلغاء</a>
       <button type="submit" style="padding:.5rem 1.25rem;border-radius:.5rem;background:#dc2626;color:#fff;border:none;font-size:.875rem;cursor:pointer">نعم، أعد الربط</button>
     </div>
   </form>

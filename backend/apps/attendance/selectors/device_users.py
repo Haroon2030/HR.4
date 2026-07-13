@@ -59,20 +59,33 @@ def get_device_user_queryset(
         term = search.strip()
         if not term:
             return qs
+        # Exists منفصل عن الـ Subquery المستخدم في annotate — يتجنب أخطاء SQL
+        # عند البحث برقم موظف HR يختلف عن رقم المستخدم على الجهاز (مثل 10078).
         if term.isdigit():
-            num = int(term)
-            qs = qs.filter(
-                Q(device_user_id=num)
-                | Q(card__icontains=term)
-                | Q(hr_employee_number__icontains=term)
+            try:
+                num = int(term)
+            except ValueError:
+                num = None
+            emp_number_match = _active_enrollment_subquery().filter(
+                employee__employee_number__icontains=term,
             )
+            q = Q(card__icontains=term) | Exists(emp_number_match)
+            if num is not None:
+                q |= Q(device_user_id=num)
+            qs = qs.filter(q)
         else:
-            name_match = enrollment.filter(employee__name__icontains=term)
+            name_match = _active_enrollment_subquery().filter(
+                employee__name__icontains=term,
+            )
+            emp_number_match = _active_enrollment_subquery().filter(
+                employee__employee_number__icontains=term,
+            )
             qs = qs.filter(
                 Q(name__icontains=term)
                 | Q(device__name__icontains=term)
                 | Q(card__icontains=term)
                 | Exists(name_match)
+                | Exists(emp_number_match)
             )
 
     return qs

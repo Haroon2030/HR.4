@@ -112,6 +112,14 @@ Do **not** copy the same `config.env` to another branch. Do **not** run two sche
 
 Attendance deduplication on the server is **per device** (same user + same second on the same device is skipped). Different devices keep separate punch rows.
 
+### Fix punch time vs camera mismatch (+3 hours)
+
+ZK devices report **local wall-clock time** (no timezone). Older agent builds wrongly tagged that as UTC, so HR (Asia/Riyadh) showed punches **3 hours later** than the real device/camera time.
+
+Current agent (`2.3.2-device-timezone`) uses `DEVICE_TIMEZONE=Asia/Riyadh` (default). After updating `agent.py` on the branch PC, new punches match the camera. Already-imported wrong times are **not** auto-corrected — review those rows against camera at the real local time (displayed time minus 3 hours if ingested by the old agent).
+
+In log you should see: `وكيل HR 2.3.2-device-timezone` and `tz=Asia/Riyadh`.
+
 ### Fix repeated 403 errors
 
 - `AGENT_API_KEY` must match the **device key** from HR (not an old or global key).

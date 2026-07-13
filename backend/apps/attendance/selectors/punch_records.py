@@ -55,7 +55,9 @@ def get_punch_queryset(
         qs = qs.filter(punched_at__lte=end)
     if search:
         term = search.strip()
-        if term.isdigit():
+        if not term:
+            return qs
+        if term.isascii() and term.isdigit():
             qs = qs.filter(
                 Q(device_user_id=int(term))
                 | Q(employee__employee_number__icontains=term)
@@ -64,6 +66,7 @@ def get_punch_queryset(
             qs = qs.filter(
                 Q(device_user_name__icontains=term)
                 | Q(employee__name__icontains=term)
+                | Q(employee__employee_number__icontains=term)
                 | Q(device__name__icontains=term)
             )
     return qs
