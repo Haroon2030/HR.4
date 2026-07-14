@@ -1,14 +1,19 @@
 """تصدير بيانات الموظف إلى Excel ملوّن (بيانات تبويب الموظف فقط)."""
+import logging
+
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.employees.models import Employee
 from apps.core.web_views._helpers import employee_branch_access_required
 from apps.core.decorators import permission_required
 from apps.core.salary_access import user_can_view_salary
 
+logger = logging.getLogger(__name__)
 
 def _employee_administration_label(employee):
     adm = getattr(employee, 'administration', None)
@@ -230,90 +235,153 @@ def _no_sponsorship_cell_value(employee: Employee, key: str):
     return '—'
 
 
+MAX_EXPORT_ROWS = 10000
+
+
+def _excel_lock(user_id: int, kind: str, timeout: int) -> bool:
+    """قفل قصير يمنع تكرار التصدير/الاستيراد لنفس المستخدم."""
+    from django.core.cache import cache
+
+    return bool(cache.add(f'employees:ns_excel:{kind}:{user_id}', '1', timeout=timeout))
+
+
+def _excel_unlock(user_id: int, kind: str) -> None:
+    from django.core.cache import cache
+
+    cache.delete(f'employees:ns_excel:{kind}:{user_id}')
+
+
+def _secure_xlsx_response(payload: bytes, filename: str) -> HttpResponse:
+    response = HttpResponse(
+        payload,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    response['Pragma'] = 'no-cache'
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Content-Length'] = str(len(payload))
+    return response
+
+
 @login_required
 @permission_required('employees.view')
+@ratelimit(key='user', rate='20/h', method='GET', block=True, group='ns_emp_export')
 def export_non_sponsored_employees_excel(request):
     """تصدير موظفين بدون كفالة — أعمدة مربوطة بحقول بيانات الموظف في الموقع."""
+    from io import BytesIO
+
+    from django.contrib import messages
+    from django.shortcuts import redirect
     from openpyxl import Workbook
+    from openpyxl.cell import WriteOnlyCell
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
     from apps.core.selectors.employee_search import apply_employee_search
     from apps.core.web_views._helpers import filter_employees_queryset_for_user
 
-    can_salary = user_can_view_salary(request.user)
-    columns = [
-        (label, key)
-        for label, key in _NO_SPONSORSHIP_COLUMNS
-        if can_salary or key not in _SALARY_COLUMN_KEYS
-    ]
+    if not _excel_lock(request.user.pk, 'export', timeout=90):
+        messages.warning(request, 'تصدير قيد التنفيذ بالفعل. انتظر اكتماله ثم أعد المحاولة.')
+        return redirect('web:list_employees')
 
-    qs = (
-        Employee.objects.filter(
-            is_deleted=False,
-            sponsorship__isnull=True,
-        )
-        .select_related(
-            'branch',
-            'department',
-            'administration',
-            'cost_center',
-            'nationality',
-            'profession',
-        )
-        .order_by('name', 'id')
-    )
-    qs = filter_employees_queryset_for_user(request.user, qs)
+    try:
+        can_salary = user_can_view_salary(request.user)
+        columns = [
+            (label, key)
+            for label, key in _NO_SPONSORSHIP_COLUMNS
+            if can_salary or key not in _SALARY_COLUMN_KEYS
+        ]
 
-    q = (request.GET.get('q') or '').strip()
-    if q:
-        qs = apply_employee_search(qs, q)
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'بدون كفالة'
-    ws.sheet_view.rightToLeft = True
-
-    header_fill = PatternFill('solid', fgColor='1E40AF')
-    header_font = Font(name='Arial', bold=True, color='FFFFFF')
-    center = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    body_font = Font(name='Arial', size=10, color='0F172A')
-
-    for col, (label, _key) in enumerate(columns, 1):
-        cell = ws.cell(row=1, column=col, value=label)
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = center
-        ws.column_dimensions[get_column_letter(col)].width = 18
-
-    for row_idx, employee in enumerate(qs.iterator(chunk_size=500), start=2):
-        for col_idx, (_label, key) in enumerate(columns, start=1):
-            cell = ws.cell(
-                row=row_idx,
-                column=col_idx,
-                value=_no_sponsorship_cell_value(employee, key),
+        qs = (
+            Employee.objects.filter(
+                is_deleted=False,
+                sponsorship__isnull=True,
             )
-            cell.font = body_font
+            .select_related(
+                'branch',
+                'department',
+                'administration',
+                'cost_center',
+                'nationality',
+                'profession',
+            )
+            .only(
+                'id',
+                'name',
+                'id_number',
+                'phone',
+                'employee_number',
+                'hire_date',
+                'basic_salary',
+                'branch__name',
+                'department__name',
+                'administration__code',
+                'administration__name',
+                'cost_center__name',
+                'nationality__name',
+                'profession__name',
+            )
+            .order_by('name', 'id')
+        )
+        qs = filter_employees_queryset_for_user(request.user, qs)
+
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            qs = apply_employee_search(qs, q)
+
+        # write_only يقلّل استهلاك الذاكرة؛ نتجنّب تنسيق كل خلية في الجسم
+        wb = Workbook(write_only=True)
+        ws = wb.create_sheet(title='بدون كفالة')
+        try:
+            ws.sheet_view.rightToLeft = True
+        except Exception:
+            pass
+
+        header_fill = PatternFill('solid', fgColor='1E40AF')
+        header_font = Font(name='Arial', bold=True, color='FFFFFF')
+        center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+        header_cells = []
+        for col, (label, _key) in enumerate(columns, 1):
+            cell = WriteOnlyCell(ws, value=label)
+            cell.fill = header_fill
+            cell.font = header_font
             cell.alignment = center
-            if key == 'hire_date' and employee.hire_date:
-                cell.number_format = 'YYYY-MM-DD'
-            elif key == 'basic_salary' and employee.basic_salary is not None:
-                cell.number_format = '#,##0.00'
+            header_cells.append(cell)
+            try:
+                ws.column_dimensions[get_column_letter(col)].width = 18
+            except Exception:
+                pass
+        ws.append(header_cells)
 
-    ws.freeze_panes = 'A2'
+        exported = 0
+        for employee in qs.iterator(chunk_size=500):
+            if exported >= MAX_EXPORT_ROWS:
+                break
+            ws.append([_no_sponsorship_cell_value(employee, key) for _label, key in columns])
+            exported += 1
 
-    stamp = timezone.localtime().strftime('%Y%m%d')
-    filename = f'employees_no_sponsorship_{stamp}.xlsx'
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    )
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    wb.save(response)
-    return response
+        buf = BytesIO()
+        wb.save(buf)
+        stamp = timezone.localtime().strftime('%Y%m%d_%H%M%S')
+        filename = f'employees_no_sponsorship_{stamp}.xlsx'
+        response = _secure_xlsx_response(buf.getvalue(), filename)
+        if exported >= MAX_EXPORT_ROWS:
+            response['X-HR-Export-Truncated'] = '1'
+        return response
+    except Exception:
+        logger.exception('non-sponsored employees export failed user=%s', request.user.pk)
+        messages.error(request, 'تعذّر إنشاء ملف التصدير. حاول مرة أخرى.')
+        return redirect('web:list_employees')
+    finally:
+        _excel_unlock(request.user.pk, 'export')
 
 
 @login_required
 @permission_required('employees.add')
+@require_POST
+@ratelimit(key='user', rate='10/h', method='POST', block=True, group='ns_emp_import')
 def import_non_sponsored_employees_excel(request):
     """استيراد موظفين بدون كفالة من Excel (نفس أعمدة التصدير)."""
     from django.contrib import messages
@@ -322,55 +390,62 @@ def import_non_sponsored_employees_excel(request):
     from apps.core.salary_access import user_can_edit_salary
     from apps.core.services.access_control import get_accessible_branch_ids
     from apps.employees.services.non_sponsored_import import (
+        ImportValidationError,
         import_non_sponsored_employees_from_upload,
     )
 
-    if request.method != 'POST':
+    if not _excel_lock(request.user.pk, 'import', timeout=180):
+        messages.warning(
+            request,
+            'استيراد قيد التنفيذ بالفعل. انتظر حتى ينتهي لتفادي تكرار البيانات.',
+        )
         return redirect('web:list_employees')
-
-    uploaded = request.FILES.get('excel_file')
-    if not uploaded:
-        messages.error(request, 'يرجى اختيار ملف Excel للاستيراد.')
-        return redirect('web:list_employees')
-
-    name = (uploaded.name or '').lower()
-    if not name.endswith(('.xlsx', '.xlsm')):
-        messages.error(request, 'يُقبل فقط ملف Excel بصيغة .xlsx')
-        return redirect('web:list_employees')
-
-    allowed = get_accessible_branch_ids(request.user)
-    allowed_set = set(allowed) if allowed is not None else None
 
     try:
-        summary = import_non_sponsored_employees_from_upload(
-            uploaded,
-            user=request.user,
-            allowed_branch_ids=allowed_set,
-            apply_salary=user_can_edit_salary(request.user),
-        )
-    except Exception:
-        messages.error(request, 'تعذّر قراءة ملف Excel. تأكد من صحة الملف.')
+        uploaded = request.FILES.get('excel_file')
+        if not uploaded:
+            messages.error(request, 'يرجى اختيار ملف Excel للاستيراد.')
+            return redirect('web:list_employees')
+
+        allowed = get_accessible_branch_ids(request.user)
+        allowed_set = set(allowed) if allowed is not None else None
+
+        try:
+            summary = import_non_sponsored_employees_from_upload(
+                uploaded,
+                user=request.user,
+                allowed_branch_ids=allowed_set,
+                apply_salary=user_can_edit_salary(request.user),
+            )
+        except ImportValidationError as exc:
+            messages.error(request, str(exc))
+            return redirect('web:list_employees')
+        except Exception:
+            logger.exception('non-sponsored employees import failed user=%s', request.user.pk)
+            messages.error(request, 'تعذّر استيراد الملف. تأكد من صحة Excel وأعد المحاولة.')
+            return redirect('web:list_employees')
+
+        if summary.created or summary.updated:
+            messages.success(
+                request,
+                f'تم الاستيراد: إنشاء {summary.created}، تحديث {summary.updated}.',
+            )
+        if summary.skipped:
+            messages.warning(request, f'تم تخطي {summary.skipped} صفاً.')
+        if summary.errors:
+            detail_errors = [
+                f'صف {r.row_number}: {r.message}'
+                for r in summary.results
+                if r.action == 'error'
+            ][:5]
+            extra = (' — ' + ' | '.join(detail_errors)) if detail_errors else ''
+            messages.error(
+                request,
+                f'فشل استيراد {summary.errors} صفاً{extra}',
+            )
+        if not (summary.created or summary.updated or summary.skipped or summary.errors):
+            messages.warning(request, 'لا توجد صفوف للاستيراد في الملف.')
+
         return redirect('web:list_employees')
-
-    if summary.created or summary.updated:
-        messages.success(
-            request,
-            f'تم الاستيراد: إنشاء {summary.created}، تحديث {summary.updated}.',
-        )
-    if summary.skipped:
-        messages.warning(request, f'تم تخطي {summary.skipped} صفاً.')
-    if summary.errors:
-        detail_errors = [
-            f'صف {r.row_number}: {r.message}'
-            for r in summary.results
-            if r.action == 'error'
-        ][:8]
-        extra = (' — ' + ' | '.join(detail_errors)) if detail_errors else ''
-        messages.error(
-            request,
-            f'فشل استيراد {summary.errors} صفاً{extra}',
-        )
-    if not (summary.created or summary.updated or summary.skipped or summary.errors):
-        messages.warning(request, 'لا توجد صفوف للاستيراد في الملف.')
-
-    return redirect('web:list_employees')
+    finally:
+        _excel_unlock(request.user.pk, 'import')

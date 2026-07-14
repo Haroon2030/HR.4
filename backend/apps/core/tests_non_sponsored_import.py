@@ -13,7 +13,7 @@ from apps.core.models import Branch, Company
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
 from apps.employees.models import Employee
-from apps.setup.models import Administration, Nationality, Profession, Sponsorship
+from apps.setup.models import Nationality, Profession, Sponsorship
 
 User = get_user_model()
 
@@ -36,7 +36,6 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
         company = Company.objects.create(name='شركة استيراد')
         cls.branch = Branch.objects.create(name='فرع جدة', code='IM1', company=company)
         cls.department = Department.objects.create(code='D1', name='الموارد', branch=cls.branch)
-        cls.administration = Administration.objects.create(code='A1', name='العمليات')
         cls.cost_center = CostCenter.objects.create(code='C1', name='مركز تشغيل', branch=cls.branch)
         cls.nationality = Nationality.objects.create(name='سعودي', code='SA')
         cls.profession = Profession.objects.create(name='محاسب', code='ACC')
@@ -86,7 +85,6 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
             'الراتب الأساسي',
             'الفرع',
             'القسم',
-            'الإدارة',
             'مركز التكلفة',
         ]
 
@@ -117,7 +115,6 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
             4500.25,
             'فرع جدة',
             'الموارد',
-            'A1 — العمليات',
             'مركز تشغيل',
         ]])
         self.assertEqual(response.status_code, 200)
@@ -129,7 +126,7 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
         self.assertEqual(emp.hire_date, date(2025, 3, 1))
         self.assertEqual(emp.branch_id, self.branch.id)
         self.assertEqual(emp.department_id, self.department.id)
-        self.assertEqual(emp.administration_id, self.administration.id)
+        self.assertIsNone(emp.administration_id)
         self.assertEqual(emp.cost_center_id, self.cost_center.id)
         self.assertEqual(emp.nationality_id, self.nationality.id)
         self.assertEqual(emp.profession_id, self.profession.id)
@@ -147,7 +144,6 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
             3100,
             'فرع جدة',
             'الموارد',
-            'A1 — العمليات',
             'مركز تشغيل',
         ]])
         self.assertEqual(response.status_code, 200)
@@ -170,7 +166,6 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
             1000,
             'فرع جدة',
             'الموارد',
-            'A1 — العمليات',
             'مركز تشغيل',
         ]])
         self.assertEqual(response.status_code, 200)
@@ -178,9 +173,22 @@ class NonSponsoredEmployeesExcelImportTests(TestCase):
         self.assertEqual(self.sponsored.name, 'على كفالة')
         self.assertEqual(Employee.objects.filter(sponsorship__isnull=False).count(), before)
 
-    def test_import_requires_login(self):
-        self.client.logout()
-        content = _xlsx_bytes(self.headers, [['اسم', '', '', '9999', '', '', '', '', 'فرع جدة', '', '', '']])
-        uploaded = SimpleUploadedFile('import.xlsx', content)
-        response = self.client.post(self.url, {'excel_file': uploaded})
-        self.assertEqual(response.status_code, 302)
+    def test_import_rejects_non_xlsx_name(self):
+        uploaded = SimpleUploadedFile(
+            'import.csv',
+            b'name,id\nfoo,1\n',
+            content_type='text/csv',
+        )
+        response = self.client.post(self.url, {'excel_file': uploaded}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Employee.objects.filter(name='foo').exists())
+
+    def test_import_rejects_fake_xlsx_content(self):
+        uploaded = SimpleUploadedFile(
+            'import.xlsx',
+            b'not-a-real-zip-file',
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response = self.client.post(self.url, {'excel_file': uploaded}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Excel')

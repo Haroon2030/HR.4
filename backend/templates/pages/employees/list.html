@@ -1,55 +1,157 @@
-{% extends "pages/list_base.html" %}
-{% load custom_tags %}
-
-{% block page_title %}شاشة الموظفين{% endblock %}
-
-{% block list_actions %}
-<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-    {% include "components/hr_btn.html" with href=no_sponsorship_export_url label="Excel بدون كفالة" variant="glass-emerald" icon="file-spreadsheet" title="تصدير الموظفين بدون كفالة (Excel)" extra_class="text-sm" %}
-    {% if user|has_permission:'employees.add' %}
-    <form method="post"
-          action="{{ no_sponsorship_import_url }}"
-          enctype="multipart/form-data"
-          class="inline-flex items-center"
-          id="ns-import-form">
-        {% csrf_token %}
-        <input type="file"
-               name="excel_file"
-               id="ns-import-file"
-               accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-               class="sr-only"
-               aria-label="ملف Excel للاستيراد">
-        <label for="ns-import-file" class="m-0 cursor-pointer">
-            {% include "components/hr_btn.html" with label="استيراد بدون كفالة" type="button" variant="glass-sky" icon="upload" title="استيراد موظفين بدون كفالة من Excel (نفس أعمدة التصدير)" extra_class="text-sm pointer-events-none" %}
-        </label>
-    </form>
-    <script>
-    (function () {
-      var input = document.getElementById('ns-import-file');
-      var form = document.getElementById('ns-import-form');
-      if (!input || !form) return;
-      input.addEventListener('change', function () {
-        if (input.files && input.files.length) form.submit();
-      });
-    })();
-    </script>
-    {% endif %}
-    <form method="get"
-          action="{% url 'web:list_employees' %}"
-          class="flex items-center gap-2 w-full sm:w-auto">
-        {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
-        {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
-        {% if query %}
-        {% url 'web:list_employees' as clear_url %}
-        {% include "components/hr_btn.html" with href=clear_url label="" icon="x" variant="ghost" title="مسح البحث" extra_class="px-3" %}
-        {% endif %}
-    </form>
-</div>
-{% endblock %}
-
-{% block table_headers %}{% endblock %}
-{% block table_body %}{% endblock %}
-
-{% block list_content %}
-{% include "pages/employees/_list_panel.html" %}
-{% endblock %}
+{% extends "pages/list_base.html" %}
+{% load custom_tags %}
+
+{% block page_title %}شاشة الموظفين{% endblock %}
+
+{% block list_actions %}
+<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+    <a href="{{ no_sponsorship_export_url }}"
+       id="ns-export-link"
+       class="hr-btn hr-btn--glass-emerald text-sm"
+       title="تصدير الموظفين بدون كفالة (Excel)"
+       data-hr-export="1">
+        {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
+        <span>Excel بدون كفالة</span>
+    </a>
+    {% if user|has_permission:'employees.add' %}
+    <form method="post"
+          action="{{ no_sponsorship_import_url }}"
+          enctype="multipart/form-data"
+          class="inline-flex items-center"
+          id="ns-import-form"
+          data-max-bytes="5242880">
+        {% csrf_token %}
+        <input type="file"
+               name="excel_file"
+               id="ns-import-file"
+               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+               class="sr-only"
+               aria-label="ملف Excel للاستيراد">
+        <label for="ns-import-file" class="m-0 cursor-pointer" id="ns-import-label">
+            <span class="hr-btn hr-btn--glass-sky text-sm pointer-events-none">
+                {% lucide_glyph 'upload' 'hr-btn__icon' %}
+                <span>استيراد بدون كفالة</span>
+            </span>
+        </label>
+    </form>
+    {% endif %}
+    <form method="get"
+          action="{% url 'web:list_employees' %}"
+          class="flex items-center gap-2 w-full sm:w-auto">
+        {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
+        {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
+        {% if query %}
+        {% url 'web:list_employees' as clear_url %}
+        {% include "components/hr_btn.html" with href=clear_url label="" icon="x" variant="ghost" title="مسح البحث" extra_class="px-3" %}
+        {% endif %}
+    </form>
+</div>
+<script>
+(function () {
+  var MAX_BYTES = 5 * 1024 * 1024;
+  var importBusy = false;
+  var exportBusy = false;
+
+  function showLoader(label, hint) {
+    try {
+      if (window.Alpine && Alpine.store('glassLoader')) {
+        Alpine.store('glassLoader').show(label, hint || '');
+        return;
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function hideLoaderSoon(ms) {
+    setTimeout(function () {
+      try {
+        if (window.Alpine && Alpine.store('glassLoader')) {
+          Alpine.store('glassLoader').hide();
+        }
+      } catch (e) { /* ignore */ }
+    }, ms || 800);
+  }
+
+  function notify(msg) {
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, 'warning');
+    } else {
+      alert(msg);
+    }
+  }
+
+  var exportLink = document.getElementById('ns-export-link');
+  if (exportLink) {
+    exportLink.addEventListener('click', function (ev) {
+      if (exportBusy || importBusy) {
+        ev.preventDefault();
+        return;
+      }
+      exportBusy = true;
+      exportLink.setAttribute('aria-disabled', 'true');
+      exportLink.classList.add('opacity-60', 'pointer-events-none');
+      showLoader('جاري التصدير', 'يتم تجهيز ملف Excel — لا تغادر الصفحة');
+      // التحميل عبر التنقل؛ نخفي اللودر بعد مهلة أمان
+      hideLoaderSoon(12000);
+      setTimeout(function () {
+        exportBusy = false;
+        exportLink.classList.remove('opacity-60', 'pointer-events-none');
+        exportLink.removeAttribute('aria-disabled');
+      }, 4000);
+    });
+  }
+
+  var input = document.getElementById('ns-import-file');
+  var form = document.getElementById('ns-import-form');
+  if (!input || !form) return;
+
+  var formMax = parseInt(form.getAttribute('data-max-bytes') || '', 10);
+  if (formMax > 0) MAX_BYTES = formMax;
+
+  form.addEventListener('submit', function (ev) {
+    if (importBusy) {
+      ev.preventDefault();
+    }
+  });
+
+  input.addEventListener('change', function () {
+    if (importBusy || exportBusy) {
+      input.value = '';
+      return;
+    }
+    if (!input.files || !input.files.length) return;
+
+    var file = input.files[0];
+    var name = (file.name || '').toLowerCase();
+    if (!name.endsWith('.xlsx')) {
+      notify('يُقبل فقط ملف بصيغة .xlsx');
+      input.value = '';
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      notify('حجم الملف أكبر من 5 ميغابايت');
+      input.value = '';
+      return;
+    }
+    if (!window.confirm('تأكيد استيراد موظفين بدون كفالة من الملف المحدد؟')) {
+      input.value = '';
+      return;
+    }
+
+    importBusy = true;
+    input.disabled = true;
+    var label = document.getElementById('ns-import-label');
+    if (label) label.classList.add('opacity-60', 'pointer-events-none');
+    showLoader('جاري الاستيراد', 'معالجة آمنة للملف — لا تكرر الطلب ولا تغلق الصفحة');
+    form.submit();
+  });
+})();
+</script>
+{% endblock %}
+
+{% block table_headers %}{% endblock %}
+{% block table_body %}{% endblock %}
+
+{% block list_content %}
+{% include "pages/employees/_list_panel.html" %}
+{% endblock %}
+

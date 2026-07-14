@@ -129,3 +129,9 @@ class NonSponsoredEmployeesExcelExportTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Excel بدون كفالة')
         self.assertContains(response, reverse('web:export_non_sponsored_employees_excel'))
+
+    def test_export_sets_secure_headers(self):
+        response = self.client.get(reverse('web:export_non_sponsored_employees_excel'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('no-store', response['Cache-Control'])
+        self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
