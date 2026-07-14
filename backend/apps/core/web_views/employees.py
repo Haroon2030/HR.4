@@ -181,12 +181,21 @@ def list_employees(request):
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
+    from django.urls import reverse
+    from urllib.parse import urlencode
+
+    export_url = reverse('web:export_non_sponsored_employees_excel')
+    if q:
+        export_url = f'{export_url}?{urlencode({"q": q})}'
+
     ctx = {
         'employees': page_obj.object_list,
         'page_obj': page_obj,
         'paginator': paginator,
         'query': q,
         'total_count': paginator.count,
+        'no_sponsorship_export_url': export_url,
+        'no_sponsorship_import_url': reverse('web:import_non_sponsored_employees_excel'),
     }
     return render(request, 'pages/employees/list.html', ctx)
 

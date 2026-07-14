@@ -1,18 +1,50 @@
 {% extends "pages/list_base.html" %}
+{% load custom_tags %}
 
 {% block page_title %}شاشة الموظفين{% endblock %}
 
 {% block list_actions %}
-<form method="get"
-      action="{% url 'web:list_employees' %}"
-      class="flex items-center gap-2 w-full sm:w-auto">
-    {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
-    {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
-    {% if query %}
-    {% url 'web:list_employees' as clear_url %}
-    {% include "components/hr_btn.html" with href=clear_url label="" icon="x" variant="ghost" title="مسح البحث" extra_class="px-3" %}
+<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+    {% include "components/hr_btn.html" with href=no_sponsorship_export_url label="Excel بدون كفالة" variant="glass-emerald" icon="file-spreadsheet" title="تصدير الموظفين بدون كفالة (Excel)" extra_class="text-sm" %}
+    {% if user|has_permission:'employees.add' %}
+    <form method="post"
+          action="{{ no_sponsorship_import_url }}"
+          enctype="multipart/form-data"
+          class="inline-flex items-center"
+          id="ns-import-form">
+        {% csrf_token %}
+        <input type="file"
+               name="excel_file"
+               id="ns-import-file"
+               accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+               class="sr-only"
+               aria-label="ملف Excel للاستيراد">
+        <label for="ns-import-file" class="m-0 cursor-pointer">
+            {% include "components/hr_btn.html" with label="استيراد بدون كفالة" type="button" variant="glass-sky" icon="upload" title="استيراد موظفين بدون كفالة من Excel (نفس أعمدة التصدير)" extra_class="text-sm pointer-events-none" %}
+        </label>
+    </form>
+    <script>
+    (function () {
+      var input = document.getElementById('ns-import-file');
+      var form = document.getElementById('ns-import-form');
+      if (!input || !form) return;
+      input.addEventListener('change', function () {
+        if (input.files && input.files.length) form.submit();
+      });
+    })();
+    </script>
     {% endif %}
-</form>
+    <form method="get"
+          action="{% url 'web:list_employees' %}"
+          class="flex items-center gap-2 w-full sm:w-auto">
+        {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
+        {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
+        {% if query %}
+        {% url 'web:list_employees' as clear_url %}
+        {% include "components/hr_btn.html" with href=clear_url label="" icon="x" variant="ghost" title="مسح البحث" extra_class="px-3" %}
+        {% endif %}
+    </form>
+</div>
 {% endblock %}
 
 {% block table_headers %}{% endblock %}

@@ -57,6 +57,16 @@ urlpatterns = [
     # كل عملية سريعة تنشئ PendingAction ينتظر دورة الموافقات
     # ══════════════════════════════════════════════════════════════
     path('employees/', web_views.list_employees, name='list_employees'),                                     # قائمة الموظفين
+    path(
+        'employees/export/no-sponsorship.xlsx',
+        web_views.export_non_sponsored_employees_excel,
+        name='export_non_sponsored_employees_excel',
+    ),
+    path(
+        'employees/import/no-sponsorship/',
+        web_views.import_non_sponsored_employees_excel,
+        name='import_non_sponsored_employees_excel',
+    ),
     path('employees/picker/search/', web_views.employee_picker_search, name='employee_picker_search'),       # بحث اختيار موظف
     path('employees/barcode-labels/', web_views.employee_barcode_labels_index, name='employee_barcode_labels'),
     path('employees/barcode-labels/print/', web_views.employee_barcode_print_batch, name='employee_barcode_print_batch'),
