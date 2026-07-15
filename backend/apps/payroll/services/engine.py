@@ -98,7 +98,7 @@ def _group_by_employee_id(rows, attr='employee_id'):
 def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, month):
     """جلب كل بنود الخصم للموظفين دفعة واحدة."""
     if not employee_ids:
-        return {}, {}, {}, {}, set()
+        return {}, {}, {}, {}, {}, set()
 
     applied = _applied_filter(run)
 
@@ -156,7 +156,6 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
         _group_by_employee_id(cash_shortages),
         locked_emp_ids,
     )
-
 
 def _unpaid_leave_days_in_period(leave, period_start, period_end):
     s = max(leave.date_from, period_start)

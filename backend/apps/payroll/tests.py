@@ -23,6 +23,7 @@ from apps.payroll.services.engine import (
     build_consolidated_payroll_run,
     lock_payroll_run,
     unlock_payroll_run,
+    _bulk_payroll_deductions,
 )
 from apps.payroll.services.payroll_line_columns import resolve_cell_value
 from apps.payroll.services.period_eligibility import employee_payroll_period
@@ -223,6 +224,28 @@ class PayrollEngineTests(TestCase):
         self.assertNotEqual(run_cash.id, run_transfer.id)
         self.assertEqual(run_cash.employees_count, 1)
         self.assertEqual(run_transfer.employees_count, 1)
+
+    def test_bulk_payroll_deductions_empty_ids_returns_six_values(self):
+        """الإرجاع المبكر يجب أن يطابق unpack المسير الموحّد (6 قيم)."""
+        run = PayrollRun(
+            company=self.company,
+            period_year=2026,
+            period_month=7,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship=self.sponsorship,
+            run_kind=PayrollRun.RunKind.CONSOLIDATED,
+            status=PayrollRun.Status.DRAFT,
+        )
+        run.pk = 0
+        abs_by, leaves_by, inst_by, pen_by, cs_by, locked = _bulk_payroll_deductions(
+            [], run, date(2026, 7, 1), date(2026, 7, 31), 2026, 7,
+        )
+        self.assertEqual(abs_by, {})
+        self.assertEqual(leaves_by, {})
+        self.assertEqual(inst_by, {})
+        self.assertEqual(pen_by, {})
+        self.assertEqual(cs_by, {})
+        self.assertEqual(locked, set())
 
     def test_consolidated_run_single_draft_for_multiple_branches(self):
         branch_b = Branch.objects.create(name='Branch B', code='TST02', company=self.company)
