@@ -291,7 +291,7 @@ class EmploymentRequestForm(forms.ModelForm):
 
     class Meta:
         model = EmploymentRequest
-        fields = ['name', 'branch', 'administration', 'department', 'cost_center', 'commencement_document']
+        fields = ['name', 'id_number', 'branch', 'administration', 'department', 'cost_center', 'commencement_document']
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user

@@ -42,7 +42,7 @@
                     </span>
                     <div>
                         <h2 class="hr-employee-create-section__title">البيانات الأساسية</h2>
-                        <p class="hr-employee-create-section__subtitle">الاسم والموقع الوظيفي داخل الفروع</p>
+                        <p class="hr-employee-create-section__subtitle">الاسم ورقم الهوية والموقع الوظيفي داخل الفروع</p>
                     </div>
                 </header>
                 <div class="hr-employee-create-section__grid">
@@ -52,14 +52,24 @@
                         </label>
                         <input type="text" id="id_create_name" name="name" required
                                class="hr-glass-input hr-employee-create-field__input"
-                               placeholder="اسم الموظف الكامل">
+                               placeholder="اسم الموظف الكامل"
+                               value="{{ request.POST.name|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_id_number">رقم الهوية</label>
+                        <input type="text" id="id_create_id_number" name="id_number"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               inputmode="numeric"
+                               autocomplete="off"
+                               dir="ltr"
+                               value="{{ request.POST.id_number|default:'' }}">
                     </div>
                     <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_branch">الفرع</label>
                         <select id="id_create_branch" name="branch" class="hr-glass-input hr-employee-create-field__input">
                             <option value="">— اختر الفرع —</option>
                             {% for b in branches %}
-                            <option value="{{ b.id }}">{% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}</option>
+                            <option value="{{ b.id }}"{% if request.POST.branch == b.id|stringformat:'s' %} selected{% endif %}>{% if b.code %}{{ b.code }}{% if b.name and b.code != b.name %} — {{ b.name }}{% endif %}{% else %}{{ b.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -68,7 +78,7 @@
                         <select id="id_create_department" name="department" class="hr-glass-input hr-employee-create-field__input">
                             <option value="">— اختر القسم —</option>
                             {% for d in departments %}
-                            <option value="{{ d.id }}">{% if d.code %}{{ d.code }}{% if d.name and d.code != d.name %} — {{ d.name }}{% endif %}{% else %}{{ d.name }}{% endif %}</option>
+                            <option value="{{ d.id }}"{% if request.POST.department == d.id|stringformat:'s' %} selected{% endif %}>{% if d.code %}{{ d.code }}{% if d.name and d.code != d.name %} — {{ d.name }}{% endif %}{% else %}{{ d.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
