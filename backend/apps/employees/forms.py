@@ -38,6 +38,19 @@ def _normalize_non_null_decimal(value, instance, field_name):
     return Decimal('0')
 
 
+def _clean_unique_employee_id_number(value, instance=None):
+    """منع تكرار رقم الهوية بين الموظفين (بما في ذلك السجلات القديمة قبل unique)."""
+    id_number = (value or '').strip()
+    if not id_number:
+        return ''
+    qs = Employee.objects.filter(id_number=id_number, is_deleted=False)
+    if instance is not None and getattr(instance, 'pk', None):
+        qs = qs.exclude(pk=instance.pk)
+    if qs.exists():
+        raise ValidationError('رقم الهوية مستخدم لموظف آخر.')
+    return id_number
+
+
 # 🏷️ خريطة عرض الحقول المرجعية (FK) في القوائم المنسدلة — الرقم/الكود ثم الاسم
 def _code_then_name(obj):
     code = (getattr(obj, 'code', None) or '').strip()
@@ -173,6 +186,12 @@ class EmployeeForm(forms.ModelForm):
         if not name:
             raise ValidationError('اسم الموظف مطلوب')
         return name
+
+    def clean_id_number(self):
+        return _clean_unique_employee_id_number(
+            self.cleaned_data.get('id_number'),
+            instance=self.instance,
+        )
 
     def clean_email(self):
         # السماح بقيمة فارغة (model يسمح blank=True)
@@ -320,6 +339,9 @@ class EmploymentRequestForm(forms.ModelForm):
             raise ValidationError('اسم الموظف مطلوب')
         return name
 
+    def clean_id_number(self):
+        return _clean_unique_employee_id_number(self.cleaned_data.get('id_number'))
+
     def clean_branch(self):
         branch = self.cleaned_data.get('branch')
         if branch is None or self.user is None:
@@ -330,6 +352,14 @@ class EmploymentRequestForm(forms.ModelForm):
         if accessible is not None and branch.pk not in accessible:
             raise ValidationError('لا يمكنك اختيار فرع خارج نطاق صلاحياتك.')
         return branch
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.user is not None:
+            instance.requested_by = self.user
+        if commit:
+            instance.save()
+        return instance
 
 
 # الحقول الإلزامية لإكمال الموافقة النهائية من الأخصائي
@@ -485,6 +515,12 @@ class EmploymentRequestEditForm(forms.ModelForm):
                 return getattr(self.instance, 'name', '') or ''
             raise ValidationError('اسم الموظف مطلوب')
         return name
+
+    def clean_id_number(self):
+        return _clean_unique_employee_id_number(
+            self.cleaned_data.get('id_number'),
+            instance=None,
+        )
 
     def clean_email(self):
         return self.cleaned_data.get('email') or ''

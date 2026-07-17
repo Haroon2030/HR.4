@@ -4,12 +4,13 @@ from __future__ import annotations
 from django.db.models import Count, Q, QuerySet
 
 from apps.attendance.models import BiometricDevice
-from apps.core.web_views._helpers import _user_accessible_branch_ids
+from apps.core.services.access_control import get_accessible_branch_ids
 
 
 def filter_biometric_devices_for_user(user, queryset: QuerySet | None = None) -> QuerySet:
     qs = queryset if queryset is not None else BiometricDevice.objects.filter(is_deleted=False)
-    branch_ids = _user_accessible_branch_ids(user)
+    # مباشرة من access_control — تجنّب استيراد web_views (دائري مع selectors)
+    branch_ids = get_accessible_branch_ids(user)
     if branch_ids is not None:
         qs = qs.filter(branch_id__in=branch_ids)
     return qs
