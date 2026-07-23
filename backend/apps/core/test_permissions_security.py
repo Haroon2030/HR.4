@@ -54,6 +54,19 @@ class RoleTypeEscalationTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('role_type', form.errors)
 
+    def test_non_privileged_cannot_grant_payroll_permission(self):
+        from apps.core.services.access_control import validate_permission_grants
+
+        err = validate_permission_grants(self.manager, ['payroll.process'])
+        self.assertIsNotNone(err)
+        self.assertIn('حساسة', err)
+
+    def test_non_privileged_cannot_grant_attendance_manage(self):
+        from apps.core.services.access_control import validate_permission_grants
+
+        err = validate_permission_grants(self.manager, ['attendance.manage'])
+        self.assertIsNotNone(err)
+
     def test_non_superuser_cannot_create_admin_role_via_form(self):
         form = RoleForm(
             data={

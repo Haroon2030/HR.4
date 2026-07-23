@@ -115,6 +115,7 @@ class EmployeeFormTests(TestCase):
                 'cash_amount': '0',
             },
             instance=req,
+            save_tab='salary',
         )
         self.assertTrue(form.is_valid(), form.errors)
         saved = form.save()

@@ -45,11 +45,6 @@ urlpatterns = [
 
     # ── لوحة التحكم الرئيسية ────────────────────────────────────
     path('', web_views.dashboard_view, name='dashboard'),
-    path(
-        'backups/<int:backup_id>/download/',
-        web_views.download_database_backup,
-        name='download_database_backup',
-    ),
     path('audit/history/', web_views.audit_history_dashboard, name='audit_history'),
     
     # ══════════════════════════════════════════════════════════════
@@ -69,7 +64,6 @@ urlpatterns = [
     ),
     path('employees/picker/search/', web_views.employee_picker_search, name='employee_picker_search'),       # بحث اختيار موظف
     path('employees/barcode-labels/', web_views.employee_barcode_labels_index, name='employee_barcode_labels'),
-    path('employees/barcode-labels/print/', web_views.employee_barcode_print_batch, name='employee_barcode_print_batch'),
     path('employees/<int:employee_id>/barcode-label/', web_views.employee_barcode_print, name='employee_barcode_print'),
     path('employees/<int:employee_id>/barcode-label/zpl/', web_views.employee_barcode_zpl, name='employee_barcode_zpl'),
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
@@ -99,9 +93,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/absence/add/', web_views.add_employee_absence, name='add_employee_absence'),              # تسجيل غياب
     path('employees/<int:employee_id>/absences/<int:absence_id>/edit/', web_views.edit_employee_absence, name='edit_employee_absence'),
     path('employees/<int:employee_id>/absences/<int:absence_id>/delete/', web_views.delete_employee_absence, name='delete_employee_absence'),
-    path('employees/<int:employee_id>/cash-shortage/add/', web_views.add_employee_cash_shortage, name='add_employee_cash_shortage'),
     path('employees/<int:employee_id>/end-of-service/', web_views.end_of_service_employee, name='end_of_service_employee'), # تصفية نهاية خدمة أو استقالة
-    path('employees/<int:employee_id>/ledger-init/', web_views.run_ledger_init, name='run_ledger_init'),        # تهيئة أرصدة الموظف
     path('employees/<int:employee_id>/ledger/<int:ledger_id>/edit/', web_views.edit_employee_ledger, name='edit_employee_ledger'),
     path('employees/<int:employee_id>/ledger/<int:ledger_id>/delete/', web_views.delete_employee_ledger, name='delete_employee_ledger'),
     path(
@@ -133,9 +125,6 @@ urlpatterns = [
     path('pending-actions/<int:action_id>/return/', web_views.return_pending_action, name='return_pending_action'),            # إرجاع للتعديل
     path('pending-actions/<int:action_id>/resubmit/', web_views.resubmit_pending_action, name='resubmit_pending_action'),      # إعادة إرسال
 
-    # روابط التوافق الخلفي (الأسماء القديمة — تُعيد التوجيه)
-    path('pending-actions/<int:action_id>/approve/', web_views.approve_pending_action, name='approve_pending_action'),
-    path('pending-actions/<int:action_id>/reject/', web_views.reject_pending_action, name='reject_pending_action'),
     path('pending-actions/<int:action_id>/delete/', web_views.delete_pending_action, name='delete_pending_action'),
 
     # ══════════════════════════════════════════════════════════════
@@ -259,7 +248,6 @@ urlpatterns = [
     path('hr-forms/<str:form_type>/<int:employee_id>/', web_views.hr_form_print, name='hr_form_print'), # طباعة نموذج
 
     path('reports/', web_views.reports_index, name='reports_index'),                    # فهرس التقارير
-    path('reports/multi/', web_views.multi_report_detail, name='multi_report_detail'),  # عرض تقارير متعددة مجمعة
     path('reports/<str:report_type>/export/', web_views.report_export_excel, name='report_export_excel'),
     path('reports/<str:report_type>/', web_views.report_detail, name='report_detail'),  # عرض تقرير محدد
 
@@ -310,18 +298,15 @@ urlpatterns = [
     path('maintenance/assets/add/', web_views.add_maintenance_asset, name='add_maintenance_asset'),
     path('maintenance/assets/<int:asset_id>/edit/', web_views.edit_maintenance_asset, name='edit_maintenance_asset'),
     path('maintenance/assets/<int:asset_id>/delete/', web_views.delete_maintenance_asset, name='delete_maintenance_asset'),
-    path('maintenance/trades/', web_views.list_maintenance_trades, name='list_maintenance_trades'),
     path('maintenance/trades/add/', web_views.add_maintenance_trade, name='add_maintenance_trade'),
     path('maintenance/trades/<int:trade_id>/edit/', web_views.edit_maintenance_trade, name='edit_maintenance_trade'),
     path('maintenance/trades/<int:trade_id>/delete/', web_views.delete_maintenance_trade, name='delete_maintenance_trade'),
-    path('maintenance/workers/', web_views.list_maintenance_workers, name='list_maintenance_workers'),
     path('maintenance/workers/add/', web_views.add_maintenance_worker, name='add_maintenance_worker'),
     path('maintenance/workers/<int:worker_id>/edit/', web_views.edit_maintenance_worker, name='edit_maintenance_worker'),
     path('maintenance/workers/<int:worker_id>/delete/', web_views.delete_maintenance_worker, name='delete_maintenance_worker'),
 
     path('payroll/', payroll_views.list_payroll_runs, name='list_payroll_runs'),                            # قائمة المسيرات
     path('payroll/export/', payroll_views.export_payroll_list_excel, name='export_payroll_list_excel'),    # تصدير المسير الموحّد
-    path('payroll/create/', payroll_views.create_payroll_run, name='create_payroll_run'),                    # إنشاء/بناء مسير
     path('payroll/<int:run_id>/', payroll_views.view_payroll_run, name='view_payroll_run'),                  # عرض تفاصيل المسير
     path('payroll/<int:run_id>/delete/', payroll_views.delete_payroll_draft_run, name='delete_payroll_draft_run'),  # حذف مسودة
     path('payroll/<int:run_id>/rebuild/', payroll_views.rebuild_payroll_run, name='rebuild_payroll_run'),     # إعادة بناء

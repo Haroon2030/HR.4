@@ -444,8 +444,8 @@ class EndOfServiceArticle80Tests(_BaseExecutorTests):
             statement_type=EmployeeStatement.StatementType.TERMINATE,
         )
         self.assertIn('المادة 80', st.title)
-        self.assertIn('بدون مكافأة نهاية خدمة', st.content)
-        self.assertIn('30 يوم/سنة', st.content)
+        self.assertIn('مكافأة نهاية الخدمة: 0.00 ر.س (المادة 80)', st.content)
+        self.assertIn('رصيد إجازات', st.content)
         self.assertIn('إجازة', st.content)
 
 
@@ -751,7 +751,8 @@ class HRFormPrintViewTests(TestCase):
         self.assertContains(r, 'hr-form-pen-field')
         self.assertContains(r, 'data-placeholder="................"')
         self.assertNotContains(r, emp.id_number)
-        self.assertNotContains(r, 'hr-form-profession-select')
+        self.assertNotContains(r, 'name="profession_id"')
+        self.assertNotContains(r, 'اختر المهنة')
         if emp.employee_number:
             self.assertNotContains(r, emp.employee_number)
 

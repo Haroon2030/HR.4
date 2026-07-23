@@ -220,7 +220,7 @@
         <div>
             <h1>ملصق موظف — <span dir="ltr">{{ label_dims.width_mm }}×{{ label_dims.height_mm }}</span> مم</h1>
             <div class="meta">
-                {% if batch_mode %}{{ labels_batch|length }} ملصق{% else %}{{ copies }} نسخة{% endif %}
+                {{ copies }} نسخة
             </div>
         </div>
         <div class="actions">
@@ -249,15 +249,9 @@
             الخط يكبر قدر الإمكان داخل الملصق، ويتصغّر تلقائياً عند النصوص الطويلة فقط.
         </p>
         <div class="label-sheet" id="label-sheet">
-            {% if batch_mode %}
-                {% for item in labels_batch %}
-                {% include "pages/employees/_barcode_label.html" with label=item only %}
-                {% endfor %}
-            {% else %}
-                {% for _ in copy_range %}
-                {% include "pages/employees/_barcode_label.html" with label=label only %}
-                {% endfor %}
-            {% endif %}
+            {% for _ in copy_range %}
+            {% include "pages/employees/_barcode_label.html" with label=label only %}
+            {% endfor %}
         </div>
     </div>
     <script>

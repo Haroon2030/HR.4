@@ -43,10 +43,22 @@ COMPANY_WIDE_BRANCH_PERMISSIONS = frozenset({
     'reports.view_all',
 })
 
+# صلاحيات لا يجوز لغير المميّزين منحها عبر تعديل الأدوار
 SENSITIVE_USER_PERMISSIONS = frozenset({
     'users.edit',
     'users.delete',
     'users.add',
+    'users.manage_roles',
+})
+
+SENSITIVE_GRANT_PERMISSIONS = frozenset({
+    *SENSITIVE_USER_PERMISSIONS,
+    'payroll.process',
+    'payroll.manage',
+    'payroll.view_reports',
+    'attendance.manage',
+    'reports.view_all',
+    'reports.export',
 })
 
 
@@ -400,12 +412,12 @@ def validate_user_admin_changes(
 
 
 def validate_permission_grants(actor, permission_codes: Iterable[str]) -> str | None:
-    """Block non-privileged actors from granting sensitive user-admin permissions."""
+    """Block non-privileged actors from granting sensitive permissions."""
     if is_privileged_actor(actor):
         return None
-    blocked = SENSITIVE_USER_PERMISSIONS.intersection(set(permission_codes))
+    blocked = SENSITIVE_GRANT_PERMISSIONS.intersection(set(permission_codes))
     if blocked:
-        return 'لا يمكنك منح صلاحيات إدارة المستخدمين.'
+        return 'لا يمكنك منح صلاحيات حساسة (مستخدمون، رواتب، بصمة، أو تقارير شاملة).'
     return None
 
 

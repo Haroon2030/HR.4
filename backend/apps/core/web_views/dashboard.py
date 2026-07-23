@@ -2,20 +2,8 @@
 Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
-
-from apps.core.backup_download import stream_database_backup_file
-from apps.core.decorators import permission_required
-from apps.core.models import DatabaseBackupLog
-
-
-
-# =============================================================================
-# Custom Decorators
-# =============================================================================
-
+from django.shortcuts import render
 
 from apps.core.web_views._helpers import (
     _user_accessible_branch_ids,
@@ -28,7 +16,7 @@ def dashboard_view(request):
     from django.urls import reverse
     from django.core.paginator import Paginator
     from apps.employees.models import EmploymentRequest, Employee
-    from apps.core.models import PendingAction, DatabaseBackupLog
+    from apps.core.models import PendingAction
     from apps.core.web_views._helpers import _is_hr_officer, _is_general_manager
     from apps.core.web_views.employment_requests import get_hr_officers
 
@@ -249,34 +237,6 @@ def dashboard_view(request):
     context['inbox_query'] = q
 
     return render(request, 'pages/dashboard.html', context)
-
-
-@login_required
-@permission_required('settings.manage')
-def download_database_backup(request, backup_id: int):
-    """تحميل ملف نسخة احتياطية من واجهة الويب (بدون الدخول إلى /admin/)."""
-    from apps.core.models import DatabaseBackupLog
-
-    obj = get_object_or_404(DatabaseBackupLog, pk=backup_id)
-
-    if obj.status == DatabaseBackupLog.Status.FAILED:
-        messages.error(request, 'نسخ فاشلة — لا يوجد ملف للتحميل.')
-        return redirect('web:dashboard')
-
-    try:
-        response = stream_database_backup_file(filename=obj.filename, r2_key=obj.r2_key or '')
-    except Exception as exc:
-        messages.error(request, f'فشل التحميل: {exc}')
-        return redirect('web:dashboard')
-
-    if response is not None:
-        return response
-
-    messages.warning(
-        request,
-        'الملف غير متوفر محلياً؛ لا توجد نسخة على التخزين السحابي مرتبطة بهذا السجل.',
-    )
-    return redirect('web:dashboard')
 
 
 # =============================================================================

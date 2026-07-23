@@ -98,7 +98,8 @@ def edit_role(request, role_id):
         for err in form.errors.values():
             messages.error(request, err[0])
 
-    ctx = _build_role_permissions_matrix(role)
+    # نفس سياق الإضافة: يشمل role_type_choices ليظهر النوع المحدد عند التعديل
+    ctx = _role_form_context(role)
     ctx['is_admin_role'] = is_admin_role
     return render(request, 'pages/roles/form.html', ctx)
 

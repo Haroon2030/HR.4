@@ -463,10 +463,11 @@ def filter_punches_for_upload(
     return kept, skipped
 
 
-def _ingest_signature(api_key: str, body: bytes) -> str:
+def _ingest_signature(api_key: str, body: bytes, *, timestamp: str) -> str:
+    payload = f'{timestamp}.'.encode('utf-8') + body
     digest = hmac.new(
         api_key.encode('utf-8'),
-        body,
+        payload,
         hashlib.sha256,
     ).hexdigest()
     return f'sha256={digest}'
@@ -500,12 +501,14 @@ def push_to_server(
         len(users),
     )
     api_key = _api_key_for(device, settings)
-    signature = _ingest_signature(api_key, body)
+    timestamp = str(int(time.time()))
+    signature = _ingest_signature(api_key, body, timestamp=timestamp)
     resp = requests.post(
         url,
         headers={
             'X-Attendance-Agent-Key': api_key,
             'Content-Type': 'application/json',
+            'X-Attendance-Timestamp': timestamp,
             'X-Attendance-Signature': signature,
             'Authorization': f'Attendance-HMAC {signature}',
             'X-Attendance-Agent-Version': '2',
@@ -1048,7 +1051,8 @@ def fetch_devices_from_server(settings: AgentSettings, *, api_key: str | None = 
                 device_id=int(row['id']),
                 device_ip=str(row['ip_address']).strip(),
                 device_port=int(row.get('port') or 4370),
-                comm_key=int(row.get('comm_key') or 0),
+                # comm_key لا يُعاد من API — يُضبط محلياً عبر devices.list / probe
+                comm_key=0,
                 label=(row.get('name') or '').strip(),
             )
         )

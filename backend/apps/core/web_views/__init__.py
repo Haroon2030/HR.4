@@ -23,7 +23,6 @@ from apps.core.web_views.hr_forms import print_ledger_settlement_detail  # noqa:
 from apps.core.web_views.hr_forms import *  # noqa: F401,F403
 from apps.core.web_views.reports import *  # noqa: F401,F403
 from apps.core.web_views.audit_log import *  # noqa: F401,F403
-from apps.core.web_views.ledger_init import *  # noqa: F401,F403
 from apps.core.web_views.biometric_devices import *  # noqa: F401,F403
 from apps.core.web_views.attendance_records import *  # noqa: F401,F403
 from apps.core.web_views.attendance_report import *  # noqa: F401,F403

@@ -30,6 +30,8 @@ class BiometricPipelineAuditTests(TestCase):
         self.client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY=self.device_key)
 
     def _ingest(self, punches, *, incremental=True):
+        import time
+
         payload = {
             'device_id': self.device.pk,
             'agent_id': 'audit-agent',
@@ -38,11 +40,15 @@ class BiometricPipelineAuditTests(TestCase):
             'sync_finalize': True,
         }
         body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        ts = str(int(time.time()))
         return self.client.post(
             '/api/v1/attendance/agent/ingest/',
             data=body,
             content_type='application/json',
-            HTTP_X_ATTENDANCE_SIGNATURE=compute_ingest_signature(self.device_key, body),
+            HTTP_X_ATTENDANCE_TIMESTAMP=ts,
+            HTTP_X_ATTENDANCE_SIGNATURE=compute_ingest_signature(
+                self.device_key, body, timestamp=ts,
+            ),
         )
 
     def test_timezone_dedup_incremental_pipeline(self):

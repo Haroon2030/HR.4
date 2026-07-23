@@ -425,37 +425,6 @@ class CustodyClearForm(forms.Form):
     return_notes = forms.CharField(required=False)
 
 
-class BusinessTripForm(HRForm):
-    """تسجيل رحلة عمل."""
-    destination = forms.CharField(error_messages={'required': 'الوجهة مطلوبة'})
-    purpose = forms.CharField(error_messages={'required': 'الغرض مطلوب'})
-    start_date = forms.DateField(error_messages={'invalid': 'تاريخ البداية غير صحيح', 'required': 'تاريخ البداية مطلوب'})
-    end_date = forms.DateField(error_messages={'invalid': 'تاريخ النهاية غير صحيح', 'required': 'تاريخ النهاية مطلوب'})
-    estimated_cost = forms.DecimalField(min_value=0, max_digits=12, decimal_places=2, required=False,
-        error_messages={'invalid': 'التكلفة غير صحيحة', 'min_value': 'لا يمكن أن تكون التكلفة بالسالب'})
-    notes = forms.CharField(required=False)
-
-    def clean_destination(self):
-        v = (self.cleaned_data.get('destination') or '').strip()
-        if not v:
-            raise ValidationError('الوجهة مطلوبة')
-        return v
-
-    def clean_purpose(self):
-        v = (self.cleaned_data.get('purpose') or '').strip()
-        if not v:
-            raise ValidationError('الغرض مطلوب')
-        return v
-
-    def clean(self):
-        cd = super().clean()
-        s = cd.get('start_date')
-        e = cd.get('end_date')
-        if s and e and e < s:
-            raise ValidationError('تاريخ النهاية يجب أن يكون بعد تاريخ البداية')
-        return cd
-
-
 class LoanRequestForm(HRForm):
     """تقديم سلفة موظف."""
     amount = forms.DecimalField(min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
@@ -543,21 +512,6 @@ class CashShortageForm(forms.Form):
         if self.fields['branch'].disabled and self.employee and self.employee.branch_id:
             cd['branch'] = self.employee.branch
         return cd
-
-
-class ReviewNotesForm(forms.Form):
-    """تستخدم في approve/reject - notes اختيارية للموافقة وإجبارية للرفض."""
-    review_notes = forms.CharField(required=False)
-
-    def __init__(self, *args, require_notes=False, **kwargs):
-        self._require_notes = require_notes
-        super().__init__(*args, **kwargs)
-
-    def clean_review_notes(self):
-        v = (self.cleaned_data.get('review_notes') or '').strip()
-        if self._require_notes and not v:
-            raise ValidationError('سبب الرفض مطلوب')
-        return v
 
 
 class ArabicPasswordChangeForm(PasswordChangeForm):

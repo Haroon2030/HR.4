@@ -31,19 +31,6 @@ def notify_action_url(action):
             return ''
 
 
-def notify_branch_managers(action, *, title, message='', icon='inbox',
-                           color=Notification.Color.PRIMARY):
-    """إشعار جميع مدراء الفرع المسؤولين عن الطلب."""
-    if not action.branch_id:
-        return
-    link = notify_action_url(action)
-    branch = action.branch
-    manager = getattr(branch, 'manager', None)
-    if manager:
-        notify(manager, title=title, message=message, link=link,
-               icon=icon, color=color, related_action=action)
-
-
 def notify_general_managers(action, *, title, message='', icon='inbox',
                             color=Notification.Color.AMBER):
     """إشعار كل من له دور admin / hr_manager (المدراء العامون)."""
@@ -60,29 +47,6 @@ def notify_general_managers(action, *, title, message='', icon='inbox',
     for user in qs:
         notify(user, title=title, message=message, link=link,
                icon=icon, color=color, related_action=action)
-
-
-def notify_hr_team(*, title, message='', link='', icon='file-earmark-text',
-                  color=Notification.Color.AMBER):
-    """إشعار فريق الموارد (admin / hr_manager) برسالة عامة دون ربط بطلب معلّق."""
-    from django.contrib.auth import get_user_model
-    from apps.core.models import Role
-
-    User = get_user_model()
-    qs = User.objects.filter(
-        is_active=True,
-        profile__role__role_type__in=[Role.RoleType.ADMIN, Role.RoleType.HR_MANAGER],
-    ).distinct()
-    for user in qs:
-        notify(
-            user,
-            title=title,
-            message=message or '',
-            link=link or '',
-            icon=icon or 'file-earmark-text',
-            color=color,
-            related_action=None,
-        )
 
 
 def notify_user(user, action, *, title, message='', icon='inbox',

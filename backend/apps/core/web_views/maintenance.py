@@ -408,12 +408,6 @@ def delete_maintenance_asset(request, asset_id):
 # ── تهيئة المهن ─────────────────────────────────────────────────────────────
 
 @login_required
-@permission_required(MAINTENANCE_SETUP_VIEW)
-def list_maintenance_trades(request):
-    return redirect(_setup_url('trades'))
-
-
-@login_required
 @permission_required(MAINTENANCE_SETUP_ADD)
 def add_maintenance_trade(request):
     if request.method == 'POST':
@@ -465,12 +459,6 @@ def delete_maintenance_trade(request, trade_id):
 
 
 # ── تهيئة العمال ────────────────────────────────────────────────────────────
-
-@login_required
-@permission_required(MAINTENANCE_SETUP_VIEW)
-def list_maintenance_workers(request):
-    return redirect(_setup_url('workers'))
-
 
 @login_required
 @permission_required(MAINTENANCE_SETUP_ADD)

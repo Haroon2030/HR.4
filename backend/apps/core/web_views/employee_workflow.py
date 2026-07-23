@@ -617,52 +617,6 @@ def clear_employee_custody(request, employee_id):
 @login_required
 @permission_required('employees.edit')
 @employee_branch_access_required
-def add_employee_business_trip(request, employee_id):
-    """طلب رحلة عمل (ينتظر دورة الموافقات)."""
-    from apps.employees.models import Employee
-    from apps.core.forms import BusinessTripForm
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
-
-    employee = get_object_or_404(Employee, id=employee_id)
-    if employee.status == Employee.Status.TERMINATED:
-        messages.error(request, 'لا يمكن تسجيل رحلة عمل لموظف منتهي الخدمة.')
-        return redirect('web:view_employee', employee_id=employee.id)
-    if request.method != 'POST':
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    files = request.FILES.copy()
-    renamed = apply_uploaded_file_rename(request, 'document')
-    if renamed is not None:
-        files['document'] = renamed
-
-    form = BusinessTripForm(request.POST, files)
-    if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    cd = form.cleaned_data
-    create_pending_action(
-        action_type='business_trip',
-        employee=employee,
-        payload={
-            'destination': cd['destination'],
-            'purpose': cd['purpose'],
-            'start_date': cd['start_date'].isoformat(),
-            'end_date': cd['end_date'].isoformat(),
-            'estimated_cost': str(cd['estimated_cost']) if cd.get('estimated_cost') is not None else None,
-            'notes': cd.get('notes', ''),
-        },
-        attachment=files.get('document') or None,
-        requested_by=request.user,
-    )
-    messages.success(request, 'تم إرسال طلب رحلة العمل إلى مدير الإدارة/الفرع للموافقة.')
-    return redirect('web:view_employee', employee_id=employee.id)
-
-
-@login_required
-@permission_required('employees.edit')
-@employee_branch_access_required
 def add_employee_loan(request, employee_id):
     """تقديم سلفة موظف (ينتظر دورة الموافقات)."""
     from apps.employees.models import Employee
@@ -964,55 +918,6 @@ def delete_employee_absence(request, employee_id, absence_id):
     absence.delete()
     messages.success(request, 'تم حذف سجل الغياب.')
     return _redirect_employee_absences_tab(employee.id)
-
-
-@login_required
-@permission_required('cash_shortages.add')
-@employee_branch_access_required
-def add_employee_cash_shortage(request, employee_id):
-    """تسجيل عجز كاشير لموظف (ينتظر اعتماد محاسب الفرع)."""
-    from apps.employees.models import Employee
-    from apps.core.forms import CashShortageForm
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
-
-    employee = get_object_or_404(Employee, id=employee_id)
-    if employee.status == Employee.Status.TERMINATED:
-        messages.error(request, 'لا يمكن تسجيل عجز لموظف منتهي الخدمة.')
-        return redirect('web:view_employee', employee_id=employee.id)
-    if request.method != 'POST':
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    files = request.FILES.copy()
-    renamed = apply_uploaded_file_rename(request, 'document')
-    if renamed is not None:
-        files['document'] = renamed
-
-    form = CashShortageForm(request.POST, files, user=request.user, employee=employee)
-    if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
-        return redirect('web:view_employee', employee_id=employee.id)
-
-    cd = form.cleaned_data
-    create_pending_action(
-        action_type='cash_shortage',
-        employee=employee,
-        payload={
-            'shortage_date': cd['shortage_date'].isoformat(),
-            'amount': str(cd['amount']),
-            'branch_id': cd['branch'].id,
-            'notes': cd.get('notes', ''),
-        },
-        attachment=cd['document'],
-        requested_by=request.user,
-    )
-    messages.success(request, 'تم إرسال طلب عجز الكاشير إلى محاسب الفرع للاعتماد.')
-    return redirect('web:view_employee', employee_id=employee.id)
-
-
-# =============================================================================
-# Roles Management
-# =============================================================================
 
 
 # =============================================================================

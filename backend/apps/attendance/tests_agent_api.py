@@ -30,14 +30,18 @@ class AttendanceAgentAPITests(TestCase):
         client.credentials(HTTP_X_ATTENDANCE_AGENT_KEY=self.device_key)
         return client
 
-    def _signed_ingest_post(self, client, payload, *, api_key=None):
+    def _signed_ingest_post(self, client, payload, *, api_key=None, timestamp=None):
+        import time
+
         body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
         key = api_key or self.device_key
+        ts = str(timestamp if timestamp is not None else int(time.time()))
         return client.post(
             '/api/v1/attendance/agent/ingest/',
             data=body,
             content_type='application/json',
-            HTTP_X_ATTENDANCE_SIGNATURE=compute_ingest_signature(key, body),
+            HTTP_X_ATTENDANCE_TIMESTAMP=ts,
+            HTTP_X_ATTENDANCE_SIGNATURE=compute_ingest_signature(key, body, timestamp=ts),
         )
 
     def test_ingest_requires_key(self):
@@ -355,30 +359,102 @@ class AttendanceAgentAPITests(TestCase):
 
     @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
     def test_ingest_rejects_invalid_signature(self):
+        import time
+
         client = self._device_client()
         payload = {'device_id': self.device.pk, 'punches': []}
         body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        ts = str(int(time.time()))
         response = client.post(
             '/api/v1/attendance/agent/ingest/',
             data=body,
             content_type='application/json',
+            HTTP_X_ATTENDANCE_TIMESTAMP=ts,
             HTTP_X_ATTENDANCE_SIGNATURE='sha256=deadbeef',
         )
         self.assertEqual(response.status_code, 403)
 
     @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
     def test_ingest_accepts_authorization_hmac_header(self):
+        import time
+
         client = self._device_client()
         payload = {'device_id': self.device.pk, 'punches': []}
         body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
-        sig = compute_ingest_signature(self.device_key, body)
+        ts = str(int(time.time()))
+        sig = compute_ingest_signature(self.device_key, body, timestamp=ts)
         response = client.post(
             '/api/v1/attendance/agent/ingest/',
             data=body,
             content_type='application/json',
+            HTTP_X_ATTENDANCE_TIMESTAMP=ts,
             HTTP_AUTHORIZATION=f'Attendance-HMAC {sig}',
         )
         self.assertEqual(response.status_code, 200)
+
+    @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
+    def test_ingest_rejects_replay_of_same_signed_request(self):
+        import time
+
+        client = self._device_client()
+        payload = {'device_id': self.device.pk, 'punches': []}
+        ts = int(time.time())
+        first = self._signed_ingest_post(client, payload, timestamp=ts)
+        second = self._signed_ingest_post(client, payload, timestamp=ts)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 403)
+        self.assertEqual(second.json().get('code'), 'replay')
+
+    @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
+    def test_ingest_rejects_missing_timestamp_when_required(self):
+        client = self._device_client()
+        payload = {'device_id': self.device.pk, 'punches': []}
+        body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            data=body,
+            content_type='application/json',
+            HTTP_X_ATTENDANCE_SIGNATURE=compute_ingest_signature(
+                self.device_key, body, timestamp='1700000000',
+            ),
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json().get('code'), 'invalid_timestamp')
+
+    def test_devices_list_omits_comm_key(self):
+        self.device.comm_key = 1234
+        self.device.save(update_fields=['comm_key'])
+        client = self._device_client()
+        response = client.get('/api/v1/attendance/agent/devices/')
+        self.assertEqual(response.status_code, 200)
+        rows = response.json()['data']
+        self.assertEqual(len(rows), 1)
+        self.assertNotIn('comm_key', rows[0])
+        self.assertEqual(rows[0]['ip_address'], '192.168.1.50')
+
+    @override_settings(ATTENDANCE_AGENT_AUTH_FAIL_LIMIT=3, ATTENDANCE_AGENT_AUTH_FAIL_WINDOW=3600)
+    def test_failed_agent_key_attempts_are_throttled(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        # تأكيد أن المفتاح الصحيح يعمل قبل الحظر
+        self.assertEqual(self._device_client().get('/api/v1/attendance/agent/devices/').status_code, 200)
+
+        anon = APIClient()
+        for _ in range(3):
+            r = anon.get(
+                '/api/v1/attendance/agent/devices/',
+                HTTP_X_ATTENDANCE_AGENT_KEY='wrong-key',
+            )
+            self.assertIn(r.status_code, (401, 403))
+
+        # بعد استنفاد الحد: حتى المفتاح الصحيح من نفس الـ IP يُرفض
+        blocked = APIClient().get(
+            '/api/v1/attendance/agent/devices/',
+            HTTP_X_ATTENDANCE_AGENT_KEY=self.device_key,
+        )
+        self.assertIn(blocked.status_code, (401, 403))
+        self.assertNotEqual(blocked.status_code, 200)
 
     @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
     def test_ingest_accepts_valid_signature(self):

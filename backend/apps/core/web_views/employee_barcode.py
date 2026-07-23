@@ -1,10 +1,9 @@
 """طباعة ملصق باركود الموظف — Zebra بمقاسات قابلة للتعديل."""
 from __future__ import annotations
 
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
 from apps.core.decorators import permission_required
@@ -111,54 +110,3 @@ def employee_barcode_zpl(request, employee_id):
     response = HttpResponse(zpl, content_type='application/octet-stream')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
-
-
-@login_required
-@permission_required('employees.view')
-def employee_barcode_print_batch(request):
-    """طباعة دفعة ملصقات لعدة موظفين (?ids=1,2,3&copies=1&w=100&h=40)."""
-    raw = (request.GET.get('ids') or '').strip()
-    if not raw:
-        messages.error(request, 'حدّد موظفاً واحداً على الأقل.')
-        return redirect('web:employee_barcode_labels')
-
-    ids: list[int] = []
-    for part in raw.split(','):
-        s = part.strip()
-        if s.isdigit():
-            ids.append(int(s))
-    ids = list(dict.fromkeys(ids))[:30]
-    if not ids:
-        messages.error(request, 'معرّفات الموظفين غير صالحة.')
-        return redirect('web:employee_barcode_labels')
-
-    dims, copies = _dims_from_request(request)
-    qs = filter_employees_queryset_for_user(
-        request.user,
-        Employee.objects.filter(is_deleted=False, pk__in=ids).select_related(
-            'branch', 'branch__company', 'sponsorship',
-        ),
-    )
-    employees = list(qs.order_by('name'))
-    if not employees:
-        raise Http404('لم يُعثَر على موظفين.')
-
-    labels = [build_employee_barcode_label(emp, dims=dims) for emp in employees]
-    label_copies: list = []
-    for lbl in labels:
-        for _ in range(copies):
-            label_copies.append(lbl)
-
-    size_qs = label_size_querystring(dims, copies=copies)
-
-    return render(request, 'pages/employees/barcode_label_print.html', {
-        'employee': employees[0],
-        'label': labels[0],
-        'label_dims': dims,
-        'labels_batch': label_copies,
-        'copies': copies,
-        'copy_range': range(copies),
-        'batch_mode': True,
-        'zpl_download_url': '',
-        'size_querystring': size_qs,
-    })

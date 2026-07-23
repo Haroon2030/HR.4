@@ -19,6 +19,7 @@ def _active_enrollment_subquery():
 
 def get_device_user_queryset(
     *,
+    user=None,
     device_id: int | None = None,
     branch_id: int | None = None,
     branch_ids: list[int] | None = None,
@@ -43,9 +44,29 @@ def get_device_user_queryset(
         .order_by(*DEVICE_USER_LIST_ORDERING)
     )
 
+    # عزل الفروع حسب صلاحيات المستخدم (يمنع IDOR عند غياب فلتر الفرع)
+    if user is not None:
+        from apps.core.services.access_control import get_accessible_branch_ids
+        from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
+
+        accessible = get_accessible_branch_ids(user)
+        if accessible is not None:
+            if branch_ids is None and branch_id is None:
+                branch_ids = list(accessible)
+            elif branch_ids is not None:
+                branch_ids = [i for i in branch_ids if i in accessible]
+            elif branch_id is not None and branch_id not in accessible:
+                return qs.none()
+            if branch_ids is not None and not branch_ids:
+                return qs.none()
+
+        if device_id is not None:
+            if not filter_biometric_devices_for_user(user).filter(pk=device_id).exists():
+                return qs.none()
+
     if device_id:
         qs = qs.filter(device_id=device_id)
-    if branch_ids:
+    if branch_ids is not None:
         qs = qs.filter(device__branch_id__in=branch_ids)
     elif branch_id:
         qs = qs.filter(device__branch_id=branch_id)

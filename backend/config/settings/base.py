@@ -417,6 +417,13 @@ AGENT_GLOBAL_KEY_LIST_DEVICES = env.bool('AGENT_GLOBAL_KEY_LIST_DEVICES', defaul
 AGENT_GLOBAL_KEY_ALLOW_INGEST = env.bool('AGENT_GLOBAL_KEY_ALLOW_INGEST', default=False)
 # توقيع HMAC لطلبات ingest — مفعّل افتراضياً (عطّله صراحة في التطوير فقط)
 ATTENDANCE_REQUIRE_INGEST_SIGNATURE = env.bool('ATTENDANCE_REQUIRE_INGEST_SIGNATURE', default=True)
+# نافذة الطابع الزمني لمكافحة إعادة تشغيل طلبات ingest (ثوانٍ)
+ATTENDANCE_INGEST_TIMESTAMP_SKEW_SECONDS = env.int(
+    'ATTENDANCE_INGEST_TIMESTAMP_SKEW_SECONDS', default=300,
+)
+# حد محاولات مفتاح الوكيل الفاشلة لكل IP
+ATTENDANCE_AGENT_AUTH_FAIL_LIMIT = env.int('ATTENDANCE_AGENT_AUTH_FAIL_LIMIT', default=30)
+ATTENDANCE_AGENT_AUTH_FAIL_WINDOW = env.int('ATTENDANCE_AGENT_AUTH_FAIL_WINDOW', default=3600)
 
 # عناوين IP مسموحة لـ Evolution webhook (فارغ = بدون تقييد — يُفضّل ضبطها في الإنتاج)
 EVOLUTION_WEBHOOK_ALLOWED_IPS = env.list('EVOLUTION_WEBHOOK_ALLOWED_IPS', default=[])

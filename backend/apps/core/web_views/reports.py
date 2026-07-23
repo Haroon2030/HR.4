@@ -850,36 +850,6 @@ def reports_index(request):
 
 @login_required
 @permission_required('reports.view')
-def multi_report_detail(request):
-    visible_reports, _ = _catalog_for_user(request.user)
-    visible_by_key = {r['key']: r for r in visible_reports}
-    report_keys = request.GET.get('reports', '').split(',')
-    selected_reports = []
-    
-    for key in report_keys:
-        key = key.strip()
-        if not key:
-            continue
-        meta = visible_by_key.get(key)
-        if meta:
-            builder = BUILDERS.get(key)
-            data = builder(request) if builder else {'columns': [], 'rows': []}
-            selected_reports.append({
-                'meta': meta,
-                'data': _cap_report_data(data),
-            })
-            
-    if not selected_reports:
-        messages.info(request, 'اختر تقاريراً لعرضها من صفحة التقارير.')
-        return redirect('web:reports_index')
-
-    return render(request, 'pages/reports/multi_detail.html', {
-        'reports_data': selected_reports,
-        'reports_count': len(selected_reports)
-    })
-
-@login_required
-@permission_required('reports.view')
 def report_detail(request, report_type):
     visible_reports, visible_groups = _catalog_for_user(request.user)
     visible_keys = {r['key'] for r in visible_reports}

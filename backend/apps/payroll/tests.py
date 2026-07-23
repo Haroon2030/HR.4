@@ -873,7 +873,7 @@ class PayrollListViewTabTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'معايير المسير التفصيلي')
+        self.assertContains(response, 'معايير التفصيلي')
         self.assertContains(response, 'hr-tab-btn--purple is-active')
 
     def test_cash_tab_query_resets_session_detailed_view(self):
@@ -890,5 +890,5 @@ class PayrollListViewTabTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'معايير المسير التفصيلي')
+        self.assertNotContains(response, 'معايير التفصيلي')
         self.assertContains(response, 'hr-tab-btn--amber is-active')

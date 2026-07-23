@@ -343,42 +343,6 @@ def _resolve_hr_form_bank(request, employee):
     return _active_banks_queryset().first()
 
 
-def _active_professions_queryset():
-    from apps.setup.models import Profession
-
-    return Profession.objects.filter(is_deleted=False, is_active=True).order_by('name')
-
-
-def _professions_for_hr_form(employee):
-    """مهن التهيئة، مع مهنة الموظف إن لم تكن ضمن القائمة النشطة."""
-    from apps.setup.models import Profession
-
-    items = list(_active_professions_queryset())
-    emp_prof = getattr(employee, 'profession', None)
-    if emp_prof and emp_prof.pk and not any(p.pk == emp_prof.pk for p in items):
-        if not emp_prof.is_deleted and (emp_prof.name or '').strip():
-            items.append(emp_prof)
-    return items
-
-
-def _resolve_hr_form_profession(request, employee):
-    """المهنة من ?profession_id= أو مهنة الموظف."""
-    profession_id = request.GET.get('profession_id')
-    if profession_id and str(profession_id).isdigit():
-        prof = _active_professions_queryset().filter(pk=int(profession_id)).first()
-        if prof:
-            return prof
-        from apps.setup.models import Profession
-        prof = Profession.objects.filter(pk=int(profession_id), is_deleted=False).first()
-        if prof:
-            return prof
-
-    emp_prof = getattr(employee, 'profession', None)
-    if emp_prof and not emp_prof.is_deleted:
-        return emp_prof
-    return None
-
-
 def _resolve_employee_sponsorship(employee):
     """كفالة الموظف (حقل «الشركة» في ملف الموظف) — حتى لو لم تُحمَّل عبر select_related."""
     from apps.setup.models import Sponsorship
@@ -597,8 +561,6 @@ def hr_form_print(request, form_type, employee_id):
         context['bank'] = _resolve_hr_form_bank(request, employee)
         context['banks'] = _banks_for_hr_form(employee)
 
-    context['profession'] = _resolve_hr_form_profession(request, employee)
-    context['professions'] = _professions_for_hr_form(employee)
     context['form_employee_iban'] = (getattr(employee, 'iban', None) or '').strip()
 
     if form_type == 'salary_transfer_commitment':

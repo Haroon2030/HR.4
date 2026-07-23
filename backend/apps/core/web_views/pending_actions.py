@@ -550,22 +550,6 @@ def resubmit_pending_action(request, action_id):
     return redirect('web:pending_action_detail', action_id=action_id)
 
 
-# =============================================================================
-# توافق خلفي مع الأسماء القديمة (تُعيد التوجيه للجديد)
-# =============================================================================
-
-@login_required
-def approve_pending_action(request, action_id):
-    messages.info(request, 'تمّت ترقية نظام الموافقات. استخدم صفحة التفاصيل لاتخاذ القرار.')
-    return redirect('web:pending_action_detail', action_id=action_id)
-
-
-@login_required
-def reject_pending_action(request, action_id):
-    messages.info(request, 'تمّت ترقية النظام. لإرجاع الطلب استخدم زر "إرجاع للتعديل".')
-    return redirect('web:pending_action_detail', action_id=action_id)
-
-
 @login_required
 def delete_pending_action(request, action_id):
     """حذف ناعم لطلب عملية غير مُنفَّذ."""

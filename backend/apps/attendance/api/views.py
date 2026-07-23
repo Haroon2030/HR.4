@@ -25,9 +25,12 @@ from apps.attendance.services.agent_pull_queue import (
 )
 from apps.attendance.middleware import ingest_body_unreadable
 from apps.attendance.services.ingest_signature import (
+    claim_ingest_replay_slot,
     extract_provided_signature,
+    extract_provided_timestamp,
     get_ingest_body,
     signature_required,
+    validate_ingest_timestamp,
     verify_ingest_signature,
 )
 
@@ -155,7 +158,6 @@ class AgentDeviceListView(APIView):
                 'name': d.name,
                 'ip_address': d.ip_address,
                 'port': d.port,
-                'comm_key': int(d.comm_key or 0),
                 'branch_id': d.branch_id,
                 'branch_name': d.branch.name if d.branch_id else '',
             }
@@ -256,6 +258,7 @@ class AgentIngestView(APIView):
         )
         body = get_ingest_body(request)
         provided_sig = extract_provided_signature(request)
+        provided_ts = extract_provided_timestamp(request)
         require_sig = signature_required()
 
         device_hint = getattr(getattr(principal, 'device', None), 'pk', None)
@@ -278,9 +281,43 @@ class AgentIngestView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        if require_sig:
+            ts_ok, ts_msg = validate_ingest_timestamp(provided_ts)
+            if not ts_ok:
+                logger.warning(
+                    'Agent ingest rejected: timestamp (%s) device_key=%s',
+                    ts_msg,
+                    device_hint,
+                )
+                log_ingest_attempt(
+                    request=request,
+                    device=getattr(principal, 'device', None),
+                    status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
+                    signature_valid=False,
+                    message=ts_msg,
+                )
+                return Response(
+                    {
+                        'success': False,
+                        'message': ts_msg,
+                        'code': 'invalid_timestamp',
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         sig_valid: bool | None = None
         if provided_sig:
-            sig_valid = verify_ingest_signature(raw_key, body, provided_sig)
+            # عند إلزام التوقيع: التوقيع مربوط بالطابع الزمني لمنع إعادة التشغيل
+            sig_ts = provided_ts if require_sig else (provided_ts or None)
+            if require_sig:
+                sig_valid = verify_ingest_signature(
+                    raw_key, body, provided_sig, timestamp=sig_ts,
+                )
+            else:
+                # تطوير: قبول التوقيع القديم أو المربوط بالطابع إن وُجد
+                sig_valid = verify_ingest_signature(
+                    raw_key, body, provided_sig, timestamp=sig_ts,
+                ) if sig_ts else verify_ingest_signature(raw_key, body, provided_sig)
             if not sig_valid:
                 msg = 'توقيع الطلب غير صالح.'
                 logger.warning(
@@ -297,6 +334,26 @@ class AgentIngestView(APIView):
                 )
                 return Response(
                     {'success': False, 'message': msg, 'code': 'invalid_signature'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if require_sig and not claim_ingest_replay_slot(
+                raw_key, body, timestamp=provided_ts,
+            ):
+                msg = 'طلب مكرر — تم رفض إعادة التشغيل.'
+                logger.warning(
+                    'Agent ingest rejected: replay (device_key=%s ts=%s)',
+                    device_hint,
+                    provided_ts,
+                )
+                log_ingest_attempt(
+                    request=request,
+                    device=getattr(principal, 'device', None),
+                    status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
+                    signature_valid=True,
+                    message=msg,
+                )
+                return Response(
+                    {'success': False, 'message': msg, 'code': 'replay'},
                     status=status.HTTP_403_FORBIDDEN,
                 )
         elif require_sig:

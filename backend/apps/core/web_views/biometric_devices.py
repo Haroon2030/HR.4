@@ -94,7 +94,19 @@ def _device_users_querystring(filters: dict, *, extra: dict | None = None) -> st
 
 @permission_required(ATTENDANCE_SCREEN_DEVICES_VIEW)
 def biometric_devices_dashboard(request):
+    from django.http import Http404
+
     branch_filter_ids = _parse_branch_filter(request)
+    accessible = _user_accessible_branch_ids(request.user)
+    # عند غياب فلتر الفرع: قيّد بالقروع المتاحة للمستخدم (لا «كل الشركة»)
+    if accessible is not None:
+        if branch_filter_ids is None:
+            effective_branch_ids: list[int] | None = list(accessible)
+        else:
+            effective_branch_ids = [i for i in branch_filter_ids if i in accessible]
+    else:
+        effective_branch_ids = branch_filter_ids
+
     devices = list(get_biometric_devices_queryset(request.user, branch_ids=branch_filter_ids))
     branches = _accessible_branches(request.user)
 
@@ -103,14 +115,22 @@ def biometric_devices_dashboard(request):
         .select_related('employee', 'device', 'device__branch')
         .order_by('device__branch__name', 'device__name', 'device_user_id')
     )
-    if branch_filter_ids:
-        enrollments_qs = enrollments_qs.filter(device__branch_id__in=branch_filter_ids)
+    if effective_branch_ids is not None:
+        enrollments_qs = enrollments_qs.filter(device__branch_id__in=effective_branch_ids)
     enrollments = list(enrollments_qs[:100])
 
     device_user_filters = _parse_device_user_filters(request)
+    scoped_device_id = device_user_filters['device_id']
+    if scoped_device_id is not None:
+        try:
+            get_device_for_user(request.user, scoped_device_id)
+        except Http404:
+            scoped_device_id = -1  # لا نتائج
+
     device_users_qs = get_device_user_queryset(
-        device_id=device_user_filters['device_id'],
-        branch_ids=device_user_filters['branch_ids'],
+        user=request.user,
+        device_id=scoped_device_id,
+        branch_ids=effective_branch_ids,
         search=device_user_filters['search'] or None,
         mapped_only=device_user_filters['mapped_only'],
     )
@@ -153,11 +173,17 @@ def biometric_devices_dashboard(request):
     link_user_id = request.GET.get('link_user')
     link_device_user = None
     if link_device_id and link_user_id and str(link_user_id).isdigit():
-        link_device_user = BiometricDeviceUser.objects.filter(
-            device_id=int(link_device_id),
-            device_user_id=int(link_user_id),
-            is_deleted=False,
-        ).select_related('device').first()
+        try:
+            get_device_for_user(request.user, int(link_device_id))
+            link_device_user = BiometricDeviceUser.objects.filter(
+                device_id=int(link_device_id),
+                device_user_id=int(link_user_id),
+                is_deleted=False,
+            ).select_related('device').first()
+        except Http404:
+            link_device_user = None
+        except (TypeError, ValueError):
+            link_device_user = None
 
     devices_without_branch = filter_biometric_devices_for_user(
         request.user,
