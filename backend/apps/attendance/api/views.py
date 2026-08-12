@@ -260,6 +260,7 @@ class AgentIngestView(APIView):
         provided_sig = extract_provided_signature(request)
         provided_ts = extract_provided_timestamp(request)
         require_sig = signature_required()
+        legacy_ingest_signature = False
 
         device_hint = getattr(getattr(principal, 'device', None), 'pk', None)
         if require_sig and not provided_sig:
@@ -284,40 +285,54 @@ class AgentIngestView(APIView):
         if require_sig:
             ts_ok, ts_msg = validate_ingest_timestamp(provided_ts)
             if not ts_ok:
-                logger.warning(
-                    'Agent ingest rejected: timestamp (%s) device_key=%s',
-                    ts_msg,
-                    device_hint,
-                )
-                log_ingest_attempt(
-                    request=request,
-                    device=getattr(principal, 'device', None),
-                    status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
-                    signature_valid=False,
-                    message=ts_msg,
-                )
-                return Response(
-                    {
-                        'success': False,
-                        'message': ts_msg,
-                        'code': 'invalid_timestamp',
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+                # وكيل قديم: توقيع على الجسم فقط بدون X-Attendance-Timestamp
+                if not provided_ts and provided_sig and verify_ingest_signature(
+                    raw_key, body, provided_sig, timestamp=None,
+                ):
+                    legacy_ingest_signature = True
+                    logger.warning(
+                        'Agent ingest legacy signature (no timestamp) device_key=%s — '
+                        'حدّث agent.py على جهاز الفرع',
+                        device_hint,
+                    )
+                else:
+                    logger.warning(
+                        'Agent ingest rejected: timestamp (%s) device_key=%s',
+                        ts_msg,
+                        device_hint,
+                    )
+                    log_ingest_attempt(
+                        request=request,
+                        device=getattr(principal, 'device', None),
+                        status=AttendanceIngestLog.Status.REJECTED_SIGNATURE,
+                        signature_valid=False,
+                        message=ts_msg,
+                    )
+                    return Response(
+                        {
+                            'success': False,
+                            'message': ts_msg,
+                            'code': 'invalid_timestamp',
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
 
         sig_valid: bool | None = None
         if provided_sig:
-            # عند إلزام التوقيع: التوقيع مربوط بالطابع الزمني لمنع إعادة التشغيل
-            sig_ts = provided_ts if require_sig else (provided_ts or None)
-            if require_sig:
-                sig_valid = verify_ingest_signature(
-                    raw_key, body, provided_sig, timestamp=sig_ts,
-                )
+            if legacy_ingest_signature:
+                sig_valid = True
             else:
-                # تطوير: قبول التوقيع القديم أو المربوط بالطابع إن وُجد
-                sig_valid = verify_ingest_signature(
-                    raw_key, body, provided_sig, timestamp=sig_ts,
-                ) if sig_ts else verify_ingest_signature(raw_key, body, provided_sig)
+                # عند إلزام التوقيع: التوقيع مربوط بالطابع الزمني لمنع إعادة التشغيل
+                sig_ts = provided_ts if require_sig else (provided_ts or None)
+                if require_sig:
+                    sig_valid = verify_ingest_signature(
+                        raw_key, body, provided_sig, timestamp=sig_ts,
+                    )
+                else:
+                    # تطوير: قبول التوقيع القديم أو المربوط بالطابع إن وُجد
+                    sig_valid = verify_ingest_signature(
+                        raw_key, body, provided_sig, timestamp=sig_ts,
+                    ) if sig_ts else verify_ingest_signature(raw_key, body, provided_sig)
             if not sig_valid:
                 msg = 'توقيع الطلب غير صالح.'
                 logger.warning(
@@ -336,7 +351,7 @@ class AgentIngestView(APIView):
                     {'success': False, 'message': msg, 'code': 'invalid_signature'},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            if require_sig and not claim_ingest_replay_slot(
+            if require_sig and not legacy_ingest_signature and not claim_ingest_replay_slot(
                 raw_key, body, timestamp=provided_ts,
             ):
                 msg = 'طلب مكرر — تم رفض إعادة التشغيل.'

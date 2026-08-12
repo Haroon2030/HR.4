@@ -530,6 +530,11 @@ def push_to_server(
                     ' — حدّث agent.py من السيرفر (يرسل X-Attendance-Signature) '
                     'أو عطّل ATTENDANCE_REQUIRE_INGEST_SIGNATURE على السيرفر مؤقتاً.'
                 )
+            elif code == 'invalid_timestamp':
+                hint = (
+                    ' — حدّث agent.py من السيرفر (يرسل X-Attendance-Timestamp + '
+                    f'X-Attendance-Signature، build {AGENT_BUILD})'
+                )
             elif code == 'invalid_signature':
                 hint = (
                     ' — المفتاح في config.env يجب أن يطابق AGENT_API_KEY '

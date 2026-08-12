@@ -406,6 +406,22 @@ class AttendanceAgentAPITests(TestCase):
         self.assertEqual(second.json().get('code'), 'replay')
 
     @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
+    def test_ingest_accepts_legacy_body_signature_without_timestamp(self):
+        """وكيل قديم يوقّع الجسم فقط — يُقبل مؤقتاً حتى تحديث agent.py على الفرع."""
+        client = self._device_client()
+        payload = {'device_id': self.device.pk, 'punches': []}
+        body = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        legacy_sig = compute_ingest_signature(self.device_key, body)
+        response = client.post(
+            '/api/v1/attendance/agent/ingest/',
+            data=body,
+            content_type='application/json',
+            HTTP_X_ATTENDANCE_SIGNATURE=legacy_sig,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+
+    @override_settings(ATTENDANCE_REQUIRE_INGEST_SIGNATURE=True)
     def test_ingest_rejects_missing_timestamp_when_required(self):
         client = self._device_client()
         payload = {'device_id': self.device.pk, 'punches': []}
