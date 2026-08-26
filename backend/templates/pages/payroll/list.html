@@ -280,12 +280,27 @@
             syncCreateFormHiddenFields();
             filterForm.requestSubmit();
         }
-        if (yearSelect) {
-            yearSelect.addEventListener('change', submitPayrollFilters);
+        /** سنة/شهر: لا ترسل فوراً على change (يمنع اختيار الشهر بأسهم الكيبورد). */
+        function bindNativeFilterSelect(select) {
+            if (!select) return;
+            var dirty = false;
+            select.addEventListener('change', function () {
+                dirty = true;
+                // اختيار من القائمة يغلق الـ select غالباً — أرسل بعد الخروج من التركيز
+                window.setTimeout(function () {
+                    if (!dirty || document.activeElement === select) return;
+                    dirty = false;
+                    submitPayrollFilters();
+                }, 0);
+            });
+            select.addEventListener('blur', function () {
+                if (!dirty) return;
+                dirty = false;
+                submitPayrollFilters();
+            });
         }
-        if (monthSelect) {
-            monthSelect.addEventListener('change', submitPayrollFilters);
-        }
+        bindNativeFilterSelect(yearSelect);
+        bindNativeFilterSelect(monthSelect);
         if (branchSelect) {
             branchSelect.addEventListener('hr-ms:closed', submitPayrollFilters);
         }
