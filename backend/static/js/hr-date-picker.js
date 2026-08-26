@@ -112,6 +112,7 @@
         }
     }
 
+    function getPop(picker) {
         return picker._hrDatePop || null;
     }
 

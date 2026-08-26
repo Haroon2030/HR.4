@@ -193,6 +193,10 @@
         panel._hrMsSelect = select;
 
         function closePanel() {
+            // مهم: لا تُطلق hr-ms:closed إن كانت مغلقة مسبقاً —
+            // مستمع document click يستدعي closePanel عند أي نقرة خارجية
+            // (مثل اختيار الشهر) وكان يسبب إرسال فورم المسير فوراً.
+            if (panel.hidden) return;
             panel.hidden = true;
             panel.classList.remove('hr-ms__panel--open');
             panel.style.position = '';

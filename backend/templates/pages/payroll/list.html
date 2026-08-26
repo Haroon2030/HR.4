@@ -280,23 +280,31 @@
             syncCreateFormHiddenFields();
             filterForm.requestSubmit();
         }
-        /** سنة/شهر: لا ترسل فوراً على change (يمنع اختيار الشهر بأسهم الكيبورد). */
+        /**
+         * سنة/شهر: إرسال بعد توقف التغيير ~800ms (أسهم/عجلة).
+         * قوائم الفروع/الكفالة: عند إغلاق اللوحة فقط.
+         */
         function bindNativeFilterSelect(select) {
             if (!select) return;
             var dirty = false;
+            var timer = null;
+            var committed = select.value;
+            function scheduleSubmit() {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(function () {
+                    if (!dirty) return;
+                    if (select.value === committed) {
+                        dirty = false;
+                        return;
+                    }
+                    dirty = false;
+                    committed = select.value;
+                    submitPayrollFilters();
+                }, 800);
+            }
             select.addEventListener('change', function () {
                 dirty = true;
-                // اختيار من القائمة يغلق الـ select غالباً — أرسل بعد الخروج من التركيز
-                window.setTimeout(function () {
-                    if (!dirty || document.activeElement === select) return;
-                    dirty = false;
-                    submitPayrollFilters();
-                }, 0);
-            });
-            select.addEventListener('blur', function () {
-                if (!dirty) return;
-                dirty = false;
-                submitPayrollFilters();
+                scheduleSubmit();
             });
         }
         bindNativeFilterSelect(yearSelect);
