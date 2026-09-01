@@ -2,5 +2,6 @@
 <span class="blank hr-form-pen-field{% if extra_class %} {{ extra_class }}{% endif %}"
       data-input-type="text"
       data-label="{{ field_label|default:'' }}"
-      data-placeholder="{{ placeholder|default:'................' }}"
-      {% if ltr %}dir="ltr"{% endif %}>{% if value %}{{ value }}{% endif %}</span>
+      data-placeholder="{{ placeholder|default_if_none:'................' }}"
+      data-value="{{ value|default:''|escape }}"
+      {% if ltr %}dir="ltr"{% endif %}>{{ value|default:''|escape }}</span>

@@ -362,17 +362,28 @@
             min-width: 140px;
             font-weight: 700;
         }
-        .hr-form-pen-field.blank,
-        input.blank.hr-form-pen-field {
+        .hr-form-pen-field.blank:not(.hr-form-inline-pen),
+        input.blank.hr-form-pen-field:not(.hr-form-inline-pen) {
             min-width: 120px;
             font-weight: 600;
         }
-        .hr-form-inline-pen.blank,
-        input.blank.hr-form-inline-pen {
-            display: inline-block;
-            min-width: 100px;
-            font-weight: 700;
+        /* نص مدمج داخل فقرة الخطاب — بدون حقول */
+        .hr-form-inline-text {
+            display: inline;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: none;
+            font: inherit;
+            font-weight: inherit;
+            color: inherit;
             vertical-align: baseline;
+            line-height: inherit;
+        }
+        .clause strong .hr-form-inline-text,
+        .clause .hr-form-inline-text {
+            font-weight: 700;
+            color: #0f172a;
         }
         .letterhead__name-ar input.blank.hr-form-letterhead-name {
             display: inline-block;
@@ -617,6 +628,11 @@
         // كل <span class="blank"></span> → input نصي (أو date إذا كان عنوانه يدل على تاريخ)
         const DATE_HINTS = ['تاريخ', 'بتاريخ', 'بدء', 'انتهاء', 'إلى:', 'من:'];
         document.querySelectorAll('span.blank').forEach(el => {
+            if (el.classList.contains('hr-form-inline-pen')) {
+                el.classList.remove('blank', 'hr-form-pen-field', 'hr-form-inline-pen');
+                el.classList.add('hr-form-inline-text');
+                return;
+            }
             const labelText = (el.dataset.label || el.previousElementSibling?.textContent || '').trim();
             const forceText = el.dataset.inputType === 'text' || el.classList.contains('hr-form-pen-field');
             const isDate = !forceText && DATE_HINTS.some(h => labelText.includes(h));
@@ -639,7 +655,7 @@
             if (el.classList.contains('hr-form-amount')) {
                 inp.setAttribute('inputmode', 'decimal');
             }
-            let val = el.textContent.trim();
+            let val = (el.dataset.value || el.textContent || '').trim();
             const placeholder = el.dataset.placeholder;
             if (placeholder && !val) {
                 inp.placeholder = placeholder;
