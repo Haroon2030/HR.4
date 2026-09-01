@@ -309,6 +309,45 @@ HR_FORMS_WITH_BANK = frozenset({
 })
 
 
+def _form_amount(value) -> str:
+    """مبلغ للنماذج المطبوعة — دائماً بنقطة عشرية."""
+    try:
+        amount = Decimal(str(value if value not in (None, '') else 0).replace(',', '.'))
+    except (InvalidOperation, ValueError, TypeError):
+        return ''
+    return format(amount, '.2f')
+
+
+def _salary_certificate_form_context(employee) -> dict:
+    """تعبئة تلقائية لحقول تعريف الراتب من ملف الموظف."""
+    hire_date = ''
+    if employee.hire_date:
+        hire_date = employee.hire_date.strftime('%Y/%m/%d')
+
+    other_fixed = (
+        Decimal(employee.other_allowance or 0)
+        + Decimal(employee.cash_amount or 0)
+        + Decimal(employee.meal_allowance or 0)
+    )
+
+    return {
+        'form_employee_name': (employee.name or '').strip(),
+        'form_nationality': (
+            employee.nationality.name if getattr(employee, 'nationality_id', None) else ''
+        ),
+        'form_id_number': (employee.id_number or '').strip(),
+        'form_job_title': (
+            employee.profession.name if getattr(employee, 'profession_id', None) else ''
+        ),
+        'form_hire_date': hire_date,
+        'form_basic_salary': _form_amount(employee.basic_salary),
+        'form_housing_allowance': _form_amount(employee.housing_allowance),
+        'form_transport_allowance': _form_amount(employee.transport_allowance),
+        'form_other_allowances': _form_amount(other_fixed),
+        'form_total_salary': _form_amount(employee.total_salary),
+    }
+
+
 def _active_banks_queryset():
     from apps.setup.models import Bank
 
@@ -569,6 +608,9 @@ def hr_form_print(request, form_type, employee_id):
         context['form_employee_iban'] = ''
         context['eosb_entitlement'] = None
         context['eosb_resignation'] = None
+
+    if form_type == 'salary_certificate':
+        context.update(_salary_certificate_form_context(employee))
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)
 

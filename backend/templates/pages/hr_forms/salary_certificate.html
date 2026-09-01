@@ -10,14 +10,14 @@
         نفيدكم نحن
         <strong>{{ letterhead_name|default:"........................" }}</strong>
         بأن الموظف/
-        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الموظف" extra_class="hr-form-inline-pen" %}</strong>،
-        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="الجنسية" extra_class="hr-form-inline-pen" %}</strong>
+        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="اسم الموظف" extra_class="hr-form-inline-pen" value=form_employee_name %}</strong>،
+        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="الجنسية" extra_class="hr-form-inline-pen" value=form_nationality %}</strong>
         الجنسية، بموجب هوية رقم
-        (<strong>{% include "pages/hr_forms/_pen_field.html" with field_label="رقم الهوية" extra_class="hr-form-inline-pen" ltr=True %}</strong>)،
+        (<strong>{% include "pages/hr_forms/_pen_field.html" with field_label="رقم الهوية" extra_class="hr-form-inline-pen" ltr=True value=form_id_number %}</strong>)،
         يعمل لدينا بوظيفة
-        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="مسمى الوظيفة" extra_class="hr-form-inline-pen" %}</strong>
+        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="مسمى الوظيفة" extra_class="hr-form-inline-pen" value=form_job_title %}</strong>
         وتاريخ تعيينه هو
-        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="تاريخ التعيين" placeholder="..../..../........" extra_class="hr-form-inline-pen" %}</strong>
+        <strong>{% include "pages/hr_forms/_pen_field.html" with field_label="تاريخ التعيين" placeholder="..../..../........" extra_class="hr-form-inline-pen" value=form_hire_date %}</strong>
         وما زال على رأس العمل،
         وأُعطي هذا الخطاب بناءً على طلبه دون أدنى مسؤولية على الشركة.
     </div>

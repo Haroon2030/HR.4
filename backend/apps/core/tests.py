@@ -789,18 +789,27 @@ class HRFormPrintViewTests(TestCase):
         self.assertContains(r, 'شركة الاختبار')
         self.assertContains(r, 'نفيدكم نحن')
 
-    def test_salary_certificate_has_blank_salary_cells(self):
+    def test_salary_certificate_prefills_employee_data(self):
         from decimal import Decimal
+
+        from apps.setup.models import Nationality, Profession
 
         self.company.commercial_record = '4030999777'
         self.company.save(update_fields=['commercial_record'])
+        nat = Nationality.objects.create(code='SA', name='سعودي')
+        prof = Profession.objects.create(code='P1', name='فني كيمرات')
         emp = Employee.objects.create(
             name='موظف تعريف راتب',
             branch=self.branch,
+            nationality=nat,
+            profession=prof,
             basic_salary=Decimal('4000.00'),
             housing_allowance=Decimal('200.00'),
+            transport_allowance=Decimal('100.00'),
+            other_allowance=Decimal('50.00'),
             status=Employee.Status.ACTIVE,
             id_number='1234567890',
+            hire_date=date(2024, 3, 15),
         )
         c = Client()
         self.assertTrue(c.login(username='hrform_su', password='x'))
@@ -812,14 +821,16 @@ class HRFormPrintViewTests(TestCase):
         self.assertEqual(r.status_code, 200)
         html = r.content.decode()
         self.assertIn('hr-form-salary-cell', html)
-        self.assertIn('701806691', html)
-        self.assertIn('4030999777', html)
-        self.assertIn('نفيدكم نحن', html)
-        self.assertIn('دون أدنى مسؤولية على الشركة', html)
-        self.assertNotIn('4000,00', html)
-        self.assertNotIn('4000.00', html)
-        self.assertNotIn(emp.id_number, html)
-        self.assertNotIn('فني كيمرات', html)
+        self.assertIn('موظف تعريف راتب', html)
+        self.assertIn('سعودي', html)
+        self.assertIn('1234567890', html)
+        self.assertIn('فني كيمرات', html)
+        self.assertIn('2024/03/15', html)
+        self.assertIn('4000.00', html)
+        self.assertIn('200.00', html)
+        self.assertIn('100.00', html)
+        self.assertIn('50.00', html)
+        self.assertIn('4350.00', html)  # total
 
 
 class PasswordChangeViewTests(TestCase):
