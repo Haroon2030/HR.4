@@ -232,19 +232,24 @@ def branch_approve(req, user, notes=''):
     return req
 
 
-@transaction.atomic
-def gm_approve_and_assign(req, user, officer, notes=''):
-    """مدير الموارد يوافق ويُسند الطلب لأخصائي."""
-    from apps.employees.models import EmploymentRequest
+def _validate_hr_officer_user(officer) -> None:
     from apps.core.models import Role
 
-    if req.status != EmploymentRequest.Status.PENDING_GM:
-        raise ValueError('هذا الطلب ليس في مرحلة موافقة مدير الموارد.')
     if not officer or not officer.is_active:
         raise ValueError('يجب اختيار أخصائي موارد فعّال للإسناد.')
     profile = getattr(officer, 'profile', None)
     if not profile or not profile.role or profile.role.role_type != Role.RoleType.HR_OFFICER:
         raise ValueError('المستخدم المختار ليس "أخصائي موارد بشرية".')
+
+
+@transaction.atomic
+def gm_approve_and_assign(req, user, officer, notes=''):
+    """مدير الموارد يوافق ويُسند الطلب لأخصائي."""
+    from apps.employees.models import EmploymentRequest
+
+    if req.status != EmploymentRequest.Status.PENDING_GM:
+        raise ValueError('هذا الطلب ليس في مرحلة موافقة مدير الموارد.')
+    _validate_hr_officer_user(officer)
 
     now = timezone.now()
     req.status = EmploymentRequest.Status.PENDING_OFFICER
@@ -270,14 +275,43 @@ def gm_approve_and_assign(req, user, officer, notes=''):
 
 
 @transaction.atomic
+def save_officer_assignment(req, user, officer):
+    """حفظ/تحديث إسناد الأخصائي — دون تغيير الحالة (مرحلة الأخصائي)."""
+    from apps.employees.models import EmploymentRequest
+    from apps.core.services.workflow_access import can_assign_employment_officer
+
+    if req.status != EmploymentRequest.Status.PENDING_OFFICER:
+        raise ValueError('لا يمكن حفظ الإسناد في هذه المرحلة.')
+    if not can_assign_employment_officer(user, req):
+        raise ValueError('لا تملك صلاحية حفظ الإسناد.')
+    _validate_hr_officer_user(officer)
+
+    now = timezone.now()
+    req.assigned_officer = officer
+    req.assigned_at = now
+    req.save(update_fields=['assigned_officer', 'assigned_at'])
+
+    _notify_user(
+        officer, req,
+        title=f'طلب توظيف مُسند إليك — {req.name}',
+        message=f'الفرع: {req.branch.name if req.branch else "—"} • أسنده {user.get_full_name() or user.username}',
+        icon='clipboard-check', color=Notification.Color.INDIGO,
+    )
+    from apps.core.services.whatsapp import workflow_notifier
+    workflow_notifier.notify_whatsapp_officer_assigned(req, officer)
+    return req
+
+
+@transaction.atomic
 def officer_approve(req, user, notes=''):
     """الأخصائي يوافق → يُنشَأ الموظف فعلياً."""
     from apps.employees.models import EmploymentRequest, Employee
+    from apps.core.services.workflow_access import can_officer_act_employment_request
 
     if req.status != EmploymentRequest.Status.PENDING_OFFICER:
         raise ValueError('هذا الطلب ليس في مرحلة الأخصائي.')
-    if req.assigned_officer_id != user.id and not user.is_superuser:
-        raise ValueError('هذا الطلب غير مُسند إليك.')
+    if not can_officer_act_employment_request(user, req):
+        raise ValueError('لا تملك صلاحية الموافقة النهائية على هذا الطلب.')
 
     # ✅ التحقق من اكتمال بيانات الموظف قبل السماح بالموافقة النهائية
     missing = validate_employee_data_complete(req)

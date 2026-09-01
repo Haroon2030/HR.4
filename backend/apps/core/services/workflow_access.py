@@ -103,10 +103,7 @@ def user_can_reject_employment_request(user, emp_req) -> bool:
             or has_permission(user, 'operations.approve_admin')
         )
     if status == EmploymentRequest.Status.PENDING_OFFICER:
-        return (
-            emp_req.assigned_officer_id == user.id
-            and has_permission(user, 'operations.approve_officer')
-        )
+        return can_officer_act_employment_request(user, emp_req)
     return False
 
 
@@ -182,6 +179,24 @@ def can_officer_act_employment_request(user, emp_req) -> bool:
     if user.is_superuser or _is_super_or_admin(user) or _is_hr_general_manager(user):
         return True
     return emp_req.assigned_officer_id == user.id
+
+
+def can_assign_employment_officer(user, emp_req) -> bool:
+    """إسناد/حفظ الأخصائي — مرحلة مدير الموارد أو إعادة الإسناد لمدير موارد/نظام."""
+    from apps.employees.models import EmploymentRequest
+
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    if emp_req.status == EmploymentRequest.Status.PENDING_GM:
+        return can_gm_approve_employment_request(user, emp_req)
+    if emp_req.status == EmploymentRequest.Status.PENDING_OFFICER:
+        if not (user.is_superuser or _is_super_or_admin(user) or _is_hr_general_manager(user)):
+            return False
+        return (
+            stage_permission_required(user, PendingAction.Stage.GM)
+            or stage_permission_required(user, PendingAction.Stage.OFFICER)
+        )
+    return False
 
 
 def can_delete_employment_request(user, emp_req) -> bool:

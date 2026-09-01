@@ -24,6 +24,7 @@ from apps.core.services.workflow_access import (
     can_first_approve_employment_request,
     can_gm_approve_employment_request,
     can_officer_act_employment_request,
+    can_assign_employment_officer,
 )
 from apps.core.services import employment_requests as svc
 from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
@@ -156,7 +157,7 @@ def gm_approve_employment_request(request, request_id):
         messages.error(request, 'لا يمكن الموافقة على هذا الطلب في مرحلته الحالية.')
         return redirect('web:list_employment_requests')
 
-    if not stage_permission_required(request.user, PendingAction.Stage.GM):
+    if not can_gm_approve_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية الموافقة كمدير عام.')
         return redirect('web:list_employment_requests')
 
@@ -278,6 +279,29 @@ def edit_employment_request(request, request_id):
 
     if request.method == 'POST':
         action = (request.POST.get('action') or 'save').strip()
+        if action == 'save_assignment':
+            if not can_assign_employment_officer(request.user, emp_req):
+                messages.error(request, 'لا تملك صلاحية حفظ الإسناد.')
+                return redirect('web:list_employment_requests')
+            officer_id = request.POST.get('assigned_officer')
+            if not officer_id:
+                messages.error(request, 'يجب اختيار أخصائي موارد لحفظ الإسناد.')
+                return redirect(
+                    reverse('web:edit_employment_request', kwargs={'request_id': emp_req.id})
+                )
+            officer = User.objects.filter(id=officer_id, is_active=True).first()
+            try:
+                svc.save_officer_assignment(emp_req, request.user, officer)
+                messages.success(
+                    request,
+                    f'تم حفظ الإسناد إلى {officer.get_full_name() or officer.username}.',
+                )
+            except ValueError as e:
+                messages.error(request, str(e))
+            return redirect(
+                reverse('web:edit_employment_request', kwargs={'request_id': emp_req.id})
+            )
+
         save_tab = (request.POST.get('save_tab') or '').strip()
         if action == 'save_tab' and save_tab not in svc.VALID_EMP_REQ_TABS:
             save_tab = 'main'
@@ -358,6 +382,8 @@ def edit_employment_request(request, request_id):
 
     from apps.employees.services.contract_rules import saudi_nationality_ids
 
+    can_assign_officer = can_assign_employment_officer(request.user, emp_req)
+
     return render(request, 'pages/employment_requests/edit.html', {
         'form': form,
         'emp_req': emp_req,
@@ -365,6 +391,8 @@ def edit_employment_request(request, request_id):
         'tab_status': tab_status,
         'active_tab': active_tab,
         'can_final_approve': can_final_approve,
+        'can_assign_officer': can_assign_officer,
+        'hr_officers': get_hr_officers() if can_assign_officer else [],
         'saved_tab': saved_tab,
         'show_saved_message': show_saved_message,
         'saved_message': saved_message,

@@ -55,6 +55,32 @@
     </div>
     {% endif %}
 
+    {% if can_assign_officer %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <h2 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <i data-lucide="user-check" class="w-4 h-4 text-primary-600"></i>
+            إسناد الأخصائي
+        </h2>
+        <form method="post" class="flex flex-col sm:flex-row sm:items-end gap-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_assignment">
+            <div class="flex-1">
+                <label for="assigned_officer" class="block text-xs font-semibold text-slate-600 mb-1">أخصائي الموارد</label>
+                <select id="assigned_officer" name="assigned_officer" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                    <option value="">— اختر أخصائياً —</option>
+                    {% for o in hr_officers %}
+                    <option value="{{ o.id }}"{% if emp_req.assigned_officer_id == o.id %} selected{% endif %}>{{ o.get_full_name|default:o.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% include "components/hr_btn.html" with label="حفظ الإسناد" type="submit" variant="primary" icon="save" extra_class="justify-center sm:mb-0.5" %}
+        </form>
+        {% if emp_req.assigned_officer %}
+        <p class="text-xs text-slate-500 mt-2">المُسند حالياً: <strong>{{ emp_req.assigned_officer.get_full_name|default:emp_req.assigned_officer.username }}</strong></p>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {% if form.errors %}
     <div class="bg-red-50 border border-red-300 text-red-800 rounded-lg p-4">
         <p class="font-bold text-sm mb-2">يوجد أخطاء في النموذج:</p>
