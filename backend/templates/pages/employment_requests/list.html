@@ -82,7 +82,7 @@
                             <div class="hr-tbl-actions">
 
                                 {% if r.status == 'pending_branch' or r.status == 'pending' %}
-                                    {% if is_branch_manager or request.user.is_superuser %}
+                                    {% if r.can_first_approve %}
                                     <form method="POST" action="{% url 'web:approve_employment_request' r.id %}" class="inline" onsubmit="return confirm('الموافقة وتحويل الطلب لمدير الموارد البشرية؟');">
                                         {% csrf_token %}
                                         <button type="submit" class="hr-act hr-act--approve" title="موافقة ({{ first_stage_tab_label|default:'موافقة أولى' }})">
@@ -92,7 +92,7 @@
                                     {% endif %}
 
                                 {% elif r.status == 'pending_gm' %}
-                                    {% if is_general_manager or request.user.is_superuser %}
+                                    {% if r.can_gm_approve %}
                                     <form method="POST" action="{% url 'web:gm_approve_employment_request' r.id %}" class="flex items-center gap-1" onsubmit="return this.assigned_officer.value && confirm('الموافقة وإسناد الطلب للأخصائي المختار؟');">
                                         {% csrf_token %}
                                         <select name="assigned_officer" required class="px-2 py-1 text-xs border border-slate-300 rounded">
@@ -108,7 +108,7 @@
                                     {% endif %}
 
                                 {% elif r.status == 'pending_officer' %}
-                                    {% if r.assigned_officer_id == request.user.id or request.user.is_superuser %}
+                                    {% if r.can_officer_act %}
                                     {% url 'web:edit_employment_request' r.id as act_edit %}
                                     {% include "components/table_act_edit.html" with url=act_edit title="تعديل البيانات" %}
                                     <form method="POST" action="{% url 'web:officer_approve_employment_request' r.id %}" class="inline" onsubmit="return confirm('الموافقة النهائية وإضافة الموظف لقائمة العاملين؟');">

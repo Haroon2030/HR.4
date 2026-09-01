@@ -18,9 +18,15 @@ from apps.core.web_views._helpers import (
     _is_hr_officer,
 )
 from apps.core.models import PendingAction
-from apps.core.services.workflow_access import stage_permission_required, can_delete_employment_request
+from apps.core.services.workflow_access import (
+    stage_permission_required,
+    can_delete_employment_request,
+    can_first_approve_employment_request,
+    can_gm_approve_employment_request,
+    can_officer_act_employment_request,
+)
 from apps.core.services import employment_requests as svc
-from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, user_can_first_approve, first_stage_tab_label
+from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
 
 
 User = get_user_model()
@@ -90,6 +96,9 @@ def list_employment_requests(request):
     page_obj = paginator.get_page(request.GET.get('page') or 1)
     for row in page_obj.object_list:
         row.first_stage_label = resolve_first_approver(row).stage_label
+        row.can_first_approve = can_first_approve_employment_request(user, row)
+        row.can_gm_approve = can_gm_approve_employment_request(user, row)
+        row.can_officer_act = can_officer_act_employment_request(user, row)
 
     return render(request, 'pages/employment_requests/list.html', {
         'requests': page_obj.object_list,
@@ -99,7 +108,7 @@ def list_employment_requests(request):
         'is_branch_manager': is_branch,
         'is_general_manager': is_gm,
         'is_hr_officer': is_officer,
-        'hr_officers': get_hr_officers() if (is_gm or is_super) else [],
+        'hr_officers': get_hr_officers() if stage_permission_required(user, PendingAction.Stage.GM) else [],
         'first_stage_tab_label': first_stage_tab_label(user),
     })
 
@@ -115,15 +124,11 @@ def approve_employment_request(request, request_id):
     """مرحلة 1: مدير الإدارة/الفرع يوافق → ينتقل لمدير الموارد."""
     emp_req = _get_request_or_404(request_id)
 
-    if not user_can_first_approve(request.user, emp_req):
+    if not can_first_approve_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية مراجعة هذا الطلب')
         return redirect('web:list_employment_requests')
 
     if request.method != 'POST':
-        return redirect('web:list_employment_requests')
-
-    if not stage_permission_required(request.user, PendingAction.Stage.BRANCH):
-        messages.error(request, 'لا تملك صلاحية الموافقة على هذه المرحلة.')
         return redirect('web:list_employment_requests')
 
     notes = request.POST.get('review_notes', '')
@@ -181,14 +186,7 @@ def officer_approve_employment_request(request, request_id):
     if request.method != 'POST':
         return redirect('web:list_employment_requests')
 
-    if (
-        emp_req.assigned_officer_id != request.user.id
-        and not request.user.is_superuser
-    ):
-        messages.error(request, 'هذا الطلب غير مُسند إليك.')
-        return redirect('web:list_employment_requests')
-
-    if not stage_permission_required(request.user, PendingAction.Stage.OFFICER):
+    if not can_officer_act_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية التنفيذ.')
         return redirect('web:list_employment_requests')
 
@@ -271,10 +269,7 @@ def edit_employment_request(request, request_id):
         return redirect('web:list_employment_requests')
 
     # تحقق من الإسناد + صلاحية التنفيذ
-    if emp_req.assigned_officer_id != request.user.id and not request.user.is_superuser:
-        messages.error(request, 'هذا الطلب غير مُسند إليك.')
-        return redirect('web:list_employment_requests')
-    if not stage_permission_required(request.user, PendingAction.Stage.OFFICER):
+    if not can_officer_act_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية تعديل بيانات هذا الطلب.')
         return redirect('web:list_employment_requests')
 

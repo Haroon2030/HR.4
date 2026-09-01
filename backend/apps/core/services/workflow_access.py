@@ -125,6 +125,65 @@ def can_delete_pending_action(user, action) -> bool:
     return False
 
 
+def _is_hr_general_manager(user) -> bool:
+    """مدير النظام أو مدير الموارد — صلاحية أوسع على مراحل التوظيف."""
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    if user.is_superuser or _is_super_or_admin(user):
+        return True
+    profile = getattr(user, 'profile', None)
+    if not profile or not profile.role:
+        return False
+    from apps.core.models import Role
+
+    return profile.role.role_type == Role.RoleType.HR_MANAGER
+
+
+def can_first_approve_employment_request(user, emp_req) -> bool:
+    """موافقة المرحلة الأولى — صلاحية DB + نطاق التوجيه (أو مدير موارد/نظام)."""
+    from apps.employees.models import EmploymentRequest
+    from apps.core.services.approval_routing import user_can_first_approve
+
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    if emp_req.status not in {
+        EmploymentRequest.Status.PENDING_BRANCH,
+        EmploymentRequest.Status.PENDING,
+    }:
+        return False
+    if not stage_permission_required(user, PendingAction.Stage.BRANCH):
+        return False
+    if user.is_superuser or _is_super_or_admin(user) or _is_hr_general_manager(user):
+        return True
+    return user_can_first_approve(user, emp_req)
+
+
+def can_gm_approve_employment_request(user, emp_req) -> bool:
+    """موافقة مدير الموارد + إسناد الأخصائي."""
+    from apps.employees.models import EmploymentRequest
+
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    if emp_req.status != EmploymentRequest.Status.PENDING_GM:
+        return False
+    return stage_permission_required(user, PendingAction.Stage.GM)
+
+
+def can_officer_act_employment_request(user, emp_req) -> bool:
+    """تعديل بيانات الموظف / الموافقة النهائية — الأخصائي المُسند أو مدير موارد/نظام."""
+    from apps.employees.models import EmploymentRequest
+
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    if emp_req.status != EmploymentRequest.Status.PENDING_OFFICER:
+        return False
+    if not stage_permission_required(user, PendingAction.Stage.OFFICER):
+        return False
+    if user.is_superuser or _is_super_or_admin(user) or _is_hr_general_manager(user):
+        return True
+    return emp_req.assigned_officer_id == user.id
+
+
 def can_delete_employment_request(user, emp_req) -> bool:
     """حذف/إخفاء طلب توظيف — الإدارة لكل الحالات؛ المقدّم لطلباته بما فيها المكتملة."""
     from apps.employees.models import EmploymentRequest
