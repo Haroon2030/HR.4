@@ -23,6 +23,7 @@ from apps.core.validators import (
 from apps.core.widgets import apply_decimal_number_widgets
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
+from apps.setup.models import Administration
 
 
 User = get_user_model()
@@ -129,6 +130,10 @@ class UserBaseForm(forms.Form):
 
     assigned_branches = forms.ModelMultipleChoiceField(
         queryset=Branch.objects.filter(is_active=True),
+        required=False,
+    )
+    assigned_administrations = forms.ModelMultipleChoiceField(
+        queryset=Administration.objects.filter(is_active=True, is_deleted=False),
         required=False,
     )
 

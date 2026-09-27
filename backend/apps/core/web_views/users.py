@@ -11,6 +11,7 @@ from apps.core.forms import UserCreateForm, UserEditForm
 from apps.core.services.access_control import (
     assignable_roles_queryset,
     can_administer_user,
+    can_assign_user_administrations,
     can_assign_role,
     can_manage_user_permissions,
     can_manage_user_sessions,
@@ -41,13 +42,34 @@ def _save_assigned_branches(profile, role, assigned):
     profile.assigned_branches.set(assigned or [])
 
 
-def _user_form_context(user_obj=None, roles=None, branches=None):
+def _save_assigned_administrations(actor, profile, administrations):
+    """غير المميّز لا يغيّر الربط — تبقى الإدارات الحالية كما هي."""
+    if not can_assign_user_administrations(actor):
+        return
+    profile.assigned_administrations.set(administrations or [])
+
+
+def _user_form_context(actor, user_obj=None, roles=None, branches=None):
+    from apps.setup.models import Administration
+
+    can_assign_admins = can_assign_user_administrations(actor)
     ctx = {
         'roles': roles or [],
         'branches': branches or [],
+        'can_assign_administrations': can_assign_admins,
+        'administrations': (
+            Administration.objects.filter(is_active=True, is_deleted=False).order_by('code', 'name')
+            if can_assign_admins else []
+        ),
+        'selected_administration_ids': set(),
     }
     if user_obj:
         ctx['user_obj'] = user_obj
+        profile = getattr(user_obj, 'profile', None)
+        if profile is not None and profile.pk:
+            linked = list(profile.assigned_administrations.filter(is_deleted=False).order_by('code', 'name'))
+            ctx['linked_administrations'] = linked
+            ctx['selected_administration_ids'] = {a.pk for a in linked}
     return ctx
 
 
@@ -159,7 +181,7 @@ def edit_user(request, user_id):
         if not form.is_valid():
             for err in form.errors.values():
                 messages.error(request, err[0])
-            return render(request, 'pages/users/form.html', _user_form_context(
+            return render(request, 'pages/users/form.html', _user_form_context(request.user,
                 user_obj=user, roles=roles, branches=branches,
             ))
         cd = form.cleaned_data
@@ -227,11 +249,12 @@ def edit_user(request, user_id):
         profile.save()
         
         _save_assigned_branches(profile, new_role, assigned)
+        _save_assigned_administrations(request.user, profile, cd.get('assigned_administrations'))
 
         messages.success(request, f'تم تحديث المستخدم "{user.username}" بنجاح')
         return redirect('web:list_users')
 
-    return render(request, 'pages/users/form.html', _user_form_context(
+    return render(request, 'pages/users/form.html', _user_form_context(request.user,
         user_obj=user, roles=roles, branches=branches,
     ))
 
@@ -250,7 +273,7 @@ def add_user(request):
         if not form.is_valid():
             for err in form.errors.values():
                 messages.error(request, err[0])
-            return render(request, 'pages/users/form.html', _user_form_context(
+            return render(request, 'pages/users/form.html', _user_form_context(request.user,
                 roles=roles, branches=branches,
             ))
         cd = form.cleaned_data
@@ -261,7 +284,7 @@ def add_user(request):
 
         if new_role and not can_assign_role(request.user, new_role):
             messages.error(request, 'لا يمكنك تعيين هذا الدور.')
-            return render(request, 'pages/users/form.html', _user_form_context(
+            return render(request, 'pages/users/form.html', _user_form_context(request.user,
                 roles=roles, branches=branches,
             ))
 
@@ -269,14 +292,14 @@ def add_user(request):
         if accessible is not None:
             if new_branch and new_branch.pk not in accessible:
                 messages.error(request, 'لا يمكنك تعيين فرع خارج نطاق صلاحياتك.')
-                return render(request, 'pages/users/form.html', _user_form_context(
+                return render(request, 'pages/users/form.html', _user_form_context(request.user,
                     roles=roles, branches=branches,
                 ))
             if assigned_ids:
                 invalid = set(assigned_ids) - accessible
                 if invalid:
                     messages.error(request, 'لا يمكنك تعيين فروع خارج نطاق صلاحياتك.')
-                    return render(request, 'pages/users/form.html', _user_form_context(
+                    return render(request, 'pages/users/form.html', _user_form_context(request.user,
                         roles=roles, branches=branches,
                     ))
 
@@ -302,11 +325,12 @@ def add_user(request):
         profile.save()
         
         _save_assigned_branches(profile, new_role, assigned)
+        _save_assigned_administrations(request.user, profile, cd.get('assigned_administrations'))
 
         messages.success(request, f'تم إنشاء المستخدم "{user.username}" بنجاح')
         return redirect('web:list_users')
 
-    return render(request, 'pages/users/form.html', _user_form_context(
+    return render(request, 'pages/users/form.html', _user_form_context(request.user,
         roles=roles, branches=branches,
     ))
 

@@ -199,6 +199,65 @@ def filter_queryset_by_accessible_branch(
     return queryset.filter(**{f'{branch_field}__in': branch_ids})
 
 
+def get_scoped_administration_ids(user) -> set[int] | None:
+    """
+    None → المستخدم غير مقيّد بإدارات (يُطبَّق نطاق الفروع المعتاد).
+    وإلا: الإدارات المرتبطة به (مع الإدارات التي يديرها من التهيئة).
+    المستخدمون المميّزون (superuser / admin / مدير موارد) لا يُقيَّدون.
+    """
+    cached = getattr(user, '_scoped_administration_ids_cache', _MISSING)
+    if cached is not _MISSING:
+        return cached
+
+    result = None
+    profile = getattr(user, 'profile', None) if user.is_authenticated else None
+    if profile is not None and profile.pk and not is_privileged_actor(user):
+        assigned = set(
+            profile.assigned_administrations.filter(is_deleted=False).values_list('id', flat=True)
+        )
+        if assigned:
+            assigned.update(
+                user.managed_administrations.filter(is_deleted=False).values_list('id', flat=True)
+            )
+            result = assigned
+    user._scoped_administration_ids_cache = result
+    return result
+
+
+def filter_employees_for_user(user, queryset: QuerySet) -> QuerySet:
+    """تقييد موظفين: بالإدارات المرتبطة إن وُجدت، وإلا بنطاق الفروع."""
+    administration_ids = get_scoped_administration_ids(user)
+    if administration_ids is not None:
+        return queryset.filter(administration_id__in=administration_ids)
+    return filter_queryset_by_accessible_branch(user, queryset)
+
+
+def filter_administrations_for_user(user, queryset: QuerySet) -> QuerySet:
+    """خيارات الإدارة في نماذج الموظف — تقتصر على إدارات المستخدم المرتبطة."""
+    administration_ids = get_scoped_administration_ids(user)
+    if administration_ids is None:
+        return queryset
+    return queryset.filter(pk__in=administration_ids)
+
+
+def user_may_access_employee(user, employee) -> bool:
+    administration_ids = get_scoped_administration_ids(user)
+    if administration_ids is not None:
+        return employee.administration_id in administration_ids
+    if (
+        employee.administration_id
+        and user.managed_administrations.filter(id=employee.administration_id).exists()
+    ):
+        return True
+    accessible = get_accessible_branch_ids(user)
+    return accessible is None or employee.branch_id in accessible
+
+
+def can_assign_user_administrations(actor) -> bool:
+    """ربط المستخدمين بالإدارات يوسّع الرؤية عبر الفروع — للمميّزين فقط."""
+    return is_privileged_actor(actor)
+
+
 def validate_user_create_data(
     actor,
     *,

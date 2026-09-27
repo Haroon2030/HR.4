@@ -134,6 +134,11 @@ def _employee_edit_page_context(employee, *, form=None, is_create=False, user=No
         'administrations': get_cached_list('administrations', _administrations_qs),
     }
     if user is not None:
+        from apps.core.services.access_control import get_scoped_administration_ids
+
+        scoped_ids = get_scoped_administration_ids(user)
+        if scoped_ids is not None:
+            ctx['administrations'] = [a for a in ctx['administrations'] if a.pk in scoped_ids]
         enrich_employee_page_context(user, ctx, requested_tab=requested_tab, edit_form=True)
         ctx['can_edit_salary'] = user_can_edit_salary(user)
         ctx['employee_edit_client_tabs'] = True
@@ -223,13 +228,24 @@ def add_employee(request):
         for err in form.errors.values():
             messages.error(request, err[0])
 
-    from apps.core.services.access_control import filter_branches_queryset
+    from apps.core.services.access_control import (
+        filter_administrations_for_user,
+        filter_branches_queryset,
+        get_scoped_administration_ids,
+    )
 
+    administrations = list(filter_administrations_for_user(request.user, _administrations_qs()))
+    administration_locked = get_scoped_administration_ids(request.user) is not None
+    default_administration_id = (
+        administrations[0].pk if administration_locked and len(administrations) == 1 else None
+    )
     return render(request, 'pages/employees/form.html', {
         'branches': filter_branches_queryset(request.user, Branch.objects.filter(is_active=True)),
         'departments': Department.objects.all(),
         'cost_centers': CostCenter.objects.all(),
-        'administrations': _administrations_qs(),
+        'administrations': administrations,
+        'administration_locked': administration_locked,
+        'default_administration_id': default_administration_id,
     })
 
 

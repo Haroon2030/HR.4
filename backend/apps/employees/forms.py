@@ -79,6 +79,17 @@ FK_LABEL_OVERRIDES = {
 }
 
 
+def _administration_choices_for(user):
+    from apps.setup.models import Administration
+
+    qs = Administration.objects.filter(is_active=True, is_deleted=False).order_by('code', 'name')
+    if user is None:
+        return qs
+    from apps.core.services.access_control import filter_administrations_for_user
+
+    return filter_administrations_for_user(user, qs)
+
+
 def _apply_fk_label_overrides(form):
     for fname, label_fn in FK_LABEL_OVERRIDES.items():
         f = form.fields.get(fname)
@@ -150,10 +161,7 @@ class EmployeeForm(forms.ModelForm):
                 Branch.objects.filter(is_active=True, is_deleted=False),
             )
         if 'administration' in self.fields:
-            from apps.setup.models import Administration
-            self.fields['administration'].queryset = Administration.objects.filter(
-                is_active=True, is_deleted=False,
-            ).order_by('code', 'name')
+            self.fields['administration'].queryset = _administration_choices_for(user)
         # كل الحقول اختيارية على مستوى الـ form باستثناء name
         # (Model أصلاً يسمح بـ blank=True/null=True لمعظمها)
         for field_name, field in self.fields.items():
@@ -328,10 +336,7 @@ class EmploymentRequestForm(forms.ModelForm):
                 Branch.objects.filter(is_active=True),
             )
         if 'administration' in self.fields:
-            from apps.setup.models import Administration
-            self.fields['administration'].queryset = Administration.objects.filter(
-                is_active=True, is_deleted=False,
-            ).order_by('code', 'name')
+            self.fields['administration'].queryset = _administration_choices_for(user)
 
     def clean_name(self):
         name = (self.cleaned_data.get('name') or '').strip()
@@ -341,6 +346,15 @@ class EmploymentRequestForm(forms.ModelForm):
 
     def clean_id_number(self):
         return _clean_unique_employee_id_number(self.cleaned_data.get('id_number'))
+
+    def clean_administration(self):
+        administration = self.cleaned_data.get('administration')
+        if administration is None and self.user is not None:
+            from apps.core.services.access_control import get_scoped_administration_ids
+
+            if get_scoped_administration_ids(self.user) is not None:
+                raise ValidationError('اختر الإدارة المرتبط بها حسابك.')
+        return administration
 
     def clean_branch(self):
         branch = self.cleaned_data.get('branch')

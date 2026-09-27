@@ -124,6 +124,34 @@
                     {% endfor %}
                 </select>
             </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <label class="block text-xs font-bold text-slate-800 tracking-wide mb-1" for="id_assigned_administrations">
+                    الإدارات المرتبطة <span class="text-slate-400 font-normal">(اختياري)</span>
+                </label>
+                <p class="text-xs text-slate-500 mb-2">
+                    عند الربط لا يرى المستخدم إلا موظفي هذه الإدارات، وتُختار إدارته تلقائياً عند إضافة موظف.
+                    لا يؤثر الربط على مدير النظام ومدير الموارد.
+                </p>
+                {% if can_assign_administrations %}
+                <select id="id_assigned_administrations" name="assigned_administrations" multiple size="5"
+                    class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                    {% for adm in administrations %}
+                    <option value="{{ adm.id }}" {% if adm.id in selected_administration_ids %}selected{% endif %}>
+                        {% if adm.code %}{{ adm.code }} — {% endif %}{{ adm.name }}
+                    </option>
+                    {% empty %}
+                    <option disabled>لا توجد إدارات — أضفها من التهيئة → الإدارات</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-slate-500 mt-1"><strong>Ctrl + نقر</strong> لاختيار أكثر من إدارة، أو لإلغاء الاختيار.</p>
+                {% else %}
+                <p class="text-sm text-slate-700">
+                    {% for adm in linked_administrations %}{% if not forloop.first %}، {% endif %}{% if adm.code %}{{ adm.code }} — {% endif %}{{ adm.name }}{% empty %}غير مرتبط بإدارة{% endfor %}
+                </p>
+                <p class="text-xs text-slate-400 mt-1">تعديل الربط متاح لمدير النظام أو مدير الموارد فقط.</p>
+                {% endif %}
+            </div>
         </div>
 
         {% url 'web:list_users' as users_cancel_url %}

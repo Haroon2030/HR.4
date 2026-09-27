@@ -98,12 +98,15 @@
                 <div class="hr-employee-create-section__grid">
                     <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_administration">الإدارة</label>
-                        <select id="id_create_administration" name="administration" class="hr-glass-input hr-employee-create-field__input">
-                            <option value="">— اختر الإدارة —</option>
+                        <select id="id_create_administration" name="administration" class="hr-glass-input hr-employee-create-field__input"{% if administration_locked %} required{% endif %}>
+                            {% if not default_administration_id %}<option value="">— اختر الإدارة —</option>{% endif %}
                             {% for a in administrations %}
-                            <option value="{{ a.id }}">{% if a.code %}{{ a.code }}{% if a.name and a.code != a.name %} — {{ a.name }}{% endif %}{% else %}{{ a.name }}{% endif %}</option>
+                            <option value="{{ a.id }}"{% if a.id == default_administration_id %} selected{% endif %}>{% if a.code %}{{ a.code }}{% if a.name and a.code != a.name %} — {{ a.name }}{% endif %}{% else %}{{ a.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
+                        {% if administration_locked %}
+                        <p class="text-xs text-slate-500 mt-1">الإدارات المتاحة هي المرتبطة بحسابك فقط.</p>
+                        {% endif %}
                     </div>
                     <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_cost_center">مركز التكلفة</label>

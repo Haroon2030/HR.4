@@ -313,6 +313,15 @@ class UserProfile(BaseModel):
         blank=True,
         help_text="فروع يصل إليها المستخدم (إضافةً لتعيين مدير الإدارة من التهيئة)",
     )
+
+    # عند التعيين: لا يرى المستخدم إلا موظفي هذه الإدارات، وتُفرض إدارته عند إضافة موظف
+    assigned_administrations = models.ManyToManyField(
+        'setup.Administration',
+        verbose_name="الإدارات المرتبطة",
+        related_name="assigned_users",
+        blank=True,
+        help_text="يقيّد رؤية المستخدم على موظفي هذه الإدارات فقط",
+    )
     
     user_number = models.CharField(
         "رقم المستخدم",

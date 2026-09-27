@@ -173,6 +173,22 @@
     </div>
     {% endif %}
 
+    {% with linked_admins=user_obj.profile.assigned_administrations.all %}
+    {% if linked_admins %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-lg font-bold text-slate-900">الإدارات المرتبطة</h2>
+            <p class="text-xs text-slate-500 mt-1">يرى المستخدم موظفي هذه الإدارات فقط.</p>
+        </div>
+        <div class="p-6 flex flex-wrap gap-2">
+            {% for adm in linked_admins %}
+            <span class="px-3 py-1.5 text-sm bg-slate-100 text-slate-800 rounded-lg">{% if adm.code %}{{ adm.code }} — {% endif %}{{ adm.name }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <!-- الفروع المعينة -->
     {% if show_assigned_branches %}
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

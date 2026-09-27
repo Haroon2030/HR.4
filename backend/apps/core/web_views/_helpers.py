@@ -43,11 +43,10 @@ def _is_branch_accountant(user):
 
 
 def filter_employees_queryset_for_user(user, queryset):
-    """Restrict employee queryset to branches the user may access."""
-    branch_ids = _user_accessible_branch_ids(user)
-    if branch_ids is None:
-        return queryset
-    return queryset.filter(branch_id__in=branch_ids)
+    """Restrict employees to the user's linked administrations, else accessible branches."""
+    from apps.core.services.access_control import filter_employees_for_user
+
+    return filter_employees_for_user(user, queryset)
 
 
 def _user_accessible_branch_ids(user):
@@ -105,14 +104,10 @@ def employee_branch_access_required(view_func):
         employee, missing_resp = get_active_employee_or_redirect(request, employee_id)
         if missing_resp is not None:
             return missing_resp
-        if (
-            employee.administration_id
-            and request.user.managed_administrations.filter(id=employee.administration_id).exists()
-        ):
-            return view_func(request, *args, **kwargs)
-        accessible = _user_accessible_branch_ids(request.user)
-        if accessible is not None and employee.branch_id not in accessible:
-            messages.error(request, 'لا تملك صلاحية على فرع هذا الموظف.')
+        from apps.core.services.access_control import user_may_access_employee
+
+        if not user_may_access_employee(request.user, employee):
+            messages.error(request, 'لا تملك صلاحية على هذا الموظف.')
             return redirect('web:list_employees')
         return view_func(request, *args, **kwargs)
     return wrapper
