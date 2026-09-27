@@ -67,12 +67,13 @@ def list_employment_requests(request):
 
     if not is_super:
         cond = Q(requested_by=user)
-        if is_branch:
-            cond |= first_stage_pending_q(
-                user,
-                model=EmploymentRequest,
-                model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
-            )
+        first_q = first_stage_pending_q(
+            user,
+            model=EmploymentRequest,
+            model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+        )
+        if first_q.children:
+            cond |= first_q
         if is_gm:
             # المدير العام يرى الكل — أبطل الفلترة على الملكية/الفرع
             cond = Q()

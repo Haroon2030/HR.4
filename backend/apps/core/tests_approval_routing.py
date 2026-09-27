@@ -135,6 +135,63 @@ class ApprovalRoutingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(req, list(response.context['pending_requests']))
 
+    def _grant_admin_approval_permission(self, user):
+        from apps.core.models import AppModule, Permission
+
+        module, _ = AppModule.objects.get_or_create(
+            code='operations',
+            defaults={'name': 'operations', 'icon': 'circle', 'order': 50},
+        )
+        perm, _ = Permission.objects.get_or_create(
+            code='operations.approve_admin',
+            defaults={
+                'module': module,
+                'operation': Permission.Operation.APPROVE_ADMINISTRATION,
+                'name': 'operations.approve_admin',
+            },
+        )
+        role = Role.objects.create(name='مدير إدارة', role_type=Role.RoleType.ADMIN_MANAGER)
+        role.permissions.add(perm)
+        profile = user.profile
+        profile.role = role
+        profile.save(update_fields=['role'])
+
+    def test_employment_list_shows_pending_hire_to_administration_manager(self):
+        from django.urls import reverse
+
+        other_admin = Administration.objects.create(
+            code='ADM-OTHER', name='Other', manager=self.other_manager,
+        )
+        own_req = self._build_hire_request(with_admin=True)
+        other_req = self._build_hire_request(with_admin=False)
+        other_req.administration = other_admin
+        other_req.save(update_fields=['administration'])
+
+        self._grant_admin_approval_permission(self.admin_manager)
+        self.assertFalse(self.admin_manager.managed_branches.exists())
+
+        self.client.force_login(self.admin_manager)
+        response = self.client.get(reverse('web:list_employment_requests'))
+
+        self.assertEqual(response.status_code, 200)
+        rows = {r.id: r for r in response.context['requests']}
+        self.assertIn(own_req.id, rows)
+        self.assertNotIn(other_req.id, rows)
+        self.assertTrue(rows[own_req.id].can_first_approve)
+
+    def test_administration_manager_can_approve_hire_from_list(self):
+        from django.urls import reverse
+        from apps.employees.models import EmploymentRequest
+
+        req = self._build_hire_request(with_admin=True)
+        self._grant_admin_approval_permission(self.admin_manager)
+
+        self.client.force_login(self.admin_manager)
+        self.client.post(reverse('web:approve_employment_request', args=[req.id]))
+
+        req.refresh_from_db()
+        self.assertEqual(req.status, EmploymentRequest.Status.PENDING_GM)
+
     def test_stage_label_strips_technical_role_code(self):
         from apps.core.models import UserProfile
 
