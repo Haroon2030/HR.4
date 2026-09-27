@@ -69,6 +69,7 @@ def dashboard_view(request):
     # طلبات التوظيف المعلقة الخاصة بالخط الأول (مدير إدارة/فرع)
     first_stage_q = first_stage_pending_q(
         request.user,
+        model=EmploymentRequest,
         model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
     )
     if request.user.is_superuser or first_stage_q.children:

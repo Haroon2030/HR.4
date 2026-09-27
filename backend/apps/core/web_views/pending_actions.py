@@ -109,7 +109,9 @@ def _inbox_for(user, qs):
     if user.is_superuser or _is_general_manager(user):
         f |= Q(status=PendingAction.Status.PENDING_GM)
         has_filter = True
-    first_q = first_stage_pending_q(user, model_status_pending_branch=PendingAction.Status.PENDING_BRANCH)
+    first_q = first_stage_pending_q(
+        user, model=PendingAction, model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
+    )
     if first_q.children:
         f |= first_q
         has_filter = True
@@ -162,7 +164,9 @@ def _inbox_for_hire(user, qs):
     if user.is_superuser or _is_general_manager(user):
         f |= Q(status=EmploymentRequest.Status.PENDING_GM)
         has_filter = True
-    first_q = first_stage_pending_q(user, model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH)
+    first_q = first_stage_pending_q(
+        user, model=EmploymentRequest, model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+    )
     if first_q.children:
         f |= first_q
         has_filter = True

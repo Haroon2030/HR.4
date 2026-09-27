@@ -70,6 +70,7 @@ def list_employment_requests(request):
         if is_branch:
             cond |= first_stage_pending_q(
                 user,
+                model=EmploymentRequest,
                 model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
             )
         if is_gm:

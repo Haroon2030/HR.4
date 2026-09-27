@@ -158,12 +158,14 @@ def user_can_first_approve(user, obj) -> bool:
     return False
 
 
-def first_stage_pending_q(user, *, model_status_pending_branch: str) -> Q:
+def first_stage_pending_q(user, *, model, model_status_pending_branch: str) -> Q:
     """
     فلتر صندوق الوارد للمرحلة الأولى:
     - محاسب الفرع: عجز الكاشير فقط في فروعه
     - مدير الإدارة: طلبات إدارته (ما عدا عجز الكاشير)
-    - مدير الفرع: طلبات فرعه غير المرتبطة بإدارة فعّالة (ما عدا عجز الكاشier)
+    - مدير الفرع: طلبات فرعه غير المرتبطة بإدارة فعّالة (ما عدا عجز الكاشير)
+
+    عجز الكاشير نوع خاص بـ PendingAction فقط؛ طلبات التوظيف لا تملك action_type.
     """
     from apps.core.models import PendingAction
     from apps.employees.services.cash_shortage_access import (
@@ -174,8 +176,10 @@ def first_stage_pending_q(user, *, model_status_pending_branch: str) -> Q:
     if user.is_superuser:
         return Q(status=model_status_pending_branch)
 
+    supports_cash_shortage = model is PendingAction
+
     q = Q()
-    if is_branch_accountant(user):
+    if supports_cash_shortage and is_branch_accountant(user):
         cs_q = cash_shortage_first_stage_q(user, model_status_pending_branch=model_status_pending_branch)
         if cs_q.children:
             q |= cs_q
@@ -186,7 +190,7 @@ def first_stage_pending_q(user, *, model_status_pending_branch: str) -> Q:
     branch_ids = list(
         user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)
     )
-    non_cash = ~Q(action_type=PendingAction.ActionType.CASH_SHORTAGE)
+    non_cash = ~Q(action_type=PendingAction.ActionType.CASH_SHORTAGE) if supports_cash_shortage else Q()
     if admin_ids:
         q |= Q(status=model_status_pending_branch, administration_id__in=admin_ids) & non_cash
     if branch_ids:

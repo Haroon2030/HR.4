@@ -78,6 +78,63 @@ class ApprovalRoutingTests(TestCase):
         self.assertEqual(decision.stage_label, 'المدير المالي')
         self.assertEqual(first_stage_tab_label(self.admin_manager), 'المدير المالي')
 
+    def _build_hire_request(self, *, with_admin: bool):
+        from apps.employees.models import EmploymentRequest
+
+        return EmploymentRequest.objects.create(
+            name='Hire',
+            branch=self.branch,
+            administration=self.administration if with_admin else None,
+            status=EmploymentRequest.Status.PENDING_BRANCH,
+        )
+
+    def test_first_stage_q_on_hire_requests_routes_by_administration(self):
+        from apps.core.services.approval_routing import first_stage_pending_q
+        from apps.employees.models import EmploymentRequest
+
+        admin_req = self._build_hire_request(with_admin=True)
+        branch_req = self._build_hire_request(with_admin=False)
+
+        def inbox_ids(user):
+            q = first_stage_pending_q(
+                user,
+                model=EmploymentRequest,
+                model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+            )
+            return set(EmploymentRequest.objects.filter(q).values_list('id', flat=True))
+
+        self.assertEqual(inbox_ids(self.admin_manager), {admin_req.id})
+        self.assertEqual(inbox_ids(self.branch_manager), {branch_req.id})
+
+    def test_first_stage_q_on_pending_actions_excludes_cash_shortage_for_admin_manager(self):
+        from apps.core.services.approval_routing import first_stage_pending_q
+
+        leave = self._build_action(with_admin=True)
+        shortage = PendingAction.objects.create(
+            action_type=PendingAction.ActionType.CASH_SHORTAGE,
+            employee=leave.employee,
+            branch=self.branch,
+            administration=self.administration,
+            status=PendingAction.Status.PENDING_BRANCH,
+        )
+        q = first_stage_pending_q(
+            self.admin_manager,
+            model=PendingAction,
+            model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
+        )
+        ids = set(PendingAction.objects.filter(q).values_list('id', flat=True))
+        self.assertIn(leave.id, ids)
+        self.assertNotIn(shortage.id, ids)
+
+    def test_dashboard_loads_for_administration_manager_with_pending_hire(self):
+        from django.urls import reverse
+
+        req = self._build_hire_request(with_admin=True)
+        self.client.force_login(self.admin_manager)
+        response = self.client.get(reverse('web:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(req, list(response.context['pending_requests']))
+
     def test_stage_label_strips_technical_role_code(self):
         from apps.core.models import UserProfile
 

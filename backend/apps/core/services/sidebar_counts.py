@@ -116,6 +116,7 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
         inbox_filter |= Q(status=PendingAction.Status.PENDING_GM)
     first_pa_q = first_stage_pending_q(
         user,
+        model=PendingAction,
         model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
     )
     if first_pa_q.children:
@@ -142,6 +143,7 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
         hire_inbox |= Q(status=EmploymentRequest.Status.PENDING_GM)
     first_hire_q = first_stage_pending_q(
         user,
+        model=EmploymentRequest,
         model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
     )
     if first_hire_q.children:
