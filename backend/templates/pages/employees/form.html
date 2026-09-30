@@ -29,7 +29,7 @@
             </div>
             <div>
                 <p class="hr-employee-create-form__intro-title">بيانات التسجيل الأولية</p>
-                <p class="hr-employee-create-form__intro-text">الحقول المعلّمة بـ <span class="hr-required-mark text-rose-600 font-bold">*</span> إلزامية. يمكن إضافة الراتب والمستندات وباقي البيانات لاحقاً.</p>
+                <p class="hr-employee-create-form__intro-text">الحقول المعلّمة بـ <span class="hr-required-mark text-rose-600 font-bold">*</span> إلزامية. يمكن إضافة البدلات والمستندات وباقي البيانات لاحقاً.</p>
             </div>
         </div>
 
@@ -116,6 +116,28 @@
                             <option value="{{ c.id }}">{% if c.code %}{{ c.code }}{% if c.name and c.code != c.name %} — {{ c.name }}{% endif %}{% else %}{{ c.name }}{% endif %}</option>
                             {% endfor %}
                         </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="hr-employee-create-section">
+                <header class="hr-employee-create-section__head">
+                    <span class="hr-employee-create-section__icon hr-employee-create-section__icon--emerald" aria-hidden="true">
+                        {% lucide_glyph 'wallet' '' %}
+                    </span>
+                    <div>
+                        <h2 class="hr-employee-create-section__title">الراتب</h2>
+                        <p class="hr-employee-create-section__subtitle">الراتب الأساسي المقترح — تُستكمل البدلات عند الاعتماد النهائي</p>
+                    </div>
+                </header>
+                <div class="hr-employee-create-section__grid">
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_basic_salary">الراتب الأساسي</label>
+                        <input type="number" id="id_create_basic_salary" name="basic_salary"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               min="0" step="0.01" inputmode="decimal" dir="ltr"
+                               placeholder="0.00"
+                               value="{{ request.POST.basic_salary|default:'' }}">
                     </div>
                 </div>
             </section>

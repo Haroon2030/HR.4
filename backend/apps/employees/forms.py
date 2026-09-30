@@ -318,7 +318,10 @@ class EmploymentRequestForm(forms.ModelForm):
 
     class Meta:
         model = EmploymentRequest
-        fields = ['name', 'id_number', 'branch', 'administration', 'department', 'cost_center', 'commencement_document']
+        fields = [
+            'name', 'id_number', 'branch', 'administration', 'department', 'cost_center',
+            'basic_salary', 'commencement_document',
+        ]
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
@@ -346,6 +349,14 @@ class EmploymentRequestForm(forms.ModelForm):
 
     def clean_id_number(self):
         return _clean_unique_employee_id_number(self.cleaned_data.get('id_number'))
+
+    def clean_basic_salary(self):
+        salary = self.cleaned_data.get('basic_salary')
+        if salary is None:
+            return Decimal('0')
+        if salary < 0:
+            raise ValidationError('الراتب الأساسي لا يمكن أن يكون سالباً.')
+        return salary
 
     def clean_administration(self):
         administration = self.cleaned_data.get('administration')

@@ -6098,6 +6098,12 @@ body.hr-app .hr-employee-create-section__icon--amber {
     border: 1px solid #fde68a;
 }
 
+body.hr-app .hr-employee-create-section__icon--emerald {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
 body.hr-app .hr-employee-create-section__title {
     margin: 0;
     font-size: 0.88rem;
