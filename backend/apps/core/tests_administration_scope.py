@@ -67,6 +67,13 @@ class AdministrationScopeTests(TestCase):
         cls.admin_user = cls._make_user('sysadmin', cls.admin_role)
         cls.admin_user.profile.assigned_administrations.add(cls.admin_a)
 
+        cls.hr_officer_role = Role.objects.create(name='HR officer', role_type=Role.RoleType.HR_OFFICER)
+        cls.hr_officer_role.permissions.add(
+            _permission('employees', 'employees.view', Permission.Operation.VIEW),
+        )
+        cls.hr_officer = cls._make_user('hr_officer', cls.hr_officer_role, branch=cls.branch_1)
+        cls.hr_officer.profile.assigned_administrations.add(cls.admin_a)
+
     @staticmethod
     def _make_user(username, role, branch=None):
         user = User.objects.create_user(username=username, password='Pass-User-99!')
@@ -98,6 +105,13 @@ class AdministrationScopeTests(TestCase):
         self.assertIsNone(get_scoped_administration_ids(self._fresh(self.admin_user)))
         self.assertEqual(self._names(self.admin_user), set(Employee.objects.values_list('name', flat=True)))
 
+    def test_hr_officer_sees_all_employees_even_when_linked(self):
+        self.assertIsNone(get_scoped_administration_ids(self._fresh(self.hr_officer)))
+        self.assertEqual(
+            self._names(self.hr_officer),
+            set(Employee.objects.values_list('name', flat=True)),
+        )
+
     def test_managed_administration_is_added_to_linked_scope(self):
         self.admin_b.manager = self.linked_user
         self.admin_b.save(update_fields=['manager'])
@@ -121,6 +135,15 @@ class AdministrationScopeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         names = {e.name for e in response.context['employees']}
         self.assertEqual(names, {'موظف أ1', 'موظف أ2'})
+
+    def test_hr_officer_employee_list_shows_all_employees(self):
+        client = self._client_for(self.hr_officer)
+        response = client.get(reverse('web:list_employees'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_count'], Employee.objects.count())
+
+        profile = client.get(reverse('web:view_employee', kwargs={'employee_id': self.emp_b_branch1.pk}))
+        self.assertEqual(profile.status_code, 200)
 
     def test_employee_profile_outside_administration_is_blocked(self):
         client = self._client_for(self.linked_user)

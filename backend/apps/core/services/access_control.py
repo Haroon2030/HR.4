@@ -203,7 +203,8 @@ def get_scoped_administration_ids(user) -> set[int] | None:
     """
     None → المستخدم غير مقيّد بإدارات (يُطبَّق نطاق الفروع المعتاد).
     وإلا: الإدارات المرتبطة به (مع الإدارات التي يديرها من التهيئة).
-    المستخدمون المميّزون (superuser / admin / مدير موارد) لا يُقيَّدون.
+    المستخدمون المميّزون (superuser / admin / مدير موارد) وأدوار مستوى الشركة
+    (أخصائي الموارد) لا يُقيَّدون حتى لو رُبطوا بإدارات.
     """
     cached = getattr(user, '_scoped_administration_ids_cache', _MISSING)
     if cached is not _MISSING:
@@ -211,7 +212,17 @@ def get_scoped_administration_ids(user) -> set[int] | None:
 
     result = None
     profile = getattr(user, 'profile', None) if user.is_authenticated else None
-    if profile is not None and profile.pk and not is_privileged_actor(user):
+    is_company_wide_role = bool(
+        profile is not None
+        and profile.role
+        and profile.role.role_type in COMPANY_WIDE_BRANCH_ROLE_TYPES
+    )
+    if (
+        profile is not None
+        and profile.pk
+        and not is_company_wide_role
+        and not is_privileged_actor(user)
+    ):
         assigned = set(
             profile.assigned_administrations.filter(is_deleted=False).values_list('id', flat=True)
         )
