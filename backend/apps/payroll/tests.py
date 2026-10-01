@@ -774,6 +774,116 @@ class PayrollEngineTests(TestCase):
         )
 
 
+class PayrollDeductionCapTests(TestCase):
+    """خصومات تتجاوز الراتب: لا تضيع الأقساط، ولا يُرحَّل مسير بقيد ناقص."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name='Cap Co')
+        self.branch = Branch.objects.create(name='Cap Branch', code='CAP01', company=self.company)
+        self.user = User.objects.create_user(username='cap_tester', password='test-pass-123')
+        self.sponsorship = Sponsorship.objects.create(code='SPCAP', company_name='كفالة')
+        self.employee = Employee.objects.create(
+            name='موظف سلفة', branch=self.branch, sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE, hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('3000'), housing_allowance=Decimal('1000'),
+            transport_allowance=Decimal('500'), insurance_deduction_rate=Decimal('10'),
+        )
+
+    def _loan(self, amount, installments=2, monthly='5000'):
+        loan = EmployeeLoan.objects.create(
+            employee=self.employee, amount=Decimal(amount),
+            monthly_deduction=Decimal(monthly), installments=installments,
+            issued_at=date(2026, 2, 1), first_deduction_date=date(2026, 3, 1),
+        )
+        loan.generate_installments()
+        return loan
+
+    def _build(self):
+        return build_payroll_run(
+            self.branch, 2026, 3, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+
+    def test_oversized_installment_is_deferred_not_lost(self):
+        loan = self._loan('10000')
+        run = self._build()
+        line = run.lines.get(employee=self.employee)
+        # الراتب 4500 والتأمينات 400: القسط 5000 لا يتسع → لا يُخصم ويُؤجَّل
+        self.assertEqual(line.loan_deduction, Decimal('0.00'))
+        self.assertEqual(line.total_deductions, Decimal('400.00'))
+        self.assertEqual(line.net_salary, Decimal('4100.00'))
+        self.assertEqual(len(line.breakdown['deferred_installments']), 1)
+
+        lock_payroll_run(run, self.user)
+        march = loan.installments_log.get(pk=line.breakdown['deferred_installments'][0]['id'])
+        march.refresh_from_db()
+        self.assertEqual(march.status, LoanInstallment.Status.SKIPPED)
+        april = loan.installments_log.get(period_year=2026, period_month=4)
+        self.assertEqual(april.amount, Decimal('10000.00'))  # 5000 + 5000 المؤجَّل
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, EmployeeLoan.Status.ACTIVE)
+
+    def test_deferred_installment_shifted_when_no_next_month(self):
+        loan = self._loan('5000', installments=1)
+        run = self._build()
+        lock_payroll_run(run, self.user)
+        inst = loan.installments_log.get()
+        self.assertEqual((inst.period_year, inst.period_month), (2026, 4))
+        self.assertEqual(inst.status, LoanInstallment.Status.PENDING)
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, EmployeeLoan.Status.ACTIVE)
+
+    def test_unlock_reverts_deferred_installments(self):
+        loan = self._loan('10000')
+        run = self._build()
+        lock_payroll_run(run, self.user)
+        unlock_payroll_run(run, self.user)
+        march = loan.installments_log.get(period_year=2026, period_month=3)
+        april = loan.installments_log.get(period_year=2026, period_month=4)
+        self.assertEqual(march.status, LoanInstallment.Status.PENDING)
+        self.assertEqual(april.amount, Decimal('5000.00'))
+
+    def test_fitting_installment_is_still_deducted(self):
+        loan = self._loan('300', installments=3, monthly='100')
+        run = self._build()
+        line = run.lines.get(employee=self.employee)
+        self.assertEqual(line.loan_deduction, Decimal('100.00'))
+        self.assertEqual(line.breakdown['deferred_installments'], [])
+        lock_payroll_run(run, self.user)
+        self.assertEqual(
+            loan.installments_log.get(period_month=3).status, LoanInstallment.Status.PAID,
+        )
+
+    def test_lock_refuses_non_loan_deductions_above_salary(self):
+        EmployeeStatement.objects.create(
+            employee=self.employee, statement_type=EmployeeStatement.StatementType.PENALTY,
+            title='غرامة كبيرة', statement_date=date(2026, 3, 15),
+            deduction_amount=Decimal('9000.00'),
+        )
+        run = self._build()
+        line = run.lines.get(employee=self.employee)
+        self.assertGreater(Decimal(line.breakdown['uncollected_deductions']), 0)
+        with self.assertRaises(ValueError) as ctx:
+            lock_payroll_run(run, self.user)
+        self.assertIn('تتجاوز راتبه', str(ctx.exception))
+        run.refresh_from_db()
+        self.assertEqual(run.status, PayrollRun.Status.DRAFT)
+
+    def test_ledger_failure_aborts_lock(self):
+        from unittest import mock
+        run = self._build()
+        with mock.patch(
+            'apps.employees.services.accrual_ledger_notes.compute_monthly_ledger_amounts',
+            side_effect=RuntimeError('boom'),
+        ):
+            with self.assertRaises(ValueError) as ctx:
+                lock_payroll_run(run, self.user)
+        self.assertIn('قيد المخصصات', str(ctx.exception))
+        run.refresh_from_db()
+        self.assertEqual(run.status, PayrollRun.Status.DRAFT)
+
+
 class PayrollFinancialAuditTests(TestCase):
     """تقرير التحقق المالي قبل الإغلاق."""
 

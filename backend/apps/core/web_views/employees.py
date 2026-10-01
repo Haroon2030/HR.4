@@ -211,6 +211,7 @@ def add_employee(request):
     """إنشاء طلب توظيف جديد (يحتاج موافقة الخط الأول)."""
     from apps.employees.forms import EmploymentRequestForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
+    from apps.setup.models import Sponsorship
 
     if request.method == 'POST':
         # استبدال الملف بعد تطبيق إعادة التسمية
@@ -243,6 +244,7 @@ def add_employee(request):
         'branches': filter_branches_queryset(request.user, Branch.objects.filter(is_active=True)),
         'departments': Department.objects.all(),
         'cost_centers': CostCenter.objects.all(),
+        'sponsorships': Sponsorship.objects.filter(is_active=True).order_by('company_name'),
         'administrations': administrations,
         'administration_locked': administration_locked,
         'default_administration_id': default_administration_id,

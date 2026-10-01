@@ -320,7 +320,7 @@ class EmploymentRequestForm(forms.ModelForm):
         model = EmploymentRequest
         fields = [
             'name', 'id_number', 'branch', 'administration', 'department', 'cost_center',
-            'basic_salary', 'commencement_document',
+            'sponsorship', 'basic_salary', 'commencement_document',
         ]
 
     def __init__(self, *args, user=None, **kwargs):
@@ -349,6 +349,12 @@ class EmploymentRequestForm(forms.ModelForm):
 
     def clean_id_number(self):
         return _clean_unique_employee_id_number(self.cleaned_data.get('id_number'))
+
+    def clean_sponsorship(self):
+        # «غير كفالة» → لا تُحفظ شركة كفالة
+        if (self.data.get('sponsorship_type') or '') == 'none':
+            return None
+        return self.cleaned_data.get('sponsorship')
 
     def clean_basic_salary(self):
         salary = self.cleaned_data.get('basic_salary')

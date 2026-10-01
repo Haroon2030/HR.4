@@ -117,6 +117,22 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_sponsorship_type">الكفالة</label>
+                        <select id="id_create_sponsorship_type" name="sponsorship_type" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="sponsored"{% if request.POST.sponsorship_type != 'none' %} selected{% endif %}>كفالة</option>
+                            <option value="none"{% if request.POST.sponsorship_type == 'none' %} selected{% endif %}>غير كفالة</option>
+                        </select>
+                    </div>
+                    <div class="hr-employee-create-field" id="create-sponsorship-wrap">
+                        <label class="hr-employee-create-field__label" for="id_create_sponsorship">اسم الكفالة</label>
+                        <select id="id_create_sponsorship" name="sponsorship" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر الكفالة —</option>
+                            {% for s in sponsorships %}
+                            <option value="{{ s.id }}"{% if request.POST.sponsorship == s.id|stringformat:'s' %} selected{% endif %}>{{ s.company_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </section>
 
@@ -171,5 +187,18 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
+    (function () {
+        const type = document.getElementById('id_create_sponsorship_type');
+        const wrap = document.getElementById('create-sponsorship-wrap');
+        const company = document.getElementById('id_create_sponsorship');
+        if (!type || !wrap) return;
+        function sync() {
+            const sponsored = type.value === 'sponsored';
+            wrap.style.display = sponsored ? '' : 'none';
+            if (!sponsored && company) company.value = '';
+        }
+        type.addEventListener('change', sync);
+        sync();
+    })();
 </script>
 {% endblock %}

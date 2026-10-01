@@ -33,6 +33,7 @@
   - البنود لا تُربط حتى يتم الترحيل (lock).
   - إذا تغيّرت البيانات بعد البناء، يجب عمل Rebuild.
 """
+import calendar
 from collections import defaultdict
 from decimal import Decimal
 from datetime import date
@@ -157,6 +158,97 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
         locked_emp_ids,
     )
 
+def _next_period(year: int, month: int) -> tuple[int, int]:
+    return (year + 1, 1) if month == 12 else (year, month + 1)
+
+
+def _add_one_month(d: date) -> date:
+    y, m = _next_period(d.year, d.month)
+    return date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
+
+
+def _carry_forward_deferred_installments(run: PayrollRun, line) -> None:
+    """يرحّل أقساط السلف التي لم يتسع لها الراتب إلى الشهر التالي ويوثّق ذلك في سطر المسير.
+
+    إن وُجد قسط للشهر التالي يُدمج المبلغ فيه ويُعلَّم الأصلي «مؤجَّل»، وإلا يُنقل القسط نفسه.
+    """
+    items = (line.breakdown or {}).get('deferred_installments') or []
+    if not items:
+        return
+    ny, nm = _next_period(run.period_year, run.period_month)
+    label = f'{run.period_year}/{run.period_month:02d}'
+    for item in items:
+        inst = LoanInstallment.objects.select_for_update().filter(
+            pk=item['id'], loan__employee_id=line.employee_id,
+            status=LoanInstallment.Status.PENDING, applied_to_payroll__isnull=True,
+        ).first()
+        if inst is None:
+            raise ValueError(
+                f'تعذّر ترحيل قسط مؤجَّل للموظف {line.employee.name} — أعد بناء المسير.'
+            )
+        target = LoanInstallment.objects.select_for_update().filter(
+            loan_id=inst.loan_id, period_year=ny, period_month=nm,
+        ).exclude(pk=inst.pk).first()
+        if target is None:
+            item.update(
+                mode='shifted',
+                from_year=inst.period_year, from_month=inst.period_month,
+                from_due=inst.due_date.isoformat(),
+            )
+            inst.period_year, inst.period_month = ny, nm
+            inst.due_date = _add_one_month(inst.due_date)
+            inst.notes = (inst.notes + '\n' if inst.notes else '') + f'أُجِّل من {label}'
+            inst.save(update_fields=['period_year', 'period_month', 'due_date', 'notes', 'updated_at'])
+        elif target.status == LoanInstallment.Status.PENDING:
+            target.amount = Decimal(target.amount) + Decimal(inst.amount)
+            target.notes = (target.notes + '\n' if target.notes else '') + (
+                f'+{inst.amount} قسط مؤجَّل من {label}'
+            )
+            target.save(update_fields=['amount', 'notes', 'updated_at'])
+            inst.status = LoanInstallment.Status.SKIPPED
+            inst.applied_to_payroll = run
+            inst.notes = (inst.notes + '\n' if inst.notes else '') + f'أُجِّل إلى {ny}/{nm:02d}'
+            inst.save(update_fields=['status', 'applied_to_payroll', 'notes', 'updated_at'])
+            item.update(mode='merged', target_id=target.pk)
+        else:
+            raise ValueError(
+                f'تعذّر ترحيل قسط مؤجَّل للموظف {line.employee.name}: '
+                f'قسط الشهر التالي ({ny}/{nm:02d}) ليس بحالة «مستحق».'
+            )
+    line.save(update_fields=['breakdown', 'updated_at'])
+
+
+def _revert_deferred_installments(run: PayrollRun) -> None:
+    """يعكس ترحيل الأقساط المؤجَّلة عند فك قفل المسير."""
+    for line in run.lines.all():
+        changed = False
+        for item in (line.breakdown or {}).get('deferred_installments') or []:
+            mode = item.get('mode')
+            if not mode:
+                continue
+            inst = LoanInstallment.objects.select_for_update().filter(pk=item['id']).first()
+            if inst is not None:
+                if mode == 'merged':
+                    target = LoanInstallment.objects.select_for_update().filter(
+                        pk=item.get('target_id'),
+                    ).first()
+                    if target is not None:
+                        target.amount = Decimal(target.amount) - Decimal(inst.amount)
+                        target.save(update_fields=['amount', 'updated_at'])
+                    inst.status = LoanInstallment.Status.PENDING
+                    inst.applied_to_payroll = None
+                    inst.save(update_fields=['status', 'applied_to_payroll', 'updated_at'])
+                elif mode == 'shifted':
+                    inst.period_year, inst.period_month = item['from_year'], item['from_month']
+                    inst.due_date = date.fromisoformat(item['from_due'])
+                    inst.save(update_fields=['period_year', 'period_month', 'due_date', 'updated_at'])
+            for k in ('mode', 'target_id', 'from_year', 'from_month', 'from_due'):
+                item.pop(k, None)
+            changed = True
+        if changed:
+            line.save(update_fields=['breakdown', 'updated_at'])
+
+
 def _unpaid_leave_days_in_period(leave, period_start, period_end):
     s = max(leave.date_from, period_start)
     e = min(leave.date_to, period_end)
@@ -265,7 +357,6 @@ def _compute_employee_payroll_snapshot(
         Decimal('0'),
     )
     unpaid_leave_deduction = _q(daily_rate * unpaid_days)
-    loan_deduction = _q(sum((Decimal(i.amount) for i in emp_installments), Decimal('0')))
     penalty_deduction = _q(
         sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
     )
@@ -274,12 +365,28 @@ def _compute_employee_payroll_snapshot(
     )
     rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
     insurance_deduction = _q(insurance_base * rate / Decimal('100'))
-    total_deductions = _q(
-        absence_deduction + unpaid_leave_deduction + loan_deduction
+    # بنود مرتبطة بالراتب نفسه (غياب/إجازة بدون راتب/تأمينات/جزاءات/عجز): لا تُؤجَّل.
+    fixed_deductions = _q(
+        absence_deduction + unpaid_leave_deduction
         + penalty_deduction + cash_shortage_deduction + insurance_deduction
     )
-    if total_deductions > gross:
-        total_deductions = _q(gross)
+    # لا يُخصم أكثر من الراتب؛ أي زيادة هنا تُسجَّل كغير محصَّلة ويمنع الترحيل بسببها.
+    uncollected_deductions = _q(max(fixed_deductions - gross, Decimal('0')))
+    available = _q(max(gross - fixed_deductions, Decimal('0')))
+
+    # أقساط السلف: تُخصم كاملة إن اتسع لها الراتب، وإلا تُؤجَّل للشهر التالي (لا تضيع).
+    included_installments, deferred_installments = [], []
+    for inst in sorted(emp_installments, key=lambda i: (i.loan_id, i.id)):
+        amount = _q(inst.amount)
+        if amount <= available:
+            included_installments.append(inst)
+            available = _q(available - amount)
+        else:
+            deferred_installments.append(inst)
+    loan_deduction = _q(sum((Decimal(i.amount) for i in included_installments), Decimal('0')))
+    loan_deferred_amount = _q(sum((Decimal(i.amount) for i in deferred_installments), Decimal('0')))
+
+    total_deductions = _q(min(fixed_deductions, gross) + loan_deduction)
     net_salary = _q(gross - total_deductions)
 
     return {
@@ -294,6 +401,8 @@ def _compute_employee_payroll_snapshot(
         'penalty_deduction': penalty_deduction,
         'cash_shortage_deduction': cash_shortage_deduction,
         'insurance_deduction': insurance_deduction,
+        'loan_deferred_amount': loan_deferred_amount,
+        'uncollected_deductions': uncollected_deductions,
         'total_earnings': gross,
         'total_deductions': total_deductions,
         'net_salary': net_salary,
@@ -320,8 +429,13 @@ def _compute_employee_payroll_snapshot(
             ],
             'loan_installments': [
                 {'id': i.id, 'loan_id': i.loan_id, 'amount': str(i.amount)}
-                for i in emp_installments
+                for i in included_installments
             ],
+            'deferred_installments': [
+                {'id': i.id, 'loan_id': i.loan_id, 'amount': str(i.amount)}
+                for i in deferred_installments
+            ],
+            'uncollected_deductions': str(uncollected_deductions),
             'penalties': [
                 {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount)}
                 for p in emp_penalties
@@ -658,6 +772,14 @@ def lock_payroll_run(run: PayrollRun, user):
 
     period_anchor = date(run.period_year, run.period_month, 1)
     line_list = list(run.lines.select_related('employee'))
+
+    for ln in line_list:
+        uncollected = Decimal(str((ln.breakdown or {}).get('uncollected_deductions') or '0'))
+        if uncollected > 0:
+            raise ValueError(
+                f'خصومات الموظف {ln.employee.name} تتجاوز راتبه بمقدار {uncollected} ر.س '
+                '(غياب/جزاءات/عجز/تأمينات) — عدّل البنود ثم أعد بناء المسير.'
+            )
     employee_ids = [ln.employee_id for ln in line_list]
 
     last_ledger_by_emp = {}
@@ -669,14 +791,14 @@ def lock_payroll_run(run: PayrollRun, user):
             if lg.employee_id not in last_ledger_by_emp:
                 last_ledger_by_emp[lg.employee_id] = lg
 
-    def _bind_breakdown_items(line, key: str, model, *, extra_filter=None):
+    def _bind_breakdown_items(line, key: str, model, *, extra_filter=None, employee_lookup='employee_id'):
         ids = [x['id'] for x in (line.breakdown or {}).get(key, [])]
         if not ids:
             return []
         qs = model.objects.filter(
             id__in=ids,
-            employee_id=line.employee_id,
             applied_to_payroll__isnull=True,
+            **{employee_lookup: line.employee_id},
         )
         if extra_filter:
             qs = qs.filter(**extra_filter)
@@ -701,12 +823,14 @@ def lock_payroll_run(run: PayrollRun, user):
             'loan_installments',
             LoanInstallment,
             extra_filter={'status': LoanInstallment.Status.PENDING},
+            employee_lookup='loan__employee_id',
         )
         if inst_ids:
             LoanInstallment.objects.filter(id__in=inst_ids).update(
                 status=LoanInstallment.Status.PAID,
             )
             all_loan_inst_ids.extend(inst_ids)
+        _carry_forward_deferred_installments(run, ln)
 
     if all_loan_inst_ids:
         inst_rows = list(
@@ -804,8 +928,12 @@ def lock_payroll_run(run: PayrollRun, user):
                 created_by=user
             )
             transaction.savepoint_commit(sid)
-        except Exception:
+        except Exception as exc:
             transaction.savepoint_rollback(sid)
+            # لا يُرحَّل مسير بقيد مخصصات ناقص: تراجع كامل مع بيان الموظف المتأثر
+            raise ValueError(
+                f'تعذّر تسجيل قيد المخصصات للموظف {line.employee.name}: {exc}'
+            ) from exc
 
     if loans_to_mark_paid:
         paid_ids = {ln.id for ln in loans_to_mark_paid}
@@ -854,13 +982,9 @@ def unlock_payroll_run(run: PayrollRun, user):
     EmployeeStatement.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)
 
     # فك وحذف سجلات المخصصات (Ledger) التي تم إنشاؤها بهذا المسير
-    sid = transaction.savepoint()
-    try:
-        from apps.employees.models import EmployeeLedger
-        EmployeeLedger.objects.filter(payroll_run=run).delete()
-        transaction.savepoint_commit(sid)
-    except Exception:
-        transaction.savepoint_rollback(sid)
+    _revert_deferred_installments(run)
+    from apps.employees.models import EmployeeLedger
+    EmployeeLedger.objects.filter(payroll_run=run).delete()
 
     # إرجاع السلف التي أصبحت PAID بسبب آخر قسط في هذا المسير
     from apps.employees.models import EmployeeLoan

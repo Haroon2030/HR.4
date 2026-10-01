@@ -271,7 +271,7 @@ _BASE_HR_FORMS = [
     },
     {
         'key': 'resumption_after_leave',
-        'title': 'نموذج المباشرة',
+        'title': 'مباشرة عمل',
         'description': 'إثبات مباشرة الموظف للعمل — يُجلب تاريخ المباشرة تلقائيًا من آخر إجازة',
         'icon': 'log-in',
         'color': 'emerald',

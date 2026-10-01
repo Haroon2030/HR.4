@@ -237,6 +237,35 @@ def _audit_standard_run(audit: PayrollFinancialAudit, run: PayrollRun) -> None:
                 employee_name=emp_name,
             ))
 
+        bd = line.breakdown or {}
+        uncollected = _q(bd.get('uncollected_deductions') or 0)
+        if uncollected > 0:
+            _add_check(audit, AuditCheck(
+                code='deductions_exceed_salary',
+                title='خصومات تتجاوز الراتب',
+                level='error',
+                detail=(
+                    f'غياب/جزاءات/عجز/تأمينات تزيد عن الراتب بمقدار {uncollected} ر.س '
+                    '— لن يُحصَّل هذا المبلغ؛ عدّل البنود ثم أعد بناء المسودة.'
+                ),
+                run_label=label,
+                employee_name=emp_name,
+            ))
+        deferred = bd.get('deferred_installments') or []
+        if deferred:
+            deferred_total = _q(sum(Decimal(str(d.get('amount') or 0)) for d in deferred))
+            _add_check(audit, AuditCheck(
+                code='installments_deferred',
+                title='أقساط سلف مؤجَّلة',
+                level='warn',
+                detail=(
+                    f'{len(deferred)} قسط بإجمالي {deferred_total} ر.س لم يتسع لها الراتب '
+                    'وستُرحَّل تلقائيًا للشهر التالي عند الإغلاق.'
+                ),
+                run_label=label,
+                employee_name=emp_name,
+            ))
+
         expected_ins = _expected_insurance(emp, run.period_year, run.period_month)
         if not _close(expected_ins, line.insurance_deduction):
             rate = emp.insurance_deduction_rate or 0
