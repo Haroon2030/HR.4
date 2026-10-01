@@ -392,9 +392,9 @@ class EmploymentRequestForm(forms.ModelForm):
 #  validate_employee_data_complete وليس هنا)
 EMPLOYMENT_REQUEST_REQUIRED_FIELDS = [
     'id_number', 'phone', 'employee_number',
-    'nationality', 'profession', 'sponsorship',
+    'nationality', 'profession',
     'hire_date',
-    'basic_salary', 'housing_allowance',
+    'basic_salary',
     'id_document',
 ]
 
@@ -507,9 +507,8 @@ class EmploymentRequestEditForm(forms.ModelForm):
         if 'nationality' in self.fields:
             self.fields['nationality'].widget.attrs['@change'] = 'onNationalityChange()'
         if 'sponsorship' in self.fields:
-            self.fields['sponsorship'].widget.attrs['@change'] = (
-                "if (!hasSponsorship() && activeTab === 'bank') activeTab = 'salary'"
-            )
+            self.fields['sponsorship'].widget.attrs['x-model'] = 'sponsorId'
+            self.fields['sponsorship'].label = 'اسم الكفالة'
         if 'opening_leave_days' in self.fields:
             self.fields['opening_leave_days'].label = 'الرصيد الافتتاحي (أيام)'
         if 'leave_accrual_start_date' in self.fields:

@@ -87,6 +87,11 @@ def normalize_salary_payment_fields(cleaned: dict, instance=None) -> dict:
     if sponsorship:
         return cleaned
 
+    # بدون كفالة: راتب أساسي فقط (لا سكن/نقل/بدلات/بنك)
+    for _f in ('housing_allowance', 'transport_allowance', 'other_allowance', 'meal_allowance'):
+        if _f in cleaned:
+            cleaned[_f] = Decimal('0')
+
     if 'bank' in cleaned:
         cleaned['bank'] = None
     if 'iban' in cleaned:

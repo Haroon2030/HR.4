@@ -41,12 +41,10 @@ _REQUIRED_EMPLOYEE_FIELDS = [
     # FKs
     ('الجنسية', 'nationality_id', 'fk'),
     ('المهنة', 'profession_id', 'fk'),
-    ('الكفالة', 'sponsorship_id', 'fk'),
     # تواريخ
     ('تاريخ المباشرة', 'hire_date', 'date'),
     # راتب (نقبل صفر، نتأكد فقط أنها ليست None)
     ('الراتب الأساسي', 'basic_salary', 'decimal'),
-    ('بدل سكن', 'housing_allowance', 'decimal'),
     # مستندات
     ('صورة الهوية', 'id_document', 'file'),
 ]
@@ -98,9 +96,9 @@ EMP_REQ_TAB_REQUIRED = {
     'main': frozenset({
         'name', 'id_number', 'phone', 'employee_number', 'hire_date',
     }),
-    'org': frozenset({'nationality', 'profession', 'sponsorship'}),
+    'org': frozenset({'nationality', 'profession'}),
     'salary': frozenset({
-        'basic_salary', 'housing_allowance',
+        'basic_salary',
     }),
     'bank': frozenset({'bank', 'iban', 'account_type'}),
     'docs': frozenset({'id_document'}),
@@ -153,16 +151,13 @@ def employment_request_tab_status(req):
             email_ok, _str_ok('employee_number'), _date_ok('hire_date'),
         ]) else 'incomplete',
         'org': 'complete' if all([
-            _fk_ok('nationality_id'), _fk_ok('profession_id'), _fk_ok('sponsorship_id'),
+            _fk_ok('nationality_id'), _fk_ok('profession_id'),
         ]) else 'incomplete',
         'salary': 'incomplete',
         'docs': 'complete' if _file_ok('id_document') else 'incomplete',
     }
 
-    salary_ok = all([
-        _dec_ok('basic_salary'),
-        _dec_ok('housing_allowance'),
-    ])
+    salary_ok = _dec_ok('basic_salary')
     if is_saudi:
         salary_ok = salary_ok and is_valid_saudi_insurance_rate(
             getattr(req, 'insurance_deduction_rate', None),

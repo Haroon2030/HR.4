@@ -403,6 +403,9 @@
                 return Number.isFinite(n) ? n : 0;
             },
             salaryTotal() {
+                if (this.payrollMode() !== 'transfer') {
+                    return this.salaryNum(this.salaryBasic);
+                }
                 return this.salaryNum(this.salaryBasic) + this.salaryNum(this.salaryHousing)
                     + this.salaryNum(this.salaryTransport) + this.salaryNum(this.salaryOther)
                     + this.salaryNum(this.salaryMeal);
