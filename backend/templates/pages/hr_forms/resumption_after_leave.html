@@ -4,17 +4,70 @@
 {% include "pages/hr_forms/_employee_info.html" %}
 
 <div class="section">
-    <h3>نوع الإجازة</h3>
+    <h3>بيانات المباشرة</h3>
     <div class="checkbox-row" data-skip-choice-note>
-        <label><span class="box"></span> جديد</label>
-        <label><span class="box"></span> بعد الإجازة</label>
+        <label><input type="checkbox" class="box" id="rl-kind-new"{% if not resumption_default %} checked{% endif %}> مباشرة جديدة</label>
+        <label><input type="checkbox" class="box" id="rl-kind-after"{% if resumption_default %} checked{% endif %}> مباشرة بعد إجازة</label>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
-        <div class="field"><span class="label">عدد أيام الإجازة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank"></span></div>
+        {% if resumption_leaves %}
+        <div class="field no-print" style="grid-column: 1 / -1;">
+            <span class="label">الإجازة:</span>
+            <select id="rl-leave" class="blank-select" aria-label="الإجازة">
+                {% for l in resumption_leaves %}
+                <option value="{{ l.id }}"{% if resumption_default and l.id == resumption_default.id %} selected{% endif %}>{{ l.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="field"><span class="label">بداية الإجازة:</span><input type="date" id="rl-from" class="blank" value="{{ resumption_default.date_from|default:'' }}" aria-label="بداية الإجازة"></div>
+        <div class="field"><span class="label">نهاية الإجازة:</span><input type="date" id="rl-to" class="blank" value="{{ resumption_default.date_to|default:'' }}" aria-label="نهاية الإجازة"></div>
+        <div class="field"><span class="label">عدد أيام الإجازة:</span><input type="text" id="rl-days" class="blank" value="{{ resumption_default.days|default:'' }}" aria-label="عدد أيام الإجازة"></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><input type="date" id="rl-resume" class="blank" value="{{ resumption_default.resume|default:resumption_today }}" aria-label="تاريخ المباشرة"></div>
     </div>
 </div>
 
 {% include "pages/hr_forms/_signatures_standard.html" %}
 
+{{ resumption_leaves|json_script:"rl-data" }}
+<script>
+(function () {
+    const data = JSON.parse(document.getElementById('rl-data').textContent || '[]');
+    const $ = id => document.getElementById(id);
+    const sel = $('rl-leave');
+    const addDay = iso => {
+        const d = new Date(iso + 'T00:00:00');
+        if (isNaN(d)) return '';
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+    };
+    const daysBetween = (a, b) => {
+        const x = new Date(a + 'T00:00:00'), y = new Date(b + 'T00:00:00');
+        return (isNaN(x) || isNaN(y)) ? '' : String(Math.round((y - x) / 86400000) + 1);
+    };
+    function fill() {
+        const l = data.find(i => String(i.id) === sel.value);
+        if (!l) return;
+        $('rl-from').value = l.date_from;
+        $('rl-to').value = l.date_to;
+        $('rl-days').value = l.days;
+        $('rl-resume').value = l.resume;
+        $('rl-kind-after').checked = true;
+        $('rl-kind-new').checked = false;
+    }
+    if (sel) sel.addEventListener('change', fill);
+    // تعديل نهاية الإجازة يدويًا → يُحدَّث تاريخ المباشرة وعدد الأيام
+    $('rl-to').addEventListener('change', function () {
+        if (!this.value) return;
+        $('rl-resume').value = addDay(this.value);
+        if ($('rl-from').value) $('rl-days').value = daysBetween($('rl-from').value, this.value);
+    });
+    $('rl-from').addEventListener('change', function () {
+        if (this.value && $('rl-to').value) $('rl-days').value = daysBetween(this.value, $('rl-to').value);
+    });
+    // اختيار نوع واحد فقط
+    [['rl-kind-new', 'rl-kind-after'], ['rl-kind-after', 'rl-kind-new']].forEach(([a, b]) =>
+        $(a).addEventListener('change', function () { if (this.checked) $(b).checked = false; }));
+})();
+</script>
 {% endblock %}

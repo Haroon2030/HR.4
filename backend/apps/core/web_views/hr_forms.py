@@ -4,7 +4,7 @@ Leave Request / Final Settlement / Warning / Loan Request / Salary Certificate /
 """
 import hashlib
 import re
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.db.models import Count, Prefetch, Q
@@ -271,8 +271,8 @@ _BASE_HR_FORMS = [
     },
     {
         'key': 'resumption_after_leave',
-        'title': 'مباشرة بعد الإجازة',
-        'description': 'إثبات مباشرة الموظف للعمل بعد انتهاء إجازته',
+        'title': 'نموذج المباشرة',
+        'description': 'إثبات مباشرة الموظف للعمل — يُجلب تاريخ المباشرة تلقائيًا من آخر إجازة',
         'icon': 'log-in',
         'color': 'emerald',
     },
@@ -307,6 +307,29 @@ HR_FORMS_WITH_BANK = frozenset({
     'salary_certificate',
     'salary_transfer_commitment',
 })
+
+
+def _resumption_form_context(employee) -> dict:
+    """إجازات الموظف الأخيرة؛ تاريخ المباشرة = اليوم التالي لانتهاء الإجازة."""
+    leaves = list(employee.leaves_log.order_by('-date_to', '-date_from')[:12])
+    today = date.today()
+    items = []
+    for lv in leaves:
+        days = lv.days.normalize() if lv.days is not None else 0
+        items.append({
+            'id': lv.id,
+            'label': f"{lv.get_leave_type_display()} — {lv.date_from:%Y-%m-%d} → {lv.date_to:%Y-%m-%d}",
+            'date_from': lv.date_from.isoformat(),
+            'date_to': lv.date_to.isoformat(),
+            'days': f"{days:f}",
+            'resume': (lv.date_to + timedelta(days=1)).isoformat(),
+        })
+    default = next((i for i in items if i['date_to'] <= today.isoformat()), items[0] if items else None)
+    return {
+        'resumption_leaves': items,
+        'resumption_default': default,
+        'resumption_today': today.isoformat(),
+    }
 
 
 def _form_amount(value) -> str:
@@ -611,6 +634,9 @@ def hr_form_print(request, form_type, employee_id):
 
     if form_type == 'salary_certificate':
         context.update(_salary_certificate_form_context(employee))
+
+    if form_type == 'resumption_after_leave':
+        context.update(_resumption_form_context(employee))
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)
 

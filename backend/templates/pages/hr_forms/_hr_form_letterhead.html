@@ -6,9 +6,6 @@
         </div>
         {% with cr=letterhead_company_cr|default:letterhead_cr|default:company.commercial_record %}
         <div class="letterhead__regs">
-            {% if letterhead_unified_national_number %}
-            <p class="line line--unified-nn"><strong>{{ letterhead_unified_national_number }}</strong></p>
-            {% endif %}
             {% if cr %}
             <p class="line">C.R <strong>{{ cr }}</strong></p>
             {% endif %}
