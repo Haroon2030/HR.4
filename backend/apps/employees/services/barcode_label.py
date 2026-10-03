@@ -413,6 +413,37 @@ def build_employee_barcode_label(
     )
 
 
+def build_manual_barcode_label(
+    *,
+    name: str,
+    employee_number: str,
+    company_name: str,
+    dims: LabelDimensions | None = None,
+) -> EmployeeBarcodeLabel:
+    """ملصق بإدخال يدوي (اسم + رقم وظيفي + شركة) بدون سجل موظف."""
+    size = dims or parse_label_dimensions(None, None)
+    name = (name or '').strip() or '—'
+    num = (employee_number or '').strip()[:MAX_BARCODE_LEN]
+    company = (company_name or '').strip() or '—'
+    display = num or '—'
+    layout = compute_label_text_layout(
+        company_name=company,
+        employee_name=name,
+        number_display=display,
+        dims=size,
+    )
+    return EmployeeBarcodeLabel(
+        employee_id=0,
+        name=name,
+        company_name=company,
+        employee_number=display,
+        barcode_value=num,
+        number_display=display,
+        barcode_svg='',
+        layout=layout,
+    )
+
+
 def _zpl_safe_text(value: str, *, max_len: int = 80) -> str:
     cleaned = (value or '').replace('^', ' ').replace('~', ' ').replace('\\', ' ')
     return cleaned.strip()[:max_len]

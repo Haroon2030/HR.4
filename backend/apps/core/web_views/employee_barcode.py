@@ -20,6 +20,7 @@ from apps.employees.services.barcode_label import (
     MIN_LABEL_HEIGHT_MM,
     MIN_LABEL_WIDTH_MM,
     build_employee_barcode_label,
+    build_manual_barcode_label,
     build_zpl_label,
     label_size_querystring,
     parse_copies,
@@ -58,7 +59,22 @@ def employee_barcode_labels_index(request):
     dims = parse_label_dimensions(request.GET.get('w'), request.GET.get('h'))
     has_size_params = 'w' in request.GET or 'h' in request.GET
 
+    from apps.setup.models import Sponsorship
+    companies = list(
+        Sponsorship.objects.filter(is_active=True, is_deleted=False)
+        .exclude(company_name='')
+        .order_by('company_name')
+        .values_list('company_name', flat=True)
+        .distinct()
+    )
+
     return render(request, 'pages/employees/barcode_labels_index.html', {
+        'sponsor_companies': companies,
+        'initial_mode': 'manual' if request.GET.get('mode') == 'manual' else 'employee',
+        'manual_name': (request.GET.get('name') or '')[:120],
+        'manual_number': (request.GET.get('number') or '')[:48],
+        'manual_company': (request.GET.get('company') or '')[:200],
+        'manual_print_url': reverse('web:employee_barcode_manual_print'),
         'employee_search_url': reverse('web:employee_picker_search'),
         'filter_employee': preselected,
         'default_copies': parse_copies(request.GET.get('copies'), default=1),
@@ -71,6 +87,56 @@ def employee_barcode_labels_index(request):
         'default_width_mm': DEFAULT_LABEL_WIDTH_MM,
         'default_height_mm': DEFAULT_LABEL_HEIGHT_MM,
     })
+
+
+def _manual_label_from_request(request, dims):
+    return build_manual_barcode_label(
+        name=(request.GET.get('name') or '')[:120],
+        employee_number=(request.GET.get('number') or '')[:48],
+        company_name=(request.GET.get('company') or '')[:200],
+        dims=dims,
+    )
+
+
+def _manual_extra(request) -> dict:
+    return {
+        'name': (request.GET.get('name') or '')[:120],
+        'number': (request.GET.get('number') or '')[:48],
+        'company': (request.GET.get('company') or '')[:200],
+    }
+
+
+@login_required
+@permission_required('employees.view')
+def employee_barcode_manual_print(request):
+    """معاينة وطباعة ملصق بإدخال يدوي."""
+    dims, copies = _dims_from_request(request)
+    label = _manual_label_from_request(request, dims)
+    extra = _manual_extra(request)
+    size_qs = label_size_querystring(dims, copies=copies, extra=extra)
+    return render(request, 'pages/employees/barcode_label_print.html', {
+        'employee': None,
+        'label': label,
+        'label_dims': dims,
+        'copies': copies,
+        'copy_range': range(copies),
+        'zpl_download_url': f"{reverse('web:employee_barcode_manual_zpl')}?{size_qs}",
+        'size_querystring': size_qs,
+        'back_url': f"{reverse('web:employee_barcode_labels')}?{size_qs}&mode=manual",
+        'hidden_params': extra,
+    })
+
+
+@login_required
+@permission_required('employees.view')
+def employee_barcode_manual_zpl(request):
+    """تنزيل ZPL للملصق اليدوي."""
+    dims, copies = _dims_from_request(request)
+    label = _manual_label_from_request(request, dims)
+    zpl = build_zpl_label(label, dims=dims, copies=copies)
+    response = HttpResponse(zpl, content_type='application/octet-stream')
+    response['Content-Disposition'] = 'attachment; filename="employee-name-manual.zpl"'
+    return response
 
 
 @login_required

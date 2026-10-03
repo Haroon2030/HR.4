@@ -226,6 +226,7 @@
         <div class="actions">
             <form class="size-form" method="get" action="">
                 <input type="hidden" name="copies" value="{{ copies }}">
+                {% for k, v in hidden_params.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
                 <label>العرض (مم)
                     <input type="number" name="w" value="{{ label_dims.width_mm }}" min="30" max="150" step="0.5" required>
                 </label>
@@ -239,7 +240,11 @@
             {% if zpl_download_url %}
             <a href="{{ zpl_download_url }}" class="btn btn-secondary" download>تنزيل ZPL</a>
             {% endif %}
+            {% if back_url %}
+            <a href="{{ back_url }}" class="btn btn-secondary">رجوع</a>
+            {% else %}
             <a href="{% url 'web:employee_barcode_labels' %}?employee_id={{ employee.id }}&w={{ label_dims.width_mm }}&h={{ label_dims.height_mm }}" class="btn btn-secondary">رجوع</a>
+            {% endif %}
         </div>
     </div>
 

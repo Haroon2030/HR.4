@@ -64,7 +64,9 @@ urlpatterns = [
     ),
     path('employees/picker/search/', web_views.employee_picker_search, name='employee_picker_search'),       # بحث اختيار موظف
     path('employees/barcode-labels/', web_views.employee_barcode_labels_index, name='employee_barcode_labels'),
-    path('employees/<int:employee_id>/barcode-label/', web_views.employee_barcode_print, name='employee_barcode_print'),
+    path('employees/barcode-labels/manual/', web_views.employee_barcode_manual_print, name='employee_barcode_manual_print'),
+    path('employees/barcode-labels/manual/zpl/', web_views.employee_barcode_manual_zpl, name='employee_barcode_manual_zpl'),
+    path('employees/<int:employee_id>/barcode-label/',web_views.employee_barcode_print, name='employee_barcode_print'),
     path('employees/<int:employee_id>/barcode-label/zpl/', web_views.employee_barcode_zpl, name='employee_barcode_zpl'),
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)

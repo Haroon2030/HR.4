@@ -59,6 +59,21 @@
 
     function openBarcodePrint(root) {
         if (!root) return false;
+        var data = window.Alpine ? Alpine.$data(root) : null;
+        if (data && data.mode === 'manual') {
+            if (!String(data.manualName || '').trim() || !String(data.manualNumber || '').trim() || !data.manualCompany) {
+                if (window.showToast) showToast('أدخل الشركة والاسم والرقم الوظيفي', 'warning');
+                return false;
+            }
+            var murl = buildPrintUrl(root, 0).replace(/^[^?]*/, root.dataset.manualPrintUrl)
+                + '&name=' + encodeURIComponent(data.manualName.trim())
+                + '&number=' + encodeURIComponent(data.manualNumber.trim())
+                + '&company=' + encodeURIComponent(data.manualCompany);
+            if (window.hrGlassLoader) window.hrGlassLoader.hide();
+            var mtab = window.open(murl, '_blank', 'noopener,noreferrer');
+            if (!mtab) window.location.assign(murl);
+            return true;
+        }
         var id = readPickerEmployeeId(root);
         if (!id) {
             if (window.showToast) showToast('اختر موظفاً أولاً', 'warning');
@@ -81,9 +96,17 @@
             minH: 15,
             maxH: 100,
             printTpl: '',
+            mode: 'employee',
+            manualName: '',
+            manualNumber: '',
+            manualCompany: '',
 
             init: function () {
                 var ds = this.$el.dataset;
+                this.mode = ds.initialMode === 'manual' ? 'manual' : 'employee';
+                this.manualName = ds.manualName || '';
+                this.manualNumber = ds.manualNumber || '';
+                this.manualCompany = ds.manualCompany || '';
                 var defW = num(ds.defaultWidth, 100);
                 var defH = num(ds.defaultHeight, 40);
                 this.copies = intVal(ds.defaultCopies, 1);
