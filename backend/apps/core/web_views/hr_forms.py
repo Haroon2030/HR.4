@@ -371,6 +371,23 @@ def _salary_certificate_form_context(employee) -> dict:
     }
 
 
+def _salary_transfer_commitment_form_context(employee) -> dict:
+    """تعبئة تلقائية لنموذج التزام تحويل الراتب من ملف الموظف (الحقول تبقى قابلة للتعديل)."""
+    from apps.employees.services.settlement_eosb import compute_transfer_commitment_eosb_amounts
+
+    ctx = _salary_certificate_form_context(employee)
+    eosb = compute_transfer_commitment_eosb_amounts(employee)
+    return {
+        'form_employee_name': ctx['form_employee_name'],
+        'form_job_title': ctx['form_job_title'],
+        'form_hire_date': ctx['form_hire_date'],
+        'form_work_id': (employee.employee_number or '').strip(),
+        'form_employee_iban': (getattr(employee, 'iban', None) or '').strip(),
+        'eosb_entitlement': eosb['eosb_entitlement'],
+        'eosb_resignation': eosb['eosb_resignation'],
+    }
+
+
 def _active_banks_queryset():
     from apps.setup.models import Bank
 
@@ -626,11 +643,7 @@ def hr_form_print(request, form_type, employee_id):
     context['form_employee_iban'] = (getattr(employee, 'iban', None) or '').strip()
 
     if form_type == 'salary_transfer_commitment':
-        # نموذج البنك: حقول يدوية فارغة — لا تُسحب من ملف الموظف (ما عدا الاسم)
-        context['form_work_id'] = ''
-        context['form_employee_iban'] = ''
-        context['eosb_entitlement'] = None
-        context['eosb_resignation'] = None
+        context.update(_salary_transfer_commitment_form_context(employee))
 
     if form_type == 'salary_certificate':
         context.update(_salary_certificate_form_context(employee))

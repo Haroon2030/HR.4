@@ -65,6 +65,13 @@
                                value="{{ request.POST.id_number|default:'' }}">
                     </div>
                     <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_hire_date">تاريخ المباشرة</label>
+                        <input type="date" id="id_create_hire_date" name="hire_date"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               dir="ltr"
+                               value="{{ request.POST.hire_date|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_branch">الفرع</label>
                         <select id="id_create_branch" name="branch" class="hr-glass-input hr-employee-create-field__input">
                             <option value="">— اختر الفرع —</option>
@@ -199,6 +206,23 @@
         }
         type.addEventListener('change', sync);
         sync();
+    })();
+
+    // Enter ينقل للحقل التالي بدل حفظ النموذج؛ الحفظ يتم بزر «حفظ الموظف» فقط
+    (function () {
+        const form = document.querySelector('form.hr-employee-create-form');
+        if (!form) return;
+        form.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' || e.isComposing || e.defaultPrevented) return;
+            const el = e.target;
+            if (!el.matches('input, select') || el.matches('[type=submit], [type=button], [type=checkbox], [type=radio]')) return;
+            e.preventDefault();
+            e.stopPropagation(); // منتقي التاريخ يفتح نافذته عند Enter — هنا ننتقل للحقل التالي فقط
+            const fields = Array.from(form.querySelectorAll('input, select, textarea, button[type=submit]'))
+                .filter((f) => !f.disabled && f.type !== 'hidden' && f.tabIndex !== -1 && f.offsetParent !== null);
+            const next = fields[fields.indexOf(el) + 1];
+            if (next) next.focus();
+        }, true);
     })();
 </script>
 {% endblock %}
