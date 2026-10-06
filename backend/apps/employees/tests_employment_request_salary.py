@@ -1,8 +1,10 @@
 """حقل الراتب الأساسي في نموذج رفع طلب التوظيف (شاشة إضافة موظف)."""
+import tempfile
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.core.models import AppModule, Branch, Company, Permission, Role
@@ -11,6 +13,7 @@ from apps.employees.models import EmploymentRequest
 User = get_user_model()
 
 
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class EmploymentRequestSalaryTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -37,8 +40,15 @@ class EmploymentRequestSalaryTests(TestCase):
         self.client.force_login(self.user)
         self.url = reverse('web:add_employee')
 
-    def _submit(self, name, **extra):
-        return self.client.post(self.url, {'name': name, 'branch': self.branch.pk, **extra})
+    @staticmethod
+    def _document():
+        return SimpleUploadedFile('commencement.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+
+    def _submit(self, name, with_document=True, **extra):
+        data = {'name': name, 'branch': self.branch.pk, 'basic_salary': '3000', **extra}
+        if with_document:
+            data['commencement_document'] = self._document()
+        return self.client.post(self.url, data)
 
     def test_add_employee_page_renders_basic_salary_field(self):
         response = self.client.get(self.url)
@@ -51,12 +61,16 @@ class EmploymentRequestSalaryTests(TestCase):
         self.assertEqual(request_obj.basic_salary, Decimal('4500.50'))
         self.assertEqual(request_obj.requested_by_id, self.user.pk)
 
-    def test_empty_salary_is_saved_as_zero(self):
+    def test_missing_or_zero_salary_is_rejected(self):
         self._submit('بدون راتب', basic_salary='')
-        self.assertEqual(
-            EmploymentRequest.objects.get(name='بدون راتب').basic_salary,
-            Decimal('0'),
+        self._submit('راتب صفر', basic_salary='0')
+        self.assertFalse(
+            EmploymentRequest.objects.filter(name__in=['بدون راتب', 'راتب صفر']).exists()
         )
+
+    def test_missing_commencement_document_is_rejected(self):
+        self._submit('بدون مستند', with_document=False)
+        self.assertFalse(EmploymentRequest.objects.filter(name='بدون مستند').exists())
 
     def test_negative_salary_is_rejected(self):
         self._submit('راتب سالب', basic_salary='-10')

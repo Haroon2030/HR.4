@@ -58,6 +58,7 @@ class EmployeeFormTests(TestCase):
         form = EmployeeForm(
             data={
                 'name': 'هارون',
+                'name_en': 'Haroon',
                 'contract_type': 'unlimited',
                 'basic_salary': '',
                 'housing_allowance': '',
@@ -78,6 +79,7 @@ class EmployeeFormTests(TestCase):
         form = EmployeeForm(
             data={
                 'name': 'موظف سعودي',
+                'name_en': 'Saudi Employee',
                 'nationality': str(saudi.pk),
                 'contract_type': 'fixed',
                 'insurance_deduction_rate': '10.75',
@@ -86,6 +88,38 @@ class EmployeeFormTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         saved = form.save()
         self.assertEqual(saved.insurance_deduction_rate, Decimal('10.75'))
+
+    def test_birth_date_and_hijri_validation(self):
+        base = {'name': 'هارون', 'name_en': 'Haroon', 'contract_type': 'unlimited'}
+
+        ok = EmployeeForm(data={**base, 'birth_date': '1990-05-17', 'birth_date_hijri': '1410/10/22'})
+        self.assertTrue(ok.is_valid(), ok.errors)
+        self.assertEqual(ok.cleaned_data['birth_date_hijri'], '1410/10/22')
+
+        future = EmployeeForm(data={**base, 'birth_date': '2999-01-01'})
+        self.assertFalse(future.is_valid())
+        self.assertIn('birth_date', future.errors)
+
+        bad_hijri = EmployeeForm(data={**base, 'birth_date_hijri': '2020/13/40'})
+        self.assertFalse(bad_hijri.is_valid())
+        self.assertIn('birth_date_hijri', bad_hijri.errors)
+
+        # الحقلان اختياريان
+        empty = EmployeeForm(data=base)
+        self.assertTrue(empty.is_valid(), empty.errors)
+
+    def test_english_name_is_required_and_latin_only(self):
+        missing = EmployeeForm(data={'name': 'هارون', 'contract_type': 'unlimited'})
+        self.assertFalse(missing.is_valid())
+        self.assertIn('name_en', missing.errors)
+
+        arabic = EmployeeForm(data={'name': 'هارون', 'name_en': 'هارون', 'contract_type': 'unlimited'})
+        self.assertFalse(arabic.is_valid())
+        self.assertIn('name_en', arabic.errors)
+
+        ok = EmployeeForm(data={'name': 'هارون', 'name_en': '  Haroon   Al-Ahdal ', 'contract_type': 'unlimited'})
+        self.assertTrue(ok.is_valid(), ok.errors)
+        self.assertEqual(ok.cleaned_data['name_en'], 'Haroon Al-Ahdal')
 
     def test_duplicate_post_insurance_rate_last_value_wins(self):
         """محاكاة إرسال حقلين بنفس الاسم — آخر قيمة هي التي يقرأها النموذج."""

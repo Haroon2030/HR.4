@@ -2,6 +2,7 @@
 <div x-show="activeTab==='main'" class="hr-glass-field-table-wrap">
     <div class="hr-field-grid hr-glass-field-table hr-employee-profile-table" role="table" aria-label="بيانات الموظف">
         {% include "components/profile_info_field.html" with label="الاسم" value=employee.name %}
+        {% include "components/profile_info_field.html" with label="الاسم بالإنجليزية" value=employee.name_en dir="ltr" %}
         {% include "components/profile_info_field.html" with label="رقم الموظف" value=employee.employee_number mono=True dir="ltr" %}
         {% include "components/profile_info_field.html" with label="رقم الهوية" value=employee.id_number mono=True dir="ltr" %}
         {% include "components/profile_info_field.html" with label="الجنس" value=employee.get_gender_display %}
@@ -19,6 +20,8 @@
             </span>
         </div>
         {% include "components/profile_info_field.html" with label="مركز التكلفة" value=employee.cost_center.name %}
+        {% include "components/profile_info_field.html" with label="تاريخ الميلاد" value=employee.birth_date mono=True dir="ltr" %}
+        {% include "components/profile_info_field.html" with label="تاريخ الميلاد (هجري)" value=employee.birth_date_hijri mono=True dir="ltr" %}
         {% include "components/profile_info_field.html" with label="تاريخ المباشرة" value=employee.hire_date mono=True dir="ltr" %}
         {% include "components/profile_info_field.html" with label="تاريخ التوقف" value=employee.end_date mono=True dir="ltr" %}
         <div class="hr-field-item">

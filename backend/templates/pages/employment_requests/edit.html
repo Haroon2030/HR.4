@@ -152,6 +152,9 @@
             <div x-show="activeTab === 'main'" class="p-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% include "pages/employment_requests/_field.html" with field=form.name %}
+                    {% include "pages/employment_requests/_field.html" with field=form.name_en %}
+                    {% include "pages/employment_requests/_field.html" with field=form.birth_date %}
+                    {% include "pages/employment_requests/_field.html" with field=form.birth_date_hijri %}
                     {% include "pages/employment_requests/_field.html" with field=form.id_number %}
                     {% include "pages/employment_requests/_field.html" with field=form.phone %}
                     {% include "pages/employment_requests/_field.html" with field=form.email %}

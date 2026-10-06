@@ -1,6 +1,9 @@
 """ربط المستخدم بالإدارات — تقييد رؤية الموظفين وفرض الإدارة عند الإضافة."""
+import tempfile
+
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from apps.core.models import AppModule, Branch, Company, Permission, Role
@@ -156,6 +159,7 @@ class AdministrationScopeTests(TestCase):
         self.assertEqual(response.context['default_administration_id'], self.admin_a.pk)
         self.assertEqual([a.pk for a in response.context['administrations']], [self.admin_a.pk])
 
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
     def test_add_employee_rejects_other_or_missing_administration(self):
         client = self._client_for(self.linked_user)
         url = reverse('web:add_employee')
@@ -165,7 +169,14 @@ class AdministrationScopeTests(TestCase):
             EmploymentRequest.objects.filter(name__in=['مرفوض ب', 'مرفوض فارغ']).exists()
         )
 
-        client.post(url, {'name': 'مقبول أ', 'administration': self.admin_a.pk})
+        client.post(url, {
+            'name': 'مقبول أ',
+            'administration': self.admin_a.pk,
+            'basic_salary': '3000',
+            'commencement_document': SimpleUploadedFile(
+                'commencement.pdf', b'%PDF-1.4 test', content_type='application/pdf',
+            ),
+        })
         created = EmploymentRequest.objects.get(name='مقبول أ')
         self.assertEqual(created.administration_id, self.admin_a.pk)
         self.assertEqual(created.requested_by_id, self.linked_user.pk)

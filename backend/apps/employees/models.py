@@ -44,6 +44,12 @@ class EmploymentRequest(BaseModel):
         REJECTED = 'rejected', 'مرفوض'
 
     name = models.CharField("اسم الموظف", max_length=200)
+    name_en = models.CharField("الاسم بالإنجليزية", max_length=200, blank=True)
+    birth_date = models.DateField("تاريخ الميلاد", null=True, blank=True)
+    birth_date_hijri = models.CharField(
+        "تاريخ الميلاد الهجري", max_length=10, blank=True,
+        help_text="يُعبّأ تلقائياً من التاريخ الميلادي (YYYY/MM/DD) ويمكن تعديله ليطابق الهوية.",
+    )
     branch = models.ForeignKey(
         Branch, on_delete=models.PROTECT, related_name='employment_requests',
         verbose_name="الفرع", null=True, blank=True
@@ -243,6 +249,12 @@ class Employee(BaseModel):
 
     # ── بيانات أساسية ───────────────────────────────────────────
     name = models.CharField("الاسم", max_length=200)
+    name_en = models.CharField("الاسم بالإنجليزية", max_length=200, blank=True)
+    birth_date = models.DateField("تاريخ الميلاد", null=True, blank=True)
+    birth_date_hijri = models.CharField(
+        "تاريخ الميلاد الهجري", max_length=10, blank=True,
+        help_text="يُعبّأ تلقائياً من التاريخ الميلادي (YYYY/MM/DD) ويمكن تعديله ليطابق الهوية.",
+    )
     gender = models.CharField(
         "الجنس", max_length=10, choices=Gender.choices, default='', blank=True
     )

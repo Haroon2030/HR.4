@@ -44,6 +44,11 @@
                         <input type="text" name="name" required value="{% if form %}{{ form.name.value|default:employee.name }}{% else %}{{ employee.name }}{% endif %}">
                     </div>
                     <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800">الاسم بالإنجليزية <span class="text-red-500">*</span></label>
+                        <input type="text" name="name_en" required dir="ltr" placeholder="Full name in English" pattern="[A-Za-z][A-Za-z .'\-]*" title="أحرف إنجليزية فقط" value="{% if form %}{{ form.name_en.value|default_if_none:employee.name_en|default:'' }}{% else %}{{ employee.name_en }}{% endif %}">
+                        {% if form.name_en.errors %}<p class="text-xs text-red-600 mt-0.5">{{ form.name_en.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">الجنس</label>
                         <select name="gender">
                             <option value="male" {% if employee.gender == 'male' or not employee.gender %}selected{% endif %}>ذكر</option>
@@ -148,6 +153,19 @@
                     <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ انتهاء الكرت الصحي</label>
                         <input type="date" name="health_card_expiry" value="{{ employee.health_card_expiry|date:'Y-m-d' }}">
+                    </div>
+                    <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ الميلاد</label>
+                        <input type="date" name="birth_date" data-hijri-target="birth_date_hijri" value="{{ employee.birth_date|date:'Y-m-d' }}">
+                        {% if form.birth_date.errors %}<p class="text-xs text-red-600 mt-0.5">{{ form.birth_date.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800">تاريخ الميلاد (هجري)</label>
+                        <input type="text" name="birth_date_hijri" dir="ltr" inputmode="numeric" maxlength="10" placeholder="YYYY/MM/DD" value="{{ employee.birth_date_hijri }}">
+                        <p class="text-[10px] text-slate-500 mt-0.5">يُحسب تلقائياً من الميلادي — عدّله ليطابق الهوية عند اختلاف يوم.</p>
+                        {% if form.birth_date_hijri.errors %}<p class="text-xs text-red-600 mt-0.5">{{ form.birth_date_hijri.errors.0 }}</p>{% endif %}
+                    </div>
                     </div>
                     <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800">تاريخ المباشرة</label>

@@ -4,6 +4,8 @@ Forms لـ apps.employees - استبدال request.POST.get(...) المباشر.
 EmployeeForm: ModelForm كامل لإنشاء/تعديل ملف موظف (32 حقل)
 EmploymentRequestForm: نموذج طلب توظيف (الأخصائي يُرسله للمدير)
 """
+import re
+from datetime import date
 from decimal import Decimal
 
 from django import forms
@@ -11,6 +13,44 @@ from django.core.exceptions import ValidationError
 from django.forms.models import ModelChoiceField
 
 from apps.employees.models import Employee, EmploymentRequest, EmployeeStatement
+
+
+_ENGLISH_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z .'\-]*$")
+
+
+def _clean_english_name(value, *, required: bool):
+    """الاسم بالإنجليزية: أحرف لاتينية ومسافات فقط، ويُوحَّد تباعد المسافات."""
+    name = ' '.join((value or '').split())
+    if not name:
+        if required:
+            raise ValidationError('الاسم بالإنجليزية مطلوب')
+        return ''
+    if not _ENGLISH_NAME_RE.match(name):
+        raise ValidationError('اكتب الاسم بأحرف إنجليزية فقط (A-Z)')
+    return name
+
+
+_HIJRI_RE = re.compile(r"^(1[3-5]\d{2})/(0[1-9]|1[0-2])/(0[1-9]|[12]\d|30)$")
+
+
+def _clean_birth_date(value):
+    if value is None:
+        return value
+    if value > date.today():
+        raise ValidationError('تاريخ الميلاد لا يمكن أن يكون في المستقبل')
+    if value.year < 1900:
+        raise ValidationError('تاريخ الميلاد غير صحيح')
+    return value
+
+
+def _clean_hijri_date(value):
+    """التاريخ الهجري بصيغة YYYY/MM/DD (أرقام لاتينية)."""
+    text = (value or '').strip().replace('-', '/').replace('.', '/')
+    if not text:
+        return ''
+    if not _HIJRI_RE.match(text):
+        raise ValidationError('التاريخ الهجري بصيغة YYYY/MM/DD مثل 1411/07/09')
+    return text
 
 
 # حقول تُرسَل دائماً عبر hidden/UI مخصص — لا تُستثنى من التحديث عند غيابها عن POST
@@ -106,8 +146,8 @@ def _apply_fk_label_overrides(form):
 # سيمحو محتواها تلقائياً عند أي تعديل لحقل آخر.
 _EMPLOYEE_FIELDS = [
     # نصوص أساسية
-    'name', 'id_number', 'phone', 'email', 'employee_number',
-    'gender',
+    'name', 'name_en', 'id_number', 'phone', 'email', 'employee_number',
+    'gender', 'birth_date', 'birth_date_hijri',
     # FKs
     'nationality', 'profession', 'sponsorship', 'branch', 'department',
     'administration', 'cost_center', 'insurance', 'insurance_class', 'housing',
@@ -194,6 +234,16 @@ class EmployeeForm(forms.ModelForm):
         if not name:
             raise ValidationError('اسم الموظف مطلوب')
         return name
+
+    def clean_birth_date(self):
+        return _clean_birth_date(self.cleaned_data.get('birth_date'))
+
+    def clean_birth_date_hijri(self):
+        return _clean_hijri_date(self.cleaned_data.get('birth_date_hijri'))
+
+    def clean_name_en(self):
+        # إكمال بيانات الموظف يتطلب الاسم بالإنجليزية
+        return _clean_english_name(self.cleaned_data.get('name_en'), required=True)
 
     def clean_id_number(self):
         return _clean_unique_employee_id_number(
@@ -328,8 +378,14 @@ class EmploymentRequestForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _apply_fk_label_overrides(self)
         for field_name, field in self.fields.items():
-            if field_name != 'name':
+            if field_name not in ('name', 'basic_salary', 'commencement_document'):
                 field.required = False
+        for field_name, message in (
+            ('basic_salary', 'الراتب الأساسي مطلوب'),
+            ('commencement_document', 'مستند المباشرة مطلوب'),
+        ):
+            self.fields[field_name].required = True
+            self.fields[field_name].error_messages['required'] = message
         if user is not None and 'branch' in self.fields:
             from apps.core.models import Branch
             from apps.core.services.access_control import filter_branches_queryset
@@ -358,10 +414,8 @@ class EmploymentRequestForm(forms.ModelForm):
 
     def clean_basic_salary(self):
         salary = self.cleaned_data.get('basic_salary')
-        if salary is None:
-            return Decimal('0')
-        if salary < 0:
-            raise ValidationError('الراتب الأساسي لا يمكن أن يكون سالباً.')
+        if salary is None or salary <= 0:
+            raise ValidationError('الراتب الأساسي مطلوب ويجب أن يكون أكبر من صفر.')
         return salary
 
     def clean_administration(self):
@@ -397,6 +451,7 @@ class EmploymentRequestForm(forms.ModelForm):
 # (البريد الإلكتروني إلزامي شرطياً لمن على كفالة/سعودي — يُتحقَّق في
 #  validate_employee_data_complete وليس هنا)
 EMPLOYMENT_REQUEST_REQUIRED_FIELDS = [
+    'name_en',
     'id_number', 'phone', 'employee_number',
     'nationality', 'profession',
     'hire_date',
@@ -416,9 +471,10 @@ class EmploymentRequestEditForm(forms.ModelForm):
         model = EmploymentRequest
         fields = [
             # الحقول الأصلية
-            'name', 'branch', 'administration', 'department', 'cost_center', 'commencement_document',
+            'name', 'name_en', 'branch', 'administration', 'department', 'cost_center', 'commencement_document',
             # بيانات أساسية
             'id_number', 'phone', 'email', 'employee_number', 'gender',
+            'birth_date', 'birth_date_hijri',
             # Setup
             'nationality', 'profession', 'sponsorship', 'insurance', 'insurance_class',
             'housing',
@@ -433,6 +489,18 @@ class EmploymentRequestEditForm(forms.ModelForm):
             # مستندات
             'id_document', 'passport_document', 'contract_document', 'other_documents',
         ]
+
+    def clean_birth_date(self):
+        return _clean_birth_date(self.cleaned_data.get('birth_date'))
+
+    def clean_birth_date_hijri(self):
+        return _clean_hijri_date(self.cleaned_data.get('birth_date_hijri'))
+
+    def clean_name_en(self):
+        # الحفظ التقدّمي لكل تبويب اختياري؛ الإلزام عند الموافقة النهائية فقط
+        return _clean_english_name(
+            self.cleaned_data.get('name_en'), required=not self._save_tab,
+        )
 
     def __init__(self, *args, **kwargs):
         self._save_tab = kwargs.pop('save_tab', None)
@@ -478,6 +546,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
             # تحويل الحقول التاريخية إلى type="date"
             if field_name in (
                 'hire_date',
+                'birth_date',
                 'end_date',
                 'health_card_expiry',
                 'medical_insurance_expiry_date',
@@ -496,6 +565,14 @@ class EmploymentRequestEditForm(forms.ModelForm):
 
         from apps.employees.form_ui import apply_hr_empty_input_defaults
         apply_hr_empty_input_defaults(self)
+
+        # التاريخ الهجري يُعبّأ تلقائياً من الميلادي (hr-hijri.js) ويبقى قابلاً للتعديل
+        if 'birth_date' in self.fields:
+            self.fields['birth_date'].widget.attrs['data-hijri-target'] = 'birth_date_hijri'
+        if 'birth_date_hijri' in self.fields:
+            self.fields['birth_date_hijri'].widget.attrs.update({
+                'placeholder': 'YYYY/MM/DD', 'dir': 'ltr', 'maxlength': '10', 'inputmode': 'numeric',
+            })
 
         _salary_field_labels = {
             'bank': 'البنك',
