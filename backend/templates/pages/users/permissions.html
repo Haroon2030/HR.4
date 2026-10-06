@@ -2,6 +2,10 @@
 {% load custom_tags %}
 {% block title %}صلاحيات المستخدم — {{ user_obj.username }}{% endblock %}
 
+{% block extra_css %}
+<link href="/static/css/hr-perms.css?v=20261006d" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="hr-user-perms-page w-full max-w-full">
 
@@ -66,20 +70,6 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        if (window.lucide) lucide.createIcons();
-        document.querySelectorAll('.hr-perm-toggle').forEach(function (group) {
-            group.querySelectorAll('.hr-perm-toggle__input').forEach(function (input) {
-                input.addEventListener('change', function () {
-                    group.querySelectorAll('.hr-perm-toggle__opt').forEach(function (opt) {
-                        opt.classList.remove('is-active');
-                    });
-                    if (input.checked) {
-                        input.closest('.hr-perm-toggle__opt').classList.add('is-active');
-                    }
-                });
-            });
-        });
-    });
+    document.addEventListener('DOMContentLoaded', function () { if (window.lucide) lucide.createIcons(); });
 </script>
 {% endblock %}

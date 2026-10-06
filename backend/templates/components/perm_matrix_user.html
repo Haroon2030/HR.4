@@ -1,63 +1,93 @@
-{# جدول صلاحيات المستخدم — جدول واحد مع أعمدة ثابتة يمين RTL #}
-<div class="hr-perm-matrix__scroll hr-scroll-hover hr-perm-erp-scroll">
-    <table class="hr-perm-matrix__table hr-perm-erp-table">
-        <thead class="hr-perm-matrix__head">
-            <tr>
-                <th class="hr-perm-screen-no-col" scope="col">رقم</th>
-                <th class="hr-perm-screen-name-col" scope="col">اسم الشاشة</th>
-                {% for op_code, op_label, op_short in operations %}
-                <th class="hr-perm-op-col" scope="col" title="{{ op_label }}">
-                    <span class="hr-perm-op-col__title">{{ op_label }}</span>
-                </th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in matrix %}
-            <tr class="hr-perm-erp-row"
-                data-group="{{ row.group_id }}"
-                x-show="activeGroupId === '{{ row.group_id }}'"
-                x-cloak>
-                <td class="hr-perm-screen-no-col">{{ row.module.order|default:forloop.counter }}</td>
-                <th class="hr-perm-screen-name-col" scope="row" title="{{ row.screen_name }}">
-                    <span class="hr-perm-screen-name">{{ row.screen_name }}</span>
-                </th>
-                {% for cell in row.cells %}
-                <td class="hr-perm-op-col">
-                    {% if not cell.available %}
-                        <span class="hr-perm-empty" aria-hidden="true">·</span>
-                    {% elif is_admin_user %}
-                        <span class="hr-perm-readonly hr-perm-readonly--allow" title="مفعّلة (أدمن)">✓</span>
-                    {% else %}
-                        <div class="hr-perm-toggle hr-perm-toggle--compact" role="group" aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
-                            <label class="hr-perm-toggle__opt hr-perm-toggle__opt--allow{% if cell.effective %} is-active{% endif %}">
-                                <input type="radio"
-                                       name="perm_{{ cell.perm.id }}"
-                                       value="allowed"
-                                       {% if cell.effective %}checked{% endif %}
-                                       class="sr-only hr-perm-toggle__input">
-                                <span aria-hidden="true">✓</span>
-                            </label>
-                            <label class="hr-perm-toggle__opt hr-perm-toggle__opt--deny{% if not cell.effective %} is-active{% endif %}">
-                                <input type="radio"
-                                       name="perm_{{ cell.perm.id }}"
-                                       value="denied"
-                                       {% if not cell.effective %}checked{% endif %}
-                                       class="sr-only hr-perm-toggle__input">
-                                <span aria-hidden="true">✕</span>
-                            </label>
-                        </div>
-                    {% endif %}
-                </td>
-                {% endfor %}
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="{{ operations|length|add:2 }}" class="hr-perm-matrix__empty">
-                    <p class="text-sm m-0">لا بيانات</p>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{# صلاحيات المستخدم — صف للشاشات متعددة العمليات، وبلاطة صغيرة للشاشة ذات العملية الواحدة #}
+<div class="hr-perm-list">
+    {% include "components/perm_list_tools.html" with locked=is_admin_user legend_user=True %}
+    <ul class="hr-perm-list__rows hr-scroll-hover">
+        {% for row in matrix %}
+        {% if row.available_count == 1 %}
+        {% for cell in row.cells %}{% if cell.available %}
+        <li class="hr-perm-tile"
+            data-group="{{ row.group_id }}"
+            data-name="{{ row.screen_name }}"
+            x-show="activeGroupId === '{{ row.group_id }}' && rowMatches($el)"
+            x-cloak>
+            {% if is_admin_user %}
+            <span class="hr-perm-chip hr-perm-chip--tile is-on is-locked" title="مفعّلة تلقائياً (أدمن)">
+                <span class="hr-perm-chip__face">{{ row.short_name }}</span>
+            </span>
+            {% else %}
+            <label class="hr-perm-chip hr-perm-chip--tile">
+                <input type="hidden" name="perm_{{ cell.perm.id }}" value="denied">
+                <input type="checkbox"
+                       name="perm_{{ cell.perm.id }}"
+                       value="allowed"
+                       data-op="{{ cell.op_code }}"
+                       data-module="{{ row.module.code }}"
+                       data-group="{{ row.group_id }}"
+                       {% if cell.effective %}checked{% endif %}
+                       class="perm-cb hr-perm-chip__input"
+                       aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
+                <span class="hr-perm-chip__face" title="{{ row.screen_name }}">
+                    {{ row.short_name }}{% if cell.op_code != 'view' %} <small>— {{ cell.op_label }}</small>{% endif %}
+                    {% if cell.state == 'grant' %}<i class="hr-perm-chip__mark hr-perm-chip__mark--grant" title="ممنوحة للمستخدم فوق دوره"></i>{% endif %}
+                    {% if cell.state == 'deny' %}<i class="hr-perm-chip__mark hr-perm-chip__mark--deny" title="محجوبة عن المستخدم رغم دوره"></i>{% endif %}
+                </span>
+            </label>
+            {% endif %}
+        </li>
+        {% endif %}{% endfor %}
+        {% else %}
+        <li class="hr-perm-row"
+            data-group="{{ row.group_id }}"
+            data-name="{{ row.screen_name }}"
+            x-show="activeGroupId === '{{ row.group_id }}' && rowMatches($el)"
+            x-cloak>
+            <span class="hr-perm-row__name">{{ row.screen_name }}</span>
+            <div class="hr-perm-row__chips" role="group" aria-label="{{ row.screen_name }}">
+                {% for cell in row.cells %}{% if cell.available %}
+                {% if is_admin_user %}
+                <span class="hr-perm-chip is-on is-locked" title="مفعّلة تلقائياً (أدمن)">
+                    <span class="hr-perm-chip__face">{{ cell.op_label }}</span>
+                </span>
+                {% else %}
+                <label class="hr-perm-chip">
+                    {# غير المحدَّد يُرسَل «denied»، والمحدَّد يُرسَل «allowed» بعده فيغلب #}
+                    <input type="hidden" name="perm_{{ cell.perm.id }}" value="denied">
+                    <input type="checkbox"
+                           name="perm_{{ cell.perm.id }}"
+                           value="allowed"
+                           data-op="{{ cell.op_code }}"
+                           data-module="{{ row.module.code }}"
+                           data-group="{{ row.group_id }}"
+                           {% if cell.effective %}checked{% endif %}
+                           class="perm-cb hr-perm-chip__input"
+                           aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
+                    <span class="hr-perm-chip__face">
+                        {{ cell.op_label }}
+                        {% if cell.state == 'grant' %}<i class="hr-perm-chip__mark hr-perm-chip__mark--grant" title="ممنوحة للمستخدم فوق دوره"></i>{% endif %}
+                        {% if cell.state == 'deny' %}<i class="hr-perm-chip__mark hr-perm-chip__mark--deny" title="محجوبة عن المستخدم رغم دوره"></i>{% endif %}
+                    </span>
+                </label>
+                {% endif %}
+                {% endif %}{% endfor %}
+            </div>
+            {% if not is_admin_user %}
+            <button type="button"
+                    class="hr-perm-row__all"
+                    @click="checkRow('{{ row.module.code }}', !rowAllChecked('{{ row.module.code }}'))"
+                    title="تبديل كل صلاحيات {{ row.screen_name }}">
+                الكل
+            </button>
+            {% endif %}
+        </li>
+        {% endif %}
+        {% empty %}
+        <li class="hr-perm-list__empty-row"><p class="hr-perm-list__empty">لا بيانات</p></li>
+        {% endfor %}
+    </ul>
 </div>
+
+<p class="hr-perm-tree-empty-hint"
+   x-show="activeGroupId && !groupHasVisibleRows()"
+   x-cloak>
+    لا توجد شاشات في هذا القسم.
+</p>

@@ -47,6 +47,24 @@ def report_allowed_for_user(user, report_key: str) -> bool:
 
 
 def hr_form_allowed_for_user(user, form_key: str) -> bool:
+    """هل يستطيع المستخدم فتح/طباعة هذا النموذج؟
+
+    إن مُنح المستخدم أي صلاحية نموذج (hr_form_<key>.view) فهي وحدها تحدد النماذج المتاحة له
+    (مثل تبويبات الموظف). بدونها يُطبَّق السلوك القديم: كل النماذج، وتُخفى نماذج الرواتب
+    عمّن لا يملك صلاحية الرواتب.
+    """
+    from apps.core.hr_form_permissions import (
+        HR_FORM_KEYS,
+        hr_form_permission_code,
+        user_has_any_hr_form_permission,
+    )
+
+    if _is_super_or_admin(user):
+        return True
+    if form_key in HR_FORM_KEYS:
+        perms = get_user_permissions(user)
+        if user_has_any_hr_form_permission(perms):
+            return hr_form_permission_code(form_key) in perms
     if form_key not in HR_FORMS_WITH_SALARY:
         return True
     return user_can_view_salary(user)

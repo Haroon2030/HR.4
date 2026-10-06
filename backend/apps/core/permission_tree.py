@@ -81,6 +81,7 @@ PERMISSION_TREE_CONFIG: list[dict] = [
             {'id': 'admin_users', 'name': 'المستخدمون والأدوار', 'module_codes': ['users']},
             {'id': 'admin_settings', 'name': 'الإعدادات', 'module_codes': ['settings', 'system_data']},
             {'id': 'admin_reports', 'name': 'التقارير والنماذج', 'module_codes': ['reports', 'hr_forms']},
+            {'id': 'admin_hr_form_types', 'name': 'أنواع النماذج الرسمية', 'module_prefix': 'hr_form_'},
         ],
     },
 ]

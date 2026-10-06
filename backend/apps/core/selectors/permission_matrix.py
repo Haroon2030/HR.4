@@ -50,6 +50,17 @@ def _ordered_operations(used_ops: set[str]) -> list[tuple[str, str, str]]:
     return ordered
 
 
+_SCREEN_NAME_PREFIXES = ('تبويب — ', 'نموذج — ')
+
+
+def _short_screen_name(name: str) -> str:
+    """اسم مختصر للبلاطات: يُحذف البادئة المشتركة (القسم يوضحها)."""
+    for prefix in _SCREEN_NAME_PREFIXES:
+        if name.startswith(prefix):
+            return name[len(prefix):]
+    return name
+
+
 def build_role_permissions_matrix(role: Role | None) -> dict:
     """جدول وحدات × عمليات لصلاحيات الدور."""
     modules = list(
@@ -90,12 +101,18 @@ def build_role_permissions_matrix(role: Role | None) -> dict:
                 'checked': bool(perm and (is_admin_role or perm.id in role_perm_ids)),
                 'available': perm is not None,
             })
-        matrix.append({'module': module, 'cells': cells, 'module_code': module.code})
+        matrix.append({
+            'module': module,
+            'cells': cells,
+            'module_code': module.code,
+            'available_count': sum(1 for c in cells if c.get('available') or c.get('perm')),
+        })
 
     permission_tree, module_to_group, default_group_id = build_permission_tree(active_module_codes)
     for row in matrix:
         row['group_id'] = module_to_group.get(row['module_code'], 'other')
         row['screen_name'] = display_screen_name(row['module'].name, row['group_id'])
+        row['short_name'] = _short_screen_name(row['screen_name'])
 
     return {
         'role': role,
@@ -159,12 +176,18 @@ def build_user_permissions_matrix(*, role, is_admin_user: bool, role_perm_ids: s
                 'state': state,
                 'effective': effective,
             })
-        matrix.append({'module': module, 'cells': cells, 'module_code': module.code})
+        matrix.append({
+            'module': module,
+            'cells': cells,
+            'module_code': module.code,
+            'available_count': sum(1 for c in cells if c.get('available') or c.get('perm')),
+        })
 
     permission_tree, module_to_group, default_group_id = build_permission_tree(active_module_codes)
     for row in matrix:
         row['group_id'] = module_to_group.get(row['module_code'], 'other')
         row['screen_name'] = display_screen_name(row['module'].name, row['group_id'])
+        row['short_name'] = _short_screen_name(row['screen_name'])
 
     return {
         'operations': operations,

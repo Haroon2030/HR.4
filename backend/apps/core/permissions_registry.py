@@ -55,6 +55,22 @@ OPERATION_NAMES = {
     'workers_add': 'إضافة عامل صيانة',
     'workers_edit': 'تعديل عامل صيانة',
     'workers_delete': 'حذف عامل صيانة',
+    # عمليات فرعية على تبويبات الموظف والتقارير (تظهر في مصفوفة الصلاحيات)
+    'edit_leave': 'تعديل الإجازات',
+    'delete_leave': 'حذف الإجازات',
+    'edit_absence': 'تعديل الغياب',
+    'delete_absence': 'حذف الغياب',
+    'edit_statement': 'تعديل الإفادات',
+    'delete_statement': 'حذف الإفادات',
+    'edit_loan': 'تعديل السلف',
+    'delete_loan': 'حذف السلف',
+    'edit_ledger': 'تعديل سجل الحركة',
+    'delete_ledger': 'حذف سجل الحركة',
+    'edit_salary': 'تعديل الراتب',
+    'export': 'تصدير',
+    'process': 'معالجة',
+    'manage_roles': 'إدارة الأدوار',
+    'view_reports': 'عرض التقارير',
 }
 
 # اختصارات رؤوس أعمدة المصفوفة (الاسم الكامل في title/tooltip)

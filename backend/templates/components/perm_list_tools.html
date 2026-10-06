@@ -1,0 +1,22 @@
+{# شريط أدوات قائمة الصلاحيات: بحث في الشاشات + تحديد/إلغاء الكل للقسم المفتوح فقط #}
+<div class="hr-perm-list__tools">
+    <label class="hr-perm-search">
+        <i data-lucide="search" class="hr-perm-search__icon" aria-hidden="true"></i>
+        <input type="search" x-model="query" class="hr-perm-search__input"
+               placeholder="ابحث عن شاشة" aria-label="ابحث عن شاشة">
+    </label>
+    {% if legend_user %}
+    <span class="hr-perm-list__legend" aria-label="دليل النقاط">
+        <span><i class="hr-perm-chip__mark hr-perm-chip__mark--grant"></i>ممنوحة للمستخدم فوق دوره</span>
+        <span><i class="hr-perm-chip__mark hr-perm-chip__mark--deny"></i>محجوبة عنه رغم دوره</span>
+    </span>
+    {% endif %}
+    {% if not locked %}
+    {# النطاق: القسم المفتوح حالياً فقط (يظهر اسمه) — لا يمس بقية الأقسام #}
+    <div class="hr-perm-list__scope" role="group" aria-label="تحديد صلاحيات القسم المفتوح">
+        <span class="hr-perm-list__scope-name" x-text="activeGroupName()"></span>
+        <button type="button" class="hr-perm-link-btn" @click="checkVisible(true)">تحديد الكل</button>
+        <button type="button" class="hr-perm-link-btn hr-perm-link-btn--muted" @click="checkVisible(false)">إلغاء الكل</button>
+    </div>
+    {% endif %}
+</div>

@@ -34,6 +34,7 @@
         return Object.assign({}, base, {
             activeGroupId: defaultGroupId || '',
             openSystems: [],
+            query: '',
 
             initTree() {
                 var self = this;
@@ -87,8 +88,36 @@
             groupHasVisibleRows() {
                 if (!this.activeGroupId) return true;
                 return document.querySelectorAll(
-                    '.hr-perm-erp-row[data-group="' + this.activeGroupId + '"]'
+                    '.hr-perm-list__rows > [data-group="' + this.activeGroupId + '"]'
                 ).length > 0;
+            },
+
+            // اسم القسم المفتوح حالياً (يُعرض بجانب أزرار التحديد)
+            activeGroupName() {
+                var leaf = document.querySelector(
+                    '.hr-perm-tree__leaf[data-group-id="' + this.activeGroupId + '"] .hr-perm-tree__leaf-name'
+                );
+                return leaf ? leaf.textContent.trim() : '';
+            },
+
+            // تطابق اسم الشاشة مع نص البحث
+            rowMatches(row) {
+                var q = (this.query || '').trim().toLowerCase();
+                if (!q) return true;
+                return (row.getAttribute('data-name') || '').toLowerCase().indexOf(q) !== -1;
+            },
+
+            // تحديد/إلغاء كل الصلاحيات في الشاشات الظاهرة (القسم الحالي + نتائج البحث)
+            checkVisible(state) {
+                var self = this;
+                var sel = '.hr-perm-list__rows > [data-group]';
+                if (this.activeGroupId) sel = '.hr-perm-list__rows > [data-group="' + this.activeGroupId + '"]';
+                document.querySelectorAll(sel).forEach(function (row) {
+                    if (!self.rowMatches(row)) return;
+                    row.querySelectorAll('.perm-cb:not(:disabled)').forEach(function (cb) {
+                        cb.checked = state;
+                    });
+                });
             },
 
             checkColumn(op, state) {

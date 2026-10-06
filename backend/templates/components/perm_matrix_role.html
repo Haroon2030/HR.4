@@ -1,33 +1,42 @@
-{# جدول صلاحيات الدور — جدول واحد مع أعمدة ثابتة يمين RTL #}
-<div class="hr-perm-matrix__scroll hr-scroll-hover hr-perm-erp-scroll">
-    <table class="hr-perm-matrix__table hr-perm-erp-table">
-        <thead class="hr-perm-matrix__head">
-            <tr>
-                <th class="hr-perm-screen-no-col" scope="col">رقم</th>
-                <th class="hr-perm-screen-name-col" scope="col">اسم الشاشة</th>
-                {% for op_code, op_label, op_short in operations %}
-                <th class="hr-perm-op-col" scope="col" title="{{ op_label }}">
-                    <span class="hr-perm-op-col__title">{{ op_label }}</span>
-                </th>
-                {% endfor %}
-                {% if not is_admin_role %}
-                <th class="hr-perm-op-col hr-perm-erp-row-toggle-col" scope="col">صف</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in matrix %}
-            <tr class="hr-perm-erp-row"
-                data-group="{{ row.group_id }}"
-                x-show="activeGroupId === '{{ row.group_id }}'"
-                x-cloak>
-                <td class="hr-perm-screen-no-col">{{ row.module.order|default:forloop.counter }}</td>
-                <th class="hr-perm-screen-name-col" scope="row" title="{{ row.screen_name }}">
-                    <span class="hr-perm-screen-name">{{ row.screen_name }}</span>
-                </th>
-                {% for cell in row.cells %}
-                <td class="hr-perm-op-col">
-                    {% if cell.available %}
+{# صلاحيات الدور — صف للشاشات متعددة العمليات، وبلاطة صغيرة للشاشة ذات العملية الواحدة #}
+<div class="hr-perm-list">
+    {% include "components/perm_list_tools.html" with locked=is_admin_role %}
+    <ul class="hr-perm-list__rows hr-scroll-hover">
+        {% for row in matrix %}
+        {% if row.available_count == 1 %}
+        {% for cell in row.cells %}{% if cell.available %}
+        <li class="hr-perm-tile"
+            data-group="{{ row.group_id }}"
+            data-name="{{ row.screen_name }}"
+            x-show="activeGroupId === '{{ row.group_id }}' && rowMatches($el)"
+            x-cloak>
+            <label class="hr-perm-chip hr-perm-chip--tile">
+                <input type="checkbox"
+                       name="permissions"
+                       value="{{ cell.perm.id }}"
+                       data-op="{{ cell.op_code }}"
+                       data-module="{{ row.module.code }}"
+                       data-group="{{ row.group_id }}"
+                       {% if cell.checked %}checked{% endif %}
+                       {% if is_admin_role %}disabled{% endif %}
+                       class="perm-cb hr-perm-chip__input"
+                       aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
+                <span class="hr-perm-chip__face" title="{{ row.screen_name }}">
+                    {{ row.short_name }}{% if cell.op_code != 'view' %} <small>— {{ cell.op_label }}</small>{% endif %}
+                </span>
+            </label>
+        </li>
+        {% endif %}{% endfor %}
+        {% else %}
+        <li class="hr-perm-row"
+            data-group="{{ row.group_id }}"
+            data-name="{{ row.screen_name }}"
+            x-show="activeGroupId === '{{ row.group_id }}' && rowMatches($el)"
+            x-cloak>
+            <span class="hr-perm-row__name">{{ row.screen_name }}</span>
+            <div class="hr-perm-row__chips" role="group" aria-label="{{ row.screen_name }}">
+                {% for cell in row.cells %}{% if cell.available %}
+                <label class="hr-perm-chip">
                     <input type="checkbox"
                            name="permissions"
                            value="{{ cell.perm.id }}"
@@ -36,33 +45,28 @@
                            data-group="{{ row.group_id }}"
                            {% if cell.checked %}checked{% endif %}
                            {% if is_admin_role %}disabled{% endif %}
-                           class="perm-cb hr-perm-erp-cb"
+                           class="perm-cb hr-perm-chip__input"
                            aria-label="{{ row.screen_name }} — {{ cell.op_label }}">
-                    {% else %}
-                    <span class="hr-perm-empty" aria-hidden="true">·</span>
-                    {% endif %}
-                </td>
-                {% endfor %}
-                {% if not is_admin_role %}
-                <td class="hr-perm-op-col hr-perm-erp-row-toggle-col">
-                    <button type="button"
-                            class="hr-perm-erp-row-all"
-                            @click="checkRow('{{ row.module.code }}', !rowAllChecked('{{ row.module.code }}'))"
-                            title="تحديد صف {{ row.screen_name }}">
-                        ⇄
-                    </button>
-                </td>
-                {% endif %}
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="{{ operations|length|add:3 }}" class="hr-perm-matrix__empty">
-                    <p class="text-sm m-0">لا بيانات — شغّل: <code>python manage.py setup_permissions_and_roles</code></p>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <span class="hr-perm-chip__face">{{ cell.op_label }}</span>
+                </label>
+                {% endif %}{% endfor %}
+            </div>
+            {% if not is_admin_role %}
+            <button type="button"
+                    class="hr-perm-row__all"
+                    @click="checkRow('{{ row.module.code }}', !rowAllChecked('{{ row.module.code }}'))"
+                    title="تبديل كل صلاحيات {{ row.screen_name }}">
+                الكل
+            </button>
+            {% endif %}
+        </li>
+        {% endif %}
+        {% empty %}
+        <li class="hr-perm-list__empty-row">
+            <p class="hr-perm-list__empty">لا بيانات — شغّل: <code>python manage.py setup_permissions_and_roles</code></p>
+        </li>
+        {% endfor %}
+    </ul>
 </div>
 
 <p class="hr-perm-tree-empty-hint"

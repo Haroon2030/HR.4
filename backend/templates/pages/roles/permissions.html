@@ -2,6 +2,10 @@
 {% load custom_tags %}
 {% block title %}صلاحيات الدور — {{ role.name }}{% endblock %}
 
+{% block extra_css %}
+<link href="/static/css/hr-perms.css?v=20261006d" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="hr-user-perms-page w-full max-w-full" dir="rtl">
 
@@ -28,8 +32,6 @@
                 </div>
                 <div class="hr-perm-matrix__toolbar-actions">
                     {% if not is_admin_role and matrix %}
-                    {% include "components/hr_btn.html" with label="تحديد الكل" type="button" variant="soft-emerald" icon="check" size="sm" x_click="checkAll(true)" %}
-                    {% include "components/hr_btn.html" with label="إلغاء الكل" type="button" variant="soft-slate" icon="x" size="sm" x_click="checkAll(false)" %}
                     <span class="text-xs text-slate-500"><span x-text="selectedCount()"></span> محددة</span>
                     {% endif %}
                     {% url 'web:list_roles' as back_url %}
