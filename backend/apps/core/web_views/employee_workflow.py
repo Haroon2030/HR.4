@@ -22,6 +22,27 @@ from apps.core.decorators import any_permission_required, permission_required
 from apps.core.salary_access import salary_view_required
 from apps.core.services.pending_actions import create_and_execute_settlement_action, create_pending_action
 
+
+def _optional_attachment(request):
+    """مرفق اختياري (حقل document) لطلبات الملف السريعة.
+
+    يُرجع (ملف | None، ok). عند فشل التحقق يُضيف رسالة خطأ ويُرجع ok=False.
+    """
+    from django.core.exceptions import ValidationError
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+    from apps.core.validators import validate_employee_upload
+
+    renamed = apply_uploaded_file_rename(request, 'document')
+    attachment = renamed if renamed is not None else request.FILES.get('document')
+    if not attachment:
+        return None, True
+    try:
+        validate_employee_upload(attachment)
+    except ValidationError as exc:
+        messages.error(request, ' '.join(exc.messages))
+        return None, False
+    return attachment, True
+
 @login_required
 @permission_required('employees.edit')
 @employee_branch_access_required
@@ -202,6 +223,10 @@ def terminate_employee(request, employee_id):
             messages.error(request, err[0])
         return redirect('web:view_employee', employee_id=employee.id)
 
+    attachment, attachment_ok = _optional_attachment(request)
+    if not attachment_ok:
+        return redirect('web:view_employee', employee_id=employee.id)
+
     cd = form.cleaned_data
     try:
         _, msg = create_and_execute_settlement_action(
@@ -212,6 +237,7 @@ def terminate_employee(request, employee_id):
                 'end_reason': cd.get('end_reason', ''),
             },
             requested_by=request.user,
+            attachment=attachment,
         )
     except ValueError as exc:
         messages.error(request, str(exc))
@@ -242,6 +268,10 @@ def reactivate_employee(request, employee_id):
             messages.error(request, err[0])
         return redirect('web:view_employee', employee_id=employee.id)
 
+    attachment, attachment_ok = _optional_attachment(request)
+    if not attachment_ok:
+        return redirect('web:view_employee', employee_id=employee.id)
+
     cd = form.cleaned_data
     create_pending_action(
         action_type='reactivate',
@@ -252,6 +282,7 @@ def reactivate_employee(request, employee_id):
             'new_status': cd['new_status'],
         },
         requested_by=request.user,
+        attachment=attachment,
     )
     messages.success(request, 'تم إرسال طلب إعادة التفعيل إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
@@ -289,6 +320,10 @@ def adjust_employee_salary(request, employee_id):
             messages.error(request, err[0])
         return redirect('web:view_employee', employee_id=employee.id)
 
+    attachment, attachment_ok = _optional_attachment(request)
+    if not attachment_ok:
+        return redirect('web:view_employee', employee_id=employee.id)
+
     cd = form.cleaned_data
     create_pending_action(
         action_type='salary_adjust',
@@ -299,6 +334,7 @@ def adjust_employee_salary(request, employee_id):
             'reason': cd['reason'],
         },
         requested_by=request.user,
+        attachment=attachment,
     )
     messages.success(request, 'تم إرسال طلب تعديل الراتب إلى مدير الإدارة/الفرع للموافقة.')
     return redirect('web:view_employee', employee_id=employee.id)
@@ -325,6 +361,10 @@ def transfer_employee(request, employee_id):
             messages.error(request, err[0])
         return redirect('web:view_employee', employee_id=employee.id)
 
+    attachment, attachment_ok = _optional_attachment(request)
+    if not attachment_ok:
+        return redirect('web:view_employee', employee_id=employee.id)
+
     cd = form.cleaned_data
     new_branch = cd.get('new_branch')
     new_dept = cd.get('new_department')
@@ -339,6 +379,7 @@ def transfer_employee(request, employee_id):
             'new_department_id': new_dept.id if new_dept else None,
         },
         requested_by=request.user,
+        attachment=attachment,
     )
     messages.success(request, 'تم إرسال طلب النقل إلى مدير إدارة العمليات للموافقة الأولى.')
     return redirect('web:view_employee', employee_id=employee.id)
@@ -946,6 +987,10 @@ def end_of_service_employee(request, employee_id):
             messages.error(request, err[0])
         return redirect('web:view_employee', employee_id=employee.id)
 
+    attachment, attachment_ok = _optional_attachment(request)
+    if not attachment_ok:
+        return redirect('web:view_employee', employee_id=employee.id)
+
     cd = form.cleaned_data
     try:
         _, msg = create_and_execute_settlement_action(
@@ -959,6 +1004,7 @@ def end_of_service_employee(request, employee_id):
                 'notes': cd.get('notes', ''),
             },
             requested_by=request.user,
+            attachment=attachment,
         )
     except ValueError as exc:
         messages.error(request, str(exc))

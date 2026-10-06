@@ -45,7 +45,7 @@
                         <i data-lucide="calendar-plus" class="w-4 h-4"></i> تقديم إجازة
                     </button>
                     <button type="button" @click="quickModal='terminate'; quickOpen=false" class="hr-dropdown-item">
-                        <i data-lucide="user-x" class="w-4 h-4"></i> تصفية موظف
+                        <i data-lucide="user-x" class="w-4 h-4"></i> تصفية خارج الشركة
                     </button>
                     {% if can_edit_salary %}
                     <button type="button" @click="quickModal='salary'; quickOpen=false" class="hr-dropdown-item">
@@ -154,7 +154,7 @@
                 </button>
             </div>
 
-            <form method="post" action="{% url 'web:reactivate_employee' employee.id %}" class="p-4 space-y-3">
+            <form method="post" enctype="multipart/form-data" action="{% url 'web:reactivate_employee' employee.id %}" class="p-4 space-y-3">
                 {% csrf_token %}
 
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
@@ -187,6 +187,7 @@
                     <input type="text" name="reactivation_reason" required placeholder="مثال: عاد بعد انتهاء تأشيرة الخروج" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
+                {% include 'components/quick_attachment_field.html' %}
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" class="hr-btn hr-btn--success">
@@ -501,6 +502,8 @@
                     <span>تتجاوز الرصيد المتاح (<span x-text="balance"></span> يوم)</span>
                 </div>
 
+                {% include 'components/quick_attachment_field.html' %}
+
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" :disabled="!canSubmit"
@@ -512,20 +515,20 @@
         </div>
     </div>
 
-    <!-- Modal: تصفية موظف -->
+    <!-- Modal: تصفية خارج الشركة -->
     <div x-show="quickModal==='terminate'" x-cloak class="hr-glass-modal-overlay hr-employee-quick-modal-overlay flex items-center justify-center p-4" @click.self="quickModal=null">
         <div class="hr-glass-modal w-full max-w-lg max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="user-x" class="w-5 h-5 text-red-600"></i>
-                    <span>تصفية موظف</span>
+                    <span>تصفية خارج الشركة</span>
                 </h3>
                 <button type="button" @click="quickModal=null" class="text-slate-400 hover:text-slate-600">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <form method="post" action="{% url 'web:terminate_employee' employee.id %}" class="p-4 space-y-3">
+            <form method="post" enctype="multipart/form-data" action="{% url 'web:terminate_employee' employee.id %}" class="p-4 space-y-3">
                 {% csrf_token %}
 
                 {% if employee.sponsorship_id %}
@@ -576,6 +579,7 @@
                     <input type="text" name="end_reason" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
+                {% include 'components/quick_attachment_field.html' %}
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" class="hr-btn hr-btn--danger">تأكيد التصفية</button>
@@ -602,7 +606,7 @@
                 </button>
             </div>
 
-            <form method="post" action="{% url 'web:end_of_service_employee' employee.id %}" class="p-4 space-y-3"
+            <form method="post" enctype="multipart/form-data" action="{% url 'web:end_of_service_employee' employee.id %}" class="p-4 space-y-3"
                   hx-boost="false"
                   x-data="employeeEosCalculator()"
                   @eos-calculator-reset.window="resetCalculator()">
@@ -804,6 +808,7 @@
                     <textarea name="notes" rows="2" class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500"></textarea>
                 </div>
 
+                {% include 'components/quick_attachment_field.html' %}
                 <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" class="hr-btn hr-btn--danger">تأكيد التصفية</button>
@@ -828,7 +833,7 @@
                 </button>
             </div>
 
-            <form method="post" action="{% url 'web:adjust_employee_salary' employee.id %}" class="p-4 space-y-3" hx-boost="false"
+            <form method="post" enctype="multipart/form-data" action="{% url 'web:adjust_employee_salary' employee.id %}" class="p-4 space-y-3" hx-boost="false"
                   @submit="$refs.newBasicSalary.value = (parseFloat(basic) + parseFloat(raise || 0)).toFixed(2)">
                 {% csrf_token %}
 
@@ -911,6 +916,7 @@
                            class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-primary-500 focus:border-primary-500">
                 </div>
 
+                {% include 'components/quick_attachment_field.html' %}
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit" :disabled="parseFloat(raise || 0) === 0"
@@ -937,7 +943,7 @@
                 </button>
             </div>
 
-            <form method="post" action="{% url 'web:transfer_employee' employee.id %}" class="p-4 space-y-4">
+            <form method="post" enctype="multipart/form-data" action="{% url 'web:transfer_employee' employee.id %}" class="p-4 space-y-4">
                 {% csrf_token %}
 
                 <!-- الفرع -->
@@ -998,6 +1004,7 @@
                     </div>
                 </div>
 
+                {% include 'components/quick_attachment_field.html' %}
                 <div class="sticky bottom-0 bg-white flex flex-wrap items-center justify-end gap-3 pt-4 pb-2 border-t border-slate-100 mt-2 -mx-4 px-4">
                     <button type="button" @click="quickModal=null" class="hr-btn hr-btn--muted">إلغاء</button>
                     <button type="submit"
