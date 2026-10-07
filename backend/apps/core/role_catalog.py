@@ -80,9 +80,10 @@ ROLE_CATALOG: dict[str, dict[str, str]] = {
     Role.RoleType.BRANCH_ACCOUNTANT: {
         'code': 'BRANCH_ACCOUNTANT',
         'name': 'BRANCH_ACCOUNTANT — محاسب الفرع',
-        'type_label': 'BRANCH_ACCOUNTANT — محاسب الفرع (اعتماد عجز الكاشير)',
+        'type_label': 'BRANCH_ACCOUNTANT — المحاسب (اطّلاع شامل + تعميد)',
         'description': (
-            'اعتماد طلبات عجز الكاشير لموظفي الفروع المعيّنة عليه (profile.branch + assigned_branches).'
+            'اطّلاع على كل شيء بلا إضافة أو تعديل أو حذف. يعمّد فقط طلبات موظفي الإدارة التي يديرها '
+            '(التهيئة → الإدارات) وعجز الكاشير لفروعه.'
         ),
     },
     Role.RoleType.SPECIALIST: {

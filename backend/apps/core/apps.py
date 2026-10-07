@@ -15,6 +15,17 @@ def _sync_permissions_to_db(verbose=False):
     return sync_to_db(verbose=verbose)
 
 
+def _sync_accountant_view_permissions():
+    """المحاسب يطّلع على كل شيء: أي صلاحية عرض جديدة تُضاف لدوره تلقائياً."""
+    try:
+        from apps.core.models import Permission, Role
+        from apps.core.role_policies import sync_accountant_role
+
+        sync_accountant_role(Role, Permission, additive_only=True)
+    except Exception as exc:  # الجداول قد لا تكون جاهزة (أول migrate)
+        print(f'[permissions] accountant sync skipped: {exc}')
+
+
 def _sync_permissions_signal(sender, **kwargs):
     """مزامنة الصلاحيات تلقائياً بعد كل migrate."""
     if sender.name != 'apps.core':
@@ -22,6 +33,7 @@ def _sync_permissions_signal(sender, **kwargs):
     try:
         modules, perms, new = _sync_permissions_to_db(verbose=False)
         print(f'[permissions] synced: {modules} modules, {perms} perms ({new} new)')
+        _sync_accountant_view_permissions()
     except Exception as e:
         print(f'[permissions] sync skipped: {e}')
 

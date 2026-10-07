@@ -30,7 +30,7 @@
             {% url 'web:list_employees' as employees_list_url %}
             {% include 'components/glass_back_link.html' with back_url=employees_list_url show_label=True label='رجوع' aria_label='رجوع لقائمة الموظفين' %}
 
-            {% if employee.status == 'active' or employee.status == 'leave' %}
+            {% if employee.status == 'active' or employee.status == 'leave' %}{% if user|has_permission:'employees.edit' %}
             <!-- زر إضافة سريعة -->
             <div class="hr-dropdown" @click.outside="quickOpen = false">
                 <button type="button" @click="quickOpen = !quickOpen"
@@ -82,7 +82,7 @@
                     {% endif %}
                 </div>
             </div>
-            {% endif %}
+            {% endif %}{% endif %}
 
             {% if can_view_salary %}
             {% url 'web:export_employee_salary_excel' employee.id as export_salary_href %}
@@ -95,8 +95,10 @@
                 <span>باركود Zebra</span>
             </a>
 
+            {% if user|has_permission:'employees.edit' %}
             {% url 'web:edit_employee' employee.id as edit_employee_url %}
             {% include "components/hr_btn.html" with href=edit_employee_url label="تعديل / إكمال البيانات" variant="glass-primary" icon="pencil" %}
+            {% endif %}
         </div>
     </div>
 
@@ -120,9 +122,11 @@
             <a href="{% url 'web:hr_form_print' 'final_settlement' employee.id %}" target="_blank" class="px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg flex items-center justify-center gap-1">
                 <i data-lucide="printer" class="w-3.5 h-3.5"></i> طباعة تسوية
             </a>
+{% if user|has_permission:'employees.edit' %}
             <button type="button" @click="quickModal='reactivate'" class="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center justify-center gap-1">
                 <i data-lucide="user-check" class="w-3.5 h-3.5"></i> إعادة تفعيل
             </button>
+{% endif %}
         </div>
     </div>
     {% elif employee.status == 'suspended' %}

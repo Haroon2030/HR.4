@@ -31,9 +31,11 @@ PRIVILEGED_ROLE_TYPES = frozenset({
     Role.RoleType.HR_MANAGER,
 })
 
-# أدوار تعمل على مستوى الشركة (كل الفروع) — أخصائي/منفّذ الموارد البشرية
+# أدوار تعمل على مستوى الشركة (كل الفروع) — أخصائي/منفّذ الموارد البشرية،
+# والمحاسب (اطّلاع شامل بلا كتابة؛ نطاق التعميد يحدده ما يديره من إدارات/فروع)
 COMPANY_WIDE_BRANCH_ROLE_TYPES = frozenset({
     Role.RoleType.HR_OFFICER,
+    Role.RoleType.BRANCH_ACCOUNTANT,
 })
 
 # صلاحيات توسّع نطاق الفروع لكل الموظفين (مالية / رواتب / تقارير شاملة)

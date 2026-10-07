@@ -228,14 +228,8 @@ class Command(BaseCommand):
             },
             {
                 **_role_meta(Role.RoleType.BRANCH_ACCOUNTANT),
-                'permissions': [
-                    'employees.view',
-                    'cash_shortages.view',
-                    'cash_shortages.add',
-                    'operations.view',
-                    'operations.approve_branch',
-                    'operations.return',
-                ],
+                # اطّلاع شامل + تعميد فقط، بلا إضافة/تعديل/حذف (apps/core/role_policies.py)
+                'permissions': 'accountant',
             },
         ]
         
@@ -255,6 +249,12 @@ class Command(BaseCommand):
             if role_config['permissions'] == 'all':
                 role.permissions.set(all_permissions.values())
                 perm_count = len(all_permissions)
+            elif role_config['permissions'] == 'accountant':
+                from apps.core.role_policies import accountant_permission_codes
+                wanted = accountant_permission_codes(all_permissions.values())
+                role_permissions = [p for code, p in all_permissions.items() if code in wanted]
+                role.permissions.set(role_permissions)
+                perm_count = len(role_permissions)
             else:
                 role_permissions = [all_permissions[code] for code in role_config['permissions'] if code in all_permissions]
                 role.permissions.set(role_permissions)
