@@ -46,7 +46,7 @@
                     </div>
                 </header>
                 <div class="hr-employee-create-section__grid">
-                    <div class="hr-employee-create-field hr-employee-create-field--full">
+                    <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_name">
                             الاسم <span class="hr-required-mark text-rose-600">*</span>
                         </label>
@@ -54,6 +54,16 @@
                                class="hr-glass-input hr-employee-create-field__input"
                                placeholder="اسم الموظف الكامل"
                                value="{{ request.POST.name|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_name_en">
+                            الاسم بالإنجليزية <span class="hr-required-mark text-rose-600">*</span>
+                        </label>
+                        <input type="text" id="id_create_name_en" name="name_en" required dir="ltr"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               pattern="[A-Za-z][A-Za-z .'\-]*" title="أحرف إنجليزية فقط"
+                               placeholder="Full name in English"
+                               value="{{ request.POST.name_en|default:'' }}">
                     </div>
                     <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_id_number">رقم الهوية</label>

@@ -171,6 +171,7 @@ class AdministrationScopeTests(TestCase):
 
         client.post(url, {
             'name': 'مقبول أ',
+            'name_en': 'Accepted A',
             'administration': self.admin_a.pk,
             'basic_salary': '3000',
             'commencement_document': SimpleUploadedFile(

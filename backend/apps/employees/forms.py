@@ -369,7 +369,7 @@ class EmploymentRequestForm(forms.ModelForm):
     class Meta:
         model = EmploymentRequest
         fields = [
-            'name', 'id_number', 'branch', 'administration', 'department', 'cost_center',
+            'name', 'name_en', 'id_number', 'branch', 'administration', 'department', 'cost_center',
             'sponsorship', 'basic_salary', 'hire_date', 'commencement_document',
         ]
 
@@ -378,9 +378,10 @@ class EmploymentRequestForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _apply_fk_label_overrides(self)
         for field_name, field in self.fields.items():
-            if field_name not in ('name', 'basic_salary', 'commencement_document'):
+            if field_name not in ('name', 'name_en', 'basic_salary', 'commencement_document'):
                 field.required = False
         for field_name, message in (
+            ('name_en', 'الاسم بالإنجليزية مطلوب'),
             ('basic_salary', 'الراتب الأساسي مطلوب'),
             ('commencement_document', 'مستند المباشرة مطلوب'),
         ):
@@ -402,6 +403,9 @@ class EmploymentRequestForm(forms.ModelForm):
         if not name:
             raise ValidationError('اسم الموظف مطلوب')
         return name
+
+    def clean_name_en(self):
+        return _clean_english_name(self.cleaned_data.get('name_en'), required=True)
 
     def clean_id_number(self):
         return _clean_unique_employee_id_number(self.cleaned_data.get('id_number'))

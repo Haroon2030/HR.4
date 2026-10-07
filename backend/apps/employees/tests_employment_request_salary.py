@@ -45,7 +45,7 @@ class EmploymentRequestSalaryTests(TestCase):
         return SimpleUploadedFile('commencement.pdf', b'%PDF-1.4 test', content_type='application/pdf')
 
     def _submit(self, name, with_document=True, **extra):
-        data = {'name': name, 'branch': self.branch.pk, 'basic_salary': '3000', **extra}
+        data = {'name': name, 'name_en': 'Test Employee', 'branch': self.branch.pk, 'basic_salary': '3000', **extra}
         if with_document:
             data['commencement_document'] = self._document()
         return self.client.post(self.url, data)
@@ -67,6 +67,17 @@ class EmploymentRequestSalaryTests(TestCase):
         self.assertFalse(
             EmploymentRequest.objects.filter(name__in=['بدون راتب', 'راتب صفر']).exists()
         )
+
+    def test_missing_or_arabic_english_name_is_rejected(self):
+        self._submit('بدون إنجليزي', name_en='')
+        self._submit('اسم عربي', name_en='اسم عربي')
+        self.assertFalse(
+            EmploymentRequest.objects.filter(name__in=['بدون إنجليزي', 'اسم عربي']).exists()
+        )
+
+    def test_english_name_is_saved_on_request(self):
+        self._submit('باسم', name_en='  Basim   Ali ')
+        self.assertEqual(EmploymentRequest.objects.get(name='باسم').name_en, 'Basim Ali')
 
     def test_missing_commencement_document_is_rejected(self):
         self._submit('بدون مستند', with_document=False)
