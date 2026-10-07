@@ -61,4 +61,4 @@ def session_idle_timeout(request):
         return {}
     from django.conf import settings
 
-    return {'session_idle_timeout': int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)}
+    return {'session_idle_timeout': int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 3600) or 3600)}

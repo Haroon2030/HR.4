@@ -13,7 +13,7 @@ from apps.core.services.system_audit import _client_ip, log_system_audit
 def get_idle_timeout() -> timedelta:
     from django.conf import settings
 
-    seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)
+    seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 3600) or 3600)
     return timedelta(seconds=max(seconds, 60))
 
 
@@ -25,7 +25,7 @@ def get_presence_threshold() -> timedelta:
     if configured is not None:
         seconds = int(configured or 180)
     else:
-        idle_seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)
+        idle_seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 3600) or 3600)
         seconds = min(max(idle_seconds // 3, 60), 180)
     return timedelta(seconds=max(seconds, 30))
 
@@ -59,14 +59,14 @@ def apply_session_idle_expiry(request) -> None:
     """ضبط مدة جلسة django_session حسب مهلة الخمول."""
     from django.conf import settings
 
-    timeout = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600)
+    timeout = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 3600) or 3600)
     request.session.set_expiry(max(timeout, 60))
 
 
 def idle_timeout_message() -> str:
     from django.conf import settings
 
-    minutes = max(int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 600) or 600) // 60, 1)
+    minutes = max(int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 3600) or 3600) // 60, 1)
     return f'انتهت جلستك بسبب {minutes} دقائق بدون نشاط. يُرجى تسجيل الدخول مجدداً.'
 
 
