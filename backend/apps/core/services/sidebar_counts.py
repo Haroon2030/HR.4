@@ -38,6 +38,7 @@ def _pending_statuses():
         PendingAction.Status.PENDING_BRANCH,
         PendingAction.Status.PENDING_GM,
         PendingAction.Status.PENDING_OFFICER,
+        PendingAction.Status.PENDING_ACCOUNTANT,
     ]
 
 
@@ -54,9 +55,9 @@ def _hire_pending_statuses():
 def _managed_branch_ids(user) -> list[int]:
     if user.is_superuser:
         return []
-    return list(
-        user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)
-    )
+    from apps.core.services.approval_routing import managed_branch_ids
+
+    return managed_branch_ids(user)
 
 
 def _managed_administration_ids(user) -> list[int]:
@@ -130,6 +131,9 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
         )
     elif user.is_superuser:
         inbox_filter |= Q(status=PendingAction.Status.PENDING_OFFICER)
+    from apps.employees.services.cash_shortage_access import is_branch_accountant
+    if user.is_superuser or is_branch_accountant(user):
+        inbox_filter |= Q(status=PendingAction.Status.PENDING_ACCOUNTANT)
     inbox_filter |= Q(status=PendingAction.Status.RETURNED, requested_by=user)
 
     pa_for_me = (

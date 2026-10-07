@@ -327,8 +327,9 @@ HR_FORMS_WITH_BANK = frozenset({
 })
 
 
-def _resumption_form_context(employee) -> dict:
-    """إجازات الموظف الأخيرة؛ تاريخ المباشرة = اليوم التالي لانتهاء الإجازة."""
+def _resumption_form_context(employee, show_salary=False) -> dict:
+    """إجازات الموظف الأخيرة؛ تاريخ المباشرة = اليوم التالي لانتهاء الإجازة،
+    والمباشرة الجديدة = تاريخ مباشرة الموظف الفعلي من ملفه."""
     leaves = list(employee.leaves_log.order_by('-date_to', '-date_from')[:12])
     today = date.today()
     items = []
@@ -343,11 +344,16 @@ def _resumption_form_context(employee) -> dict:
             'resume': (lv.date_to + timedelta(days=1)).isoformat(),
         })
     default = next((i for i in items if i['date_to'] <= today.isoformat()), items[0] if items else None)
-    return {
+    ctx = {
         'resumption_leaves': items,
         'resumption_default': default,
         'resumption_today': today.isoformat(),
+        'resumption_hire_date': employee.hire_date.isoformat() if employee.hire_date else '',
+        'resumption_show_salary': show_salary,
     }
+    if show_salary:
+        ctx.update(_salary_certificate_form_context(employee))
+    return ctx
 
 
 def _form_amount(value) -> str:
@@ -667,7 +673,8 @@ def hr_form_print(request, form_type, employee_id):
         context.update(_salary_certificate_form_context(employee))
 
     if form_type == 'resumption_after_leave':
-        context.update(_resumption_form_context(employee))
+        from apps.core.salary_access import user_can_view_salary
+        context.update(_resumption_form_context(employee, user_can_view_salary(request.user)))
 
     return render(request, f'pages/hr_forms/{form_type}.html', context)
 

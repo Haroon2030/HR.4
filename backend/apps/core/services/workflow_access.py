@@ -55,7 +55,7 @@ def stage_permission_required(user, stage) -> bool:
         return True
     if _is_super_or_admin(user):
         return True
-    if stage == PendingAction.Stage.BRANCH:
+    if stage in (PendingAction.Stage.BRANCH, PendingAction.Stage.ACCOUNTANT):
         return (
             has_permission(user, 'operations.approve_branch')
             or has_permission(user, 'operations.approve_admin')

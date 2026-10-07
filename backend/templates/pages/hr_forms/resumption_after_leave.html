@@ -11,7 +11,7 @@
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
         {% if resumption_leaves %}
-        <div class="field no-print" style="grid-column: 1 / -1;">
+        <div class="field no-print rl-leave-field" style="grid-column: 1 / -1;">
             <span class="label">الإجازة:</span>
             <select id="rl-leave" class="blank-select" aria-label="الإجازة">
                 {% for l in resumption_leaves %}
@@ -20,12 +20,25 @@
             </select>
         </div>
         {% endif %}
-        <div class="field"><span class="label">بداية الإجازة:</span><input type="date" id="rl-from" class="blank" value="{{ resumption_default.date_from|default:'' }}" aria-label="بداية الإجازة"></div>
-        <div class="field"><span class="label">نهاية الإجازة:</span><input type="date" id="rl-to" class="blank" value="{{ resumption_default.date_to|default:'' }}" aria-label="نهاية الإجازة"></div>
-        <div class="field"><span class="label">عدد أيام الإجازة:</span><input type="text" id="rl-days" class="blank" value="{{ resumption_default.days|default:'' }}" aria-label="عدد أيام الإجازة"></div>
-        <div class="field"><span class="label">تاريخ المباشرة:</span><input type="date" id="rl-resume" class="blank" value="{{ resumption_default.resume|default:resumption_today }}" aria-label="تاريخ المباشرة"></div>
+        <div class="field rl-leave-field"><span class="label">بداية الإجازة:</span><input type="date" id="rl-from" class="blank" value="{{ resumption_default.date_from|default:'' }}" aria-label="بداية الإجازة"></div>
+        <div class="field rl-leave-field"><span class="label">نهاية الإجازة:</span><input type="date" id="rl-to" class="blank" value="{{ resumption_default.date_to|default:'' }}" aria-label="نهاية الإجازة"></div>
+        <div class="field rl-leave-field"><span class="label">عدد أيام الإجازة:</span><input type="text" id="rl-days" class="blank" value="{{ resumption_default.days|default:'' }}" aria-label="عدد أيام الإجازة"></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><input type="date" id="rl-resume" class="blank" value="{{ resumption_default.resume|default:resumption_hire_date|default:resumption_today }}" aria-label="تاريخ المباشرة"></div>
     </div>
 </div>
+
+{% if resumption_show_salary %}
+<div class="section">
+    <h3>بيانات الراتب</h3>
+    <div class="info-grid">
+        <div class="row"><span class="label">الراتب الأساسي:</span><span class="value">{{ form_basic_salary }}</span></div>
+        <div class="row"><span class="label">بدل السكن:</span><span class="value">{{ form_housing_allowance }}</span></div>
+        <div class="row"><span class="label">بدل النقل:</span><span class="value">{{ form_transport_allowance }}</span></div>
+        <div class="row"><span class="label">بدلات أخرى:</span><span class="value">{{ form_other_allowances }}</span></div>
+        <div class="row"><span class="label">إجمالي الراتب:</span><span class="value"><strong>{{ form_total_salary }}</strong></span></div>
+    </div>
+</div>
+{% endif %}
 
 {% include "pages/hr_forms/_signatures_standard.html" %}
 
@@ -68,6 +81,25 @@
     // اختيار نوع واحد فقط
     [['rl-kind-new', 'rl-kind-after'], ['rl-kind-after', 'rl-kind-new']].forEach(([a, b]) =>
         $(a).addEventListener('change', function () { if (this.checked) $(b).checked = false; }));
+    // مباشرة جديدة → تاريخ المباشرة الفعلي للموظف؛ بعد إجازة → اليوم التالي لانتهائها
+    const hireDate = '{{ resumption_hire_date|default:''|escapejs }}';
+    // حقول الإجازة تظهر فقط عند «مباشرة بعد إجازة»
+    function toggleLeaveFields() {
+        const show = $('rl-kind-after').checked;
+        document.querySelectorAll('.rl-leave-field').forEach(el => el.style.display = show ? '' : 'none');
+    }
+    $('rl-kind-new').addEventListener('change', function () {
+        if (this.checked) {
+            ['rl-from', 'rl-to', 'rl-days'].forEach(id => $(id).value = '');
+            if (hireDate) $('rl-resume').value = hireDate;
+        }
+        toggleLeaveFields();
+    });
+    $('rl-kind-after').addEventListener('change', function () {
+        if (this.checked && sel) fill();
+        toggleLeaveFields();
+    });
+    toggleLeaveFields();
 })();
 </script>
 {% endblock %}

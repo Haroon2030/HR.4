@@ -184,7 +184,19 @@ def _can_act_at_stage(user, action, stage):
     if stage == PendingAction.Stage.OFFICER:
         return action.assigned_officer_id == user.id
 
+    if stage == PendingAction.Stage.ACCOUNTANT:
+        return _accountant_stage_ok(user)
+
     return False
+
+
+def _accountant_stage_ok(user):
+    from apps.employees.services.cash_shortage_access import is_branch_accountant
+    return is_branch_accountant(user) or _is_super_or_admin_role(user)
+
+
+def _is_super_or_admin_role(user):
+    return user.is_superuser or _user_role_type(user) == Role.RoleType.ADMIN
 
 
 def _role_ok_at_stage(user, action, stage):
@@ -200,6 +212,8 @@ def _role_ok_at_stage(user, action, stage):
         return True
     if stage == PendingAction.Stage.OFFICER:
         return action.assigned_officer_id == user.id
+    if stage == PendingAction.Stage.ACCOUNTANT:
+        return _accountant_stage_ok(user)
     return False
 
 

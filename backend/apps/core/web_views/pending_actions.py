@@ -20,8 +20,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.core.models import PendingAction, Role
-from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
+from apps.core.services.approval_routing import managed_branch_ids, first_stage_pending_q, resolve_first_approver, first_stage_tab_label
 from apps.core.services.workflow_access import can_resubmit_operation, can_view_operations, can_delete_pending_action
+from apps.core.services.pending_actions import is_settlement_final_stage
 from apps.core.utils.user_errors import log_web_action_error
 from apps.core.web_views._helpers import (
     _can_act_at_stage,
@@ -62,7 +63,7 @@ def _managed_scope_for_user(user) -> tuple[list[int], list[int]]:
         cached = ([], [])
     else:
         cached = (
-            list(user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)),
+            managed_branch_ids(user),
             list(user.managed_administrations.filter(is_deleted=False).values_list('id', flat=True)),
         )
     user._hr_managed_scope = cached
@@ -84,7 +85,7 @@ def _user_visible_actions(user):
 
     if is_branch_accountant(user):
         ba_ids = list(branch_accountant_branch_ids(user))
-        filters = Q(requested_by=user)
+        filters = Q(requested_by=user) | Q(status=PendingAction.Status.PENDING_ACCOUNTANT)
         if ba_ids:
             filters |= Q(
                 action_type=PendingAction.ActionType.CASH_SHORTAGE,
@@ -104,6 +105,8 @@ def _user_visible_actions(user):
 
 
 def _inbox_for(user, qs):
+    from apps.employees.services.cash_shortage_access import is_branch_accountant
+
     f = Q()
     has_filter = False
     if user.is_superuser or _is_general_manager(user):
@@ -119,6 +122,9 @@ def _inbox_for(user, qs):
         f |= Q(status=PendingAction.Status.PENDING_OFFICER, assigned_officer=user) \
             if not user.is_superuser \
             else Q(status=PendingAction.Status.PENDING_OFFICER)
+        has_filter = True
+    if user.is_superuser or is_branch_accountant(user):
+        f |= Q(status=PendingAction.Status.PENDING_ACCOUNTANT)
         has_filter = True
     f |= Q(status=PendingAction.Status.RETURNED, requested_by=user)
     return qs.filter(f) if has_filter else qs.none()
@@ -391,7 +397,8 @@ def pending_action_detail(request, action_id):
         return redirect('web:list_pending_actions')
 
     officers = []
-    if _is_general_manager(request.user) and action.status == PendingAction.Status.PENDING_GM:
+    if (_is_general_manager(request.user) and action.status == PendingAction.Status.PENDING_GM
+            and not action.executed_at):
         from django.contrib.auth import get_user_model
         User = get_user_model()
         officers = User.objects.filter(
@@ -414,6 +421,8 @@ def pending_action_detail(request, action_id):
         'can_resubmit': can_resubmit,
         'current_stage': current_stage,
         'first_decision': resolve_first_approver(action),
+        'is_final_stage': is_settlement_final_stage(action),
+        'accountant_stage': current_stage == PendingAction.Stage.ACCOUNTANT,
     })
 
 
@@ -487,6 +496,48 @@ def gm_approve_action(request, action_id):
         messages.success(request, 'تمت موافقتك. تم إسناد المهمة لموظف الموارد.')
     except Exception as e:
         messages.error(request, log_web_action_error('branch_approve_action', e))
+    return redirect('web:pending_action_detail', action_id=action_id)
+
+
+@login_required
+def gm_final_approve_action(request, action_id):
+    if request.method != 'POST':
+        return redirect('web:pending_action_detail', action_id=action_id)
+    notes = (request.POST.get('notes') or '').strip()
+    try:
+        with transaction.atomic():
+            action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
+            if not _can_act_at_stage(request.user, action, PendingAction.Stage.GM):
+                messages.error(request, 'لا تملك صلاحية الاعتماد النهائي.')
+                return redirect('web:list_pending_actions')
+            from apps.core.services.pending_actions import gm_final_approve
+            gm_final_approve(action, request.user, notes)
+        messages.success(request, 'تم الاعتماد النهائي للتصفية.')
+    except Exception as e:
+        messages.error(request, log_web_action_error('gm_final_approve_action', e))
+    return redirect('web:pending_action_detail', action_id=action_id)
+
+
+@login_required
+def accountant_approve_action(request, action_id):
+    if request.method != 'POST':
+        return redirect('web:pending_action_detail', action_id=action_id)
+    notes = (request.POST.get('notes') or '').strip()
+    try:
+        with transaction.atomic():
+            action = _locked(action_id)
+            if _deny_if_action_not_visible(request, action):
+                return redirect('web:list_pending_actions')
+            if not _can_act_at_stage(request.user, action, PendingAction.Stage.ACCOUNTANT):
+                messages.error(request, 'لا تملك صلاحية اعتماد المحاسب.')
+                return redirect('web:list_pending_actions')
+            from apps.core.services.pending_actions import accountant_approve
+            accountant_approve(action, request.user, notes)
+        messages.success(request, 'تم اعتماد المحاسب. الطلب الآن بانتظار الاعتماد النهائي لمدير الموارد.')
+    except Exception as e:
+        messages.error(request, log_web_action_error('accountant_approve_action', e))
     return redirect('web:pending_action_detail', action_id=action_id)
 
 

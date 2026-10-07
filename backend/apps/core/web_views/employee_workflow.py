@@ -20,7 +20,7 @@ from apps.core.web_views._helpers import (
 from apps.core.utils.user_errors import log_email_partial_failure
 from apps.core.decorators import any_permission_required, permission_required
 from apps.core.salary_access import salary_view_required
-from apps.core.services.pending_actions import create_and_execute_settlement_action, create_pending_action
+from apps.core.services.pending_actions import create_pending_action, submit_settlement_for_approval
 
 
 def _optional_attachment(request):
@@ -206,7 +206,7 @@ def delete_employee_leave(request, employee_id, leave_id):
 @permission_required('employees.edit')
 @employee_branch_access_required
 def terminate_employee(request, employee_id):
-    """تقديم طلب تصفية (ينتظر موافقة مدير الفرع)."""
+    """تقديم طلب تصفية (يُرفع لمدير الموارد ثم أخصائي ثم اعتماد نهائي)."""
     from apps.employees.models import Employee
     from apps.core.forms import TerminateEmployeeForm
 
@@ -229,7 +229,7 @@ def terminate_employee(request, employee_id):
 
     cd = form.cleaned_data
     try:
-        _, msg = create_and_execute_settlement_action(
+        submit_settlement_for_approval(
             action_type='terminate',
             employee=employee,
             payload={
@@ -242,7 +242,7 @@ def terminate_employee(request, employee_id):
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect('web:view_employee', employee_id=employee.id)
-    messages.success(request, msg or 'تمت تصفية الموظف مباشرة.')
+    messages.success(request, 'تم رفع طلب التصفية لمدير الموارد.')
     return redirect('web:view_employee', employee_id=employee.id)
 
 
@@ -993,7 +993,7 @@ def end_of_service_employee(request, employee_id):
 
     cd = form.cleaned_data
     try:
-        _, msg = create_and_execute_settlement_action(
+        submit_settlement_for_approval(
             action_type='end_of_service',
             employee=employee,
             payload={
@@ -1009,5 +1009,5 @@ def end_of_service_employee(request, employee_id):
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect('web:view_employee', employee_id=employee.id)
-    messages.success(request, msg or 'تمت تصفية نهاية الخدمة مباشرة.')
+    messages.success(request, 'تم رفع طلب تصفية نهاية الخدمة لمدير الموارد.')
     return redirect('web:view_employee', employee_id=employee.id)

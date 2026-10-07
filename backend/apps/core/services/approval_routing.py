@@ -35,6 +35,47 @@ class FirstApproverDecision:
         return 'غير محدد'
 
 
+def managed_branch_ids(user) -> list[int]:
+    """فروع يعمّد عنها المستخدم: فروع هو «مدير الفرع» فيها + (لدور المدير) فرعه المرتبط به.
+
+    الربط بالدور يغطي حالة مدير فرع مرتبط بفرعه في ملفه دون تعيينه في حقل «مدير الفرع» بالتهيئة.
+    """
+    from apps.core.models import Role
+
+    ids = set(
+        user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)
+    )
+    profile, role = _profile_and_role(user)
+    if profile and role and role.role_type == Role.RoleType.MANAGER:
+        if profile.branch_id:
+            ids.add(profile.branch_id)
+        ids.update(
+            profile.assigned_branches.filter(is_deleted=False).values_list('id', flat=True)
+        )
+    return list(ids)
+
+
+def branch_manager_for(branch):
+    """مدير الفرع الفعّال: المعيَّن في الفرع، وإلا مستخدم بدور «مدير» مرتبط بالفرع."""
+    from django.contrib.auth import get_user_model
+    from django.db.models import Q
+    from apps.core.models import Role
+
+    if not branch:
+        return None
+    manager = getattr(branch, 'manager', None)
+    if manager and getattr(manager, 'is_active', False):
+        return manager
+    return (
+        get_user_model().objects.filter(
+            is_active=True,
+            profile__role__role_type=Role.RoleType.MANAGER,
+        ).filter(
+            Q(profile__branch_id=branch.id) | Q(profile__assigned_branches=branch.id)
+        ).order_by('id').first()
+    )
+
+
 def _profile_and_role(user):
     from apps.core.models import UserProfile
 
@@ -76,7 +117,7 @@ def first_stage_tab_label(user) -> str:
     if user.managed_administrations.filter(is_deleted=False).exists():
         return approver_display_label(user) if role else 'مدير الإدارة'
 
-    if user.managed_branches.filter(is_deleted=False).exists():
+    if managed_branch_ids(user):
         return approver_display_label(user) if role else 'مدير الفرع'
 
     from apps.employees.services.cash_shortage_access import is_branch_accountant
@@ -125,8 +166,8 @@ def resolve_first_approver(obj) -> FirstApproverDecision:
         )
 
     branch = getattr(obj, 'branch', None)
-    branch_manager = getattr(branch, 'manager', None) if branch else None
-    if branch_manager and getattr(branch_manager, 'is_active', False):
+    branch_manager = branch_manager_for(branch)
+    if branch_manager:
         return FirstApproverDecision(
             kind=FirstApproverKind.BRANCH,
             recipient=branch_manager,
@@ -154,7 +195,7 @@ def user_can_first_approve(user, obj) -> bool:
     if decision.kind == FirstApproverKind.ADMINISTRATION:
         return user.managed_administrations.filter(id=decision.administration.id).exists()
     if decision.kind == FirstApproverKind.BRANCH:
-        return user.managed_branches.filter(id=decision.branch.id).exists()
+        return decision.branch.id in managed_branch_ids(user)
     return False
 
 
@@ -187,9 +228,7 @@ def first_stage_pending_q(user, *, model, model_status_pending_branch: str) -> Q
     admin_ids = list(
         user.managed_administrations.filter(is_deleted=False).values_list('id', flat=True)
     )
-    branch_ids = list(
-        user.managed_branches.filter(is_deleted=False).values_list('id', flat=True)
-    )
+    branch_ids = managed_branch_ids(user)
     non_cash = ~Q(action_type=PendingAction.ActionType.CASH_SHORTAGE) if supports_cash_shortage else Q()
     if admin_ids:
         q |= Q(status=model_status_pending_branch, administration_id__in=admin_ids) & non_cash

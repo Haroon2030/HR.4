@@ -497,6 +497,7 @@ class PendingAction(BaseModel):
         PENDING_BRANCH = 'pending_branch', 'بانتظار مدير الفرع'
         PENDING_GM = 'pending_gm', 'بانتظار المدير العام'
         PENDING_OFFICER = 'pending_officer', 'بانتظار موظف الموارد'
+        PENDING_ACCOUNTANT = 'pending_accountant', 'بانتظار المحاسب'
         APPROVED = 'approved', 'مُنفَّذ'
         RETURNED = 'returned', 'مُرتجَع للتعديل'
 
@@ -504,6 +505,7 @@ class PendingAction(BaseModel):
         BRANCH = 'branch', 'مدير الفرع'
         GM = 'gm', 'المدير العام'
         OFFICER = 'officer', 'موظف الموارد'
+        ACCOUNTANT = 'accountant', 'المحاسب'
 
     action_type = models.CharField(
         "نوع العملية", max_length=20, choices=ActionType.choices, db_index=True
@@ -569,6 +571,14 @@ class PendingAction(BaseModel):
     officer_reviewed_at = models.DateTimeField("تاريخ موافقة موظف الموارد", null=True, blank=True)
     officer_notes = models.TextField("ملاحظات موظف الموارد", blank=True)
 
+    # ── مرحلة المحاسب (تصفية الموظفين على الكفالة بعد التنفيذ) ──
+    accountant_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='accountant_reviewed_actions', verbose_name="اعتماد المحاسب"
+    )
+    accountant_reviewed_at = models.DateTimeField("تاريخ اعتماد المحاسب", null=True, blank=True)
+    accountant_notes = models.TextField("ملاحظات المحاسب", blank=True)
+
     # ── الإرجاع للتعديل ──
     returned_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -618,6 +628,7 @@ class PendingAction(BaseModel):
             self.Status.PENDING_BRANCH,
             self.Status.PENDING_GM,
             self.Status.PENDING_OFFICER,
+            self.Status.PENDING_ACCOUNTANT,
         }
 
     @property
@@ -631,6 +642,7 @@ class PendingAction(BaseModel):
             self.Status.PENDING_BRANCH: self.Stage.BRANCH,
             self.Status.PENDING_GM: self.Stage.GM,
             self.Status.PENDING_OFFICER: self.Stage.OFFICER,
+            self.Status.PENDING_ACCOUNTANT: self.Stage.ACCOUNTANT,
         }
         return mapping.get(self.status)
 

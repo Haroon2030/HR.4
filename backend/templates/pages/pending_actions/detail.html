@@ -166,7 +166,31 @@
                     </form>
                 {% endif %}
 
-                {% if can_act and current_stage == 'gm' %}
+                {% if can_act and current_stage == 'accountant' %}
+                    <p class="text-xs text-slate-600 mb-3">نفّذ الأخصائي التصفية. اعتمدها كمحاسب لتعود لمدير الموارد للاعتماد النهائي.</p>
+                    <form method="POST" action="{% url 'web:accountant_approve_action' action.id %}" class="space-y-2">
+                        {% csrf_token %}
+                        <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
+                        <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
+                        <div class="flex justify-end gap-2">
+                            {% include "components/hr_btn.html" with label="اعتماد المحاسب" type="submit" variant="success" icon="check" %}
+                        </div>
+                    </form>
+                {% endif %}
+
+                {% if can_act and current_stage == 'gm' and is_final_stage %}
+                    <p class="text-xs text-slate-600 mb-3">نفّذ الأخصائي التصفية. اعتمدها نهائياً لإغلاق الطلب.</p>
+                    <form method="POST" action="{% url 'web:gm_final_approve_action' action.id %}" class="space-y-2">
+                        {% csrf_token %}
+                        <label class="block text-xs font-semibold text-slate-600">ملاحظات (اختياري)</label>
+                        <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
+                        <div class="flex justify-end gap-2">
+                            {% include "components/hr_btn.html" with label="اعتماد نهائي" type="submit" variant="success" icon="check-check" %}
+                        </div>
+                    </form>
+                {% endif %}
+
+                {% if can_act and current_stage == 'gm' and not is_final_stage %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
                         {% include "components/hr_btn.html" with label="موافقة وإسناد لموظف موارد" type="button" variant="indigo" icon="user-cog" x_click="panel='approve'" %}
                         {% include "components/hr_btn.html" with label="إرجاع للتعديل" type="button" variant="danger" icon="undo-2" x_click="panel='return'" %}
@@ -205,7 +229,7 @@
                     </form>
                 {% endif %}
 
-                {% if can_act %}
+                {% if can_act and not is_final_stage and not accountant_stage %}
                     <form method="POST" action="{% url 'web:return_pending_action' action.id %}" x-show="panel=='return'" x-cloak class="space-y-2 mt-3">
                         {% csrf_token %}
                         <label class="block text-xs font-semibold text-slate-600">سبب الإرجاع <span class="text-red-500">*</span></label>

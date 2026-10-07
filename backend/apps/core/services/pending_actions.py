@@ -876,6 +876,86 @@ def create_and_execute_settlement_action(
 
 
 @transaction.atomic
+def submit_settlement_for_approval(*, action_type, employee, payload, requested_by, attachment=None):
+    """تصفية موظف.
+
+    على كفالة: رفع → تعميد → مدير الموارد → أخصائي (تنفيذ) → المحاسب → مدير الموارد (اعتماد نهائي).
+    بدون كفالة: رفع → مدير الموارد → أخصائي (تنفيذ) → مدير الموارد (اعتماد نهائي).
+    """
+    from apps.core.models import PendingAction
+
+    if not _is_settlement_pending_action(action_type):
+        raise ValueError('نوع عملية غير مدعوم لمسار التصفية.')
+    action = create_pending_action(
+        action_type=action_type,
+        employee=employee,
+        payload=payload,
+        requested_by=requested_by,
+        attachment=attachment,
+    )
+    if employee.sponsorship_id:
+        # تصفية على كفالة: تعميد أولاً (مدير الإدارة/الفرع) ثم مدير الموارد
+        notify_branch_on_create(action)
+        return action
+    # بدون كفالة: لا مرحلة تعميد — مباشرة لمدير الموارد
+    action.status = PendingAction.Status.PENDING_GM
+    action.branch_reviewed_by = requested_by
+    action.branch_reviewed_at = timezone.now()
+    action.branch_notes = 'رفع مباشر لمدير الموارد'
+    action.save(update_fields=[
+        'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
+    ])
+    notif = _notify()
+    notif.notify_general_managers(
+        action,
+        title=f'طلب تصفية بانتظار موافقتك — {action.get_action_type_display()}',
+        message=f'الموظف: {employee.name} • مقدّم الطلب: '
+                f'{requested_by.get_full_name() or requested_by.username}',
+        icon='user-cog', color='amber',
+    )
+    try:
+        from apps.core.services.whatsapp import workflow_notifier
+        workflow_notifier.notify_whatsapp_pending_gm(action)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('WhatsApp notify failed for settlement %s', action.pk)
+    return action
+
+
+def is_settlement_final_stage(action) -> bool:
+    """تصفية نُفِّذت من الأخصائي وتنتظر الاعتماد النهائي لمدير الموارد."""
+    from apps.core.models import PendingAction
+
+    return (
+        action.action_type in SETTLEMENT_PENDING_ACTION_TYPES
+        and action.status == PendingAction.Status.PENDING_GM
+        and bool(action.executed_at)
+    )
+
+
+@transaction.atomic
+def gm_final_approve(action, user, notes=''):
+    """مدير الموارد يعتمد التصفية بعد تنفيذ الأخصائي → اكتمال الطلب."""
+    from apps.core.models import PendingAction
+
+    if not is_settlement_final_stage(action):
+        raise ValueError('هذا الطلب ليس في مرحلة الاعتماد النهائي.')
+    action.status = PendingAction.Status.APPROVED
+    if notes:
+        action.gm_notes = f'{action.gm_notes}\n[اعتماد نهائي] {notes}'.strip()
+    action.save(update_fields=['status', 'gm_notes'])
+    notif = _notify()
+    if action.requested_by_id:
+        notif.notify_user(
+            action.requested_by, action,
+            title=f'تم اعتماد التصفية نهائياً — {action.get_action_type_display()}',
+            message=f'الموظف: {action.employee.name}',
+            icon='check-circle', color='emerald',
+        )
+    return action
+
+
+@transaction.atomic
 def branch_approve(action, user, notes=''):
     """المرحلة الأولى (إدارة/فرع/محاسب) توافق → GM أو تنفيذ فوري لعجز الكاشير."""
     from apps.core.models import PendingAction
@@ -901,25 +981,6 @@ def branch_approve(action, user, notes=''):
                 action.requested_by, action,
                 title=f'تم تنفيذ طلبك — {action.get_action_type_display()}',
                 message=f'الموظف: {action.employee.name}',
-                icon='check-circle', color='emerald',
-            )
-        return action
-
-    if action.action_type in SETTLEMENT_PENDING_ACTION_TYPES:
-        action.status = PendingAction.Status.APPROVED
-        action.branch_reviewed_by = user
-        action.branch_reviewed_at = timezone.now()
-        action.branch_notes = notes or ''
-        action.save(update_fields=[
-            'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
-        ])
-        msg = execute_pending_action(action, user)
-        notif = _notify()
-        if action.requested_by_id:
-            notif.notify_user(
-                action.requested_by, action,
-                title=f'تم تنفيذ طلبك — {action.get_action_type_display()}',
-                message=msg or f'الموظف: {action.employee.name}',
                 icon='check-circle', color='emerald',
             )
         return action
@@ -951,7 +1012,7 @@ def gm_approve_and_assign(action, user, officer, notes=''):
     """المدير العام يوافق ويُسند المهمة لموظف موارد."""
     from apps.core.models import PendingAction, Role
 
-    if action.status != PendingAction.Status.PENDING_GM:
+    if action.status != PendingAction.Status.PENDING_GM or action.executed_at:
         raise ValueError('هذا الطلب ليس في مرحلة موافقة المدير العام.')
     if not officer or not officer.is_active:
         raise ValueError('يجب اختيار موظف موارد فعّال للإسناد.')
@@ -1003,6 +1064,27 @@ def officer_approve(action, user, notes=''):
     # التنفيذ الفعلي
     msg = execute_pending_action(action, user)
 
+    if action.action_type in SETTLEMENT_PENDING_ACTION_TYPES:
+        if action.employee.sponsorship_id:
+            # على كفالة: بعد التنفيذ تذهب للمحاسب ثم تعود لمدير الموارد
+            action.status = PendingAction.Status.PENDING_ACCOUNTANT
+            action.save(update_fields=['status'])
+            _notify_accountants(
+                action,
+                title=f'تصفية نُفِّذت وتنتظر اعتماد المحاسب — {action.get_action_type_display()}',
+                message=f'الموظف: {action.employee.name} • نفّذها {user.get_full_name() or user.username}',
+            )
+        else:
+            action.status = PendingAction.Status.PENDING_GM
+            action.save(update_fields=['status'])
+            _notify().notify_general_managers(
+                action,
+                title=f'تصفية نُفِّذت وتنتظر اعتمادك النهائي — {action.get_action_type_display()}',
+                message=f'الموظف: {action.employee.name} • نفّذها {user.get_full_name() or user.username}',
+                icon='check-check', color='amber',
+            )
+        return msg
+
     # إشعار مقدّم الطلب بالاكتمال
     notif = _notify()
     if action.requested_by_id:
@@ -1013,6 +1095,46 @@ def officer_approve(action, user, notes=''):
             icon='check-circle', color='emerald',
         )
     return msg
+
+
+def _notify_accountants(action, *, title, message=''):
+    from django.contrib.auth import get_user_model
+    from apps.core.models import Role
+    from apps.employees.services.cash_shortage_access import branch_accountants_for_branch
+
+    recipients = branch_accountants_for_branch(action.branch_id or action.employee.branch_id)
+    if not recipients.exists():
+        recipients = get_user_model().objects.filter(
+            is_active=True, profile__role__role_type=Role.RoleType.BRANCH_ACCOUNTANT,
+        )
+    notif = _notify()
+    for recipient in recipients:
+        notif.notify_user(
+            recipient, action, title=title, message=message, icon='calculator', color='indigo',
+        )
+
+
+@transaction.atomic
+def accountant_approve(action, user, notes=''):
+    """المحاسب يعتمد التصفية المنفَّذة → تعود لمدير الموارد للاعتماد النهائي."""
+    from apps.core.models import PendingAction
+
+    if action.status != PendingAction.Status.PENDING_ACCOUNTANT:
+        raise ValueError('هذا الطلب ليس في مرحلة المحاسب.')
+    action.status = PendingAction.Status.PENDING_GM
+    action.accountant_reviewed_by = user
+    action.accountant_reviewed_at = timezone.now()
+    action.accountant_notes = notes or ''
+    action.save(update_fields=[
+        'status', 'accountant_reviewed_by', 'accountant_reviewed_at', 'accountant_notes',
+    ])
+    _notify().notify_general_managers(
+        action,
+        title=f'تصفية اعتمدها المحاسب وتنتظر اعتمادك النهائي — {action.get_action_type_display()}',
+        message=f'الموظف: {action.employee.name}',
+        icon='check-check', color='amber',
+    )
+    return action
 
 
 @transaction.atomic
@@ -1026,6 +1148,8 @@ def return_action(action, user, notes):
         PendingAction.Status.PENDING_OFFICER,
     }:
         raise ValueError('لا يمكن إرجاع طلب ليس قيد الموافقة.')
+    if action.executed_at:
+        raise ValueError('لا يمكن إرجاع طلب نُفِّذ بالفعل.')
     if not notes or not str(notes).strip():
         raise ValueError('ملاحظات الإرجاع إجبارية.')
 
