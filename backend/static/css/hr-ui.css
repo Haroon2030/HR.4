@@ -15295,3 +15295,225 @@ body.hr-app .hr-maint-location__maps svg {
 }
 
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   شريط التبويبات — صف واحد متصل (يتمرّر أفقياً عند الازدحام)
+   التبويب النشط بطاقة بيضاء ملتصقة بالمحتوى أسفل الشريط.
+   (قاعدة «توحيد أزرار الموقع» أعلاه تفرض لون الأزرار بـ !important،
+    لذلك تُعاد هنا بخصوصية أعلى)
+   ══════════════════════════════════════════════════════════════ */
+body.hr-app .hr-page-tabs__bar,
+body.hr-app .hr-tabs__bar,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar,
+body.hr-app .hr-page-tabs > nav[role="tablist"] {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-end;
+    gap: 0.2rem;
+    padding: 0.55rem 0.65rem 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+    -webkit-overflow-scrolling: touch;
+    /* ظل على الحافة التي خلفها تبويبات مخفية (يختفي عند الوصول للنهاية) */
+    background:
+        linear-gradient(to right, #3a73a4 25%, rgba(58, 115, 164, 0)) left center / 2.2rem 100% no-repeat local,
+        linear-gradient(to left, #3a73a4 25%, rgba(58, 115, 164, 0)) right center / 2.2rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, rgba(8, 28, 60, 0.55), rgba(8, 28, 60, 0)) left center / 0.9rem 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, rgba(8, 28, 60, 0.55), rgba(8, 28, 60, 0)) right center / 0.9rem 100% no-repeat scroll,
+        linear-gradient(165deg, #3d7aad 0%, #356391 100%) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-bottom: 0 !important;
+    border-radius: var(--hr-radius) var(--hr-radius) 0 0;
+}
+
+body.hr-app .hr-page-tabs__bar::-webkit-scrollbar,
+body.hr-app .hr-tabs__bar::-webkit-scrollbar,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar::-webkit-scrollbar,
+body.hr-app .hr-page-tabs > nav[role="tablist"]::-webkit-scrollbar {
+    height: 4px;
+}
+
+body.hr-app .hr-page-tabs__bar::-webkit-scrollbar-thumb,
+body.hr-app .hr-tabs__bar::-webkit-scrollbar-thumb,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar::-webkit-scrollbar-thumb,
+body.hr-app .hr-page-tabs > nav[role="tablist"]::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+}
+
+body.hr-app .hr-page-tabs__bar .hr-tab-btn,
+body.hr-app .hr-tabs__bar .hr-tab-btn,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn,
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    padding: 0.62rem 1.05rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-bottom: 0 !important;
+    border-radius: 0.6rem 0.6rem 0 0 !important;
+    box-shadow: none !important;
+    transform: none;
+}
+
+body.hr-app .hr-page-tabs__bar .hr-tab-btn:hover:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app .hr-tabs__bar .hr-tab-btn:hover:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn:hover:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn:hover:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app .hr-page-tabs__bar .hr-tab-btn:focus-visible:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app .hr-tabs__bar .hr-tab-btn:focus-visible:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn:focus-visible:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]),
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn:focus-visible:not(.is-active):not(.hr-tab--active):not([aria-selected="true"]) {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+}
+
+body.hr-app .hr-page-tabs__bar .hr-tab-btn.is-active,
+body.hr-app .hr-tabs__bar .hr-tab-btn.is-active,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn.is-active,
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn.is-active,
+body.hr-app .hr-page-tabs__bar .hr-tab-btn.hr-tab--active,
+body.hr-app .hr-tabs__bar .hr-tab-btn.hr-tab--active,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn.hr-tab--active,
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn.hr-tab--active,
+body.hr-app .hr-page-tabs__bar .hr-tab-btn[aria-selected="true"],
+body.hr-app .hr-tabs__bar .hr-tab-btn[aria-selected="true"],
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn[aria-selected="true"],
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn[aria-selected="true"] {
+    color: #1e3a8a !important;
+    background: #ffffff !important;
+    border-color: #ffffff !important;
+    box-shadow: inset 0 3px 0 #2563eb !important;
+    z-index: 2;
+}
+
+body.hr-app .hr-page-tabs__bar .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(span, small, b),
+body.hr-app .hr-tabs__bar .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(span, small, b),
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(span, small, b),
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(span, small, b) {
+    color: #1e3a8a !important;
+}
+
+body.hr-app .hr-page-tabs__bar .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(svg, i[data-lucide]),
+body.hr-app .hr-tabs__bar .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(svg, i[data-lucide]),
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(svg, i[data-lucide]),
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn:is(.is-active,.hr-tab--active,[aria-selected="true"]) :is(svg, i[data-lucide]) {
+    color: #2563eb !important;
+    stroke: #2563eb !important;
+}
+
+@media (max-width: 640px) {
+    body.hr-app .hr-page-tabs__bar .hr-tab-btn,
+    body.hr-app .hr-tabs__bar .hr-tab-btn,
+    body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn,
+    body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn {
+        padding: 0.55rem 0.8rem !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   جداول مضغوطة قابلة للتوسّع (hr-dyn-table.js)
+   ══════════════════════════════════════════════════════════════ */
+body.hr-app table.hr-dyn-table .hr-dyn-hide {
+    display: none !important;
+}
+
+body.hr-app table.hr-dyn-table .hr-dyn-toggle-col {
+    width: 2.25rem;
+    padding-inline: 0.35rem !important;
+    text-align: center;
+}
+
+body.hr-app .hr-dyn-toggle {
+    position: relative;
+    width: 1.55rem;
+    height: 1.55rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.45rem;
+    background: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+body.hr-app .hr-dyn-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-right: 2px solid #2563eb;
+    border-bottom: 2px solid #2563eb;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.18s ease;
+}
+
+body.hr-app .hr-dyn-toggle[aria-expanded="true"] {
+    background: #eff6ff;
+    border-color: #93c5fd;
+}
+
+body.hr-app .hr-dyn-toggle[aria-expanded="true"]::before {
+    transform: translateY(1px) rotate(-135deg);
+}
+
+body.hr-app .hr-dyn-toggle:hover {
+    border-color: #60a5fa;
+}
+
+body.hr-app .hr-dyn-toggle:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+body.hr-app tr.is-expanded > td {
+    background: #f8fafc;
+}
+
+body.hr-app tr.hr-dyn-detail > td {
+    padding: 0.65rem 1rem 0.85rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+body.hr-app .hr-dyn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 0.6rem 1.25rem;
+}
+
+body.hr-app .hr-dyn-item {
+    min-width: 0;
+}
+
+body.hr-app .hr-dyn-label {
+    display: block;
+    margin-bottom: 0.15rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+body.hr-app .hr-dyn-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0f172a;
+    overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.hr-app .hr-dyn-toggle,
+    body.hr-app .hr-dyn-toggle::before {
+        transition: none;
+    }
+}
