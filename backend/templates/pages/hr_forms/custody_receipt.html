@@ -6,7 +6,7 @@
 <div class="section">
     <h3>تفاصيل العهدة المُستلَمة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ الاستلام:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ الاستلام:</span><span class="blank">{% if custody %}{{ custody.received_at|date:"Y/m/d" }}{% endif %}</span></div>
         <div class="field">
             <span class="label">جهة التسليم:</span>
             <select class="blank-select" aria-label="جهة التسليم">
@@ -16,8 +16,8 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="field"><span class="label">رقم سند التسليم:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">القيمة الإجمالية:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">رقم سند التسليم:</span><span class="blank">{% if custody %}{{ custody.serial_number }}{% endif %}</span></div>
+        <div class="field"><span class="label">القيمة الإجمالية:</span><span class="blank">{% if custody_value_text %}{{ custody_value_text }} ر.س{% endif %}</span></div>
     </div>
 
     <table style="width:100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
@@ -34,8 +34,8 @@
             {% for i in "12345678"|make_list %}
             <tr>
                 <td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">{{ forloop.counter }}</td>
-                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
-                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;">{% if forloop.first and custody %}{{ custody.item_name }}{% if custody.item_details %} — {{ custody.item_details }}{% endif %}{% endif %}</td>
+                <td style="border:1px solid #cbd5e1; padding:8px;">{% if forloop.first and custody %}{{ custody.quantity }}{% endif %}</td>
                 <td style="border:1px solid #cbd5e1; padding:8px;"></td>
                 <td style="border:1px solid #cbd5e1; padding:8px;"></td>
             </tr>

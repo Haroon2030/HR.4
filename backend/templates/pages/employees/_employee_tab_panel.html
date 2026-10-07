@@ -241,15 +241,15 @@
                     <!-- Timeline Table -->
                     <div class="border border-slate-200 rounded-lg overflow-hidden">
                         <div class="overflow-x-auto overflow-y-auto" style="max-height: 60vh;">
-                            <table class="w-full text-sm hr-archive-table">
+                            <table class="w-full text-sm hr-archive-table" data-hr-dyn>
                                 <thead class="bg-slate-100 text-slate-600 sticky top-0 z-10">
                                     <tr class="border-b border-slate-200">
-                                        <th class="px-3 py-2 text-right font-semibold w-32">التاريخ والوقت</th>
+                                        <th class="px-3 py-2 text-right font-semibold w-32" data-secondary>التاريخ والوقت</th>
                                         <th class="px-3 py-2 text-right font-semibold w-28">النوع</th>
                                         <th class="px-3 py-2 text-right font-semibold w-32">من / إلى</th>
                                         <th class="px-3 py-2 text-right font-semibold w-20">الأيام</th>
-                                        <th class="px-3 py-2 text-center font-semibold w-16">الملاحظات</th>
-                                        <th class="px-3 py-2 text-right font-semibold w-32">المنفّذ</th>
+                                        <th class="px-3 py-2 text-center font-semibold w-24">ملاحظات / طباعة</th>
+                                        <th class="px-3 py-2 text-right font-semibold w-32" data-secondary>المنفّذ</th>
                                         <th class="px-3 py-2 text-right font-semibold w-24">الحالة</th>
                                         {% if can_edit_leave or can_delete_leave %}
                                         <th class="px-3 py-2 text-center font-semibold w-24">إجراءات</th>
@@ -316,6 +316,12 @@
                                             </button>
                                             {% else %}
                                             <span class="text-slate-300 text-xs">—</span>
+                                            {% endif %}
+                                            {% if row.leave_id %}
+                                            <a href="{% url 'web:print_leave_form' employee.id row.leave_id %}" target="_blank" rel="noopener"
+                                               class="hr-act hr-act--view" title="طباعة النموذج الرسمي" aria-label="طباعة النموذج الرسمي">
+                                                <i data-lucide="printer" class="hr-act__icon"></i>
+                                            </a>
                                             {% endif %}
                                         </td>
                                         <td class="px-3 py-2 align-top text-xs text-slate-600">{{ row.executor_name }}</td>
@@ -516,14 +522,14 @@
                 <!-- Timeline Table -->
                 <div class="border border-slate-200 rounded-lg overflow-hidden">
                     <div class="overflow-x-auto overflow-y-auto" style="max-height: 60vh;">
-                        <table class="w-full text-sm hr-archive-table">
+                        <table class="w-full text-sm hr-archive-table" data-hr-dyn>
                             <thead class="bg-slate-100 text-slate-600 sticky top-0 z-10">
                                 <tr class="border-b border-slate-200">
                                     <th class="px-3 py-2 text-right font-semibold w-32">التاريخ والوقت</th>
                                     <th class="px-3 py-2 text-right font-semibold w-32">النوع</th>
                                     <th class="px-3 py-2 text-right font-semibold">العنوان / التفاصيل</th>
-                                    <th class="px-3 py-2 text-right font-semibold w-24">المرفق</th>
-                                    <th class="px-3 py-2 text-right font-semibold w-32">المنفّذ</th>
+                                    <th class="px-3 py-2 text-right font-semibold w-28">مرفق / طباعة</th>
+                                    <th class="px-3 py-2 text-right font-semibold w-32" data-secondary>المنفّذ</th>
                                     {% if can_edit_statement or can_delete_statement %}
                                     <th class="px-3 py-2 text-center font-semibold w-24">إجراءات</th>
                                     {% endif %}
@@ -588,10 +594,15 @@
                                         {% else %}
                                         —
                                         {% endif %}
+
+                                        <a href="{% url 'web:print_statement_form' employee.id st.id %}" target="_blank" rel="noopener"
+                                           class="hr-act hr-act--view" title="طباعة النموذج الرسمي" aria-label="طباعة النموذج الرسمي">
+                                            <i data-lucide="printer" class="hr-act__icon"></i>
+                                        </a>
                                     </td>
                                     <td class="px-3 py-2 align-top text-slate-600 text-xs">
                                         <i data-lucide="user" class="w-3 h-3 inline-block"></i>
-                                        {{ st.created_by.get_full_name|default:st.created_by.username|default:"—" }}
+                                        {% if st.created_by %}{{ st.created_by.get_full_name|default:st.created_by.username }}{% else %}—{% endif %}
                                     </td>
                                     {% if can_edit_statement or can_delete_statement %}
                                     <td class="px-3 py-2 align-top text-center">
@@ -703,17 +714,18 @@
             {% if tab_visible.custodies and default_employee_tab == 'custodies' %}            <div x-show="activeTab==='custodies'" class="space-y-3" style="display:none">
                 {% if custodies %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full text-sm" data-hr-dyn>
                         <thead class="bg-slate-50 text-slate-600 text-xs">
                             <tr>
                                 <th class="px-3 py-2 text-right font-bold">الرقم</th>
                                 <th class="px-3 py-2 text-right font-bold">العهدة</th>
-                                <th class="px-3 py-2 text-right font-bold">الكمية</th>
-                                <th class="px-3 py-2 text-right font-bold">القيمة</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>الكمية</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>القيمة</th>
                                 <th class="px-3 py-2 text-right font-bold">تاريخ الاستلام</th>
                                 <th class="px-3 py-2 text-right font-bold">الحالة</th>
-                                <th class="px-3 py-2 text-right font-bold">تاريخ الإعادة</th>
-                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>تاريخ الإعادة</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>المستند</th>
+                                <th class="px-3 py-2 text-center font-bold w-24">طباعة</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -736,6 +748,18 @@
                                     {% if c.document %}{% include "components/media_preview_btn.html" with url=c.document.url title="مستند الاستلام" label="استلام" btn_class="inline-flex items-center gap-0.5 text-primary-600 font-semibold" %}{% endif %}
                                     {% if c.return_document %}{% if c.document %} · {% endif %}{% include "components/media_preview_btn.html" with url=c.return_document.url title="مستند الإعادة" label="إعادة" btn_class="inline-flex items-center gap-0.5 text-primary-600 font-semibold" %}{% endif %}
                                     {% if not c.document and not c.return_document %}—{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-center whitespace-nowrap">
+                                    <a href="{% url 'web:print_custody_form' employee.id c.id %}" target="_blank" rel="noopener"
+                                       class="hr-act hr-act--view" title="طباعة النموذج الرسمي" aria-label="طباعة النموذج الرسمي">
+                                        <i data-lucide="printer" class="hr-act__icon"></i>
+                                    </a>
+                                    {% if c.status == 'returned' %}
+                                    <a href="{% url 'web:print_custody_form' employee.id c.id %}?kind=clearance" target="_blank" rel="noopener"
+                                       class="hr-act hr-act--edit" title="طباعة نموذج تصفية العهدة" aria-label="طباعة نموذج تصفية العهدة">
+                                        <i data-lucide="printer" class="hr-act__icon"></i>
+                                    </a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -798,18 +822,18 @@
             {% if tab_visible.loans and default_employee_tab == 'loans' %}            <div x-show="activeTab==='loans'" class="space-y-3" style="display:none">
                 {% if loans %}
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full text-sm" data-hr-dyn>
                         <thead class="bg-slate-50 text-slate-600 text-xs">
                             <tr>
                                 <th class="px-3 py-2 text-right font-bold">الرقم</th>
                                 <th class="px-3 py-2 text-right font-bold">المبلغ</th>
                                 <th class="px-3 py-2 text-right font-bold">الخصم الشهري</th>
-                                <th class="px-3 py-2 text-right font-bold">عدد الأقساط</th>
-                                <th class="px-3 py-2 text-center font-bold w-16">السبب</th>
-                                <th class="px-3 py-2 text-right font-bold">تاريخ الصرف</th>
-                                <th class="px-3 py-2 text-right font-bold">بداية الخصم</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>عدد الأقساط</th>
+                                <th class="px-3 py-2 text-center font-bold w-24">سبب / طباعة</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>تاريخ الصرف</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>بداية الخصم</th>
                                 <th class="px-3 py-2 text-right font-bold">الحالة</th>
-                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>المستند</th>
                                 {% if can_edit_loan or can_delete_loan %}
                                 <th class="px-3 py-2 text-center font-bold w-24">إجراءات</th>
                                 {% endif %}
@@ -834,12 +858,17 @@
                                             data-hr-text-detail-title="سبب السلفة — {{ l.serial_number|default:l.id }}"
                                             data-hr-text-detail-label="السبب"
                                             data-hr-text-detail-content-id="loan-reason-content-{{ l.id }}"
+                                            data-hr-text-detail-print-url="{% url 'web:print_loan_form' employee.id l.id %}"
                                             data-hr-text-detail-meta='[{"label":"المبلغ","value":"{% localize off %}{{ l.amount|js_number:0 }}{% endlocalize %} ر.س"},{"label":"الخصم الشهري","value":"{% localize off %}{{ l.monthly_deduction|js_number:0 }}{% endlocalize %} ر.س"},{"label":"الأقساط","value":"{{ l.installments }}"}]'>
                                         <i data-lucide="eye" class="hr-act__icon"></i>
                                     </button>
                                     {% else %}
                                     <span class="text-slate-300 text-xs">—</span>
                                     {% endif %}
+                                    <a href="{% url 'web:print_loan_form' employee.id l.id %}" target="_blank" rel="noopener"
+                                       class="hr-act hr-act--view" title="طباعة النموذج الرسمي" aria-label="طباعة النموذج الرسمي">
+                                        <i data-lucide="printer" class="hr-act__icon"></i>
+                                    </a>
                                 </td>
                                 <td class="px-3 py-2">{{ l.issued_at|date:"Y/m/d" }}</td>
                                 <td class="px-3 py-2 text-xs">{{ l.first_deduction_date|date:"Y/m/d"|default:"—" }}</td>
@@ -919,18 +948,18 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full text-sm" data-hr-dyn>
                         <thead class="bg-slate-50 text-slate-600 text-xs">
                             <tr>
                                 <th class="px-3 py-2 text-right font-bold">الرقم</th>
                                 <th class="px-3 py-2 text-right font-bold">تاريخ الغياب</th>
                                 <th class="px-3 py-2 text-right font-bold">عدد الأيام</th>
-                                <th class="px-3 py-2 text-right font-bold">أيام الشهر</th>
-                                <th class="px-3 py-2 text-right font-bold">الراتب وقتها</th>
-                                <th class="px-3 py-2 text-right font-bold">سعر اليوم</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>أيام الشهر</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>الراتب وقتها</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>سعر اليوم</th>
                                 <th class="px-3 py-2 text-right font-bold">الخصم</th>
-                                <th class="px-3 py-2 text-center font-bold w-16">السبب</th>
-                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                                <th class="px-3 py-2 text-center font-bold w-24">سبب / طباعة</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>المستند</th>
                                 {% if can_edit_absence or can_delete_absence %}
                                 <th class="px-3 py-2 text-center font-bold w-24">إجراءات</th>
                                 {% endif %}
@@ -958,12 +987,17 @@
                                             data-hr-text-detail-title="سبب الغياب — {{ a.absence_date|date:'Y/m/d' }}"
                                             data-hr-text-detail-label="السبب"
                                             data-hr-text-detail-content-id="absence-reason-content-{{ a.id }}"
+                                            data-hr-text-detail-print-url="{% url 'web:print_absence_form' employee.id a.id %}"
                                             data-hr-text-detail-meta='[{"label":"الرقم","value":"{{ a.serial_number|default:"—"|escapejs }}","valueClass":"mono"},{"label":"عدد الأيام","value":"{{ a.days }}","valueClass":"text-orange-700"},{"label":"سعر اليوم","value":"{% localize off %}{{ a.daily_rate|js_number:0 }}{% endlocalize %}"},{"label":"الخصم","value":"{% localize off %}{{ a.deduction_amount|js_number:0 }}{% endlocalize %} ر.س","valueClass":"text-rose-700"}]'>
                                         <i data-lucide="eye" class="hr-act__icon"></i>
                                     </button>
                                     {% else %}
                                     <span class="text-slate-300 text-xs">—</span>
                                     {% endif %}
+                                    <a href="{% url 'web:print_absence_form' employee.id a.id %}" target="_blank" rel="noopener"
+                                       class="hr-act hr-act--view" title="طباعة النموذج الرسمي" aria-label="طباعة النموذج الرسمي">
+                                        <i data-lucide="printer" class="hr-act__icon"></i>
+                                    </a>
                                 </td>
                                 <td class="px-3 py-2">{% if a.document %}{% include "components/table_act_file.html" with url=a.document.url title="عرض الملف" %}{% else %}—{% endif %}</td>
                                 {% if can_edit_absence or can_delete_absence %}
@@ -1024,15 +1058,15 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full text-sm" data-hr-dyn>
                         <thead class="bg-slate-50 text-slate-600 text-xs">
                             <tr>
                                 <th class="px-3 py-2 text-right font-bold">الرقم</th>
                                 <th class="px-3 py-2 text-right font-bold">التاريخ</th>
-                                <th class="px-3 py-2 text-right font-bold">الفرع</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>الفرع</th>
                                 <th class="px-3 py-2 text-right font-bold">المبلغ</th>
-                                <th class="px-3 py-2 text-right font-bold">المسير</th>
-                                <th class="px-3 py-2 text-right font-bold">المستند</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>المسير</th>
+                                <th class="px-3 py-2 text-right font-bold" data-secondary>المستند</th>
                                 <th class="px-3 py-2 text-right font-bold">ملاحظات</th>
                             </tr>
                         </thead>
@@ -1247,7 +1281,7 @@
                                     </td>
                                     <td class="px-3 py-2 align-top text-slate-600 text-xs">
                                         <i data-lucide="user" class="w-3 h-3 inline-block"></i>
-                                        {{ st.created_by.get_full_name|default:st.created_by.username|default:"—" }}
+                                        {% if st.created_by %}{{ st.created_by.get_full_name|default:st.created_by.username }}{% else %}—{% endif %}
                                     </td>
                                     <td class="px-3 py-2 align-top">
                                         {% if st.statement_type == 'terminate' %}
@@ -1497,7 +1531,7 @@
                                             <h3 class="font-bold text-slate-800 text-base">{{ st.title|default:"تصفية حساب" }}</h3>
                                             <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
                                                 <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"Y-m-d H:i" }}</span>
-                                                <span class="flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>
+                                                {% if st.created_by %}<span class="flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>{% endif %}
                                             </div>
                                         </div>
                                     </div>

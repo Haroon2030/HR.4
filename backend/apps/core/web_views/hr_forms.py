@@ -15,7 +15,9 @@ from django.http import Http404, JsonResponse
 from django.utils.html import strip_tags
 
 from apps.core.models import Company
-from apps.employees.models import Employee, EmployeeLoan, EmployeeStatement, EmployeeCustody
+from apps.employees.models import (
+    Employee, EmployeeAbsence, EmployeeLeave, EmployeeLoan, EmployeeStatement, EmployeeCustody,
+)
 from django.contrib import messages
 
 from apps.core.decorators import permission_required
@@ -30,6 +32,8 @@ FORM_CODE_MAP = {
     'final_settlement': 'FS',
     'warning_notice': 'WN',
     'loan_request': 'LN',
+    'absence_notice': 'AB',
+    'statement_notice': 'SN',
     'custody_receipt': 'CR',
     'custody_clearance': 'CC',
     'evaluation': 'EV',
@@ -247,6 +251,20 @@ _BASE_HR_FORMS = [
         'description': 'نموذج رسمي لطلب سلفة على الراتب',
         'icon': 'wallet',
         'color': 'primary',
+    },
+    {
+        'key': 'statement_notice',
+        'title': 'إفادة / إشعار',
+        'description': 'نموذج رسمي لإفادة أو إشعار أو مخالفة أو إقرار',
+        'icon': 'file-text',
+        'color': 'primary',
+    },
+    {
+        'key': 'absence_notice',
+        'title': 'إشعار غياب',
+        'description': 'نموذج رسمي لإشعار الموظف بتسجيل غياب',
+        'icon': 'user-minus',
+        'color': 'amber',
     },
     {
         'key': 'custody_receipt',
@@ -695,3 +713,195 @@ def print_ledger_settlement_detail(request, employee_id, ledger_id):
     context.update(_letterhead_context(employee, company))
     context.update(_letter_footer_context(company))
     return render(request, 'pages/hr_forms/ledger_settlement_detail.html', context)
+
+
+def _record_form_context(form_type, employee, record_serial=None, **extra):
+    """سياق نموذج رسمي مبني على سجل واحد (سلفة / غياب) مع ترويسة الشركة."""
+    company = (employee.branch.company if employee.branch_id else None) or Company.objects.first()
+    form_meta = next((f for f in HR_FORMS if f['key'] == form_type), {'key': form_type, 'title': form_type})
+    context = {
+        'form_meta': form_meta,
+        'employee': employee,
+        'company': company,
+        'branch': employee.branch,
+        'form_serial': record_serial or _build_form_serial(form_type, employee.id),
+    }
+    context.update(_letterhead_context(employee, company))
+    context.update(_letter_footer_context(company))
+    context.update(extra)
+    return context
+
+
+def _employee_for_record_form(employee_id):
+    return get_object_or_404(
+        Employee.objects.select_related(
+            'branch', 'branch__company', 'department', 'cost_center',
+            'nationality', 'profession', 'sponsorship', 'bank',
+        ),
+        id=employee_id,
+    )
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def print_loan_form(request, employee_id, loan_id):
+    """نموذج السلفة الرسمي معبّأ ببيانات السلفة المحددة."""
+    from apps.core.utils.arabic_amount import amount_in_words
+
+    if not hr_form_allowed_for_user(request.user, 'loan_request'):
+        messages.error(request, 'لا تملك صلاحية عرض هذا النموذج.')
+        return redirect('web:view_employee', employee_id=employee_id)
+
+    employee = _employee_for_record_form(employee_id)
+    loan = get_object_or_404(EmployeeLoan, id=loan_id, employee=employee)
+    context = _record_form_context(
+        'loan_request',
+        employee,
+        record_serial=loan.serial_number or None,
+        loan=loan,
+        loan_amount_words=amount_in_words(loan.amount),
+        loan_amount_text=_form_amount(loan.amount),
+        loan_monthly_text=_form_amount(loan.monthly_deduction),
+        form_basic_salary=_form_amount(employee.basic_salary),
+        form_total_salary=_form_amount(employee.total_salary),
+        form_back_url=reverse('web:view_employee', args=[employee.id]) + '?tab=loans',
+    )
+    return render(request, 'pages/hr_forms/loan_request.html', context)
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def print_absence_form(request, employee_id, absence_id):
+    """إشعار الغياب الرسمي معبّأ ببيانات سجل الغياب."""
+    from apps.core.salary_access import user_can_view_salary
+
+    if not hr_form_allowed_for_user(request.user, 'absence_notice'):
+        messages.error(request, 'لا تملك صلاحية عرض هذا النموذج.')
+        return redirect('web:view_employee', employee_id=employee_id)
+
+    employee = _employee_for_record_form(employee_id)
+    absence = get_object_or_404(EmployeeAbsence, id=absence_id, employee=employee)
+    context = _record_form_context(
+        'absence_notice',
+        employee,
+        record_serial=absence.serial_number or None,
+        absence=absence,
+        show_salary=user_can_view_salary(request.user),
+        absence_daily_rate_text=_form_amount(absence.daily_rate),
+        absence_deduction_text=_form_amount(absence.deduction_amount),
+        form_back_url=reverse('web:view_employee', args=[employee.id]) + '?tab=absences',
+    )
+    return render(request, 'pages/hr_forms/absence_notice.html', context)
+
+
+def _days_text(value) -> str:
+    """عدد الأيام بدون أصفار زائدة وبنقطة عشرية."""
+    try:
+        return format(Decimal(str(value)).normalize(), 'f')
+    except (InvalidOperation, ValueError, TypeError):
+        return ''
+
+
+def _form_not_allowed(request, form_type, employee_id):
+    if hr_form_allowed_for_user(request.user, form_type):
+        return None
+    messages.error(request, 'لا تملك صلاحية عرض هذا النموذج.')
+    return redirect('web:view_employee', employee_id=employee_id)
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def print_leave_form(request, employee_id, leave_id):
+    """طلب الإجازة الرسمي معبّأ ببيانات الإجازة المسجّلة."""
+    denied = _form_not_allowed(request, 'leave_request', employee_id)
+    if denied:
+        return denied
+    employee = _employee_for_record_form(employee_id)
+    leave = get_object_or_404(EmployeeLeave, id=leave_id, employee=employee)
+    return_date = leave.date_to + timedelta(days=1) if leave.date_to else None
+    context = _record_form_context(
+        'leave_request',
+        employee,
+        leave=leave,
+        leave_days_text=_days_text(leave.days),
+        leave_return_date=return_date,
+        form_back_url=reverse('web:view_employee', args=[employee.id]) + '?tab=leaves',
+    )
+    return render(request, 'pages/hr_forms/leave_request.html', context)
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def print_custody_form(request, employee_id, custody_id):
+    """نموذج استلام العهدة (أو تصفيتها بـ ?kind=clearance) معبّأ ببيانات العهدة."""
+    from apps.setup.models import Administration
+
+    employee = _employee_for_record_form(employee_id)
+    custody = get_object_or_404(EmployeeCustody, id=custody_id, employee=employee)
+    clearing = (
+        request.GET.get('kind') == 'clearance'
+        and custody.status == EmployeeCustody.Status.RETURNED
+    )
+    form_type = 'custody_clearance' if clearing else 'custody_receipt'
+    denied = _form_not_allowed(request, form_type, employee_id)
+    if denied:
+        return denied
+    context = _record_form_context(
+        form_type,
+        employee,
+        record_serial=custody.serial_number or None,
+        custody=custody,
+        custody_value_text=_form_amount(custody.estimated_value) if custody.estimated_value else '',
+        administrations=Administration.objects.filter(is_deleted=False, is_active=True).order_by('code', 'name'),
+        form_back_url=reverse('web:view_employee', args=[employee.id]) + '?tab=custodies',
+    )
+    return render(request, f'pages/hr_forms/{form_type}.html', context)
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def print_statement_form(request, employee_id, statement_id):
+    """النموذج الرسمي المناسب لنوع الإفادة/الإنذار/العملية المسجّلة."""
+    employee = _employee_for_record_form(employee_id)
+    statement = get_object_or_404(EmployeeStatement, id=statement_id, employee=employee)
+    types = EmployeeStatement.StatementType
+
+    if statement.statement_type == types.TERMINATE:
+        return redirect(
+            reverse('web:hr_form_print', args=['final_settlement', employee.id]) + f'?stmt_id={statement.id}'
+        )
+
+    is_warning = statement.statement_type in (types.WARNING, types.FINAL_WARNING)
+    form_type = 'warning_notice' if is_warning else 'statement_notice'
+    denied = _form_not_allowed(request, form_type, employee_id)
+    if denied:
+        return denied
+
+    extra = {}
+    if is_warning:
+        earlier = EmployeeStatement.objects.filter(
+            employee=employee, statement_type__in=[types.WARNING, types.FINAL_WARNING],
+        ).filter(
+            Q(statement_date__lt=statement.statement_date)
+            | Q(statement_date=statement.statement_date, id__lte=statement.id)
+        )
+        extra = {
+            'warning_serial': statement.serial_number,
+            'next_statement_serial': statement.serial_number,
+            'employee_warning_no': earlier.count(),
+        }
+    context = _record_form_context(
+        form_type,
+        employee,
+        record_serial=statement.serial_number or None,
+        statement=statement,
+        deduction_text=_form_amount(statement.deduction_amount) if statement.deduction_amount else '',
+        form_back_url=reverse('web:view_employee', args=[employee.id]) + '?tab=warnings',
+        **extra,
+    )
+    return render(request, f'pages/hr_forms/{form_type}.html', context)

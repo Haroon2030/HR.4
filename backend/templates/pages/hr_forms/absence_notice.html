@@ -1,0 +1,70 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+
+{% block doc_title %}إشعار غياب{% endblock %}
+
+{% block body %}
+
+{% include "pages/hr_forms/_employee_info.html" %}
+
+<div class="section">
+    <h3>بيانات الغياب</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ الغياب:</span><span class="blank">{% if absence %}{{ absence.absence_date|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">عدد أيام الغياب:</span><span class="blank">{% if absence %}{{ absence.days }} {% if absence.days == 1 %}يوم{% elif absence.days == 2 %}يومان{% elif absence.days <= 10 %}أيام{% else %}يوماً{% endif %}{% endif %}</span></div>
+        <div class="field"><span class="label">رقم السجل:</span><span class="blank">{% if absence %}{{ absence.serial_number|default:"—" }}{% endif %}</span></div>
+        <div class="field"><span class="label">المستند المرفق:</span><span class="blank">{% if absence %}{% if absence.document %}مرفق{% else %}لا يوجد{% endif %}{% endif %}</span></div>
+        {% if absence and show_salary %}
+        <div class="field"><span class="label">الأجر اليومي:</span><span class="blank">{{ absence_daily_rate_text }} ر.س</span></div>
+        <div class="field"><span class="label">مبلغ الخصم:</span><span class="blank">{{ absence_deduction_text }} ر.س</span></div>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">سبب الغياب:</span>
+        <div class="blank-block">{% if absence %}{{ absence.reason }}{% endif %}</div>
+    </div>
+
+    {% if absence.notes %}
+    <div style="margin-top: 14px;">
+        <span class="label" style="font-weight:600; color:#334155;">ملاحظات:</span>
+        <div class="blank-block">{{ absence.notes }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="clause">
+    <strong>إشعار:</strong>
+    يُشعَر الموظف <strong>{{ employee.name }}</strong>
+    ـ حامل الهوية رقم {{ employee.id_number|default:"............" }} ـ
+    بأنه تم تسجيل غيابه عن العمل في التاريخ المبيّن أعلاه
+    {% if absence and show_salary and absence.deduction_amount %}، وسيُخصم من راتبه ما يقابل أيام الغياب وفق أنظمة الشركة ولوائحها{% endif %}.
+    وفي حال وجود عذر مقبول يُرفق به المستند المؤيد خلال المدة المحددة لدى إدارة الموارد البشرية.
+</div>
+
+<div class="section">
+    <h3>إقرار الموظف</h3>
+    <div class="checkbox-row" data-skip-choice-note>
+        <label><span class="box"></span> اطلعت على الإشعار</label>
+        <label><span class="box"></span> لدي اعتراض (يُرفق مبرّره)</label>
+    </div>
+</div>
+
+<div class="signatures">
+    <div class="sig-box">
+        <div class="role">الموظف</div>
+        <div class="line">الاسم: {{ employee.name }}</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">المدير المباشر</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع: ......................</div>
+    </div>
+    <div class="sig-box">
+        <div class="role">الموارد البشرية</div>
+        <div class="line name-blank">الاسم: ......................</div>
+        <div class="name-blank" style="margin-top:6px;">التوقيع والختم</div>
+    </div>
+</div>
+
+{% endblock %}

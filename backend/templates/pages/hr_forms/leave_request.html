@@ -7,21 +7,21 @@
     <h3>تفاصيل الإجازة</h3>
 
     <div class="checkbox-row" data-skip-choice-note>
-        <label><span class="box"></span> إجازة سنوية</label>
-        <label><span class="box"></span> إجازة مرضية</label>
-        <label><span class="box"></span> إجازة اضطرارية</label>
-        <label><span class="box"></span> إجازة بدون راتب</label>
+        <label><span class="box"{% if leave.leave_type == 'annual' %} data-checked{% endif %}></span> إجازة سنوية</label>
+        <label><span class="box"{% if leave.leave_type == 'sick' %} data-checked{% endif %}></span> إجازة مرضية</label>
+        <label><span class="box"{% if leave.leave_type == 'emergency' %} data-checked{% endif %}></span> إجازة اضطرارية</label>
+        <label><span class="box"{% if leave.leave_type == 'unpaid' %} data-checked{% endif %}></span> إجازة بدون راتب</label>
     </div>
     <div class="choice-note">
         <label>ملاحظة:</label>
-        <textarea placeholder="اكتب الملاحظة هنا..."></textarea>
+        <textarea placeholder="اكتب الملاحظة هنا...">{% if leave %}{{ leave.notes }}{% endif %}</textarea>
     </div>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
-        <div class="field"><span class="label">تاريخ بداية الإجازة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ نهاية الإجازة:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">عدد الأيام:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ بداية الإجازة:</span><span class="blank">{% if leave %}{{ leave.date_from|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ نهاية الإجازة:</span><span class="blank">{% if leave %}{{ leave.date_to|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">عدد الأيام:</span><span class="blank">{% if leave %}{{ leave_days_text }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{% if leave_return_date %}{{ leave_return_date|date:"Y/m/d" }}{% endif %}</span></div>
     </div>
 
     <div class="field" style="margin-top:8px;">

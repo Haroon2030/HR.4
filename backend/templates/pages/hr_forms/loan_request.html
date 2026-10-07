@@ -6,19 +6,20 @@
 <div class="section">
     <h3>تفاصيل السلفة المطلوبة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">الراتب الأساسي:</span><span class="blank">{{ employee.basic_salary|floatformat:2 }} ر.س</span></div>
-        <div class="field"><span class="label">إجمالي الراتب:</span><span class="blank">{{ employee.total_salary|floatformat:2 }} ر.س</span></div>
-        <div class="field"><span class="label">المبلغ المطلوب (رقماً):</span><span class="blank"></span></div>
-        <div class="field"><span class="label">المبلغ كتابةً:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">عدد أشهر السداد:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">قيمة القسط الشهري:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">تاريخ بدء الخصم:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">الراتب الأساسي:</span><span class="blank">{% if form_basic_salary %}{{ form_basic_salary }}{% else %}{{ employee.basic_salary|floatformat:2 }}{% endif %} ر.س</span></div>
+        <div class="field"><span class="label">إجمالي الراتب:</span><span class="blank">{% if form_total_salary %}{{ form_total_salary }}{% else %}{{ employee.total_salary|floatformat:2 }}{% endif %} ر.س</span></div>
+        <div class="field"><span class="label">المبلغ المطلوب (رقماً):</span><span class="blank">{% if loan %}{{ loan_amount_text }} ر.س{% endif %}</span></div>
+        <div class="field" style="grid-column: 1 / -1;"><span class="label">المبلغ كتابةً:</span><span class="blank">{% if loan %}{{ loan_amount_words }}{% endif %}</span></div>
+        <div class="field"><span class="label">عدد أشهر السداد:</span><span class="blank">{% if loan %}{{ loan.installments }}{% endif %}</span></div>
+        <div class="field"><span class="label">قيمة القسط الشهري:</span><span class="blank">{% if loan %}{{ loan_monthly_text }} ر.س{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ الصرف:</span><span class="blank">{% if loan %}{{ loan.issued_at|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ بدء الخصم:</span><span class="blank">{% if loan %}{{ loan.first_deduction_date|date:"Y/m/d" }}{% endif %}</span></div>
         <div class="field"><span class="label">طريقة الاستلام:</span><span class="blank"></span></div>
     </div>
 
     <div style="margin-top: 14px;">
         <span class="label" style="font-weight:600; color:#334155;">سبب طلب السلفة:</span>
-        <div class="blank-block"></div>
+        <div class="blank-block">{% if loan %}{{ loan.reason }}{% endif %}</div>
     </div>
 </div>
 

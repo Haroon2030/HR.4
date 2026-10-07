@@ -6,8 +6,8 @@
 <div class="section">
     <h3>تفاصيل تصفية العهدة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ التصفية:</span><span class="blank"></span></div>
-        <div class="field"><span class="label">سبب التصفية:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ التصفية:</span><span class="blank">{% if custody %}{{ custody.returned_at|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">سبب التصفية:</span><span class="blank">{% if custody %}{{ custody.return_notes }}{% endif %}</span></div>
         <div class="field">
             <span class="label">جهة الاستلام:</span>
             <select id="custody-receiving-admin" class="blank-select" aria-label="جهة الاستلام">
@@ -33,8 +33,8 @@
             {% for i in "12345"|make_list %}
             <tr>
                 <td style="border:1px solid #cbd5e1; padding:8px; text-align:center;">{{ forloop.counter }}</td>
-                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
-                <td style="border:1px solid #cbd5e1; padding:8px;"></td>
+                <td style="border:1px solid #cbd5e1; padding:8px;">{% if forloop.first and custody %}{{ custody.item_name }}{% if custody.item_details %} — {{ custody.item_details }}{% endif %}{% endif %}</td>
+                <td style="border:1px solid #cbd5e1; padding:8px;">{% if forloop.first and custody %}{{ custody.quantity }}{% endif %}</td>
                 <td style="border:1px solid #cbd5e1; padding:8px;"></td>
                 <td style="border:1px solid #cbd5e1; padding:8px;"></td>
             </tr>

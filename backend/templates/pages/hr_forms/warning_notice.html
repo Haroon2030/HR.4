@@ -26,18 +26,19 @@
 <div class="section">
     <h3>تفاصيل المخالفة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ المخالفة:</span><span class="blank"></span></div>
+        <div class="field"><span class="label">تاريخ المخالفة:</span><span class="blank">{% if statement %}{{ statement.statement_date|date:"Y/m/d" }}{% endif %}</span></div>
         <div class="field"><span class="label">مكان وقوعها:</span><span class="blank"></span></div>
     </div>
 
     <div style="margin-top: 14px;">
         <span class="label" style="font-weight:600; color:#334155;">وصف المخالفة:</span>
-        <div class="blank-block"></div>
+        <div class="blank-block">{% if statement %}{{ statement.title }}{% if statement.content and statement.content != statement.title %}
+{{ statement.content }}{% endif %}{% endif %}</div>
     </div>
 
     <div style="margin-top: 14px;">
         <span class="label" style="font-weight:600; color:#334155;">العقوبة / الإجراء المتخذ:</span>
-        <div class="blank-block" style="min-height:50px;"></div>
+        <div class="blank-block" style="min-height:50px;">{% if statement and deduction_text %}خصم مالي بمبلغ {{ deduction_text }} ر.س{% endif %}</div>
     </div>
 </div>
 

@@ -690,6 +690,7 @@
             const cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.className = 'box';
+            if (el.hasAttribute('data-checked')) cb.checked = true;
             el.replaceWith(cb);
         });
         // إضافة مربع "ملاحظة / سبب" إلكتروني تحت كل مجموعة اختيارات
