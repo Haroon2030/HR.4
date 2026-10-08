@@ -19,17 +19,18 @@
 
     <!-- Header -->
     <div class="hr-employee-header hr-glass-panel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
-        <div>
-            <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-2xl font-bold text-slate-900">{{ employee.name }}</h1>
-                {% employee_status_badge employee size='md' %}
-            </div>
-            <p class="text-slate-500 text-xs mt-1">عرض البيانات للقراءة فقط</p>
-        </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3 min-w-0">
             {% url 'web:list_employees' as employees_list_url %}
-            {% include 'components/glass_back_link.html' with back_url=employees_list_url show_label=True label='رجوع' aria_label='رجوع لقائمة الموظفين' %}
-
+            {% include 'components/glass_back_link.html' with back_url=employees_list_url show_label=False label='رجوع' aria_label='رجوع لقائمة الموظفين' %}
+            <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h1 class="text-2xl font-bold text-slate-900">{{ employee.name }}</h1>
+                    {% employee_status_badge employee size='md' %}
+                </div>
+                <p class="text-slate-500 text-xs mt-1">عرض البيانات للقراءة فقط</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
             {% if employee.status == 'active' or employee.status == 'leave' %}{% if user|has_permission:'employees.edit' %}
             <!-- زر إضافة سريعة -->
             <div class="hr-dropdown" @click.outside="quickOpen = false">
@@ -83,17 +84,6 @@
                 </div>
             </div>
             {% endif %}{% endif %}
-
-            {% if can_view_salary %}
-            {% url 'web:export_employee_salary_excel' employee.id as export_salary_href %}
-            {% include "components/hr_btn.html" with href=export_salary_href label="تصدير Excel" variant="glass-emerald" icon="file-spreadsheet" %}
-            {% endif %}
-
-            <a href="{% url 'web:employee_barcode_labels' %}?employee_id={{ employee.id }}"
-               class="hr-btn hr-btn--glass-slate inline-flex items-center gap-2">
-                <i data-lucide="barcode" class="hr-btn__icon w-4 h-4"></i>
-                <span>باركود Zebra</span>
-            </a>
 
             {% if user|has_permission:'employees.edit' %}
             {% url 'web:edit_employee' employee.id as edit_employee_url %}
