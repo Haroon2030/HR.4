@@ -14,6 +14,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         libpq-dev \
+        libmariadb-dev \
+        pkg-config \
         libjpeg-dev \
         zlib1g-dev \
         curl \
