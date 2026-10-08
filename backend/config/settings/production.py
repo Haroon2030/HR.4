@@ -64,6 +64,8 @@ if 'postgresql' in _db_engine:
     _db_options.setdefault('keepalives_count', 5)
 
 elif 'mysql' in _db_engine:
+    # محرك MySQL يعمل بدون جداول المناطق الزمنية (Hostinger) — انظر config/db_backends/mysql
+    DATABASES['default']['ENGINE'] = 'config.db_backends.mysql'
     _db_options = DATABASES['default'].setdefault('OPTIONS', {})
     _db_options.setdefault('charset', 'utf8mb4')
     _db_options.setdefault('connect_timeout', 10)

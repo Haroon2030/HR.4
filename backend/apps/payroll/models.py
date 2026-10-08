@@ -153,13 +153,15 @@ class PayrollRun(BaseModel):
         Meta.ordering يستخدم branch__name فيُنشئ LEFT JOIN؛ PostgreSQL يرفض
         FOR UPDATE على الجانب القابل للإبطال من outer join.
         """
-        return (
-            cls.objects
-            .select_for_update(of=('self',))
-            .filter(pk=pk)
-            .order_by('pk')
-            .get()
-        )
+        from django.db import connection
+
+        # FOR UPDATE OF مدعوم في PostgreSQL فقط — MySQL/MariaDB ترفضه (NotSupportedError).
+        # order_by('pk') يلغي LEFT JOIN الترتيب الافتراضي، فالقفل البسيط كافٍ هناك.
+        if connection.features.has_select_for_update_of:
+            qs = cls.objects.select_for_update(of=('self',))
+        else:
+            qs = cls.objects.select_for_update()
+        return qs.filter(pk=pk).order_by('pk').get()
 
     def recompute_totals(self):
         """

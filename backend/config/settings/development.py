@@ -45,6 +45,9 @@ if env('DATABASE_URL', default=''):
     if DATABASES['default'].get('ENGINE', '').endswith('postgresql'):
         _opts = DATABASES['default'].setdefault('OPTIONS', {})
         _opts.setdefault('sslmode', env('DB_SSLMODE', default='require'))
+    elif DATABASES['default'].get('ENGINE', '').endswith('mysql'):
+        # بدون جداول المناطق الزمنية (Hostinger) — انظر config/db_backends/mysql
+        DATABASES['default']['ENGINE'] = 'config.db_backends.mysql'
 else:
     DATABASES = {
         'default': {
