@@ -258,12 +258,14 @@ urlpatterns = [
 
     path('reports/', web_views.reports_index, name='reports_index'),                    # فهرس التقارير
     path('reports/<str:report_type>/export/', web_views.report_export_excel, name='report_export_excel'),
+    path('reports/<str:report_type>/export-pdf/', web_views.report_export_pdf, name='report_export_pdf'),
     path('reports/<str:report_type>/', web_views.report_detail, name='report_detail'),  # عرض تقرير محدد
 
     # ══════════════════════════════════════════════════════════════
     # 12. أجهزة البصمة والحضور
     # ══════════════════════════════════════════════════════════════
-    path('attendance/devices/', web_views.biometric_devices_dashboard, name='biometric_devices'),
+    path('setup/biometric-devices/', web_views.biometric_devices_dashboard, name='biometric_devices'),
+    path('attendance/devices/', RedirectView.as_view(pattern_name='web:biometric_devices', query_string=True)),
     path('attendance/devices/save/', web_views.biometric_device_save, name='biometric_device_save'),
     path('attendance/devices/<int:device_id>/delete/', web_views.biometric_device_delete, name='biometric_device_delete'),
     path('attendance/devices/<int:device_id>/test/', web_views.biometric_device_test, name='biometric_device_test'),
@@ -279,6 +281,7 @@ urlpatterns = [
     path('attendance/records/pull/', web_views.attendance_records_pull, name='attendance_records_pull'),
     path('attendance/records/reclassify/', web_views.attendance_records_reclassify, name='attendance_records_reclassify'),
     path('attendance/records/export/', web_views.attendance_records_export, name='attendance_records_export'),
+    path('attendance/daily/', web_views.attendance_daily, name='attendance_daily'),
     path('attendance/report/', web_views.attendance_report, name='attendance_report'),
     path('attendance/report/export/', web_views.attendance_report_export, name='attendance_report_export'),
     path('attendance/late-alerts/', web_views.attendance_late_alerts, name='attendance_late_alerts'),

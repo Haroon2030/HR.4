@@ -38,7 +38,6 @@ PERMISSION_TREE_CONFIG: list[dict] = [
                 'name': 'الشاشات',
                 'module_codes': [
                     'attendance',
-                    'attendance_screen_devices',
                     'attendance_screen_report',
                     'attendance_screen_late_alerts',
                     'attendance_screen_records',
@@ -98,6 +97,7 @@ PERMISSION_TREE_CONFIG: list[dict] = [
         'name': 'إعدادات النظام والاتصال',
         'icon': 'settings',
         'children': [
+            {'id': 'setup_devices', 'name': 'أجهزة البصمة', 'module_codes': ['attendance_screen_devices']},
             {'id': 'setup_branches', 'name': 'الهيكل التنظيمي — الفروع', 'module_codes': ['branches']},
             {'id': 'setup_departments', 'name': 'الهيكل التنظيمي — الأقسام', 'module_codes': ['departments']},
             {'id': 'setup_cost_centers', 'name': 'الهيكل التنظيمي — مراكز التكلفة', 'module_codes': ['cost_centers']},

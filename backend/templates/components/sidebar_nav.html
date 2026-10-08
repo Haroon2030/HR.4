@@ -24,17 +24,11 @@
 <div class="hr-nav-group" data-nav-group>
 {% include "components/nav_group_head.html" with label="الحضور والانصراف" icon="fingerprint" always_show=always_show %}
 <div class="hr-nav-group__body">
-{% if user|has_permission:'attendance_screen_devices.view' %}
-{% include "components/nav_item.html" with url="web:biometric_devices" path_prefix="/attendance/devices" icon="fingerprint" label="أجهزة البصمة" force_show_label=always_show %}
-{% endif %}
 {% if user|has_permission:'attendance_screen_report.view' %}
-{% include "components/nav_item.html" with url="web:attendance_report" path_prefix="/attendance/report" icon="file-bar-chart" label="تقرير البصمة" force_show_label=always_show %}
-{% endif %}
-{% if user|has_permission:'attendance_screen_late_alerts.view' %}
-{% include "components/nav_item.html" with url="web:attendance_late_alerts" path_prefix="/attendance/late-alerts" icon="alarm-clock" label="إنذار تأخير البصمة" force_show_label=always_show %}
+{% include "components/nav_item.html" with url="web:attendance_daily" path_prefix="/attendance/daily" icon="calendar-check" label="الحضور اليومي" force_show_label=always_show %}
 {% endif %}
 {% if user|has_permission:'attendance_screen_records.view' %}
-{% include "components/nav_item.html" with url="web:attendance_records" path_prefix="/attendance/records" icon="calendar-check" label="سجلات الحضور" force_show_label=always_show %}
+{% include "components/nav_item.html" with url="web:attendance_records" path_prefix="/attendance/records" icon="list" label="سجلات البصمة" force_show_label=always_show %}
 {% endif %}
 </div>
 </div>
@@ -85,12 +79,15 @@
 </div>
 {% endif %}
 
-{% if user|has_permission:'branches.view' or user|has_permission:'system_data.edit' %}
+{% if user|has_permission:'branches.view' or user|has_permission:'system_data.edit' or user|has_permission:'attendance_screen_devices.view' %}
 <div class="hr-nav-group" data-nav-group>
 {% include "components/nav_group_head.html" with label="إعدادات النظام والاتصال" icon="settings" always_show=always_show %}
 <div class="hr-nav-group__body">
 {% if user|has_permission:'branches.view' %}
 {% include "components/nav_item.html" with url="web:list_branches" path_prefix="/branches/" icon="building-2" label="الهيكل التنظيمي" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'attendance_screen_devices.view' %}
+{% include "components/nav_item.html" with url="web:biometric_devices" path_prefix="/setup/biometric-devices" icon="fingerprint" label="أجهزة البصمة" force_show_label=always_show %}
 {% endif %}
 {% if user|has_permission:'system_data.edit' %}
 {% include "components/nav_item.html" with url="web:operations_report_settings" icon="calendar-clock" label="تقرير العمليات المجدول" force_show_label=always_show %}

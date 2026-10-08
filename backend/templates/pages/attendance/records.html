@@ -1,271 +1,204 @@
 {% extends "base.html" %}
 {% load custom_tags %}
 
-{% block title %}سجلات الحضور — البصمة{% endblock %}
+{% block title %}سجلات البصمة{% endblock %}
 
 {% block content %}
 {% include "pages/attendance/_biometric_page_styles.html" %}
-<div class="zk-rec space-y-3" dir="rtl">
+{% include "pages/attendance/_report_styles.html" %}
+<style>
+    .rec-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+    .rec-chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 700; color: #475569; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; text-decoration: none; }
+    .rec-chip strong { font-weight: 800; color: #0f172a; }
+    .rec-chip:hover { border-color: #93c5fd; }
+    .rec-chip.is-active { color: #1d4ed8; border-color: #1d4ed8; background: #eff6ff; }
+    .rec-chip--warn strong { color: #b45309; }
+    .rec-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.625rem; padding: 0.85rem 1rem; }
+    .rec-sub { display: block; margin-top: 0.1rem; font-size: 0.72rem; font-weight: 500; color: #64748b; }
+    .rec-tech { color: #64748b; font-size: 0.75rem; }
+</style>
+<div class="zk-rec space-y-3" dir="rtl"
+     x-data="{ adv: {{ filters.device_id|yesno:'true,false' }} || {{ filters.employee_id|yesno:'true,false' }}, pull: false, tech: false }">
 
-    <div class="zk-rec-top">
+    <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <nav class="zk-rec-crumb">
-                <a href="{% url 'web:biometric_devices' %}">أجهزة البصمة</a>
-                <i data-lucide="chevron-left" class="w-3 h-3"></i>
-                <span>سجلات</span>
-            </nav>
-            <h1>سجلات الحضور</h1>
+            <h1 class="text-2xl font-bold text-slate-900 m-0">سجلات البصمة</h1>
             {% if filter_employee %}
             <p class="text-sm font-bold text-primary-900 m-0 mt-1">
                 الموظف: {{ filter_employee.name }}
                 {% if employee_enrollments %}
                 — مربوط على:
-                {% for en in employee_enrollments %}
-                <span class="inline-flex gap-1">{{ en.device.name }} (مستخدم {{ en.device_user_id }}{% if en.device_user_name %} · {{ en.device_user_name }}{% endif %})</span>{% if not forloop.last %}، {% endif %}
-                {% endfor %}
+                {% for en in employee_enrollments %}{{ en.device.name }} (مستخدم {{ en.device_user_id }}){% if not forloop.last %}، {% endif %}{% endfor %}
                 {% else %}
                 <span class="text-amber-800">— غير مربوط بجهاز</span>
                 {% endif %}
             </p>
             {% endif %}
-            <p class="zk-rec-period m-0 mt-0.5">
-                {% if filters.date_from or filters.date_to %}{{ filters.date_from|default:"*" }} → {{ filters.date_to|default:"*" }}{% else %}ALL · {{ stats.total|default:0 }} rows{% endif %}
-            </p>
         </div>
-        <div class="zk-rec-actions">
-            {% url 'web:attendance_report' as report_url %}
-            {% with report_href=report_url|add:"?"|add:querystring %}
-            {% if querystring %}
-            {% include "components/hr_btn.html" with href=report_href label="تقرير" variant="soft-primary" icon="bar-chart-2" %}
-            {% else %}
-            {% include "components/hr_btn.html" with href=report_url label="تقرير" variant="soft-primary" icon="bar-chart-2" %}
+        <div class="flex flex-wrap gap-2">
+            {% if user|has_permission:'attendance.manage' %}
+            <button type="button" class="hr-btn hr-btn--primary" @click="pull = !pull" :aria-expanded="pull">
+                <i data-lucide="download-cloud" class="w-4 h-4"></i> سحب من جهاز
+            </button>
             {% endif %}
-            {% endwith %}
             {% url 'web:attendance_records_export' as export_url %}
             {% with export_href=export_url|add:"?"|add:querystring %}
-            {% include "components/hr_btn.html" with href=export_href label="Excel" variant="success" icon="file-spreadsheet" %}
+            {% include "components/hr_btn.html" with href=export_href label="تصدير Excel" variant="success" icon="file-spreadsheet" %}
             {% endwith %}
-            {% url 'web:biometric_devices' as devices_url %}
-            {% include "components/hr_btn.html" with href=devices_url label="أجهزة" variant="soft-slate" icon="settings" %}
         </div>
     </div>
 
-    <div class="zk-rec-toolbar-row">
     {% if user|has_permission:'attendance.manage' %}
-    <section class="zk-rec-sync-wrap">
-        <div class="zk-rec-panel zk-rec-panel--sync">
-            <div class="zk-rec-panel-hd">
-                <div class="title-wrap">
-                    <span class="zk-rec-code">SYNC</span>
-                    <h2>سحب من جهاز البصمة</h2>
-                </div>
-                <span class="zk-rec-hint">LAN</span>
-            </div>
-            <div class="zk-rec-panel-body">
-            <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-sync-form">
-                {% csrf_token %}
-                <div class="zk-rec-sync-grid">
-                    <div class="fld fld--device">
-                        <label class="zk-bio-lbl">الجهاز</label>
-                        <select name="device_id" required class="zk-bio-field">
-                            {% for d in devices %}
-                            <option value="{{ d.pk }}" dir="ltr"{% if sync_device_id == d.pk %} selected{% endif %}>{{ d.name }} · {{ d.ip_address }}:{{ d.port }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="fld">
-                        <label class="zk-bio-lbl">من</label>
-                        <input type="date" name="date_from" class="zk-bio-field">
-                    </div>
-                    <div class="fld">
-                        <label class="zk-bio-lbl">إلى</label>
-                        <input type="date" name="date_to" class="zk-bio-field">
-                    </div>
-                    <div class="fld fld--action">
-                        <label class="zk-bio-lbl">&nbsp;</label>
-                        <button type="submit" id="attendance-pull-submit" class="hr-btn hr-btn--primary hr-btn--xs zk-rec-btn-pull">
-                            <i data-lucide="download-cloud" class="w-4 h-4"></i>
-                            سحب
-                        </button>
-                    </div>
-                </div>
-            </form>
-            <div id="attendance-pull-progress" class="zk-pull-progress-wrap" aria-live="polite">
-                <div class="zk-pull-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="attendance-pull-track">
-                    <div id="attendance-pull-fill" class="zk-pull-fill"></div>
-                </div>
-                <p id="attendance-pull-status" class="zk-pull-status">0%</p>
-            </div>
-            {% if stats.status_health.skewed %}
-            <div class="zk-rec-skew-bar">
-                <span class="zk-rec-skew-msg zk-mono">St≠ · 0={{ stats.status_health.status_0 }} · 1={{ stats.status_health.status_1 }}</span>
-                <form method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-skew-actions">
-                    {% csrf_token %}
-                    <select name="device_id" class="zk-bio-field zk-rec-skew-device" aria-label="جهاز">
-                        <option value="">الكل</option>
+    <section class="rec-panel" x-show="pull" x-cloak aria-label="سحب البصمات من جهاز">
+        <form id="attendance-pull-form" method="post" action="{% url 'web:attendance_records_pull' %}" class="zk-rec-sync-form">
+            {% csrf_token %}
+            <div class="zk-rec-sync-grid">
+                <div class="fld fld--device">
+                    <label class="zk-bio-lbl">الجهاز</label>
+                    <select name="device_id" required class="zk-bio-field">
                         {% for d in devices %}
-                        <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+                        <option value="{{ d.pk }}"{% if sync_device_id == d.pk %} selected{% endif %}>{{ d.name }}</option>
                         {% endfor %}
                     </select>
-                    <button type="submit" class="hr-btn hr-btn--soft-emerald hr-btn--xs zk-rec-skew-btn" title="ترتيب دخول/خروج"
-                            onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم؟');">
-                        <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="fld">
+                    <label class="zk-bio-lbl">من</label>
+                    <input type="date" name="date_from" class="zk-bio-field">
+                </div>
+                <div class="fld">
+                    <label class="zk-bio-lbl">إلى</label>
+                    <input type="date" name="date_to" class="zk-bio-field">
+                </div>
+                <div class="fld fld--action">
+                    <label class="zk-bio-lbl">&nbsp;</label>
+                    <button type="submit" id="attendance-pull-submit" class="hr-btn hr-btn--primary hr-btn--xs zk-rec-btn-pull">
+                        <i data-lucide="download-cloud" class="w-4 h-4"></i> سحب
                     </button>
-                </form>
+                </div>
             </div>
-            {% endif %}
+        </form>
+        <div id="attendance-pull-progress" class="zk-pull-progress-wrap" aria-live="polite">
+            <div class="zk-pull-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="attendance-pull-track">
+                <div id="attendance-pull-fill" class="zk-pull-fill"></div>
             </div>
+            <p id="attendance-pull-status" class="zk-pull-status">0%</p>
         </div>
+        <form id="zk-rec-reclassify-form" method="post" action="{% url 'web:attendance_records_reclassify' %}" class="mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="device_id" id="zk-rec-reclassify-device" value="{{ filters.device_id|default:'' }}">
+            <button type="submit" class="hr-btn hr-btn--soft-emerald hr-btn--xs"
+                    onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم لكل موظف؟');">
+                <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i> ترتيب دخول/خروج حسب التسلسل
+            </button>
+            {% if stats.status_health.skewed %}<span class="rec-sub">حالة الجهاز الخام غير متسقة في بعض السجلات، يُنصح بالترتيب.</span>{% endif %}
+        </form>
     </section>
     {% endif %}
 
-    <aside class="zk-rec-stats-wrap">
-        <div class="zk-rec-panel zk-rec-panel--stats">
-            <div class="zk-rec-panel-hd">
-                <div class="title-wrap">
-                    <span class="zk-rec-code">STAT</span>
-                    <h2>ملخص السجلات</h2>
+    <form method="get" class="hr-report-filter">
+        {% if filters.device_user_id %}<input type="hidden" name="device_user" value="{{ filters.device_user_id }}">{% endif %}
+        {% if filters.punch_type %}<input type="hidden" name="punch_type" value="{{ filters.punch_type }}">{% endif %}
+        <div class="hr-filter-grid hr-filter-grid--main">
+            <div class="hr-filter-slot hr-filter-slot--period">
+                <div class="hr-filter-slot__row">
+                    <div class="hr-filter-cell">
+                        <label class="hr-report-lbl">من</label>
+                        <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="hr-report-field">
+                    </div>
+                    <div class="hr-filter-cell">
+                        <label class="hr-report-lbl">إلى</label>
+                        <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="hr-report-field">
+                    </div>
                 </div>
             </div>
-            <div class="zk-rec-panel-body">
-            <div class="zk-rec-stats-grid">
-                <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}"
-                   class="zk-rec-kpi zk-rec-kpi--link{% if not filters.punch_type %} is-active{% endif %}">
-                    <p class="k">الكل</p>
-                    <p class="v">{{ stats.total|default:0 }}</p>
-                </a>
-                <a href="{% url 'web:attendance_records' %}?{{ qs_punch_in }}"
-                   class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'in' %} is-active{% endif %}">
-                    <p class="k">دخول</p>
-                    <p class="v text-emerald-700">{{ stats.check_in|default:0 }}</p>
-                </a>
-                <a href="{% url 'web:attendance_records' %}?{{ qs_punch_out }}"
-                   class="zk-rec-kpi zk-rec-kpi--link{% if filters.punch_type == 'out' %} is-active{% endif %}">
-                    <p class="k">خروج</p>
-                    <p class="v text-indigo-700">{{ stats.check_out|default:0 }}</p>
-                </a>
-                <div class="zk-rec-kpi">
-                    <p class="k">غير مربوط</p>
-                    <p class="v text-amber-700">{{ stats.unmapped|default:0 }}</p>
-                </div>
+            <div class="hr-filter-slot">
+                <span class="hr-filter-slot__title">الفرع</span>
+                {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filters.branch_ids field_class="hr-report-field" aria_label="الفرع" %}
             </div>
+            <div class="hr-filter-slot">
+                <span class="hr-filter-slot__title">بحث</span>
+                <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم" class="hr-report-field" autocomplete="off">
             </div>
-        </div>
-    </aside>
-
-    <aside class="zk-rec-filter-wrap">
-        <div class="zk-rec-panel zk-rec-panel--filter">
-            <div class="zk-rec-panel-hd">
-                <div class="title-wrap">
-                    <span class="zk-rec-code">LOG</span>
-                    <h2>فلتر السجلات</h2>
-                </div>
-                <span class="zk-bio-stat zk-mono">{{ page_obj.start_index }}–{{ page_obj.end_index }}{% if page_obj.paginator.count %}/{{ page_obj.paginator.count }}{% endif %}</span>
-            </div>
-            <div class="zk-rec-panel-body">
-            <form method="get" class="zk-rec-filter-form">
-                {% if filters.device_user_id %}<input type="hidden" name="device_user" value="{{ filters.device_user_id }}">{% endif %}
-                <div class="zk-rec-filter-grid">
-                    <div class="fld">
-                        <label class="zk-bio-lbl">من</label>
-                        <input type="date" name="from" value="{{ filters.date_from|default:'' }}" class="zk-bio-field">
-                    </div>
-                    <div class="fld">
-                        <label class="zk-bio-lbl">إلى</label>
-                        <input type="date" name="to" value="{{ filters.date_to|default:'' }}" class="zk-bio-field">
-                    </div>
-                    <div class="fld fld--full">
-                        <label class="zk-bio-lbl">الفرع</label>
-                        {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filters.branch_ids field_class="zk-bio-field" aria_label="الفرع" %}
-                    </div>
-                    <div class="fld fld--full">
-                        <label class="zk-bio-lbl">جهاز</label>
-                        <select name="device" class="hr-filter-select zk-bio-field">
-                            <option value="">الكل</option>
-                            {% for d in devices %}
-                            <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="fld fld--full">
-                        {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" filter_employee=filter_employee employee_search_url=employee_search_url %}
-                    </div>
-                    <div class="fld fld--full">
-                        <label class="zk-bio-lbl">بحث</label>
-                        <input type="text" name="q" value="{{ filters.search }}" placeholder="اسم أو رقم" class="zk-bio-field" autocomplete="off">
-                    </div>
-                    {% if filters.punch_type %}<input type="hidden" name="punch_type" value="{{ filters.punch_type }}">{% endif %}
-                    <div class="fld fld--actions fld--full hr-filter-form">
+            <div class="hr-filter-slot hr-filter-slot--actions">
+                <div class="hr-filter-actions">
+                    <button type="button" class="hr-report-filter-toggle" :class="{ 'is-active': adv }" @click="adv = !adv">
+                        <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> فلاتر
+                    </button>
+                    <div class="hr-filter-form flex items-center gap-1">
                         {% url 'web:attendance_records' as records_clear_url %}
                         {% include "components/filter_actions.html" with clear_url=records_clear_url %}
                     </div>
                 </div>
-            </form>
-            {% if user|has_permission:'attendance.manage' %}
-            <form id="zk-rec-reclassify-form" method="post" action="{% url 'web:attendance_records_reclassify' %}" class="zk-rec-reclassify-form">
-                {% csrf_token %}
-                <input type="hidden" name="device_id" id="zk-rec-reclassify-device" value="{{ filters.device_id|default:'' }}">
-                    <button type="submit" class="hr-btn hr-btn--soft-emerald hr-btn--xs zk-rec-reclassify-btn"
-                        onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم لكل موظف؟');">
-                    <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i>
-                    ترتيب دخول/خروج
-                </button>
-            </form>
-            {% endif %}
             </div>
         </div>
-    </aside>
+        <div class="hr-filter-grid hr-filter-grid--adv" x-show="adv" x-cloak>
+            <div class="hr-filter-slot">
+                <label class="hr-report-lbl">الجهاز</label>
+                <select name="device" class="hr-filter-select hr-report-field">
+                    <option value="">الكل</option>
+                    {% for d in devices %}
+                    <option value="{{ d.pk }}" {% if filters.device_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="hr-filter-slot hr-filter-slot--employee">
+                {% include "components/employee_search_picker.html" with label="موظف محدد" input_name="employee" filter_employee=filter_employee employee_search_url=employee_search_url %}
+            </div>
+        </div>
+    </form>
+
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="rec-chips" role="group" aria-label="نوع الحركة">
+            <a href="{% url 'web:attendance_records' %}?{{ qs_punch_all }}" class="rec-chip{% if not filters.punch_type %} is-active{% endif %}">الكل <strong>{{ stats.total|default:0 }}</strong></a>
+            <a href="{% url 'web:attendance_records' %}?{{ qs_punch_in }}" class="rec-chip{% if filters.punch_type == 'in' %} is-active{% endif %}">دخول <strong>{{ stats.check_in|default:0 }}</strong></a>
+            <a href="{% url 'web:attendance_records' %}?{{ qs_punch_out }}" class="rec-chip{% if filters.punch_type == 'out' %} is-active{% endif %}">خروج <strong>{{ stats.check_out|default:0 }}</strong></a>
+            {% if stats.unmapped %}<span class="rec-chip rec-chip--warn" title="بصمات لمستخدمين غير مربوطين بموظف">غير مربوط <strong>{{ stats.unmapped }}</strong></span>{% endif %}
+        </div>
+        <button type="button" class="hr-report-filter-toggle" :class="{ 'is-active': tech }" @click="tech = !tech" :aria-pressed="tech">
+            <i data-lucide="wrench" class="w-3.5 h-3.5"></i> تفاصيل تقنية
+        </button>
     </div>
 
     <section class="zk-rec-box zk-rec-box--table">
-        <div class="zk-bio-card-hd">
-            <div class="flex items-center gap-2">
-                <span class="zk-rec-code">TBL</span>
-                <h2 class="text-sm font-bold text-slate-800 m-0">جدول البصمات</h2>
-            </div>
-            <span class="zk-bio-stat zk-mono">{% if page_obj.paginator.count %}{{ page_obj.paginator.count }}{% else %}{{ page_obj.end_index }}+{% endif %} سجل</span>
-        </div>
-
         <div class="overflow-x-auto">
             <table class="zk-bio-tbl">
                 <thead>
                     <tr>
-                        <th class="text-center w-10">#</th>
                         <th>التاريخ</th>
                         <th>الوقت</th>
-                        <th>معرف ZK</th>
-                        <th dir="ltr">رقم المستخدم</th>
-                        <th>الاسم على الجهاز</th>
-                        <th>موظف HR</th>
-                        <th dir="ltr">الرقم الوظيفي</th>
-                        <th>نوع الحركة</th>
-                        <th class="text-center" title="حالة الجهاز الخام">St</th>
-                        <th>التحقق</th>
-                        <th class="text-center" title="رمز التحقق">Vm</th>
+                        <th>الموظف</th>
+                        <th>الحركة</th>
                         <th>الجهاز</th>
-                        <th dir="ltr">IP</th>
+                        <th x-show="tech" x-cloak>رقم المستخدم</th>
+                        <th x-show="tech" x-cloak>الرقم الوظيفي</th>
+                        <th x-show="tech" x-cloak>معرف السجل</th>
+                        <th x-show="tech" x-cloak>طريقة التحقق</th>
+                        <th x-show="tech" x-cloak>عنوان الجهاز</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in page_obj %}
                     <tr class="{% if not p.employee_id %}zk-row-warn{% endif %}">
-                        <td class="text-center text-slate-400 zk-mono">{{ page_obj.start_index|add:forloop.counter0 }}</td>
                         <td class="zk-mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
-                        <td class="zk-mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
-                        <td class="zk-mono text-slate-500">{{ p.device_record_uid|default:"—" }}</td>
-                        <td class="zk-mono" dir="ltr">{{ p.device_user_id }}</td>
-                        <td>{{ p.device_user_name|default:"—" }}</td>
-                        <td>{% if p.employee %}<span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>{% else %}<span class="zk-pill zk-pill-warn">غير مربوط</span>{% endif %}</td>
-                        <td class="zk-mono text-xs" dir="ltr">{{ p.employee.employee_number|default:"—" }}</td>
+                        <td class="zk-mono">{{ p.local_punched_at|date:"H:i" }}</td>
+                        <td>
+                            {% if p.employee %}
+                            <span class="text-emerald-800 font-semibold">{{ p.employee.name }}</span>
+                            {% else %}
+                            <span class="zk-pill zk-pill-warn">غير مربوط</span>
+                            {% if p.device_user_name %}<span class="rec-sub">{{ p.device_user_name }}</span>{% endif %}
+                            {% endif %}
+                        </td>
                         <td>{% if p.punch_type == 'in' %}<span class="zk-pill zk-pill-in">دخول</span>{% elif p.punch_type == 'out' %}<span class="zk-pill zk-pill-out">خروج</span>{% else %}<span class="zk-pill zk-pill-muted">{{ p.get_punch_type_display }}</span>{% endif %}</td>
-                        <td class="text-center zk-mono text-slate-500">{{ p.raw_status|default:"—" }}</td>
-                        <td class="text-xs">{{ p.verify_mode_label|default:"—" }}</td>
-                        <td class="text-center zk-mono text-slate-500">{{ p.verify_mode|default:"—" }}</td>
                         <td>{{ p.device.name }}</td>
-                        <td class="zk-mono" dir="ltr">{{ p.device.ip_address }}</td>
+                        <td x-show="tech" x-cloak class="zk-mono rec-tech" dir="ltr">{{ p.device_user_id }}</td>
+                        <td x-show="tech" x-cloak class="zk-mono rec-tech" dir="ltr">{{ p.employee.employee_number|default:"—" }}</td>
+                        <td x-show="tech" x-cloak class="zk-mono rec-tech">{{ p.device_record_uid|default:"—" }}</td>
+                        <td x-show="tech" x-cloak class="rec-tech">{{ p.verify_mode_label|default:"—" }}</td>
+                        <td x-show="tech" x-cloak class="zk-mono rec-tech" dir="ltr">{{ p.device.ip_address }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="14" class="px-4 py-10 text-center text-slate-500 text-sm">لا سجلات — نفّذ السحب من الجهاز أو غيّر الفلتر</td></tr>
+                    <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500 text-sm">لا توجد سجلات بهذه الشروط. غيّر الفلتر أو اسحب البصمات من الجهاز.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -276,10 +209,6 @@
             {% include "components/hr_keyset_pagination.html" with page_obj=page_obj base_qs=querystring prev_label="السابق" next_label="التالي" %}
         </div>
         {% endif %}
-
-        <p class="zk-rec-legend m-0">
-            نفس أعمدة التصدير: معرف ZK · St (0=دخول / 1=خروج على الجهاز) · Vm رمز التحقق
-        </p>
     </section>
 </div>
 <script>
@@ -313,7 +242,7 @@
             if (currentPct < target) {
                 setBar(currentPct + Math.min(4, target - currentPct));
             }
-            setStatus(Math.round(currentPct) + '% · pulling…');
+            setStatus(Math.round(currentPct) + '% · جارٍ السحب…');
         }, 320);
     }
 
@@ -328,7 +257,7 @@
         wrap.classList.add('zk-pull-active');
         setBar(3);
         statusEl.style.whiteSpace = 'nowrap';
-        setStatus('3% · connecting…');
+        setStatus('3% · جارٍ الاتصال…');
         if (btn) btn.disabled = true;
         startProgressTick();
 
@@ -351,13 +280,13 @@
                 stopProgressTick();
                 if (!data) {
                     setBar(100);
-                    setStatus('100% · reload…');
+                    setStatus('100% · إعادة تحميل…');
                     setTimeout(function () { location.reload(); }, 1200);
                     return;
                 }
                 if (data.ok !== true) {
                     setBar(100);
-                    setStatus('100% · ' + (data.error || 'failed'));
+                    setStatus('100% · ' + (data.error || 'فشل السحب'));
                     if (btn) btn.disabled = false;
                     setTimeout(function () {
                         wrap.classList.remove('zk-pull-active');
@@ -366,7 +295,7 @@
                     return;
                 }
                 setBar(100);
-                setStatus('100% · ' + (data.message || (data.queued ? 'queued' : 'done')));
+                setStatus('100% · ' + (data.message || (data.queued ? 'أُضيف الطلب بانتظار الفرع' : 'تم')));
                 statusEl.style.whiteSpace = 'normal';
                 setTimeout(function () {
                     window.location.reload();
@@ -375,7 +304,7 @@
             .catch(function () {
                 stopProgressTick();
                 setBar(100);
-                setStatus('100% · network error');
+                setStatus('100% · خطأ في الاتصال');
                 if (btn) btn.disabled = false;
                 setTimeout(function () {
                     wrap.classList.remove('zk-pull-active');
@@ -389,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var reclassifyForm = document.getElementById('zk-rec-reclassify-form');
     if (reclassifyForm) {
         reclassifyForm.addEventListener('submit', function () {
-            var deviceSel = document.querySelector('.zk-rec-filter-form select[name="device"]');
+            var deviceSel = document.querySelector('.hr-report-filter select[name="device"]');
             var deviceHid = document.getElementById('zk-rec-reclassify-device');
             if (deviceSel && deviceHid) deviceHid.value = deviceSel.value || '';
         });

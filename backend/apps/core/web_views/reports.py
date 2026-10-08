@@ -2,6 +2,7 @@
 التقارير — بيانات تفصيلية بصفوف وأعمدة
 كل تقرير يُرجع: columns (أعمدة) + rows (صفوف) + title
 """
+import re
 from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
 
@@ -55,6 +56,9 @@ _BASE_REPORTS = [
     {'group': 'demographics','key': 'nationality',         'title': 'حسب الجنسية',                 'icon': 'flag',          'color': 'amber',    'description': 'توزيع حسب الجنسية'},
     {'group': 'demographics','key': 'professions',         'title': 'حسب المهنة',                  'icon': 'briefcase',     'color': 'amber',    'description': 'توزيع حسب المهنة'},
     {'group': 'attendance',  'key': 'biometric_daily',     'title': 'تقرير البصمة اليومي',         'icon': 'fingerprint',   'color': 'violet',   'description': 'دخول وخروج ومدة العمل لكل موظف/يوم'},
+    {'group': 'attendance',  'key': 'attendance_monthly',  'title': 'الحضور الشهري',               'icon': 'calendar-check', 'color': 'violet',  'description': 'ملخص كل موظف: أيام الحضور وساعات العمل'},
+    {'group': 'attendance',  'key': 'attendance_incomplete', 'title': 'البصمات الناقصة',           'icon': 'alert-circle',  'color': 'violet',   'description': 'أيام ببصمة واحدة أو غير مكتملة أو لمستخدم غير مربوط'},
+    {'group': 'attendance',  'key': 'attendance_devices_status', 'title': 'حالة أجهزة البصمة',     'icon': 'router',        'color': 'violet',   'description': 'اتصال كل جهاز وآخر مزامنة وعدد البصمات'},
 ]
 
 REPORTS = merge_reports_catalog(_BASE_REPORTS, PRIMARY_REPORT_SPECS)
@@ -296,9 +300,9 @@ def _build_deductions_breakdown(req):
 
 def _build_insurance_costs(req):
     cols = ['الاسم', 'الفرع', 'شركة التأمين', 'فئة التأمين', 'نسبة الخصم %']
-    qs = _filtered_employees(req)[0].select_related('branch', 'insurance', 'insurance_class').order_by('insurance__name', 'name')
+    qs = _filtered_employees(req)[0].select_related('branch', 'insurance', 'insurance_class').order_by('insurance__insurance_type', 'name')
     employees, truncated = _materialize_qs(qs)
-    rows = [[e.name, e.branch.name if e.branch else '—', e.insurance.name if e.insurance else '—', e.insurance_class.name if e.insurance_class else '—', str(e.insurance_deduction_rate)] for e in employees]
+    rows = [[e.name, e.branch.name if e.branch else '—', e.insurance.insurance_type if e.insurance else '—', e.insurance_class.class_type if e.insurance_class else '—', str(e.insurance_deduction_rate)] for e in employees]
     return _report_payload(cols, rows, truncated)
 
 def _build_new_hires(req):
@@ -418,18 +422,18 @@ def _build_leave_balance(req):
     rows = [[e.name, e.branch.name if e.branch else '—', str(e.hire_date), str(e.accrued_leave_days), str(e.available_leave_balance), str(e.remaining_leave_days)] for e in employees]
     return _report_payload(cols, rows, truncated)
 
-def _build_biometric_daily(req):
+def _attendance_daily_rows(req):
+    """صفوف الحضور اليومي ضمن فلاتر التقرير: (rows, date_from, date_to, date_clamped, truncated)."""
     from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
-    from apps.attendance.selectors.daily_report import build_daily_attendance_rows, daily_rows_to_table
+    from apps.attendance.selectors.daily_report import build_daily_attendance_rows
     from apps.attendance.selectors.punch_records import get_punch_queryset
     from apps.core.utils.attendance_filters import clamp_attendance_date_range
 
     filters = _report_filters(req)
-    report_filters = {
+    report_filters, date_clamped = clamp_attendance_date_range({
         'date_from': filters['date_from'],
         'date_to': filters['date_to'],
-    }
-    report_filters, date_clamped = clamp_attendance_date_range(report_filters)
+    })
     date_from, date_to = _parse_filter_dates({**filters, **report_filters})
     qs = get_punch_queryset(
         branch_ids=filters['branch_ids'],
@@ -438,23 +442,121 @@ def _build_biometric_daily(req):
     ).filter(device_id__in=filter_biometric_devices_for_user(req.user).values('pk'))
     if filters['sponsorship_ids']:
         qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
-    daily_rows = build_daily_attendance_rows(qs)
-    if len(daily_rows) > MAX_REPORT_ROWS:
-        daily_rows = daily_rows[:MAX_REPORT_ROWS]
-        truncated = True
-    else:
-        truncated = False
-    data = daily_rows_to_table(daily_rows)
+    rows = build_daily_attendance_rows(qs)
+    truncated = len(rows) > MAX_REPORT_ROWS
+    if truncated:
+        rows = rows[:MAX_REPORT_ROWS]
+    return rows, date_from, date_to, date_clamped, truncated
+
+
+def _attendance_note(date_from, date_to, date_clamped, truncated, extra=''):
     note = f'من {date_from} إلى {date_to}'
+    if extra:
+        note += f' — {extra}'
     if date_clamped:
         note += ' — تم تقييد الفترة إلى 93 يوماً'
     if truncated:
         note += f' — عُرض أول {MAX_REPORT_ROWS} صف'
-    data['note'] = note + ' — للفلترة الكاملة: قائمة البصمة → تقرير البصمة'
+    return note
+
+
+def _build_biometric_daily(req):
+    from apps.attendance.selectors.daily_report import daily_rows_to_table
+
+    daily_rows, date_from, date_to, date_clamped, truncated = _attendance_daily_rows(req)
+    data = daily_rows_to_table(daily_rows)
+    data['note'] = _attendance_note(date_from, date_to, date_clamped, truncated)
     if truncated:
         data['truncated'] = True
         data['max_rows'] = MAX_REPORT_ROWS
     return data
+
+
+def _fmt_hours(total_seconds: float) -> str:
+    minutes = int(total_seconds // 60)
+    hours, mins = divmod(minutes, 60)
+    return f'{hours}:{mins:02d}'
+
+
+def _build_attendance_monthly(req):
+    daily_rows, date_from, date_to, date_clamped, truncated = _attendance_daily_rows(req)
+    per_employee: dict[int, dict] = {}
+    unmapped_days = 0
+    for r in daily_rows:
+        if not r.is_mapped or not r.employee_id:
+            unmapped_days += 1
+            continue
+        acc = per_employee.setdefault(r.employee_id, {
+            'name': r.employee_name, 'number': r.employee_number, 'branch': r.branch_name,
+            'days': 0, 'complete': 0, 'issues': 0, 'seconds': 0.0,
+        })
+        acc['days'] += 1
+        if r.status_label == 'مكتمل':
+            acc['complete'] += 1
+        else:
+            acc['issues'] += 1
+        if r.work_duration:
+            acc['seconds'] += max(r.work_duration.total_seconds(), 0)
+    columns = [
+        'الموظف', 'الرقم الوظيفي', 'الفرع', 'أيام الحضور', 'أيام مكتملة',
+        'أيام تحتاج متابعة', 'إجمالي الساعات', 'متوسط الساعات يومياً',
+    ]
+    rows = []
+    for acc in sorted(per_employee.values(), key=lambda a: (a['branch'] or '', a['name'] or '')):
+        avg = acc['seconds'] / acc['complete'] if acc['complete'] else 0
+        rows.append([
+            acc['name'], acc['number'], acc['branch'], acc['days'], acc['complete'],
+            acc['issues'], _fmt_hours(acc['seconds']), _fmt_hours(avg) if avg else '—',
+        ])
+    extra = f'{unmapped_days} يوم-مستخدم غير مربوط لم يُحتسب' if unmapped_days else ''
+    data = {'columns': columns, 'rows': rows, 'note': _attendance_note(date_from, date_to, date_clamped, truncated, extra)}
+    if truncated:
+        data['truncated'] = True
+        data['max_rows'] = MAX_REPORT_ROWS
+    return data
+
+
+def _build_attendance_incomplete(req):
+    daily_rows, date_from, date_to, date_clamped, truncated = _attendance_daily_rows(req)
+    columns = ['التاريخ', 'الموظف', 'الفرع', 'الجهاز', 'الدخول', 'الخروج', 'عدد البصمات', 'الحالة']
+    rows = []
+    for r in daily_rows:
+        if r.is_mapped and r.status_label == 'مكتمل':
+            continue
+        rows.append([
+            str(r.work_date),
+            r.employee_name if r.is_mapped else (r.device_user_name or f'مستخدم {r.device_user_id}'),
+            r.branch_name,
+            r.device_name,
+            r.check_in_display,
+            r.check_out_display if r.punch_count > 1 else '—',
+            r.punch_count,
+            r.status_label if r.is_mapped else 'غير مربوط بموظف',
+        ])
+    data = {'columns': columns, 'rows': rows, 'note': _attendance_note(date_from, date_to, date_clamped, truncated)}
+    if truncated:
+        data['truncated'] = True
+        data['max_rows'] = MAX_REPORT_ROWS
+    return data
+
+
+def _build_attendance_devices_status(req):
+    from apps.attendance.selectors.biometric_devices import get_biometric_devices_queryset
+
+    filters = _report_filters(req)
+    devices = get_biometric_devices_queryset(req.user, branch_ids=filters['branch_ids'] or None)
+    columns = ['الجهاز', 'الفرع', 'العنوان', 'الحالة', 'آخر مزامنة', 'عدد البصمات']
+    rows = []
+    for d in devices:
+        rows.append([
+            d.name,
+            d.branch.name if d.branch_id else '—',
+            d.address_label,
+            d.get_connection_status_display() + ('' if d.is_active else ' (معطّل)'),
+            timezone.localtime(d.last_sync_at).strftime('%Y-%m-%d %H:%M') if d.last_sync_at else '—',
+            d.punch_count,
+        ])
+    return {'columns': columns, 'rows': rows, 'note': 'الحالة الحالية للأجهزة وقت إصدار التقرير (لا تتأثر بفترة التقرير)'}
 
 
 def _build_absences(req):
@@ -647,32 +749,12 @@ def _build_suspended(req):
 def _build_attendance_late(req):
     from django.utils import timezone
     from apps.attendance.models import EmployeeBiometricSettings
-    from apps.attendance.selectors.biometric_devices import filter_biometric_devices_for_user
-    from apps.attendance.selectors.daily_report import build_daily_attendance_rows
-    from apps.attendance.selectors.punch_records import get_punch_queryset
     from apps.attendance.services.attendance_evaluation import (
         evaluate_daily_checkin,
         evaluate_daily_checkout,
     )
-    from apps.core.utils.attendance_filters import clamp_attendance_date_range
 
-    filters = _report_filters(req)
-    report_filters, date_clamped = clamp_attendance_date_range({
-        'date_from': filters['date_from'],
-        'date_to': filters['date_to'],
-    })
-    date_from, date_to = _parse_filter_dates({**filters, **report_filters})
-    qs = get_punch_queryset(
-        branch_ids=filters['branch_ids'],
-        date_from=date_from,
-        date_to=date_to,
-    ).filter(device_id__in=filter_biometric_devices_for_user(req.user).values('pk'))
-    if filters['sponsorship_ids']:
-        qs = qs.filter(employee__sponsorship_id__in=filters['sponsorship_ids'])
-    daily_rows = build_daily_attendance_rows(qs)
-    rows_truncated = len(daily_rows) > MAX_REPORT_ROWS
-    if rows_truncated:
-        daily_rows = daily_rows[:MAX_REPORT_ROWS]
+    daily_rows, date_from, date_to, date_clamped, rows_truncated = _attendance_daily_rows(req)
     employee_ids = [r.employee_id for r in daily_rows if r.employee_id]
     settings_map = {
         s.employee_id: s
@@ -780,7 +862,40 @@ BUILDERS = {
     'active_headcount': _build_active_headcount,
     'suspended': _build_suspended,
     'attendance_late': _build_attendance_late,
+    'attendance_monthly': _build_attendance_monthly,
+    'attendance_incomplete': _build_attendance_incomplete,
+    'attendance_devices_status': _build_attendance_devices_status,
 }
+
+def _selected_column_indexes(request, total: int) -> list[int] | None:
+    """الأعمدة المختارة من ?cols=0&cols=3 — None تعني كل الأعمدة."""
+    raw = request.GET.getlist('cols')
+    picked = sorted({int(c) for c in raw if c.isdigit() and int(c) < total})
+    if not picked or len(picked) == total:
+        return None
+    return picked
+
+
+def _apply_columns(data: dict, indexes: list[int] | None) -> dict:
+    if indexes is None:
+        return data
+    columns = data.get('columns') or []
+    out = dict(data)
+    out['columns'] = [columns[i] for i in indexes]
+    out['rows'] = [[r[i] if i < len(r) else '' for i in indexes] for r in (data.get('rows') or [])]
+    return out
+
+
+def _filter_scope_label(filters: dict) -> str:
+    branch_ids = filters.get('branch_ids')
+    if not branch_ids:
+        return 'كل الفروع'
+    names = list(Branch.objects.filter(pk__in=branch_ids).order_by('name').values_list('name', flat=True))
+    label = '، '.join(names[:3])
+    if len(names) > 3:
+        label += f' و{len(names) - 3} أخرى'
+    return label or 'كل الفروع'
+
 
 def _catalog_for_user(user):
     """تقارير ومجموعات مرئية حسب صلاحيات الرواتب."""
@@ -820,7 +935,38 @@ def _filter_querystring(request, exclude=()):
     report = f.get('report')
     if 'report' not in exclude and report:
         params.append(('report', report))
+    if 'cols' not in exclude:
+        for c in request.GET.getlist('cols'):
+            if c.isdigit():
+                params.append(('cols', c))
     return urlencode(params, doseq=True)
+
+
+def _period_presets(request, report_type: str, filters: dict) -> list[dict]:
+    """فترات جاهزة (اليوم، الأسبوع، الشهر...) تحتفظ ببقية الفلاتر."""
+    today = timezone.localdate()
+    week_start = today - timedelta(days=(today.weekday() + 1) % 7)  # الأحد بداية الأسبوع
+    month_start = today.replace(day=1)
+    prev_month_end = month_start - timedelta(days=1)
+    prev_month_start = prev_month_end.replace(day=1)
+    options = [
+        ('اليوم', today, today),
+        ('هذا الأسبوع', week_start, today),
+        ('هذا الشهر', month_start, today),
+        ('الشهر الماضي', prev_month_start, prev_month_end),
+    ]
+    base = reverse('web:report_detail', kwargs={'report_type': report_type})
+    rest = _filter_querystring(request, exclude=('from', 'to'))
+    presets = []
+    for label, d1, d2 in options:
+        qs = urlencode({'from': d1.isoformat(), 'to': d2.isoformat()})
+        href = f"{base}?{qs}" + (f'&{rest}' if rest else '')
+        presets.append({
+            'label': label,
+            'href': href,
+            'active': filters['date_from'] == d1.isoformat() and filters['date_to'] == d2.isoformat(),
+        })
+    return presets
 
 
 @login_required
@@ -881,8 +1027,17 @@ def report_detail(request, report_type):
         builder=_build,
         bypass=cache_bypass_requested(request),
     )
+    all_columns = list(data.get('columns') or [])
+    col_indexes = _selected_column_indexes(request, len(all_columns))
+    data = _apply_columns(data, col_indexes)
+    selected_set = set(col_indexes) if col_indexes is not None else set(range(len(all_columns)))
+    column_choices = [{'index': i, 'name': name, 'selected': i in selected_set} for i, name in enumerate(all_columns)]
     ctx = _report_filter_context(request)
     return render(request, 'pages/reports/detail.html', {
+        'column_choices': column_choices,
+        'period_presets': _period_presets(request, report_type, filters),
+        'filter_querystring_nocols': _filter_querystring(request, exclude=('cols',)),
+        'pdf_url': reverse('web:report_export_pdf', kwargs={'report_type': report_type}),
         'report_meta': meta,
         'group_meta': group,
         'reports': visible_reports,
@@ -935,9 +1090,12 @@ def report_export_excel(request, report_type):
         bypass=cache_bypass_requested(request),
     )
 
+    data = _apply_columns(data, _selected_column_indexes(request, len(data.get('columns') or [])))
+
     wb = Workbook()
     ws = wb.active
-    ws.title = (meta.get('title') or report_type)[:31]
+    # أسماء أوراق Excel لا تقبل / \ ? * [ ] : (مثل «سجل الغياب / الإجازات»)
+    ws.title = re.sub(r'[\\/*?:\[\]]', '-', meta.get('title') or report_type)[:31]
     ws.sheet_view.rightToLeft = True
     header_fill = PatternFill('solid', fgColor='1E40AF')
     columns = data.get('columns') or []
@@ -959,4 +1117,55 @@ def report_export_excel(request, report_type):
     )
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
+    return response
+
+
+@login_required
+@any_permission_required('reports.export')
+def report_export_pdf(request, report_type):
+    """تصدير تقرير بصيغة PDF رسمية موحّدة (ترويسة، بيانات الإصدار، جدول، توقيعات)."""
+    from apps.core.models import Company
+    from apps.core.services.report_pdf import ReportPdfMeta, build_report_pdf
+
+    visible_reports, _ = _catalog_for_user(request.user)
+    meta = next((r for r in visible_reports if r['key'] == report_type), None)
+    if not meta:
+        if report_type in {r['key'] for r in REPORTS}:
+            messages.error(request, 'لا تملك صلاحية تصدير هذا التقرير (بيانات رواتب).')
+            return redirect('web:reports_index')
+        raise Http404('تقرير غير معروف')
+
+    builder = BUILDERS.get(report_type)
+    filters = _report_filters(request)
+    from apps.core.services.dashboard_cache import cache_bypass_requested
+    from apps.core.services.report_cache import get_or_build_report_data
+
+    def _build():
+        return _cap_report_data(builder(request) if builder else {'columns': [], 'rows': []})
+
+    data, _ = get_or_build_report_data(
+        user_id=request.user.id,
+        report_type=report_type,
+        filters=filters,
+        builder=_build,
+        bypass=cache_bypass_requested(request),
+    )
+    data = _apply_columns(data, _selected_column_indexes(request, len(data.get('columns') or [])))
+
+    now = timezone.localtime()
+    company = Company.objects.filter(is_deleted=False).order_by('id').first()
+    pdf_meta = ReportPdfMeta(
+        title=meta.get('title') or report_type,
+        company_name=(company.name if company else 'نظام الموارد البشرية'),
+        period=f"من|{filters['date_from']}|إلى|{filters['date_to']}",
+        scope=_filter_scope_label(filters),
+        prepared_by=(request.user.get_full_name() or request.user.get_username()),
+        reference=f"{report_type[:4].upper()}-{now:%Y%m%d-%H%M}-{request.user.id}",
+        issued_at=now.replace(tzinfo=None),
+        note=data.get('note') or '',
+        total_rows=len(data.get('rows') or []),
+    )
+    pdf_bytes = build_report_pdf(pdf_meta, data.get('columns') or [], data.get('rows') or [])
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="report_{report_type}_{now:%Y%m%d_%H%M%S}.pdf"'
     return response

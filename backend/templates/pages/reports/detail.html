@@ -56,9 +56,48 @@
             {% else %}
             {% include "components/hr_btn.html" with href=export_url label="Excel" variant="success" icon="file-spreadsheet" size="sm" %}
             {% endif %}
+            {% if filter_querystring %}
+            {% with pdf_href=pdf_url|add:"?"|add:filter_querystring %}
+            {% include "components/hr_btn.html" with href=pdf_href label="PDF رسمي" variant="primary" icon="file-text" size="sm" %}
+            {% endwith %}
+            {% else %}
+            {% include "components/hr_btn.html" with href=pdf_url label="PDF رسمي" variant="primary" icon="file-text" size="sm" %}
             {% endif %}
-            {% include "components/hr_btn_print.html" with label="طباعة رسمية" size="sm" %}
+            {% endif %}
+            {% include "components/hr_btn_print.html" with label="طباعة" size="sm" %}
         </div>
+    </div>
+
+    {# أدوات التقرير: فترات جاهزة + اختيار الأعمدة #}
+    <div class="rep-tools">
+        <div class="rep-presets" role="group" aria-label="فترات جاهزة">
+            {% for p in period_presets %}
+            <a href="{{ p.href }}" class="rep-chip{% if p.active %} is-active{% endif %}">{{ p.label }}</a>
+            {% endfor %}
+        </div>
+        {% if column_choices|length > 1 %}
+        <details class="rep-cols">
+            <summary class="rep-chip">
+                <i data-lucide="columns-3" class="w-3.5 h-3.5"></i> الأعمدة
+                <span class="rep-cols__count">{{ data.columns|length }}/{{ column_choices|length }}</span>
+            </summary>
+            <form method="get" action="{{ form_action }}" class="rep-cols__panel">
+                {% for bid in filter.branch_ids %}<input type="hidden" name="branch" value="{{ bid }}">{% endfor %}
+                {% for sid in filter.sponsorship_ids %}<input type="hidden" name="sponsorship" value="{{ sid }}">{% endfor %}
+                <input type="hidden" name="from" value="{{ filter.date_from }}">
+                <input type="hidden" name="to" value="{{ filter.date_to }}">
+                <div class="rep-cols__list">
+                    {% for c in column_choices %}
+                    <label class="rep-cols__item"><input type="checkbox" name="cols" value="{{ c.index }}" {% if c.selected %}checked{% endif %}> {{ c.name }}</label>
+                    {% endfor %}
+                </div>
+                <div class="rep-cols__actions">
+                    <button type="submit" class="hr-btn hr-btn--primary hr-btn--sm">تطبيق</button>
+                    <a href="{{ clear_url }}?{% if filter_querystring_nocols %}{{ filter_querystring_nocols }}{% endif %}" class="hr-btn hr-btn--outline hr-btn--sm">كل الأعمدة</a>
+                </div>
+            </form>
+        </details>
+        {% endif %}
     </div>
 
     {# Table #}
@@ -97,6 +136,21 @@
 </div>
 
 <style>
+.rep-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.rep-presets { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.rep-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.8rem; font-size: 0.78rem; font-weight: 700; color: #475569; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; text-decoration: none; cursor: pointer; list-style: none; }
+.rep-chip::-webkit-details-marker { display: none; }
+.rep-chip:hover { border-color: #93c5fd; }
+.rep-chip.is-active { color: #1d4ed8; border-color: #1d4ed8; background: #eff6ff; }
+.rep-cols { position: relative; }
+.rep-cols__count { font-weight: 800; color: #0f172a; }
+.rep-cols__panel { position: absolute; z-index: 20; inset-inline-start: 0; top: calc(100% + 0.35rem); min-width: 16rem; max-width: 22rem; background: #fff; border: 1px solid #cbd5e1; border-radius: 0.625rem; padding: 0.75rem; box-shadow: 0 8px 24px rgba(15, 23, 42, .12); }
+.rep-cols__list { display: grid; gap: 0.3rem; max-height: 16rem; overflow-y: auto; margin-bottom: 0.6rem; }
+.rep-cols__item { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: #1e293b; }
+.rep-cols__actions { display: flex; gap: 0.4rem; }
+@media print {
+    .rep-tools { display: none !important; }
+}
 @media print {
     nav, button, .hr-reports-filter-form, .sidebar, header, .navbar { display: none !important; }
     .max-w-7xl { max-width: 100% !important; }

@@ -185,6 +185,27 @@
                     <input type="checkbox" name="is_active" x-model="form.is_active" class="sr-only peer">
                     <span class="relative w-8 h-4 rounded-full bg-slate-300 peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full after:shadow peer-checked:after:translate-x-3.5 transition-all"></span>
                 </label>
+
+                <fieldset class="zk-modal-fieldset" x-show="form.original_device_id" x-cloak>
+                    <legend>إجراءات الجهاز</legend>
+                    <div class="zk-dev-actions">
+                        <button type="button" class="zk-dev-actions__btn"
+                            @click="deviceModal = false; generateAgentKey(form.original_device_id, form.name, form.has_key, form.ip, form.port)">
+                            <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                            <span x-text="form.has_key ? 'تجديد مفتاح وكيل الفرع' : 'إنشاء مفتاح وكيل الفرع'"></span>
+                        </button>
+                        <button type="button" class="zk-dev-actions__btn" x-show="!form.lan" @click="deviceModal = false; testDevice(form.original_device_id)">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i><span>اختبار الاتصال</span>
+                        </button>
+                        <button type="button" class="zk-dev-actions__btn" x-show="!form.lan" @click="deviceModal = false; syncUsers(form.original_device_id)">
+                            <i data-lucide="users" class="w-3.5 h-3.5"></i><span>سحب مستخدمي الجهاز</span>
+                        </button>
+                        <button type="button" class="zk-dev-actions__btn zk-dev-actions__btn--danger"
+                            @click="deleteDevice(form.original_device_id, form.name, form.punch_count)">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>حذف الجهاز</span>
+                        </button>
+                    </div>
+                </fieldset>
             </div>
 
             <div class="shrink-0 py-2 border-t border-slate-200 bg-slate-50">

@@ -58,9 +58,13 @@ class AttendanceSubPermissionsTests(TestCase):
         client = Client()
         client.force_login(self.user)
         records_resp = client.get('/attendance/records/')
-        devices_resp = client.get('/attendance/devices/')
+        devices_resp = client.get('/setup/biometric-devices/')
+        legacy_resp = client.get('/attendance/devices/')
         self.assertEqual(records_resp.status_code, 200, records_resp.content[:500])
         self.assertEqual(devices_resp.status_code, 302)
+        # المسار القديم يحوّل للجديد، ثم يُرفض لعدم الصلاحية
+        self.assertEqual(legacy_resp.status_code, 302)
+        self.assertEqual(client.get('/attendance/devices/', follow=True).redirect_chain[0][0], '/setup/biometric-devices/')
 
     def test_attendance_view_expands_to_all_screen_permissions(self):
         mod, _ = AppModule.objects.get_or_create(

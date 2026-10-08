@@ -28,13 +28,18 @@
     </div>
     {% endif %}
 
-    <div class="zk-bio-card">
+    <div class="zk-tabs" role="tablist" aria-label="أقسام شاشة الأجهزة">
+        <button type="button" role="tab" class="zk-tab" :class="tab === 'devices' && 'is-active'" :aria-selected="tab === 'devices'" @click="tab = 'devices'">
+            الأجهزة <span class="zk-tab__count">{{ devices|length }}</span>
+        </button>
+        <button type="button" role="tab" class="zk-tab" :class="tab === 'users' && 'is-active'" :aria-selected="tab === 'users'" @click="tab = 'users'">
+            مستخدمو الأجهزة
+            {% if device_users_stats.unmapped %}<span class="zk-tab__count zk-tab__count--warn" title="مستخدمون غير مربوطين بموظف">{{ device_users_stats.unmapped }}</span>{% endif %}
+        </button>
+    </div>
+
+    <div class="zk-bio-card" x-show="tab === 'devices'">
         <div class="zk-bio-card-hd">
-            <div class="flex items-center gap-3">
-                <span class="zk-bio-sec-tag">01</span>
-                <h2 class="text-sm font-bold text-slate-800">الأجهزة المسجّلة</h2>
-                <span class="zk-bio-stat">{{ devices|length }} جهاز</span>
-            </div>
             <form method="get" class="flex flex-wrap items-center gap-2">
                 <label class="text-xs text-slate-500">فرع</label>
                 <div class="min-w-[10rem]" style="min-width:10rem">
@@ -42,8 +47,7 @@
                 </div>
                 <button type="submit" class="text-xs font-semibold text-primary-700 hover:text-primary-900 px-2 py-1">تصفية</button>
                 {% if branch_filter_ids %}
-                <a href="{% url 'web:biometric_devices' %}"
-                   class="text-xs text-slate-500 hover:text-primary-600">مسح</a>
+                <a href="{% url 'web:biometric_devices' %}" class="text-xs text-slate-500 hover:text-primary-600">مسح</a>
                 {% endif %}
             </form>
         </div>
@@ -51,92 +55,50 @@
             <table class="zk-bio-tbl zk-bio-tbl--compact">
                 <thead>
                     <tr>
-                        <th class="text-right w-12 zk-bio-col-mono">ID</th>
                         <th class="text-right">الجهاز</th>
-                        <th class="text-right zk-bio-col-mono">IP:Port</th>
                         <th class="text-right">الحالة</th>
                         <th class="text-right">آخر مزامنة</th>
-                        <th class="text-right">بصمات</th>
-                        <th class="text-right">مفتاح وكيل</th>
                         {% if user|has_permission:'attendance.manage' %}
-                        <th class="text-right zk-bio-tbl__actions-th zk-bio-col-actions">إجراء</th>
+                        <th class="text-right zk-bio-tbl__actions-th">إجراء</th>
                         {% endif %}
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for d in devices %}
                     <tr class="hover:bg-slate-50/80">
-                        <td class="zk-bio-col-mono text-slate-500" dir="ltr">{{ d.pk }}</td>
                         <td>
                             <span class="font-medium text-slate-900">{{ d.name }}</span>
                             {% if not d.is_active %}<span class="mr-1 text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">معطّل</span>{% endif %}
+                            <span class="zk-dev-sub">{% if d.branch %}{{ d.branch.name }} · {% endif %}<bdi dir="ltr">{{ d.address_label }}</bdi></span>
                         </td>
-                        <td class="zk-bio-col-mono" dir="ltr">{{ d.address_label }}</td>
                         <td>
                             {% if d.connection_status == 'online' %}
                             <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>متصل</span>
                             {% elif d.connection_status == 'error' %}
-                            <span class="inline-flex items-center gap-1 text-red-700" title="{{ d.last_error }}"><span class="w-2 h-2 rounded-full bg-red-500"></span>خطأ</span>
+                            <span class="inline-flex items-center gap-1 text-red-700" title="{{ d.last_error }}"><span class="w-2 h-2 rounded-full bg-red-500"></span>خطأ في الاتصال</span>
                             {% elif d.agent_api_key and d.last_sync_at %}
-                            <span class="inline-flex items-center gap-1 text-sky-700" title="آخر مزامنة عبر وكيل الفرع"><span class="w-2 h-2 rounded-full bg-sky-500"></span>وكيل LAN</span>
+                            <span class="inline-flex items-center gap-1 text-sky-700" title="آخر مزامنة عبر وكيل الفرع"><span class="w-2 h-2 rounded-full bg-sky-500"></span>يعمل عبر الفرع</span>
                             {% elif d.agent_api_key %}
-                            <span class="inline-flex items-center gap-1 text-amber-700" title="بانتظار أول مزامنة من PC الفرع"><span class="w-2 h-2 rounded-full bg-amber-400"></span>بانتظار وكيل</span>
+                            <span class="inline-flex items-center gap-1 text-amber-700" title="بانتظار أول مزامنة من حاسوب الفرع"><span class="w-2 h-2 rounded-full bg-amber-400"></span>بانتظار أول مزامنة</span>
                             {% else %}
                             <span class="text-slate-500">غير معروف</span>
                             {% endif %}
+                            {% if d.pull_pending %}<span class="zk-dev-sub text-amber-700">طلب سحب بانتظار الفرع</span>{% endif %}
                         </td>
-                        <td class="text-slate-600">{{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}</td>
-                        <td>
-                            <div class="zk-bio-punch-cell" dir="ltr">
-                                <span class="zk-bio-punch-cell__count" title="سجلات في قاعدة HR">{{ d.punch_count }}</span>
-                                <span class="zk-bio-punch-cell__tag zk-bio-punch-cell__tag--db">HR DB</span>
-                                {% if d.last_ingest_log %}
-                                <span class="zk-bio-punch-cell__tag {% if d.last_ingest_log.status == 'success' %}zk-bio-punch-cell__tag--ok{% else %}zk-bio-punch-cell__tag--err{% endif %}"
-                                    title="{% if d.last_ingest_log.status != 'success' %}{{ d.last_ingest_log.message|default:d.last_ingest_log.get_status_display }}{% else %}آخر رفع ناجح{% endif %}">
-                                    ingest +{{ d.last_ingest_log.imported }}
-                                    {% if d.last_ingest_log.status != 'success' %}
-                                    <span class="zk-bio-punch-cell__err-hint">· {{ d.last_ingest_log.message|default:d.last_ingest_log.get_status_display|truncatechars:28 }}</span>
-                                    {% endif %}
-                                </span>
-                                {% endif %}
-                                {% if d.pull_pending %}
-                                <span class="zk-bio-punch-cell__tag zk-bio-punch-cell__tag--pull" title="طلب سحب من الموقع — بانتظار الوكيل">pull pending</span>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            {% if d.agent_api_key %}
-                            <span class="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                <i data-lucide="shield-check" class="w-3 h-3"></i> مُفعّل
-                            </span>
-                            {% else %}
-                            <span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">غير مُولَّد</span>
-                            {% endif %}
+                        <td class="text-slate-600">
+                            {{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}
+                            <span class="zk-dev-sub">{{ d.punch_count }} بصمة{% if d.last_ingest_log and d.last_ingest_log.status != 'success' %} · <span class="text-red-700">آخر رفع فشل</span>{% endif %}</span>
                         </td>
                         {% if user|has_permission:'attendance.manage' %}
-                        <td class="zk-bio-tbl__actions-td zk-bio-col-actions">
-                            <div class="zk-bio-action-bar" dir="ltr">
-                                <button type="button"
-                                    @click="generateAgentKey({{ d.pk }}, '{{ d.name|escapejs }}', {{ d.agent_api_key|yesno:'true,false' }}, '{{ d.ip_address }}', {{ d.port }})"
-                                    class="hr-btn hr-btn--icon hr-btn--bio-key"
-                                    :disabled="loadingId === {{ d.pk }}"
-                                    title="مفتاح وكيل"
-                                    aria-label="مفتاح وكيل">
-                                    <i data-lucide="key-round" class="w-3 h-3"></i>
-                                </button>
+                        <td class="zk-bio-tbl__actions-td">
+                            <div class="zk-bio-action-bar">
                                 {% if d.ip_address|is_private_lan_ip %}
                                 <form method="post" action="{% url 'web:biometric_device_sync' d.pk %}" class="zk-bio-action-bar__form">
                                     {% csrf_token %}
-                                    {% include "components/bio_action_btn.html" with type="submit" variant="sync" icon="refresh-cw" title="مزامنة (LAN)" %}
+                                    {% include "components/bio_action_btn.html" with type="submit" variant="sync" icon="refresh-cw" title="مزامنة الآن" %}
                                 </form>
                                 {% else %}
-                                <button type="button" @click="testDevice({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-test" :disabled="loadingId === {{ d.pk }}" title="اختبار" aria-label="اختبار">
-                                    <i data-lucide="activity" class="w-3 h-3"></i>
-                                </button>
-                                <button type="button" @click="syncUsers({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-users" :disabled="loadingId === {{ d.pk }}" title="المستخدمون" aria-label="المستخدمون">
-                                    <i data-lucide="users" class="w-3 h-3"></i>
-                                </button>
-                                <button type="button" @click="syncDevice({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-sync" :disabled="loadingId === {{ d.pk }}" title="مزامنة" aria-label="مزامنة">
+                                <button type="button" @click="syncDevice({{ d.pk }})" class="hr-btn hr-btn--icon hr-btn--bio-sync" :disabled="loadingId === {{ d.pk }}" title="مزامنة الآن" aria-label="مزامنة الآن">
                                     <i data-lucide="download" class="w-3 h-3"></i>
                                 </button>
                                 {% endif %}
@@ -147,32 +109,28 @@
                                     port: {{ d.port }},
                                     comm_key: {{ d.comm_key }},
                                     branch_id: {% if d.branch_id %}'{{ d.branch_id }}'{% else %}''{% endif %},
-                                    is_active: {{ d.is_active|yesno:'true,false' }}
-                                })" title="تعديل" aria-label="تعديل" class="hr-btn hr-btn--icon hr-btn--bio-edit">
-                                    <i data-lucide="pencil" class="w-3 h-3"></i>
+                                    is_active: {{ d.is_active|yesno:'true,false' }},
+                                    has_key: {{ d.agent_api_key|yesno:'true,false' }},
+                                    lan: {{ d.ip_address|is_private_lan_ip|yesno:'true,false' }},
+                                    punch_count: {{ d.punch_count }}
+                                })" title="إدارة الجهاز" aria-label="إدارة الجهاز" class="hr-btn hr-btn--icon hr-btn--bio-edit">
+                                    <i data-lucide="settings-2" class="w-3 h-3"></i>
                                 </button>
-                                {% url 'web:biometric_device_delete' d.pk as act_del %}
-                                {% if d.punch_count %}
-                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ سيُحذف "|add:d.punch_count|add:" سجل بصمة وكل الربط — لا يمكن التراجع." title="حذف الجهاز" bio_btn=True form_class="zk-bio-action-bar__form" %}
-                                {% else %}
-                                {% include "components/table_act_delete.html" with url=act_del confirm="حذف نهائي لجهاز «"|add:d.name|add:"» (رقم "|add:d.pk|add:") من قاعدة البيانات؟ لا يمكن التراجع." title="حذف الجهاز" bio_btn=True form_class="zk-bio-action-bar__form" %}
-                                {% endif %}
                             </div>
                         </td>
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="{% if user|has_permission:'attendance.manage' %}8{% else %}7{% endif %}" class="px-4 py-8 text-center text-slate-500">لا بيانات</td></tr>
+                    <tr><td colspan="{% if user|has_permission:'attendance.manage' %}4{% else %}3{% endif %}" class="px-4 py-8 text-center text-slate-500">لا توجد أجهزة بعد. أضف أول جهاز من زر «إضافة جهاز».</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="zk-bio-card mb-4">
+    <div class="zk-bio-card mb-4" x-show="tab === 'users'" x-cloak>
         <div class="zk-bio-card-hd">
             <div>
-                <span class="zk-bio-sec-tag">02</span>
                 <h2 class="text-sm font-bold text-slate-800">مستخدمو الأجهزة</h2>
                 <p class="text-[10px] text-slate-500 mt-0.5">أسماء من البصمة — يُحدَّث عند المزامنة</p>
             </div>
@@ -308,6 +266,7 @@
 function biometricPage() {
     const csrf = '{{ csrf_token }}';
     return {
+        tab: (location.hash === '#device-users-table' || /[?&](users_|link_device)/.test(location.search)) ? 'users' : 'devices',
         deviceModal: false,
         enrollModal: false,
         agentKeyModal: false,
@@ -321,7 +280,7 @@ function biometricPage() {
         toast: false,
         toastOk: true,
         toastMsg: '',
-        form: { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true },
+        form: { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true, has_key: false, lan: false, punch_count: 0 },
         openDeviceForm(data) {
             if (data) {
                 this.form = {
@@ -333,9 +292,12 @@ function biometricPage() {
                     comm_key: data.comm_key,
                     branch_id: data.branch_id ? String(data.branch_id) : '',
                     is_active: data.is_active,
+                    has_key: !!data.has_key,
+                    lan: !!data.lan,
+                    punch_count: data.punch_count || 0,
                 };
             } else {
-                this.form = { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true };
+                this.form = { original_device_id: '', device_id: '', name: '', ip: '', port: 4370, comm_key: 0, branch_id: '', is_active: true, has_key: false, lan: false, punch_count: 0 };
             }
             this.deviceModal = true;
             this.$nextTick(() => lucide.createIcons());
@@ -427,6 +389,18 @@ function biometricPage() {
                 this.showToast(false, 'خطأ في الاتصال بالخادم');
             }
             this.loadingId = null;
+        },
+        deleteDevice(id, name, punchCount) {
+            const extra = punchCount ? `\nسيُحذف ${punchCount} سجل بصمة وكل الربط.` : '';
+            if (!window.confirm(`حذف نهائي للجهاز «${name}» من قاعدة البيانات؟${extra}\nلا يمكن التراجع.`)) return;
+            const f = document.createElement('form');
+            f.method = 'post';
+            f.action = `/attendance/devices/${id}/delete/`;
+            const t = document.createElement('input');
+            t.type = 'hidden'; t.name = 'csrfmiddlewaretoken'; t.value = csrf;
+            f.appendChild(t);
+            document.body.appendChild(f);
+            f.submit();
         },
         async _postJson(url) {
             const r = await fetch(url, {
