@@ -14,7 +14,7 @@
 
     <div class="hr-sidebar-account">
         <div class="hr-sidebar-account__inner" {% if allow_collapse and not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-            <span class="hr-sidebar-account__avatar" aria-hidden="true">{{ display_name|slice:":1" }}</span>
+            <span class="hr-sidebar-account__avatar" aria-hidden="true"><i data-lucide="circle-user-round" class="w-4 h-4"></i></span>
             <div class="hr-sidebar-account__meta min-w-0 flex-1">
                 <p class="hr-sidebar-account__label">الحساب</p>
                 {% if email %}
@@ -26,7 +26,7 @@
         </div>
         {% if allow_collapse and not always_show %}
         <div class="hr-sidebar-account__collapsed" x-show="!sidebarOpen" x-cloak>
-            <span class="hr-sidebar-account__avatar" title="{{ display_name }}">{{ display_name|slice:":1" }}</span>
+            <span class="hr-sidebar-account__avatar" title="{{ display_name }}"><i data-lucide="circle-user-round" class="w-4 h-4"></i></span>
         </div>
         {% endif %}
     </div>
