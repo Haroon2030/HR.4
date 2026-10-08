@@ -7,13 +7,13 @@
 <div x-data="{ activeTab: 'users' }">
 {% include "components/page_tabs_start.html" with aria_label="المستخدمون والأدوار" %}
             <button type="button" role="tab" class="hr-tab-btn"
-                @click="activeTab = 'users'; lucide.createIcons()"
+                @click="activeTab = 'users'; window.lucide && lucide.createIcons()"
                 :class="activeTab === 'users' && 'is-active'">
                 <i data-lucide="user-cog" class="w-4 h-4"></i>
                 <span>المستخدمون</span>
             </button>
             <button type="button" role="tab" class="hr-tab-btn"
-                @click="activeTab = 'roles'; lucide.createIcons()"
+                @click="activeTab = 'roles'; window.lucide && lucide.createIcons()"
                 :class="activeTab === 'roles' && 'is-active'">
                 <i data-lucide="shield" class="w-4 h-4"></i>
                 <span>الأدوار</span>
@@ -145,7 +145,7 @@
             <div class="p-4">
                 <div class="flex items-center justify-between mb-4 gap-3">
                     <button type="button"
-                            @click="activeTab = 'users'; lucide.createIcons()"
+                            @click="activeTab = 'users'; window.lucide && lucide.createIcons()"
                             class="hr-glass-back-btn hr-glass-back-btn--labeled"
                             aria-label="رجوع لقائمة المستخدمين">
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -229,11 +229,11 @@
 
 <script>
     document.addEventListener('alpine:init', () => {
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     });
     
     document.addEventListener('DOMContentLoaded', function() {
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     });
 </script>
 {% endblock %}

@@ -19,14 +19,14 @@
                 <!-- رقم المستخدم -->
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-slate-800 tracking-wide">
-                        رقم المستخدم <span class="text-red-500">*</span>
+                        رقم المستخدم {% if not user_obj %}<span class="text-red-500">*</span>{% else %}<span class="text-slate-400 font-normal">(اختياري)</span>{% endif %}
                     </label>
                     <input
                         type="text"
                         name="user_number"
                         value="{% if user_obj and user_obj.profile %}{{ user_obj.profile.user_number|default:'' }}{% endif %}"
                         class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-                        required
+                        {% if not user_obj %}required{% endif %}
                         placeholder="رقم المستخدم للدخول (مثال: 1001)"
                     >
                 </div>

@@ -244,8 +244,11 @@ def edit_user(request, user_id):
         profile.role = new_role
         profile.branch = new_branch
         profile.user_number = cd.get('user_number')
-        profile.phone = cd.get('phone', '')
-        profile.position = cd.get('position', '')
+        # حقول غير موجودة في النموذج لا تُمسح (الجوال/المسمى) — تُحدَّث فقط إن أُرسلت
+        if 'phone' in request.POST:
+            profile.phone = cd.get('phone', '')
+        if 'position' in request.POST:
+            profile.position = cd.get('position', '')
         profile.save()
         
         _save_assigned_branches(profile, new_role, assigned)

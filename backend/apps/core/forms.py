@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 
-from apps.core.models import Role, Branch
+from apps.core.models import Branch, Role, UserProfile
 from apps.core.validators import (
     DOCUMENT_VALIDATORS,
     USER_PASSWORD_HELP_TEXT,
@@ -152,7 +152,17 @@ class UserBaseForm(forms.Form):
 
     def clean_user_number(self):
         v = (self.cleaned_data.get('user_number') or '').strip()
-        return v or None
+        if not v:
+            return None
+        # رقم المستخدم فريد (يُستخدم للدخول) — رسالة واضحة بدل خطأ قاعدة البيانات
+        taken = UserProfile.all_objects.filter(user_number=v).select_related('user')
+        instance = getattr(self, 'instance', None)
+        if instance is not None and getattr(instance, 'pk', None):
+            taken = taken.exclude(user_id=instance.pk)
+        other = taken.first()
+        if other:
+            raise ValidationError(f'رقم المستخدم "{v}" مستخدم بالفعل للمستخدم "{other.user.username}".')
+        return v
 
 
 class UserCreateForm(UserBaseForm):
