@@ -2,7 +2,7 @@
 {% for line in run_lines %}
 <tr>
     <td class="font-bold text-slate-900">
-        <a href="{% url 'web:view_employee' line.employee.id %}" class="text-primary-700 hover:underline">{{ line.employee.name }}</a>
+        <a href="{% url 'web:view_employee' line.employee.id %}" class="text-primary-700 hover:underline" title="{{ line.employee.name }}">{{ line.employee.name }}</a>
     </td>
     <td class="col-num">{{ line.gross_salary|format_sar:"gross" }}</td>
     <td class="col-num td-deduct">

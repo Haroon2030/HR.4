@@ -86,19 +86,27 @@ def _run_label(run: PayrollRun) -> str:
     return f'{branch} — {run.period_label}'
 
 
-def _expected_insurance(emp, year: int, month: int) -> Decimal:
+def _expected_insurance(emp, year: int, month: int, line=None) -> Decimal:
+    from apps.employees.services.salary_changes import basic_salary_for_period
+
     period = employee_payroll_period(
         period_year=year,
         period_month=month,
         hire_date=getattr(emp, 'hire_date', None),
         end_date=getattr(emp, 'end_date', None),
     )
-    base_full = Decimal(emp.basic_salary or 0) + Decimal(emp.housing_allowance or 0)
+    base_full = basic_salary_for_period(emp, year, month) + Decimal(emp.housing_allowance or 0)
     insurance_base = prorate_amount(
         base_full,
         period['payable_base_days'],
         period['month_days'],
     )
+    # فروقات زيادة أشهر سابقة تخضع للتأمينات أيضاً
+    if line is not None:
+        insurance_base += sum(
+            (Decimal(i['amount']) for i in (line.breakdown or {}).get('salary_arrears') or []),
+            Decimal('0'),
+        )
     rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
     return _q(insurance_base * rate / Decimal('100'))
 
@@ -111,6 +119,62 @@ def _lines_for_run(run: PayrollRun) -> list:
             key=lambda line: (line.employee.name if line.employee_id else ''),
         )
     return list(payroll_lines_select_related(run.lines).order_by('employee__name'))
+
+
+_SALARY_FIELDS = (
+    ('basic_salary', 'الأساسي'),
+    ('housing_allowance', 'السكن'),
+    ('transport_allowance', 'النقل'),
+    ('other_allowance', 'الإضافي'),
+    ('meal_allowance', 'التغذية'),
+)
+
+
+def _audit_line_freshness(audit, run, line, emp, label, emp_name) -> None:
+    """مسودة قديمة: بيانات الموظف تغيّرت بعد البناء ⇒ يجب إعادة البناء قبل الترحيل."""
+    from apps.employees.models import Employee
+
+    if emp.is_deleted or emp.status not in (Employee.Status.ACTIVE, Employee.Status.LEAVE):
+        _add_check(audit, AuditCheck(
+            code='employee_not_active',
+            title='موظف لم يعد على رأس العمل',
+            level='error',
+            detail='حُذف الموظف أو تغيّرت حالته بعد بناء المسودة — أعد البناء.',
+            run_label=label,
+            employee_name=emp_name,
+        ))
+        return
+    from apps.employees.services.salary_changes import basic_salary_for_period
+
+    expected = {field: getattr(emp, field) for field, _ in _SALARY_FIELDS}
+    # الأساسي المتوقع هو الساري لشهر المسير (تعديلات بتاريخ سريان)
+    expected['basic_salary'] = basic_salary_for_period(emp, run.period_year, run.period_month)
+    changed = [
+        title for field, title in _SALARY_FIELDS
+        if _q(getattr(line, field)) != _q(expected[field])
+    ]
+    if changed:
+        _add_check(audit, AuditCheck(
+            code='stale_salary',
+            title='راتب تغيّر بعد البناء',
+            level='error',
+            detail=f'تغيّر ({"، ".join(changed)}) في ملف الموظف بعد بناء المسودة — أعد البناء.',
+            run_label=label,
+            employee_name=emp_name,
+        ))
+    mode_ok = (
+        bool(emp.sponsorship_id) if run.salary_mode == PayrollRun.SalaryMode.TRANSFER
+        else not emp.sponsorship_id
+    )
+    if not mode_ok or (run.sponsorship_id and emp.sponsorship_id != run.sponsorship_id):
+        _add_check(audit, AuditCheck(
+            code='stale_sponsorship',
+            title='كفالة تغيّرت بعد البناء',
+            level='error',
+            detail='كفالة الموظف لم تعد تطابق هذا المسير (تحويل/نقدي أو شركة الكفالة) — أعد البناء.',
+            run_label=label,
+            employee_name=emp_name,
+        ))
 
 
 def _audit_standard_run(audit: PayrollFinancialAudit, run: PayrollRun) -> None:
@@ -209,6 +273,9 @@ def _audit_standard_run(audit: PayrollFinancialAudit, run: PayrollRun) -> None:
                 employee_name=emp_name,
             ))
 
+        if run.status == PayrollRun.Status.DRAFT:
+            _audit_line_freshness(audit, run, line, emp, label, emp_name)
+
         if line.net_salary < 0:
             _add_check(audit, AuditCheck(
                 code='negative_net',
@@ -266,7 +333,7 @@ def _audit_standard_run(audit: PayrollFinancialAudit, run: PayrollRun) -> None:
                 employee_name=emp_name,
             ))
 
-        expected_ins = _expected_insurance(emp, run.period_year, run.period_month)
+        expected_ins = _expected_insurance(emp, run.period_year, run.period_month, line)
         if not _close(expected_ins, line.insurance_deduction):
             rate = emp.insurance_deduction_rate or 0
             _add_check(audit, AuditCheck(

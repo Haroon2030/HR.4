@@ -448,7 +448,7 @@ class PayrollEngineTests(TestCase):
         self.assertTrue(new_row.bears_salary)
 
     def test_mid_month_hire_prorates_gross_and_export_period(self):
-        """مباشرة منتصف الشهر: فترة فعلية + راتب نسبي وليس شهراً كاملاً."""
+        """مباشرة منتصف الشهر: فترة فعلية + راتب نسبي (قاعدة 30 يوماً: 20→30 = 11 يوماً)."""
         haroon = Employee.objects.create(
             name='هارون',
             branch=self.branch,
@@ -469,7 +469,7 @@ class PayrollEngineTests(TestCase):
         )
         self.assertEqual(period['period_start'], date(2026, 7, 20))
         self.assertEqual(period['period_end'], date(2026, 7, 31))
-        self.assertEqual(period['payable_base_days'], Decimal('12'))
+        self.assertEqual(period['payable_base_days'], Decimal('11'))
 
         run = build_payroll_run(
             self.branch, 2026, 7, self.user,
@@ -477,16 +477,16 @@ class PayrollEngineTests(TestCase):
             sponsorship_id=self.sponsorship.id,
         )
         line = run.lines.get(employee=haroon)
-        expected_gross = (Decimal('4500') * Decimal('12') / Decimal('30')).quantize(Decimal('0.01'))
+        expected_gross = (Decimal('4500') * Decimal('11') / Decimal('30')).quantize(Decimal('0.01'))
         self.assertEqual(line.gross_salary, expected_gross)
-        expected_insurance_base = (Decimal('4000') * Decimal('12') / Decimal('30')).quantize(Decimal('0.01'))
+        expected_insurance_base = (Decimal('4000') * Decimal('11') / Decimal('30')).quantize(Decimal('0.01'))
         self.assertEqual(
             line.insurance_deduction,
             (expected_insurance_base * Decimal('0.10')).quantize(Decimal('0.01')),
         )
         self.assertEqual(resolve_cell_value(line, run, 'period_start'), '2026-07-20')
         self.assertEqual(resolve_cell_value(line, run, 'period_end'), '2026-07-31')
-        self.assertEqual(resolve_cell_value(line, run, 'worked_days'), Decimal('12'))
+        self.assertEqual(resolve_cell_value(line, run, 'worked_days'), Decimal('11'))
 
     def test_future_hire_excluded_from_payroll_run(self):
         Employee.objects.create(
@@ -1002,3 +1002,154 @@ class PayrollListViewTabTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'معايير التفصيلي')
         self.assertContains(response, 'hr-tab-btn--amber is-active')
+
+
+class PayrollHeroAndDetailedExportTests(TestCase):
+    """الترويسة المبسّطة + تصدير المسير التفصيلي الموحّد."""
+
+    def setUp(self):
+        import json
+
+        self.company = Company.objects.create(name='Hero Co')
+        self.branch_a = Branch.objects.create(name='Hero A', code='HRA', company=self.company)
+        self.branch_b = Branch.objects.create(name='Hero B', code='HRB', company=self.company)
+        self.sponsorship = Sponsorship.objects.create(code='HSP', company_name='كفالة الترويسة')
+        self.user = User.objects.create_user(
+            username='hero_tester', password='test-pass-123', is_superuser=True, is_staff=True,
+        )
+        self.client.login(username='hero_tester', password='test-pass-123')
+        self.employee = Employee.objects.create(
+            name='منقول', branch=self.branch_b, sponsorship=self.sponsorship,
+            status=Employee.Status.ACTIVE, hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('3000'), housing_allowance=Decimal('1000'),
+        )
+        EmployeeStatement.objects.create(
+            employee=self.employee,
+            statement_type=EmployeeStatement.StatementType.TRANSFER,
+            title='نقل',
+            statement_date=date(2026, 6, 15),
+            content=json.dumps({
+                'branch_changed': True,
+                'branch_from': 'Hero A',
+                'branch_to': 'Hero B',
+                'branch_from_id': self.branch_a.id,
+                'branch_to_id': self.branch_b.id,
+            }, ensure_ascii=False),
+        )
+
+    def test_empty_month_shows_single_build_button_and_all_scope(self):
+        from django.urls import reverse
+
+        response = self.client.get(reverse('web:list_payroll_runs'), {
+            'year': 2026, 'month': 6, 'salary_mode': PayrollRun.SalaryMode.TRANSFER,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ابنِ مسير يونيو')
+        self.assertContains(response, 'كل الفروع (2)')
+        self.assertContains(response, 'كل الشركات (1)')
+        self.assertEqual(response.context['payroll_state'], 'empty')
+        self.assertFalse(response.context['can_export_detailed'])
+
+    def test_detailed_unified_export_returns_xlsx(self):
+        from io import BytesIO
+
+        from django.urls import reverse
+        from openpyxl import load_workbook
+
+        build_payroll_detailed_run(
+            self.company, 2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        params = {
+            'year': 2026, 'month': 6, 'salary_mode': PayrollRun.SalaryMode.TRANSFER,
+            'sponsorship_id': self.sponsorship.id,
+        }
+        response = self.client.get(reverse('web:export_payroll_detailed_excel'), params)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('spreadsheetml', response['Content-Type'])
+        self.assertIn('payroll_detailed_2026_06_transfer', response['Content-Disposition'])
+        ws = load_workbook(BytesIO(response.content)).active
+        self.assertGreaterEqual(ws.max_row, 3)
+
+    def test_detailed_export_without_runs_redirects(self):
+        from django.urls import reverse
+
+        response = self.client.get(reverse('web:export_payroll_detailed_excel'), {
+            'year': 2026, 'month': 6, 'salary_mode': PayrollRun.SalaryMode.TRANSFER,
+        })
+        self.assertEqual(response.status_code, 302)
+
+    def test_delete_draft_run_removes_it_and_redirects(self):
+        from django.urls import reverse
+
+        run = build_payroll_detailed_run(
+            self.company, 2026, 6, self.user,
+            salary_mode=PayrollRun.SalaryMode.TRANSFER,
+            sponsorship_id=self.sponsorship.id,
+        )
+        response = self.client.post(reverse('web:delete_payroll_draft_run', args=[run.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(PayrollRun.all_objects.filter(pk=run.pk).exists())
+
+    def test_single_branch_all_companies_builds_one_run_per_sponsorship(self):
+        """فرع واحد + جميع الشركات: مسير لكل شركة كفالة فيها موظفون، دون استبدال بعضها."""
+        from django.contrib.messages import get_messages
+        from django.urls import reverse
+
+        other = Sponsorship.objects.create(code='HS2', company_name='كفالة ثانية')
+        empty = Sponsorship.objects.create(code='HS3', company_name='كفالة بلا موظفين')
+        Employee.objects.create(
+            name='موظف الكفالة الثانية', branch=self.branch_b, sponsorship=other,
+            status=Employee.Status.ACTIVE, hire_date=date(2020, 1, 1),
+            basic_salary=Decimal('2000'),
+        )
+        base = {'year': 2026, 'month': 7, 'salary_mode': 'transfer', 'build_kind': 'standard'}
+
+        self.client.post(reverse('web:list_payroll_runs'), {**base, 'branch_id': self.branch_b.id})
+        runs = PayrollRun.objects.filter(
+            run_kind=PayrollRun.RunKind.STANDARD, period_year=2026, period_month=7,
+        )
+        self.assertEqual(
+            sorted(runs.values_list('sponsorship_id', flat=True)),
+            sorted([self.sponsorship.id, other.id]),
+        )
+        self.assertTrue(all(r.employees_count == 1 for r in runs))
+
+        # شركة بلا موظفين: لا مسير ورسالة واضحة
+        response = self.client.post(
+            reverse('web:list_payroll_runs'),
+            {**base, 'month': 8, 'branch_id': self.branch_b.id, 'sponsorship_id': empty.id},
+        )
+        self.assertFalse(PayrollRun.objects.filter(period_month=8).exists())
+        self.assertTrue(any('لا يوجد موظفون' in str(m) for m in get_messages(response.wsgi_request)))
+
+    def _post(self, **data):
+        from django.urls import reverse
+        r = self.client.post(
+            reverse('web:list_payroll_runs'),
+            {'year': 2026, 'month': 9, 'salary_mode': 'transfer', **data}, follow=True,
+        )
+        return [str(m.message) for m in r.context['messages']]
+
+    def test_branch_build_is_refused_when_consolidated_draft_covers_it(self):
+        """موحّد ثم فرع منفرداً: يُرفض بدل إنشاء مسودتين تكرّران الموظف."""
+        self._post(build_kind='standard')                       # كل الفروع ⇒ موحّد
+        self.assertEqual(PayrollRun.objects.filter(run_kind='consolidated').count(), 1)
+        msgs = self._post(build_kind='standard', branch_id=self.branch_b.id)
+        self.assertTrue(any('مسير موحّد' in m for m in msgs), msgs)
+        self.assertFalse(PayrollRun.objects.filter(run_kind='standard').exists())
+
+    def test_branch_then_all_replaces_branch_draft_with_single_consolidated(self):
+        self._post(build_kind='standard', branch_id=self.branch_b.id)
+        self.assertEqual(PayrollRun.objects.filter(run_kind='standard').count(), 1)
+        self._post(build_kind='standard')
+        self.assertFalse(PayrollRun.objects.filter(run_kind='standard').exists())
+        self.assertEqual(PayrollRun.objects.filter(run_kind='consolidated').count(), 1)
+
+    def test_rebuild_after_lock_reports_already_paid(self):
+        self._post(build_kind='standard')
+        self._post(payroll_action='lock')
+        self.assertTrue(PayrollRun.objects.filter(status='locked').exists())
+        msgs = self._post(build_kind='standard', branch_id=self.branch_b.id)
+        self.assertTrue(any('مدفوعون بالفعل' in m for m in msgs), msgs)

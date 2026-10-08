@@ -5,6 +5,25 @@
 
 {% block content %}
 {% include "pages/payroll/_payroll_table_styles.html" %}
+<style>
+    .pa-box { display: inline-flex; align-items: stretch; gap: 0.25rem; padding: 0.25rem; border: 1px solid #dbe4f0; background: #fff; border-radius: 0.8rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); align-self: flex-start; }
+    .pa-box form { display: contents; }
+    .pa-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; width: 7.25rem; height: 2.25rem; border-radius: 0.6rem; border: 1px solid transparent; background: #f8fafc; color: #1e293b; font-size: 0.8rem; font-weight: 800; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .pa-btn:hover { background: #eff6ff; color: #1d4ed8; }
+    .pa-btn--export { color: #047857; }
+    .pa-btn--export:hover { background: #ecfdf5; color: #047857; }
+    .pa-btn--primary { background: #2563eb; color: #fff; }
+    .pa-btn--primary:hover { background: #1d4ed8; color: #fff; }
+    .pa-btn--danger { color: #b91c1c; }
+    .pa-btn--danger:hover { background: #fef2f2; color: #b91c1c; }
+    .pa-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: auto; }
+    .pa-btn[disabled]:hover { background: #2563eb; }
+    .pa-dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: #94a3b8; }
+    .pa-btn--audit-ok .pa-dot { background: #10b981; }
+    .pa-btn--audit-warning .pa-dot { background: #f59e0b; }
+    .pa-btn--audit-error .pa-dot { background: #ef4444; }
+    @media (max-width: 520px) { .pa-box { width: 100%; flex-wrap: wrap; } .pa-btn { flex: 1 1 calc(50% - 0.25rem); width: auto; } }
+</style>
 
 <div class="space-y-4 max-w-7xl mx-auto" dir="rtl"
      x-data="{
@@ -21,7 +40,7 @@
      }"
      @keydown.escape.window="if (auditModalOpen) closeAuditModal()">
 
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
             {% url 'web:list_payroll_runs' as back_url %}
             {% include 'components/glass_back_link.html' with back_url=back_url show_label=True label='رجوع للقائمة' aria_label='رجوع لقائمة المسيرات' %}
@@ -35,31 +54,41 @@
                 {% endif %}
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {% url 'web:export_payroll_run_excel' run.id as payroll_export_href %}
-            {% include "components/hr_btn.html" with href=payroll_export_href label="تصدير Excel" variant="glass-emerald" icon="file-spreadsheet" extra_class="text-sm" title="تصدير مسير ملوّن إلى Excel" %}
+        <div class="pa-box" role="toolbar" aria-label="إجراءات المسير">
+            <a class="pa-btn pa-btn--export" href="{% url 'web:export_payroll_run_excel' run.id %}" title="تصدير المسير إلى Excel">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i><span>تصدير</span>
+            </a>
             {% if run.status == 'draft' %}
-                <form method="POST" action="{% url 'web:rebuild_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم إعادة بناء المسير. هل تريد المتابعة؟');">
-                    {% csrf_token %}
-                    {% include "components/hr_btn.html" with label="إعادة بناء" type="submit" variant="soft-slate" icon="refresh-cw" %}
-                </form>
-                {% if financial_audit %}
-                {% include "pages/payroll/_payroll_financial_audit_modal.html" with audit_modal_trigger=True %}
-                {% endif %}
-                <form method="POST" action="{% url 'web:lock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('بمجرد الترحيل لن تتمكن من تعديل المسير. هل أنت متأكد؟');">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="hr-btn hr-btn--success"
-                            {% if financial_audit and not financial_audit.ready_to_lock %}disabled title="يوجد أخطاء في تقرير التحقق المالي"{% endif %}>
-                        <i data-lucide="lock" class="w-4 h-4"></i>
-                        <span>ترحيل وإغلاق</span>
-                    </button>
-                </form>
+            <form method="POST" action="{% url 'web:rebuild_payroll_run' run.id %}"
+                  data-hr-confirm="سيتم إعادة بناء المسير. هل تريد المتابعة؟" data-hr-confirm-ok="أعد البناء">
+                {% csrf_token %}
+                <button type="submit" class="pa-btn" title="إعادة بناء المسير بأحدث البيانات">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>إعادة بناء</span>
+                </button>
+            </form>
+            {% if financial_audit %}
+            <button type="button" class="pa-btn pa-btn--audit-{{ financial_audit.status_level }}" @click="openAuditModal()"
+                    title="تقرير التحقق المالي — {{ financial_audit.status_label }}">
+                <i data-lucide="shield-check" class="w-4 h-4"></i><span>التحقق</span>
+                <span class="pa-dot" aria-hidden="true"></span>
+            </button>
+            {% endif %}
+            <form method="POST" action="{% url 'web:lock_payroll_run' run.id %}"
+                  data-hr-confirm="بمجرد الترحيل لن تتمكن من تعديل المسير. هل أنت متأكد؟" data-hr-confirm-ok="رحّل وأغلق">
+                {% csrf_token %}
+                <button type="submit" class="pa-btn pa-btn--primary" title="{% if financial_audit and not financial_audit.ready_to_lock %}يوجد أخطاء في تقرير التحقق المالي{% else %}ترحيل المسير وإغلاقه نهائياً{% endif %}"
+                        {% if financial_audit and not financial_audit.ready_to_lock %}disabled{% endif %}>
+                    <i data-lucide="lock" class="w-4 h-4"></i><span>ترحيل</span>
+                </button>
+            </form>
             {% elif run.status == 'locked' and request.user.is_superuser %}
-                <form method="POST" action="{% url 'web:unlock_payroll_run' run.id %}" class="inline" onsubmit="return confirm('سيتم فك ربط البنود من هذا المسير. هل أنت متأكد؟');">
-                    {% csrf_token %}
-                    {% include "components/hr_btn.html" with label="إعادة فتح" type="submit" variant="soft-rose" icon="unlock" %}
-                </form>
+            <form method="POST" action="{% url 'web:unlock_payroll_run' run.id %}"
+                  data-hr-confirm="سيتم فك ربط البنود من هذا المسير. هل أنت متأكد؟" data-hr-confirm-ok="أعد الفتح" data-hr-confirm-variant="danger">
+                {% csrf_token %}
+                <button type="submit" class="pa-btn pa-btn--danger" title="إعادة فتح المسير">
+                    <i data-lucide="unlock" class="w-4 h-4"></i><span>إعادة فتح</span>
+                </button>
+            </form>
             {% endif %}
         </div>
     </div>
@@ -112,7 +141,7 @@
                     {% for line in lines %}
                     <tr>
                         <td class="font-bold text-slate-900">
-                            <a href="{% url 'web:view_employee' line.employee.id %}" class="text-primary-700 hover:underline">{{ line.employee.name }}</a>
+                            <a href="{% url 'web:view_employee' line.employee.id %}" class="text-primary-700 hover:underline" title="{{ line.employee.name }}">{{ line.employee.name }}</a>
                         </td>
                         <td class="col-num">{{ line.gross_salary|format_sar:"gross" }}</td>
                         <td class="col-num td-deduct">

@@ -276,6 +276,35 @@ def build_payroll_detailed_run_workbook(run):
     return wb
 
 
+def build_payroll_detailed_runs_workbook(runs):
+    """Workbook تفصيلي موحّد لعدة مسيرات تفصيلية (ورقة واحدة لكل الشركات المختارة)."""
+    from openpyxl import Workbook
+
+    runs = list(runs)
+    if not runs:
+        raise ValueError('لا توجد مسيرات تفصيلية للتصدير.')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'كشف الرواتب'[:31]
+    ws.sheet_view.rightToLeft = True
+
+    pairs = []
+    for run in runs:
+        pairs.extend(detailed_payroll_export_pairs(run))
+    companies = ', '.join(dict.fromkeys(r.company.name for r in runs if r.company_id))[:120]
+    meta_note = (
+        f'{companies or "مسير تفصيلي"} — {runs[0].period_label} — مسير تفصيلي — '
+        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
+    )
+    _write_payroll_sheet(ws, pairs, meta_note=meta_note, resolve_value=_resolve_detailed_export_row)
+    return wb
+
+
+def payroll_detailed_runs_excel_filename(*, year: int, month: int, salary_mode: str) -> str:
+    return f'payroll_detailed_{year}_{month:02d}_{salary_mode}.xlsx'
+
+
 def payroll_run_excel_filename(run) -> str:
     branch = run.branch_id or 'run'
     return f'payroll_{branch}_{run.period_year}_{run.period_month:02d}.xlsx'

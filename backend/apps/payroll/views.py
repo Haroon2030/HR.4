@@ -55,6 +55,7 @@ _PAYROLL_LIST_SESSION_KEY = 'hr_payroll_list_filters'
 
 from apps.setup.models import Sponsorship
 from apps.payroll.services.engine import (
+    PAYING_RUN_KINDS,
     build_payroll_run,
     build_consolidated_payroll_run,
     delete_draft_payroll_run,
@@ -324,8 +325,7 @@ def _draft_runs_for_period(filters: dict, user, scope: PayrollBranchScope, *, br
     )
     if not user.is_superuser:
         qs = qs.filter(branch_id__in=scope.all_branch_ids)
-    if branch_ids:
-        qs = qs.filter(branch_id__in=branch_ids)
+    qs = qs.filter(branch_id__in=resolved)
     return list(qs.select_related('branch', 'sponsorship').order_by('-updated_at'))
 
 
@@ -706,6 +706,9 @@ def _validate_payroll_build(filters, scope: PayrollBranchScope):
 def _build_payroll_runs(user, filters, scope: PayrollBranchScope):
     """بناء مسير موحّد (عدة فروع) أو مسير لكل فرع (فرع واحد)."""
     from django.db import transaction
+    from apps.employees.services.salary_changes import apply_due_salary_changes
+
+    apply_due_salary_changes()  # تعديلات رواتب حان شهرها ⇒ تنعكس على ملفات الموظفين
 
     branch_ids = _resolved_branch_ids(filters, scope)
     branches = list(Branch.objects.filter(id__in=branch_ids, is_active=True).order_by('name'))
@@ -720,6 +723,23 @@ def _build_payroll_runs(user, filters, scope: PayrollBranchScope):
     runs_built = []
     errors = []
     use_consolidated = _prefer_consolidated_runs(filters, branch_ids)
+    if not use_consolidated:
+        overlapping = PayrollRun.objects.filter(
+            run_kind=PayrollRun.RunKind.CONSOLIDATED,
+            status=PayrollRun.Status.DRAFT,
+            period_year=filters['year'],
+            period_month=filters['month'],
+            salary_mode=filters['salary_mode'],
+            company_id__in=scope.company_ids_for(branch_ids),
+            employees_count__gt=0,
+        )
+        if filters['salary_mode'] == PayrollRun.SalaryMode.TRANSFER:
+            overlapping = overlapping.filter(sponsorship_id__in=sponsorship_ids)
+        if overlapping.exists():
+            return [], [
+                'يوجد مسير موحّد (مسودة) لهذا الشهر يشمل هذه الفروع — بناء الفرع منفرداً يكرّر موظفيه. '
+                'أعد بناء «كل الفروع» أو احذف المسودة الموحّدة أولاً.'
+            ]
     try:
         with transaction.atomic():
             for sponsorship_id in sponsorship_ids:
@@ -741,19 +761,34 @@ def _build_payroll_runs(user, filters, scope: PayrollBranchScope):
                 else:
                     for branch in branches:
                         try:
-                            runs_built.append(
-                                build_payroll_run(
-                                    branch, filters['year'], filters['month'], user,
-                                    salary_mode=filters['salary_mode'],
-                                    sponsorship_id=sponsorship_id,
-                                )
+                            built = build_payroll_run(
+                                branch, filters['year'], filters['month'], user,
+                                salary_mode=filters['salary_mode'],
+                                sponsorship_id=sponsorship_id,
                             )
+                            if built.employees_count:
+                                runs_built.append(built)
+                            elif built.status == PayrollRun.Status.DRAFT:
+                                built.hard_delete()  # لا مسودة فارغة لشركة بلا موظفين في هذا الفرع
                         except ValueError as e:
                             sp_label = f' / كفالة #{sponsorship_id}' if sponsorship_id else ''
                             errors.append(f'{branch.name}{sp_label}: {e}')
                             raise
     except ValueError:
         return [], errors
+    if not runs_built and not errors:
+        paid_already = PayrollRun.objects.filter(
+            run_kind__in=PAYING_RUN_KINDS,
+            status=PayrollRun.Status.LOCKED,
+            period_year=filters['year'],
+            period_month=filters['month'],
+            salary_mode=filters['salary_mode'],
+        ).exists()
+        errors.append(
+            'موظفو هذا الاختيار مدفوعون بالفعل في مسير مُرحَّل لنفس الشهر — لا يوجد ما يُبنى.'
+            if paid_already else
+            'لا يوجد موظفون مطابقون للفرع/الشركة المختارة في هذا الشهر — لم يُبنَ مسير.'
+        )
     return runs_built, errors
 
 
@@ -1021,9 +1056,7 @@ def list_payroll_runs(request):
                                 f'({total_emp} موظف — افتح الصف لعرض التفاصيل).',
                             )
                 if runs_built:
-                    return _redirect_payroll_list(
-                        request, filters, open_run_id=runs_built[0].pk,
-                    )
+                    return _redirect_payroll_list(request, filters)
             elif build_kind == 'detailed':
                 from apps.core.services.task_dispatch import celery_background_enabled, dispatch_task
                 from apps.payroll.tasks import build_detailed_payroll_runs_task
@@ -1063,9 +1096,7 @@ def list_payroll_runs(request):
                             f'({total_rows} موظف منقول).',
                         )
                     filters['payroll_view'] = 'detailed'
-                    return _redirect_payroll_list(
-                        request, filters, open_run_id=runs_built[0].pk,
-                    )
+                    return _redirect_payroll_list(request, filters)
         return _redirect_payroll_list(request, filters)
 
     if request.method == 'GET' and filters['ready']:
@@ -1086,6 +1117,7 @@ def list_payroll_runs(request):
     detailed_runs = []
     detailed_totals = {}
     detailed_run_count = 0
+    detailed_has_lines = False
     has_detailed_draft = False
     if filters['ready'] and active_payroll_view == 'detailed':
         detailed_runs_all = list(
@@ -1105,10 +1137,11 @@ def list_payroll_runs(request):
         detailed_run_count = detailed_runs_total_count
         detailed_totals = _period_run_totals(detailed_runs_all)
         has_payroll_lines = any(int(r.employees_count or 0) > 0 for r in detailed_runs_all)
+        detailed_has_lines = has_payroll_lines
     elif filters['ready']:
-        detailed_run_count = len(_detailed_runs_for_filters(
-            filters, request.user, scope,
-        ))
+        _detailed_probe = _detailed_runs_for_filters(filters, request.user, scope)
+        detailed_run_count = len(_detailed_probe)
+        detailed_has_lines = any(int(r.employees_count or 0) > 0 for r in _detailed_probe)
 
     today = date.today()
     sponsorships = Sponsorship.objects.filter(is_deleted=False, is_active=True).order_by('company_name')
@@ -1224,7 +1257,57 @@ def list_payroll_runs(request):
             detailed_runs=detailed_runs_all,
         )
 
+    # ── الترويسة المبسّطة: حالة الشهر + تنقّل بين الأشهر + نطاق الفروع/الشركات ──
+    state_runs = detailed_runs_all if active_payroll_view == 'detailed' else period_runs_all
+    if not any(int(r.employees_count or 0) > 0 for r in state_runs):
+        payroll_state = 'empty'
+    elif has_draft_runs:
+        payroll_state = 'draft'
+    else:
+        payroll_state = 'locked'
+
+    nav_year, nav_month = filters['year'], filters['month']
+    prev_year, prev_month = (nav_year, nav_month - 1) if nav_month > 1 else (nav_year - 1, 12)
+    next_year, next_month = (nav_year, nav_month + 1) if nav_month < 12 else (nav_year + 1, 1)
+    nav_base = dict(
+        branch_ids=filters['branch_ids'] or None,
+        salary_mode=active_mode,
+        sponsorship_ids=(
+            filters['sponsorship_ids'] if active_mode == PayrollRun.SalaryMode.TRANSFER else None
+        ),
+        payroll_view='detailed' if active_payroll_view == 'detailed' else None,
+    )
+    can_go_prev = prev_year >= today.year - 2
+    can_go_next = (next_year, next_month) <= (today.year, today.month)
+    prev_month_qs = _payroll_list_querystring(year=prev_year, month=prev_month, **nav_base)
+    next_month_qs = _payroll_list_querystring(year=next_year, month=next_month, **nav_base)
+
+    total_branches = len(scope.all_branch_ids)
+    picked_branches = len(filters['branch_ids'] or [])
+    if not picked_branches or picked_branches >= total_branches:
+        branch_scope_label = f'كل الفروع ({total_branches})'
+    else:
+        branch_scope_label = f'{picked_branches} من {total_branches} فروع'
+    if active_mode != PayrollRun.SalaryMode.TRANSFER:
+        sponsor_scope_label = 'نقدي — بدون كفالة'
+    elif filters.get('sponsorship_ids') is None:
+        sponsor_scope_label = f'كل الشركات ({sponsorships.count()})'
+    else:
+        sponsor_scope_label = f'{len(filters["sponsorship_ids"])} من {sponsorships.count()} شركات'
+
     return render(request, 'pages/payroll/list.html', {
+        'payroll_state': payroll_state,
+        'period_month_label': (
+            'يناير فبراير مارس أبريل مايو يونيو يوليو أغسطس سبتمبر أكتوبر نوفمبر ديسمبر'.split()[nav_month - 1]
+        ),
+        'prev_month_qs': prev_month_qs,
+        'next_month_qs': next_month_qs,
+        'can_go_prev': can_go_prev,
+        'can_go_next': can_go_next,
+        'branch_scope_label': branch_scope_label,
+        'sponsor_scope_label': sponsor_scope_label,
+        'hero_totals': detailed_totals if active_payroll_view == 'detailed' else grand_totals,
+        'can_export_detailed': bool(filters['ready'] and detailed_has_lines),
         'branches': scope.branches,
         'sponsorships': sponsorships,
         'SALARY_MODE_CHOICES': PayrollRun.SalaryMode.choices,
@@ -1580,6 +1663,49 @@ def export_payroll_list_excel(request):
 
     wb = build_payroll_runs_workbook(runs)
     filename = payroll_runs_excel_filename(
+        year=filters['year'],
+        month=filters['month'],
+        salary_mode=filters['salary_mode'],
+    )
+    return workbook_to_response(wb, filename)
+
+
+@login_required
+@permission_required('payroll.view')
+def export_payroll_detailed_excel(request):
+    """تصدير المسير التفصيلي الموحّد (كل الشركات/الفروع المختارة) إلى Excel."""
+    try:
+        from apps.payroll.services.export_excel import (
+            build_payroll_detailed_runs_workbook,
+            payroll_detailed_runs_excel_filename,
+            workbook_to_response,
+        )
+    except ImportError:
+        messages.error(request, 'مكتبة openpyxl غير مثبتة.')
+        return redirect('web:list_payroll_runs')
+
+    scope = _payroll_branch_scope(request.user)
+    filters = _parse_payroll_form(request, scope)
+    filters, redirect_response = _restore_payroll_list_filters(
+        request, filters, request.user, scope,
+    )
+    if redirect_response is not None:
+        return redirect_response
+    if not filters.get('year') or not filters.get('month') or not filters.get('salary_mode'):
+        messages.error(request, 'يرجى اختيار السنة والشهر ونوع الراتب أولاً.')
+        return redirect('web:list_payroll_runs')
+
+    runs = [
+        r for r in _detailed_runs_for_filters(filters, request.user, scope)
+        if int(r.employees_count or 0) > 0
+    ]
+    if not runs:
+        messages.error(request, 'لا يوجد مسير تفصيلي للتصدير — ابنِه أولاً.')
+        filters['payroll_view'] = 'detailed'
+        return _redirect_payroll_list(request, filters)
+
+    wb = build_payroll_detailed_runs_workbook(runs)
+    filename = payroll_detailed_runs_excel_filename(
         year=filters['year'],
         month=filters['month'],
         salary_mode=filters['salary_mode'],

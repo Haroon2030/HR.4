@@ -209,7 +209,7 @@ def build_ephemeral_payroll_line(emp, run: PayrollRun):
     return PayrollLine(
         run=run,
         employee=emp,
-        basic_salary=emp.basic_salary or 0,
+        basic_salary=snap['basic_salary'],
         housing_allowance=emp.housing_allowance or 0,
         transport_allowance=emp.transport_allowance or 0,
         other_allowance=emp.other_allowance or 0,
@@ -224,6 +224,8 @@ def build_ephemeral_payroll_line(emp, run: PayrollRun):
         loan_deduction=snap['loan_deduction'],
         penalty_deduction=snap['penalty_deduction'],
         insurance_deduction=snap['insurance_deduction'],
+        other_deduction=snap['cash_shortage_deduction'],
+        other_addition=snap['salary_arrears'],
         gross_salary=snap['gross_salary'],
         total_earnings=snap['total_earnings'],
         total_deductions=snap['total_deductions'],

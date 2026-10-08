@@ -113,7 +113,7 @@ class PayrollRun(BaseModel):
         ordering = ['-period_year', '-period_month', 'branch__name']
         constraints = [
             models.UniqueConstraint(
-                fields=['branch', 'period_year', 'period_month', 'salary_mode'],
+                fields=['branch', 'period_year', 'period_month', 'salary_mode', 'sponsorship'],
                 condition=models.Q(run_kind='standard'),
                 name='payroll_uniq_standard_run',
             ),

@@ -285,7 +285,8 @@ class EmployeeModelTests(TestCase):
         expected_daily = (Decimal('6500') / Decimal('30')).quantize(Decimal('0.01'))
         self.assertEqual(absence.month_days, 30)
         self.assertEqual(absence.daily_rate, expected_daily)
-        self.assertEqual(absence.deduction_amount, (expected_daily * 2).quantize(Decimal('0.01')))
+        # الخصم = الإجمالي × الأيام ÷ 30 (دقيق، دون تقريب أجر اليوم قبل الضرب)
+        self.assertEqual(absence.deduction_amount, (Decimal('6500') * 2 / Decimal('30')).quantize(Decimal('0.01')))
 
 
 class LedgerBalanceTests(TestCase):

@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from apps.core.salary_month import calendar_period_bounds, salary_month_days
+from apps.core.salary_month import calendar_period_bounds, month_day_span, salary_month_days
 
 
 def employee_payroll_period(
@@ -19,7 +19,8 @@ def employee_payroll_period(
 
     - تاريخ البداية = max(أول الشهر, تاريخ المباشرة)
     - تاريخ الإقفال = min(آخر الشهر, تاريخ التوقف إن وُجد)
-    - أيام الاستحقاق الأساسية = أيام التقويم ضمن الفترة (بحد أقصى 30 يوماً للحساب)
+    - أيام الاستحقاق = على قاعدة الشهر 30 يوماً لكل الشهور (راجع month_day_span):
+      الشهر الكامل 30 يوماً (حتى فبراير)، والجزئي بأرقام الأيام (مباشرة 16 ⇒ 15 يوماً).
     """
     period_start, period_end = calendar_period_bounds(period_year, period_month)
     month_days = Decimal(salary_month_days(period_year, period_month))
@@ -40,8 +41,7 @@ def employee_payroll_period(
     if eff_end < eff_start:
         payable_base = Decimal('0')
     else:
-        calendar_days = Decimal((eff_end - eff_start).days + 1)
-        payable_base = min(calendar_days, month_days)
+        payable_base = min(month_day_span(eff_start, eff_end, period_start, period_end), month_days)
 
     return {
         'period_start': eff_start,

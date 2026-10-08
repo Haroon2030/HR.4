@@ -1,5 +1,5 @@
 {% load custom_tags %}
-<form method="POST" action="{{ url }}" class="{% if form_class %}{{ form_class }}{% else %}inline{% endif %}" onsubmit="return confirm('{{ confirm|escapejs }}');">
+<form method="POST" action="{{ url }}" class="{% if form_class %}{{ form_class }}{% else %}inline{% endif %}" data-hr-confirm="{{ confirm|default:'تأكيد الحذف؟' }}" data-hr-confirm-ok="حذف" data-hr-confirm-variant="danger">
     {% csrf_token %}
     <button type="submit" class="{% if bio_btn %}hr-btn hr-btn--icon hr-btn--bio-delete{% elif extra_class %}{{ extra_class }}{% else %}hr-act hr-act--delete{% endif %}" title="{{ title|default:'حذف' }}" aria-label="{{ title|default:'حذف' }}">
         {% if bio_btn %}{% lucide_glyph 'trash-2' 'hr-btn__icon' %}{% else %}<i data-lucide="trash-2" class="hr-act__icon"></i>{% endif %}

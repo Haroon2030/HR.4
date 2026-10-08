@@ -1034,7 +1034,7 @@ class EmployeeAbsence(BaseModel):
         ]
 
     def save(self, *args, **kwargs):
-        from apps.core.salary_month import STANDARD_MONTH_DAYS, daily_rate_from_total
+        from apps.core.salary_month import STANDARD_MONTH_DAYS, daily_rate_from_total, deduction_for_days
 
         self.month_days = STANDARD_MONTH_DAYS
         salary = Decimal(self.total_salary_snapshot or 0)
@@ -1042,9 +1042,8 @@ class EmployeeAbsence(BaseModel):
             salary = Decimal(self.employee.total_salary or 0)
         self.total_salary_snapshot = salary
         self.daily_rate = daily_rate_from_total(salary)
-        self.deduction_amount = (
-            self.daily_rate * Decimal(self.days or 0)
-        ).quantize(Decimal('0.01'))
+        # نفس معادلة المسير: الإجمالي × الأيام ÷ 30 (بدون تقريب أجر اليوم قبل الضرب)
+        self.deduction_amount = deduction_for_days(salary, self.days)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1178,3 +1177,43 @@ class EmployeeLedger(BaseModel):
         return ledger_entry_is_locked(self)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# تعديلات الراتب بتاريخ سريان — تُطبَّق على المسير بالشهر كاملاً
+# ══════════════════════════════════════════════════════════════════════════════
+class EmployeeSalaryChange(BaseModel):
+    """
+    تعديل راتب أساسي بتاريخ سريان.
+
+    قاعدة المسير: التعديل يسري على شهر تاريخه كاملاً (تاريخ في أكتوبر ⇒ مسير أكتوبر كله).
+    - شهر مستقبلي: يبقى معلّقاً (applied=False) حتى يحين شهره، ولا يمس راتب الموظف الحالي.
+    - شهر مُرحَّل سابقاً: يُطبَّق فوراً وتُصرف «فروقات الزيادة» في أول مسير مفتوح.
+    """
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='salary_changes',
+        verbose_name="الموظف",
+    )
+    effective_date = models.DateField("تاريخ السريان", db_index=True)
+    old_basic_salary = models.DecimalField("الأساسي السابق", max_digits=12, decimal_places=2)
+    new_basic_salary = models.DecimalField("الأساسي الجديد", max_digits=12, decimal_places=2)
+    reason = models.CharField("السبب", max_length=300, blank=True)
+    applied = models.BooleanField("طُبِّق على ملف الموظف", default=False, db_index=True)
+    applied_at = models.DateTimeField("تاريخ التطبيق", null=True, blank=True)
+    statement = models.ForeignKey(
+        EmployeeStatement, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='salary_changes', verbose_name="سجل التعديل",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="أُضيف بواسطة",
+    )
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "تعديل راتب"
+        verbose_name_plural = "تعديلات الرواتب"
+        ordering = ['effective_date', 'id']
+
+    def __str__(self):
+        return f"{self.employee.name} — {self.old_basic_salary} → {self.new_basic_salary} ({self.effective_date})"

@@ -69,6 +69,35 @@
         text-align: left;
         white-space: nowrap;
     }
+    /* ── جدول أسطر المسير: مضغوط وبصف واحد لكل موظف ── */
+    .payroll-tbl { font-size: 0.8rem; }
+    .payroll-tbl thead th {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.72rem;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+    .payroll-tbl tbody td {
+        padding: 0.3rem 0.5rem;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+    .payroll-tbl tbody td:first-child {
+        max-width: 15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .payroll-tbl tbody td:first-child a { white-space: nowrap; }
+    .payroll-tbl tbody td.text-sm { font-size: 0.78rem; }
+
+    .payroll-tbl .pay-money { font-size: 0.78rem; }
+    .payroll-tbl .pay-money__cur { font-size: 0.62rem; }
+    .payroll-tbl .pay-money--net { font-size: 0.8rem; }
+    .payroll-tbl .pay-days {
+        display: inline;
+        margin: 0 0.3rem 0 0;
+        font-size: 0.64rem;
+    }
     .pay-money {
         display: inline-flex;
         align-items: baseline;
@@ -2400,3 +2429,10 @@
         }
     }
 </style>
+
+<style>
+    .hr-drag-scroll { cursor: grab; }
+    .hr-drag-scroll.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; scroll-behavior: auto; }
+    .hr-drag-scroll.is-dragging * { cursor: grabbing !important; }
+</style>
+<script defer src="/static/js/hr-drag-scroll.js?v=20261008"></script>

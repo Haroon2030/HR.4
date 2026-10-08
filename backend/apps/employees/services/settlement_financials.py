@@ -5,7 +5,13 @@ from datetime import date
 from decimal import Decimal
 
 from apps.core.salary_month import STANDARD_MONTH_DAYS
-from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan
+from apps.employees.models import (
+    Employee,
+    EmployeeAbsence,
+    EmployeeCashShortage,
+    EmployeeLoan,
+    EmployeeStatement,
+)
 
 
 def _quantize(amount: Decimal) -> Decimal:
@@ -50,21 +56,79 @@ def pending_absences_deduction(employee: Employee, *, as_of: date) -> Decimal:
     return _quantize(total)
 
 
+def pending_penalties_deduction(employee: Employee, *, as_of: date) -> Decimal:
+    """مخالفات (جزاءات مالية) لم تُحتسب في مسير بعد — حتى تاريخ التوقف."""
+    qs = EmployeeStatement.objects.filter(
+        employee=employee,
+        statement_type=EmployeeStatement.StatementType.PENALTY,
+        applied_to_payroll__isnull=True,
+        statement_date__lte=as_of,
+    )
+    return _quantize(sum((Decimal(str(p.deduction_amount or 0)) for p in qs), Decimal('0')))
+
+
+def pending_cash_shortages_deduction(employee: Employee, *, as_of: date) -> Decimal:
+    """عجز كاشير لم يُحتسب في مسير بعد — حتى تاريخ التوقف."""
+    qs = EmployeeCashShortage.objects.filter(
+        employee=employee,
+        applied_to_payroll__isnull=True,
+        shortage_date__lte=as_of,
+    )
+    return _quantize(sum((Decimal(str(c.amount or 0)) for c in qs), Decimal('0')))
+
+
+def salary_paid_in_locked_payroll(employee: Employee, end_date: date) -> tuple[Decimal, Decimal]:
+    """
+    ما صُرف فعلاً في مسيرات مُرحَّلة:
+    - (المصروف عن شهر التوقف، المصروف عن أشهر بعد شهر التوقف)
+    الأشهر اللاحقة لتاريخ التوقف كلها زيادة يجب استردادها.
+    """
+    from django.db.models import Q, Sum
+
+    from apps.payroll.models import PayrollLine, PayrollRun
+    from apps.payroll.services.engine import PAYING_RUN_KINDS
+
+    locked = PayrollLine.objects.filter(
+        employee=employee,
+        run__status=PayrollRun.Status.LOCKED,
+        run__run_kind__in=PAYING_RUN_KINDS,
+    )
+    same_month = locked.filter(
+        run__period_year=end_date.year, run__period_month=end_date.month,
+    ).aggregate(s=Sum('gross_salary'))['s'] or Decimal('0')
+    later = locked.filter(
+        Q(run__period_year__gt=end_date.year)
+        | Q(run__period_year=end_date.year, run__period_month__gt=end_date.month),
+    ).aggregate(s=Sum('gross_salary'))['s'] or Decimal('0')
+    return _quantize(Decimal(same_month)), _quantize(Decimal(later))
+
+
 def compute_settlement_financials(employee: Employee, end_date: date) -> dict:
     """
     يُرجع بنود التسوية المالية عند التصفية:
-    - prorated_salary: مستحق راتب الفترة
-    - loans_deduction / absences_deduction: خصومات
-    - total_deductions / net_payable: بعد خصم السلف والغياب
+    - prorated_salary: راتب الفترة المتبقي للصرف (بعد طرح ما صُرف في مسير مُرحَّل لنفس الشهر)
+    - overpaid_salary_recovery: ما صُرف زيادةً عن الاستحقاق (مسير مُرحَّل كامل ثم توقف مبكر) — يُسترد
+    - loans / absences / penalties / cash shortages: خصومات معلّقة لم تُحتسب في مسير
     """
-    prorated = prorated_salary_until(employee, end_date)
+    entitled = prorated_salary_until(employee, end_date)
+    paid_same_month, paid_later_months = salary_paid_in_locked_payroll(employee, end_date)
+    prorated = _quantize(max(entitled - paid_same_month, Decimal('0')))
+    overpaid = _quantize(max(paid_same_month - entitled, Decimal('0')) + paid_later_months)
+
     loans = pending_loans_deduction(employee)
     absences = pending_absences_deduction(employee, as_of=end_date)
-    deductions = _quantize(loans + absences)
+    penalties = pending_penalties_deduction(employee, as_of=end_date)
+    shortages = pending_cash_shortages_deduction(employee, as_of=end_date)
+    deductions = _quantize(loans + absences + penalties + shortages + overpaid)
     return {
         'prorated_salary': prorated,
+        'entitled_salary': entitled,
+        'salary_already_paid': paid_same_month,
+        'overpaid_salary_recovery': overpaid,
         'loans_deduction': loans,
         'absences_deduction': absences,
+        'penalties_deduction': penalties,
+        'cash_shortages_deduction': shortages,
         'total_deductions': deductions,
         'month_days': STANDARD_MONTH_DAYS,
     }

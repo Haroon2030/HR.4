@@ -44,6 +44,7 @@ from apps.core.salary_month import (
     calendar_month_last_day,
     daily_rate_from_total,
     deduction_for_days,
+    month_day_span,
     salary_month_days,
 )
 from django.db import IntegrityError
@@ -55,6 +56,10 @@ from apps.employees.models import (
     Employee, EmployeeAbsence, EmployeeCashShortage, EmployeeLeave,
     EmployeeStatement, LoanInstallment,
 )
+
+
+# المسيرات التي تصرف الرواتب فعلاً (التفصيلي توزيع تحمّل فروع فقط — لا صرف)
+PAYING_RUN_KINDS = (PayrollRun.RunKind.STANDARD, PayrollRun.RunKind.CONSOLIDATED)
 
 
 def _q(v):
@@ -115,12 +120,15 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
         date_to__gte=period_start,
     ).filter(applied)
 
+    from apps.employees.models import EmployeeLoan
+
     installments = LoanInstallment.objects.filter(
         loan__employee_id__in=employee_ids,
+        loan__is_deleted=False,  # سلفة حُذفت من ملف الموظف لا تُخصم أقساطها
         period_year=year,
         period_month=month,
         status=LoanInstallment.Status.PENDING,
-    ).filter(applied)
+    ).exclude(loan__status=EmployeeLoan.Status.CANCELLED).filter(applied)
 
     penalties = EmployeeStatement.objects.filter(
         employee_id__in=employee_ids,
@@ -133,13 +141,45 @@ def _bulk_payroll_deductions(employee_ids, run, period_start, period_end, year, 
         shortage_date__range=(period_start, period_end),
     ).filter(applied)
 
+    # ── بنود سُجِّلت بأثر رجعي بعد ترحيل شهرها: تُحمَّل على هذا المسير بدل أن تضيع ──
+    paid_months = set(
+        PayrollLine.objects.filter(
+            employee_id__in=employee_ids,
+            run__status=PayrollRun.Status.LOCKED,
+            run__run_kind__in=PAYING_RUN_KINDS,
+        ).filter(
+            Q(run__period_year__lt=year) | Q(run__period_year=year, run__period_month__lt=month),
+        ).values_list('employee_id', 'run__period_year', 'run__period_month')
+    )
+
+    def _with_late(current_qs, model, date_field, extra=None):
+        items = list(current_qs)
+        if not paid_months:
+            return items
+        late_qs = model.objects.filter(
+            employee_id__in=employee_ids, **{f'{date_field}__lt': period_start}, **(extra or {}),
+        ).filter(applied)
+        for item in late_qs:
+            d = getattr(item, date_field)
+            if (item.employee_id, d.year, d.month) in paid_months:
+                item.carried_from = f'{d.year}-{d.month:02d}'
+                items.append(item)
+        return items
+
+    absences = _with_late(absences, EmployeeAbsence, 'absence_date')
+    penalties = _with_late(
+        penalties, EmployeeStatement, 'statement_date',
+        {'statement_type': EmployeeStatement.StatementType.PENALTY},
+    )
+    cash_shortages = _with_late(cash_shortages, EmployeeCashShortage, 'shortage_date')
+
     locked_emp_ids = set(
         PayrollLine.objects.filter(
             employee_id__in=employee_ids,
             run__period_year=year,
             run__period_month=month,
             run__status=PayrollRun.Status.LOCKED,
-            run__run_kind=PayrollRun.RunKind.STANDARD,
+            run__run_kind__in=PAYING_RUN_KINDS,
         )
         .exclude(run_id=run.pk)
         .values_list('employee_id', flat=True)
@@ -250,11 +290,8 @@ def _revert_deferred_installments(run: PayrollRun) -> None:
 
 
 def _unpaid_leave_days_in_period(leave, period_start, period_end):
-    s = max(leave.date_from, period_start)
-    e = min(leave.date_to, period_end)
-    if e < s:
-        return Decimal('0')
-    return Decimal((e - s).days + 1)
+    """أيام الإجازة بدون راتب ضمن الشهر على قاعدة 30 يوماً (شهر كامل = 30)."""
+    return month_day_span(leave.date_from, leave.date_to, period_start, period_end)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -328,7 +365,14 @@ def _compute_employee_payroll_snapshot(
         cs_by_emp = {}
     emp_cash_shortages = cs_by_emp.get(emp.id, [])
 
-    basic_full = Decimal(emp.basic_salary or 0)
+    # الأساسي الساري لشهر المسير (تعديل الراتب يسري على شهر تاريخه كاملاً)
+    from apps.employees.services.salary_changes import (
+        basic_salary_for_period,
+        changes_for,
+        salary_arrears_for_period,
+    )
+    salary_changes = changes_for(emp)
+    basic_full = basic_salary_for_period(emp, year, month, salary_changes)
     housing_full = Decimal(emp.housing_allowance or 0)
     gross_full = (
         basic_full
@@ -346,9 +390,22 @@ def _compute_employee_payroll_snapshot(
     )
     daily_rate = daily_rate_from_total(gross_full)
 
+    # غياب يقع داخل إجازة بدون راتب لا يُخصم ثانيةً (اليوم محسوب في الإجازة)
+    def _covered_by_unpaid_leave(absence):
+        return any(lv.date_from <= absence.absence_date <= lv.date_to for lv in emp_leaves)
+
+    def _outside_employment(absence):
+        if getattr(absence, 'carried_from', None):
+            return False  # شهره الأصلي مُرحَّل والموظف كان على رأس العمل
+        return not (pay_period['period_start'] <= absence.absence_date <= pay_period['period_end'])
+
+    def _not_chargeable(absence):
+        return _covered_by_unpaid_leave(absence) or _outside_employment(absence)
+
+    chargeable_absences = [a for a in emp_absences if not _not_chargeable(a)]
     absence_deduction = _q(
         sum(
-            (deduction_for_days(gross_full, a.days) for a in emp_absences),
+            (deduction_for_days(gross_full, a.days) for a in chargeable_absences),
             Decimal('0'),
         )
     )
@@ -356,7 +413,7 @@ def _compute_employee_payroll_snapshot(
         (_unpaid_leave_days_in_period(lv, period_start, period_end) for lv in emp_leaves),
         Decimal('0'),
     )
-    unpaid_leave_deduction = _q(daily_rate * unpaid_days)
+    unpaid_leave_deduction = deduction_for_days(gross_full, unpaid_days)
     penalty_deduction = _q(
         sum((Decimal(p.deduction_amount or 0) for p in emp_penalties), Decimal('0'))
     )
@@ -364,15 +421,21 @@ def _compute_employee_payroll_snapshot(
         sum((Decimal(cs.amount or 0) for cs in emp_cash_shortages), Decimal('0'))
     )
     rate = min(max(Decimal(emp.insurance_deduction_rate or 0), Decimal('0')), Decimal('100'))
-    insurance_deduction = _q(insurance_base * rate / Decimal('100'))
+    # فروقات زيادة عن أشهر مُرحَّلة صُرفت بالأساسي القديم (تُضاف مرة واحدة) + تأميناتها
+    arrears_items = salary_arrears_for_period(
+        emp, year, month, salary_changes, exclude_run_id=run.pk if run else None,
+    )
+    salary_arrears = _q(sum((Decimal(i['amount']) for i in arrears_items), Decimal('0')))
+    insurance_deduction = _q((insurance_base + salary_arrears) * rate / Decimal('100'))
+    total_earnings = _q(gross + salary_arrears)
     # بنود مرتبطة بالراتب نفسه (غياب/إجازة بدون راتب/تأمينات/جزاءات/عجز): لا تُؤجَّل.
     fixed_deductions = _q(
         absence_deduction + unpaid_leave_deduction
         + penalty_deduction + cash_shortage_deduction + insurance_deduction
     )
     # لا يُخصم أكثر من الراتب؛ أي زيادة هنا تُسجَّل كغير محصَّلة ويمنع الترحيل بسببها.
-    uncollected_deductions = _q(max(fixed_deductions - gross, Decimal('0')))
-    available = _q(max(gross - fixed_deductions, Decimal('0')))
+    uncollected_deductions = _q(max(fixed_deductions - total_earnings, Decimal('0')))
+    available = _q(max(total_earnings - fixed_deductions, Decimal('0')))
 
     # أقساط السلف: تُخصم كاملة إن اتسع لها الراتب، وإلا تُؤجَّل للشهر التالي (لا تضيع).
     included_installments, deferred_installments = [], []
@@ -386,14 +449,16 @@ def _compute_employee_payroll_snapshot(
     loan_deduction = _q(sum((Decimal(i.amount) for i in included_installments), Decimal('0')))
     loan_deferred_amount = _q(sum((Decimal(i.amount) for i in deferred_installments), Decimal('0')))
 
-    total_deductions = _q(min(fixed_deductions, gross) + loan_deduction)
-    net_salary = _q(gross - total_deductions)
+    total_deductions = _q(min(fixed_deductions, total_earnings) + loan_deduction)
+    net_salary = _q(total_earnings - total_deductions)
 
     return {
+        'basic_salary': basic_full,
+        'salary_arrears': salary_arrears,
         'gross_salary': gross,
         'daily_rate': daily_rate,
         'month_days': month_days,
-        'absence_days': sum((a.days for a in emp_absences), 0),
+        'absence_days': sum((a.days for a in chargeable_absences), 0),
         'absence_deduction': absence_deduction,
         'unpaid_leave_days': unpaid_days,
         'unpaid_leave_deduction': unpaid_leave_deduction,
@@ -403,7 +468,7 @@ def _compute_employee_payroll_snapshot(
         'insurance_deduction': insurance_deduction,
         'loan_deferred_amount': loan_deferred_amount,
         'uncollected_deductions': uncollected_deductions,
-        'total_earnings': gross,
+        'total_earnings': total_earnings,
         'total_deductions': total_deductions,
         'net_salary': net_salary,
         'breakdown': {
@@ -419,7 +484,13 @@ def _compute_employee_payroll_snapshot(
                     'id': a.id,
                     'date': a.absence_date.isoformat(),
                     'days': a.days,
-                    'amount': str(deduction_for_days(gross_full, a.days)),
+                    'amount': str(
+                        Decimal('0.00') if _not_chargeable(a)
+                        else deduction_for_days(gross_full, a.days)
+                    ),
+                    'covered_by_unpaid_leave': _covered_by_unpaid_leave(a),
+                    'outside_employment': _outside_employment(a),
+                    'carried_from': getattr(a, 'carried_from', None),
                 }
                 for a in emp_absences
             ],
@@ -436,8 +507,10 @@ def _compute_employee_payroll_snapshot(
                 for i in deferred_installments
             ],
             'uncollected_deductions': str(uncollected_deductions),
+            'salary_arrears': arrears_items,
             'penalties': [
-                {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount)}
+                {'id': p.id, 'title': p.title, 'amount': str(p.deduction_amount),
+                 'carried_from': getattr(p, 'carried_from', None)}
                 for p in emp_penalties
             ],
             'cash_shortages': [
@@ -446,6 +519,7 @@ def _compute_employee_payroll_snapshot(
                     'date': cs.shortage_date.isoformat(),
                     'amount': str(cs.amount),
                     'serial': cs.serial_number or '',
+                    'carried_from': getattr(cs, 'carried_from', None),
                 }
                 for cs in emp_cash_shortages
             ],
@@ -476,17 +550,18 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         raise ValueError('يرجى اختيار شركة الكفالة لمسير التحويل.')
 
     # ── جلب أو إنشاء المسير ──
+    # مسير لكل (فرع، شهر، نوع راتب، شركة كفالة) — فرع واحد قد يضم عدة شركات كفالة
     run, _ = _acquire_payroll_run(
         branch=branch,
         period_year=year,
         period_month=month,
         salary_mode=salary_mode,
         run_kind=PayrollRun.RunKind.STANDARD,
+        sponsorship_id=sponsorship_id,
         defaults={
             'created_by': user,
             'status': PayrollRun.Status.DRAFT,
             'company': branch.company,
-            'sponsorship_id': sponsorship_id,
         },
     )
     update_fields = []
@@ -558,7 +633,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
         line = PayrollLine(
             run=run,
             employee=emp,
-            basic_salary=emp.basic_salary or 0,
+            basic_salary=snap['basic_salary'],
             housing_allowance=emp.housing_allowance or 0,
             transport_allowance=emp.transport_allowance or 0,
             other_allowance=emp.other_allowance or 0,
@@ -573,6 +648,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             loan_deduction=snap['loan_deduction'],
             penalty_deduction=snap['penalty_deduction'],
             other_deduction=snap['cash_shortage_deduction'],
+            other_addition=snap['salary_arrears'],
             insurance_deduction=snap['insurance_deduction'],
             gross_salary=snap['gross_salary'],
             total_earnings=snap['total_earnings'],
@@ -695,7 +771,7 @@ def build_consolidated_payroll_run(
         lines_to_create.append(PayrollLine(
             run=run,
             employee=emp,
-            basic_salary=emp.basic_salary or 0,
+            basic_salary=snap['basic_salary'],
             housing_allowance=emp.housing_allowance or 0,
             transport_allowance=emp.transport_allowance or 0,
             other_allowance=emp.other_allowance or 0,
@@ -710,6 +786,7 @@ def build_consolidated_payroll_run(
             loan_deduction=snap['loan_deduction'],
             penalty_deduction=snap['penalty_deduction'],
             other_deduction=snap['cash_shortage_deduction'],
+            other_addition=snap['salary_arrears'],
             insurance_deduction=snap['insurance_deduction'],
             gross_salary=snap['gross_salary'],
             total_earnings=snap['total_earnings'],
@@ -762,6 +839,8 @@ def lock_payroll_run(run: PayrollRun, user):
     run = PayrollRun.acquire_row_lock(run.pk)
     if run.status == PayrollRun.Status.LOCKED:
         raise ValueError('المسير مُغلق بالفعل.')
+    if date(run.period_year, run.period_month, 1) > timezone.localdate():
+        raise ValueError('لا يمكن ترحيل مسير لشهر لم يبدأ بعد.')
 
     from apps.employees.models import EmployeeLedger, EmployeeLoan
     from apps.employees.services.accrual_ledger_notes import (
@@ -773,6 +852,17 @@ def lock_payroll_run(run: PayrollRun, user):
     period_anchor = date(run.period_year, run.period_month, 1)
     line_list = list(run.lines.select_related('employee'))
 
+    gone = sorted({
+        ln.employee.name for ln in line_list
+        if ln.employee.is_deleted
+        or ln.employee.status not in (Employee.Status.ACTIVE, Employee.Status.LEAVE)
+    })
+    if gone:
+        raise ValueError(
+            'تعذّر الترحيل: موظفون في المسودة لم يعودوا على رأس العمل أو حُذفوا '
+            f'({"، ".join(gone[:5])}) — أعد بناء المسودة.'
+        )
+
     for ln in line_list:
         uncollected = Decimal(str((ln.breakdown or {}).get('uncollected_deductions') or '0'))
         if uncollected > 0:
@@ -782,11 +872,29 @@ def lock_payroll_run(run: PayrollRun, user):
             )
     employee_ids = [ln.employee_id for ln in line_list]
 
+    # منع صرف الموظف مرتين: لا يُرحَّل إن كان مدفوعاً في مسير مُرحَّل آخر لنفس الشهر
+    if employee_ids:
+        already_paid = list(
+            PayrollLine.objects.filter(
+                employee_id__in=employee_ids,
+                run__period_year=run.period_year,
+                run__period_month=run.period_month,
+                run__status=PayrollRun.Status.LOCKED,
+                run__run_kind__in=PAYING_RUN_KINDS,
+            ).exclude(run_id=run.pk).select_related('employee')[:5]
+        )
+        if already_paid:
+            names = '، '.join(sorted({pl.employee.name for pl in already_paid}))
+            raise ValueError(
+                f'تعذّر الترحيل: الموظف/الموظفون ({names}) مدفوعون مسبقاً في مسير مُرحَّل آخر '
+                'لنفس الشهر — أعد بناء المسودة لاستبعادهم.'
+            )
+
     last_ledger_by_emp = {}
     if employee_ids:
         for lg in EmployeeLedger.objects.filter(
             employee_id__in=employee_ids,
-            date__lt=period_anchor,
+            date__lte=calendar_month_last_day(run.period_year, run.period_month),
         ).order_by('employee_id', '-date', '-created_at'):
             if lg.employee_id not in last_ledger_by_emp:
                 last_ledger_by_emp[lg.employee_id] = lg
@@ -971,6 +1079,19 @@ def unlock_payroll_run(run: PayrollRun, user):
     run = PayrollRun.acquire_row_lock(run.pk)
     if run.status != PayrollRun.Status.LOCKED:
         raise ValueError('المسير ليس مغلقاً.')
+    later_locked = PayrollLine.objects.filter(
+        employee_id__in=run.lines.values('employee_id'),
+        run__status=PayrollRun.Status.LOCKED,
+        run__run_kind__in=PAYING_RUN_KINDS,
+    ).filter(
+        Q(run__period_year__gt=run.period_year)
+        | Q(run__period_year=run.period_year, run__period_month__gt=run.period_month)
+    )
+    if later_locked.exists():
+        raise ValueError(
+            'لا يمكن إعادة فتح هذا الشهر: يوجد مسير مُرحَّل لشهر لاحق لنفس الموظفين '
+            '(أرصدة الإجازات ونهاية الخدمة مبنية عليه). افتح الأشهر اللاحقة أولاً بالترتيب.'
+        )
 
     # فك ربط كل البنود
     EmployeeAbsence.objects.filter(applied_to_payroll=run).update(applied_to_payroll=None)

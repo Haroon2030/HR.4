@@ -316,6 +316,7 @@ urlpatterns = [
 
     path('payroll/', payroll_views.list_payroll_runs, name='list_payroll_runs'),                            # قائمة المسيرات
     path('payroll/export/', payroll_views.export_payroll_list_excel, name='export_payroll_list_excel'),    # تصدير المسير الموحّد
+    path('payroll/export-detailed/', payroll_views.export_payroll_detailed_excel, name='export_payroll_detailed_excel'),  # تصدير المسير التفصيلي
     path('payroll/<int:run_id>/', payroll_views.view_payroll_run, name='view_payroll_run'),                  # عرض تفاصيل المسير
     path('payroll/<int:run_id>/delete/', payroll_views.delete_payroll_draft_run, name='delete_payroll_draft_run'),  # حذف مسودة
     path('payroll/<int:run_id>/rebuild/', payroll_views.rebuild_payroll_run, name='rebuild_payroll_run'),     # إعادة بناء

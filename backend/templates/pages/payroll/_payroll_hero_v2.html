@@ -1,0 +1,215 @@
+{% load custom_tags %}
+{# ترويسة المسير المبسّطة: شهر واحد · حالة واحدة · زر رئيسي واحد حسب الحالة #}
+<style>
+    .pr2 { position: relative; z-index: 30; padding: 1rem 1.25rem; border-radius: 1rem; border: 1px solid rgba(37, 99, 235, 0.14);
+           background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, #fff 55%); display: flex; flex-direction: column; gap: 0.9rem; }
+    .pr2-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; }
+    .pr2-title { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+    .pr2-ic { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: #2563eb; color: #fff; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pr2-h1 { margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; }
+    .pr2-scope { margin: 0.1rem 0 0; font-size: 0.78rem; font-weight: 700; color: #475569; }
+    .pr2-month { display: inline-flex; align-items: center; gap: 0.35rem; background: #fff; border: 1px solid #dbe4f0; border-radius: 999px; padding: 0.2rem; }
+    .pr2-month__label { min-width: 8.5rem; text-align: center; font-weight: 800; font-size: 0.95rem; color: #0f172a; }
+    .pr2-arrow { width: 2rem; height: 2rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #2563eb; background: #eff6ff; }
+    .pr2-arrow:hover { background: #dbeafe; }
+    .pr2-arrow.is-off { opacity: 0.35; pointer-events: none; }
+    .pr2-steps { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .pr2-step { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 700; color: #94a3b8; }
+    .pr2-step__dot { width: 1.5rem; height: 1.5rem; border-radius: 999px; border: 2px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; background: #fff; }
+    .pr2-step.is-done { color: #047857; }
+    .pr2-step.is-done .pr2-step__dot { background: #10b981; border-color: #10b981; color: #fff; }
+    .pr2-step.is-now { color: #1d4ed8; }
+    .pr2-step.is-now .pr2-step__dot { border-color: #2563eb; color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    .pr2-step__bar { width: 1.6rem; height: 2px; background: #e2e8f0; border-radius: 2px; }
+    .pr2-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.6rem; }
+    .pr2-kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 0.55rem 0.8rem; }
+    .pr2-kpi__l { margin: 0; font-size: 0.72rem; font-weight: 700; color: #64748b; }
+    .pr2-kpi__v { margin: 0.1rem 0 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+    .pr2-kpi--net .pr2-kpi__v { color: #1d4ed8; }
+    .pr2-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+    .pr2-btn { display: inline-flex; align-items: center; gap: 0.45rem; border-radius: 0.7rem; padding: 0.55rem 1rem; font-weight: 800; font-size: 0.9rem; border: 1px solid transparent; cursor: pointer; text-decoration: none; line-height: 1.2; }
+    .pr2-btn--primary { background: #2563eb; color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
+    .pr2-btn--primary:hover { background: #1d4ed8; }
+    .pr2-btn--success { background: #059669; color: #fff; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25); }
+    .pr2-btn--warn { background: #f59e0b; color: #fff; }
+    .pr2-btn--ghost { background: #fff; color: #1e3a8a; border-color: #cbd5e1; }
+    .pr2-btn--ghost:hover { background: #f8fafc; }
+    .pr2-btn[disabled], .pr2-btn.is-off { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+    .pr2-menu { position: relative; }
+    .pr2-pop { position: absolute; top: calc(100% + 0.35rem); right: 0; left: auto; min-width: 14.5rem; max-width: calc(100vw - 1.5rem); background: #fff; border: 1px solid #dbe4f0; border-radius: 0.8rem; box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16); padding: 0.35rem; z-index: 40; }
+    .pr2-pop__item { display: flex; align-items: center; gap: 0.55rem; width: 100%; text-align: right; padding: 0.55rem 0.7rem; border-radius: 0.55rem; font-size: 0.85rem; font-weight: 700; color: #0f172a; background: transparent; border: 0; cursor: pointer; text-decoration: none; }
+    .pr2-pop__item:hover { background: #eff6ff; }
+    .pr2-pop__sep { height: 1px; background: #e5e7eb; margin: 0.3rem 0.2rem; }
+    .pr2-hint { font-size: 0.8rem; font-weight: 700; color: #475569; margin: 0; }
+    .pr2-alert { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 800; border-radius: 999px; padding: 0.3rem 0.75rem; border: 0; cursor: pointer; }
+    .pr2-alert--ok { background: #ecfdf5; color: #047857; }
+    .pr2-alert--warning { background: #fffbeb; color: #b45309; }
+    .pr2-alert--error { background: #fef2f2; color: #b91c1c; }
+</style>
+
+<header class="pr2 hr-glass-panel" aria-label="مسير الرواتب">
+    <div class="pr2-row">
+        <div class="pr2-title">
+            <span class="pr2-ic" aria-hidden="true"><i data-lucide="banknote" class="w-5 h-5"></i></span>
+            <div class="min-w-0">
+                <h1 class="pr2-h1">مسير الرواتب</h1>
+                <p class="pr2-scope">{{ branch_scope_label }} · {{ sponsor_scope_label }}</p>
+            </div>
+        </div>
+
+        <div class="pr2-month" role="group" aria-label="الشهر">
+            <a href="?{{ prev_month_qs }}" class="pr2-arrow{% if not can_go_prev %} is-off{% endif %}" aria-label="الشهر السابق" title="الشهر السابق">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+            <span class="pr2-month__label">{{ period_month_label }} {{ filter_year }}</span>
+            <a href="?{{ next_month_qs }}" class="pr2-arrow{% if not can_go_next %} is-off{% endif %}" aria-label="الشهر التالي" title="الشهر التالي">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+        <div class="pr2-steps" aria-label="مراحل المسير">
+            <span class="pr2-step {% if payroll_state == 'empty' %}is-now{% else %}is-done{% endif %}">
+                <span class="pr2-step__dot">{% if payroll_state == 'empty' %}1{% else %}✓{% endif %}</span> البناء
+            </span>
+            <span class="pr2-step__bar"></span>
+            <span class="pr2-step {% if payroll_state == 'draft' %}is-now{% elif payroll_state == 'locked' %}is-done{% endif %}">
+                <span class="pr2-step__dot">{% if payroll_state == 'locked' %}✓{% else %}2{% endif %}</span> المراجعة
+            </span>
+            {% if active_payroll_view != 'detailed' %}
+            <span class="pr2-step__bar"></span>
+            <span class="pr2-step {% if payroll_state == 'locked' %}is-done{% endif %}">
+                <span class="pr2-step__dot">{% if payroll_state == 'locked' %}✓{% else %}3{% endif %}</span> الإغلاق
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if show_table and hero_totals and payroll_state != 'empty' %}
+    <div class="pr2-kpis" aria-label="ملخص الشهر">
+        <div class="pr2-kpi"><p class="pr2-kpi__l">الموظفون</p><p class="pr2-kpi__v">{{ hero_totals.employees_count }}</p></div>
+        <div class="pr2-kpi"><p class="pr2-kpi__l">الاستحقاقات</p><p class="pr2-kpi__v">{{ hero_totals.total_earnings|format_amount }}</p></div>
+        <div class="pr2-kpi"><p class="pr2-kpi__l">الخصومات</p><p class="pr2-kpi__v">{{ hero_totals.total_deductions|format_amount }}</p></div>
+        <div class="pr2-kpi pr2-kpi--net"><p class="pr2-kpi__l">الصافي</p><p class="pr2-kpi__v">{{ hero_totals.total_net|format_amount }}</p></div>
+    </div>
+    {% endif %}
+
+    <div class="pr2-row">
+        <div class="pr2-actions">
+            {# ── الزر الرئيسي حسب الحالة ── #}
+            {% if payroll_state == 'empty' %}
+                {% if can_build_new or can_build and has_draft_runs %}
+                <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                        name="build_kind" value="{% if active_payroll_view == 'detailed' %}detailed{% else %}standard{% endif %}"
+                        class="pr2-btn pr2-btn--primary"
+                        {% if has_draft_runs %}data-hr-confirm="توجد مسودة فارغة لهذا الشهر وسيتم استبدالها. متابعة؟" data-hr-confirm-ok="ابنِ"{% endif %}>
+                    <i data-lucide="zap" class="w-4 h-4"></i> {% if has_draft_runs %}أعد بناء{% else %}ابنِ{% endif %} مسير {{ period_month_label }}
+                </button>
+                {% else %}
+                <button type="button" class="pr2-btn pr2-btn--primary" disabled title="لا تملك صلاحية البناء">
+                    <i data-lucide="zap" class="w-4 h-4"></i> ابنِ مسير {{ period_month_label }}
+                </button>
+                {% endif %}
+                <p class="pr2-hint">{% if has_draft_runs %}المسودة الحالية بلا موظفين.{% else %}لم يُبنَ مسير هذا الشهر بعد.{% endif %}</p>
+
+            {% elif payroll_state == 'draft' %}
+                {% if active_payroll_view == 'detailed' %}
+                    {% if can_export_detailed %}
+                    <a href="{% url 'web:export_payroll_detailed_excel' %}?{{ export_unified_qs }}" class="pr2-btn pr2-btn--success">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> تصدير المسير التفصيلي
+                    </a>
+                    {% endif %}
+                {% elif financial_audit and not financial_audit.ready_to_lock %}
+                    <button type="button" class="pr2-btn pr2-btn--warn" @click="openAuditModal()">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i> راجع الملاحظات قبل الإغلاق
+                    </button>
+                {% elif can_build %}
+                    <form method="POST" action="{% url 'web:list_payroll_runs' %}" class="inline"
+                          data-hr-confirm="الإغلاق النهائي — لا رجوع. متابعة؟" data-hr-confirm-ok="أغلق نهائياً">
+                        {% csrf_token %}
+                        {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                        <button type="submit" name="payroll_action" value="lock" class="pr2-btn pr2-btn--primary">
+                            <i data-lucide="lock" class="w-4 h-4"></i> أغلق المسير نهائياً
+                        </button>
+                    </form>
+                {% endif %}
+                <p class="pr2-hint">مسودة — راجعها ثم أغلقها.</p>
+
+            {% else %}
+                {% if active_payroll_view == 'detailed' %}
+                    {% if can_export_detailed %}
+                    <a href="{% url 'web:export_payroll_detailed_excel' %}?{{ export_unified_qs }}" class="pr2-btn pr2-btn--success">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> تصدير المسير التفصيلي
+                    </a>
+                    {% endif %}
+                {% elif can_export %}
+                    <a href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}" class="pr2-btn pr2-btn--success">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> تصدير المسير
+                    </a>
+                {% endif %}
+                <p class="pr2-hint">المسير مُرحَّل ومقفل.</p>
+            {% endif %}
+
+            {# ── قائمة التصدير: المسير + التفصيلي ── #}
+            {% if show_table and payroll_state != 'empty' %}
+            <div class="pr2-menu" x-data="{ o: false, place() { this.$nextTick(() => { var p = this.$refs.pop; if (!p) return; p.style.right = '0'; p.style.left = 'auto'; var r = p.getBoundingClientRect(); if (r.left < 8) { p.style.right = 'auto'; p.style.left = '0'; } }); } }" @click.outside="o = false" @keydown.escape.window="o = false">
+                <button type="button" class="pr2-btn pr2-btn--ghost" @click="o = !o; if (o) place()" :aria-expanded="o">
+                    <i data-lucide="download" class="w-4 h-4"></i> تصدير <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                <div class="pr2-pop" x-ref="pop" x-show="o" x-cloak x-transition.opacity>
+                    {% if can_export %}
+                    <a class="pr2-pop__item" href="{% url 'web:export_payroll_list_excel' %}?{{ export_unified_qs }}">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> المسير (Excel)
+                    </a>
+                    {% endif %}
+                    {% if can_export_detailed %}
+                    <a class="pr2-pop__item" href="{% url 'web:export_payroll_detailed_excel' %}?{{ export_unified_qs }}">
+                        <i data-lucide="git-branch" class="w-4 h-4"></i> المسير التفصيلي (Excel)
+                    </a>
+                    {% else %}
+                    <span class="pr2-pop__item" style="opacity:.5;cursor:not-allowed" title="لا يوجد مسير تفصيلي (نقل موظفين) لهذه الفترة">
+                        <i data-lucide="git-branch" class="w-4 h-4"></i> المسير التفصيلي — لا يوجد هذا الشهر
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── ⋯ إجراءات ثانوية ── #}
+            <div class="pr2-menu" x-data="{ o: false, place() { this.$nextTick(() => { var p = this.$refs.pop; if (!p) return; p.style.right = '0'; p.style.left = 'auto'; var r = p.getBoundingClientRect(); if (r.left < 8) { p.style.right = 'auto'; p.style.left = '0'; } }); } }" @click.outside="o = false" @keydown.escape.window="o = false">
+                <button type="button" class="pr2-btn pr2-btn--ghost" @click="o = !o; if (o) place()" :aria-expanded="o" aria-label="المزيد">
+                    <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                </button>
+                <div class="pr2-pop" x-ref="pop" x-show="o" x-cloak x-transition.opacity>
+                    <button type="submit" form="payrollFilterForm" class="pr2-pop__item">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> تحديث العرض
+                    </button>
+                    {% if can_build and has_draft_runs %}
+                    <div class="pr2-pop__sep"></div>
+                    {% if active_payroll_view != 'detailed' %}
+                    <form method="POST" action="{% url 'web:list_payroll_runs' %}" data-hr-confirm="تحديث المسودة بأحدث البيانات؟">
+                        {% csrf_token %}
+                        {% include "pages/payroll/_payroll_filter_hidden.html" %}
+                        <button type="submit" name="payroll_action" value="save" class="pr2-pop__item"{% if not has_payroll_lines %} disabled{% endif %}>
+                            <i data-lucide="save" class="w-4 h-4"></i> حفظ المسودة بأحدث البيانات
+                        </button>
+                    </form>
+                    {% endif %}
+                    <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                            name="build_kind" value="{% if active_payroll_view == 'detailed' %}detailed{% else %}standard{% endif %}"
+                            class="pr2-pop__item"
+                            data-hr-confirm="سيتم استبدال المسودة الحالية. متابعة؟" data-hr-confirm-ok="أعد البناء">
+                        <i data-lucide="rotate-cw" class="w-4 h-4"></i> إعادة بناء المسودة
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if show_table and has_draft_runs and financial_audit %}
+        <button type="button" class="pr2-alert pr2-alert--{{ financial_audit.status_level }}" @click="openAuditModal()"
+                title="تقرير التحقق المالي">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> التحقق المالي: {{ financial_audit.status_label }}
+        </button>
+        {% endif %}
+    </div>
+</header>

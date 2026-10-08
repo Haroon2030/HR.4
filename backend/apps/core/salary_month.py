@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from calendar import monthrange
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 STANDARD_MONTH_DAYS = 30
 STANDARD_YEAR_DAYS = STANDARD_MONTH_DAYS * 12  # 360
@@ -41,8 +41,31 @@ def daily_rate_from_total(total) -> Decimal:
 
 
 def deduction_for_days(total, days) -> Decimal:
-    """خصم أيام (غياب / إجازة بدون راتب) = أجر اليوم × عدد الأيام."""
-    return (daily_rate_from_total(total) * Decimal(days or 0)).quantize(Decimal('0.01'))
+    """
+    خصم أيام (غياب / إجازة بدون راتب) = الإجمالي × الأيام ÷ 30.
+
+    الضرب قبل القسمة (بدون تقريب أجر اليوم أولاً) كي يساوي خصمُ 30 يوماً الراتبَ تماماً.
+    """
+    return (
+        Decimal(total or 0) * Decimal(days or 0) / Decimal(STANDARD_MONTH_DAYS)
+    ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def month_day_span(start: date, end: date, period_start: date, period_end: date) -> Decimal:
+    """
+    عدد الأيام ضمن شهر على قاعدة «الشهر = 30 يوماً لكل الشهور».
+
+    - البداية: أول الشهر ⇒ اليوم 1، وإلا رقم اليوم (بحد أقصى 30).
+    - النهاية: آخر الشهر (28/29/30/31) ⇒ اليوم 30، وإلا رقم اليوم (بحد أقصى 30).
+    فالشهر الكامل = 30 يوماً دائماً (فبراير ويناير سواء)، والجزئي يُحسب بأرقام الأيام.
+    """
+    s = max(start, period_start)
+    e = min(end, period_end)
+    if e < s:
+        return Decimal('0')
+    first = 1 if s <= period_start else min(s.day, STANDARD_MONTH_DAYS)
+    last = STANDARD_MONTH_DAYS if e >= period_end else min(e.day, STANDARD_MONTH_DAYS)
+    return Decimal(max(last - first + 1, 0))
 
 
 def employment_service_days(hire_date: date, as_of: date) -> int:

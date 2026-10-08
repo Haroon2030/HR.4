@@ -192,6 +192,8 @@ PY_ENV
             OPS_SCHED="${OPERATIONS_REPORT_CRON_SCHEDULE:-* * * * *}"
             echo "${OPS_SCHED} root run-cron-cmd python manage.py send_operations_report --send-email --verbose-skip >> /app/logs/operations_report.log 2>&1"
         fi
+        # تطبيق تعديلات الرواتب التي حان شهر سريانها (يومياً بعد منتصف الليل)
+        echo "5 0 * * * root run-cron-cmd python manage.py apply_salary_changes >> /app/logs/salary_changes.log 2>&1"
         echo ""
     } > /etc/cron.d/hr-backup
     chmod 0644 /etc/cron.d/hr-backup

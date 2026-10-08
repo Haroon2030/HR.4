@@ -192,7 +192,14 @@ def _execute_reactivate(action, executor):
 # ─────────────────────────────────────────────────────────────────────────────
 @transaction.atomic
 def _execute_salary_adjust(action, executor):
+    """
+    تعديل الراتب الأساسي بتاريخ سريان — يسري على مسير شهر التاريخ كاملاً.
+    شهر مستقبلي ⇒ يبقى معلّقاً ولا يغيّر الراتب الحالي حتى يحين شهره.
+    شهر مُرحَّل سابقاً ⇒ يُطبَّق الآن وتُصرف فروقاته في أول مسير مفتوح.
+    """
     from apps.employees.models import EmployeeStatement
+    from apps.employees.services.salary_changes import basic_salary_for_period, record_salary_change
+
     p = action.payload
     employee = action.employee
 
@@ -200,24 +207,21 @@ def _execute_salary_adjust(action, executor):
     reason = p.get('reason', '')
     effective_date = _to_date(p['effective_date'])
 
-    old_basic = employee.basic_salary
-    old_total = employee.total_salary
-
-    employee.basic_salary = new_basic
-    employee.save(update_fields=['basic_salary'])
-
-    new_total = employee.total_salary
+    old_basic = basic_salary_for_period(employee, effective_date.year, effective_date.month)
+    old_total = employee.total_salary - Decimal(employee.basic_salary or 0) + old_basic
+    new_total = old_total - old_basic + new_basic
     diff = new_total - old_total
     pct = (diff / old_total * 100).quantize(Decimal('0.1')) if old_total else Decimal('0.0')
     direction = 'زيادة' if diff > 0 else ('خفض' if diff < 0 else 'بدون تغيير')
+    period_label = f'{effective_date.month:02d}/{effective_date.year}'
 
-    EmployeeStatement.objects.create(
+    statement = EmployeeStatement.objects.create(
         employee=employee,
         statement_type=EmployeeStatement.StatementType.SALARY_ADJUST,
         title=f'تعديل راتب — {direction}',
         statement_date=effective_date,
         content=(
-            f'تاريخ التعديل: {effective_date}\n'
+            f'تاريخ السريان: {effective_date} (يسري على مسير شهر {period_label} كاملاً)\n'
             f'السبب: {reason}\n'
             f'───────────────────\n'
             f'الراتب الأساسي:  {old_basic}  ←  {new_basic}  ر.س\n'
@@ -227,7 +231,17 @@ def _execute_salary_adjust(action, executor):
         ),
         created_by=action.requested_by,
     )
-    return f'تم تعديل راتب {employee.name} ({direction})'
+    change = record_salary_change(
+        employee,
+        new_basic=new_basic,
+        effective_date=effective_date,
+        user=executor,
+        reason=reason,
+        statement=statement,
+    )
+    if change.applied:
+        return f'تم تعديل راتب {employee.name} ({direction}) — يسري من مسير {period_label}'
+    return f'سُجِّل تعديل راتب {employee.name} ({direction}) — يُطبَّق تلقائياً من مسير {period_label}'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -549,6 +563,10 @@ def _execute_end_of_service(action, executor):
     prorated_salary = financials['prorated_salary']
     loans_deduction = financials['loans_deduction']
     absences_deduction = financials['absences_deduction']
+    penalties_deduction = financials.get('penalties_deduction') or Decimal('0')
+    shortages_deduction = financials.get('cash_shortages_deduction') or Decimal('0')
+    overpaid_recovery = financials.get('overpaid_salary_recovery') or Decimal('0')
+    other_deductions = penalties_deduction + shortages_deduction + overpaid_recovery
     gross_entitlement = eosb + leave_comp + penalty + prorated_salary
     total_entitlement = net_settlement_total(
         eosb=eosb,
@@ -642,6 +660,12 @@ def _execute_end_of_service(action, executor):
         content += f'خصم سلف: {loans_deduction} ر.س\n'
     if absences_deduction > 0:
         content += f'خصم غيابات: {absences_deduction} ر.س\n'
+    if penalties_deduction > 0:
+        content += f'خصم مخالفات غير محتسبة: {penalties_deduction} ر.س\n'
+    if shortages_deduction > 0:
+        content += f'خصم عجز كاشير غير محتسب: {shortages_deduction} ر.س\n'
+    if overpaid_recovery > 0:
+        content += f'استرداد راتب صُرف زيادة في مسير مُرحَّل: {overpaid_recovery} ر.س\n'
     content += (
         f'───────────────────\n'
         f'إجمالي المستحقات (قبل الخصم): {gross_entitlement} ر.س\n'
@@ -654,11 +678,15 @@ def _execute_end_of_service(action, executor):
         )
         if loans_deduction or absences_deduction:
             content += f' − سلف {loans_deduction} − غياب {absences_deduction}'
+        if other_deductions:
+            content += f' − خصومات أخرى {other_deductions}'
         content += ')\n'
     elif settlement_type in LEAVE_ONLY_SETTLEMENTS:
         content += f'  (إجازة {leave_comp} + راتب {prorated_salary}'
         if loans_deduction or absences_deduction:
             content += f' − سلف {loans_deduction} − غياب {absences_deduction}'
+        if other_deductions:
+            content += f' − خصومات أخرى {other_deductions}'
         content += ')\n'
     else:
         content += (
@@ -666,6 +694,8 @@ def _execute_end_of_service(action, executor):
         )
         if loans_deduction or absences_deduction:
             content += f' − سلف {loans_deduction} − غياب {absences_deduction}'
+        if other_deductions:
+            content += f' − خصومات أخرى {other_deductions}'
         content += ')\n'
     if notes:
         content += f'\nملاحظات: {notes}\n'
