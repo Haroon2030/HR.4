@@ -312,7 +312,8 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 # منع تحميل الموقع داخل iframe من مواقع خارجية
-X_FRAME_OPTIONS = 'DENY'
+# SAMEORIGIN (لا DENY): عارض المستندات يعرض ملفات PDF من /media/ داخل iframe في نفس الموقع
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # تقييد أقوى لمحاولات تسجيل الدخول عبر API
 REST_FRAMEWORK = {

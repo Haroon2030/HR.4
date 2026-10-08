@@ -299,6 +299,9 @@ DASHBOARD_CACHE_TTL = env.int('DASHBOARD_CACHE_TTL', default=120)
 SETUP_CACHE_TTL = env.int('SETUP_CACHE_TTL', default=3600)
 
 # الملفات المرفوعة (media)
+# عارض المستندات يعرض PDF من /media/ داخل iframe في نفس الموقع (الافتراضي DENY يُظهر إطاراً أبيض)
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

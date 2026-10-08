@@ -5184,6 +5184,7 @@ body.hr-app .hr-glass-modal__body--compact > .mt-2 {
 
 .hr-glass-modal--media {
     max-width: min(92vw, 52rem);
+    height: min(88vh, 720px);
 }
 
 /* عارض المرفق — ثيم الشريط الجانبي */
@@ -5243,14 +5244,15 @@ body.hr-app .hr-glass-modal__body--compact > .mt-2 {
 }
 
 .hr-glass-modal__body--media {
-    min-height: 12rem;
+    min-height: 0;
+    overflow: hidden;
     background: rgba(248, 250, 252, 0.35);
 }
 
 .hr-glass-modal__img {
     display: block;
     max-width: 100%;
-    max-height: min(72vh, 640px);
+    max-height: 100%;
     width: auto;
     height: auto;
     object-fit: contain;
@@ -5261,9 +5263,12 @@ body.hr-app .hr-glass-modal__body--compact > .mt-2 {
 }
 
 .hr-glass-modal__frame {
+    display: block;
     width: 100%;
-    min-height: min(70vh, 520px);
-    max-height: min(72vh, 640px);
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    min-height: 0;
     border: 1px solid var(--hr-glass-line);
     border-radius: 0.5rem;
     background: #fff;
