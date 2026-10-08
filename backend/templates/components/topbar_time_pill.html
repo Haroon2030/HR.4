@@ -3,7 +3,7 @@
          timeLabel: '',
          tick() {
              try {
-                 this.timeLabel = new Date().toLocaleTimeString('ar-SA', {
+                 this.timeLabel = new Date().toLocaleTimeString('ar-SA-u-nu-latn', {
                      hour: '2-digit', minute: '2-digit', second: '2-digit',
                      hour12: false, timeZone: 'Asia/Riyadh'
                  });

@@ -191,7 +191,8 @@
         align-items: stretch;
         gap: 0.6rem;
     }
-    @media (min-width: 768px) {
+    /* ثلاث لوحات (مزامنة 28rem + ملخص 12.5rem + فلتر 20rem) لا تتسع في صف واحد إلا على الشاشات الواسعة */
+    @media (min-width: 1280px) {
         .zk-rec-toolbar-row { flex-wrap: nowrap; }
     }
     .zk-rec-sync-wrap,

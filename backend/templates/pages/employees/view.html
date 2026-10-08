@@ -863,7 +863,7 @@
                         </div>
                         <div class="flex justify-between bg-primary-50 rounded px-2 py-1.5 border border-primary-200">
                             <span class="text-primary-700 font-bold">الإجمالي</span>
-                            <span class="font-bold text-primary-800" x-text="currentTotal.toLocaleString('ar')"></span>
+                            <span class="font-bold text-primary-800" x-text="currentTotal.toLocaleString('ar-u-nu-latn')"></span>
                         </div>
                     </div>
                 </div>
@@ -889,7 +889,7 @@
                      :class="diff > 0 ? 'bg-emerald-50 border-emerald-200' : diff < 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'">
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-slate-600 font-bold">الإجمالي بعد التعديل</span>
-                        <span class="text-lg font-bold" :class="diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-red-700' : 'text-slate-700'" x-text="newTotal.toLocaleString('ar') + ' ر.س'"></span>
+                        <span class="text-lg font-bold" :class="diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-red-700' : 'text-slate-700'" x-text="newTotal.toLocaleString('ar-u-nu-latn') + ' ر.س'"></span>
                     </div>
                     <div class="flex items-center gap-3 mt-1.5 text-xs">
                         <span :class="diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-600' : 'text-slate-500'">

@@ -15695,3 +15695,81 @@ body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link.is-active {
         0 0 18px rgba(255, 255, 255, 0.55),
         0 0 36px rgba(255, 255, 255, 0.45) !important;
 }
+
+/* ══ أصناف منطقية (RTL) مستخدمة في القوالب وغير مولَّدة في Tailwind المُنقّى ══ */
+.ms-auto { margin-inline-start: auto; }
+.ms-2 { margin-inline-start: 0.5rem; }
+.end-0 { inset-inline-end: 0; }
+.text-start { text-align: start; }
+@media (min-width: 640px) {
+    .sm\:ms-auto { margin-inline-start: auto; }
+}
+
+/* حقول الإدخال على الجوال: 16px كحد أدنى لمنع تكبير iOS التلقائي عند التركيز */
+@media (max-width: 767px) {
+    body.hr-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+    body.hr-app select,
+    body.hr-app textarea {
+        font-size: 16px;
+    }
+}
+
+/* ══ جوال (<768px): قراءة وأهداف لمس ══════════════════════════════════ */
+@media (max-width: 767px) {
+    /* حد أدنى 11px للنص الثانوي (العدّادات الرقمية الصغيرة تبقى كما هي) */
+    body.hr-app .pay-money__cur,
+    body.hr-app .payroll-tbl .pay-money__cur,
+    body.hr-app .hr-approval-track__label,
+    body.hr-app .hr-presence-badge__label,
+    body.hr-app .zk-bio-lbl,
+    body.hr-app .hr-dist-card__vbar-pct,
+    body.hr-app .hr-dist-card__hbar-rank,
+    body.hr-app .zk-rec-code,
+    body.hr-app .zk-rec-hint,
+    body.hr-app .hr-filter-slot__title,
+    body.hr-app .hr-report-lbl,
+    body.hr-app p.k,
+    body.hr-app p.lbl {
+        font-size: 11px;
+    }
+
+    /* أزرار الإجراءات داخل الجداول والأزرار الصغيرة: هدف لمس 40px */
+    body.hr-app .hr-act {
+        width: 40px;
+        height: 40px;
+    }
+    body.hr-app .hr-btn,
+    body.hr-app .hr-btn--sm {
+        min-height: 40px;
+    }
+    body.hr-app td > a,
+    body.hr-app td > a.text-primary-700 {
+        display: inline-flex;
+        align-items: center;
+        min-height: 40px;
+    }
+
+    /* جدول أسطر المسير: عمود الموظف ثابت أثناء التمرير الأفقي
+       (overflow:hidden على الجدول يجعله حاوية التمرير فيلغي sticky) */
+    body.hr-app .hr-main .overflow-x-auto > table.payroll-tbl { overflow: visible; }
+
+    body.hr-app .payroll-tbl thead th:first-child,
+    body.hr-app .payroll-tbl tbody td:first-child,
+    body.hr-app .payroll-tbl tfoot td:first-child {
+        position: sticky;
+        inset-inline-start: 0;
+        z-index: 2;
+        background: #fff;
+        box-shadow: -1px 0 0 #e5e7eb;
+    }
+    body.hr-app .payroll-tbl tbody td:first-child {
+        max-width: 7.5rem;
+    }
+    body.hr-app .payroll-tbl thead th:first-child {
+        background: #f9fafb;
+        z-index: 3;
+    }
+    body.hr-app .payroll-tbl tbody tr:hover td:first-child {
+        background: #fafafa;
+    }
+}

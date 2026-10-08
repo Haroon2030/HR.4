@@ -7,9 +7,18 @@
     var STORAGE_KEY = 'hr-sidebar-open';
     var mobileMenuOpen = false;
 
+    // التابلت (768–1023px): الشريط مطوي افتراضياً ليبقى للمحتوى عرض كافٍ، بتفضيل محفوظ مستقل
+    function isWideShell() {
+        return window.matchMedia('(min-width: 1024px)').matches;
+    }
+
+    function storageKey() {
+        return isWideShell() ? STORAGE_KEY : STORAGE_KEY + '-tablet';
+    }
+
     function readSavedSidebarOpen(defaultOpen) {
         try {
-            var saved = localStorage.getItem(STORAGE_KEY);
+            var saved = localStorage.getItem(storageKey());
             if (saved === '0') return false;
             if (saved === '1') return true;
         } catch (e) {}
@@ -18,7 +27,7 @@
 
     function writeSavedSidebarOpen(open) {
         try {
-            localStorage.setItem(STORAGE_KEY, open ? '1' : '0');
+            localStorage.setItem(storageKey(), open ? '1' : '0');
         } catch (e) {}
     }
 
@@ -184,7 +193,7 @@
     window.hrInitNavDropdowns = bindNavDropdowns;
 
     window.hrShellState = function hrShellState() {
-        var defaultOpen = isDesktopShell();
+        var defaultOpen = isWideShell();
         return {
             sidebarOpen: readSavedSidebarOpen(defaultOpen),
             toggleSidebar: function () {
@@ -206,7 +215,7 @@
                         return;
                     }
                     closeMobileMenu();
-                    this.sidebarOpen = readSavedSidebarOpen(true);
+                    this.sidebarOpen = readSavedSidebarOpen(isWideShell());
                     syncSidebarDom(this.sidebarOpen);
                 }.bind(this));
             },
