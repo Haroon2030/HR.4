@@ -3,6 +3,7 @@
 ========================================
 يدعم:
   - PostgreSQL (pg_dump)
+  - MySQL / MariaDB (mariadb-dump / mysqldump)
   - SQLite (نسخ ملف)
 
 يحفظ النسخة الاحتياطية في:
@@ -125,7 +126,7 @@ class Command(BaseCommand):
         db_engine = settings.DATABASES['default']['ENGINE']
         filename = (
             f'hr_backup_{ts}{suffix}.sql.gz'
-            if 'postgresql' in db_engine
+            if 'sqlite' not in db_engine
             else f'hr_backup_{ts}{suffix}.sqlite3.gz'
         )
         local_path = backup_dir / filename
@@ -136,6 +137,8 @@ class Command(BaseCommand):
         try:
             if 'postgresql' in db_engine:
                 self._dump_postgres(local_path)
+            elif 'mysql' in db_engine:
+                self._dump_mysql(local_path)
             elif 'sqlite' in db_engine:
                 self._dump_sqlite(local_path)
             else:
@@ -324,6 +327,38 @@ class Command(BaseCommand):
             output_path.unlink(missing_ok=True)
             err = e.stderr.decode('utf-8', errors='ignore') if e.stderr else str(e)
             raise CommandError(f'فشل pg_dump:\n{err}')
+
+    def _dump_mysql(self, output_path: Path):
+        """ينفذ mariadb-dump / mysqldump ويضغط الناتج بـ gzip."""
+        db = settings.DATABASES['default']
+        env = {**os.environ, 'MYSQL_PWD': str(db.get('PASSWORD') or '')}
+        args = [
+            '-h', str(db.get('HOST') or 'localhost'),
+            '-P', str(db.get('PORT') or 3306),
+            '-u', str(db.get('USER') or ''),
+            '--single-transaction', '--quick', '--routines',
+            '--no-tablespaces', '--default-character-set=utf8mb4',
+            '--skip-ssl-verify-server-cert',
+            str(db.get('NAME') or ''),
+        ]
+        self.stdout.write(f'تشغيل mysqldump → {output_path.name} ...')
+        for binary in ('mariadb-dump', 'mysqldump'):
+            try:
+                with gzip.open(output_path, 'wb') as gz:
+                    proc = subprocess.run(
+                        [binary, *args], env=env, check=True,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    )
+                    gz.write(proc.stdout)
+                return
+            except FileNotFoundError:
+                output_path.unlink(missing_ok=True)
+                continue
+            except subprocess.CalledProcessError as e:
+                output_path.unlink(missing_ok=True)
+                err = e.stderr.decode('utf-8', errors='ignore') if e.stderr else str(e)
+                raise CommandError(f'فشل {binary}:\n{err}')
+        raise CommandError('mariadb-dump / mysqldump غير موجود. ثبّت mariadb-client في الحاوية.')
 
     def _dump_sqlite(self, output_path: Path):
         """ينسخ ملف SQLite ويضغطه."""

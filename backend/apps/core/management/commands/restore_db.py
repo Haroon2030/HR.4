@@ -3,6 +3,7 @@
 ================================================
 يدعم:
   - PostgreSQL (psql)
+  - MySQL / MariaDB (mariadb / mysql)
   - SQLite (نسخ ملف)
 
 مصادر النسخة:
@@ -107,6 +108,8 @@ class Command(BaseCommand):
         db_engine = settings.DATABASES['default']['ENGINE']
         if 'postgresql' in db_engine:
             self._restore_postgres(local_file)
+        elif 'mysql' in db_engine:
+            self._restore_mysql(local_file)
         elif 'sqlite' in db_engine:
             self._restore_sqlite(local_file)
         else:
@@ -167,6 +170,40 @@ class Command(BaseCommand):
         except subprocess.CalledProcessError as e:
             err = e.stderr.decode('utf-8', errors='ignore') if e.stderr else str(e)
             raise CommandError(f'فشل psql:\n{err}')
+
+    # ──────────────────────────────────────────────────────────────────
+    # MySQL / MariaDB restore
+    # ──────────────────────────────────────────────────────────────────
+    def _restore_mysql(self, gz_file: Path):
+        db = settings.DATABASES['default']
+        env = {**os.environ, 'MYSQL_PWD': str(db.get('PASSWORD') or '')}
+        args = [
+            '-h', str(db.get('HOST') or 'localhost'),
+            '-P', str(db.get('PORT') or 3306),
+            '-u', str(db.get('USER') or ''),
+            '--default-character-set=utf8mb4',
+            '--skip-ssl-verify-server-cert',
+            str(db.get('NAME') or ''),
+        ]
+        self.stdout.write('استرجاع MySQL ...')
+        for binary in ('mariadb', 'mysql'):
+            try:
+                with gzip.open(gz_file, 'rb') as gz:
+                    proc = subprocess.run(
+                        [binary, *args], env=env, input=gz.read(),
+                        check=True, capture_output=True,
+                    )
+                if proc.stderr:
+                    msg = proc.stderr.decode('utf-8', errors='ignore')
+                    if msg.strip():
+                        self.stdout.write(msg)
+                return
+            except FileNotFoundError:
+                continue
+            except subprocess.CalledProcessError as e:
+                err = e.stderr.decode('utf-8', errors='ignore') if e.stderr else str(e)
+                raise CommandError(f'فشل {binary}:\n{err}')
+        raise CommandError('mariadb / mysql غير مثبت في الحاوية.')
 
     # ──────────────────────────────────────────────────────────────────
     # SQLite restore

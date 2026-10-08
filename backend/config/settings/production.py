@@ -63,6 +63,14 @@ if 'postgresql' in _db_engine:
     _db_options.setdefault('keepalives_interval', 10)
     _db_options.setdefault('keepalives_count', 5)
 
+elif 'mysql' in _db_engine:
+    _db_options = DATABASES['default'].setdefault('OPTIONS', {})
+    _db_options.setdefault('charset', 'utf8mb4')
+    _db_options.setdefault('connect_timeout', 10)
+    # اختياري: DISABLED / PREFERRED / REQUIRED / VERIFY_CA / VERIFY_IDENTITY
+    if env('DB_SSL_MODE', default=''):
+        _db_options['ssl_mode'] = env('DB_SSL_MODE')
+
 # ══════════════════════════════════════════════════════════════════════════════
 # التخزين المؤقت (Cache)
 # - بدون REDIS_URL: LocMemCache (عملية واحدة / worker واحد)
