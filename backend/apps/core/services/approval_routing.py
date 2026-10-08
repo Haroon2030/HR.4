@@ -95,7 +95,9 @@ def approver_display_label(user) -> str:
         return 'غير محدد'
     _profile, role = _profile_and_role(user)
     if role:
-        label = arabic_role_label(role_type=role.role_type, name=getattr(role, 'name', None))
+        # الاسم المخصّص للدور (مثل «المدير المالي») يتقدّم على الاسم الافتراضي لنوع الدور
+        custom = arabic_role_label(name=role.name) if getattr(role, 'name', None) else ''
+        label = custom if custom and custom != '—' else arabic_role_label(role_type=role.role_type)
         if label and label != '—':
             return label
     full = user.get_full_name() if hasattr(user, 'get_full_name') else ''

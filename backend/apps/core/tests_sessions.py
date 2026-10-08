@@ -173,8 +173,11 @@ class UserSessionManagementTests(TestCase):
         from django.utils import timezone
         from datetime import timedelta
 
+        from django.conf import settings
+
+        idle_seconds = int(getattr(settings, 'SESSION_IDLE_TIMEOUT', 3600))
         UserSession.objects.filter(pk=record.pk).update(
-            last_seen_at=timezone.now() - timedelta(minutes=11),
+            last_seen_at=timezone.now() - timedelta(seconds=idle_seconds + 60),
         )
         response = self.target_client.get(reverse('web:dashboard'))
         self.assertEqual(response.status_code, 302)

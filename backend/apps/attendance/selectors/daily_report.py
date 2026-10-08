@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 
 from django.db.models import Count, Max, Min, Q, QuerySet
@@ -231,6 +231,40 @@ def _rows_from_unlinked_python(
         work_date = timezone.localtime(first.punched_at).date()
         employee = _resolve_employee_for_punch(first, enroll_map)
         if employee is not None:
+            # مربوطة عبر تسجيل الجهاز فقط (employee_id فارغ): صف موظف — لا تُسقط من التقرير
+            check_in, check_out = _pick_in_out_times(punches)
+            duration = None
+            if check_in and check_out and check_out > check_in:
+                duration = check_out - check_in
+            device_names = sorted({p.device.name for p in punches if p.device})
+            rows.append(
+                DailyAttendanceRow(
+                    work_date=work_date,
+                    employee_id=employee.pk,
+                    employee_name=employee.name,
+                    employee_number=employee.employee_number or '—',
+                    branch_name=employee.branch.name if employee.branch else '—',
+                    department_name=employee.department.name if employee.department else '—',
+                    administration_name=_fmt_employee_administration(employee),
+                    device_name=', '.join(device_names) if device_names else '—',
+                    device_id=first.device_id,
+                    device_user_id=0,
+                    device_user_name='—',
+                    check_in=check_in,
+                    check_out=check_out,
+                    punch_count=len(punches),
+                    work_duration=duration,
+                    status_label=_status_label(
+                        punch_count=len(punches),
+                        check_in=check_in,
+                        check_out=check_out,
+                        is_mapped=True,
+                    ),
+                    is_mapped=True,
+                ),
+            )
+            if max_rows is not None and len(rows) >= max_rows:
+                break
             continue
         device_names = sorted({p.device.name for p in punches if p.device})
         device_user_ids = sorted({p.device_user_id for p in punches})
@@ -282,6 +316,40 @@ class DailyAttendanceBuildResult:
     truncated: bool
 
 
+def _merge_employee_day_rows(rows: list[DailyAttendanceRow]) -> list[DailyAttendanceRow]:
+    """صف واحد لكل موظف/يوم: يدمج بصمات مربوطة مباشرة مع المربوطة عبر تسجيل الجهاز."""
+    merged: dict[tuple, DailyAttendanceRow] = {}
+    out: list[DailyAttendanceRow] = []
+    for row in rows:
+        if not row.is_mapped or row.employee_id is None:
+            out.append(row)
+            continue
+        key = (row.work_date, row.employee_id)
+        prev = merged.get(key)
+        if prev is None:
+            merged[key] = row
+            continue
+        ins = [t for t in (prev.check_in, row.check_in) if t]
+        outs = [t for t in (prev.check_out, row.check_out) if t]
+        check_in = min(ins) if ins else None
+        check_out = max(outs) if outs else None
+        count = prev.punch_count + row.punch_count
+        duration = check_out - check_in if check_in and check_out and check_out > check_in else None
+        devices = sorted({n for n in (prev.device_name, row.device_name) if n and n != '—'})
+        merged[key] = replace(
+            prev,
+            check_in=check_in,
+            check_out=check_out,
+            punch_count=count,
+            work_duration=duration,
+            device_name=', '.join(devices) if devices else '—',
+            status_label=_status_label(
+                punch_count=count, check_in=check_in, check_out=check_out, is_mapped=True,
+            ),
+        )
+    return out + list(merged.values())
+
+
 def build_daily_attendance_result(
     qs: QuerySet,
     *,
@@ -298,6 +366,7 @@ def build_daily_attendance_result(
 
     rows = _rows_from_linked_sql_aggregates(qs)
     rows.extend(_rows_from_unlinked_python(qs, enroll_map, max_rows=max_rows))
+    rows = _merge_employee_day_rows(rows)
 
     rows.sort(key=lambda r: r.sort_key, reverse=True)
     truncated = max_rows is not None and len(rows) > max_rows

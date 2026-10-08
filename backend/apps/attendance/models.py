@@ -293,9 +293,9 @@ class AttendanceIngestLog(BaseModel):
         verbose_name_plural = 'سجلات استقبال البصمات'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['-created_at']),
-            models.Index(fields=['device', '-created_at']),
-            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['-created_at'], name='attendance__created_6a8f2d_idx'),
+            models.Index(fields=['device', '-created_at'], name='attendance__device__f3c1a9_idx'),
+            models.Index(fields=['status', '-created_at'], name='attendance__status__8b4e21_idx'),
         ]
 
     def __str__(self):
@@ -349,8 +349,8 @@ class BiometricEnrollmentAuditLog(BaseModel):
         verbose_name_plural = 'تدقيق ربط البصمات'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['device', 'device_user_id', '-created_at']),
-            models.Index(fields=['new_employee', '-created_at']),
+            models.Index(fields=['device', 'device_user_id', '-created_at'], name='attendance__device__a1b2c3_idx'),
+            models.Index(fields=['new_employee', '-created_at'], name='attendance__new_emp_4d5e6f_idx'),
         ]
 
     def __str__(self):
@@ -386,7 +386,10 @@ class BiometricPullRequest(BaseModel):
         verbose_name_plural = 'طلبات سحب البصمة'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['device', 'acknowledged_at', '-created_at']),
+            models.Index(
+                fields=['device', 'acknowledged_at', '-created_at'],
+                name='attendance__device__pull_idx',  # الاسم الموجود في القاعدة (0011)
+            ),
         ]
 
     def __str__(self):
