@@ -598,7 +598,7 @@ def _execute_end_of_service(action, executor):
 
     from apps.payroll.services.settlement_payroll import remove_employee_from_draft_payroll_runs
 
-    payroll_cleanup = remove_employee_from_draft_payroll_runs(employee)
+    remove_employee_from_draft_payroll_runs(employee)
 
     if settlement_type == 'contract_expiry':
         header = '═══ انتهاء عقد بانتهاء مدته ═══'

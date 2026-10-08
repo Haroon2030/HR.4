@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from apps.core.models import AppModule, Permission, Role
+from apps.core.models import Permission, Role
 from apps.core.forms import RoleForm
 from apps.core.selectors.permission_matrix import build_role_permissions_matrix
 from apps.core.services.access_control import assignable_roles_queryset, order_roles_queryset

@@ -25,8 +25,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from django.http import HttpResponse, Http404
-from django.db.models import Prefetch, Sum, Count
+from django.http import Http404
+from django.db.models import Prefetch
 
 from apps.core.decorators import any_permission_required, permission_required
 from apps.core.salary_access import user_can_manage_payroll
@@ -1440,7 +1440,6 @@ def view_payroll_run(request, run_id):
                 raise Http404()
         from django.core.paginator import Paginator
         from apps.core.utils.pagination import clamp_page_size
-        from apps.payroll.models import PayrollAllocationLine
 
         alloc_qs = run.allocation_lines.select_related(
             'employee', 'branch', 'from_branch',

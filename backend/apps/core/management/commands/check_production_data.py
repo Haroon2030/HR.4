@@ -14,7 +14,6 @@ import os
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
-from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand

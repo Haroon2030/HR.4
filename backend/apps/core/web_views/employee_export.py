@@ -55,29 +55,16 @@ def export_employee_salary_excel(request, employee_id):
     title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
     title_fill = PatternFill('solid', fgColor='1E40AF')
 
-    header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
     header_fill = PatternFill('solid', fgColor='2563EB')
 
-    label_font = Font(name='Arial', size=11, bold=True, color='1E293B')
-    label_fill = PatternFill('solid', fgColor='F1F5F9')
 
-    value_font = Font(name='Arial', size=11, color='0F172A')
     value_fill = PatternFill('solid', fgColor='FFFFFF')
 
-    salary_label_fill = PatternFill('solid', fgColor='DBEAFE')
-    salary_value_fill = PatternFill('solid', fgColor='EFF6FF')
 
-    allowance_fill = PatternFill('solid', fgColor='ECFDF5')
-    allowance_label_fill = PatternFill('solid', fgColor='D1FAE5')
 
-    deduction_fill = PatternFill('solid', fgColor='FEF2F2')
-    deduction_label_fill = PatternFill('solid', fgColor='FEE2E2')
 
-    total_font = Font(name='Arial', size=14, bold=True, color='FFFFFF')
-    total_fill = PatternFill('solid', fgColor='059669')
 
     center = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    right = Alignment(horizontal='right', vertical='center', wrap_text=True)
 
     thin = Side(border_style='thin', color='CBD5E1')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -112,7 +99,6 @@ def export_employee_salary_excel(request, employee_id):
         ws.column_dimensions[col_letter].width = 10
 
     n = len(columns)
-    last_col = get_column_letter(n)
 
     # العنوان الكبير
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=n)

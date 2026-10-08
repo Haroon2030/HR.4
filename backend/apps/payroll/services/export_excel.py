@@ -173,29 +173,6 @@ def build_payroll_run_workbook(run):
     return wb
 
 
-def build_payroll_runs_workbook(runs):
-    """Workbook موحّد لعدة مسيرات (جدول واحد لكل الفروع المختارة)."""
-    from openpyxl import Workbook
-
-    runs = list(runs)
-    if not runs:
-        raise ValueError('لا توجد مسيرات للتصدير.')
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'كشف الرواتب'[:31]
-    ws.sheet_view.rightToLeft = True
-
-    first = runs[0]
-    branch_names = ', '.join(
-        r.branch.name for r in runs if r.branch_id
-    )[:120]
-    meta_note = (
-        f'{branch_names or "مسير موحّد"} — {first.period_label} — '
-        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
-    )
-    _write_payroll_sheet(ws, _payroll_line_pairs_for_runs(runs), meta_note=meta_note)
-    return wb
 
 
 @dataclass
@@ -536,8 +513,6 @@ def payroll_detailed_run_excel_filename(run) -> str:
     return f'payroll_detailed_{company}_{run.period_year}_{run.period_month:02d}.xlsx'
 
 
-def payroll_runs_excel_filename(*, year: int, month: int, salary_mode: str) -> str:
-    return f'payroll_{year}_{month:02d}_{salary_mode}.xlsx'
 
 
 def workbook_to_response(wb, filename: str):

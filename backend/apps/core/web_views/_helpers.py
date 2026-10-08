@@ -36,10 +36,6 @@ def _is_branch_manager(user):
     )
 
 
-def _is_branch_accountant(user):
-    """هل المستخدم محاسب فرع (دور BRANCH_ACCOUNTANT)؟"""
-    from apps.employees.services.cash_shortage_access import is_branch_accountant
-    return is_branch_accountant(user) or user.is_superuser
 
 
 def filter_employees_queryset_for_user(user, queryset):
@@ -91,7 +87,6 @@ def employee_branch_access_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('web:auth:login')
-        from apps.employees.models import Employee
         employee_id = kwargs.get('employee_id')
         if employee_id is None and kwargs.get('statement_id') is not None:
             from apps.employees.models import EmployeeStatement
@@ -219,7 +214,6 @@ def _role_ok_at_stage(user, action, stage):
 
 def _can_return_at_stage(user, action, stage):
     """إرجاع الطلب — operations.return + نطاق المرحلة."""
-    from apps.core.models import Permission
     from apps.core.services.workflow_access import can_return_operation
 
     if user.is_superuser:

@@ -3,8 +3,8 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_GET, require_POST
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.attendance.models import (
     AttendancePunch,
@@ -355,7 +355,6 @@ def biometric_device_save(request):
         request,
         f'تم حفظ الجهاز «{device.name}» (رقم {device.pk}) وربطه بفرع «{branch.name}» — يمكنك الآن ربط الموظفين بالأسفل.',
     )
-    from django.urls import reverse
     return redirect('web:biometric_devices')
 
 

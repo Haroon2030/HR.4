@@ -9,8 +9,6 @@ from django.db import transaction
 from apps.core.salary_month import daily_rate_from_total
 from apps.employees.models import Employee, EmployeeLedger
 from apps.employees.services.migration_balance import (
-    compute_opening_eosb_amount,
-    compute_opening_leave_days,
     employee_leave_accrual_start,
     global_cutover_date,
 )

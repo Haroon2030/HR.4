@@ -18,9 +18,7 @@ from apps.core.services.pending_actions import (
     branch_approve,
     create_and_execute_settlement_action,
     create_pending_action,
-    execute_pending_action,
     gm_approve_and_assign,
-    notify_branch_on_create,
 )
 from apps.employees.models import Employee, EmploymentRequest
 from apps.setup.models import Administration, EvolutionWhatsAppSettings, WorkflowWhatsAppSettings

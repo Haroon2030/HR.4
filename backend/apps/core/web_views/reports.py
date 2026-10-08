@@ -3,12 +3,10 @@
 كل تقرير يُرجع: columns (أعمدة) + rows (صفوف) + title
 """
 from datetime import date, datetime, timedelta
-from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum, Q, F
-from django.db.models.functions import Coalesce
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -101,8 +99,6 @@ def _grouped_reports():
     return groups
 
 
-def _report_keys():
-    return {r['key'] for r in REPORTS}
 
 
 def _report_filters(request):
@@ -871,7 +867,8 @@ def report_detail(request, report_type):
     group = next((g for g in visible_groups if g['key'] == meta.get('group')), None)
     builder = BUILDERS.get(report_type)
     filters = _report_filters(request)
-    from apps.core.services.report_cache import cache_bypass_requested, get_or_build_report_data
+    from apps.core.services.dashboard_cache import cache_bypass_requested
+    from apps.core.services.report_cache import get_or_build_report_data
 
     def _build():
         raw = builder(request) if builder else {'columns': [], 'rows': []}
@@ -924,7 +921,8 @@ def report_export_excel(request, report_type):
 
     builder = BUILDERS.get(report_type)
     filters = _report_filters(request)
-    from apps.core.services.report_cache import cache_bypass_requested, get_or_build_report_data
+    from apps.core.services.dashboard_cache import cache_bypass_requested
+    from apps.core.services.report_cache import get_or_build_report_data
 
     def _build():
         return _cap_report_data(builder(request) if builder else {'columns': [], 'rows': []})

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-from apps.attendance.services.labels import punch_type_for_status, verify_mode_label
+from apps.attendance.services.labels import punch_type_for_status
 from apps.attendance.services.zk_device_user_id import parse_device_user_id
 
 
@@ -372,16 +371,6 @@ def sync_device_users(device: BiometricDevice, *, force_mock: bool | None = None
     return {'ok': True, 'synced': synced, 'names': name_map}
 
 
-def get_device_user_name_map(device: BiometricDevice) -> dict[int, str]:
-    from apps.attendance.models import BiometricDeviceUser
-
-    return {
-        u.device_user_id: u.name
-        for u in BiometricDeviceUser.objects.filter(device=device, is_deleted=False).only(
-            'device_user_id', 'name',
-        )
-        if u.name
-    }
 
 
 def sync_device_attendance(

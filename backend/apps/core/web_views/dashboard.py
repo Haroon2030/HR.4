@@ -15,7 +15,7 @@ def dashboard_view(request):
     """لوحة التحكم الرئيسية"""
     from django.urls import reverse
     from django.core.paginator import Paginator
-    from apps.employees.models import EmploymentRequest, Employee
+    from apps.employees.models import EmploymentRequest
     from apps.core.models import PendingAction
     from apps.core.web_views._helpers import _is_hr_officer, _is_general_manager
     from apps.core.web_views.employment_requests import get_hr_officers
@@ -23,10 +23,8 @@ def dashboard_view(request):
     raw_branch_ids = _user_accessible_branch_ids(request.user)
     if raw_branch_ids is None:
         branch_scope = None
-        accessible_branch_ids = []
     else:
         branch_scope = list(raw_branch_ids)
-        accessible_branch_ids = branch_scope
 
     from apps.core.services.dashboard_cache import (
         cache_bypass_requested,

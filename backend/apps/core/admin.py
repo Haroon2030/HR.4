@@ -4,12 +4,10 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import path, reverse
 from django.utils.html import format_html
 
-from .backup_download import safe_local_backup_path
 from .models import (
     Role,
     UserProfile,

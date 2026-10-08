@@ -73,11 +73,6 @@ def compute_tiered_leave_accrued_days(service_days: int) -> Decimal:
     return (FIRST_TIER_LEAVE_CAP + extra_leave).quantize(LEAVE_DAYS_QUANT)
 
 
-def compute_flat_21_leave_accrued_days(service_days: int) -> Decimal:
-    """21 يوم/سنة — بدون تدرج (سنة = 360 يوماً)."""
-    if service_days <= 0:
-        return Decimal('0.00')
-    return (Decimal(service_days) / DAYS_PER_YEAR * LEAVE_DAYS_FIRST_FIVE_YEARS).quantize(LEAVE_DAYS_QUANT)
 
 
 def _compute_leave_only_settlement(

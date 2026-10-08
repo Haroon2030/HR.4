@@ -2,9 +2,9 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 
-from apps.core.decorators import get_user_permissions, has_permission
+from apps.core.decorators import has_permission
 from apps.core.forms import RoleForm
-from apps.core.models import AppModule, Branch, Company, Permission, Role, UserProfile
+from apps.core.models import AppModule, Branch, Company, Permission, Role
 from apps.maintenance.sub_permissions import (
     MAINTENANCE_SCREEN_ASSIGN_VIEW,
     MAINTENANCE_SCREEN_REQUESTS_VIEW,

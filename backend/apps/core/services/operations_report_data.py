@@ -254,15 +254,6 @@ def _action_matches_scope(action: PendingAction, profile: RoleReportProfile) -> 
     return False
 
 
-def _employment_matches_scope(req: EmploymentRequest, profile: RoleReportProfile) -> bool:
-    if not profile.scoped:
-        return True
-    if not req.administration_id:
-        return False
-    admin = getattr(req, 'administration', None)
-    if admin is not None:
-        return _administration_role(admin) == profile.role_key
-    return _administration_id_matches_scope(req.administration_id, profile)
 
 
 def _new_employee_rows(report_date: date, profile: RoleReportProfile) -> list[OperationsReportRow]:
@@ -409,24 +400,3 @@ def collect_operations_report(
         role_key=profile.role_key,
     )
 
-
-def collect_operations_report_rows(
-    *,
-    report_date: date | None = None,
-    include_pending: bool = True,
-    include_completed: bool = True,
-) -> tuple[list[OperationsReportRow], list[OperationsReportRow]]:
-    """توافق خلفي — قائمة مسطّحة للمعلّق والمُنجز."""
-    bundle = collect_operations_report(
-        report_date=report_date,
-        include_pending=include_pending,
-        include_completed=include_completed,
-    )
-    pending: list[OperationsReportRow] = []
-    completed: list[OperationsReportRow] = []
-    for section in bundle.sections:
-        pending.extend(section.pending_rows)
-        completed.extend(section.completed_rows)
-    pending.sort(key=lambda r: r.sort_key, reverse=True)
-    completed.sort(key=lambda r: r.sort_key, reverse=True)
-    return pending, completed

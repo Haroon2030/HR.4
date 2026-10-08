@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from django.conf import settings
 from django.urls import NoReverseMatch, reverse

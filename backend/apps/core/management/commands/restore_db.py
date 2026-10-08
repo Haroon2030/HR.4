@@ -25,7 +25,6 @@ import gzip
 import os
 import shutil
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse

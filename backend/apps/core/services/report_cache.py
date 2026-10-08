@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Callable
+from typing import Callable
 
 from django.core.cache import cache
 
@@ -18,10 +18,6 @@ def filters_digest(filters: dict) -> str:
     normalized = {str(k): filters[k] for k in sorted(filters)}
     raw = json.dumps(normalized, sort_keys=True, default=str)
     return hashlib.sha256(raw.encode('utf-8')).hexdigest()[:20]
-
-
-def cache_bypass_requested(request) -> bool:
-    return (request.GET.get('refresh') or '').strip() == '1'
 
 
 def report_cache_key(user_id: int, report_type: str, filters: dict) -> str:
@@ -81,17 +77,3 @@ def get_or_build_daily_attendance_rows(
     cache.set(key, rows, ATTENDANCE_DAILY_CACHE_TTL)
     return rows, False
 
-
-def invalidate_user_report_caches(user_id: int) -> None:
-    """إبطال تقارير مستخدم — يستخدم delete_pattern عند Redis."""
-    patterns = (
-        f'*{CACHE_PREFIX_REPORT}{user_id}:*',
-        f'*{CACHE_PREFIX_ATTENDANCE_DAILY}{user_id}:*',
-    )
-    delete_pattern = getattr(cache, 'delete_pattern', None)
-    if callable(delete_pattern):
-        for pattern in patterns:
-            try:
-                delete_pattern(pattern)
-            except Exception:
-                pass

@@ -20,7 +20,6 @@ def build_maintenance_created_message(req) -> str:
 
 
 def build_maintenance_assigned_message(req) -> str:
-    worker = req.assigned_worker
     report_url = build_system_link(f'/maintenance/report/{req.worker_report_token}/')
     return (
         f'🔧 *مهمة صيانة مُسندة إليك*\n'

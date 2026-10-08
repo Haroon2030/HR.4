@@ -18,14 +18,11 @@ from apps.cost_centers.models import CostCenter
 from apps.core.decorators import permission_required
 from apps.core.web_views._branch_scoped import (
     branch_for_scoped_view,
-    deny_branch_resource,
     list_branch_scoped_queryset,
     require_branch_access,
 )
 
 
-def _deny_cost_center_branch(request, *, action: str):
-    return deny_branch_resource(request, resource_label='مراكز التكلفة', action=action)
 
 
 @login_required

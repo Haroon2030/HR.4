@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from apps.core.models import AppModule, Branch, Company, Permission, Role, UserProfile
+from apps.core.models import AppModule, Branch, Company, Permission, Role
 
 User = get_user_model()
 

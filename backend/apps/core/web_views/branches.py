@@ -17,7 +17,6 @@ from apps.core.models import Branch, Company
 
 from apps.core.decorators import permission_required
 from apps.core.services.org_structure import (
-    ORG_STRUCTURE_TAB_KEYS,
     get_org_tab_context,
     resolve_org_tab,
 )

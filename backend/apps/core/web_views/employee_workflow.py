@@ -762,7 +762,7 @@ def _redirect_employee_tab(employee_id: int, tab: str):
 def edit_employee_loan(request, employee_id, loan_id):
     """تعديل سلفة موظف."""
     from django.db import transaction
-    from apps.employees.models import Employee, EmployeeLoan, LoanInstallment
+    from apps.employees.models import Employee, EmployeeLoan
     from apps.core.forms import LoanRequestForm
     from apps.core.services.file_helpers import apply_uploaded_file_rename
     from apps.employees.services.employee_record_locks import loan_has_consumed_installments

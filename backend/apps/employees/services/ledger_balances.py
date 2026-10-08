@@ -4,15 +4,6 @@ from __future__ import annotations
 from decimal import Decimal
 
 
-def get_latest_ledger_balance(employee):
-    """آخر قيد تراكمي للموظف أو None."""
-    from apps.employees.models import EmployeeLedger
-
-    return (
-        EmployeeLedger.objects.filter(employee=employee)
-        .order_by('-date', '-created_at')
-        .first()
-    )
 
 
 def settlement_leave_from_ledger(employee) -> tuple[Decimal, Decimal, str]:

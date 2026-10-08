@@ -91,10 +91,8 @@ def attendance_report(request):
     summary = summarize_daily_rows([], punch_total=punch_stats['total'])
 
     if load_daily:
-        from apps.core.services.report_cache import (
-            cache_bypass_requested,
-            get_or_build_daily_attendance_rows,
-        )
+        from apps.core.services.dashboard_cache import cache_bypass_requested
+        from apps.core.services.report_cache import get_or_build_daily_attendance_rows
 
         bypass_cache = cache_bypass_requested(request)
         all_rows, from_daily_cache = get_or_build_daily_attendance_rows(

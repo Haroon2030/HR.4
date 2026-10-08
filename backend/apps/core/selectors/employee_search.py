@@ -6,7 +6,6 @@ from django.db.models import Q, QuerySet
 from apps.core.models import Branch
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
-from apps.employees.models import Employee
 from apps.setup.models import Nationality, Profession
 
 

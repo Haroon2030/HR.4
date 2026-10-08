@@ -10,9 +10,9 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from apps.attendance.models import BiometricDevice, BiometricDeviceUser
-from apps.attendance.services.labels import punch_type_for_status, verify_mode_label
+from apps.attendance.services.labels import punch_type_for_status
 from apps.attendance.services.punch_sync import import_raw_attendance_rows
-from apps.attendance.services.zk_client import DeviceUserRow, RawAttendanceRow
+from apps.attendance.services.zk_client import RawAttendanceRow
 
 
 @dataclass

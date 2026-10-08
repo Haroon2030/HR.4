@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import time
-from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

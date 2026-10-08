@@ -96,11 +96,6 @@ def _status_label(
     return 'غير مكتمل'
 
 
-def _day_group_key(punch: AttendancePunch, day: date) -> tuple:
-    """موظف مربوط: صف واحد/يوم — غير مربوط: حسب الجهاز ورقم المستخدم."""
-    if punch.employee_id:
-        return ('emp', day, punch.employee_id)
-    return ('dev', day, punch.device_id, punch.device_user_id)
 
 
 def _resolve_employee_for_punch(punch: AttendancePunch, enroll_map: dict) -> object | None:

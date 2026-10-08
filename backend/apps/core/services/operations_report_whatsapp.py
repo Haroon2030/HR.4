@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from django.conf import settings
 
 from apps.core.models import WhatsAppMessageLog
 from apps.core.services.operations_report_data import OperationsReportBundle

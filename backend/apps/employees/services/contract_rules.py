@@ -96,9 +96,6 @@ def _query_saudi_nationality_ids() -> tuple[int, ...]:
     )
 
 
-def refresh_saudi_nationality_ids_cache() -> tuple[int, ...]:
-    saudi_nationality_ids.cache_clear()
-    return saudi_nationality_ids()
 
 
 def _add_months(d: date, months: int) -> date:
@@ -127,10 +124,6 @@ def should_auto_unlimited(*, hire_date: date | None, nationality, today: date | 
     return (today or date.today()) >= fourth_year_start(hire_date)
 
 
-def default_contract_type(*, nationality, hire_date: date | None, today: date | None = None) -> str:
-    if should_auto_unlimited(hire_date=hire_date, nationality=nationality, today=today):
-        return ContractType.UNLIMITED
-    return ContractType.FIXED
 
 
 def sync_employee_contract(employee, *, today: date | None = None) -> bool:

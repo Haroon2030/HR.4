@@ -1,5 +1,5 @@
 """سجلات الحضور — عرض تقني مع فلترة وتصفح وتصدير."""
-from datetime import datetime, time
+from datetime import datetime
 
 from django.contrib import messages
 from django.http import JsonResponse
@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from apps.attendance.models import AttendancePunch, BiometricDevice
+from apps.attendance.models import AttendancePunch
 from apps.attendance.selectors.punch_records import (
     PUNCH_LIST_ORDERING,
     get_punch_queryset,

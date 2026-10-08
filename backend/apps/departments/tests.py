@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from apps.core.models import Branch, Company, UserProfile
+from apps.core.models import Branch, Company
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
 

@@ -11,7 +11,6 @@ from django.utils import timezone
 from apps.core.salary_month import (
     MONTHLY_LEAVE_ACCRUAL_DAYS,
     accrued_annual_leave_days,
-    calendar_month_last_day,
     daily_rate_from_total,
     employment_service_days,
     salary_month_days,
@@ -81,7 +80,6 @@ def _eosb_detail_text(employee: Employee, as_of: date) -> str:
 
 def _compute_monthly_changes(employee: Employee, entry: EmployeeLedger) -> tuple[Decimal, Decimal, Decimal, str]:
     from apps.employees.services.accrual_ledger_notes import (
-        build_monthly_payroll_notes,
         compute_monthly_ledger_amounts,
     )
     from apps.payroll.models import PayrollLine

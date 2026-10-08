@@ -46,8 +46,6 @@ def tab_permission_code(tab_key: str) -> str:
     return f'employee_tab_{tab_key}.view'
 
 
-def settlement_execute_permission_code() -> str:
-    return SETTLEMENT_EXECUTE_PERMISSION
 
 
 def register_employee_tab_permissions() -> None:

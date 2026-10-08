@@ -28,7 +28,6 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 

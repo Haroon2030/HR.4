@@ -587,7 +587,6 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
 
     # ── حدود الشهر: فترة تقويمية للتصفية، 30 يوماً لقسمة الراتب ──
     period_start, period_end = calendar_period_bounds(year, month)
-    month_days = salary_month_days(year, month)
 
     from apps.payroll.services.transfer_payroll import (
         transfer_breakdown_for_employee,
@@ -849,7 +848,6 @@ def lock_payroll_run(run: PayrollRun, user):
         compute_monthly_ledger_amounts,
     )
 
-    period_anchor = date(run.period_year, run.period_month, 1)
     line_list = list(run.lines.select_related('employee'))
 
     gone = sorted({

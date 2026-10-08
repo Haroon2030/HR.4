@@ -30,8 +30,6 @@ def employee_enrollments(employee: Employee) -> QuerySet:
     return enrollments_for_employee(employee.id)
 
 
-def employee_is_biometric_linked(employee: Employee) -> bool:
-    return employee_enrollments(employee).exists()
 
 
 def base_punches_queryset(

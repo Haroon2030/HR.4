@@ -177,14 +177,6 @@ def fetch_connection_state(
     return EvolutionWhatsAppSettings.ConnectionStatus.UNKNOWN
 
 
-def find_webhook(
-    instance_name: str,
-    *,
-    config: EvolutionRuntimeConfig | None = None,
-) -> dict:
-    name = _validate_instance_name(instance_name)
-    quoted = urllib.parse.quote(name, safe='')
-    return _request('GET', f'/webhook/find/{quoted}', config=config)
 
 
 def set_webhook(

@@ -7,9 +7,8 @@
 """
 from __future__ import annotations
 
-import uuid
 from dataclasses import dataclass, field
-from datetime import date, datetime, time
+from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -17,11 +16,9 @@ from django.utils import timezone
 
 from apps.attendance.services.labels import punch_type_for_status, verify_mode_label as zk_verify_label
 from apps.attendance.services.zk_client import (
-    DeviceSnapshot,
     DeviceUserRow,
     RawAttendanceRow,
     fetch_device_snapshot,
-    sync_device_users,
 )
 
 if TYPE_CHECKING:
@@ -173,18 +170,13 @@ def export_punches_excel(
     output_path: Path,
 ) -> Path:
     from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font
 
     wb = Workbook()
     ws_summary = wb.active
     ws_summary.title = 'ملخص'
     ws_summary.sheet_view.rightToLeft = True
 
-    header_fill = PatternFill('solid', fgColor='1E40AF')
-    header_font = Font(bold=True, color='FFFFFF', name='Arial')
-    thin = Side(style='thin', color='CBD5E1')
-    border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     summary_rows = [
         ('الجهاز', result.device_name),

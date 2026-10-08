@@ -4,7 +4,7 @@ from django.contrib.sessions.models import Session
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from apps.core.models import AppModule, Branch, Company, Permission, Role, UserProfile, UserSession
+from apps.core.models import AppModule, Branch, Company, Permission, Role, UserSession
 
 User = get_user_model()
 

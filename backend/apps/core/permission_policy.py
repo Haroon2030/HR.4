@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from apps.core.decorators import get_user_permissions, has_permission, _is_super_or_admin
-from apps.core.salary_access import user_can_edit_salary, user_can_view_salary
+from apps.core.salary_access import user_can_view_salary
 
 # تقارير تحتوي بيانات رواتب
 # تقارير تُظهر رواتب أو مبالغ مالية للموظفين

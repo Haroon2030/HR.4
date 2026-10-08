@@ -346,7 +346,7 @@ def add_user(request):
 def manage_user_permissions(request, user_id):
     """إدارة الصلاحيات على مستوى المستخدم (تعديل فوق صلاحيات الدور)."""
     from django.contrib.auth import get_user_model
-    from apps.core.models import AppModule, Permission
+    from apps.core.models import Permission
 
     User = get_user_model()
     user_obj = get_object_or_404(User.objects.select_related('profile__role'), id=user_id)

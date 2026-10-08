@@ -8,7 +8,6 @@ from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 
 from apps.core.employee_tab_permissions import (
-    employee_tab_visibility,
     resolve_default_employee_tab,
 )
 from apps.employees.models import Employee, EmployeeStatement
@@ -67,7 +66,7 @@ def load_employee_view_context(
     """بيانات إضافية للقالب حسب التبويب — بعد جلب Employee بـ select_related."""
     from apps.core.models import Branch
     from apps.departments.models import Department
-    from apps.employees.models import EmployeeCustody, EmployeeLedger
+    from apps.employees.models import EmployeeCustody
 
     ctx: dict = {
         'statements_count': 0,
@@ -219,11 +218,6 @@ def _modal_js_float(value) -> float:
         return 0.0
 
 
-def _modal_js_int(value) -> int:
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
 
 
 def _build_employee_modal_js(employee: Employee, user) -> dict:
@@ -241,7 +235,6 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
     }
     if user_can_view_salary(user):
         from apps.employees.services.settlement_financials import (
-            pending_absences_deduction,
             pending_loans_deduction,
         )
 
@@ -391,7 +384,6 @@ def _ledger_settlement_print_url(employee_id: int, ledger_id: int) -> str:
 
 
 def _load_accruals_tab(employee: Employee, user) -> list:
-    from apps.employees.models import EmployeeLedger
 
     accruals_qs = employee.accruals_ledger.all().order_by('-date', '-created_at')
     if employee.hire_date and not accruals_qs.exists():

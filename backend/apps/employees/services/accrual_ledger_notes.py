@@ -11,7 +11,6 @@ from apps.core.salary_month import (
     completed_employment_months,
     daily_rate_from_total,
     employment_service_days,
-    salary_month_days,
     service_years_30day,
 )
 

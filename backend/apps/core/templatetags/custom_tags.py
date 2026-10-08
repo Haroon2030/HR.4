@@ -321,21 +321,6 @@ def startswith(value, arg):
     return False
 
 
-@register.filter
-def get_item(dictionary, key):
-    """Get item from dictionary"""
-    if dictionary and key:
-        return dictionary.get(key)
-    return None
-
-
-@register.simple_tag
-def active_class(request, pattern):
-    """Return active class if URL matches pattern"""
-    import re
-    if re.search(pattern, request.path):
-        return 'bg-primary-50 text-primary-700'
-    return 'text-slate-600 hover:bg-slate-100'
 
 
 @register.filter
@@ -385,16 +370,6 @@ def is_general_manager(user):
     return _is_general_manager(user)
 
 
-@register.simple_tag(takes_context=True)
-def user_has_permission(context, permission_code):
-    """
-    Template tag للتحقق من صلاحية المستخدم
-    """
-    from apps.core.decorators import has_permission as check_permission
-    user = context.get('request').user if 'request' in context else None
-    if not user:
-        return False
-    return check_permission(user, permission_code)
 
 
 @register.filter
@@ -446,13 +421,6 @@ def guarded_table_actions(
     }
 
 
-@register.simple_tag(takes_context=True)
-def can_see_employee_tab(context, tab_key):
-    """هل يظهر تبويب ملف الموظف للمستخدم الحالي؟"""
-    from apps.core.employee_tab_permissions import user_can_see_employee_tab
-    request = context.get('request')
-    user = getattr(request, 'user', None) if request else None
-    return user_can_see_employee_tab(user, tab_key)
 
 
 @register.inclusion_tag('components/hr_breadcrumb.html')
@@ -479,29 +447,6 @@ def role_type_arabic(role_type):
     return arabic_role_label(role_type=role_type)
 
 
-@register.filter
-def role_technical_code(role_type):
-    """رمز الدور التقني من role_catalog."""
-    if not role_type:
-        return '—'
-    try:
-        from apps.core.role_catalog import ROLE_CATALOG
-        return ROLE_CATALOG.get(role_type, {}).get('code', role_type)
-    except Exception:
-        return role_type
-
-
-@register.filter
-def role_badge_class(role_type):
-    """كلاس شارة الدور حسب النوع."""
-    return _ROLE_BADGE_CLASS.get(role_type, 'bg-slate-100 text-slate-700')
-
-
-@register.filter
-def perm_op_short(op_code):
-    """اختصار عمود العملية في مصفوفة الصلاحيات."""
-    from apps.core.permissions_registry import OPERATION_SHORT_LABELS
-    return OPERATION_SHORT_LABELS.get(op_code, op_code)
 
 
 @register.filter

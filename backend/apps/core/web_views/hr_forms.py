@@ -196,7 +196,6 @@ def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
     if end:
         from apps.employees.services.settlement_financials import (
             compute_settlement_financials,
-            net_settlement_total,
         )
 
         fin = compute_settlement_financials(employee, end)

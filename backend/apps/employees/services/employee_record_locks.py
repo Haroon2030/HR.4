@@ -27,8 +27,6 @@ def loan_has_consumed_installments(loan: EmployeeLoan) -> bool:
     ).exists()
 
 
-def loan_is_editable(loan: EmployeeLoan) -> bool:
-    return not loan_has_consumed_installments(loan)
 
 
 def ledger_entry_is_locked(entry: EmployeeLedger) -> bool:

@@ -1,8 +1,7 @@
 from django.http import QueryDict
 from django.test import TestCase
 from decimal import Decimal
-from datetime import date, timedelta
-from django.utils import timezone
+from datetime import date
 from apps.employees.forms import EmployeeForm, EmploymentRequestEditForm
 from apps.employees.models import Employee, EmployeeAbsence, EmployeeLoan, EmployeeLedger, LoanInstallment, EmploymentRequest
 from apps.setup.models import Nationality, Sponsorship

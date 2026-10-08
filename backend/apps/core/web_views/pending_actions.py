@@ -334,7 +334,7 @@ def list_pending_actions(request):
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     # ─ العدّادات الموحّدة (aggregate لتقليل الاستعلامات) ────────
-    from django.db.models import Count, Case, When, IntegerField
+    from django.db.models import Count
     pa_agg = base.aggregate(
         c_branch=Count('id', filter=Q(status=PendingAction.Status.PENDING_BRANCH)),
         c_gm=Count('id', filter=Q(status=PendingAction.Status.PENDING_GM)),

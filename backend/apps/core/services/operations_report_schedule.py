@@ -13,14 +13,6 @@ def normalize_send_time(value: time | None) -> time:
     return value
 
 
-def send_time_matches_now(now: datetime, send_time: time | None) -> bool:
-    """يطابق الساعة والدقيقة والثواني (للاستخدام مع cron كل دقيقة)."""
-    target = normalize_send_time(send_time)
-    return (
-        now.hour == target.hour
-        and now.minute == target.minute
-        and now.second == target.second
-    )
 
 
 def send_time_matches_minute(now: datetime, send_time: time | None) -> bool:

@@ -17,7 +17,7 @@ from apps.employees.models import (
     EmployeeLoan,
     LoanInstallment,
 )
-from apps.payroll.models import PayrollAllocationLine, PayrollRun
+from apps.payroll.models import PayrollRun
 from apps.payroll.services.engine import (
     build_payroll_run,
     build_consolidated_payroll_run,

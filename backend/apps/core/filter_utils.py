@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from typing import Any
-from urllib.parse import urlencode
 
 
 def parse_multi_filter_ids(
@@ -54,22 +53,3 @@ def append_multi_param(params: list[tuple[str, Any]], param: str, ids: list[int]
         for i in ids:
             params.append((param, i))
 
-
-def multi_filter_querystring(
-    base: dict | None = None,
-    *,
-    branch_ids: list[int] | None = None,
-    branch_param: str = 'branch',
-    extra: dict | None = None,
-) -> str:
-    pairs: list[tuple[str, Any]] = []
-    if base:
-        for k, v in base.items():
-            if v is not None and v != '':
-                pairs.append((k, v))
-    append_multi_param(pairs, branch_param, branch_ids)
-    if extra:
-        for k, v in extra.items():
-            if v is not None and v != '':
-                pairs.append((k, v))
-    return urlencode(pairs, doseq=True)
