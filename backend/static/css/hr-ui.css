@@ -7179,6 +7179,21 @@ body.hr-app .hr-sidebar-panel .hr-nav-label {
     color: var(--hr-sidebar-text-muted) !important;
 }
 
+body.hr-app .hr-sidebar-panel .hr-nav-section {
+    padding: 1.1rem 0 0.45rem;
+    margin-top: 0.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+    margin-bottom: 0.35rem;
+}
+
+body.hr-app .hr-sidebar-panel .hr-nav-label {
+    font-size: 0.95rem;
+    font-weight: 800 !important;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: #fff !important;
+}
+
 body.hr-app .hr-sidebar-panel .hr-nav-link,
 body.hr-app .hr-sidebar-panel .hr-nav-link--btn {
     width: 100%;
@@ -15521,4 +15536,141 @@ body.hr-app .hr-dyn-value {
     body.hr-app .hr-dyn-toggle::before {
         transition: none;
     }
+}
+
+/* ══ مجموعات الشريط الجانبي (قابلة للطي) ══════════════════════ */
+body.hr-app .hr-sidebar-panel .hr-nav-section.hr-nav-section--toggle {
+    padding: 0.2rem 0;
+    margin: 0.15rem 0 0;
+    border-bottom: 0;
+}
+.hr-nav-group__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.4rem;
+    background: transparent;
+    border: 0;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    color: #fff;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+.hr-nav-group__head:hover,
+a.hr-nav-group__head:hover {
+    background: rgba(255, 255, 255, 0.1);
+    text-decoration: none;
+}
+.hr-nav-group__head:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+.hr-nav-group__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+.hr-nav-group__icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.38rem;
+    flex-shrink: 0;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    stroke: #fff;
+    box-sizing: border-box;
+}
+.hr-nav-group__head--link.is-active,
+.hr-nav-group.has-active > .hr-nav-section .hr-nav-group__head {
+    background: rgba(255, 255, 255, 0.12);
+}
+.hr-nav-group__dot {
+    display: none;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+.hr-nav-group.has-active:not(.is-open) .hr-nav-group__dot {
+    display: inline-block;
+}
+.hr-nav-group__end {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.hr-nav-group__chevron {
+    width: 1rem;
+    height: 1rem;
+    color: #fff;
+    opacity: 0.85;
+    transition: transform 0.2s ease;
+}
+.hr-nav-group.is-open .hr-nav-group__chevron {
+    transform: rotate(180deg);
+}
+.hr-nav-group:not(.is-open) .hr-nav-group__body {
+    display: none;
+}
+.hr-nav-group__body {
+    padding: 0.1rem 0 0.35rem;
+}
+.hr-sidebar--collapsed .hr-nav-group .hr-nav-group__body {
+    display: block;
+}
+/* نص الشاشات داخل المجموعات — تباين أعلى */
+body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link,
+body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link .hr-nav-text {
+    color: #fff !important;
+}
+
+/* زر الرئيسية (شعار الشريط) — توهّج خفيف */
+.hr-sidebar-brand-bar__logo {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.12),
+        0 0 14px rgba(255, 255, 255, 0.38),
+        0 0 28px rgba(255, 255, 255, 0.35);
+    transition: box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.hr-sidebar-brand-bar__main:hover .hr-sidebar-brand-bar__logo,
+.hr-sidebar-brand-bar__main:focus-visible .hr-sidebar-brand-bar__logo {
+    background: rgba(255, 255, 255, 0.28) !important;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        0 0 18px rgba(255, 255, 255, 0.55),
+        0 0 36px rgba(255, 255, 255, 0.5);
+}
+
+/* الخلية النشطة في الشريط الجانبي — توهّج كهرماني (لون التمييز الوحيد في الشريط) */
+body.hr-app .hr-sidebar-panel .hr-nav-group.has-active > .hr-nav-section .hr-nav-group__head,
+body.hr-app .hr-sidebar-panel .hr-nav-group__head--link.is-active {
+    background: rgba(251, 191, 36, 0.14);
+    box-shadow:
+        inset 0 0 0 1px rgba(251, 191, 36, 0.55),
+        0 0 16px rgba(251, 191, 36, 0.3);
+}
+body.hr-app .hr-sidebar-panel .hr-nav-group.has-active > .hr-nav-section .hr-nav-group__icon,
+body.hr-app .hr-sidebar-panel .hr-nav-group__head--link.is-active .hr-nav-group__icon {
+    background: rgba(251, 191, 36, 0.3);
+    box-shadow:
+        0 0 0 1px rgba(251, 191, 36, 0.6),
+        0 0 12px rgba(251, 191, 36, 0.55);
+}
+body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link.is-active {
+    background: rgba(251, 191, 36, 0.16) !important;
+    box-shadow:
+        inset 0 0 0 1px rgba(251, 191, 36, 0.5),
+        0 0 12px rgba(251, 191, 36, 0.28) !important;
+}
+.hr-nav-group__dot {
+    background: #fbbf24;
+    box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.7);
 }

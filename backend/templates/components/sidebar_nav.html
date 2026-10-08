@@ -3,148 +3,108 @@
 
 {% include "components/app_org_bar.html" with always_show=always_show dropdown_uid=dropdown_uid %}
 
-{% include "components/nav_section.html" with label="الرئيسية" always_show=always_show %}
-{% include "components/nav_item.html" with url="web:dashboard" icon="layout-grid" label="لوحة التحكم" force_show_label=always_show %}
-
 {% if user|has_permission:'employees.view' or user|has_permission:'employees.add' %}
-{% include "components/nav_section.html" with label="الموارد البشرية" always_show=always_show %}
-<div class="hr-nav-dropdown{% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'create_employee_full' or request.resolver_match.url_name == 'edit_employee' or request.resolver_match.url_name == 'view_employee' %} is-open{% endif %}" data-nav-dropdown>
-    <button type="button" data-nav-dropdown-trigger
-        aria-expanded="{% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'create_employee_full' or request.resolver_match.url_name == 'edit_employee' or request.resolver_match.url_name == 'view_employee' %}true{% else %}false{% endif %}"
-        class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'create_employee_full' or request.resolver_match.url_name == 'edit_employee' or request.resolver_match.url_name == 'view_employee' %}is-active{% endif %}">
-        <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="users" class="w-4 h-4"></i></span>
-        {% if always_show %}
-        <span class="hr-nav-text flex-1 text-right">قائمة الموظفين</span>
-        <i data-lucide="chevron-down" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% else %}
-        <span x-show="sidebarOpen" class="hr-nav-text flex-1 text-right">قائمة الموظفين</span>
-        <i data-lucide="chevron-down" x-show="sidebarOpen" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% endif %}
-    </button>
-    <div class="hr-nav-sub">
-        {% if user|has_permission:'employees.view' %}
-        <a href="{% url 'web:list_employees' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'list_employees' or request.resolver_match.url_name == 'view_employee' %}is-active{% endif %}">قائمة الموظفين</a>
-        <a href="{% url 'web:employee_barcode_labels' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'employee_barcode_labels' or request.resolver_match.url_name == 'employee_barcode_print' %}is-active{% endif %}">ملصق باركود Zebra</a>
-        {% endif %}
-        {% if user|has_permission:'employees.add' %}
-        <a href="{% url 'web:add_employee' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'add_employee' or request.resolver_match.url_name == 'create_employee_full' %}is-active{% endif %}">إضافة موظف</a>
-        {% endif %}
+<div class="hr-nav-group" data-nav-group>
+    {% include "components/nav_group_head.html" with label="بيانات الموظفين" icon="users" always_show=always_show %}
+    <div class="hr-nav-group__body">
+{% if user|has_permission:'employees.view' %}
+{% include "components/nav_item.html" with url="web:list_employees" related_url="view_employee" icon="users" label="قائمة الموظفين" force_show_label=always_show %}
+{% include "components/nav_item.html" with url="web:employee_barcode_labels" icon="barcode" label="ملصق باركود Zebra" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'employees.add' %}
+{% include "components/nav_item.html" with url="web:add_employee" related_url="create_employee_full" icon="user-plus" label="إضافة موظف" force_show_label=always_show %}
+{% endif %}
+
+{% include "components/nav_item.html" with external_href="https://forms.gle/Uw2nuffzNa4ZgfZX9" icon="file-badge" label="العروض الوظيفية" force_show_label=always_show %}
     </div>
 </div>
 {% endif %}
 
+{% if user|has_attendance_nav %}
+<div class="hr-nav-group" data-nav-group>
+{% include "components/nav_group_head.html" with label="الحضور والانصراف" icon="fingerprint" always_show=always_show %}
+<div class="hr-nav-group__body">
+{% if user|has_permission:'attendance_screen_devices.view' %}
+{% include "components/nav_item.html" with url="web:biometric_devices" path_prefix="/attendance/devices" icon="fingerprint" label="أجهزة البصمة" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'attendance_screen_report.view' %}
+{% include "components/nav_item.html" with url="web:attendance_report" path_prefix="/attendance/report" icon="file-bar-chart" label="تقرير البصمة" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'attendance_screen_late_alerts.view' %}
+{% include "components/nav_item.html" with url="web:attendance_late_alerts" path_prefix="/attendance/late-alerts" icon="alarm-clock" label="إنذار تأخير البصمة" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'attendance_screen_records.view' %}
+{% include "components/nav_item.html" with url="web:attendance_records" path_prefix="/attendance/records" icon="calendar-check" label="سجلات الحضور" force_show_label=always_show %}
+{% endif %}
+</div>
+</div>
+{% endif %}
+
 {% if user.is_superuser or user|has_permission:'payroll.view' or user|has_permission:'payroll.manage' or user|has_permission:'payroll.process' or user|has_permission:'cash_shortages.view' %}
-{% include "components/nav_section.html" with label="المالية" always_show=always_show %}
+<div class="hr-nav-group" data-nav-group>
+{% include "components/nav_group_head.html" with label="الرواتب والمالية" icon="banknote" always_show=always_show %}
+<div class="hr-nav-group__body">
 {% if user|has_permission:'cash_shortages.view' %}
 {% include "components/nav_item.html" with url="web:list_cash_shortages" path_prefix="/cash-shortages/" icon="wallet" label="عجز الكاشير" force_show_label=always_show %}
 {% endif %}
 {% if user.is_superuser or user|has_permission:'payroll.view' or user|has_permission:'payroll.manage' or user|has_permission:'payroll.process' %}
 {% include "components/nav_item.html" with url="web:list_payroll_runs" path_prefix="/payroll/" icon="banknote" label="مسير الرواتب" force_show_label=always_show %}
 {% endif %}
+</div>
+</div>
 {% endif %}
 
-{% if user|has_attendance_nav %}
-{% include "components/nav_section.html" with label="الحضور والدوام" always_show=always_show %}
-<div class="hr-nav-dropdown{% if '/attendance/' in request.path %} is-open{% endif %}" data-nav-dropdown>
-    <button type="button" data-nav-dropdown-trigger
-        aria-expanded="{% if '/attendance/' in request.path %}true{% else %}false{% endif %}"
-        class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if '/attendance/' in request.path %}is-active{% endif %}">
-        <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="fingerprint" class="w-4 h-4"></i></span>
-        {% if always_show %}
-        <span class="hr-nav-text flex-1 text-right">البصمة</span>
-        <i data-lucide="chevron-down" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% else %}
-        <span x-show="sidebarOpen" class="hr-nav-text flex-1 text-right">البصمة</span>
-        <i data-lucide="chevron-down" x-show="sidebarOpen" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% endif %}
-    </button>
-    <div class="hr-nav-sub">
-        {% if user|has_permission:'attendance_screen_devices.view' %}
-        <a href="{% url 'web:biometric_devices' %}" class="hr-nav-sublink {% if '/attendance/devices' in request.path %}is-active{% endif %}">أجهزة البصمة</a>
-        {% endif %}
-        {% if user|has_permission:'attendance_screen_report.view' %}
-        <a href="{% url 'web:attendance_report' %}" class="hr-nav-sublink {% if '/attendance/report' in request.path %}is-active{% endif %}">تقرير البصمة</a>
-        {% endif %}
-        {% if user|has_permission:'attendance_screen_late_alerts.view' %}
-        <a href="{% url 'web:attendance_late_alerts' %}" class="hr-nav-sublink {% if '/attendance/late-alerts' in request.path %}is-active{% endif %}">إنذار تأخير البصمة</a>
-        {% endif %}
-        {% if user|has_permission:'attendance_screen_records.view' %}
-        <a href="{% url 'web:attendance_records' %}" class="hr-nav-sublink {% if '/attendance/records' in request.path %}is-active{% endif %}">سجلات الحضور</a>
-        {% endif %}
-    </div>
-</div>
+{% if user|has_permission:'reports.view' %}
+{% url 'web:reports_index' as reports_href %}
+{% if '/reports/' in request.path %}{% include "components/nav_group_head.html" with label="إدارة التقارير" icon="bar-chart-3" href=reports_href active='1' always_show=always_show %}{% else %}{% include "components/nav_group_head.html" with label="إدارة التقارير" icon="bar-chart-3" href=reports_href always_show=always_show %}{% endif %}
+{% endif %}
+
+{% if user|has_permission:'hr_forms.view' %}
+{% url 'web:hr_forms_index' as forms_href %}
+{% if '/hr-forms/' in request.path %}{% include "components/nav_group_head.html" with label="النماذج المستندية" icon="file-text" href=forms_href active='1' always_show=always_show %}{% else %}{% include "components/nav_group_head.html" with label="النماذج المستندية" icon="file-text" href=forms_href always_show=always_show %}{% endif %}
 {% endif %}
 
 {% if user|has_maintenance_nav %}
-{% include "components/nav_section.html" with label="إدارة الصيانة" always_show=always_show %}
-<div class="hr-nav-dropdown{% if '/maintenance/' in request.path %} is-open{% endif %}" data-nav-dropdown>
-    <button type="button" data-nav-dropdown-trigger
-        aria-expanded="{% if '/maintenance/' in request.path %}true{% else %}false{% endif %}"
-        class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if '/maintenance/' in request.path %}is-active{% endif %}">
-        <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="wrench" class="w-4 h-4"></i></span>
-        {% if always_show %}
-        <span class="hr-nav-text flex-1 text-right">إدارة الصيانة</span>
-        <i data-lucide="chevron-down" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% else %}
-        <span x-show="sidebarOpen" class="hr-nav-text flex-1 text-right">إدارة الصيانة</span>
-        <i data-lucide="chevron-down" x-show="sidebarOpen" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% endif %}
-    </button>
-    <div class="hr-nav-sub">
-        {% if user|has_permission:'maintenance_screen_requests.view' %}
-        <a href="{% url 'web:list_maintenance_requests' %}" class="hr-nav-sublink {% if '/maintenance/requests' in request.path %}is-active{% endif %}">
-            <span class="hr-nav-sublink__label">طلبات الصيانة</span>
-            {% if maintenance_open_count %}<span class="hr-sidebar-panel__pending-badge hr-nav-sublink__badge">{{ maintenance_open_count }}</span>{% endif %}
-        </a>
-        {% endif %}
-        {% if user|has_permission:'maintenance_screen_request_add.view' %}
-        <a href="{% url 'web:add_maintenance_request' %}" class="hr-nav-sublink {% if request.resolver_match.url_name == 'add_maintenance_request' %}is-active{% endif %}">طلب سريع</a>
-        {% endif %}
-        {% if user|has_permission:'maintenance_setup.view' %}
-        <a href="{% url 'web:maintenance_setup' %}" class="hr-nav-sublink {% if '/maintenance/setup' in request.path or '/maintenance/assets' in request.path or '/maintenance/trades' in request.path or '/maintenance/workers' in request.path %}is-active{% endif %}">تهيئة الصيانة</a>
-        {% endif %}
-    </div>
+<div class="hr-nav-group" data-nav-group>
+{% include "components/nav_group_head.html" with label="إدارة الصيانة" icon="wrench" badge=maintenance_open_count always_show=always_show %}
+<div class="hr-nav-group__body">
+{% if user|has_permission:'maintenance_screen_requests.view' %}
+<a href="{% url 'web:list_maintenance_requests' %}" class="hr-nav-link {% if '/maintenance/requests' in request.path %}is-active{% endif %}">
+    <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="clipboard-list" class="w-4 h-4"></i></span>
+    {% if always_show %}<span class="hr-nav-text flex-1">طلبات الصيانة</span>{% else %}<span x-show="sidebarOpen" class="hr-nav-text flex-1">طلبات الصيانة</span>{% endif %}
+    {% if maintenance_open_count %}<span class="hr-sidebar-panel__pending-badge">{{ maintenance_open_count }}</span>{% endif %}
+</a>
+{% endif %}
+{% if user|has_permission:'maintenance_screen_request_add.view' %}
+{% include "components/nav_item.html" with url="web:add_maintenance_request" icon="plus-circle" label="طلب سريع" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'maintenance_setup.view' %}
+{% include "components/nav_item.html" with url="web:maintenance_setup" path_prefix="/maintenance/setup" icon="settings-2" label="تهيئة الصيانة" force_show_label=always_show %}
+{% endif %}
+</div>
 </div>
 {% endif %}
 
-{% if user|has_permission:'reports.view' or user|has_permission:'hr_forms.view' %}
-{% include "components/nav_section.html" with label="التقارير والنماذج" always_show=always_show %}
-{% if user|has_permission:'reports.view' %}{% include "components/nav_item.html" with url="web:reports_index" icon="bar-chart-3" label="التقارير" force_show_label=always_show %}{% endif %}
-{% if user|has_permission:'hr_forms.view' %}{% include "components/nav_item.html" with url="web:hr_forms_index" icon="file-text" label="النماذج الرسمية" force_show_label=always_show %}{% endif %}
-{% include "components/nav_item.html" with external_href="https://forms.gle/Uw2nuffzNa4ZgfZX9" icon="file-badge" label="العروض الوظيفية" force_show_label=always_show %}
-{% endif %}
-
-{% if user|has_permission:'branches.view' or user|has_permission:'users.view' or user|is_general_manager %}
-{% include "components/nav_section.html" with label="إدارة النظام" always_show=always_show %}
 {% if user|has_permission:'branches.view' or user|has_permission:'system_data.edit' %}
-<div class="hr-nav-dropdown{% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' or request.resolver_match.url_name == 'whatsapp_integration' or request.resolver_match.url_name == 'workflow_whatsapp_settings' %} is-open{% endif %}" data-nav-dropdown>
-    <button type="button" data-nav-dropdown-trigger
-        aria-expanded="{% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' or request.resolver_match.url_name == 'whatsapp_integration' or request.resolver_match.url_name == 'workflow_whatsapp_settings' %}true{% else %}false{% endif %}"
-        class="hr-nav-link hr-nav-link--btn hr-nav-dropdown__trigger {% if '/branches/' in request.path or '/setup/' in request.path or request.resolver_match.url_name == 'operations_report_settings' or request.resolver_match.url_name == 'whatsapp_integration' or request.resolver_match.url_name == 'workflow_whatsapp_settings' %}is-active{% endif %}">
-        <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="settings" class="w-4 h-4"></i></span>
-        {% if always_show %}
-        <span class="hr-nav-text flex-1 text-right">تهيئة النظام</span>
-        <i data-lucide="chevron-down" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% else %}
-        <span x-show="sidebarOpen" class="hr-nav-text flex-1 text-right">تهيئة النظام</span>
-        <i data-lucide="chevron-down" x-show="sidebarOpen" class="hr-nav-chevron w-3.5 h-3.5"></i>
-        {% endif %}
-    </button>
-    <div class="hr-nav-sub">
-        {% if user|has_permission:'branches.view' %}
-        <a href="{% url 'web:list_branches' %}"
-           class="hr-nav-sublink {% if request.resolver_match.url_name != 'operations_report_settings' and request.resolver_match.url_name != 'whatsapp_integration' and request.resolver_match.url_name != 'workflow_whatsapp_settings' %}{% if '/branches/' in request.path or '/setup/' in request.path %}is-active{% endif %}{% endif %}">الهيكل التنظيمي</a>
-        {% endif %}
-        {% if user|has_permission:'system_data.edit' %}
-        <a href="{% url 'web:operations_report_settings' %}"
-           class="hr-nav-sublink {% if request.resolver_match.url_name == 'operations_report_settings' %}is-active{% endif %}">تقرير العمليات المجدول</a>
-        <a href="{% url 'web:whatsapp_integration' %}"
-           class="hr-nav-sublink {% if request.resolver_match.url_name == 'whatsapp_integration' %}is-active{% endif %}">ربط WhatsApp</a>
-        <a href="{% url 'web:workflow_whatsapp_settings' %}"
-           class="hr-nav-sublink {% if request.resolver_match.url_name == 'workflow_whatsapp_settings' %}is-active{% endif %}">واتساب — سير العمل</a>
-        {% endif %}
-    </div>
+<div class="hr-nav-group" data-nav-group>
+{% include "components/nav_group_head.html" with label="إعدادات النظام والاتصال" icon="settings" always_show=always_show %}
+<div class="hr-nav-group__body">
+{% if user|has_permission:'branches.view' %}
+{% include "components/nav_item.html" with url="web:list_branches" path_prefix="/branches/" icon="building-2" label="الهيكل التنظيمي" force_show_label=always_show %}
+{% endif %}
+{% if user|has_permission:'system_data.edit' %}
+{% include "components/nav_item.html" with url="web:operations_report_settings" icon="calendar-clock" label="تقرير العمليات المجدول" force_show_label=always_show %}
+{% include "components/nav_item.html" with url="web:whatsapp_integration" icon="message-circle" label="ربط WhatsApp" force_show_label=always_show %}
+{% include "components/nav_item.html" with url="web:workflow_whatsapp_settings" icon="workflow" label="واتساب — سير العمل" force_show_label=always_show %}
+{% endif %}
 </div>
+</div>
+{% endif %}
+
+{% if user|has_permission:'users.view' or user|is_general_manager %}
+<div class="hr-nav-group" data-nav-group>
+{% include "components/nav_group_head.html" with label="بيانات المستخدمين" icon="user-cog" always_show=always_show %}
+<div class="hr-nav-group__body">
 {% endif %}
 {% if user|has_permission:'users.view' %}{% include "components/nav_item.html" with url="web:list_users" related_url="web:add_user" icon="user-cog" label="المستخدمون" force_show_label=always_show %}{% endif %}
 {% if user|is_general_manager %}
@@ -153,4 +113,7 @@
     {% if always_show %}<span class="hr-nav-text">سجل التدقيق</span>{% else %}<span x-show="sidebarOpen" class="hr-nav-text">سجل التدقيق</span>{% endif %}
 </a>
 {% endif %}
+{% if user|has_permission:'users.view' or user|is_general_manager %}
+</div>
+</div>
 {% endif %}

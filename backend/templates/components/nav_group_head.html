@@ -1,0 +1,30 @@
+{# رأس مجموعة في الشريط الجانبي: label, icon, always_show, badge, [href, active] #}
+{% if href %}
+<div class="hr-nav-section hr-nav-section--toggle" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
+    <a href="{{ href }}" class="hr-nav-group__head hr-nav-group__head--link{% if active %} is-active{% endif %}">
+        <span class="hr-nav-group__title">
+            {% if icon %}<i data-lucide="{{ icon }}" class="hr-nav-group__icon" aria-hidden="true"></i>{% endif %}
+            <span class="hr-nav-label">{{ label }}</span>
+        </span>
+    </a>
+</div>
+{% if not always_show %}
+<a href="{{ href }}" x-show="!sidebarOpen" x-cloak class="hr-nav-link{% if active %} is-active{% endif %}" title="{{ label }}" aria-label="{{ label }}">
+    <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="{{ icon }}" class="w-4 h-4"></i></span>
+</a>
+{% endif %}
+{% else %}
+<div class="hr-nav-section hr-nav-section--toggle" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
+    <button type="button" class="hr-nav-group__head" data-nav-group-trigger aria-expanded="false">
+        <span class="hr-nav-group__title">
+            {% if icon %}<i data-lucide="{{ icon }}" class="hr-nav-group__icon" aria-hidden="true"></i>{% endif %}
+            <span class="hr-nav-label">{{ label }}</span>
+            <span class="hr-nav-group__dot" aria-hidden="true"></span>
+        </span>
+        <span class="hr-nav-group__end">
+            {% if badge %}<span class="hr-sidebar-panel__pending-badge">{{ badge }}</span>{% endif %}
+            <i data-lucide="chevron-down" class="hr-nav-group__chevron" aria-hidden="true"></i>
+        </span>
+    </button>
+</div>
+{% endif %}

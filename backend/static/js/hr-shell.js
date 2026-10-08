@@ -119,6 +119,40 @@
         scope.querySelectorAll('[data-nav-dropdown]').forEach(syncNavDropdownAria);
     }
 
+    function bindNavGroups(root) {
+        var scope = root && root.querySelectorAll ? root : document;
+        scope.querySelectorAll('[data-nav-group]').forEach(function (group) {
+            if (group.dataset.navGroupBound === '1') return;
+            group.dataset.navGroupBound = '1';
+            var trigger = group.querySelector('[data-nav-group-trigger]');
+            if (!trigger) return;
+            var sync = function () {
+                trigger.setAttribute('aria-expanded', group.classList.contains('is-open') ? 'true' : 'false');
+            };
+            // المجموعة التي تحتوي الصفحة الحالية: تُفتح وتُعلَّم بنقطة عند طيّها
+            if (group.querySelector('.is-active')) {
+                group.classList.add('is-open', 'has-active');
+            }
+            sync();
+            trigger.addEventListener('click', function (event) {
+                event.preventDefault();
+                var willOpen = !group.classList.contains('is-open');
+                // أكورديون: فتح مجموعة يغلق باقي المجموعات في نفس الشريط
+                if (willOpen) {
+                    var nav = group.closest('nav') || document;
+                    nav.querySelectorAll('[data-nav-group].is-open').forEach(function (other) {
+                        if (other === group) return;
+                        other.classList.remove('is-open');
+                        var t = other.querySelector('[data-nav-group-trigger]');
+                        if (t) t.setAttribute('aria-expanded', 'false');
+                    });
+                }
+                group.classList.toggle('is-open', willOpen);
+                sync();
+            });
+        });
+    }
+
     function bindMobileMenuControls() {
         document.querySelectorAll('[data-hr-mobile-menu-toggle]').forEach(function (btn) {
             if (btn.dataset.mobileMenuBound === '1') return;
@@ -144,6 +178,7 @@
     function bindShellControls() {
         bindMobileMenuControls();
         bindNavDropdowns(document);
+        bindNavGroups(document);
     }
 
     window.hrInitNavDropdowns = bindNavDropdowns;

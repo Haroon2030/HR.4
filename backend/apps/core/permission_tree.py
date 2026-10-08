@@ -6,18 +6,36 @@ from __future__ import annotations
 from apps.core.permissions_registry import DEFAULT_MODULE_META
 
 # أنظمة رئيسية ← أقسام ← أكواد الوحدات (أو بادئة)
+# المجموعات الأربع تطابق عناوين الشريط الجانبي (templates/components/sidebar_nav.html):
+#   الرئيسية ← بيانات الموظفين ← الحضور والانصراف ← الرواتب والمالية ← إدارة التقارير ← النماذج المستندية ← إدارة الصيانة ← إعدادات النظام والاتصال ← بيانات المستخدمين
+# عند إضافة وحدة/شاشة جديدة: أضف كودها هنا وعنصرها في الشريط تحت نفس العنوان.
 PERMISSION_TREE_CONFIG: list[dict] = [
     {
+        'id': 'main',
+        'name': 'الرئيسية',
+        'icon': 'layout-grid',
+        'children': [
+            {'id': 'main_operations', 'name': 'طلبات العمليات', 'module_codes': ['operations']},
+        ],
+    },
+    {
         'id': 'hr',
-        'name': 'أنظمة الموارد البشرية',
+        'name': 'بيانات الموظفين',
         'icon': 'users',
         'children': [
-            {'id': 'hr_employees', 'name': 'الموظفين', 'module_codes': ['employees']},
+            {'id': 'hr_employees', 'name': 'الموظفون', 'module_codes': ['employees']},
             {'id': 'hr_tabs', 'name': 'تبويبات ملف الموظف', 'module_prefix': 'employee_tab_'},
             {'id': 'hr_leaves', 'name': 'الإجازات', 'module_codes': ['leaves']},
+        ],
+    },
+    {
+        'id': 'attendance',
+        'name': 'الحضور والانصراف',
+        'icon': 'fingerprint',
+        'children': [
             {
-                'id': 'hr_attendance',
-                'name': 'الحضور والبصمة',
+                'id': 'att_main',
+                'name': 'الشاشات',
                 'module_codes': [
                     'attendance',
                     'attendance_screen_devices',
@@ -26,18 +44,32 @@ PERMISSION_TREE_CONFIG: list[dict] = [
                     'attendance_screen_records',
                 ],
             },
-            {'id': 'hr_payroll', 'name': 'مسير الرواتب', 'module_codes': ['payroll']},
-            {'id': 'hr_cash_shortages', 'name': 'عجز الكاشير', 'module_codes': ['cash_shortages']},
         ],
     },
     {
-        'id': 'org',
-        'name': 'الهيكل التنظيمي',
-        'icon': 'building-2',
+        'id': 'finance',
+        'name': 'الرواتب والمالية',
+        'icon': 'banknote',
         'children': [
-            {'id': 'org_branches', 'name': 'الفروع', 'module_codes': ['branches']},
-            {'id': 'org_departments', 'name': 'الأقسام', 'module_codes': ['departments']},
-            {'id': 'org_cost_centers', 'name': 'مراكز التكلفة', 'module_codes': ['cost_centers']},
+            {'id': 'finance_payroll', 'name': 'مسير الرواتب', 'module_codes': ['payroll']},
+            {'id': 'finance_cash_shortages', 'name': 'عجز الكاشير', 'module_codes': ['cash_shortages']},
+        ],
+    },
+    {
+        'id': 'reports',
+        'name': 'إدارة التقارير',
+        'icon': 'bar-chart-3',
+        'children': [
+            {'id': 'reports_main', 'name': 'التقارير', 'module_codes': ['reports']},
+        ],
+    },
+    {
+        'id': 'documents',
+        'name': 'النماذج المستندية',
+        'icon': 'file-text',
+        'children': [
+            {'id': 'documents_forms', 'name': 'النماذج الرسمية', 'module_codes': ['hr_forms']},
+            {'id': 'documents_form_types', 'name': 'أنواع النماذج الرسمية', 'module_prefix': 'hr_form_'},
         ],
     },
     {
@@ -58,30 +90,26 @@ PERMISSION_TREE_CONFIG: list[dict] = [
                     'maintenance_screen_return',
                 ],
             },
-            {
-                'id': 'maint_setup',
-                'name': 'التهيئة',
-                'module_codes': ['maintenance_setup'],
-            },
+            {'id': 'maint_setup', 'name': 'التهيئة', 'module_codes': ['maintenance_setup']},
         ],
     },
     {
-        'id': 'workflow',
-        'name': 'العمليات والطلبات',
-        'icon': 'list-checks',
+        'id': 'system_setup',
+        'name': 'إعدادات النظام والاتصال',
+        'icon': 'settings',
         'children': [
-            {'id': 'workflow_ops', 'name': 'طلبات العمليات', 'module_codes': ['operations']},
+            {'id': 'setup_branches', 'name': 'الهيكل التنظيمي — الفروع', 'module_codes': ['branches']},
+            {'id': 'setup_departments', 'name': 'الهيكل التنظيمي — الأقسام', 'module_codes': ['departments']},
+            {'id': 'setup_cost_centers', 'name': 'الهيكل التنظيمي — مراكز التكلفة', 'module_codes': ['cost_centers']},
+            {'id': 'setup_settings', 'name': 'الإعدادات وربط واتساب', 'module_codes': ['settings', 'system_data']},
         ],
     },
     {
-        'id': 'admin',
-        'name': 'الإدارة والتقارير',
+        'id': 'tech',
+        'name': 'بيانات المستخدمين',
         'icon': 'settings-2',
         'children': [
-            {'id': 'admin_users', 'name': 'المستخدمون والأدوار', 'module_codes': ['users']},
-            {'id': 'admin_settings', 'name': 'الإعدادات', 'module_codes': ['settings', 'system_data']},
-            {'id': 'admin_reports', 'name': 'التقارير والنماذج', 'module_codes': ['reports', 'hr_forms']},
-            {'id': 'admin_hr_form_types', 'name': 'أنواع النماذج الرسمية', 'module_prefix': 'hr_form_'},
+            {'id': 'tech_users', 'name': 'المستخدمون والأدوار', 'module_codes': ['users']},
         ],
     },
 ]
