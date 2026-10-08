@@ -305,6 +305,227 @@ def payroll_detailed_runs_excel_filename(*, year: int, month: int, salary_mode: 
     return f'payroll_detailed_{year}_{month:02d}_{salary_mode}.xlsx'
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# تصدير شامل متعدد الأوراق: كشف + تحليل الفروع + الشركات + تحويل + نقدي + تفصيلي
+# ══════════════════════════════════════════════════════════════════════════════
+_SUMMARY_COLUMNS = [
+    ('employee_number', 'الرقم الوظيفي', 12),
+    ('employee_name', 'الاسم', 26),
+    ('branch', 'الفرع', 16),
+    ('salary_gross', 'إجمالي الراتب', 14),
+    ('total_earnings', 'إجمالي المستحق', 14),
+    ('total_deductions', 'إجمالي الخصومات', 14),
+    ('net_salary', 'الصافي', 14),
+]
+
+
+def _sheet_styles():
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    thin = Side(border_style='thin', color='94A3B8')
+    return {
+        'border': Border(left=thin, right=thin, top=thin, bottom=thin),
+        'center': Alignment(horizontal='center', vertical='center', wrap_text=True),
+        'right': Alignment(horizontal='right', vertical='center'),
+        'head_font': Font(name='Arial', size=10, bold=True, color='FFFFFF'),
+        'head_fill': PatternFill('solid', fgColor='1E40AF'),
+        'title_font': Font(name='Arial', size=12, bold=True, color='1E3A8A'),
+        'title_fill': PatternFill('solid', fgColor='DBEAFE'),
+        'data_font': Font(name='Arial', size=10),
+        'total_font': Font(name='Arial', size=10, bold=True),
+        'total_fill': PatternFill('solid', fgColor='F1F5F9'),
+    }
+
+
+def _write_table(ws, start_row: int, headers: list[str], rows: list[list], *,
+                 title: str | None = None, money_cols: set[int] = frozenset(),
+                 total_row: list | None = None) -> int:
+    """يكتب جدولاً منسّقاً بدءاً من start_row ويُرجع أول صف فارغ بعده."""
+    st = _sheet_styles()
+    r = start_row
+    ncols = len(headers)
+    if title:
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=ncols)
+        cell = ws.cell(row=r, column=1, value=title)
+        cell.font, cell.fill, cell.alignment = st['title_font'], st['title_fill'], st['right']
+        ws.row_dimensions[r].height = 22
+        r += 1
+    for c, h in enumerate(headers, start=1):
+        cell = ws.cell(row=r, column=c, value=h)
+        cell.font, cell.fill, cell.alignment, cell.border = (
+            st['head_font'], st['head_fill'], st['center'], st['border'],
+        )
+    ws.row_dimensions[r].height = 28
+    r += 1
+    for row in rows:
+        for c, v in enumerate(row, start=1):
+            cell = ws.cell(row=r, column=c, value=v)
+            cell.font, cell.border = st['data_font'], st['border']
+            cell.alignment = st['center'] if c in money_cols else st['right']
+            if c in money_cols:
+                cell.number_format = '#,##0.00'
+        r += 1
+    if total_row is not None:
+        for c, v in enumerate(total_row, start=1):
+            cell = ws.cell(row=r, column=c, value=v)
+            cell.font, cell.fill, cell.border = st['total_font'], st['total_fill'], st['border']
+            cell.alignment = st['center'] if c in money_cols else st['right']
+            if c in money_cols:
+                cell.number_format = '#,##0.00'
+        r += 1
+    return r
+
+
+def _new_sheet(wb, title: str):
+    ws = wb.create_sheet(title=title[:31])
+    ws.sheet_view.rightToLeft = True
+    return ws
+
+
+def _line_branch(line, run) -> str:
+    return resolve_cell_value(line, run, 'branch') or '—'
+
+
+def _line_company(line, run) -> str:
+    if run.salary_mode == 'cash':
+        return 'نقدي — بدون كفالة'
+    emp = line.employee
+    if emp.sponsorship_id and getattr(emp, 'sponsorship', None):
+        return (emp.sponsorship.company_name or '').strip() or '—'
+    return resolve_cell_value(line, run, 'company') or '—'
+
+
+def _money(v) -> float:
+    return float(v or 0)
+
+
+def _write_analysis_sheet(ws, pairs) -> None:
+    """التحليل: إجماليات حسب الفرع + حسب نوع الصرف."""
+    by_branch: dict[str, dict] = {}
+    by_mode = {'transfer': {'n': 0, 'gross': 0.0, 'ded': 0.0, 'net': 0.0},
+               'cash': {'n': 0, 'gross': 0.0, 'ded': 0.0, 'net': 0.0}}
+    for run, line in pairs:
+        b = by_branch.setdefault(_line_branch(line, run), {
+            'n': 0, 'gross': 0.0, 'earn': 0.0, 'ded': 0.0, 'net': 0.0, 'transfer': 0.0, 'cash': 0.0,
+        })
+        b['n'] += 1
+        b['gross'] += _money(line.gross_salary)
+        b['earn'] += _money(line.total_earnings)
+        b['ded'] += _money(line.total_deductions)
+        b['net'] += _money(line.net_salary)
+        b[run.salary_mode] += _money(line.net_salary)
+        m = by_mode[run.salary_mode]
+        m['n'] += 1
+        m['gross'] += _money(line.gross_salary)
+        m['ded'] += _money(line.total_deductions)
+        m['net'] += _money(line.net_salary)
+
+    rows = [
+        [name, v['n'], v['gross'], v['earn'], v['ded'], v['net'], v['transfer'], v['cash']]
+        for name, v in sorted(by_branch.items(), key=lambda kv: -kv[1]['net'])
+    ]
+    tot = [sum(r[i] for r in rows) for i in range(1, 8)]
+    r = _write_table(
+        ws, 1,
+        ['الفرع', 'عدد الموظفين', 'إجمالي الرواتب', 'إجمالي المستحق', 'إجمالي الخصومات',
+         'الصافي', 'منه تحويل', 'منه نقدي'],
+        rows, title='تحليل المسير حسب الفرع', money_cols={3, 4, 5, 6, 7, 8},
+        total_row=['الإجمالي', *tot],
+    )
+    mode_rows = [
+        [label, by_mode[k]['n'], by_mode[k]['gross'], by_mode[k]['ded'], by_mode[k]['net']]
+        for k, label in (('transfer', 'تحويل بنكي'), ('cash', 'نقدي'))
+    ]
+    _write_table(
+        ws, r + 1,
+        ['نوع الصرف', 'عدد الموظفين', 'إجمالي الرواتب', 'إجمالي الخصومات', 'الصافي'],
+        mode_rows, title='حسب نوع الصرف', money_cols={3, 4, 5},
+        total_row=['الإجمالي', *[sum(x[i] for x in mode_rows) for i in range(1, 5)]],
+    )
+    from openpyxl.utils import get_column_letter
+    for c, w in enumerate([22, 13, 15, 15, 15, 15, 14, 14], start=1):
+        ws.column_dimensions[get_column_letter(c)].width = w
+
+
+def _summary_row(line, run) -> list:
+    return [
+        _money(resolve_cell_value(line, run, k)) if k in MONEY_SUM_KEYS else (
+            resolve_cell_value(line, run, k) or '—'
+        )
+        for k, _label, _w in _SUMMARY_COLUMNS
+    ]
+
+
+def _write_companies_sheet(ws, pairs) -> None:
+    """جدول مستقل لكل شركة كفالة (والنقدي في جدول أخير)."""
+    groups: dict[str, list] = {}
+    for run, line in pairs:
+        groups.setdefault(_line_company(line, run), []).append((run, line))
+    headers = [label for _k, label, _w in _SUMMARY_COLUMNS]
+    money_cols = {i for i, (k, _l, _w) in enumerate(_SUMMARY_COLUMNS, start=1) if k in MONEY_SUM_KEYS}
+    ordered = sorted(groups, key=lambda name: (name.startswith('نقدي'), name))
+    r = 1
+    for name in ordered:
+        items = sorted(groups[name], key=lambda p: (_line_branch(p[1], p[0]), p[1].employee.name))
+        rows = [_summary_row(line, run) for run, line in items]
+        total = ['الإجمالي', f'{len(rows)} موظف', '']
+        total += [sum(row[i - 1] for row in rows) for i in range(4, len(headers) + 1)]
+        net = sum(_money(line.net_salary) for _run, line in items)
+        r = _write_table(
+            ws, r, headers, rows,
+            title=f'{name} — {len(rows)} موظف — صافي {net:,.2f}',
+            money_cols=money_cols, total_row=total,
+        ) + 1
+    from openpyxl.utils import get_column_letter
+    for c, (_k, _l, w) in enumerate(_SUMMARY_COLUMNS, start=1):
+        ws.column_dimensions[get_column_letter(c)].width = w
+
+
+def build_payroll_full_workbook(*, transfer_runs, cash_runs, detailed_runs, period_label: str):
+    """
+    ملف واحد بعدة أوراق:
+    كشف الرواتب (الكل) · التحليل (الفروع) · حسب الشركات · التحويل · النقدي · التفصيلي.
+    """
+    from openpyxl import Workbook
+
+    transfer_runs, cash_runs = list(transfer_runs), list(cash_runs)
+    if not transfer_runs and not cash_runs:
+        raise ValueError('لا توجد مسيرات للتصدير.')
+    stamp = timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')
+    transfer_pairs = _payroll_line_pairs_for_runs(transfer_runs)
+    cash_pairs = _payroll_line_pairs_for_runs(cash_runs)
+    all_pairs = transfer_pairs + cash_pairs
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'كشف الرواتب'
+    ws.sheet_view.rightToLeft = True
+    _write_payroll_sheet(ws, all_pairs, meta_note=f'كشف الرواتب — {period_label} — تصدير {stamp}')
+
+    _write_analysis_sheet(_new_sheet(wb, 'التحليل'), all_pairs)
+    _write_companies_sheet(_new_sheet(wb, 'حسب الشركات'), all_pairs)
+
+    _write_payroll_sheet(_new_sheet(wb, 'التحويل'), transfer_pairs,
+                         meta_note=f'موظفو التحويل — {period_label}')
+    _write_payroll_sheet(_new_sheet(wb, 'النقدي'), cash_pairs,
+                         meta_note=f'موظفو النقدي — {period_label}')
+
+    detailed_pairs = []
+    for run in detailed_runs or []:
+        detailed_pairs.extend(detailed_payroll_export_pairs(run))
+    ws_d = _new_sheet(wb, 'التفصيلي')
+    if detailed_pairs:
+        _write_payroll_sheet(ws_d, detailed_pairs, meta_note=f'المسير التفصيلي — {period_label}',
+                             resolve_value=_resolve_detailed_export_row)
+    else:
+        ws_d.cell(row=1, column=1, value='لا يوجد مسير تفصيلي (نقل موظفين بين الفروع) لهذه الفترة.')
+    return wb
+
+
+def payroll_full_excel_filename(*, year: int, month: int) -> str:
+    return f'payroll_{year}_{month:02d}_full.xlsx'
+
+
 def payroll_run_excel_filename(run) -> str:
     branch = run.branch_id or 'run'
     return f'payroll_{branch}_{run.period_year}_{run.period_month:02d}.xlsx'

@@ -1629,11 +1629,14 @@ def unlock_payroll_run_view(request, run_id):
 @login_required
 @permission_required('payroll.view')
 def export_payroll_list_excel(request):
-    """تصدير المسير الموحّد (كل الفروع المختارة) إلى Excel."""
+    """
+    تصدير شامل للشهر في ملف واحد متعدد الأوراق:
+    كشف الرواتب · التحليل (الفروع) · حسب الشركات · التحويل · النقدي · التفصيلي.
+    """
     try:
         from apps.payroll.services.export_excel import (
-            build_payroll_runs_workbook,
-            payroll_runs_excel_filename,
+            build_payroll_full_workbook,
+            payroll_full_excel_filename,
             workbook_to_response,
         )
     except ImportError:
@@ -1647,27 +1650,43 @@ def export_payroll_list_excel(request):
     )
     if redirect_response is not None:
         return redirect_response
-    if not filters.get('year') or not filters.get('month') or not filters.get('salary_mode'):
-        messages.error(request, 'يرجى اختيار السنة والشهر ونوع الراتب أولاً.')
+    if not filters.get('year') or not filters.get('month'):
+        messages.error(request, 'يرجى اختيار السنة والشهر أولاً.')
         return redirect('web:list_payroll_runs')
 
-    runs = _runs_for_unified_export(filters, request.user, scope)
-    if not runs:
+    def _mode_filters(mode):
+        f = dict(filters)
+        f['salary_mode'] = mode
+        f['sponsorship_ids'] = filters.get('sponsorship_ids') if mode == PayrollRun.SalaryMode.TRANSFER else None
+        return _recompute_payroll_ready(f)
+
+    def _with_lines(runs):
+        return [r for r in runs if int(r.employees_count or 0) > 0]
+
+    transfer_f = _mode_filters(PayrollRun.SalaryMode.TRANSFER)
+    cash_f = _mode_filters(PayrollRun.SalaryMode.CASH)
+    transfer_runs = _with_lines(_runs_for_unified_export(transfer_f, request.user, scope))
+    cash_runs = _with_lines(_runs_for_unified_export(cash_f, request.user, scope))
+    if not transfer_runs and not cash_runs:
         messages.error(request, 'لا يوجد مسير للتصدير — ابنِ المسير أولاً.')
         return _redirect_payroll_list(request, filters)
 
-    lines_qs = PayrollLine.objects.filter(run__in=runs)
-    if not lines_qs.exists():
-        messages.error(request, 'لا توجد أسطر موظفين للتصدير.')
-        return _redirect_payroll_list(request, filters)
+    detailed_runs = []
+    for f in (transfer_f, cash_f):
+        export_f = dict(f)
+        export_f['branch_ids'] = None
+        detailed_runs.extend(_with_lines(_detailed_runs_for_filters(export_f, request.user, scope)))
 
-    wb = build_payroll_runs_workbook(runs)
-    filename = payroll_runs_excel_filename(
-        year=filters['year'],
-        month=filters['month'],
-        salary_mode=filters['salary_mode'],
+    months_ar = 'يناير فبراير مارس أبريل مايو يونيو يوليو أغسطس سبتمبر أكتوبر نوفمبر ديسمبر'.split()
+    wb = build_payroll_full_workbook(
+        transfer_runs=transfer_runs,
+        cash_runs=cash_runs,
+        detailed_runs=detailed_runs,
+        period_label=f"{months_ar[filters['month'] - 1]} {filters['year']}",
     )
-    return workbook_to_response(wb, filename)
+    return workbook_to_response(
+        wb, payroll_full_excel_filename(year=filters['year'], month=filters['month']),
+    )
 
 
 @login_required

@@ -846,3 +846,52 @@ class SalaryChangeEffectiveMonthTests(FinanceBase):
         self.assertEqual(e.basic_salary, D('3000.00'))
         self.assertIn('تلقائياً', msg)
         self.assertEqual(self.line(self.build(2026, 11), e).basic_salary, D('4500.00'))
+
+
+class FullExportWorkbookTests(FinanceBase):
+    def test_single_export_has_all_sheets_and_consistent_totals(self):
+        from io import BytesIO
+
+        from django.urls import reverse
+        from openpyxl import load_workbook
+
+        sp2 = Sponsorship.objects.create(code='SP2', company_name='كفالة ثانية')
+        self.emp('ت1', branch=self.branch)
+        self.emp('ت2', branch=self.branch2)
+        e3 = self.emp('ت3', branch=self.branch2)
+        Employee.objects.filter(pk=e3.pk).update(sponsorship=sp2)
+        self.emp('ن1', branch=self.branch, sponsored=False)
+
+        for br in (self.branch, self.branch2):
+            for sp in (self.sp, sp2):
+                build_payroll_run(br, 2026, 4, self.user, salary_mode=TRANSFER, sponsorship_id=sp.id)
+            build_payroll_run(br, 2026, 4, self.user, salary_mode=CASH)
+        runs = PayrollRun.objects.filter(period_year=2026, period_month=4)
+        expected_net = float(sum(r.total_net for r in runs))
+
+        admin = User.objects.create_superuser(username='exp_admin', password='x-pass-123')
+        self.client.force_login(admin)
+        resp = self.client.get(reverse('web:export_payroll_list_excel'),
+                               {'year': 2026, 'month': 4, 'salary_mode': 'transfer'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('payroll_2026_04_full', resp['Content-Disposition'])
+        wb = load_workbook(BytesIO(resp.content))
+        self.assertEqual(wb.sheetnames,
+                         ['كشف الرواتب', 'التحليل', 'حسب الشركات', 'التحويل', 'النقدي', 'التفصيلي'])
+
+        # كشف الرواتب يضم الكل (3 تحويل + 1 نقدي) + صف إجمالي
+        self.assertEqual(wb['كشف الرواتب'].max_row, 1 + 4 + 1)
+        self.assertEqual(wb['التحويل'].max_row, 1 + 3 + 1)
+        self.assertEqual(wb['النقدي'].max_row, 1 + 1 + 1)
+
+        # التحليل: صف الإجمالي (عمود الصافي = 6) يساوي مجموع صافي المسيرات
+        ws = wb['التحليل']
+        total_row = next(r for r in range(1, ws.max_row + 1) if ws.cell(r, 1).value == 'الإجمالي')
+        self.assertAlmostEqual(ws.cell(total_row, 6).value, expected_net, places=2)
+        self.assertEqual(ws.cell(total_row, 2).value, 4)
+
+        # حسب الشركات: جدول لكل شركة + جدول النقدي
+        titles = [ws_c.value for ws_c in wb['حسب الشركات']['A'] if ws_c.value and '—' in str(ws_c.value)]
+        self.assertTrue(any(t.startswith('كفالة الفحص') for t in titles), titles)
+        self.assertTrue(any(t.startswith('كفالة ثانية') for t in titles), titles)
+        self.assertTrue(any(t.startswith('نقدي') for t in titles), titles)
