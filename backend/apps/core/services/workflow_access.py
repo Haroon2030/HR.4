@@ -84,8 +84,6 @@ def user_can_reject_employment_request(user, emp_req) -> bool:
         return False
     if user.is_superuser or _is_super_or_admin(user):
         return True
-    if not can_return_operation(user):
-        return False
 
     from apps.employees.models import EmploymentRequest
     from apps.core.services.approval_routing import user_can_first_approve
@@ -95,8 +93,13 @@ def user_can_reject_employment_request(user, emp_req) -> bool:
         EmploymentRequest.Status.PENDING_BRANCH,
         EmploymentRequest.Status.PENDING,
     }
+    # مدير الفرع (صاحب الموافقة الأولى) يلغي الطلب الواصل إليه دون اشتراط operations.return
+    if status in pending_branch and user_can_first_approve(user, emp_req):
+        return True
+    if not can_return_operation(user):
+        return False
     if status in pending_branch:
-        return user_can_first_approve(user, emp_req)
+        return False
     if status == EmploymentRequest.Status.PENDING_GM:
         return (
             has_permission(user, 'operations.approve_gm')

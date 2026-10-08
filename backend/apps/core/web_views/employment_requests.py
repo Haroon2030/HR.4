@@ -25,6 +25,7 @@ from apps.core.services.workflow_access import (
     can_gm_approve_employment_request,
     can_officer_act_employment_request,
     can_assign_employment_officer,
+    user_can_reject_employment_request,
 )
 from apps.core.services import employment_requests as svc
 from apps.core.services.approval_routing import first_stage_pending_q, resolve_first_approver, first_stage_tab_label
@@ -102,6 +103,7 @@ def list_employment_requests(request):
         row.can_first_approve = can_first_approve_employment_request(user, row)
         row.can_gm_approve = can_gm_approve_employment_request(user, row)
         row.can_officer_act = can_officer_act_employment_request(user, row)
+        row.can_reject = user_can_reject_employment_request(user, row)
 
     return render(request, 'pages/employment_requests/list.html', {
         'requests': page_obj.object_list,

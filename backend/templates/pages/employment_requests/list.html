@@ -129,10 +129,10 @@
                                     </span>
                                 {% endif %}
 
-                                {% if r.status != 'approved' and r.status != 'rejected' %}
-                                <form method="POST" action="{% url 'web:reject_employment_request' r.id %}" class="inline" onsubmit="return confirm('رفض هذا الطلب نهائياً؟');">
+                                {% if r.can_reject and r.status != 'approved' and r.status != 'rejected' %}
+                                <form method="POST" action="{% url 'web:reject_employment_request' r.id %}" class="inline" onsubmit="return confirm('إلغاء هذا الطلب نهائياً؟');">
                                     {% csrf_token %}
-                                    <button type="submit" class="hr-act hr-act--reject" title="رفض">
+                                    <button type="submit" class="hr-act hr-act--reject" title="إلغاء الطلب">
                                         <i data-lucide="x" class="hr-act__icon"></i>
                                     </button>
                                 </form>

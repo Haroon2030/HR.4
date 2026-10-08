@@ -1481,6 +1481,46 @@ def view_payroll_run(request, run_id):
     from apps.core.utils.pagination import clamp_page_size
 
     lines_qs = run.lines.select_related('employee', 'employee__branch').order_by('employee__name')
+
+    # فلترة أسطر المسير بالشركة / الفرع (خيارات الفلتر من أسطر هذا المسير فقط)
+    from apps.core.models import Branch
+    branch_ids_in_run = (
+        run.lines.exclude(employee__branch_id__isnull=True)
+        .values_list('employee__branch_id', flat=True).distinct()
+    )
+    filter_branches = list(
+        Branch.objects.filter(id__in=branch_ids_in_run)
+        .select_related('company').order_by('name')
+    )
+    filter_companies = sorted(
+        {b.company for b in filter_branches if b.company_id},
+        key=lambda c: c.name,
+    )
+    sel_company = request.GET.get('company_id') or ''
+    sel_branch = request.GET.get('branch_id') or ''
+    if sel_company.isdigit():
+        lines_qs = lines_qs.filter(employee__branch__company_id=int(sel_company))
+    else:
+        sel_company = ''
+    if sel_branch.isdigit():
+        lines_qs = lines_qs.filter(employee__branch_id=int(sel_branch))
+    else:
+        sel_branch = ''
+    is_filtered = bool(sel_company or sel_branch)
+    filtered_totals = None
+    if is_filtered:
+        from django.db.models import Sum
+        filtered_totals = lines_qs.aggregate(
+            earnings=Sum('total_earnings'),
+            deductions=Sum('total_deductions'),
+            net=Sum('net_salary'),
+        )
+    base_qs_parts = []
+    if sel_company:
+        base_qs_parts.append(f'company_id={sel_company}')
+    if sel_branch:
+        base_qs_parts.append(f'branch_id={sel_branch}')
+
     paginator = Paginator(
         lines_qs,
         per_page=clamp_page_size(request.GET.get('per_page'), default=50, maximum=200),
@@ -1498,6 +1538,13 @@ def view_payroll_run(request, run_id):
         'page_obj': page_obj,
         'lines_total': paginator.count,
         'financial_audit': financial_audit,
+        'filter_branches': filter_branches,
+        'filter_companies': filter_companies,
+        'sel_company': sel_company,
+        'sel_branch': sel_branch,
+        'is_filtered': is_filtered,
+        'filtered_totals': filtered_totals,
+        'base_qs': '&'.join(base_qs_parts),
     })
 
 

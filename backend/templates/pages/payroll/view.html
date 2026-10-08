@@ -119,6 +119,25 @@
                 أسطر المسير ({{ lines_total }})
             </h3>
         </div>
+        <form method="get" class="flex flex-wrap items-end gap-3 px-4 py-3 border-b border-slate-100">
+            <div>
+                <label for="pl-company" class="block text-xs font-semibold text-slate-500 mb-1">الشركة</label>
+                <select id="pl-company" name="company_id" class="hr-input" onchange="this.form.submit()">
+                    <option value="">كل الشركات</option>
+                    {% for c in filter_companies %}<option value="{{ c.id }}" {% if sel_company == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pl-branch" class="block text-xs font-semibold text-slate-500 mb-1">الفرع</label>
+                <select id="pl-branch" name="branch_id" class="hr-input" onchange="this.form.submit()">
+                    <option value="">كل الفروع</option>
+                    {% for b in filter_branches %}<option value="{{ b.id }}" {% if sel_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+                </select>
+            </div>
+            {% if is_filtered %}
+            <a href="?" class="hr-btn hr-btn--outline hr-btn--sm">إزالة الفلتر</a>
+            {% endif %}
+        </form>
         <div class="overflow-x-auto">
             <table class="payroll-tbl">
                 <thead>
@@ -180,10 +199,10 @@
                         <td class="text-right font-bold text-slate-900">الإجمالي</td>
                         <td class="col-num"></td>
                         <td class="col-num td-deduct" colspan="5"></td>
-                        <td class="col-num td-earn">{{ run.total_earnings|format_sar:"earn" }}</td>
-                        <td class="col-num td-deduct">{{ run.total_deductions|format_sar:"deduct" }}</td>
+                        <td class="col-num td-earn">{% if is_filtered %}{{ filtered_totals.earnings|default:0|format_sar:"earn" }}{% else %}{{ run.total_earnings|format_sar:"earn" }}{% endif %}</td>
+                        <td class="col-num td-deduct">{% if is_filtered %}{{ filtered_totals.deductions|default:0|format_sar:"deduct" }}{% else %}{{ run.total_deductions|format_sar:"deduct" }}{% endif %}</td>
                         <td class="col-num" colspan="2"></td>
-                        <td class="col-num td-net">{{ run.total_net|format_sar:"net" }}</td>
+                        <td class="col-num td-net">{% if is_filtered %}{{ filtered_totals.net|default:0|format_sar:"net" }}{% else %}{{ run.total_net|format_sar:"net" }}{% endif %}</td>
                     </tr>
                 </tfoot>
                 {% endif %}
@@ -192,7 +211,7 @@
         {% if page_obj and page_obj.paginator.num_pages > 1 %}
         <div class="px-4 py-3 border-t border-slate-100 hr-pagination hr-pagination--bar">
             <div class="hr-pagination__summary">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</div>
-            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True show_numbers=False %}
+            {% include "components/hr_pagination.html" with page_obj=page_obj controls_only=True show_numbers=False base_qs=base_qs %}
         </div>
         {% endif %}
     </div>
