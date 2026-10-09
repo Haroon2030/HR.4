@@ -5,7 +5,7 @@
 {% block content %}
 {% include "pages/reports/_filter_styles.html" %}
 
-<div class="max-w-7xl mx-auto space-y-4">
+<div class="max-w-7xl mx-auto space-y-4 rd rp-c--{{ report_meta.color }}">
 
     {# Breadcrumb #}
     <nav class="text-xs text-slate-500 flex items-center gap-1">
@@ -20,16 +20,17 @@
         <span class="text-slate-700 font-semibold">{{ report_meta.title }}</span>
     </nav>
 
-    {% include "pages/reports/_filter_table.html" %}
+    {% if is_period_report %}{% include "pages/reports/_filter_table.html" %}{% else %}{% include "pages/reports/_filter_table.html" with hide_dates=True %}{% endif %}
 
     {# Header #}
-    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center justify-between gap-4 flex-wrap">
+    <div class="rd-head bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-{{ report_meta.color }}-50 text-{{ report_meta.color }}-600 flex items-center justify-center flex-shrink-0">
+            <div class="rd-head__icon">
                 <i data-lucide="{{ report_meta.icon }}" class="w-5 h-5"></i>
             </div>
             <div>
-                <h1 class="text-lg font-bold text-slate-800">{{ report_meta.title }}</h1>
+                <h1 class="text-lg font-bold text-slate-800 m-0">{{ report_meta.title }}</h1>
+                {% if report_meta.description %}<p class="rd-head__desc">{{ report_meta.description }}</p>{% endif %}
             </div>
         </div>
         <div class="flex items-center gap-3 text-xs flex-wrap">
@@ -68,13 +69,44 @@
         </div>
     </div>
 
+    {# القراءة الإدارية المولّدة من بيانات التقرير #}
+    {% if analysis.insights %}
+    <section class="rd-reading" aria-labelledby="rd-reading-title">
+        <div class="rd-reading__text">
+            <h2 id="rd-reading-title">القراءة الإدارية</h2>
+            <ul>
+                {% for i in analysis.insights %}
+                <li><span class="rd-dot rd-dot--{{ i.tone }}" aria-hidden="true"></span><span>{{ i.text }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if analysis.chart %}
+        <div class="rd-reading__chart" role="img" aria-label="{{ analysis.chart.title }}">
+            <h3>{{ analysis.chart.title }}</h3>
+            {% for item in analysis.chart.items %}
+            <div class="rd-bar">
+                <div class="rd-bar__meta"><span>{{ item.label }}</span><span><b>{{ item.value }}</b> · {{ item.pct }}%</span></div>
+                <div class="rd-bar__track"><div class="rd-bar__fill" style="width: {{ item.pct }}%"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
     {# أدوات التقرير: فترات جاهزة + اختيار الأعمدة #}
     <div class="rep-tools">
+        {% if is_period_report %}
         <div class="rep-presets" role="group" aria-label="فترات جاهزة">
             {% for p in period_presets %}
             <a href="{{ p.href }}" class="rep-chip{% if p.active %} is-active{% endif %}">{{ p.label }}</a>
             {% endfor %}
         </div>
+        {% else %}
+        <span class="rep-snapshot" title="هذا التقرير يعرض الوضع الحالي للبيانات ولا يتأثر باختيار فترة">
+            <i data-lucide="clock-3" class="w-3.5 h-3.5"></i> يعرض الوضع الحالي ولا يتأثر بالفترة
+        </span>
+        {% endif %}
         {% if column_choices|length > 1 %}
         <details class="rep-cols">
             <summary class="rep-chip">
@@ -102,27 +134,41 @@
 
     {# Table #}
     {% if data.rows %}
-    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse" id="reportTable">
+    <div class="rd-table">
+        <div class="rd-table__caption">
+            <strong>{{ report_meta.title }}</strong>
+            <span>{% if is_period_report %}{{ filter.date_from }} إلى {{ filter.date_to }}{% else %}الوضع الحالي{% endif %} · {{ data.rows|length }} سجل</span>
+        </div>
+        <div class="rd-table__scroll">
+            <table id="reportTable">
                 <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="text-center p-2.5 text-slate-500 font-semibold w-10">#</th>
-                        {% for col in data.columns %}
-                        <th class="text-right p-2.5 text-slate-600 font-semibold whitespace-nowrap">{{ col }}</th>
-                        {% endfor %}
+                    <tr>
+                        <th class="rd-num-idx">#</th>
+                        {% for col in data.columns %}<th scope="col">{{ col }}</th>{% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in data.rows %}
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="text-center p-2 text-slate-400 text-xs">{{ forloop.counter }}</td>
+                    {% for row in table_rows %}
+                    <tr>
+                        <td class="rd-num-idx">{{ forloop.counter }}</td>
                         {% for cell in row %}
-                        <td class="p-2 text-slate-700 whitespace-nowrap">{{ cell }}</td>
+                        <td{% if cell.num %} class="rd-num" dir="ltr"{% endif %}>
+                            {% if cell.tone %}<span class="rd-badge rd-badge--{{ cell.tone }}">{{ cell.v }}</span>{% else %}{{ cell.v }}{% endif %}
+                        </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}
                 </tbody>
+                {% if analysis.totals %}
+                <tfoot>
+                    <tr>
+                        <td class="rd-num-idx"></td>
+                        {% for t in analysis.totals %}
+                        <td{% if t %} class="rd-num" dir="ltr"{% endif %}>{% if forloop.first and not t %}الإجمالي{% else %}{{ t }}{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+                {% endif %}
             </table>
         </div>
     </div>
@@ -136,11 +182,55 @@
 </div>
 
 <style>
+.rd { --c: #2563eb; --bg: #eff6ff; }
+.rp-c--primary, .rp-c--blue { --c: #2563eb; --bg: #eff6ff; --ink: #1e3a8a; }
+.rp-c--emerald { --c: #059669; --bg: #ecfdf5; --ink: #064e3b; }
+.rp-c--indigo { --c: #4f46e5; --bg: #eef2ff; --ink: #312e81; }
+.rp-c--rose { --c: #e11d48; --bg: #fff1f2; --ink: #881337; }
+.rp-c--cyan { --c: #0891b2; --bg: #ecfeff; --ink: #164e63; }
+.rp-c--amber { --c: #d97706; --bg: #fffbeb; --ink: #78350f; }
+.rp-c--violet { --c: #7c3aed; --bg: #f5f3ff; --ink: #4c1d95; }
+.rd-head { border-top: 4px solid var(--c); }
+.rd-head__icon { flex: 0 0 2.6rem; width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border-radius: 0.7rem; color: var(--c); background: var(--bg); }
+.rd-head__desc { margin: 0.15rem 0 0; font-size: 0.78rem; font-weight: 600; color: #64748b; }
+.rd-table { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.rd-table__caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.4rem 1rem; padding: 0.7rem 1rem; background: var(--bg); border-bottom: 1px solid #e2e8f0; color: var(--ink, #1e3a8a); }
+.rd-table__caption strong { font-size: 0.95rem; font-weight: 800; }
+.rd-table__caption span { font-size: 0.76rem; font-weight: 700; opacity: .85; }
+.rd-table__scroll { overflow: auto; max-height: 70vh; }
+body.hr-app .hr-main .rd-table table { width: 100%; border: 0; border-radius: 0; box-shadow: none; background: transparent; backdrop-filter: none; border-collapse: separate; border-spacing: 0; font-size: 0.83rem; font-variant-numeric: tabular-nums; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table thead th { position: sticky; top: 0; z-index: 2; padding: 0.65rem 0.8rem; text-align: right; font-size: 0.78rem; font-weight: 800; color: #fff !important; background: var(--c) !important; white-space: nowrap; border-bottom: 1px solid rgba(255, 255, 255, .25); }
+body.hr-app .hr-main .rd-table .rd-table__scroll table tbody td { padding: 0.55rem 0.8rem; border-bottom: 1px solid #eef2f7; color: #1e293b; font-weight: 600; white-space: nowrap; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--bg) 55%, #fff) !important; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table tbody tr:hover td { background: var(--bg) !important; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table tfoot td { position: sticky; bottom: 0; padding: 0.65rem 0.8rem; font-weight: 800; color: var(--ink, #1e3a8a) !important; background: var(--bg) !important; border-top: 2px solid var(--c); white-space: nowrap; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table .rd-num-idx { width: 2.6rem; text-align: center; color: #94a3b8; font-weight: 700; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table thead .rd-num-idx { color: #fff !important; }
+body.hr-app .hr-main .rd-table .rd-table__scroll table .rd-num { text-align: left; }
+.rd-badge { display: inline-block; padding: 0.12rem 0.6rem; border-radius: 999px; font-size: 0.74rem; font-weight: 800; }
+.rd-badge--good { color: #047857; background: #d1fae5; }
+.rd-badge--warn { color: #b45309; background: #fef3c7; }
+.rd-badge--bad { color: #b91c1c; background: #fee2e2; }
+.rd-reading { display: grid; gap: 1rem; background: #fff; border: 1px solid #e2e8f0; border-inline-start: 5px solid #1e40af; border-radius: 0.75rem; padding: 1rem 1.15rem; }
+@media (min-width: 900px) { .rd-reading { grid-template-columns: 1.4fr 1fr; align-items: start; } }
+.rd-reading h2 { margin: 0 0 0.55rem; font-size: 1rem; font-weight: 800; color: #1e3a8a; }
+.rd-reading h3 { margin: 0 0 0.6rem; font-size: 0.85rem; font-weight: 800; color: #0f172a; }
+.rd-reading ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; max-width: 72ch; }
+.rd-reading li { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.86rem; font-weight: 600; line-height: 1.75; color: #1e293b; }
+.rd-dot { flex: 0 0 0.55rem; width: 0.55rem; height: 0.55rem; margin-top: 0.6rem; border-radius: 999px; background: #2563eb; }
+.rd-dot--good { background: #059669; }
+.rd-dot--warn { background: #d97706; }
+.rd-bar { display: grid; gap: 0.2rem; margin-bottom: 0.5rem; }
+.rd-bar__meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.76rem; font-weight: 700; color: #334155; }
+.rd-bar__meta b { color: #0f172a; }
+.rd-bar__track { height: 0.5rem; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+.rd-bar__fill { height: 100%; background: linear-gradient(to left, #2563eb, #60a5fa); border-radius: 999px; }
 .rep-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .rep-presets { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .rep-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.8rem; font-size: 0.78rem; font-weight: 700; color: #475569; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; text-decoration: none; cursor: pointer; list-style: none; }
 .rep-chip::-webkit-details-marker { display: none; }
 .rep-chip:hover { border-color: #93c5fd; }
+.rep-snapshot { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.8rem; font-size: 0.78rem; font-weight: 700; color: #475569; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 999px; }
 .rep-chip.is-active { color: #1d4ed8; border-color: #1d4ed8; background: #eff6ff; }
 .rep-cols { position: relative; }
 .rep-cols__count { font-weight: 800; color: #0f172a; }
@@ -149,6 +239,8 @@
 .rep-cols__item { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: #1e293b; }
 .rep-cols__actions { display: flex; gap: 0.4rem; }
 @media print {
+    .rd-table, .rd-table * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .rd-table__scroll { max-height: none !important; overflow: visible !important; }
     .rep-tools { display: none !important; }
 }
 @media print {

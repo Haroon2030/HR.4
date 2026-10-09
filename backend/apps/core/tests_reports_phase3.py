@@ -121,3 +121,99 @@ class AllReportsExportTests(TestCase):
                 if status != 200:
                     failures.append(f'{key}/{suffix} -> {status}')
         self.assertEqual(failures, [])
+
+
+class InsightsTests(TestCase):
+    def test_analyze_table_picks_category_and_skips_phone_numbers(self):
+        from apps.core.services.report_insights import analyze_table
+
+        columns = ['الاسم', 'الفرع', 'الجوال', 'الراتب']
+        rows = [
+            [f'موظف {i}', 'الرياض' if i < 7 else 'جدة', f'05{10000000 + i}', 1000 + i * 10]
+            for i in range(10)
+        ]
+        result = analyze_table(columns, rows)
+        texts = ' '.join(i['text'] for i in result['insights'])
+        self.assertIn('الفرع', texts)
+        self.assertIn('الراتب', texts)
+        self.assertNotIn('الجوال', texts)
+        self.assertEqual(result['chart']['items'][0]['label'], 'الرياض')
+        self.assertEqual(result['chart']['items'][0]['pct'], 70)
+
+    def test_analyze_empty_table_gives_guidance(self):
+        from apps.core.services.report_insights import analyze_table
+
+        result = analyze_table(['أ'], [])
+        self.assertEqual(result['insights'][0]['tone'], 'info')
+        self.assertIsNone(result['chart'])
+
+
+class ReportsCenterTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.admin = User.objects.create_superuser('center_admin', 'c@example.com', 'x-pass-123')
+        self.client = Client()
+        self.client.force_login(self.admin)
+
+    def test_index_renders_management_reading_and_catalog(self):
+        response = self.client.get('/reports/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'القراءة الإدارية')
+        self.assertContains(response, 'كتالوج التقارير')
+        overview = response.context['overview']
+        self.assertEqual(len(overview['kpis']), 6)
+        self.assertEqual(len(overview['series']), 6)
+        self.assertTrue(overview['insights'])
+
+    def test_detail_shows_reading_panel(self):
+        response = self.client.get('/reports/attendance_devices_status/')
+        self.assertContains(response, 'القراءة الإدارية')
+        self.assertIn('analysis', response.context)
+
+
+class PeriodReportsFlagTests(TestCase):
+    """أزرار الفترات والتواريخ تظهر فقط للتقارير التي تتأثر بالفترة فعلاً."""
+
+    def setUp(self):
+        cache.clear()
+        self.admin = User.objects.create_superuser('period_admin', 'pe@example.com', 'x-pass-123')
+        self.client = Client()
+        self.client.force_login(self.admin)
+
+    def test_flag_matches_builder_source(self):
+        """أي منشئ تقرير يستخدم تواريخ الفلتر يجب أن يكون ضمن PERIOD_REPORT_KEYS (والعكس)."""
+        import inspect
+        import re
+
+        from apps.core.web_views.reports import BUILDERS, PERIOD_REPORT_KEYS
+
+        pattern = re.compile(r"_parse_filter_dates\(|date_from|date_to|_attendance_daily_rows\(|filters\['date")
+        mismatches = [
+            key for key, builder in BUILDERS.items()
+            if bool(pattern.search(inspect.getsource(builder))) != (key in PERIOD_REPORT_KEYS)
+        ]
+        self.assertEqual(mismatches, [])
+        self.assertLessEqual(PERIOD_REPORT_KEYS, set(BUILDERS))
+
+    def test_snapshot_report_hides_presets_and_dates(self):
+        response = self.client.get('/reports/housing/')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['is_period_report'])
+        self.assertEqual(response.context['period_presets'], [])
+        self.assertContains(response, 'يعرض الوضع الحالي ولا يتأثر بالفترة')
+        # لا حقول فترة في فلتر التقرير (حقل from المخفي لاختيار الأعمدة مقصود، وحاسبة التواريخ العامة خارج الفلتر)
+        self.assertNotContains(response, 'aria-label="من تاريخ"')
+        self.assertNotContains(response, 'aria-label="إلى تاريخ"')
+
+    def test_period_report_shows_presets_and_dates(self):
+        response = self.client.get('/reports/leaves/')
+        self.assertTrue(response.context['is_period_report'])
+        self.assertEqual(len(response.context['period_presets']), 4)
+        self.assertNotContains(response, 'يعرض الوضع الحالي ولا يتأثر بالفترة')
+        self.assertContains(response, 'aria-label="من تاريخ"')
+        self.assertContains(response, 'aria-label="إلى تاريخ"')
+
+    def test_pdf_period_text_for_snapshot(self):
+        response = self.client.get('/reports/housing/export-pdf/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b'%PDF'))

@@ -867,6 +867,14 @@ BUILDERS = {
     'attendance_devices_status': _build_attendance_devices_status,
 }
 
+# التقارير التي تتأثر نتائجها بفترة «من/إلى». الباقي لقطة للوضع الحالي لا تتغير بتغيير الفترة.
+# يحرسها اختبار (tests_reports_phase3) كي لا ينحرف التصنيف عند إضافة تقرير جديد.
+PERIOD_REPORT_KEYS = frozenset({
+    'new_hires', 'terminations', 'stopped', 'warnings', 'statements', 'leaves', 'absences',
+    'biometric_daily', 'attendance_late', 'attendance_monthly', 'attendance_incomplete',
+})
+
+
 def _selected_column_indexes(request, total: int) -> list[int] | None:
     """الأعمدة المختارة من ?cols=0&cols=3 — None تعني كل الأعمدة."""
     raw = request.GET.getlist('cols')
@@ -942,7 +950,7 @@ def _filter_querystring(request, exclude=()):
     return urlencode(params, doseq=True)
 
 
-def _period_presets(request, report_type: str, filters: dict) -> list[dict]:
+def _period_presets(request, report_type: str | None, filters: dict, base_url: str | None = None) -> list[dict]:
     """فترات جاهزة (اليوم، الأسبوع، الشهر...) تحتفظ ببقية الفلاتر."""
     today = timezone.localdate()
     week_start = today - timedelta(days=(today.weekday() + 1) % 7)  # الأحد بداية الأسبوع
@@ -955,7 +963,7 @@ def _period_presets(request, report_type: str, filters: dict) -> list[dict]:
         ('هذا الشهر', month_start, today),
         ('الشهر الماضي', prev_month_start, prev_month_end),
     ]
-    base = reverse('web:report_detail', kwargs={'report_type': report_type})
+    base = base_url or reverse('web:report_detail', kwargs={'report_type': report_type})
     rest = _filter_querystring(request, exclude=('from', 'to'))
     presets = []
     for label, d1, d2 in options:
@@ -967,6 +975,35 @@ def _period_presets(request, report_type: str, filters: dict) -> list[dict]:
             'active': filters['date_from'] == d1.isoformat() and filters['date_to'] == d2.isoformat(),
         })
     return presets
+
+
+def _executive_overview_for(request, filters: dict) -> dict:
+    """النظرة التنفيذية لمركز التقارير ضمن فلاتر الفرع/الكفالة/الفترة."""
+    from apps.core.models import PendingAction
+    from apps.core.services.report_insights import executive_overview
+    from apps.employees.models import EmploymentRequest
+
+    emp_qs = apply_branch_filter(_emp_qs(), filters['branch_ids'])
+    if filters['sponsorship_ids']:
+        emp_qs = emp_qs.filter(sponsorship_id__in=filters['sponsorship_ids'])
+    date_from, date_to = _parse_filter_dates(filters)
+
+    er_qs = EmploymentRequest.objects.filter(is_deleted=False).exclude(
+        status__in=[EmploymentRequest.Status.APPROVED, EmploymentRequest.Status.REJECTED],
+    )
+    pa_qs = PendingAction.objects.exclude(status=PendingAction.Status.APPROVED)
+    if hasattr(PendingAction, 'is_deleted'):
+        pa_qs = pa_qs.filter(is_deleted=False)
+    if filters['branch_ids']:
+        er_qs = er_qs.filter(branch_id__in=filters['branch_ids'])
+        pa_qs = pa_qs.filter(branch_id__in=filters['branch_ids'])
+    return executive_overview(
+        emp_qs,
+        date_from=date_from,
+        date_to=date_to,
+        branch_ids=filters['branch_ids'],
+        open_requests={'employment': er_qs.count(), 'operations': pa_qs.count()},
+    )
 
 
 @login_required
@@ -983,11 +1020,20 @@ def reports_index(request):
         return redirect(url)
 
     ctx = _report_filter_context(request)
+    filters = ctx['filter']
+    date_from, date_to = _parse_filter_dates(filters)
+    index_url = reverse('web:reports_index')
     return render(request, 'pages/reports/index.html', {
         **ctx,
         'reports': visible_reports,
         'report_groups': _grouped_reports_for_user(request.user),
-        'clear_url': reverse('web:reports_index'),
+        'clear_url': index_url,
+        'overview': _executive_overview_for(request, filters),
+        'period_presets': _period_presets(request, None, filters, base_url=index_url),
+        'period_label': f'من {date_from} إلى {date_to}',
+        'scope_label': _filter_scope_label(filters),
+        'period_keys': sorted(PERIOD_REPORT_KEYS),
+        'filter_querystring': _filter_querystring(request, exclude=('report', 'cols')),
     })
 
 @login_required
@@ -1030,12 +1076,17 @@ def report_detail(request, report_type):
     all_columns = list(data.get('columns') or [])
     col_indexes = _selected_column_indexes(request, len(all_columns))
     data = _apply_columns(data, col_indexes)
+    from apps.core.services.report_insights import analyze_table, decorate_rows
+    analysis = analyze_table(data.get('columns') or [], data.get('rows') or [])
     selected_set = set(col_indexes) if col_indexes is not None else set(range(len(all_columns)))
     column_choices = [{'index': i, 'name': name, 'selected': i in selected_set} for i, name in enumerate(all_columns)]
     ctx = _report_filter_context(request)
     return render(request, 'pages/reports/detail.html', {
         'column_choices': column_choices,
-        'period_presets': _period_presets(request, report_type, filters),
+        'analysis': analysis,
+        'table_rows': decorate_rows(data.get('columns') or [], data.get('rows') or [], analysis['numeric_columns']),
+        'is_period_report': report_type in PERIOD_REPORT_KEYS,
+        'period_presets': _period_presets(request, report_type, filters) if report_type in PERIOD_REPORT_KEYS else [],
         'filter_querystring_nocols': _filter_querystring(request, exclude=('cols',)),
         'pdf_url': reverse('web:report_export_pdf', kwargs={'report_type': report_type}),
         'report_meta': meta,
@@ -1157,7 +1208,11 @@ def report_export_pdf(request, report_type):
     pdf_meta = ReportPdfMeta(
         title=meta.get('title') or report_type,
         company_name=(company.name if company else 'نظام الموارد البشرية'),
-        period=f"من|{filters['date_from']}|إلى|{filters['date_to']}",
+        period=(
+            f"من|{filters['date_from']}|إلى|{filters['date_to']}"
+            if report_type in PERIOD_REPORT_KEYS
+            else f"الوضع الحالي|بتاريخ|{now:%Y-%m-%d}"
+        ),
         scope=_filter_scope_label(filters),
         prepared_by=(request.user.get_full_name() or request.user.get_username()),
         reference=f"{report_type[:4].upper()}-{now:%Y%m%d-%H%M}-{request.user.id}",
@@ -1165,6 +1220,11 @@ def report_export_pdf(request, report_type):
         note=data.get('note') or '',
         total_rows=len(data.get('rows') or []),
     )
+    from apps.core.services.report_insights import analyze_table
+    analysis = analyze_table(data.get('columns') or [], data.get('rows') or [])
+    pdf_meta.insights = analysis['insights']
+    pdf_meta.chart = analysis['chart']
+    pdf_meta.kpis = analysis['kpis']
     pdf_bytes = build_report_pdf(pdf_meta, data.get('columns') or [], data.get('rows') or [])
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="report_{report_type}_{now:%Y%m%d_%H%M%S}.pdf"'

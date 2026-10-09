@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-from apps.core.services.operations_report_pdf import _font_path, _pdf_text
+from apps.core.services.operations_report_pdf import _font_path, _pdf_text as _base_pdf_text
 
 _MARGIN = 10
 _ROW_H = 6.2
@@ -31,9 +31,19 @@ class ReportPdfMeta:
     issued_at: datetime = field(default_factory=datetime.now)
     note: str = ''
     total_rows: int | None = None
+    insights: list = field(default_factory=list)
+    chart: dict | None = None
+    kpis: list = field(default_factory=list)
 
 
 _ARABIC_RE = re.compile(r'[\u0600-\u06FF]')
+
+
+def _pdf_text(text) -> str:
+    raw = str(text or '-')
+    if _ARABIC_RE.search(raw):
+        raw = raw.translate(_NOTO_PUNCT_MAP)
+    return _base_pdf_text(raw)
 
 
 def _latin_fallback_font() -> Path | None:
@@ -46,7 +56,11 @@ def _latin_fallback_font() -> Path | None:
         return None
 
 
-_NOTO_SAFE_RE = re.compile(r'^[0-9:.,\-+% ()]*$')
+_NOTO_SAFE_RE = re.compile(r'^[0-9:.,\- ]*$')
+# رموز لا يحتويها Noto العربي → بدائل موجودة فيه (النص العربي فقط)
+_NOTO_PUNCT_MAP = str.maketrans({
+    '%': '٪', '(': '«', ')': '»', '—': '-', '–': '-', '/': '-', '|': '-', '+': '', '·': '-', '…': '...',
+})
 
 
 def _font_for(pdf: FPDF, text: str, size: float) -> None:
@@ -203,6 +217,98 @@ def _meta_block(pdf: _OfficialPDF) -> None:
     pdf.set_y(pdf.get_y() + 2)
 
 
+_TONE_COLORS = {'good': (5, 150, 105), 'warn': (217, 119, 6), 'info': (37, 99, 235)}
+
+
+def _wrap_rtl(pdf: FPDF, text: str, max_w: float) -> list[str]:
+    """يلتف النص منطقياً بالكلمات ثم يُشكَّل كل سطر على حدة (حتى لا ينقلب ترتيب الأسطر)."""
+    words = str(text).split()
+    lines: list[str] = []
+    current: list[str] = []
+    for word in words:
+        candidate = ' '.join(current + [word])
+        _font_for(pdf, candidate, pdf.font_size_pt)
+        if current and pdf.get_string_width(_pdf_text(candidate)) > max_w:
+            lines.append(' '.join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        lines.append(' '.join(current))
+    return lines or ['']
+
+
+def _reading_block(pdf: _OfficialPDF) -> None:
+    """القراءة الإدارية (جمل تحليلية) + رسم أعمدة أفقي لأفضل توزيع في التقرير."""
+    m = pdf.meta
+    if not m.insights:
+        return
+    pad = 4.0
+    inner_w = pdf.body_w - 2 * pad - 5
+    pdf.set_font('NotoArabic', '', 9)
+    wrapped = [(i.get('tone', 'info'), _wrap_rtl(pdf, i.get('text', ''), inner_w)) for i in m.insights[:6]]
+    text_h = sum(len(lines) * 5.0 + 1.6 for _, lines in wrapped)
+    chart_items = (m.chart or {}).get('items') or []
+    chart_h = (9 + len(chart_items) * 6.0) if chart_items else 0
+    total_h = pad + 7 + text_h + chart_h + pad
+    if pdf.get_y() + min(total_h, 60) > pdf.h - 26:
+        pdf.add_page()
+    x0, y0 = _MARGIN, pdf.get_y()
+    right = pdf.w - _MARGIN
+
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(*_LINE)
+    pdf.rect(x0, y0, pdf.body_w, min(total_h, pdf.h - y0 - 24), style='DF')
+    pdf.set_fill_color(*_NAVY)
+    pdf.rect(right - 1.4, y0, 1.4, min(total_h, pdf.h - y0 - 24), style='F')
+
+    pdf.set_font('NotoArabic', '', 11)
+    pdf.set_text_color(*_NAVY)
+    pdf.set_xy(x0, y0 + pad - 1)
+    pdf.cell(pdf.body_w - pad - 3, 7, _pdf_text('القراءة الإدارية'), align='R')
+    y = y0 + pad + 7
+
+    pdf.set_font('NotoArabic', '', 9)
+    for tone, lines in wrapped:
+        color = _TONE_COLORS.get(tone, _TONE_COLORS['info'])
+        pdf.set_fill_color(*color)
+        pdf.ellipse(right - pad - 3.2, y + 1.6, 2.2, 2.2, style='F')
+        pdf.set_text_color(15, 23, 42)
+        for line in lines:
+            _font_for(pdf, line, 9)
+            pdf.set_xy(x0 + pad, y)
+            pdf.cell(pdf.body_w - 2 * pad - 5, 5.0, _pdf_text(line), align='R')
+            y += 5.0
+        y += 1.6
+
+    if chart_items:
+        pdf.set_font('NotoArabic', '', 9)
+        pdf.set_text_color(*_SLATE)
+        pdf.set_xy(x0 + pad, y + 1)
+        pdf.cell(pdf.body_w - 2 * pad - 5, 5, _fit(pdf, m.chart.get('title', ''), pdf.body_w - 2 * pad - 5), align='R')
+        y += 7
+        label_w = min(52.0, pdf.body_w * 0.28)
+        bar_w_max = pdf.body_w - 2 * pad - 5 - label_w - 24
+        peak = max((it['value'] for it in chart_items), default=1) or 1
+        for it in chart_items:
+            pdf.set_font('NotoArabic', '', 8)
+            pdf.set_text_color(15, 23, 42)
+            pdf.set_xy(right - pad - 5 - label_w, y)
+            pdf.cell(label_w, 5, _fit(pdf, it['label'], label_w), align='R')
+            bar_x_right = right - pad - 5 - label_w - 2
+            w = max(bar_w_max * it['value'] / peak, 0.6)
+            pdf.set_fill_color(96, 165, 250)
+            pdf.rect(bar_x_right - w, y + 0.9, w, 3.2, style='F')
+            pdf.set_text_color(*_SLATE)
+            value_label = f"{it['value']} ({it['pct']}%)"
+            _font_for(pdf, value_label, 8)
+            pdf.set_xy(bar_x_right - bar_w_max - 22, y)
+            pdf.cell(20, 5, value_label, align='L')
+            y += 6.0
+    pdf.set_y(max(y, y0 + total_h) + 3)
+    pdf.set_x(_MARGIN)
+
+
 def _table(pdf: _OfficialPDF, columns: list[str], rows: list[list]) -> None:
     num_w = 9.0
     widths = _column_widths(pdf, columns, rows, pdf.body_w, num_w)
@@ -289,6 +395,7 @@ def _render(meta: ReportPdfMeta, columns: list[str], rows: list[list], total_pag
     pdf.total_pages = total_pages
     pdf.add_page()
     _meta_block(pdf)
+    _reading_block(pdf)
     if rows and columns:
         _table(pdf, columns, rows)
     else:

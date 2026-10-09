@@ -1,29 +1,229 @@
 {% extends "base.html" %}
-{% block title %}التقارير{% endblock %}
+{% load custom_tags %}
+{% block title %}مركز التقارير{% endblock %}
 
 {% block content %}
-{% include "pages/reports/_filter_styles.html" %}
+<style>
+    .rp-c--primary, .rp-c--blue { --c: #2563eb; --bg: #eff6ff; }
+    .rp-c--emerald { --c: #059669; --bg: #ecfdf5; }
+    .rp-c--indigo { --c: #4f46e5; --bg: #eef2ff; }
+    .rp-c--rose { --c: #e11d48; --bg: #fff1f2; }
+    .rp-c--cyan { --c: #0891b2; --bg: #ecfeff; }
+    .rp-c--amber { --c: #d97706; --bg: #fffbeb; }
+    .rp-c--violet { --c: #7c3aed; --bg: #f5f3ff; }
 
-<div class="max-w-7xl mx-auto space-y-4">
+    .rp { display: flex; flex-direction: column; gap: 1rem; }
+    .rp-head h1 { margin: 0; font-size: 1.6rem; font-weight: 800; color: #0f172a; }
+    .rp-head p { margin: 0.2rem 0 0; font-size: 0.85rem; font-weight: 600; color: #64748b; }
 
-    <div class="mb-1">
-        <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-1">
-            <i data-lucide="bar-chart-3" class="w-5 h-5 text-primary-600"></i>
-            التقارير
-        </h1>
+    .rp-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.7rem 0.9rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.85rem 1rem; }
+    .rp-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; flex: 1 1 10rem; }
+    .rp-field > label { font-size: 0.7rem; font-weight: 700; color: #475569; }
+    .rp-field--date { flex: 0 0 10.5rem; }
+    .rp-input { box-sizing: border-box; width: 100%; min-height: 2.25rem; padding: 0.4rem 0.6rem; font-size: 0.8125rem; font-weight: 600; color: #0f172a; background: #fff; border: 1px solid #cbd5e1; border-radius: 0.375rem; }
+    .rp-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
+    .rp-presets { display: flex; flex-wrap: wrap; gap: 0.35rem; width: 100%; }
+    .rp-chip { display: inline-flex; align-items: center; padding: 0.3rem 0.75rem; font-size: 0.76rem; font-weight: 700; color: #475569; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 999px; text-decoration: none; }
+    .rp-chip:hover { border-color: #93c5fd; }
+    .rp-chip.is-active { color: #1d4ed8; border-color: #1d4ed8; background: #eff6ff; }
+
+    .rp-reading { position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.1rem 1.25rem 1.1rem 1.1rem; border-inline-start: 5px solid #1e40af; }
+    .rp-reading h2 { margin: 0 0 0.65rem; font-size: 1.05rem; font-weight: 800; color: #1e3a8a; }
+    .rp-reading ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; max-width: 72ch; }
+    .rp-reading li { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem; font-weight: 600; line-height: 1.75; color: #1e293b; }
+    .rp-dot { flex: 0 0 0.6rem; width: 0.6rem; height: 0.6rem; margin-top: 0.62rem; border-radius: 999px; background: #2563eb; }
+    .rp-dot--good { background: #059669; }
+    .rp-dot--warn { background: #d97706; }
+    .rp-dot--info { background: #2563eb; }
+
+    .rp-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+    @media (min-width: 640px) { .rp-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 1100px) { .rp-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+    .rp-kpi { display: flex; align-items: center; gap: 0.7rem; padding: 0.75rem 0.85rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; }
+    .rp-kpi__icon { flex: 0 0 2.4rem; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 0.65rem; color: var(--c); background: var(--bg); }
+    .rp-kpi strong { display: block; font-size: 1.45rem; line-height: 1.1; font-weight: 800; color: #0f172a; }
+    .rp-kpi span { font-size: 0.74rem; font-weight: 700; color: #64748b; }
+
+    .rp-charts { display: grid; gap: 0.8rem; grid-template-columns: 1fr; }
+    @media (min-width: 1100px) { .rp-charts { grid-template-columns: 1.3fr 1.2fr 1fr; } }
+    .rp-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.95rem 1rem; min-width: 0; }
+    .rp-card h3 { margin: 0 0 0.8rem; font-size: 0.92rem; font-weight: 800; color: #0f172a; }
+    .rp-empty { margin: 0; padding: 1.5rem 0; text-align: center; font-size: 0.82rem; font-weight: 600; color: #94a3b8; }
+
+    .rp-bars { display: grid; gap: 0.6rem; }
+    .rp-bars__row { display: grid; gap: 0.2rem; }
+    .rp-bars__meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; font-weight: 700; color: #334155; }
+    .rp-bars__meta b { color: #0f172a; }
+    .rp-bars__track { height: 0.55rem; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+    .rp-bars__fill { height: 100%; background: linear-gradient(to left, #2563eb, #60a5fa); border-radius: 999px; }
+
+    .rp-series { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; align-items: end; height: 9.5rem; }
+    .rp-series__col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 0.3rem; }
+    .rp-series__pair { display: flex; align-items: flex-end; gap: 0.2rem; height: 7.5rem; }
+    .rp-series__bar { width: 0.8rem; min-height: 2px; border-radius: 3px 3px 0 0; }
+    .rp-series__bar--in { background: #059669; }
+    .rp-series__bar--out { background: #e11d48; }
+    .rp-series__label { font-size: 0.68rem; font-weight: 700; color: #64748b; white-space: nowrap; }
+    .rp-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.7rem; font-size: 0.76rem; font-weight: 700; color: #475569; }
+    .rp-legend i { display: inline-block; width: 0.65rem; height: 0.65rem; border-radius: 3px; margin-inline-end: 0.3rem; vertical-align: -1px; }
+
+    .rp-donut { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .rp-donut__ring { position: relative; flex: 0 0 7.5rem; width: 7.5rem; height: 7.5rem; border-radius: 50%; }
+    .rp-donut__ring::after { content: ""; position: absolute; inset: 1.35rem; background: #fff; border-radius: 50%; }
+    .rp-donut__value { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; text-align: center; font-size: 1.25rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+    .rp-donut__value small { display: block; font-size: 0.66rem; font-weight: 700; color: #64748b; }
+    .rp-donut ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; font-size: 0.8rem; font-weight: 700; color: #334155; }
+    .rp-donut li i { display: inline-block; width: 0.65rem; height: 0.65rem; border-radius: 50%; margin-inline-end: 0.4rem; }
+
+    .rp-catalog-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; }
+    .rp-catalog-head h2 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+    .rp-search { max-width: 18rem; }
+    .rp-group { display: grid; gap: 0.55rem; }
+    .rp-group h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 0.95rem; font-weight: 800; color: #0f172a; }
+    .rp-group h3 .rp-gi { width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--c); background: var(--bg); }
+    .rp-group h3 small { font-size: 0.74rem; font-weight: 600; color: #64748b; }
+    .rp-cards { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); }
+    .rp-report { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.8rem 0.9rem; background: #fff; border: 1px solid #e2e8f0; border-inline-start: 4px solid var(--c); border-radius: 0.65rem; text-decoration: none; color: inherit; }
+    .rp-report:hover { border-color: var(--c); box-shadow: 0 4px 14px rgba(15, 23, 42, .07); }
+    .rp-report:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    .rp-report__icon { flex: 0 0 2rem; width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--c); background: var(--bg); }
+    .rp-report strong { display: block; font-size: 0.88rem; font-weight: 800; color: #0f172a; }
+    .rp-report span { display: block; margin-top: 0.15rem; font-size: 0.75rem; font-weight: 500; line-height: 1.5; color: #64748b; }
+    .rp-period { display: inline-block; margin-top: 0.35rem; padding: 0.05rem 0.55rem; font-size: 0.68rem; font-style: normal; font-weight: 800; color: var(--c); background: var(--bg); border-radius: 999px; }
+    .rp-none { padding: 2rem 1rem; text-align: center; font-weight: 600; color: #64748b; background: #fff; border: 1px dashed #cbd5e1; border-radius: 0.75rem; }
+</style>
+
+<div class="rp" x-data="{ q: '' }">
+    <div class="rp-head">
+        <h1>مركز التقارير</h1>
+        <p>{{ period_label }} · {{ scope_label }}</p>
     </div>
 
-    {% include "pages/reports/_filter_table.html" %}
+    <form method="get" class="rp-bar" aria-label="نطاق التقارير">
+        <div class="rp-presets" role="group" aria-label="فترات جاهزة">
+            {% for p in period_presets %}<a href="{{ p.href }}" class="rp-chip{% if p.active %} is-active{% endif %}">{{ p.label }}</a>{% endfor %}
+        </div>
+        <div class="rp-field rp-field--date">
+            <label for="rp-from">من تاريخ</label>
+            <input type="date" id="rp-from" name="from" value="{{ filter.date_from }}" class="rp-input">
+        </div>
+        <div class="rp-field rp-field--date">
+            <label for="rp-to">إلى تاريخ</label>
+            <input type="date" id="rp-to" name="to" value="{{ filter.date_to }}" class="rp-input">
+        </div>
+        <div class="rp-field">
+            <label>الفرع</label>
+            {% include "components/filter_multiselect.html" with name="branch" items=branches selected_ids=filter.branch_ids field_class="rp-input" aria_label="الفرع" %}
+        </div>
+        <div class="rp-field">
+            <label>شركة الكفالة</label>
+            {% include "components/filter_multiselect.html" with name="sponsorship" items=sponsorships selected_ids=filter.sponsorship_ids field_class="rp-input" aria_label="شركة الكفالة" %}
+        </div>
+        <div class="hr-filter-form flex items-center gap-1">
+            {% include "components/filter_actions.html" with clear_url=clear_url %}
+        </div>
+    </form>
 
+    <section class="rp-reading" aria-labelledby="rp-reading-title">
+        <h2 id="rp-reading-title">القراءة الإدارية</h2>
+        <ul>
+            {% for i in overview.insights %}
+            <li><span class="rp-dot rp-dot--{{ i.tone }}" aria-hidden="true"></span><span>{{ i.text }}</span></li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <div class="rp-kpis">
+        {% for k in overview.kpis %}
+        <div class="rp-kpi rp-c--{{ k.tone }}">
+            <span class="rp-kpi__icon"><i data-lucide="{{ k.icon }}" class="w-5 h-5"></i></span>
+            <div><strong>{{ k.value }}</strong><span>{{ k.label }}</span></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="rp-charts">
+        <section class="rp-card" aria-label="الموظفون حسب الفرع">
+            <h3>الموظفون حسب الفرع</h3>
+            {% if overview.branches %}
+            <div class="rp-bars">
+                {% for b in overview.branches %}
+                <div class="rp-bars__row">
+                    <div class="rp-bars__meta"><span>{{ b.label }}</span><span><b>{{ b.value }}</b> · {{ b.pct }}%</span></div>
+                    <div class="rp-bars__track"><div class="rp-bars__fill" style="width: {{ b.width }}%"></div></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}<p class="rp-empty">لا بيانات ضمن النطاق</p>{% endif %}
+        </section>
+
+        <section class="rp-card" aria-label="التعيينات مقابل إنهاء الخدمات">
+            <h3>التعيينات مقابل إنهاء الخدمات (آخر 6 أشهر)</h3>
+            <div class="rp-series" role="img" aria-label="رسم أعمدة شهري للتعيين والإنهاء">
+                {% for s in overview.series %}
+                <div class="rp-series__col">
+                    <div class="rp-series__pair">
+                        <div class="rp-series__bar rp-series__bar--in" style="height: {{ s.hires_h }}%" title="تعيين {{ s.hires }}"></div>
+                        <div class="rp-series__bar rp-series__bar--out" style="height: {{ s.exits_h }}%" title="إنهاء {{ s.exits }}"></div>
+                    </div>
+                    <span class="rp-series__label">{{ s.label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="rp-legend"><span><i style="background:#059669"></i>تعيين</span><span><i style="background:#e11d48"></i>إنهاء خدمة</span></div>
+        </section>
+
+        <section class="rp-card" aria-label="التوزيع حسب النوع">
+            <h3>التوزيع حسب النوع</h3>
+            {% if overview.gender %}
+            <div class="rp-donut">
+                <div class="rp-donut__ring" style="background: {{ overview.donut_style }}">
+                    <div class="rp-donut__value"><span>{{ overview.gender_total }}<small>موظف</small></span></div>
+                </div>
+                <ul>
+                    {% for g in overview.gender %}<li><i style="background: {{ g.color }}"></i>{{ g.label }} <b>{{ g.value }}</b> ({{ g.pct }}%)</li>{% endfor %}
+                </ul>
+            </div>
+            {% else %}<p class="rp-empty">لا بيانات ضمن النطاق</p>{% endif %}
+        </section>
+    </div>
+
+    <div class="rp-catalog-head">
+        <h2>كتالوج التقارير</h2>
+        <div class="rp-search">
+            <label for="rp-q" class="sr-only">بحث في التقارير</label>
+            <input type="search" id="rp-q" x-model="q" placeholder="ابحث باسم التقرير…" class="rp-input" autocomplete="off">
+        </div>
+    </div>
+
+    {% for g in report_groups %}
+    <section class="rp-group rp-c--{{ g.color }}"
+             x-show="!q.trim() || [...$el.querySelectorAll('[data-search]')].some(c => c.dataset.search.includes(q.trim().toLowerCase()))">
+        <h3>
+            <span class="rp-gi"><i data-lucide="{{ g.icon }}" class="w-4 h-4"></i></span>
+            {{ g.title }} <small>{{ g.description }}</small>
+        </h3>
+        <div class="rp-cards">
+            {% for r in g.items %}
+            <a class="rp-report" data-search="{{ r.title|lower }} {{ r.description|lower }}"
+               x-show="!q.trim() || $el.dataset.search.includes(q.trim().toLowerCase())"
+               href="{% url 'web:report_detail' report_type=r.key %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}">
+                <span class="rp-report__icon"><i data-lucide="{{ r.icon|default:g.icon }}" class="w-4 h-4"></i></span>
+                <div><strong>{{ r.title }}</strong><span>{{ r.description }}</span>{% if r.key in period_keys %}<em class="rp-period">حسب الفترة</em>{% endif %}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% empty %}
+    <p class="rp-none">لا توجد تقارير متاحة لحسابك.</p>
+    {% endfor %}
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script defer src="/static/js/hr-report-picker.js?v=20260604-3"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    if (window.hrInitReportPickers) window.hrInitReportPickers();
     if (window.lucide) lucide.createIcons();
 });
 </script>
