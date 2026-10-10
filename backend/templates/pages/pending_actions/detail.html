@@ -254,7 +254,7 @@
                 <li>
                     <div class="absolute -right-2 w-4 h-4 rounded-full bg-primary-500 border-2 border-white"></div>
                     <p class="text-xs font-bold text-slate-800">إنشاء الطلب</p>
-                    <p class="text-xs text-slate-500">{{ action.requested_by.get_full_name|default:action.requested_by.username }}</p>
+                    <p class="text-xs text-slate-500">{% if action.requested_by %}{{ action.requested_by.get_full_name|default:action.requested_by.username }}{% else %}—{% endif %}</p>
                     <p class="text-xs text-slate-400">{{ action.requested_at|date:"Y-m-d H:i" }}</p>
                 </li>
                 <!-- 2. Branch -->
@@ -262,7 +262,7 @@
                     <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.branch_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
                     <p class="text-xs font-bold {% if action.branch_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">{{ first_decision.stage_label }}</p>
                     {% if action.branch_reviewed_at %}
-                        <p class="text-xs text-slate-500">{{ action.branch_reviewed_by.get_full_name|default:action.branch_reviewed_by.username }}</p>
+                        <p class="text-xs text-slate-500">{% if action.branch_reviewed_by %}{{ action.branch_reviewed_by.get_full_name|default:action.branch_reviewed_by.username }}{% else %}—{% endif %}</p>
                         <p class="text-xs text-slate-400">{{ action.branch_reviewed_at|date:"Y-m-d H:i" }}</p>
                         {% if action.branch_notes %}<p class="text-xs text-slate-600 mt-1 px-2 py-1 bg-slate-50 rounded">{{ action.branch_notes }}</p>{% endif %}
                     {% else %}
@@ -274,9 +274,9 @@
                     <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.gm_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
                     <p class="text-xs font-bold {% if action.gm_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">المدير العام</p>
                     {% if action.gm_reviewed_at %}
-                        <p class="text-xs text-slate-500">{{ action.gm_reviewed_by.get_full_name|default:action.gm_reviewed_by.username }}</p>
+                        <p class="text-xs text-slate-500">{% if action.gm_reviewed_by %}{{ action.gm_reviewed_by.get_full_name|default:action.gm_reviewed_by.username }}{% else %}—{% endif %}</p>
                         <p class="text-xs text-slate-400">{{ action.gm_reviewed_at|date:"Y-m-d H:i" }}</p>
-                        {% if action.assigned_officer %}<p class="text-xs text-indigo-700 mt-1">أُسند إلى: <strong>{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}</strong></p>{% endif %}
+                        {% if action.assigned_officer %}<p class="text-xs text-indigo-700 mt-1">أُسند إلى: <strong>{% if action.assigned_officer %}{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}{% else %}—{% endif %}</strong></p>{% endif %}
                         {% if action.gm_notes %}<p class="text-xs text-slate-600 mt-1 px-2 py-1 bg-slate-50 rounded">{{ action.gm_notes }}</p>{% endif %}
                     {% else %}
                         <p class="text-xs text-slate-400">— بانتظار —</p>
@@ -287,7 +287,7 @@
                     <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.officer_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
                     <p class="text-xs font-bold {% if action.officer_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">موظف الموارد</p>
                     {% if action.officer_reviewed_at %}
-                        <p class="text-xs text-slate-500">{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}</p>
+                        <p class="text-xs text-slate-500">{% if action.assigned_officer %}{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}{% else %}—{% endif %}</p>
                         <p class="text-xs text-slate-400">{{ action.officer_reviewed_at|date:"Y-m-d H:i" }}</p>
                         {% if action.officer_notes %}<p class="text-xs text-slate-600 mt-1 px-2 py-1 bg-slate-50 rounded">{{ action.officer_notes }}</p>{% endif %}
                     {% else %}
@@ -299,7 +299,7 @@
                 <li>
                     <div class="absolute -right-2 w-4 h-4 rounded-full bg-rose-500 border-2 border-white"></div>
                     <p class="text-xs font-bold text-rose-700">إرجاع للتعديل</p>
-                    <p class="text-xs text-slate-500">{{ action.returned_by.get_full_name|default:action.returned_by.username }}</p>
+                    <p class="text-xs text-slate-500">{% if action.returned_by %}{{ action.returned_by.get_full_name|default:action.returned_by.username }}{% else %}—{% endif %}</p>
                     <p class="text-xs text-slate-400">{{ action.returned_at|date:"Y-m-d H:i" }}</p>
                     {% if action.return_notes %}<p class="text-xs text-rose-700 mt-1 px-2 py-1 bg-rose-50 rounded">{{ action.return_notes }}</p>{% endif %}
                 </li>
