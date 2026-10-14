@@ -379,6 +379,7 @@ def _compute_employee_payroll_snapshot(
         + housing_full
         + Decimal(emp.transport_allowance or 0)
         + Decimal(emp.other_allowance or 0)
+        + Decimal(emp.incentive_allowance or 0)
         + Decimal(emp.cash_amount or 0)
         + Decimal(emp.meal_allowance or 0)
     )
@@ -636,6 +637,7 @@ def build_payroll_run(branch, year: int, month: int, user=None, *, salary_mode=N
             housing_allowance=emp.housing_allowance or 0,
             transport_allowance=emp.transport_allowance or 0,
             other_allowance=emp.other_allowance or 0,
+            incentive_allowance=emp.incentive_allowance or 0,
             cash_amount=emp.cash_amount or 0,
             meal_allowance=emp.meal_allowance or 0,
             month_days=snap['month_days'],
@@ -774,6 +776,7 @@ def build_consolidated_payroll_run(
             housing_allowance=emp.housing_allowance or 0,
             transport_allowance=emp.transport_allowance or 0,
             other_allowance=emp.other_allowance or 0,
+            incentive_allowance=emp.incentive_allowance or 0,
             cash_amount=emp.cash_amount or 0,
             meal_allowance=emp.meal_allowance or 0,
             month_days=snap['month_days'],

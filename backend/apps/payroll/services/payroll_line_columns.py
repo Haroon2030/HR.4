@@ -27,6 +27,7 @@ PAYROLL_LINE_COLUMNS = [
     ('earned_housing', 'بدل سكن المستحق', 'cyan', 'money'),
     ('transport_allowance', 'بدل الانتقال', 'blue', 'money'),
     ('fixed_other_allowance', 'بدل إضافي ثابت', 'blue', 'money'),
+    ('incentive_allowance', 'حوافز / بدل ثابت', 'blue', 'money'),
     ('additional', 'إضافي', 'blue', 'money'),
     ('total_allowances', 'إجمالي البدلات', 'cyan', 'money'),
     ('total_earnings', 'إجمالي الراتب المستحق', 'blue', 'money'),
@@ -139,6 +140,8 @@ def resolve_cell_value(line, run, key: str):
         return line.transport_allowance
     if key == 'fixed_other_allowance':
         return line.other_allowance
+    if key == 'incentive_allowance':
+        return line.incentive_allowance
     if key == 'additional':
         return _q(line.bonus) + _q(line.overtime) + _q(line.other_addition)
     if key == 'total_allowances':
@@ -146,6 +149,7 @@ def resolve_cell_value(line, run, key: str):
             _q(line.housing_allowance)
             + _q(line.transport_allowance)
             + _q(line.other_allowance)
+            + _q(line.incentive_allowance)
             + _q(line.meal_allowance)
             + _q(line.cash_amount)
         )
@@ -213,6 +217,7 @@ def build_ephemeral_payroll_line(emp, run: PayrollRun):
         housing_allowance=emp.housing_allowance or 0,
         transport_allowance=emp.transport_allowance or 0,
         other_allowance=emp.other_allowance or 0,
+        incentive_allowance=emp.incentive_allowance or 0,
         cash_amount=emp.cash_amount or 0,
         meal_allowance=emp.meal_allowance or 0,
         month_days=snap['month_days'],

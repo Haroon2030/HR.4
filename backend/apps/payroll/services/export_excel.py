@@ -41,6 +41,7 @@ COLUMN_WIDTHS = {
     'earned_housing': 13,
     'transport_allowance': 11,
     'fixed_other_allowance': 12,
+    'incentive_allowance': 12,
     'additional': 10,
     'total_allowances': 12,
     'total_earnings': 14,

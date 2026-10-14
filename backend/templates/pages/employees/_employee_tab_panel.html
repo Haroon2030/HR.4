@@ -42,6 +42,10 @@
                             <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.other_allowance|format_amount }}</div>
                         </div>
                         <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
+                            <div class="text-xs font-bold text-slate-600">بدل إضافي ثابت / حوافز</div>
+                            <div class="text-sm font-bold text-slate-800 font-mono" dir="ltr">{{ employee.incentive_allowance|format_amount }}</div>
+                        </div>
+                        <div class="hr-salary-grid__item rounded-lg border border-slate-200 bg-white/70 px-3 py-2.5 space-y-1">
                             <div class="text-xs font-bold text-slate-600">
                                 بدل التغذية
                                 <span class="block text-[10px] font-normal text-slate-400 mt-0.5">لا يُحتسب ضمن مكافأة نهاية الخدمة</span>

@@ -13,6 +13,7 @@ _ZERO_DECIMAL_FIELDS = frozenset({
     'housing_allowance',
     'transport_allowance',
     'other_allowance',
+    'incentive_allowance',
     'cash_amount',
     'meal_allowance',
     'insurance_deduction_rate',

@@ -247,6 +247,7 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
             'housing_allowance': _modal_js_float(employee.housing_allowance),
             'transport_allowance': _modal_js_float(employee.transport_allowance),
             'other_allowance': _modal_js_float(employee.other_allowance),
+            'incentive_allowance': _modal_js_float(employee.incentive_allowance),
             'cash_amount': _modal_js_float(employee.cash_amount),
             'pending_loans_total': _modal_js_float(pending_loans_deduction(employee)),
         })

@@ -76,6 +76,7 @@ FIELD_LABELS: dict[str, str] = {
     'housing_allowance': 'بدل السكن',
     'transport_allowance': 'بدل النقل',
     'other_allowance': 'بدلات أخرى',
+    'incentive_allowance': 'بدل إضافي ثابت / حوافز',
     'cash_amount': 'كاش',
     'meal_allowance': 'بدل التغذية',
     'hire_date': 'تاريخ المباشرة',

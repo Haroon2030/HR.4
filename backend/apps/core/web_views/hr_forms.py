@@ -372,6 +372,7 @@ def _salary_certificate_form_context(employee) -> dict:
 
     other_fixed = (
         Decimal(employee.other_allowance or 0)
+        + Decimal(employee.incentive_allowance or 0)
         + Decimal(employee.cash_amount or 0)
         + Decimal(employee.meal_allowance or 0)
     )

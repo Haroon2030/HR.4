@@ -24,7 +24,7 @@
         const spons = this.isSponsored();
         const s = document.querySelector('[name=sponsorship]');
         if (s) s.required = spons;
-        ['housing_allowance', 'transport_allowance', 'other_allowance', 'meal_allowance'].forEach((n) => {
+        ['housing_allowance', 'transport_allowance', 'other_allowance', 'incentive_allowance', 'meal_allowance'].forEach((n) => {
             const el = document.querySelector('[name=' + n + ']');
             if (!el) return;
             if (el.dataset.origReq === undefined) el.dataset.origReq = el.required ? '1' : '0';
@@ -207,6 +207,7 @@
                     <div x-show="isSponsored()" x-cloak>{% include "pages/employment_requests/_field.html" with field=form.housing_allowance %}</div>
                     <div x-show="isSponsored()" x-cloak>{% include "pages/employment_requests/_field.html" with field=form.transport_allowance %}</div>
                     <div x-show="isSponsored()" x-cloak>{% include "pages/employment_requests/_field.html" with field=form.other_allowance %}</div>
+                    <div x-show="isSponsored()" x-cloak>{% include "pages/employment_requests/_field.html" with field=form.incentive_allowance %}</div>
                     <div x-show="isSponsored()" x-cloak>{% include "pages/employment_requests/_field.html" with field=form.meal_allowance %}</div>
                     <div>
                         {% include "components/insurance_deduction_rate_field.html" with rate=emp_req.insurance_deduction_rate can_edit=True %}

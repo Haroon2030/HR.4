@@ -126,6 +126,7 @@ _SALARY_FIELDS = (
     ('housing_allowance', 'السكن'),
     ('transport_allowance', 'النقل'),
     ('other_allowance', 'الإضافي'),
+    ('incentive_allowance', 'الحوافز'),
     ('meal_allowance', 'التغذية'),
 )
 

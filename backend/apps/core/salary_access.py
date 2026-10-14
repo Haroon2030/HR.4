@@ -16,6 +16,7 @@ EMPLOYEE_SALARY_FIELD_NAMES = (
     'housing_allowance',
     'transport_allowance',
     'other_allowance',
+    'incentive_allowance',
     'cash_amount',
     'meal_allowance',
     'insurance_deduction_rate',

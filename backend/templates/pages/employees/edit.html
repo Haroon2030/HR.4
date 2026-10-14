@@ -414,6 +414,7 @@
             salaryHousing: {% if is_create %}''{% else %}'{{ employee.housing_allowance|input_decimal }}'{% endif %},
             salaryTransport: {% if is_create %}''{% else %}'{{ employee.transport_allowance|input_decimal }}'{% endif %},
             salaryOther: {% if is_create %}''{% else %}'{{ employee.other_allowance|input_decimal }}'{% endif %},
+            salaryIncentive: {% if is_create %}''{% else %}'{{ employee.incentive_allowance|input_decimal }}'{% endif %},
             salaryMeal: {% if is_create %}''{% else %}'{{ employee.meal_allowance|input_decimal }}'{% endif %},
             salaryInsuranceRate: {% if is_create %}''{% elif employee.insurance_deduction_rate %}'{{ employee.insurance_deduction_rate|input_decimal }}'{% else %}''{% endif %},
             salaryNum(v) {
@@ -425,7 +426,7 @@
                     return this.salaryNum(this.salaryBasic);
                 }
                 return this.salaryNum(this.salaryBasic) + this.salaryNum(this.salaryHousing)
-                    + this.salaryNum(this.salaryTransport) + this.salaryNum(this.salaryOther)
+                    + this.salaryNum(this.salaryTransport) + this.salaryNum(this.salaryOther) + this.salaryNum(this.salaryIncentive)
                     + this.salaryNum(this.salaryMeal);
             },
             switchTab(key) {

@@ -179,6 +179,9 @@ class EmploymentRequest(BaseModel):
     other_allowance = models.DecimalField(
         "بدل إضافي", max_digits=12, decimal_places=2, default=0
     )
+    incentive_allowance = models.DecimalField(
+        "بدل إضافي ثابت / حوافز", max_digits=12, decimal_places=2, default=0
+    )
     cash_amount = models.DecimalField(
         "كاش", max_digits=12, decimal_places=2, default=0
     )
@@ -353,6 +356,7 @@ class Employee(BaseModel):
     housing_allowance = models.DecimalField("بدل سكن", max_digits=12, decimal_places=2, default=0)
     transport_allowance = models.DecimalField("بدل نقل", max_digits=12, decimal_places=2, default=0)
     other_allowance = models.DecimalField("بدل إضافي", max_digits=12, decimal_places=2, default=0)
+    incentive_allowance = models.DecimalField("بدل إضافي ثابت / حوافز", max_digits=12, decimal_places=2, default=0)
     cash_amount = models.DecimalField("كاش", max_digits=12, decimal_places=2, default=0)
     meal_allowance = models.DecimalField(
         "بدل التغذية", max_digits=12, decimal_places=2, default=0,
@@ -469,7 +473,7 @@ class Employee(BaseModel):
         """إجمالي الراتب الشهري (يشمل بدل التغذية)."""
         return (
             self.basic_salary + self.housing_allowance + self.transport_allowance
-            + self.other_allowance + self.cash_amount + self.meal_allowance
+            + self.other_allowance + self.incentive_allowance + self.cash_amount + self.meal_allowance
         )
 
     @property
@@ -485,7 +489,7 @@ class Employee(BaseModel):
             return Decimal('0')
         return (
             self.basic_salary + self.housing_allowance + self.transport_allowance
-            + self.other_allowance + self.cash_amount
+            + self.other_allowance + self.incentive_allowance + self.cash_amount
         )
 
     @property

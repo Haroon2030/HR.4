@@ -367,6 +367,7 @@ def officer_approve(req, user, notes=''):
             housing_allowance=req.housing_allowance,
             transport_allowance=req.transport_allowance,
             other_allowance=req.other_allowance,
+            incentive_allowance=req.incentive_allowance,
             cash_amount=req.cash_amount,
             meal_allowance=req.meal_allowance,
             insurance_deduction_rate=req.insurance_deduction_rate,

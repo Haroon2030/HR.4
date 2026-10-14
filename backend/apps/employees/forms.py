@@ -60,6 +60,7 @@ _SALARY_DECIMAL_FIELDS = (
     'housing_allowance',
     'transport_allowance',
     'other_allowance',
+    'incentive_allowance',
     'cash_amount',
     'meal_allowance',
     'insurance_deduction_rate',
@@ -159,7 +160,7 @@ _EMPLOYEE_FIELDS = [
     'health_card_status', 'health_card_expiry',
     # راتب
     'basic_salary', 'housing_allowance', 'transport_allowance',
-    'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
+    'other_allowance', 'incentive_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
     'bank', 'iban', 'account_type',
     # إجازات (leaves_archive و attendance_notes معروضة كـ textarea في edit.html)
     'opening_leave_days', 'leave_accrual_start_date',
@@ -488,7 +489,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
             'health_card_status', 'health_card_expiry',
             # راتب
             'basic_salary', 'housing_allowance', 'transport_allowance',
-            'other_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
+            'other_allowance', 'incentive_allowance', 'cash_amount', 'meal_allowance', 'insurance_deduction_rate',
             'bank', 'iban', 'account_type',
             # مستندات
             'id_document', 'passport_document', 'contract_document', 'other_documents',
@@ -559,7 +560,7 @@ class EmploymentRequestEditForm(forms.ModelForm):
                 widget.input_type = 'date'
             # خطوة الأرقام للراتب
             if field_name in ('basic_salary', 'housing_allowance', 'transport_allowance',
-                              'other_allowance', 'cash_amount', 'meal_allowance',
+                              'other_allowance', 'incentive_allowance', 'cash_amount', 'meal_allowance',
                               'insurance_deduction_rate'):
                 widget.attrs.setdefault('step', '0.01')
                 widget.attrs.setdefault('min', '0')

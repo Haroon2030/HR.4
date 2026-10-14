@@ -854,6 +854,10 @@
                             <span class="font-bold text-slate-800">{{ employee.other_allowance|floatformat:0 }}</span>
                         </div>
                         <div class="flex justify-between bg-white rounded px-2 py-1.5 border border-slate-100">
+                            <span class="text-slate-500">حوافز</span>
+                            <span class="font-bold text-slate-800">{{ employee.incentive_allowance|floatformat:0 }}</span>
+                        </div>
+                        <div class="flex justify-between bg-white rounded px-2 py-1.5 border border-slate-100">
                             <span class="text-slate-500">نقدي</span>
                             <span class="font-bold text-slate-800">{{ employee.cash_amount|floatformat:0 }}</span>
                         </div>
@@ -1787,17 +1791,18 @@ window.employeeSalaryRaiseCalculator = function() {
         housing: Number(n.housing_allowance) || 0,
         transport: Number(n.transport_allowance) || 0,
         other: Number(n.other_allowance) || 0,
+        incentive: Number(n.incentive_allowance) || 0,
         cash: Number(n.cash_amount) || 0,
         meal: Number(n.meal_allowance) || 0,
         raise: 0,
         get newBasic() { return parseFloat(this.basic) + parseFloat(this.raise || 0); },
         get currentTotal() {
             return parseFloat(this.basic) + parseFloat(this.housing) + parseFloat(this.transport)
-                + parseFloat(this.other) + parseFloat(this.cash) + parseFloat(this.meal);
+                + parseFloat(this.other) + parseFloat(this.incentive) + parseFloat(this.cash) + parseFloat(this.meal);
         },
         get newTotal() {
             return this.newBasic + parseFloat(this.housing) + parseFloat(this.transport)
-                + parseFloat(this.other) + parseFloat(this.cash) + parseFloat(this.meal);
+                + parseFloat(this.other) + parseFloat(this.incentive) + parseFloat(this.cash) + parseFloat(this.meal);
         },
         get diff() { return this.newTotal - this.currentTotal; },
         get pct() { return this.currentTotal ? ((this.diff / this.currentTotal) * 100).toFixed(1) : 0; }
