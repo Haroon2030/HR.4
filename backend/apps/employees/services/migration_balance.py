@@ -7,9 +7,10 @@ from decimal import Decimal
 from django.conf import settings
 
 from apps.core.salary_month import (
-    accrued_annual_leave_days,
+    ANNUAL_LEAVE_DAYS_FIRST_TIER,
     calendar_month_last_day,
     LEAVE_DAYS_QUANT,
+    STANDARD_YEAR_DAYS,
 )
 
 
@@ -52,20 +53,43 @@ def should_accrue_leave_in_period(employee, period_year: int, period_month: int)
     return period_end >= start
 
 
+def _add_years(d: date, years: int) -> date:
+    try:
+        return d.replace(year=d.year + years)
+    except ValueError:  # 29 فبراير
+        return d.replace(year=d.year + years, day=28)
+
+
 def compute_period_leave_accrual_days(
     employee,
     *,
     as_of: date,
     flat_21_only: bool = False,
 ) -> Decimal:
-    """تراكم الإجازة من تاريخ الانتقال فقط (بدون الافتتاحي)."""
+    """
+    تراكم الإجازة بالأيام من تاريخ الاحتساب (من) إلى تاريخ النهاية (إلى) أو as_of
+    (الأقل منهما) — شامل اليومين، بمعدل 21 يوم/360 يوم (أول 5 سنوات) ثم 30/360.
+    """
     start = employee_leave_accrual_start(employee)
     end = getattr(employee, 'leave_accrual_end_date', None)
     if end and as_of > end:
         as_of = end
     if not start or as_of < start:
         return Decimal('0.00')
-    return accrued_annual_leave_days(start, as_of, flat_21_only=flat_21_only)
+
+    year_days = Decimal(STANDARD_YEAR_DAYS)
+    tier_end = _add_years(start, 5)  # أول يوم بعد 5 سنوات
+    if flat_21_only or as_of < tier_end:
+        first_days, later_days = (as_of - start).days + 1, 0
+    else:
+        first_days = (tier_end - start).days
+        later_days = (as_of - tier_end).days + 1
+
+    accrued = (
+        Decimal(first_days) * ANNUAL_LEAVE_DAYS_FIRST_TIER
+        + Decimal(later_days) * Decimal('30')
+    ) / year_days
+    return accrued.quantize(LEAVE_DAYS_QUANT)
 
 
 def compute_opening_leave_days(employee) -> Decimal:

@@ -68,8 +68,8 @@ class MigrationOpeningBalanceTests(TestCase):
         emp.refresh_from_db()
         as_of = date(2026, 12, 1)
         accrued = compute_employee_accrued_leave_days(emp, as_of=as_of)
-        # 18 افتتاحي + 5 أشهر × 1.75 = 8.75
-        self.assertEqual(accrued, Decimal('26.75'))
+        # 18 افتتاحي + 154 يوماً × 21/360 = 8.98
+        self.assertEqual(accrued, Decimal('26.98'))
         self.assertGreater(accrued, Decimal('18'))
 
     def test_used_leave_only_counts_after_cutover(self):
@@ -88,7 +88,7 @@ class MigrationOpeningBalanceTests(TestCase):
             days=Decimal('5'),
         )
         remaining = compute_employee_remaining_leave_days(emp, as_of=date(2026, 12, 1))
-        self.assertEqual(remaining, Decimal('21.75'))
+        self.assertEqual(remaining, Decimal('21.98'))
 
     def test_settlement_leave_mentions_hire_date_for_eosb(self):
         emp = self._create_employee()
@@ -135,7 +135,16 @@ class MigrationOpeningBalanceTests(TestCase):
         )
         self.assertFalse(emp.migration_locked)
         accrued = compute_employee_accrued_leave_days(emp, as_of=date(2026, 12, 1))
-        self.assertEqual(accrued, Decimal('23.75'))
+        self.assertEqual(accrued, Decimal('23.98'))
+
+    def test_accrual_from_to_dates_by_days(self):
+        emp = self._create_employee(
+            leave_accrual_start_date=date(2026, 9, 1),
+            leave_accrual_end_date=date(2026, 10, 16),
+        )
+        # 46 يوماً × 21/360 = 2.68 — يتوقف عند تاريخ النهاية
+        accrued = compute_employee_accrued_leave_days(emp, as_of=date(2026, 12, 1))
+        self.assertEqual(accrued, Decimal('2.68'))
 
     def test_cannot_reimport_without_replace(self):
         emp = self._create_employee()

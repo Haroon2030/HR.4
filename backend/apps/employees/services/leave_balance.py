@@ -165,7 +165,7 @@ def settlement_leave_for_employee(
             if accrual_start
             else 0
         )
-        rule = leave_accrual_formula_label(flat_21_only=flat_21_only, months=months)
+        rule = 'بالأيام: 21 يوم ÷ 360 لكل يوم (أول 5 سنوات) ثم 30 ÷ 360'
         prefix = f'{title} — ' if title else ''
         remaining = (accrued - used).quantize(LEAVE_DAYS_QUANT)
         if remaining < 0:
