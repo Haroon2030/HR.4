@@ -302,17 +302,22 @@ def list_pending_actions(request):
         qs = base
         qs_hire = base_hire
 
-    # ─ دمج وفرز موحّد (حد أقصى لتقليل استهلاك الذاكرة) ─────────
-    _MERGE_LIMIT = 200
-    rows = [_wrap_action(a, request.user) for a in qs.order_by('-requested_at')[:_MERGE_LIMIT]]
-    rows += [_wrap_hire(r, request.user) for r in qs_hire.order_by('-created_at')[:_MERGE_LIMIT]]
-    rows_may_be_truncated = len(rows) >= _MERGE_LIMIT
-    rows.sort(key=lambda x: x.updated_at or x.requested_at, reverse=True)
-
-    # ─ بحث ذكي عبر الحقول ────────────────────────────────────────
+    # ─ دمج وفرز موحّد بلا أي حد أقصى: لا يُخفى أي طلب عن المستخدم ─────
+    # الفرز والترقيم على مفاتيح خفيفة (id + تاريخ) ثم تُحمَّل صفوف الصفحة فقط.
+    # البحث النصي يحتاج بيانات كل صف فيُحمَّل الكل في هذه الحالة.
     q = (request.GET.get('q') or '').strip()
+
+    def _wrap_rows(pa_ids, hire_ids):
+        pa_map = {a.id: a for a in qs.filter(id__in=pa_ids)}
+        hire_map = {r.id: r for r in qs_hire.filter(id__in=hire_ids)}
+        return pa_map, hire_map
+
     if q:
         ql = q.lower()
+        rows = [_wrap_action(a, request.user) for a in qs]
+        rows += [_wrap_hire(r, request.user) for r in qs_hire]
+        rows.sort(key=lambda x: x.updated_at or x.requested_at, reverse=True)
+
         def _match(r):
             blobs = [
                 getattr(r, 'employee_name', '') or '',
@@ -326,13 +331,36 @@ def list_pending_actions(request):
                 blobs.append(getattr(rb, 'get_full_name', lambda: '')() or getattr(rb, 'username', '') or '')
             return any(ql in str(b).lower() for b in blobs)
         rows = [r for r in rows if _match(r)]
-
-    total_rows = len(rows)
-
-    # ─ ترقيم: 10 صفوف/صفحة ───────────────────────────────────────
-    from django.core.paginator import Paginator
-    paginator = Paginator(rows, 10)
-    page_obj = paginator.get_page(request.GET.get('page') or 1)
+        total_rows = len(rows)
+        from django.core.paginator import Paginator
+        paginator = Paginator(rows, 10)
+        page_obj = paginator.get_page(request.GET.get('page') or 1)
+        page_rows = list(page_obj.object_list)
+    else:
+        keys = [
+            (updated or requested, 'action', pk)
+            for pk, updated, requested in qs.values_list('id', 'updated_at', 'requested_at')
+        ]
+        keys += [
+            (updated or created, 'hire', pk)
+            for pk, updated, created in qs_hire.values_list('id', 'updated_at', 'created_at')
+        ]
+        keys.sort(key=lambda k: (k[0] is not None, k[0]), reverse=True)
+        total_rows = len(keys)
+        from django.core.paginator import Paginator
+        paginator = Paginator(keys, 10)
+        page_obj = paginator.get_page(request.GET.get('page') or 1)
+        page_keys = list(page_obj.object_list)
+        pa_map, hire_map = _wrap_rows(
+            [pk for _, kind, pk in page_keys if kind == 'action'],
+            [pk for _, kind, pk in page_keys if kind == 'hire'],
+        )
+        page_rows = []
+        for _, kind, pk in page_keys:
+            if kind == 'action' and pk in pa_map:
+                page_rows.append(_wrap_action(pa_map[pk], request.user))
+            elif kind == 'hire' and pk in hire_map:
+                page_rows.append(_wrap_hire(hire_map[pk], request.user))
 
     # ─ العدّادات الموحّدة (aggregate لتقليل الاستعلامات) ────────
     from django.db.models import Count
@@ -364,7 +392,7 @@ def list_pending_actions(request):
     }
 
     return render(request, 'pages/pending_actions/list.html', {
-        'actions': page_obj.object_list,
+        'actions': page_rows,
         'page_obj': page_obj,
         'paginator': paginator,
         'total_rows': total_rows,
@@ -376,7 +404,6 @@ def list_pending_actions(request):
         'is_branch_mgr': _is_branch_manager(request.user),
         'resolve_first_approver': resolve_first_approver,
         'first_stage_tab_label': first_stage_tab_label(request.user),
-        'rows_may_be_truncated': rows_may_be_truncated,
     })
 
 
