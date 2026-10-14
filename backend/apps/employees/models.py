@@ -388,6 +388,12 @@ class Employee(BaseModel):
         blank=True,
         help_text="يُستخدم بعد الترحيل — الافتراضي تاريخ الانتقال العام في الإعدادات.",
     )
+    leave_accrual_end_date = models.DateField(
+        "تاريخ نهاية احتساب الإجازة",
+        null=True,
+        blank=True,
+        help_text="اختياري — يتوقف التراكم عند هذا التاريخ (من تاريخ الاحتساب إلى هذا التاريخ بالأيام).",
+    )
     opening_leave_days = models.DecimalField(
         "رصيد إجازة افتتاحي (أيام)",
         max_digits=8,

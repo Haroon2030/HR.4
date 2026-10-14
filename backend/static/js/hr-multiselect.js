@@ -163,7 +163,7 @@
             const panelVh = parseFloat(select.dataset.panelVh || '');
             panel.style.position = 'fixed';
             panel.style.top = Math.round(rect.bottom + 2) + 'px';
-            panel.style.zIndex = '9999';
+            panel.style.zIndex = '10300';
             panel.classList.add('hr-ms__panel--open');
 
             if (panelVw > 0) {

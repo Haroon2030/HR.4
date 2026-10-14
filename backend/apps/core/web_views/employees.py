@@ -434,9 +434,17 @@ def save_employee_leave_settings(request, employee_id):
         messages.error(request, 'أدخل تاريخ الاحتساب عند تعبئة رصيد افتتاحي.')
         return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
 
-    update_fields = ['opening_leave_days', 'leave_accrual_start_date', 'updated_at']
+    accrual_end = _parse_date(request.POST.get('leave_accrual_end_date'))
+    if accrual_end is False:
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+    if accrual_end and accrual_start and accrual_end < accrual_start:
+        messages.error(request, 'تاريخ نهاية الاحتساب يجب أن يكون بعد تاريخ البداية.')
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+
+    update_fields = ['opening_leave_days', 'leave_accrual_start_date', 'leave_accrual_end_date', 'updated_at']
     employee.opening_leave_days = opening
     employee.leave_accrual_start_date = accrual_start
+    employee.leave_accrual_end_date = accrual_end if accrual_start else None
 
     if not accrual_start:
         used = _parse_decimal(

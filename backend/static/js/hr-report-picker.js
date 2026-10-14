@@ -38,7 +38,7 @@
         menu.style.width = w + 'px';
         menu.style.minWidth = w + 'px';
         menu.style.maxWidth = maxW + 'px';
-        menu.style.zIndex = '10060';
+        menu.style.zIndex = '10300';
         menu.style.display = 'block';
     }
 

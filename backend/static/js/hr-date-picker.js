@@ -153,7 +153,7 @@
         }
         pop.style.position = 'fixed';
         pop.style.width = popW + 'px';
-        pop.style.zIndex = '10070';
+        pop.style.zIndex = '10300';
         pop.style.right = Math.round(window.innerWidth - rect.right) + 'px';
         pop.style.left = 'auto';
 

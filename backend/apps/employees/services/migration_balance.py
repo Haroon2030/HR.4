@@ -60,6 +60,9 @@ def compute_period_leave_accrual_days(
 ) -> Decimal:
     """تراكم الإجازة من تاريخ الانتقال فقط (بدون الافتتاحي)."""
     start = employee_leave_accrual_start(employee)
+    end = getattr(employee, 'leave_accrual_end_date', None)
+    if end and as_of > end:
+        as_of = end
     if not start or as_of < start:
         return Decimal('0.00')
     return accrued_annual_leave_days(start, as_of, flat_21_only=flat_21_only)

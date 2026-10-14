@@ -109,11 +109,18 @@
                         <p class="text-[10px] text-slate-500 mt-1">المتبقي قبل تاريخ الاحتساب (إن وُجد).</p>
                     </div>
                     <div class="hr-form-field">
-                        <label class="block text-xs font-bold text-slate-800 mb-1">تاريخ الاحتساب</label>
+                        <label class="block text-xs font-bold text-slate-800 mb-1">تاريخ الاحتساب (من)</label>
                         <input type="date" name="leave_accrual_start_date"
                                value="{{ employee.leave_accrual_start_date|date:'Y-m-d' }}"
                                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
                         <p class="text-[10px] text-slate-500 mt-1">يُحسب التراكم من هذا التاريخ + الرصيد الافتتاحي.</p>
+                    </div>
+                    <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800 mb-1">تاريخ الاحتساب (إلى)</label>
+                        <input type="date" name="leave_accrual_end_date"
+                               value="{{ employee.leave_accrual_end_date|date:'Y-m-d' }}"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        <p class="text-[10px] text-slate-500 mt-1">اختياري — يتوقف التراكم عند هذا التاريخ (يُحسب بالأيام).</p>
                     </div>
                     {% if not employee.leave_accrual_start_date %}
                     <div class="hr-form-field sm:col-span-2">
@@ -140,6 +147,10 @@
                     <div>
                         <div class="text-xs font-bold text-slate-600 mb-1">تاريخ الاحتساب</div>
                         <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_start_date|date:"Y-m-d"|default:"—" }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-600 mb-1">نهاية الاحتساب</div>
+                        <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_end_date|date:"Y-m-d"|default:"—" }}</div>
                     </div>
                 </div>
                 {% endif %}
