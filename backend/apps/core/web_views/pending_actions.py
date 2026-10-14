@@ -80,9 +80,8 @@ def _user_visible_actions(user):
         'employee', 'branch', 'administration', 'requested_by',
         'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer', 'returned_by',
     )
-    # مدير الموارد (المدير العام) وأخصائي الموارد يرون كل الطلبات المرفوعة،
-    # سواء كان الموظف تابعاً لإدارة أم غير مرتبط بإدارة.
-    if user.is_superuser or _is_general_manager(user) or _is_hr_officer(user):
+    # مدير الموارد (المدير العام) يرى كل الطلبات المرفوعة، تابعة لإدارة أو غير مرتبطة.
+    if user.is_superuser or _is_general_manager(user):
         return qs
 
     if is_branch_accountant(user):
@@ -101,6 +100,8 @@ def _user_visible_actions(user):
         filters |= Q(branch_id__in=managed_ids)
     if managed_admin_ids:
         filters |= Q(administration_id__in=managed_admin_ids)
+    if _is_hr_officer(user):
+        filters |= Q(assigned_officer=user)
     return qs.filter(filters).distinct()
 
 
@@ -147,7 +148,7 @@ def _user_visible_hire_requests(user):
         'branch', 'administration', 'requested_by', 'branch_reviewed_by',
         'gm_reviewed_by', 'assigned_officer',
     )
-    if user.is_superuser or _is_general_manager(user) or _is_hr_officer(user):
+    if user.is_superuser or _is_general_manager(user):
         return qs
 
     filters = Q(requested_by=user)
@@ -156,6 +157,8 @@ def _user_visible_hire_requests(user):
         filters |= Q(branch_id__in=managed_ids)
     if managed_admin_ids:
         filters |= Q(administration_id__in=managed_admin_ids)
+    if _is_hr_officer(user):
+        filters |= Q(assigned_officer=user)
     return qs.filter(filters).distinct()
 
 

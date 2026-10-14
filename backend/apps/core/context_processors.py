@@ -23,7 +23,16 @@ def sidebar_context(request):
         return {}
     from apps.core.services.sidebar_counts import get_sidebar_counts
 
-    return get_sidebar_counts(user)
+    from apps.core.web_views._helpers import _is_general_manager, _is_hr_officer
+
+    data = dict(get_sidebar_counts(user))
+    data['show_employment_requests_tab'] = bool(
+        user.is_superuser
+        or _is_general_manager(user)
+        or _is_hr_officer(user)
+        or user.managed_branches.exists()
+    )
+    return data
 
 
 # توافق مع الإصدارات السابقة — تستدعي نفس الذاكرة المؤقتة

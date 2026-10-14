@@ -79,6 +79,7 @@ def list_employment_requests(request):
             # المدير العام يرى الكل — أبطل الفلترة على الملكية/الفرع
             cond = Q()
         if is_officer:
+            # أخصائي الموارد يرى ما أُسند إليه فقط
             cond |= Q(assigned_officer=user)
         qs = qs.filter(cond).distinct()
 

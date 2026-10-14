@@ -97,7 +97,7 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
     pa_qs = PendingAction.objects.filter(status__in=pending_statuses)
     hire_qs = EmploymentRequest.objects.filter(status__in=hire_statuses)
 
-    if user.is_superuser:
+    if user.is_superuser or _is_general_manager(user):
         pa_total = pa_qs.count()
         hire_total = hire_qs.count()
     else:
