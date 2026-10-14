@@ -119,12 +119,13 @@ def _inbox_for(user, qs):
     if first_q.children:
         f |= first_q
         has_filter = True
-    if _is_hr_officer(user) or user.is_superuser:
-        f |= Q(status=PendingAction.Status.PENDING_OFFICER, assigned_officer=user) \
-            if not user.is_superuser \
-            else Q(status=PendingAction.Status.PENDING_OFFICER)
+    if _is_general_manager(user):
+        f |= Q(status=PendingAction.Status.PENDING_OFFICER)
         has_filter = True
-    if user.is_superuser or is_branch_accountant(user):
+    elif _is_hr_officer(user):
+        f |= Q(status=PendingAction.Status.PENDING_OFFICER, assigned_officer=user)
+        has_filter = True
+    if _is_general_manager(user) or is_branch_accountant(user):
         f |= Q(status=PendingAction.Status.PENDING_ACCOUNTANT)
         has_filter = True
     f |= Q(status=PendingAction.Status.RETURNED, requested_by=user)
@@ -177,12 +178,11 @@ def _inbox_for_hire(user, qs):
     if first_q.children:
         f |= first_q
         has_filter = True
-    if _is_hr_officer(user) or user.is_superuser:
-        f |= (
-            Q(status=EmploymentRequest.Status.PENDING_OFFICER, assigned_officer=user)
-            if not user.is_superuser
-            else Q(status=EmploymentRequest.Status.PENDING_OFFICER)
-        )
+    if _is_general_manager(user):
+        f |= Q(status=EmploymentRequest.Status.PENDING_OFFICER)
+        has_filter = True
+    elif _is_hr_officer(user):
+        f |= Q(status=EmploymentRequest.Status.PENDING_OFFICER, assigned_officer=user)
         has_filter = True
     return qs.filter(f) if has_filter else qs.none()
 

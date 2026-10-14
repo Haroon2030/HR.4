@@ -207,16 +207,19 @@ def first_stage_pending_q(user, *, model, model_status_pending_branch: str) -> Q
     - محاسب الفرع: عجز الكاشير فقط في فروعه
     - مدير الإدارة: طلبات إدارته (ما عدا عجز الكاشير)
     - مدير الفرع: طلبات فرعه غير المرتبطة بإدارة فعّالة (ما عدا عجز الكاشير)
+    - المدير العام (superuser / admin / مدير الموارد): كل الطلبات
 
     عجز الكاشير نوع خاص بـ PendingAction فقط؛ طلبات التوظيف لا تملك action_type.
     """
     from apps.core.models import PendingAction
+    from apps.core.services.access_control import is_privileged_actor
     from apps.employees.services.cash_shortage_access import (
         cash_shortage_first_stage_q,
         is_branch_accountant,
     )
 
-    if user.is_superuser:
+    # المدير العام (superuser / admin / مدير الموارد) يرى كل طلبات المرحلة الأولى
+    if is_privileged_actor(user):
         return Q(status=model_status_pending_branch)
 
     supports_cash_shortage = model is PendingAction
