@@ -989,3 +989,23 @@ class AllCompaniesPayrollTests(FinanceBase):
         self.assertEqual(resp.context['lines_total'], run.lines.count())
         resp = self.client.get(reverse('web:view_payroll_run', args=[run.id]), {'sponsorship_id': self.sp2.id})
         self.assertEqual(resp.context['lines_total'], 0)
+
+    def test_empty_month_shows_prominent_build_button_with_scope(self):
+        from django.urls import reverse
+        resp = self.client.get(reverse('web:list_payroll_runs'),
+                               {'year': 2026, 'month': 4, 'salary_mode': 'transfer', 'payroll_filters': 1})
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('pr2-btn--cta', html)
+        self.assertIn('ابنِ مسير', html)
+        self.assertIn('سيُبنى لـ', html)
+        self.assertIn('كل الشركات (3)', html)
+
+    def test_draft_month_shows_visible_rebuild_button(self):
+        from django.urls import reverse
+        self._build_all()
+        resp = self.client.get(reverse('web:list_payroll_runs'),
+                               {'year': 2026, 'month': 4, 'salary_mode': 'transfer', 'payroll_filters': 1})
+        html = resp.content.decode()
+        self.assertIn('أعد بناء المسير', html)
+        self.assertNotIn('class="pr2-btn pr2-btn--cta"', html)  # بطاقة «ابنِ» لحالة «لم يُبنَ» فقط

@@ -32,6 +32,17 @@
     .pr2-btn--primary:hover { background: #1d4ed8; }
     .pr2-btn--success { background: #059669; color: #fff; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25); }
     .pr2-btn--warn { background: #f59e0b; color: #fff; }
+    /* بطاقة البناء الواضحة (حالة: لم يُبنَ المسير) */
+    .pr2-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.9rem 1.25rem; padding: 1rem 1.2rem; border-radius: 0.95rem; border: 1.5px dashed #93c5fd; background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%); }
+    .pr2-cta__title { margin: 0; font-size: 1rem; font-weight: 800; color: #0f172a; }
+    .pr2-cta__sub { margin: 0.2rem 0 0; font-size: 0.82rem; font-weight: 700; color: #475569; }
+    .pr2-btn--cta { min-height: 3rem; padding: 0.8rem 1.7rem; font-size: 1.05rem; border-radius: 0.85rem; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .pr2-btn--cta:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(37, 99, 235, 0.42); }
+    .pr2-btn--cta:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+    @media (max-width: 640px) {
+        .pr2-cta { flex-direction: column; align-items: stretch; text-align: center; }
+        .pr2-btn--cta { width: 100%; justify-content: center; }
+    }
     .pr2-btn--ghost { background: #fff; color: #1e3a8a; border-color: #cbd5e1; }
     .pr2-btn--ghost:hover { background: #f8fafc; }
     .pr2-btn[disabled], .pr2-btn.is-off { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
@@ -93,23 +104,32 @@
     </div>
     {% endif %}
 
+    {% if payroll_state == 'empty' %}
+    <section class="pr2-cta" aria-label="بناء المسير">
+        <div class="min-w-0">
+            <p class="pr2-cta__title">{% if has_draft_runs %}المسودة الحالية بلا موظفين{% else %}لم يُبنَ مسير {{ period_month_label }} {{ filter_year }} بعد{% endif %}</p>
+            <p class="pr2-cta__sub">سيُبنى لـ {{ branch_scope_label }} · {{ sponsor_scope_label }}</p>
+        </div>
+        {% if can_build_new or can_build and has_draft_runs %}
+        <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                name="build_kind" value="{% if active_payroll_view == 'detailed' %}detailed{% else %}standard{% endif %}"
+                class="pr2-btn pr2-btn--cta"
+                {% if has_draft_runs %}data-hr-confirm="توجد مسودة فارغة لهذا الشهر وسيتم استبدالها. متابعة؟" data-hr-confirm-ok="ابنِ"{% endif %}>
+            <i data-lucide="zap" class="w-5 h-5"></i> {% if has_draft_runs %}أعد بناء{% else %}ابنِ{% endif %} مسير {{ period_month_label }}
+        </button>
+        {% else %}
+        <button type="button" class="pr2-btn pr2-btn--cta" disabled title="لا تملك صلاحية البناء">
+            <i data-lucide="zap" class="w-5 h-5"></i> ابنِ مسير {{ period_month_label }}
+        </button>
+        {% endif %}
+    </section>
+    {% endif %}
+
     <div class="pr2-row">
         <div class="pr2-actions">
             {# ── الزر الرئيسي حسب الحالة ── #}
             {% if payroll_state == 'empty' %}
-                {% if can_build_new or can_build and has_draft_runs %}
-                <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
-                        name="build_kind" value="{% if active_payroll_view == 'detailed' %}detailed{% else %}standard{% endif %}"
-                        class="pr2-btn pr2-btn--primary"
-                        {% if has_draft_runs %}data-hr-confirm="توجد مسودة فارغة لهذا الشهر وسيتم استبدالها. متابعة؟" data-hr-confirm-ok="ابنِ"{% endif %}>
-                    <i data-lucide="zap" class="w-4 h-4"></i> {% if has_draft_runs %}أعد بناء{% else %}ابنِ{% endif %} مسير {{ period_month_label }}
-                </button>
-                {% else %}
-                <button type="button" class="pr2-btn pr2-btn--primary" disabled title="لا تملك صلاحية البناء">
-                    <i data-lucide="zap" class="w-4 h-4"></i> ابنِ مسير {{ period_month_label }}
-                </button>
-                {% endif %}
-                <p class="pr2-hint">{% if has_draft_runs %}المسودة الحالية بلا موظفين.{% else %}لم يُبنَ مسير هذا الشهر بعد.{% endif %}</p>
+                {# زر البناء في البطاقة الواضحة أعلاه #}
 
             {% elif payroll_state == 'draft' %}
                 {% if active_payroll_view == 'detailed' %}
@@ -131,6 +151,14 @@
                             <i data-lucide="lock" class="w-4 h-4"></i> أغلق المسير نهائياً
                         </button>
                     </form>
+                {% endif %}
+                {% if can_build and has_draft_runs %}
+                <button type="submit" form="payrollCreateForm" formaction="{% url 'web:list_payroll_runs' %}" formmethod="post"
+                        name="build_kind" value="{% if active_payroll_view == 'detailed' %}detailed{% else %}standard{% endif %}"
+                        class="pr2-btn pr2-btn--ghost"
+                        data-hr-confirm="سيتم استبدال المسودة الحالية. متابعة؟" data-hr-confirm-ok="أعد البناء">
+                    <i data-lucide="rotate-cw" class="w-4 h-4"></i> أعد بناء المسير
+                </button>
                 {% endif %}
                 <p class="pr2-hint">مسودة — راجعها ثم أغلقها.</p>
 
