@@ -1716,18 +1716,33 @@ body.hr-app .hr-pagination__summary {
     color: #475569;
 }
 
+/* صف واحد دائماً: كل أرقام الصفحات في سطر، ويتمرّر الشريط أفقياً إن طال (مثلاً 1000 صفحة) */
 body.hr-app .hr-pagination__controls {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.25rem;
 }
 
+body.hr-app .hr-pagination__controls > .hr-pagination__btn {
+    flex-shrink: 0;
+}
+
 body.hr-app .hr-pagination__nums {
     display: flex;
-    flex-wrap: wrap;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.25rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    padding: 0.125rem 0;
+}
+
+body.hr-app .hr-pagination__nums > * {
+    flex-shrink: 0;
 }
 
 body.hr-app .hr-pagination__num.is-active {
