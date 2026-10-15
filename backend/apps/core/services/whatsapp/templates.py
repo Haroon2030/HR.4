@@ -228,8 +228,8 @@ def build_executed_message(action: PendingAction, execution_message: str = '') -
 
     elif action.action_type == PendingAction.ActionType.LEAVE:
         lines.extend([
-            f'📅 من: {_fmt_date(payload.get("start_date"))}',
-            f'📅 إلى: {_fmt_date(payload.get("end_date"))}',
+            f'📅 من: {_fmt_date(payload.get("date_from") or payload.get("start_date"))}',
+            f'📅 إلى: {_fmt_date(payload.get("date_to") or payload.get("end_date"))}',
         ])
 
     elif action.action_type == PendingAction.ActionType.TRANSFER:
