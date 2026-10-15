@@ -15729,10 +15729,9 @@ body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link .hr-nav-text {
     color: rgba(255, 255, 255, 0.9) !important;
     font-weight: 500 !important;
 }
+/* الشاشات الفرعية بلا أيقونة — النص فقط (الأيقونة تبقى في الشريط المطوي) */
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-icon {
-    width: 1rem;
-    height: 1rem;
-    opacity: 0.85;
+    display: none;
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link:hover,
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link:hover .hr-nav-text {
@@ -15777,6 +15776,9 @@ body.hr-app .hr-sidebar--collapsed .hr-sidebar-panel .hr-nav-group__body {
 }
 body.hr-app .hr-sidebar--collapsed .hr-sidebar-panel .hr-nav-group__body .hr-nav-link.is-active::after {
     display: none;
+}
+body.hr-app .hr-sidebar--collapsed .hr-sidebar-panel .hr-nav-group__body .hr-nav-icon {
+    display: inline-flex;
 }
 
 /* أيقونة الحساب وزر الإغلاق في الشريط — توهّج خفيف (مثل زر الرئيسية) */
