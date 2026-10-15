@@ -1714,9 +1714,11 @@ body.hr-app .hr-pagination {
 body.hr-app .hr-pagination__summary {
     font-size: 0.8125rem;
     color: #475569;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-/* صف واحد دائماً: كل أرقام الصفحات في سطر، ويتمرّر الشريط أفقياً إن طال (مثلاً 1000 صفحة) */
+/* صف واحد: أرقام قليلة حول الصفحة الحالية (فلتر page_window) تتحرك مع التنقّل */
 body.hr-app .hr-pagination__controls {
     display: flex;
     flex-wrap: nowrap;
@@ -1730,7 +1732,7 @@ body.hr-app .hr-pagination__controls > .hr-pagination__btn {
 
 body.hr-app .hr-pagination__nums {
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
     flex-wrap: nowrap;
     align-items: center;
@@ -1743,6 +1745,13 @@ body.hr-app .hr-pagination__nums {
 
 body.hr-app .hr-pagination__nums > * {
     flex-shrink: 0;
+}
+
+/* الجوال: نافذة أصغر (تخفي طرفي النافذة ما لم يكونا الصفحة الحالية) */
+@media (max-width: 480px) {
+    body.hr-app .hr-pagination__num.is-edge {
+        display: none;
+    }
 }
 
 body.hr-app .hr-pagination__num.is-active {

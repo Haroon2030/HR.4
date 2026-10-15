@@ -1,3 +1,4 @@
+{% load custom_tags %}
 <div class="hr-payroll-runs-datatable__footer">
     <div class="hr-payroll-runs-datatable__footer-meta">
         <span class="hr-payroll-runs-datatable__footer-badge">
@@ -29,12 +30,12 @@
         </span>
         {% endif %}
         <div class="hr-pagination__nums">
-            {% for p in page_obj.paginator.page_range %}
+            {% for p in page_obj|page_window %}
                 {% if p == page_obj.number %}
                 <span class="hr-btn hr-btn--primary hr-btn--sm hr-pagination__num is-active" aria-current="page">{{ p }}</span>
                 {% else %}
                 <a href="?{% if base_qs %}{{ base_qs }}&{% endif %}{{ page_param }}={{ p }}"
-                   class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__num">{{ p }}</a>
+                   class="hr-btn hr-btn--outline hr-btn--sm hr-pagination__num{% if forloop.first or forloop.last %} is-edge{% endif %}">{{ p }}</a>
                 {% endif %}
             {% endfor %}
         </div>

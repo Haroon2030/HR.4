@@ -207,3 +207,25 @@ def keyset_paginate_queryset(
         cursor_after=cursor_after,
         cursor_before=cursor_before,
     )
+
+
+def page_window(current: int, num_pages: int, size: int = 5) -> list[int]:
+    """
+    أرقام صفحات قليلة حول الصفحة الحالية (نافذة متحركة بلا اختصار «…»).
+
+    مثال (size=5): الصفحة 1 → [1..5]، الصفحة 10 → [8..12]، آخر صفحة → آخر 5 صفحات.
+    كلما تقدّم المستخدم تتحرك النافذة لتظهر الصفحات التالية.
+    """
+    try:
+        current = int(current)
+        num_pages = int(num_pages)
+        size = int(size)
+    except (TypeError, ValueError):
+        return []
+    if num_pages < 1:
+        return []
+    size = max(1, min(size, num_pages))
+    current = max(1, min(current, num_pages))
+    start = current - size // 2
+    start = max(1, min(start, num_pages - size + 1))
+    return list(range(start, start + size))

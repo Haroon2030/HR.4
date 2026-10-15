@@ -31,6 +31,16 @@ _DIST_PALETTE = employee_status_dist_palette()
 
 
 @register.filter
+def page_window(page_obj, size=5):
+    """أرقام صفحات قليلة حول الصفحة الحالية — تتحرك مع التنقّل."""
+    from apps.core.utils.pagination import page_window as _page_window
+
+    if not page_obj:
+        return []
+    return _page_window(page_obj.number, page_obj.paginator.num_pages, size)
+
+
+@register.filter
 def user_display(user, default='—'):
     """اسم المستخدم للعرض — آمن عند user=None."""
     if user is None:
