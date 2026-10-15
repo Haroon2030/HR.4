@@ -122,9 +122,10 @@
         <form method="get" class="flex flex-wrap items-end gap-3 px-4 py-3 border-b border-slate-100">
             <div>
                 <label for="pl-company" class="block text-xs font-semibold text-slate-500 mb-1">الشركة</label>
-                <select id="pl-company" name="company_id" class="hr-input" onchange="this.form.submit()">
+                <select id="pl-company" name="sponsorship_id" class="hr-input" onchange="this.form.submit()">
                     <option value="">كل الشركات</option>
-                    {% for c in filter_companies %}<option value="{{ c.id }}" {% if sel_company == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                    {% for c in filter_companies %}<option value="{{ c.id }}" {% if sel_company == c.id|stringformat:"s" %}selected{% endif %}>{{ c.company_name }}</option>{% endfor %}
+                    {% if has_unsponsored_lines and filter_companies %}<option value="none" {% if sel_company == 'none' %}selected{% endif %}>بدون كفالة</option>{% endif %}
                 </select>
             </div>
             <div>

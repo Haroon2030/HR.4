@@ -31,7 +31,12 @@
                         </div>
                     </td>
                     {% if active_salary_mode == 'transfer' %}
-                    <td class="hr-payroll-runs-datatable__sponsor">{% payroll_sponsorship_filter_label all_sponsorships_selected filter_sponsorship_ids sponsorships %}</td>
+                    <td class="hr-payroll-runs-datatable__sponsor">
+                        {% payroll_sponsorship_names period_runs_all all_sponsorships_selected filter_sponsorship_ids sponsorships as sponsor_names %}
+                        {% if sponsor_names %}
+                        {% for name in sponsor_names %}<span class="hr-payroll-runs-datatable__sponsor-name">{{ name }}</span>{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                        {% else %}{% payroll_sponsorship_filter_label all_sponsorships_selected filter_sponsorship_ids sponsorships %}{% endif %}
+                    </td>
                     {% endif %}
                     <td class="text-center hr-payroll-runs-datatable__period">{{ filter_month }}/{{ filter_year }}</td>
                     <td class="col-num hr-payroll-runs-datatable__count">{{ period_totals.employees_count }}</td>

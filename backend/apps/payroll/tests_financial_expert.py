@@ -925,3 +925,67 @@ class FullExportWorkbookTests(FinanceBase):
         self.assertTrue(any(t.startswith('كفالة الفحص') for t in titles), titles)
         self.assertTrue(any(t.startswith('كفالة ثانية') for t in titles), titles)
         self.assertTrue(any(t.startswith('نقدي') for t in titles), titles)
+
+
+class AllCompaniesPayrollTests(FinanceBase):
+    """خيار «كل الشركات»: يبني مسير كل شركة كفالة، وتظهر الشركات بأسمائها في الشاشة."""
+
+    def setUp(self):
+        super().setUp()
+        self.sp2 = Sponsorship.objects.create(code='SP2', company_name='كفالة ثانية')
+        self.sp3 = Sponsorship.objects.create(code='SP3', company_name='كفالة ثالثة')
+        self.e1 = self.emp('ت1', branch=self.branch)
+        self.e2 = self.emp('ت2', branch=self.branch2)
+        self.e3 = self.emp('ت3', branch=self.branch)
+        Employee.objects.filter(pk=self.e2.pk).update(sponsorship=self.sp2)
+        Employee.objects.filter(pk=self.e3.pk).update(sponsorship=self.sp3)
+        self.admin = User.objects.create_superuser(username='all_co_admin', password='x-pass-123')
+        self.client.force_login(self.admin)
+
+    def _build_all(self):
+        from django.urls import reverse
+        # بدون أي sponsorship_id أو branch_id = «كل الشركات» و«كل الفروع»
+        return self.client.post(reverse('web:list_payroll_runs'), {
+            'year': 2026, 'month': 4, 'salary_mode': 'transfer', 'build_kind': 'standard',
+        })
+
+    def test_build_with_all_companies_builds_every_company(self):
+        self._build_all()
+        built = set(
+            PayrollRun.objects.filter(period_year=2026, period_month=4, salary_mode=TRANSFER)
+            .exclude(employees_count=0).values_list('sponsorship_id', flat=True)
+        )
+        self.assertEqual(built, {self.sp.id, self.sp2.id, self.sp3.id})
+
+    def test_list_page_shows_each_company_by_name(self):
+        from django.urls import reverse
+        self._build_all()
+        resp = self.client.get(reverse('web:list_payroll_runs'),
+                               {'year': 2026, 'month': 4, 'salary_mode': 'transfer', 'payroll_filters': 1})
+        self.assertEqual(resp.status_code, 200)
+        import re
+        # خلايا عمود «شركة الكفالة» في جدول المسيرات (لا قائمة الفلتر التي تسرد كل الأسماء دائماً)
+        cells = re.findall(
+            r'<td class="hr-payroll-runs-datatable__sponsor">(.*?)</td>', resp.content.decode(), re.S,
+        )
+        self.assertTrue(cells)
+        text = ' '.join(re.sub(r'<[^>]+>', ' ', c) for c in cells)
+        for name in ('كفالة الفحص', 'كفالة ثانية', 'كفالة ثالثة'):
+            self.assertIn(name, text)
+        self.assertNotIn('جميع الشركات', text)
+
+    def test_run_page_company_filter_lists_sponsorship_names(self):
+        from django.urls import reverse
+        run = build_payroll_run(self.branch, 2026, 4, self.user, salary_mode=TRANSFER, sponsorship_id=self.sp.id)
+        # مسير مرتبط بكفالة واحدة: القائمة تعرض اسم تلك الشركة (لا «الشركة الافتراضية»)
+        import re
+        html = self.client.get(reverse('web:view_payroll_run', args=[run.id])).content.decode()
+        select = re.search(r'<select id="pl-company".*?</select>', html, re.S).group(0)
+        self.assertIn('كفالة الفحص', select)
+        self.assertNotIn('شركة الفحص', select)  # اسم شركة الفرع القانونية
+        # الفلتر بالكفالة يعمل
+        resp = self.client.get(reverse('web:view_payroll_run', args=[run.id]), {'sponsorship_id': self.sp.id})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['lines_total'], run.lines.count())
+        resp = self.client.get(reverse('web:view_payroll_run', args=[run.id]), {'sponsorship_id': self.sp2.id})
+        self.assertEqual(resp.context['lines_total'], 0)

@@ -1491,14 +1491,22 @@ def view_payroll_run(request, run_id):
         Branch.objects.filter(id__in=branch_ids_in_run)
         .select_related('company').order_by('name')
     )
-    filter_companies = sorted(
-        {b.company for b in filter_branches if b.company_id},
-        key=lambda c: c.name,
+    # «الشركة» = شركة الكفالة (كما في الملف وأسماء المسيرات)، وليس شركة الفرع القانونية
+    # (كل الفروع تتبع شركة واحدة افتراضية فكانت القائمة لا تعرض إلا اسماً واحداً).
+    sponsor_ids_in_run = (
+        run.lines.exclude(employee__sponsorship_id__isnull=True)
+        .values_list('employee__sponsorship_id', flat=True).distinct()
     )
-    sel_company = request.GET.get('company_id') or ''
+    filter_companies = list(
+        Sponsorship.objects.filter(id__in=sponsor_ids_in_run).order_by('company_name')
+    )
+    has_unsponsored_lines = run.lines.filter(employee__sponsorship_id__isnull=True).exists()
+    sel_company = request.GET.get('sponsorship_id') or ''
     sel_branch = request.GET.get('branch_id') or ''
     if sel_company.isdigit():
-        lines_qs = lines_qs.filter(employee__branch__company_id=int(sel_company))
+        lines_qs = lines_qs.filter(employee__sponsorship_id=int(sel_company))
+    elif sel_company == 'none':
+        lines_qs = lines_qs.filter(employee__sponsorship_id__isnull=True)
     else:
         sel_company = ''
     if sel_branch.isdigit():
@@ -1516,7 +1524,7 @@ def view_payroll_run(request, run_id):
         )
     base_qs_parts = []
     if sel_company:
-        base_qs_parts.append(f'company_id={sel_company}')
+        base_qs_parts.append(f'sponsorship_id={sel_company}')
     if sel_branch:
         base_qs_parts.append(f'branch_id={sel_branch}')
 
@@ -1539,6 +1547,7 @@ def view_payroll_run(request, run_id):
         'financial_audit': financial_audit,
         'filter_branches': filter_branches,
         'filter_companies': filter_companies,
+        'has_unsponsored_lines': has_unsponsored_lines,
         'sel_company': sel_company,
         'sel_branch': sel_branch,
         'is_filtered': is_filtered,
