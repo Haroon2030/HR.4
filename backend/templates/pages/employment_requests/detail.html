@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="space-y-4 max-w-4xl">
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">طلب توظيف: {{ obj.name }}</h1>
+            <p class="text-slate-500 text-xs">رقم الطلب {{ obj.id }} · {{ obj.created_at|date:"Y-m-d H:i" }}</p>
+        </div>
+        <a href="{{ list_url }}" class="hr-btn hr-btn--outline hr-btn--sm">العودة إلى القائمة</a>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <div class="flex flex-wrap gap-3 items-center">
+            <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-800 text-sm font-semibold">الحالة: {{ obj.get_status_display }}</span>
+            <span class="px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-sm font-semibold">المرحلة الحالية: {{ obj.first_stage_label }}</span>
+        </div>
+
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div><dt class="text-slate-500 text-xs">الفرع</dt><dd class="font-semibold text-slate-900">{{ obj.branch.name|default:"—" }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">الإدارة</dt><dd class="font-semibold text-slate-900">{{ obj.administration.name|default:"—" }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">القسم</dt><dd class="font-semibold text-slate-900">{{ obj.department.name|default:"—" }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">مركز التكلفة</dt><dd class="font-semibold text-slate-900">{{ obj.cost_center.name|default:"—" }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">الراتب الأساسي</dt><dd class="font-semibold text-slate-900">{{ obj.basic_salary|format_amount }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">مقدّم الطلب</dt><dd class="font-semibold text-slate-900">{% if obj.requested_by %}{{ obj.requested_by.get_full_name|default:obj.requested_by.username }}{% else %}—{% endif %}</dd></div>
+            <div><dt class="text-slate-500 text-xs">أسند إلى</dt><dd class="font-semibold text-slate-900">{% if obj.assigned_officer %}{{ obj.assigned_officer.get_full_name|default:obj.assigned_officer.username }}{% else %}—{% endif %}</dd></div>
+        </dl>
+
+        <div class="border-t border-slate-100 pt-4 space-y-2 text-sm">
+            <p><span class="text-slate-500">ملاحظات مدير الفرع:</span> {{ obj.branch_notes|default:"—" }}</p>
+            <p><span class="text-slate-500">ملاحظات مدير الموارد:</span> {{ obj.gm_notes|default:"—" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

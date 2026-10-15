@@ -112,7 +112,8 @@ urlpatterns = [
     # ══════════════════════════════════════════════════════════════
     # 3. طلبات التوظيف — دورة: أخصائي → مدير فرع → مدير الموارد → أخصائي ينفّذ
     # ══════════════════════════════════════════════════════════════
-    path('employment-requests/', web_views.list_employment_requests, name='list_employment_requests'),                                    # قائمة الطلبات
+    path('employment-requests/', web_views.list_employment_requests, name='list_employment_requests'),
+    path('employment-requests/<int:request_id>/', web_views.employment_request_detail, name='employment_request_detail'),                                    # قائمة الطلبات
     path('employment-requests/<int:request_id>/approve/', web_views.approve_employment_request, name='approve_employment_request'),        # موافقة مدير الفرع
     path('employment-requests/<int:request_id>/gm-approve/', web_views.gm_approve_employment_request, name='gm_approve_employment_request'),  # موافقة المدير العام
     path('employment-requests/<int:request_id>/officer-approve/', web_views.officer_approve_employment_request, name='officer_approve_employment_request'),  # تنفيذ الأخصائي

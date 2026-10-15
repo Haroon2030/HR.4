@@ -44,6 +44,31 @@ def get_hr_officers():
 
 
 # ─── قائمة الطلبات ───────────────────────────────────────────────────────────
+def _hire_visibility_q(user):
+    """
+    طلبات التوظيف التي يراها المستخدم (None = الكل).
+    مصدر واحد للقائمة وصفحة التفاصيل وصندوق العمليات: ما يُعرض للمستخدم في أي منها يُعرض في الباقي.
+    - طلباته هو
+    - طلبات مرحلته الأولى (فرعه/إدارته) التي تنتظر إجراءه
+    - لأخصائي الموارد: ما أُسند إليه
+    """
+    from apps.employees.models import EmploymentRequest
+
+    if user.is_superuser or _is_general_manager(user):
+        return None
+    cond = Q(requested_by=user)
+    first_q = first_stage_pending_q(
+        user,
+        model=EmploymentRequest,
+        model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
+    )
+    if first_q.children:
+        cond |= first_q
+    if _is_hr_officer(user):
+        cond |= Q(assigned_officer=user)
+    return cond
+
+
 @login_required
 def list_employment_requests(request):
     """قائمة طلبات التوظيف — تظهر بحسب دور المستخدم والمرحلة."""
@@ -61,27 +86,13 @@ def list_employment_requests(request):
     )
 
     user = request.user
-    is_super = user.is_superuser
     is_branch = _is_branch_manager(user)
     is_gm = _is_general_manager(user)
     is_officer = _is_hr_officer(user)
 
-    if not is_super:
-        cond = Q(requested_by=user)
-        first_q = first_stage_pending_q(
-            user,
-            model=EmploymentRequest,
-            model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,
-        )
-        if first_q.children:
-            cond |= first_q
-        if is_gm:
-            # المدير العام يرى الكل — أبطل الفلترة على الملكية/الفرع
-            cond = Q()
-        if is_officer:
-            # أخصائي الموارد يرى ما أُسند إليه فقط
-            cond |= Q(assigned_officer=user)
-        qs = qs.filter(cond).distinct()
+    visible = _hire_visibility_q(user)
+    if visible is not None:
+        qs = qs.filter(visible).distinct()
 
     status = request.GET.get('status', 'pending')
     if status == 'pending':
@@ -117,6 +128,34 @@ def list_employment_requests(request):
         'hr_officers': get_hr_officers() if stage_permission_required(user, PendingAction.Stage.GM) else [],
         'first_stage_tab_label': first_stage_tab_label(user),
     })
+
+
+@login_required
+def employment_request_detail(request, request_id):
+    """عرض بيانات طلب توظيف واحد (للقراءة) — بنفس صلاحية القائمة."""
+    from apps.core.services.workflow_access import can_view_operations
+    from apps.employees.models import EmploymentRequest
+
+    if not can_view_operations(request.user):
+        messages.error(request, 'لا تملك صلاحية عرض طلبات التوظيف.')
+        return redirect('web:dashboard')
+    obj = get_object_or_404(
+        EmploymentRequest.objects.select_related(
+            'branch', 'administration', 'department', 'cost_center', 'requested_by',
+            'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer', 'housing', 'bank',
+        ),
+        pk=request_id,
+    )
+    visible = _hire_visibility_q(request.user)
+    if visible is not None and not EmploymentRequest.objects.filter(pk=obj.pk).filter(visible).exists():
+        messages.error(request, 'هذا الطلب ليس ضمن ما تستطيع الاطلاع عليه.')
+        return redirect('web:list_employment_requests')
+    obj.first_stage_label = resolve_first_approver(obj).stage_label
+    return render(request, 'pages/employment_requests/detail.html', {
+        'obj': obj,
+        'list_url': reverse('web:list_employment_requests'),
+    })
+
 
 
 # ─── إجراءات المراحل ─────────────────────────────────────────────────────────

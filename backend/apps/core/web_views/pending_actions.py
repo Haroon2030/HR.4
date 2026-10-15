@@ -142,25 +142,18 @@ def _inbox_for(user, qs):
 # نعرضها بنفس البُنية في الـ template.
 
 def _user_visible_hire_requests(user):
-    """طلبات التوظيف المرئية للمستخدم بنفس منطق _user_visible_actions."""
+    """طلبات التوظيف المرئية للمستخدم — نفس قاعدة قائمة طلبات التوظيف وصفحة تفاصيلها."""
+    from apps.core.web_views.employment_requests import _hire_visibility_q
     from apps.employees.models import EmploymentRequest
 
     qs = EmploymentRequest.objects.select_related(
         'branch', 'administration', 'requested_by', 'branch_reviewed_by',
         'gm_reviewed_by', 'assigned_officer',
     )
-    if user.is_superuser or _is_general_manager(user):
+    visible = _hire_visibility_q(user)
+    if visible is None:
         return qs
-
-    filters = Q(requested_by=user)
-    managed_ids, managed_admin_ids = _managed_scope_for_user(user)
-    if managed_ids:
-        filters |= Q(branch_id__in=managed_ids)
-    if managed_admin_ids:
-        filters |= Q(administration_id__in=managed_admin_ids)
-    if _is_hr_officer(user):
-        filters |= Q(assigned_officer=user)
-    return qs.filter(filters).distinct()
+    return qs.filter(visible).distinct()
 
 
 def _inbox_for_hire(user, qs):
@@ -258,7 +251,7 @@ def _wrap_hire(r, user):
         requested_at=r.created_at,
         updated_at=r.updated_at,
         resubmit_count=0,
-        detail_url=reverse('web:list_employment_requests'),
+        detail_url=reverse('web:employment_request_detail', args=[r.id]),
         delete_url=reverse('web:delete_employment_request', args=[r.id]) if can_del else '',
         delete_confirm=delete_confirm,
     )
