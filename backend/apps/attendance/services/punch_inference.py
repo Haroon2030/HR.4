@@ -47,11 +47,16 @@ def reclassify_punches_by_sequence(
     *,
     device_id: int | None = None,
     dry_run: bool = False,
+    queryset=None,
 ) -> dict:
     """
     إعادة تصنيف punch_type حسب ترتيب الوقت لكل (جهاز، مستخدم، يوم).
+
+    queryset: مجموعة بصمات محددة (مثلاً السجلات الظاهرة بعد الفلترة). يجب أن تكون
+    مغلقة على (جهاز، مستخدم، يوم) — أي لا تقطع يوم موظف في منتصفه — وإلا يُحسب التسلسل خطأً.
     """
-    qs = AttendancePunch.objects.filter(is_deleted=False).order_by('punched_at')
+    base = queryset if queryset is not None else AttendancePunch.objects.filter(is_deleted=False)
+    qs = base.order_by('punched_at')
     if device_id:
         qs = qs.filter(device_id=device_id)
 

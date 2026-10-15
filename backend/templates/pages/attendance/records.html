@@ -41,6 +41,17 @@
                 <i data-lucide="download-cloud" class="w-4 h-4"></i> سحب من جهاز
             </button>
             {% endif %}
+            {% if user|has_permission:'attendance.manage' %}
+            <form method="post" action="{% url 'web:attendance_records_reclassify' %}{% if querystring %}?{{ querystring }}{% endif %}" class="inline"
+                  data-hr-confirm="ترتيب الدخول والخروج حسب التسلسل للسجلات الظاهرة الآن؟ (تُصحَّح أنواع الحركات المخزّنة)"
+                  data-hr-confirm-ok="رتّب">
+                {% csrf_token %}
+                <button type="submit" class="hr-btn hr-btn--primary" title="يرتّب دخول/خروج لكل السجلات الظاهرة بعد الفلترة">
+                    <i data-lucide="arrow-down-up" class="w-4 h-4"></i> ترتيب دخول/خروج
+                </button>
+            </form>
+            {% endif %}
+            {% if stats.status_health.skewed %}<span class="text-xs text-amber-700">حالة الجهاز الخام غير متسقة في بعض السجلات، يُنصح بالترتيب.</span>{% endif %}
             {% url 'web:attendance_records_export' as export_url %}
             {% with export_href=export_url|add:"?"|add:querystring %}
             {% include "components/hr_btn.html" with href=export_href label="تصدير Excel" variant="success" icon="file-spreadsheet" %}
@@ -83,15 +94,6 @@
             </div>
             <p id="attendance-pull-status" class="zk-pull-status">0%</p>
         </div>
-        <form id="zk-rec-reclassify-form" method="post" action="{% url 'web:attendance_records_reclassify' %}" class="mt-3">
-            {% csrf_token %}
-            <input type="hidden" name="device_id" id="zk-rec-reclassify-device" value="{{ filters.device_id|default:'' }}">
-            <button type="submit" class="hr-btn hr-btn--soft-emerald hr-btn--xs"
-                    onclick="return confirm('ترتيب دخول/خروج حسب تسلسل اليوم لكل موظف؟');">
-                <i data-lucide="arrow-down-up" class="w-3.5 h-3.5"></i> ترتيب دخول/خروج حسب التسلسل
-            </button>
-            {% if stats.status_health.skewed %}<span class="rec-sub">حالة الجهاز الخام غير متسقة في بعض السجلات، يُنصح بالترتيب.</span>{% endif %}
-        </form>
     </section>
     {% endif %}
 
@@ -315,14 +317,6 @@
 })();
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
-    var reclassifyForm = document.getElementById('zk-rec-reclassify-form');
-    if (reclassifyForm) {
-        reclassifyForm.addEventListener('submit', function () {
-            var deviceSel = document.querySelector('.hr-report-filter select[name="device"]');
-            var deviceHid = document.getElementById('zk-rec-reclassify-device');
-            if (deviceSel && deviceHid) deviceHid.value = deviceSel.value || '';
-        });
-    }
 });
 </script>
 {% endblock %}

@@ -102,12 +102,11 @@ def _filters_to_querystring(filters: dict, *, extra: dict | None = None) -> str:
     return urlencode(params, doseq=True)
 
 
-@permission_required(ATTENDANCE_SCREEN_RECORDS_VIEW)
-def attendance_records_list(request):
+def _resolve_records_filters(request):
+    """الفلاتر + الموظف والتسجيلات (إن وُجد موظف) — نفس منطق صفحة السجلات."""
     filters = _parse_filters(request)
     filter_employee = None
     employee_enrollments = []
-
     if filters['employee_id']:
         from apps.attendance.selectors.employee_enrollment import apply_employee_enrollment_to_filters
         from apps.employees.models import Employee
@@ -118,6 +117,12 @@ def attendance_records_list(request):
         )
         filters = apply_employee_enrollment_to_filters(filters, filter_employee.id)
         employee_enrollments = filters.get('enrollments') or []
+    return filters, filter_employee, employee_enrollments
+
+
+def _records_queryset(request, filters, employee_enrollments, *, ignore_punch_type=False):
+    """البصمات الظاهرة للفلتر الحالي. ignore_punch_type: لا يُقطع بنوع الحركة (يكسر التسلسل)."""
+    from apps.attendance.selectors.employee_enrollment import enrollment_filter_q
 
     date_from = None
     date_to = None
@@ -133,16 +138,22 @@ def attendance_records_list(request):
         device_user_id=filters['device_user_id'],
         date_from=date_from,
         date_to=date_to,
-        punch_type=filters['punch_type'],
+        punch_type=None if ignore_punch_type else filters['punch_type'],
         mapped_only=filters['mapped_only'],
         search=filters['search'] or None,
     ).filter(device_id__in=filter_biometric_devices_for_user(request.user).values('pk'))
-
     if employee_enrollments:
-        from apps.attendance.selectors.employee_enrollment import enrollment_filter_q
         qs = qs.filter(enrollment_filter_q(employee_enrollments))
     elif filters['employee_id']:
         qs = qs.filter(employee_id=filters['employee_id'])
+    return qs
+
+
+@permission_required(ATTENDANCE_SCREEN_RECORDS_VIEW)
+def attendance_records_list(request):
+    filters, filter_employee, employee_enrollments = _resolve_records_filters(request)
+    qs = _records_queryset(request, filters, employee_enrollments)
+
     stats = get_punch_stats(qs, device_id=filters['device_id'])
     qs = qs.order_by(*PUNCH_LIST_ORDERING)
     from apps.core.utils.pagination import clamp_page_size, keyset_paginate_queryset
@@ -266,20 +277,25 @@ def attendance_records_pull(request):
 @permission_required('attendance.manage')
 @require_POST
 def attendance_records_reclassify(request):
-    device_id = request.POST.get('device_id')
-    if not device_id or not str(device_id).isdigit():
-        messages.error(request, 'يجب اختيار جهاز بصمة لإعادة التصنيف.')
-        return redirect('web:attendance_records')
-    device = get_device_for_user(request.user, int(device_id))
-    did = device.pk
-    result = reclassify_punches_by_sequence(device_id=did, dry_run=False)
-    messages.success(
-        request,
-        f'تم إعادة التصنيف بالتسلسل: دخول {result["inferred_in"]} · خروج {result["inferred_out"]} '
-        f'(حدّث {result["updated"]} سجل)',
-    )
-    url = f'{reverse("web:attendance_records")}?device={did}'
-    return redirect(url)
+    """
+    ترتيب دخول/خروج حسب التسلسل لكل البصمات الظاهرة في الصفحة (بعد الفلترة)،
+    وبدون اختيار جهاز مسبقاً.
+    """
+    filters, _employee, employee_enrollments = _resolve_records_filters(request)
+    qs = _records_queryset(request, filters, employee_enrollments, ignore_punch_type=True)
+    result = reclassify_punches_by_sequence(queryset=qs, dry_run=False)
+    if not result['total']:
+        messages.error(request, 'لا توجد سجلات بصمة في الفلتر الحالي لإعادة ترتيبها.')
+    else:
+        messages.success(
+            request,
+            f'تم ترتيب الدخول والخروج حسب التسلسل للسجلات الظاهرة: '
+            f'دخول {result["inferred_in"]} · خروج {result["inferred_out"]} '
+            f'(حُدّث {result["updated"]} سجل)',
+        )
+    target = reverse('web:attendance_records')
+    query = request.GET.urlencode()
+    return redirect(f'{target}?{query}' if query else target)
 
 
 @permission_required(ATTENDANCE_SCREEN_RECORDS_VIEW)
