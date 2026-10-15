@@ -15674,19 +15674,23 @@ body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link .hr-nav-text {
 }
 
 /* الخلية النشطة في الشريط الجانبي — توهّج كهرماني (لون التمييز الوحيد في الشريط) */
+/* العنوان الرئيسي للمجموعة النشطة: خلفية بيضاء شفافة نظيفة (بدل الذهبي المعكّر)
+   وأيقونة في مربع ذهبي صريح بنفس ألوان الشاشة الفرعية النشطة (ذهبي + كحلي) */
 body.hr-app .hr-sidebar-panel .hr-nav-group.has-active > .hr-nav-section .hr-nav-group__head,
 body.hr-app .hr-sidebar-panel .hr-nav-group__head--link.is-active {
-    background: rgba(251, 191, 36, 0.14);
-    box-shadow:
-        inset 0 0 0 1px rgba(251, 191, 36, 0.55),
-        0 0 16px rgba(251, 191, 36, 0.3);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group.has-active > .hr-nav-section .hr-nav-group__icon,
 body.hr-app .hr-sidebar-panel .hr-nav-group__head--link.is-active .hr-nav-group__icon {
-    background: rgba(251, 191, 36, 0.3);
-    box-shadow:
-        0 0 0 1px rgba(251, 191, 36, 0.6),
-        0 0 12px rgba(251, 191, 36, 0.55);
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+    color: #1e3a5f !important;
+    stroke: #1e3a5f !important;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.35);
+}
+body.hr-app .hr-sidebar-panel .hr-nav-group.has-active > .hr-nav-section .hr-nav-group__icon *,
+body.hr-app .hr-sidebar-panel .hr-nav-group__head--link.is-active .hr-nav-group__icon * {
+    stroke: #1e3a5f !important;
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link.is-active {
     background: rgba(251, 191, 36, 0.16) !important;
