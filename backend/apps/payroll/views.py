@@ -434,7 +434,7 @@ def _period_run_totals(runs: list) -> dict:
 
 
 def _runs_for_unified_export(filters: dict, user, scope: PayrollBranchScope):
-    """كل مسيرات الشهر/النوع في ملف تصدير واحد — بغض النظر عن فلتر فرع العرض."""
+    """كل مسيرات الشهر/النوع في ملف تصدير واحد — بغض النظر عن فلتر فرع العرض وفلتر الكفالة."""
     export_filters = dict(filters)
     export_filters['branch_ids'] = None
     return list(_payroll_runs_for_filters(export_filters, user, scope))
@@ -1701,9 +1701,10 @@ def export_payroll_list_excel(request):
         return redirect('web:list_payroll_runs')
 
     def _mode_filters(mode):
+        # الملف الشامل لكل شركات الكفالة: لا يتقيّد بفلتر الكفالة (المحفوظ في الجلسة أو المستنتج من مسودة)
         f = dict(filters)
         f['salary_mode'] = mode
-        f['sponsorship_ids'] = filters.get('sponsorship_ids') if mode == PayrollRun.SalaryMode.TRANSFER else None
+        f['sponsorship_ids'] = None
         return _recompute_payroll_ready(f)
 
     def _with_lines(runs):

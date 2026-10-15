@@ -849,6 +849,36 @@ class SalaryChangeEffectiveMonthTests(FinanceBase):
 
 
 class FullExportWorkbookTests(FinanceBase):
+    def test_export_includes_all_sponsorship_companies_even_if_list_filtered(self):
+        """فلتر كفالة واحدة في رابط التصدير (كما تمرّره الشاشة) لا يقلّص الملف الشامل لشركة واحدة."""
+        from io import BytesIO
+
+        from django.urls import reverse
+        from openpyxl import load_workbook
+
+        sp2 = Sponsorship.objects.create(code='SP2', company_name='كفالة ثانية')
+        self.emp('ت1', branch=self.branch)
+        e2 = self.emp('ت2', branch=self.branch2)
+        Employee.objects.filter(pk=e2.pk).update(sponsorship=sp2)
+        for sp in (self.sp, sp2):
+            for br in (self.branch, self.branch2):
+                build_payroll_run(br, 2026, 4, self.user, salary_mode=TRANSFER, sponsorship_id=sp.id)
+
+        admin = User.objects.create_superuser(username='exp_admin2', password='x-pass-123')
+        self.client.force_login(admin)
+
+        def company_titles(resp):
+            self.assertEqual(resp.status_code, 200)
+            wb = load_workbook(BytesIO(resp.content))
+            return [c.value for c in wb['حسب الشركات']['A'] if c.value and '—' in str(c.value)]
+
+        titles = company_titles(self.client.get(
+            reverse('web:export_payroll_list_excel'),
+            {'year': 2026, 'month': 4, 'salary_mode': 'transfer', 'sponsorship_id': self.sp.id},
+        ))
+        self.assertTrue(any(t.startswith('كفالة الفحص') for t in titles), titles)
+        self.assertTrue(any(t.startswith('كفالة ثانية') for t in titles), titles)
+
     def test_single_export_has_all_sheets_and_consistent_totals(self):
         from io import BytesIO
 
