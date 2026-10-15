@@ -5,7 +5,7 @@
            background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, #fff 55%); display: flex; flex-direction: column; gap: 0.9rem; }
     .pr2-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; }
     .pr2-title { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
-    .pr2-ic { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: #2563eb; color: #fff; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pr2-ic { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: var(--hr-action-btn-bg, linear-gradient(165deg, #3d7aad 0%, #356391 100%)); color: #fff; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .pr2-h1 { margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; }
     .pr2-scope { margin: 0.1rem 0 0; font-size: 0.78rem; font-weight: 700; color: #475569; }
     .pr2-month { display: inline-flex; align-items: center; gap: 0.35rem; background: #fff; border: 1px solid #dbe4f0; border-radius: 999px; padding: 0.2rem; }
@@ -28,17 +28,17 @@
     .pr2-kpi--net .pr2-kpi__v { color: #1d4ed8; }
     .pr2-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
     .pr2-btn { display: inline-flex; align-items: center; gap: 0.45rem; border-radius: 0.7rem; padding: 0.55rem 1rem; font-weight: 800; font-size: 0.9rem; border: 1px solid transparent; cursor: pointer; text-decoration: none; line-height: 1.2; }
-    .pr2-btn--primary { background: #2563eb; color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
-    .pr2-btn--primary:hover { background: #1d4ed8; }
+    .pr2-btn--primary { background: var(--hr-action-btn-bg, linear-gradient(165deg, #3d7aad 0%, #356391 100%)); color: #fff; border-color: var(--hr-action-btn-border, rgba(255, 255, 255, 0.18)); box-shadow: 0 4px 12px rgba(61, 122, 173, 0.28); }
+    .pr2-btn--primary:hover { background: var(--hr-action-btn-bg-hover, linear-gradient(165deg, #4688b8 0%, #3d7aad 100%)); }
     .pr2-btn--success { background: #059669; color: #fff; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25); }
     .pr2-btn--warn { background: #f59e0b; color: #fff; }
     /* بطاقة البناء الواضحة (حالة: لم يُبنَ المسير) */
-    .pr2-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.9rem 1.25rem; padding: 1rem 1.2rem; border-radius: 0.95rem; border: 1.5px dashed #93c5fd; background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%); }
+    .pr2-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.9rem 1.25rem; padding: 1rem 1.2rem; border-radius: 0.95rem; border: 1.5px dashed rgba(61, 122, 173, 0.5); background: linear-gradient(135deg, rgba(61, 122, 173, 0.09) 0%, #ffffff 70%); }
     .pr2-cta__title { margin: 0; font-size: 1rem; font-weight: 800; color: #0f172a; }
     .pr2-cta__sub { margin: 0.2rem 0 0; font-size: 0.82rem; font-weight: 700; color: #475569; }
-    .pr2-btn--cta { min-height: 3rem; padding: 0.8rem 1.7rem; font-size: 1.05rem; border-radius: 0.85rem; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-    .pr2-btn--cta:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(37, 99, 235, 0.42); }
-    .pr2-btn--cta:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+    .pr2-btn--cta { min-height: 3rem; padding: 0.8rem 1.7rem; font-size: 1.05rem; border-radius: 0.85rem; background: var(--hr-action-btn-bg, linear-gradient(165deg, #3d7aad 0%, #356391 100%)); color: #fff; border-color: var(--hr-action-btn-border, rgba(255, 255, 255, 0.18)); box-shadow: 0 8px 20px rgba(61, 122, 173, 0.35); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .pr2-btn--cta:hover { transform: translateY(-1px); background: var(--hr-action-btn-bg-hover, linear-gradient(165deg, #4688b8 0%, #3d7aad 100%)); box-shadow: 0 12px 26px rgba(61, 122, 173, 0.42); }
+    .pr2-btn--cta:focus-visible { outline: 3px solid rgba(61, 122, 173, 0.45); outline-offset: 2px; }
     @media (max-width: 640px) {
         .pr2-cta { flex-direction: column; align-items: stretch; text-align: center; }
         .pr2-btn--cta { width: 100%; justify-content: center; }
