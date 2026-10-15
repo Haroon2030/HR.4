@@ -134,9 +134,9 @@
     --hr-card-bg: #ffffff;
     --hr-card-border: #e5e7eb;
     --hr-card-radius: 0.875rem;
-    --hr-sidebar-pad-x: 1rem;
+    --hr-sidebar-pad-x: 0.75rem;
     --hr-sidebar-pad-top: 0.85rem;
-    --hr-sidebar-width: 18rem;
+    --hr-sidebar-width: 15.5rem;
     --hr-sidebar-foot-height: 120px;
     --hr-sidebar-item-radius: 0.5rem;
     --hr-shell-gap: 0.65rem;
@@ -15709,15 +15709,30 @@ body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link.is-active {
    والشاشة النشطة تُعلَّم بشريط كهرماني على خط الشجرة بدل إطار متوهّج كامل. */
 body.hr-app .hr-sidebar-panel .hr-nav-group__head {
     background: rgba(255, 255, 255, 0.07);
+    padding: 0.38rem 0.4rem;
+    gap: 0.4rem;
+}
+body.hr-app .hr-sidebar-panel .hr-nav-group__head .hr-nav-group__title {
+    gap: 0.5rem;
+}
+body.hr-app .hr-sidebar-panel .hr-nav-group__head .hr-nav-group__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    padding: 0.32rem;
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group__head .hr-nav-label {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 800 !important;
     color: #fff !important;
+    white-space: nowrap;
+}
+body.hr-app .hr-sidebar-panel .hr-nav-section.hr-nav-section--toggle {
+    padding: 0.12rem 0;
+    margin: 0.1rem 0 0;
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group__body {
     position: relative;
-    margin-inline-start: 1.25rem;
+    margin-inline-start: 1.15rem;
     margin-top: 0.3rem;
     padding: 0.1rem 0 0.4rem;
     padding-inline-start: 0.65rem;
@@ -15726,7 +15741,7 @@ body.hr-app .hr-sidebar-panel .hr-nav-group__body {
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link {
     padding: 0.4rem 0.55rem;
     gap: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link,
 body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link .hr-nav-text {
