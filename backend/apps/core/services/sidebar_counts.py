@@ -114,7 +114,12 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
     # ── صندوق الوارد الشخصي + الإشعارات ──
     inbox_filter = Q()
     if user.is_superuser or _is_general_manager(user):
-        inbox_filter |= Q(status=PendingAction.Status.PENDING_GM)
+        inbox_filter |= Q(status__in=[
+            PendingAction.Status.PENDING_BRANCH,
+            PendingAction.Status.PENDING_GM,
+            PendingAction.Status.PENDING_OFFICER,
+            PendingAction.Status.PENDING_ACCOUNTANT,
+        ])
     first_pa_q = first_stage_pending_q(
         user,
         model=PendingAction,
@@ -144,7 +149,12 @@ def _compute_sidebar_counts(user) -> dict[str, int]:
 
     hire_inbox = Q()
     if user.is_superuser or _is_general_manager(user):
-        hire_inbox |= Q(status=EmploymentRequest.Status.PENDING_GM)
+        hire_inbox |= Q(status__in=[
+            EmploymentRequest.Status.PENDING,
+            EmploymentRequest.Status.PENDING_BRANCH,
+            EmploymentRequest.Status.PENDING_GM,
+            EmploymentRequest.Status.PENDING_OFFICER,
+        ])
     first_hire_q = first_stage_pending_q(
         user,
         model=EmploymentRequest,

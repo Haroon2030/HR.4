@@ -153,7 +153,7 @@
                         <td class="rd-num-idx">{{ forloop.counter }}</td>
                         {% for cell in row %}
                         <td{% if cell.num %} class="rd-num" dir="ltr"{% endif %}>
-                            {% if cell.tone %}<span class="rd-badge rd-badge--{{ cell.tone }}">{{ cell.v }}</span>{% else %}{{ cell.v }}{% endif %}
+                            {% if cell.link %}<a href="{{ cell.link }}" class="rd-emp-link">{{ cell.v }}</a>{% elif cell.tone %}<span class="rd-badge rd-badge--{{ cell.tone }}">{{ cell.v }}</span>{% else %}{{ cell.v }}{% endif %}
                         </td>
                         {% endfor %}
                     </tr>
@@ -207,6 +207,8 @@ body.hr-app .hr-main .rd-table .rd-table__scroll table tfoot td { position: stic
 body.hr-app .hr-main .rd-table .rd-table__scroll table .rd-num-idx { width: 2.6rem; text-align: center; color: #94a3b8; font-weight: 700; }
 body.hr-app .hr-main .rd-table .rd-table__scroll table thead .rd-num-idx { color: #fff !important; }
 body.hr-app .hr-main .rd-table .rd-table__scroll table .rd-num { text-align: left; }
+.rd-emp-link { color: #1e4f80; font-weight: 700; text-decoration: none; }
+.rd-emp-link:hover { text-decoration: underline; color: #0f3a63; }
 .rd-badge { display: inline-block; padding: 0.12rem 0.6rem; border-radius: 999px; font-size: 0.74rem; font-weight: 800; }
 .rd-badge--good { color: #047857; background: #d1fae5; }
 .rd-badge--warn { color: #b45309; background: #fef3c7; }

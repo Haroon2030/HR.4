@@ -57,9 +57,9 @@
                     </div>
                     <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_name_en">
-                            الاسم بالإنجليزية <span class="hr-required-mark text-rose-600">*</span>
+                            الاسم بالإنجليزية
                         </label>
-                        <input type="text" id="id_create_name_en" name="name_en" required dir="ltr"
+                        <input type="text" id="id_create_name_en" name="name_en" dir="ltr"
                                class="hr-glass-input hr-employee-create-field__input"
                                pattern="[A-Za-z][A-Za-z .'\-]*" title="أحرف إنجليزية فقط"
                                placeholder="Full name in English"
@@ -73,6 +73,31 @@
                                autocomplete="off"
                                dir="ltr"
                                value="{{ request.POST.id_number|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_phone">رقم الجوال</label>
+                        <input type="tel" id="id_create_phone" name="phone"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               inputmode="tel" autocomplete="off" dir="ltr"
+                               placeholder="05XXXXXXXX"
+                               value="{{ request.POST.phone|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_gender">الجنس</label>
+                        <select id="id_create_gender" name="gender" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر الجنس —</option>
+                            <option value="male"{% if request.POST.gender == 'male' %} selected{% endif %}>ذكر</option>
+                            <option value="female"{% if request.POST.gender == 'female' %} selected{% endif %}>أنثى</option>
+                        </select>
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_nationality">الجنسية</label>
+                        <select id="id_create_nationality" name="nationality" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="">— اختر الجنسية —</option>
+                            {% for n in nationalities %}
+                            <option value="{{ n.id }}"{% if request.POST.nationality == n.id|stringformat:'s' %} selected{% endif %}>{{ n.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_hire_date">تاريخ المباشرة</label>

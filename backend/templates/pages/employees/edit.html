@@ -44,8 +44,8 @@
                         <input type="text" name="name" required value="{% if form %}{{ form.name.value|default:employee.name }}{% else %}{{ employee.name }}{% endif %}">
                     </div>
                     <div class="hr-form-field">
-                        <label class="block text-xs font-bold text-slate-800">الاسم بالإنجليزية <span class="text-red-500">*</span></label>
-                        <input type="text" name="name_en" required dir="ltr" placeholder="Full name in English" pattern="[A-Za-z][A-Za-z .'\-]*" title="أحرف إنجليزية فقط" value="{% if form %}{{ form.name_en.value|default_if_none:employee.name_en|default:'' }}{% else %}{{ employee.name_en }}{% endif %}">
+                        <label class="block text-xs font-bold text-slate-800">الاسم بالإنجليزية</label>
+                        <input type="text" name="name_en" dir="ltr" placeholder="Full name in English" pattern="[A-Za-z][A-Za-z .'\-]*" title="أحرف إنجليزية فقط" value="{% if form %}{{ form.name_en.value|default_if_none:employee.name_en|default:'' }}{% else %}{{ employee.name_en }}{% endif %}">
                         {% if form.name_en.errors %}<p class="text-xs text-red-600 mt-0.5">{{ form.name_en.errors.0 }}</p>{% endif %}
                     </div>
                     <div class="hr-form-field">

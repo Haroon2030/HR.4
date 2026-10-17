@@ -62,6 +62,11 @@ urlpatterns = [
         web_views.import_non_sponsored_employees_excel,
         name='import_non_sponsored_employees_excel',
     ),
+    path(
+        'employees/import/sponsorship/',
+        web_views.import_sponsored_employees_excel,
+        name='import_sponsored_employees_excel',
+    ),
     path('employees/picker/search/', web_views.employee_picker_search, name='employee_picker_search'),       # بحث اختيار موظف
     path('employees/barcode-labels/', web_views.employee_barcode_labels_index, name='employee_barcode_labels'),
     path('employees/barcode-labels/manual/', web_views.employee_barcode_manual_print, name='employee_barcode_manual_print'),

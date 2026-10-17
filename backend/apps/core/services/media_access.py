@@ -37,37 +37,43 @@ def _is_privileged(user) -> bool:
 
 
 def _branch_allowed(user, branch_id: int | None) -> bool:
-    if branch_id is None:
-        return False
     accessible = _user_accessible_branch_ids(user)
     if accessible is None:
         return True
+    if branch_id is None:
+        return False
     return branch_id in accessible
 
 
-def _branch_from_employee_file(path: str) -> int | None:
+def _scope_from_employee_file(path: str):
     from apps.employees.models import Employee
 
     for field in _EMPLOYEE_FILE_FIELDS:
-        emp = Employee.all_objects.filter(**{field: path}).only('branch_id').first()
-        if emp and emp.branch_id:
-            return emp.branch_id
+        emp = (
+            Employee.all_objects.filter(**{field: path})
+            .only('branch_id', 'administration_id').first()
+        )
+        if emp:
+            return emp.branch_id, emp.administration_id
     return None
 
 
-def _branch_from_employment_file(path: str) -> int | None:
+def _scope_from_employment_file(path: str):
     from apps.employees.models import EmploymentRequest
 
     q = Q()
     for field in _EMPLOYMENT_FILE_FIELDS:
         q |= Q(**{field: path})
-    req = EmploymentRequest.all_objects.filter(q).only('branch_id').first()
-    if req and req.branch_id:
-        return req.branch_id
+    req = (
+        EmploymentRequest.all_objects.filter(q)
+        .only('branch_id', 'administration_id').first()
+    )
+    if req:
+        return req.branch_id, req.administration_id
     return None
 
 
-def _branch_from_related_document(path: str) -> int | None:
+def _scope_from_related_document(path: str):
     from apps.employees.models import (
         EmployeeAbsence,
         EmployeeBusinessTrip,
@@ -82,11 +88,14 @@ def _branch_from_related_document(path: str) -> int | None:
     cs = (
         EmployeeCashShortage.objects.filter(document=path)
         .select_related('branch', 'employee')
-        .only('branch_id', 'employee__branch_id')
         .first()
     )
     if cs:
-        return cs.branch_id or (cs.employee.branch_id if cs.employee_id else None)
+        emp = cs.employee if cs.employee_id else None
+        return (
+            cs.branch_id or (emp.branch_id if emp else None),
+            emp.administration_id if emp else None,
+        )
 
     for model in (
         EmployeeLeave,
@@ -96,54 +105,71 @@ def _branch_from_related_document(path: str) -> int | None:
         EmployeeJobOffer,
         EmployeeBusinessTrip,
     ):
-        obj = (
-            model.objects.filter(document=path)
-            .select_related('employee')
-            .only('employee__branch_id')
-            .first()
-        )
-        if obj and obj.employee_id and obj.employee.branch_id:
-            return obj.employee.branch_id
+        obj = model.objects.filter(document=path).select_related('employee').first()
+        if obj and obj.employee_id:
+            return obj.employee.branch_id, obj.employee.administration_id
 
     custody = (
         EmployeeCustody.objects.filter(Q(document=path) | Q(return_document=path))
         .select_related('employee')
-        .only('employee__branch_id')
         .first()
     )
-    if custody and custody.employee_id and custody.employee.branch_id:
-        return custody.employee.branch_id
+    if custody and custody.employee_id:
+        return custody.employee.branch_id, custody.employee.administration_id
     return None
 
 
-def branch_id_for_media_path(path: str) -> int | None:
-    """يُرجع branch_id المرتبط بالملف، أو None إن لم يُعرف."""
-    if path.startswith('company/'):
-        return None
-    if path.startswith('avatars/'):
+def scope_for_media_path(path: str):
+    """(branch_id, administration_id) لمالك الملف، أو None إن لم يُعرف المالك."""
+    if path.startswith('company/') or path.startswith('avatars/'):
         return None
 
     for resolver in (
-        _branch_from_employee_file,
-        _branch_from_employment_file,
-        _branch_from_related_document,
+        _scope_from_employee_file,
+        _scope_from_employment_file,
+        _scope_from_related_document,
     ):
-        branch_id = resolver(path)
-        if branch_id is not None:
-            return branch_id
+        scope = resolver(path)
+        if scope is not None:
+            return scope
 
     from apps.core.models import PendingAction
 
     pending = (
         PendingAction.objects.filter(attachment=path)
         .select_related('employee')
-        .only('employee__branch_id')
         .first()
     )
-    if pending and pending.employee_id and pending.employee.branch_id:
-        return pending.employee.branch_id
-
+    if pending:
+        emp = pending.employee if pending.employee_id else None
+        return (
+            (emp.branch_id if emp else None) or pending.branch_id,
+            (emp.administration_id if emp else None) or pending.administration_id,
+        )
     return None
+
+
+def branch_id_for_media_path(path: str) -> int | None:
+    """يُرجع branch_id المرتبط بالملف، أو None إن لم يُعرف."""
+    scope = scope_for_media_path(path)
+    return scope[0] if scope else None
+
+
+def _scope_allowed(user, path: str) -> bool:
+    """نفس منطق الوصول لملف الموظف: نطاق الإدارة ثم الفرع."""
+    from apps.core.services.access_control import get_scoped_administration_ids
+
+    scope = scope_for_media_path(path)
+    if scope is None:
+        return False
+    branch_id, administration_id = scope
+
+    scoped_admins = get_scoped_administration_ids(user)
+    if scoped_admins is not None:
+        return administration_id in scoped_admins
+    if administration_id and user.managed_administrations.filter(id=administration_id).exists():
+        return True
+    return _branch_allowed(user, branch_id)
 
 
 def user_may_access_media_path(user, path: str) -> bool:
@@ -177,10 +203,7 @@ def user_may_access_media_path(user, path: str) -> bool:
             or has_permission(user, 'cash_shortages.view')
         ):
             return False
-        branch_id = branch_id_for_media_path(path)
-        if branch_id is None:
-            return False
-        return _branch_allowed(user, branch_id)
+        return _scope_allowed(user, path)
 
     if path.startswith('employees/') or path.startswith('HR/employees/'):
         if not (
@@ -188,17 +211,11 @@ def user_may_access_media_path(user, path: str) -> bool:
             or has_permission(user, 'cash_shortages.view')
         ):
             return False
-        branch_id = branch_id_for_media_path(path)
-        if branch_id is None:
-            return False
-        return _branch_allowed(user, branch_id)
+        return _scope_allowed(user, path)
 
-    if path.startswith('employment_requests/'):
+    if path.startswith('employment_requests/') or path.startswith('HR/employment_requests/'):
         if not has_permission(user, 'employees.view'):
             return False
-        branch_id = branch_id_for_media_path(path)
-        if branch_id is None:
-            return False
-        return _branch_allowed(user, branch_id)
+        return _scope_allowed(user, path)
 
     return False

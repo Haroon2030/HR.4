@@ -34,6 +34,26 @@
             </span>
         </label>
     </form>
+    <form method="post"
+          action="{{ sponsorship_import_url }}"
+          enctype="multipart/form-data"
+          class="inline-flex items-center"
+          id="sp-import-form"
+          data-max-bytes="5242880">
+        {% csrf_token %}
+        <input type="file"
+               name="excel_file"
+               id="sp-import-file"
+               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+               class="sr-only"
+               aria-label="ملف Excel لاستيراد موظفين بكفالة">
+        <label for="sp-import-file" class="m-0 cursor-pointer" id="sp-import-label">
+            <span class="hr-btn hr-btn--glass-sky text-sm pointer-events-none">
+                {% lucide_glyph 'upload' 'hr-btn__icon' %}
+                <span>استيراد بكفالة</span>
+            </span>
+        </label>
+    </form>
     {% endif %}
     <form method="get"
           action="{% url 'web:list_employees' %}"
@@ -100,8 +120,9 @@
     });
   }
 
-  var input = document.getElementById('ns-import-file');
-  var form = document.getElementById('ns-import-form');
+  function bindImport(prefix, confirmText) {
+  var input = document.getElementById(prefix + '-import-file');
+  var form = document.getElementById(prefix + '-import-form');
   if (!input || !form) return;
 
   var formMax = parseInt(form.getAttribute('data-max-bytes') || '', 10);
@@ -132,18 +153,22 @@
       input.value = '';
       return;
     }
-    if (!window.confirm('تأكيد استيراد موظفين بدون كفالة من الملف المحدد؟')) {
+    if (!window.confirm(confirmText)) {
       input.value = '';
       return;
     }
 
     importBusy = true;
     // لا تعطّل input قبل الإرسال — الحقول المعطّلة لا تُرسل في multipart
-    var label = document.getElementById('ns-import-label');
+    var label = document.getElementById(prefix + '-import-label');
     if (label) label.classList.add('opacity-60', 'pointer-events-none');
     showLoader('جاري الاستيراد', 'معالجة آمنة للملف — لا تكرر الطلب ولا تغلق الصفحة');
     form.submit();
   });
+  }
+
+  bindImport('ns', 'تأكيد استيراد موظفين بدون كفالة من الملف المحدد؟');
+  bindImport('sp', 'تأكيد استيراد موظفين بكفالة من الملف المحدد؟');
 })();
 </script>
 {% endblock %}

@@ -111,7 +111,13 @@ def _inbox_for(user, qs):
     f = Q()
     has_filter = False
     if user.is_superuser or _is_general_manager(user):
-        f |= Q(status=PendingAction.Status.PENDING_GM)
+        # مدير الموارد: كل الطلبات غير المنتهية في أي مرحلة (بلا استثناء)
+        f |= Q(status__in=[
+            PendingAction.Status.PENDING_BRANCH,
+            PendingAction.Status.PENDING_GM,
+            PendingAction.Status.PENDING_OFFICER,
+            PendingAction.Status.PENDING_ACCOUNTANT,
+        ])
         has_filter = True
     first_q = first_stage_pending_q(
         user, model=PendingAction, model_status_pending_branch=PendingAction.Status.PENDING_BRANCH,
@@ -163,7 +169,12 @@ def _inbox_for_hire(user, qs):
     f = Q()
     has_filter = False
     if user.is_superuser or _is_general_manager(user):
-        f |= Q(status=EmploymentRequest.Status.PENDING_GM)
+        f |= Q(status__in=[
+            EmploymentRequest.Status.PENDING,
+            EmploymentRequest.Status.PENDING_BRANCH,
+            EmploymentRequest.Status.PENDING_GM,
+            EmploymentRequest.Status.PENDING_OFFICER,
+        ])
         has_filter = True
     first_q = first_stage_pending_q(
         user, model=EmploymentRequest, model_status_pending_branch=EmploymentRequest.Status.PENDING_BRANCH,

@@ -35,7 +35,6 @@ def _notify_user(user, req, *, title, message='', icon='user-plus',
 # (label, attr) — نستخدم الـ FK suffix `_id` لتجنّب لمس DB لأجل استرجاع الكائن
 _REQUIRED_EMPLOYEE_FIELDS = [
     # نصوص أساسية
-    ('الاسم بالإنجليزية', 'name_en', 'str'),
     ('رقم الهوية', 'id_number', 'str'),
     ('رقم الجوال', 'phone', 'str'),
     ('الرقم الوظيفي', 'employee_number', 'str'),
@@ -95,7 +94,7 @@ def validate_employee_data_complete(req):
 
 EMP_REQ_TAB_REQUIRED = {
     'main': frozenset({
-        'name', 'name_en', 'id_number', 'phone', 'employee_number', 'hire_date',
+        'name', 'id_number', 'phone', 'employee_number', 'hire_date',
     }),
     'org': frozenset({'nationality', 'profession'}),
     'salary': frozenset({
@@ -148,7 +147,7 @@ def employment_request_tab_status(req):
 
     status = {
         'main': 'complete' if all([
-            _str_ok('name'), _str_ok('name_en'), _str_ok('id_number'), _str_ok('phone'),
+            _str_ok('name'), _str_ok('id_number'), _str_ok('phone'),
             email_ok, _str_ok('employee_number'), _date_ok('hire_date'),
         ]) else 'incomplete',
         'org': 'complete' if all([

@@ -1036,6 +1036,69 @@ def reports_index(request):
         'filter_querystring': _filter_querystring(request, exclude=('report', 'cols')),
     })
 
+_EMPLOYEE_NAME_HEADERS = frozenset({'الاسم', 'الموظف', 'اسم الموظف'})
+_EMPLOYEE_NUMBER_HEADERS = frozenset({'الرقم الوظيفي', 'رقم الموظف'})
+
+
+def _link_employee_names(user, columns, rows, table_rows):
+    """يضيف رابط ملف الموظف لخلايا عمود الاسم في أي تقرير (بدون تغيير بيانات التصدير).
+
+    المطابقة بالرقم الوظيفي إن وُجد عموده، وإلا بالاسم عند عدم وجود التباس؛
+    ويقتصر الرابط على الموظفين ضمن نطاق صلاحيات المستخدم.
+    """
+    from apps.core.decorators import has_permission
+    from apps.core.web_views._helpers import filter_employees_queryset_for_user
+    from apps.employees.models import Employee
+
+    if not has_permission(user, 'employees.view'):
+        return table_rows
+    name_cols = [i for i, c in enumerate(columns) if str(c).strip() in _EMPLOYEE_NAME_HEADERS]
+    if not name_cols:
+        return table_rows
+    num_col = next(
+        (i for i, c in enumerate(columns) if str(c).strip() in _EMPLOYEE_NUMBER_HEADERS), None,
+    )
+
+    names = {
+        str(row[i]).strip()
+        for row in rows for i in name_cols
+        if i < len(row) and row[i] not in (None, '', '—')
+    }
+    numbers = set()
+    if num_col is not None:
+        numbers = {
+            str(row[num_col]).strip()
+            for row in rows
+            if num_col < len(row) and row[num_col] not in (None, '', '—')
+        }
+    if not names:
+        return table_rows
+
+    qs = filter_employees_queryset_for_user(user, Employee.objects.all())
+    by_name: dict[str, list[int]] = {}
+    for emp_id, name in qs.filter(name__in=names).values_list('id', 'name'):
+        by_name.setdefault(name.strip(), []).append(emp_id)
+    by_number: dict[str, int] = {}
+    if numbers:
+        for emp_id, number in qs.filter(employee_number__in=numbers).values_list('id', 'employee_number'):
+            by_number.setdefault(str(number).strip(), emp_id)
+
+    for row, cells in zip(rows, table_rows):
+        emp_id = None
+        if num_col is not None and num_col < len(row):
+            emp_id = by_number.get(str(row[num_col]).strip())
+        for i in name_cols:
+            if i >= len(row) or i >= len(cells):
+                continue
+            target = emp_id
+            if target is None:
+                ids = by_name.get(str(row[i]).strip()) or []
+                target = ids[0] if len(ids) == 1 else None
+            if target is not None:
+                cells[i]['link'] = reverse('web:view_employee', kwargs={'employee_id': target})
+    return table_rows
+
+
 @login_required
 @permission_required('reports.view')
 def report_detail(request, report_type):
@@ -1084,7 +1147,12 @@ def report_detail(request, report_type):
     return render(request, 'pages/reports/detail.html', {
         'column_choices': column_choices,
         'analysis': analysis,
-        'table_rows': decorate_rows(data.get('columns') or [], data.get('rows') or [], analysis['numeric_columns']),
+        'table_rows': _link_employee_names(
+            request.user,
+            data.get('columns') or [],
+            data.get('rows') or [],
+            decorate_rows(data.get('columns') or [], data.get('rows') or [], analysis['numeric_columns']),
+        ),
         'is_period_report': report_type in PERIOD_REPORT_KEYS,
         'period_presets': _period_presets(request, report_type, filters) if report_type in PERIOD_REPORT_KEYS else [],
         'filter_querystring_nocols': _filter_querystring(request, exclude=('cols',)),

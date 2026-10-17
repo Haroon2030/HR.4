@@ -107,10 +107,9 @@ class EmployeeFormTests(TestCase):
         empty = EmployeeForm(data=base)
         self.assertTrue(empty.is_valid(), empty.errors)
 
-    def test_english_name_is_required_and_latin_only(self):
+    def test_english_name_is_optional_and_latin_only(self):
         missing = EmployeeForm(data={'name': 'هارون', 'contract_type': 'unlimited'})
-        self.assertFalse(missing.is_valid())
-        self.assertIn('name_en', missing.errors)
+        self.assertNotIn('name_en', missing.errors)
 
         arabic = EmployeeForm(data={'name': 'هارون', 'name_en': 'هارون', 'contract_type': 'unlimited'})
         self.assertFalse(arabic.is_valid())

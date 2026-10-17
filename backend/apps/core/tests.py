@@ -1068,6 +1068,18 @@ class MediaAccessTests(TestCase):
             )
         )
 
+    def test_branch_manager_allowed_hr_prefixed_employment_request_file(self):
+        """ملفات HR/employment_requests/... (المسار الفعلي في الإنتاج) لا تُحجب."""
+        from apps.core.services.media_access import user_may_access_media_path
+
+        self.employee_a.passport_document = 'HR/employment_requests/passport/2026/p.pdf'
+        self.employee_a.save(update_fields=['passport_document'])
+        self.assertTrue(
+            user_may_access_media_path(
+                self._manager_user(), 'HR/employment_requests/passport/2026/p.pdf'
+            )
+        )
+
 
 class ParseMultiFilterIdsTests(TestCase):
     def test_post_reads_branch_id_not_get(self):

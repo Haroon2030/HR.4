@@ -435,3 +435,71 @@ def import_non_sponsored_employees_excel(request):
         return redirect('web:list_employees')
     finally:
         _excel_unlock(request.user.pk, 'import')
+
+
+@login_required
+@permission_required('employees.add')
+@require_POST
+@ratelimit(key='user', rate='10/h', method='POST', block=True, group='sp_emp_import')
+def import_sponsored_employees_excel(request):
+    """استيراد موظفين بكفالة من Excel (بيانات الموظف + الراتب + البنك)."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    from apps.core.salary_access import user_can_edit_salary
+    from apps.core.services.access_control import get_accessible_branch_ids
+    from apps.employees.services.non_sponsored_import import ImportValidationError
+    from apps.employees.services.sponsored_import import import_sponsored_employees_from_upload
+
+    if not _excel_lock(request.user.pk, 'import', timeout=180):
+        messages.warning(
+            request,
+            'استيراد قيد التنفيذ بالفعل. انتظر حتى ينتهي لتفادي تكرار البيانات.',
+        )
+        return redirect('web:list_employees')
+
+    try:
+        uploaded = request.FILES.get('excel_file')
+        if not uploaded:
+            messages.error(request, 'يرجى اختيار ملف Excel للاستيراد.')
+            return redirect('web:list_employees')
+
+        allowed = get_accessible_branch_ids(request.user)
+        allowed_set = set(allowed) if allowed is not None else None
+
+        try:
+            summary = import_sponsored_employees_from_upload(
+                uploaded,
+                user=request.user,
+                allowed_branch_ids=allowed_set,
+                apply_salary=user_can_edit_salary(request.user),
+            )
+        except ImportValidationError as exc:
+            messages.error(request, str(exc))
+            return redirect('web:list_employees')
+        except Exception:
+            logger.exception('sponsored employees import failed user=%s', request.user.pk)
+            messages.error(request, 'تعذّر استيراد الملف. تأكد من صحة Excel وأعد المحاولة.')
+            return redirect('web:list_employees')
+
+        if summary.created or summary.updated:
+            messages.success(
+                request,
+                f'تم الاستيراد: إنشاء {summary.created}، تحديث {summary.updated}.',
+            )
+        if summary.skipped:
+            messages.warning(request, f'تم تخطي {summary.skipped} صفاً.')
+        if summary.errors:
+            detail_errors = [
+                f'صف {r.row_number}: {r.message}'
+                for r in summary.results
+                if r.action == 'error'
+            ][:5]
+            extra = (' — ' + ' | '.join(detail_errors)) if detail_errors else ''
+            messages.error(request, f'فشل استيراد {summary.errors} صفاً{extra}')
+        if not (summary.created or summary.updated or summary.skipped or summary.errors):
+            messages.warning(request, 'لا توجد صفوف للاستيراد في الملف.')
+
+        return redirect('web:list_employees')
+    finally:
+        _excel_unlock(request.user.pk, 'import')

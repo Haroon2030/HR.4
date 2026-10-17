@@ -68,12 +68,11 @@ class EmploymentRequestSalaryTests(TestCase):
             EmploymentRequest.objects.filter(name__in=['بدون راتب', 'راتب صفر']).exists()
         )
 
-    def test_missing_or_arabic_english_name_is_rejected(self):
+    def test_missing_english_name_is_allowed_but_arabic_is_rejected(self):
         self._submit('بدون إنجليزي', name_en='')
         self._submit('اسم عربي', name_en='اسم عربي')
-        self.assertFalse(
-            EmploymentRequest.objects.filter(name__in=['بدون إنجليزي', 'اسم عربي']).exists()
-        )
+        self.assertTrue(EmploymentRequest.objects.filter(name='بدون إنجليزي').exists())
+        self.assertFalse(EmploymentRequest.objects.filter(name='اسم عربي').exists())
 
     def test_english_name_is_saved_on_request(self):
         self._submit('باسم', name_en='  Basim   Ali ')
