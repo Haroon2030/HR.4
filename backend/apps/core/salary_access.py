@@ -50,6 +50,19 @@ def user_can_edit_salary(user) -> bool:
     return any(has_permission(user, code) for code in PAYROLL_MANAGE_CODES)
 
 
+def user_can_request_salary_adjust(user) -> bool:
+    """تقديم طلب تعديل راتب من «الإضافة السريعة» (يمر بدورة الموافقات).
+
+    يكفي صلاحية تعديل الراتب، أو صلاحية «تقديم طلب تعديل راتب» الأضيق
+    (لا تمنح عرض الرواتب ولا تعديلها مباشرة).
+    """
+    if not user or not getattr(user, 'is_authenticated', False) or not user.is_authenticated:
+        return False
+    if user_can_edit_salary(user):
+        return True
+    return has_permission(user, 'employees.request_salary_adjust')
+
+
 def user_can_manage_payroll(user) -> bool:
     """بناء / إعادة بناء / ترحيل مسير الرواتب."""
     return user_can_edit_salary(user)

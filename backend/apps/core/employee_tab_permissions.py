@@ -7,7 +7,11 @@ from __future__ import annotations
 
 from apps.core.decorators import get_user_permissions, _is_super_or_admin
 from apps.core.permissions_registry import register_module, register_permission
-from apps.core.salary_access import user_can_edit_salary, user_can_view_salary
+from apps.core.salary_access import (
+    user_can_edit_salary,
+    user_can_request_salary_adjust,
+    user_can_view_salary,
+)
 
 # تبويبات حساسة مالياً — لا تُعرض بمجرد employees.view
 _SALARY_SENSITIVE_TAB_KEYS = frozenset({'salary', 'accruals'})
@@ -165,6 +169,7 @@ def enrich_employee_page_context(
     context['tab_visible'] = tab_visible
     context['can_view_salary'] = user_can_view_salary(user)
     context['can_edit_salary'] = user_can_edit_salary(user)
+    context['can_request_salary_adjust'] = user_can_request_salary_adjust(user)
     context['can_execute_settlement'] = user_can_execute_settlement(user)
     from apps.core.decorators import has_permission
     context['can_edit_leave_settings'] = has_permission(user, 'employees.edit')

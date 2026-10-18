@@ -289,7 +289,10 @@ def reactivate_employee(request, employee_id):
 
 
 @login_required
-@any_permission_required('employees.edit_salary', 'payroll.manage', 'payroll.process')
+@any_permission_required(
+    'employees.edit_salary', 'employees.request_salary_adjust',
+    'payroll.manage', 'payroll.process',
+)
 @employee_branch_access_required
 def adjust_employee_salary(request, employee_id):
     """تقديم طلب تعديل راتب (ينتظر موافقة مدير الفرع)."""

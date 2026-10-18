@@ -67,6 +67,7 @@ OPERATION_NAMES = {
     'edit_ledger': 'تعديل سجل الحركة',
     'delete_ledger': 'حذف سجل الحركة',
     'edit_salary': 'تعديل الراتب',
+    'request_salary_adjust': 'تقديم طلب تعديل راتب',
     'export': 'تصدير',
     'process': 'معالجة',
     'manage_roles': 'إدارة الأدوار',
