@@ -24,6 +24,7 @@ HR_FORM_TYPES = (
     ('evaluation', 'تقييم موظف'),
     ('warning_notice', 'إنذار'),
     ('statement_notice', 'إفادة / إشعار'),
+    ('employee_statement', 'إفادة'),
     ('custody_receipt', 'استلام عهدة'),
     ('custody_clearance', 'تصفية عهدة'),
     ('clearance', 'إخلاء طرف'),

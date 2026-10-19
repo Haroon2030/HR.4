@@ -1,0 +1,56 @@
+{% extends "pages/hr_forms/_print_base.html" %}
+
+{% block doc_title %}إفادة{% endblock %}
+
+{% block body %}
+<table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <tr>
+        <td style="width:28%; border:1px solid #111; padding:8px; text-align:center; font-weight:700; background:#f1f5f9;">Employee Name</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center;">{{ employee.name|default:"" }}</td>
+        <td style="width:20%; border:1px solid #111; padding:8px; text-align:center; font-weight:700;">إسم الموظف</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700; background:#f1f5f9;">Employee Number</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center;">{{ employee.employee_number|default:"" }}</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700;">الرقم الوظيفي</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700; background:#f1f5f9;">ID or Iqama's No</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center;">{{ employee.id_number|default:"" }}</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700;">رقم الهوية أو الإقامة</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700; background:#f1f5f9;">Work Place</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center;">{{ employee.branch.name|default:"" }}</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700;">مكان العمل</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700; background:#f1f5f9;">Job Title</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center;">{{ employee.profession.name|default:"" }}</td>
+        <td style="border:1px solid #111; padding:8px; text-align:center; font-weight:700;">المسمى الوظيفي</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #111; padding:14px; text-align:center; font-weight:700; background:#f1f5f9;">&nbsp;</td>
+        <td style="border:1px solid #111; padding:14px; text-align:center; font-weight:700;">{{ subject|default:"&nbsp;" }}</td>
+        <td style="border:1px solid #111; padding:14px; text-align:center; font-weight:700;">المخالفة</td>
+    </tr>
+</table>
+
+<div style="border:1px solid #111; border-top:none; text-align:center; font-weight:700; padding:6px; font-size:15px;">إفادة الموظف</div>
+<div style="border:1px solid #111; border-top:none; height:300px; padding:10px;">&nbsp;</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:14px; margin-top:0;">
+    <tr>
+        <td style="width:70%; border:1px solid #111; height:70px; padding:6px;">&nbsp;</td>
+        <td style="border:1px solid #111; text-align:center; font-weight:700;">توقيع الموظف</td>
+    </tr>
+</table>
+
+<table style="width:100%; border-collapse:collapse; font-size:14px; margin-top:0;">
+    <tr>
+        <td style="width:33%; border:1px solid #111; height:60px; text-align:center; font-weight:700;">الموارد البشرية</td>
+        <td style="width:34%; border:1px solid #111;">&nbsp;</td>
+        <td style="width:33%; border:1px solid #111; text-align:center; font-weight:700;">المدير المباشر</td>
+    </tr>
+</table>
+{% endblock %}

@@ -34,6 +34,7 @@ FORM_CODE_MAP = {
     'loan_request': 'LN',
     'absence_notice': 'AB',
     'statement_notice': 'SN',
+    'employee_statement': 'ES',
     'custody_receipt': 'CR',
     'custody_clearance': 'CC',
     'evaluation': 'EV',
@@ -249,6 +250,13 @@ _BASE_HR_FORMS = [
         'title': 'طلب سلفة',
         'description': 'نموذج رسمي لطلب سلفة على الراتب',
         'icon': 'wallet',
+        'color': 'primary',
+    },
+    {
+        'key': 'employee_statement',
+        'title': 'نموذج إفادة',
+        'description': 'إفادة موظف بواقعة أو مخالفة مع توقيعه وتوقيع المدير المباشر والموارد البشرية',
+        'icon': 'file-signature',
         'color': 'primary',
     },
     {
