@@ -15707,10 +15707,19 @@ body.hr-app .hr-sidebar-panel .hr-nav-group__body .hr-nav-link.is-active {
    الرئيسي: خط أكبر وأثقل + خلفية خفيفة دائمة.
    الفرعي: مُزاح للداخل تحت أيقونة العنوان، خط شجري يربطه بالعنوان، خط أصغر وأخف،
    والشاشة النشطة تُعلَّم بشريط كهرماني على خط الشجرة بدل إطار متوهّج كامل. */
+/* خلايا المجموعات: كحلي غائر مختلف عن لون الشريط الفاتح — تبدو محفورة في الشريط
+   بدل أن تذوب فيه؛ والمجموعة النشطة تبقى أفتح منها فتتميّز بوضوح. */
 body.hr-app .hr-sidebar-panel .hr-nav-group__head {
-    background: rgba(255, 255, 255, 0.07);
+    background: #274f7b;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.09),
+        0 1px 2px rgba(10, 30, 55, 0.28);
     padding: 0.38rem 0.4rem;
     gap: 0.4rem;
+}
+body.hr-app .hr-sidebar-panel .hr-nav-group__head:hover,
+body.hr-app .hr-sidebar-panel a.hr-nav-group__head:hover {
+    background: #2f5f8e;
 }
 body.hr-app .hr-sidebar-panel .hr-nav-group__head .hr-nav-group__title {
     gap: 0.5rem;
