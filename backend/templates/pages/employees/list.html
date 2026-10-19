@@ -13,6 +13,14 @@
         {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
         <span>Excel بدون كفالة</span>
     </a>
+    <a href="{{ sponsorship_export_url }}"
+       id="sp-export-link"
+       class="hr-btn hr-btn--glass-emerald text-sm"
+       title="تصدير موظفي الكفالة بنفس أعمدة الاستيراد (Excel)"
+       data-hr-export="1">
+        {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
+        <span>Excel بكفالة</span>
+    </a>
     {% if user|has_permission:'employees.add' %}
     <form method="post"
           action="{{ no_sponsorship_import_url }}"

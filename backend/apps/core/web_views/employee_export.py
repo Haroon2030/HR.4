@@ -503,3 +503,139 @@ def import_sponsored_employees_excel(request):
         return redirect('web:list_employees')
     finally:
         _excel_unlock(request.user.pk, 'import')
+
+
+# أعمدة تصدير الموظفين بكفالة = نفس أعمدة الاستيراد (sponsored_import.py)
+# (العنوان، المفتاح، يتطلب عرض الرواتب، عمود بنكي)
+_SPONSORED_COLUMNS = (
+    ('رقم الموظف', 'employee_number', False, False),
+    ('الاسم', 'name', False, False),
+    ('رقم الايبان', 'iban', True, True),
+    ('البنك', 'bank', True, True),
+    ('طبيعة الحساب', 'account_type', True, True),
+    ('رقم الهوية', 'id_number', False, False),
+    ('الفرع', 'branch', False, False),
+    ('الشركة', 'sponsorship', False, False),
+    ('الراتب الأساسي', 'basic_salary', True, False),
+    ('بدل السكن', 'housing_allowance', True, False),
+    ('بدل النقل', 'transport_allowance', True, False),
+    ('بدل إضافي ثابت / حوافز', 'incentive_allowance', True, False),
+    ('بدل إضافي', 'other_allowance', True, False),
+    ('الجنس', 'gender', False, False),
+    ('الجنسية', 'nationality', False, False),
+    ('القسم', 'department', False, False),
+    ('مركز التكلفة', 'cost_center', False, False),
+    ('تاريخ المباشرة', 'hire_date', False, False),
+)
+
+
+def _sponsored_cell_value(employee: Employee, key: str):
+    """قيمة الخلية بصيغة يقبلها الاستيراد كما هي (فارغ بدل «—»)."""
+    if key in ('employee_number', 'name', 'id_number', 'iban'):
+        return (getattr(employee, key, '') or '').strip()
+    if key == 'bank':
+        return employee.bank.name if employee.bank_id else ''
+    if key == 'account_type':
+        return employee.get_account_type_display() if employee.account_type else ''
+    if key == 'branch':
+        return employee.branch.name if employee.branch_id else ''
+    if key == 'sponsorship':
+        return employee.sponsorship.company_name if employee.sponsorship_id else ''
+    if key == 'gender':
+        return employee.get_gender_display() if employee.gender else ''
+    if key == 'nationality':
+        return employee.nationality.name if employee.nationality_id else ''
+    if key == 'department':
+        return employee.department.name if employee.department_id else ''
+    if key == 'cost_center':
+        return employee.cost_center.name if employee.cost_center_id else ''
+    if key == 'hire_date':
+        return employee.hire_date or ''
+    value = getattr(employee, key, None)
+    return float(value) if value is not None else 0.0
+
+
+@login_required
+@permission_required('employees.view')
+@ratelimit(key='user', rate='20/h', method='GET', block=True, group='sp_emp_export')
+def export_sponsored_employees_excel(request):
+    """تصدير موظفي الكفالة بنفس أعمدة «استيراد بكفالة» (تصدير ثم تعديل ثم استيراد)."""
+    from io import BytesIO
+
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from openpyxl import Workbook
+    from openpyxl.cell import WriteOnlyCell
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    from apps.core.selectors.employee_search import apply_employee_search
+    from apps.core.web_views._helpers import filter_employees_queryset_for_user
+
+    if not _excel_lock(request.user.pk, 'export', timeout=90):
+        messages.warning(request, 'تصدير قيد التنفيذ بالفعل. انتظر اكتماله ثم أعد المحاولة.')
+        return redirect('web:list_employees')
+
+    try:
+        can_salary = user_can_view_salary(request.user)
+        columns = [c for c in _SPONSORED_COLUMNS if can_salary or not c[2]]
+
+        qs = (
+            Employee.objects.filter(is_deleted=False, sponsorship__isnull=False)
+            .select_related(
+                'branch', 'department', 'cost_center', 'nationality',
+                'sponsorship', 'bank',
+            )
+            .order_by('name', 'id')
+        )
+        qs = filter_employees_queryset_for_user(request.user, qs)
+
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            qs = apply_employee_search(qs, q)
+
+        wb = Workbook(write_only=True)
+        ws = wb.create_sheet(title='بكفالة')
+        try:
+            ws.sheet_view.rightToLeft = True
+        except Exception:
+            pass
+
+        blue = PatternFill('solid', fgColor='B4C6E7')
+        yellow = PatternFill('solid', fgColor='FFF2CC')
+        header_font = Font(name='Arial', bold=True, color='000000')
+        center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+        header_cells = []
+        for col, (label, _key, _salary, banking) in enumerate(columns, 1):
+            cell = WriteOnlyCell(ws, value=label)
+            cell.fill = yellow if banking else blue
+            cell.font = header_font
+            cell.alignment = center
+            header_cells.append(cell)
+            try:
+                ws.column_dimensions[get_column_letter(col)].width = 22 if _key in ('iban', 'sponsorship') else 16
+            except Exception:
+                pass
+        ws.append(header_cells)
+
+        exported = 0
+        for employee in qs.iterator(chunk_size=500):
+            if exported >= MAX_EXPORT_ROWS:
+                break
+            ws.append([_sponsored_cell_value(employee, key) for _l, key, _s, _b in columns])
+            exported += 1
+
+        buf = BytesIO()
+        wb.save(buf)
+        stamp = timezone.localtime().strftime('%Y%m%d_%H%M%S')
+        response = _secure_xlsx_response(buf.getvalue(), f'employees_sponsorship_{stamp}.xlsx')
+        if exported >= MAX_EXPORT_ROWS:
+            response['X-HR-Export-Truncated'] = '1'
+        return response
+    except Exception:
+        logger.exception('sponsored employees export failed user=%s', request.user.pk)
+        messages.error(request, 'تعذّر إنشاء ملف التصدير. حاول مرة أخرى.')
+        return redirect('web:list_employees')
+    finally:
+        _excel_unlock(request.user.pk, 'export')

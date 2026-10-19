@@ -1,32 +1,92 @@
 {% extends "pages/hr_forms/_print_base.html" %}
 
-{% block doc_title %}{% if statement %}{{ statement.get_statement_type_display }}{% else %}إفادة / إشعار{% endif %}{% endblock %}
+{# نموذج «إفادة» — جدول رسمي: بيانات الموظف (عربي/إنجليزي) + المخالفة + إفادة الموظف + التوقيعات #}
+{% block letterhead %}{% endblock %}
+{% block doc_title %}إفادة{% endblock %}
 
 {% block body %}
+<style>
+    .doc-title h2 { text-decoration: underline; text-underline-offset: 6px; font-weight: 800; }
+    .st-form {
+        width: 100%; border-collapse: collapse; table-layout: fixed;
+        border: 2px solid #1f1f1f; font-size: 13px; color: #111;
+    }
+    .st-form td {
+        border: 2px solid #1f1f1f; padding: 6px 8px; text-align: center;
+        vertical-align: middle; word-break: break-word;
+    }
+    .st-form .st-label { background: #dcdcdc; font-weight: 800; }
+    .st-form .st-value { font-weight: 700; }
+    .st-form .st-col-ar { width: 21%; }
+    .st-form .st-col-val { width: 46%; }
+    .st-form .st-col-en { width: 33%; }
+    .st-form .st-head { background: #fff; font-weight: 800; font-size: 14px; padding: 8px; }
+    .st-form .st-body { height: 7.2cm; vertical-align: top; text-align: right; font-weight: 500; padding: 10px; }
+    .st-form .st-sign { height: 3cm; }
+    .st-form .st-sign-label { background: #dcdcdc; font-weight: 800; font-size: 12px; }
+    .st-form .st-hr { height: 2.4cm; }
+    .st-form .st-viol td { height: 1.7cm; }
+    .st-fill { min-height: 1.2em; outline: none; white-space: pre-wrap; }
+    .st-fill:focus { background: #eff6ff; }
+    @media print {
+        .st-fill:focus { background: transparent; }
+    }
+</style>
 
-{% include "pages/hr_forms/_employee_info.html" %}
-
-<div class="section">
-    <h3>بيانات {% if statement %}{{ statement.get_statement_type_display }}{% else %}الإفادة{% endif %}</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">النوع:</span><span class="blank">{% if statement %}{{ statement.get_statement_type_display }}{% endif %}</span></div>
-        <div class="field"><span class="label">التاريخ:</span><span class="blank">{% if statement %}{{ statement.statement_date|date:"Y/m/d" }}{% endif %}</span></div>
-        <div class="field" style="grid-column: 1 / -1;"><span class="label">العنوان:</span><span class="blank">{% if statement %}{{ statement.title }}{% endif %}</span></div>
-        {% if deduction_text %}
-        <div class="field"><span class="label">مبلغ الخصم:</span><span class="blank">{{ deduction_text }} ر.س</span></div>
-        {% endif %}
-    </div>
-
-    <div style="margin-top: 14px;">
-        <span class="label" style="font-weight:600; color:#334155;">التفاصيل:</span>
-        <div class="blank-block">{% if statement %}{{ statement.content }}{% endif %}</div>
-    </div>
-</div>
-
-<div class="clause">
-    يُعدّ هذا النموذج جزءاً من ملف الموظف الرسمي لدى إدارة الموارد البشرية.
-</div>
-
-{% include "pages/hr_forms/_signatures_standard.html" %}
-
+<table class="st-form">
+    <colgroup>
+        <col class="st-col-ar"><col class="st-col-val"><col class="st-col-en">
+    </colgroup>
+    <tbody>
+        <tr>
+            <td class="st-label">إسم الموظف</td>
+            <td class="st-value">{{ employee.name|default:"" }}</td>
+            <td class="st-label" dir="ltr">Employee Name</td>
+        </tr>
+        <tr>
+            <td class="st-label">الرقم الوظيفي</td>
+            <td class="st-value">{{ employee.employee_number|default:"" }}</td>
+            <td class="st-label" dir="ltr">Employee Number</td>
+        </tr>
+        <tr>
+            <td class="st-label">رقم الهوية أو الإقامة</td>
+            <td class="st-value">{{ employee.id_number|default:"" }}</td>
+            <td class="st-label" dir="ltr">ID or Iqama’s No</td>
+        </tr>
+        <tr>
+            <td class="st-label">مكان العمل</td>
+            <td class="st-value">{{ employee.branch.name|default:"" }}</td>
+            <td class="st-label" dir="ltr">Work Place</td>
+        </tr>
+        <tr>
+            <td class="st-label">المسمى الوظيفي</td>
+            <td class="st-value">{{ employee.profession.name|default:"" }}</td>
+            <td class="st-label" dir="ltr">Job Title</td>
+        </tr>
+        <tr class="st-viol">
+            <td class="st-label">المخالفة</td>
+            <td colspan="2" class="st-value">
+                <div class="st-fill" contenteditable="true" spellcheck="false">{% if statement %}{{ statement.title|default:statement.get_statement_type_display }}{% elif violation_text %}{{ violation_text }}{% endif %}</div>
+            </td>
+            
+        </tr>
+        <tr>
+            <td colspan="3" class="st-head">إفادة الموظف</td>
+        </tr>
+        <tr>
+            <td colspan="3" class="st-body">
+                <div class="st-fill" contenteditable="true" spellcheck="false">{% if statement %}{{ statement.content }}{% endif %}</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="st-sign-label">توقيع الموظف</td>
+            <td colspan="2" class="st-sign"></td>
+        </tr>
+        <tr>
+            <td class="st-sign-label st-hr">المدير المباشر</td>
+            <td class="st-hr"></td>
+            <td class="st-sign-label st-hr">الموارد البشرية</td>
+        </tr>
+    </tbody>
+</table>
 {% endblock %}

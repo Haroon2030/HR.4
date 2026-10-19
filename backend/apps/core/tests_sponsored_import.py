@@ -120,3 +120,56 @@ class SponsoredEmployeesExcelImportTests(TestCase):
     def test_unknown_company_is_row_error(self):
         self._post([self._row(**{'الشركة': 'شركة غير موجودة'})])
         self.assertFalse(Employee.objects.filter(employee_number='9001').exists())
+
+
+@override_settings(ALLOWED_HOSTS=['testserver'])
+class SponsoredEmployeesExcelExportTests(SponsoredEmployeesExcelImportTests):
+    """التصدير بنفس أعمدة الاستيراد، وتصدير ثم استيراد يعيد نفس البيانات."""
+
+    def _export_rows(self):
+        from openpyxl import load_workbook
+
+        response = self.client.get(reverse('web:export_sponsored_employees_excel'))
+        self.assertEqual(response.status_code, 200)
+        ws = load_workbook(BytesIO(response.content)).active
+        rows = list(ws.iter_rows(values_only=True))
+        return rows[0], rows[1:]
+
+    def test_export_headers_match_import_columns(self):
+        header, _rows = self._export_rows()
+        self.assertEqual(list(header), [
+            'رقم الموظف', 'الاسم', 'رقم الايبان', 'البنك', 'طبيعة الحساب', 'رقم الهوية',
+            'الفرع', 'الشركة', 'الراتب الأساسي', 'بدل السكن', 'بدل النقل',
+            'بدل إضافي ثابت / حوافز', 'بدل إضافي', 'الجنس', 'الجنسية', 'القسم',
+            'مركز التكلفة', 'تاريخ المباشرة',
+        ])
+        for label in header:
+            self.assertIsNotNone(field_for_header(label), label)
+
+    def test_export_contains_only_sponsored_and_roundtrips(self):
+        Employee.objects.create(
+            name='بدون كفالة', employee_number='7001', branch=self.branch,
+            status=Employee.Status.ACTIVE,
+        )
+        self._post([self._row()])
+        header, rows = self._export_rows()
+        names = [r[1] for r in rows]
+        self.assertIn('موظف بكفالة', names)
+        self.assertNotIn('بدون كفالة', names)
+
+        # إعادة استيراد الملف المُصدَّر نفسه لا تُنشئ مكرراً ولا تُغيّر القيم
+        buf = _xlsx(list(header), rows)
+        uploaded = SimpleUploadedFile(
+            'again.xlsx', buf,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        self.client.post(self.url, {'excel_file': uploaded}, follow=True)
+        self.assertEqual(Employee.objects.filter(employee_number='9001').count(), 1)
+        emp = Employee.objects.get(employee_number='9001')
+        self.assertEqual(emp.total_salary, Decimal('4500.00'))
+        self.assertEqual(emp.iban, 'SA0380000000608010167519')
+        self.assertEqual(emp.account_type, SalaryAccountType.SALARY_CARD)
+
+    def test_list_page_has_export_button(self):
+        response = self.client.get(reverse('web:list_employees'))
+        self.assertContains(response, 'Excel بكفالة')

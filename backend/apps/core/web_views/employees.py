@@ -201,6 +201,7 @@ def list_employees(request):
         'no_sponsorship_export_url': export_url,
         'no_sponsorship_import_url': reverse('web:import_non_sponsored_employees_excel'),
         'sponsorship_import_url': reverse('web:import_sponsored_employees_excel'),
+        'sponsorship_export_url': reverse('web:export_sponsored_employees_excel'),
     }
     return render(request, 'pages/employees/list.html', ctx)
 

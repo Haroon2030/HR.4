@@ -58,6 +58,11 @@ urlpatterns = [
         name='export_non_sponsored_employees_excel',
     ),
     path(
+        'employees/export/sponsorship.xlsx',
+        web_views.export_sponsored_employees_excel,
+        name='export_sponsored_employees_excel',
+    ),
+    path(
         'employees/import/no-sponsorship/',
         web_views.import_non_sponsored_employees_excel,
         name='import_non_sponsored_employees_excel',
