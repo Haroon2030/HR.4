@@ -177,20 +177,34 @@ def list_employees(request):
     ).all()
     qs = filter_employees_queryset_for_user(request.user, qs)
 
+    from apps.core.selectors.employee_filters import (
+        active_filter_count,
+        apply_employee_list_filters,
+        employee_list_querystring,
+        parse_employee_list_filters,
+    )
+    from apps.core.services.access_control import filter_branches_queryset
+    from apps.departments.models import Department
+    from apps.setup.models import Sponsorship
+
     q = (request.GET.get('q') or '').strip()
     if q:
         qs = apply_employee_search(qs, q)
+    filters = parse_employee_list_filters(request.GET)
+    qs = apply_employee_list_filters(qs, filters)
 
     qs = qs.order_by('-id')
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     from django.urls import reverse
-    from urllib.parse import urlencode
 
+    filter_qs = employee_list_querystring(q, filters)
     export_url = reverse('web:export_non_sponsored_employees_excel')
-    if q:
-        export_url = f'{export_url}?{urlencode({"q": q})}'
+    sponsored_export_url = reverse('web:export_sponsored_employees_excel')
+    if filter_qs:
+        export_url = f'{export_url}?{filter_qs}'
+        sponsored_export_url = f'{sponsored_export_url}?{filter_qs}'
 
     ctx = {
         'employees': page_obj.object_list,
@@ -201,7 +215,19 @@ def list_employees(request):
         'no_sponsorship_export_url': export_url,
         'no_sponsorship_import_url': reverse('web:import_non_sponsored_employees_excel'),
         'sponsorship_import_url': reverse('web:import_sponsored_employees_excel'),
-        'sponsorship_export_url': reverse('web:export_sponsored_employees_excel'),
+        'sponsorship_export_url': sponsored_export_url,
+        'filters': filters,
+        'filter_qs': filter_qs,
+        'active_filters': active_filter_count(q, filters),
+        'filter_branches': filter_branches_queryset(
+            request.user, Branch.objects.filter(is_active=True, is_deleted=False),
+        ).order_by('name'),
+        'filter_departments': Department.objects.filter(
+            is_active=True, is_deleted=False,
+        ).order_by('name'),
+        'filter_sponsorships': Sponsorship.objects.filter(
+            is_active=True, is_deleted=False,
+        ).order_by('company_name'),
     }
     return render(request, 'pages/employees/list.html', ctx)
 

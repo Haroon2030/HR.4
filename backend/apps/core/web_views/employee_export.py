@@ -264,6 +264,10 @@ def export_non_sponsored_employees_excel(request):
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
+    from apps.core.selectors.employee_filters import (
+        apply_employee_list_filters,
+        parse_employee_list_filters,
+    )
     from apps.core.selectors.employee_search import apply_employee_search
     from apps.core.web_views._helpers import filter_employees_queryset_for_user
 
@@ -315,6 +319,7 @@ def export_non_sponsored_employees_excel(request):
         q = (request.GET.get('q') or '').strip()
         if q:
             qs = apply_employee_search(qs, q)
+        qs = apply_employee_list_filters(qs, parse_employee_list_filters(request.GET))
 
         # write_only يقلّل استهلاك الذاكرة؛ نتجنّب تنسيق كل خلية في الجسم
         wb = Workbook(write_only=True)
@@ -569,6 +574,10 @@ def export_sponsored_employees_excel(request):
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
+    from apps.core.selectors.employee_filters import (
+        apply_employee_list_filters,
+        parse_employee_list_filters,
+    )
     from apps.core.selectors.employee_search import apply_employee_search
     from apps.core.web_views._helpers import filter_employees_queryset_for_user
 
@@ -593,6 +602,7 @@ def export_sponsored_employees_excel(request):
         q = (request.GET.get('q') or '').strip()
         if q:
             qs = apply_employee_search(qs, q)
+        qs = apply_employee_list_filters(qs, parse_employee_list_filters(request.GET))
 
         wb = Workbook(write_only=True)
         ws = wb.create_sheet(title='بكفالة')

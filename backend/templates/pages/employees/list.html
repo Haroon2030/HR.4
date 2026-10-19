@@ -4,75 +4,186 @@
 {% block page_title %}شاشة الموظفين{% endblock %}
 
 {% block list_actions %}
-<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-    <a href="{{ no_sponsorship_export_url }}"
-       id="ns-export-link"
-       class="hr-btn hr-btn--glass-emerald text-sm"
-       title="تصدير الموظفين بدون كفالة (Excel)"
-       data-hr-export="1">
-        {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
-        <span>Excel بدون كفالة</span>
-    </a>
-    <a href="{{ sponsorship_export_url }}"
-       id="sp-export-link"
-       class="hr-btn hr-btn--glass-emerald text-sm"
-       title="تصدير موظفي الكفالة بنفس أعمدة الاستيراد (Excel)"
-       data-hr-export="1">
-        {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
-        <span>Excel بكفالة</span>
-    </a>
-    {% if user|has_permission:'employees.add' %}
-    <form method="post"
-          action="{{ no_sponsorship_import_url }}"
-          enctype="multipart/form-data"
-          class="inline-flex items-center"
-          id="ns-import-form"
-          data-max-bytes="5242880">
-        {% csrf_token %}
-        <input type="file"
-               name="excel_file"
-               id="ns-import-file"
-               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-               class="sr-only"
-               aria-label="ملف Excel للاستيراد">
-        <label for="ns-import-file" class="m-0 cursor-pointer" id="ns-import-label">
-            <span class="hr-btn hr-btn--glass-sky text-sm pointer-events-none">
-                {% lucide_glyph 'upload' 'hr-btn__icon' %}
-                <span>استيراد بدون كفالة</span>
-            </span>
-        </label>
+<style>
+    .hr-emp-toolbar { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+    .hr-emp-filter { padding: 0.9rem 1rem 1rem; border-radius: 0.9rem; }
+    .hr-emp-filter__head {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-bottom: 0.75rem; padding-bottom: 0.6rem;
+        border-bottom: 1px solid rgba(100, 116, 139, 0.22);
+    }
+    .hr-emp-filter__head h2 { margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e3a5f; }
+    .hr-emp-filter__head svg { width: 1.05rem; height: 1.05rem; color: #3d7aad; }
+    .hr-emp-filter__count {
+        margin-inline-start: auto; font-size: 0.72rem; font-weight: 800;
+        padding: 0.15rem 0.6rem; border-radius: 999px;
+        color: #1e4f80; background: #dbeafe;
+    }
+    .hr-emp-filter__grid {
+        display: grid; gap: 0.75rem 0.9rem;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        align-items: end;
+    }
+    .hr-emp-filter__cell { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+    .hr-emp-filter__cell--search { grid-column: span 5; }
+    .hr-emp-filter__cell--branch { grid-column: span 3; }
+    .hr-emp-filter__cell--dept { grid-column: span 4; }
+    .hr-emp-filter__cell--sponsor { grid-column: span 4; }
+    .hr-emp-filter__cell--date { grid-column: span 3; }
+    .hr-emp-filter__cell--actions { grid-column: span 2; flex-direction: row; gap: 0.5rem; }
+    .hr-emp-filter__label { font-size: 0.75rem; font-weight: 800; color: #475569; }
+    .hr-emp-field {
+        width: 100%; height: 2.6rem; padding: 0 0.75rem;
+        border: 1px solid #cbd5e1; border-radius: 0.6rem; background: #fff;
+        font-family: inherit; font-size: 0.85rem; font-weight: 600; color: #0f172a;
+        outline: none; box-sizing: border-box;
+    }
+    .hr-emp-field:focus { border-color: #3d7aad; box-shadow: 0 0 0 3px rgba(61, 122, 173, 0.18); }
+    .hr-emp-filter__cell .hr-search-field { width: 100%; height: 2.6rem; }
+    .hr-emp-filter__cell .hr-date-picker { width: 100%; }
+    .hr-emp-filter__cell .hr-date-picker__field { height: 2.6rem; }
+    .hr-emp-filter__cell--actions .hr-btn { height: 2.6rem; flex: 1 1 0; justify-content: center; white-space: nowrap; }
+    .hr-emp-actions {
+        display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.75rem;
+    }
+    .hr-emp-actions__group {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+        padding: 0.45rem 0.6rem; border-radius: 0.8rem;
+        background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(100, 116, 139, 0.2);
+    }
+    .hr-emp-actions__title { font-size: 0.72rem; font-weight: 800; color: #475569; padding-inline: 0.2rem; }
+    .hr-emp-actions .hr-btn { height: 2.4rem; }
+    .hr-emp-actions form { display: inline-flex; margin: 0; }
+    @media (max-width: 1023px) {
+        .hr-emp-filter__cell--search { grid-column: span 12; }
+        .hr-emp-filter__cell--branch,
+        .hr-emp-filter__cell--dept,
+        .hr-emp-filter__cell--sponsor,
+        .hr-emp-filter__cell--date { grid-column: span 6; }
+        .hr-emp-filter__cell--actions { grid-column: span 12; }
+    }
+    @media (max-width: 639px) {
+        .hr-emp-filter__cell--branch,
+        .hr-emp-filter__cell--dept,
+        .hr-emp-filter__cell--sponsor,
+        .hr-emp-filter__cell--date { grid-column: span 12; }
+        .hr-emp-actions__group { width: 100%; }
+    }
+</style>
+
+<div class="hr-emp-toolbar">
+    <form method="get" action="{% url 'web:list_employees' %}" class="hr-emp-filter hr-glass-panel" id="emp-filter-form">
+        <div class="hr-emp-filter__head">
+            {% lucide_glyph 'sliders-horizontal' '' %}
+            <h2>الفلترة</h2>
+            {% if active_filters %}<span class="hr-emp-filter__count">{{ active_filters }} فلتر فعّال</span>{% endif %}
+        </div>
+        <div class="hr-emp-filter__grid">
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--search">
+                <label class="hr-emp-filter__label" for="emp-f-q">بحث</label>
+                {% include "components/search_field.html" with name="q" id="emp-f-q" value=query placeholder="اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." aria_label="بحث الموظفين" %}
+            </div>
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--branch">
+                <label class="hr-emp-filter__label" for="emp-f-branch">الفرع</label>
+                <select name="branch" id="emp-f-branch" class="hr-emp-field">
+                    <option value="">الكل</option>
+                    {% for b in filter_branches %}<option value="{{ b.pk }}"{% if filters.branch_id == b.pk %} selected{% endif %}>{{ b.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--dept">
+                <label class="hr-emp-filter__label" for="emp-f-dept">القسم</label>
+                <select name="department" id="emp-f-dept" class="hr-emp-field">
+                    <option value="">الكل</option>
+                    {% for d in filter_departments %}<option value="{{ d.pk }}"{% if filters.department_id == d.pk %} selected{% endif %}>{{ d.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--sponsor">
+                <label class="hr-emp-filter__label" for="emp-f-sponsor">شركة الكفالة</label>
+                <select name="sponsorship" id="emp-f-sponsor" class="hr-emp-field">
+                    <option value="">الكل</option>
+                    {% for sp in filter_sponsorships %}<option value="{{ sp.pk }}"{% if filters.sponsorship_id == sp.pk %} selected{% endif %}>{{ sp.company_name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--date">
+                <label class="hr-emp-filter__label" for="emp-f-from">تاريخ المباشرة: من</label>
+                <input type="date" name="from" id="emp-f-from" value="{{ filters.date_from|date:'Y-m-d' }}" class="hr-emp-field">
+            </div>
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--date">
+                <label class="hr-emp-filter__label" for="emp-f-to">تاريخ المباشرة: إلى</label>
+                <input type="date" name="to" id="emp-f-to" value="{{ filters.date_to|date:'Y-m-d' }}" class="hr-emp-field">
+            </div>
+            <div class="hr-emp-filter__cell hr-emp-filter__cell--actions">
+                {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
+                {% url 'web:list_employees' as clear_url %}
+                {% include "components/hr_btn.html" with href=clear_url label="مسح" variant="outline" icon="x" %}
+            </div>
+        </div>
     </form>
-    <form method="post"
-          action="{{ sponsorship_import_url }}"
-          enctype="multipart/form-data"
-          class="inline-flex items-center"
-          id="sp-import-form"
-          data-max-bytes="5242880">
-        {% csrf_token %}
-        <input type="file"
-               name="excel_file"
-               id="sp-import-file"
-               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-               class="sr-only"
-               aria-label="ملف Excel لاستيراد موظفين بكفالة">
-        <label for="sp-import-file" class="m-0 cursor-pointer" id="sp-import-label">
-            <span class="hr-btn hr-btn--glass-sky text-sm pointer-events-none">
-                {% lucide_glyph 'upload' 'hr-btn__icon' %}
-                <span>استيراد بكفالة</span>
-            </span>
-        </label>
-    </form>
-    {% endif %}
-    <form method="get"
-          action="{% url 'web:list_employees' %}"
-          class="flex items-center gap-2 w-full sm:w-auto">
-        {% include "components/search_field.html" with name="q" value=query placeholder="بحث ذكي: اسم، هوية، جوال، فرع، قسم، جنسية، مهنة..." extra_class="flex-1 sm:w-80" aria_label="بحث الموظفين" %}
-        {% include "components/hr_btn.html" with label="بحث" type="submit" variant="primary" icon="search" %}
-        {% if query %}
-        {% url 'web:list_employees' as clear_url %}
-        {% include "components/hr_btn.html" with href=clear_url label="" icon="x" variant="ghost" title="مسح البحث" extra_class="px-3" %}
+
+    <div class="hr-emp-actions">
+        <div class="hr-emp-actions__group" role="group" aria-label="تصدير Excel">
+            <span class="hr-emp-actions__title">تصدير</span>
+            <a href="{{ no_sponsorship_export_url }}"
+               id="ns-export-link"
+               class="hr-btn hr-btn--glass-emerald text-sm"
+               title="تصدير الموظفين بدون كفالة (Excel)"
+               data-hr-export="1">
+                {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
+                <span>Excel بدون كفالة</span>
+            </a>
+            <a href="{{ sponsorship_export_url }}"
+               id="sp-export-link"
+               class="hr-btn hr-btn--glass-emerald text-sm"
+               title="تصدير موظفي الكفالة بنفس أعمدة الاستيراد (Excel)"
+               data-hr-export="1">
+                {% lucide_glyph 'file-spreadsheet' 'hr-btn__icon' %}
+                <span>Excel بكفالة</span>
+            </a>
+        </div>
+        {% if user|has_permission:'employees.add' %}
+        <div class="hr-emp-actions__group" role="group" aria-label="استيراد Excel">
+            <span class="hr-emp-actions__title">استيراد</span>
+            <form method="post"
+                  action="{{ no_sponsorship_import_url }}"
+                  enctype="multipart/form-data"
+                  id="ns-import-form"
+                  data-max-bytes="5242880">
+                {% csrf_token %}
+                <input type="file"
+                       name="excel_file"
+                       id="ns-import-file"
+                       accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                       class="sr-only"
+                       aria-label="ملف Excel للاستيراد">
+                <label for="ns-import-file" class="m-0 cursor-pointer" id="ns-import-label">
+                    <span class="hr-btn hr-btn--glass-sky text-sm pointer-events-none">
+                        {% lucide_glyph 'upload' 'hr-btn__icon' %}
+                        <span>استيراد بدون كفالة</span>
+                    </span>
+                </label>
+            </form>
+            <form method="post"
+                  action="{{ sponsorship_import_url }}"
+                  enctype="multipart/form-data"
+                  id="sp-import-form"
+                  data-max-bytes="5242880">
+                {% csrf_token %}
+                <input type="file"
+                       name="excel_file"
+                       id="sp-import-file"
+                       accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                       class="sr-only"
+                       aria-label="ملف Excel لاستيراد موظفين بكفالة">
+                <label for="sp-import-file" class="m-0 cursor-pointer" id="sp-import-label">
+                    <span class="hr-btn hr-btn--glass-sky text-sm pointer-events-none">
+                        {% lucide_glyph 'upload' 'hr-btn__icon' %}
+                        <span>استيراد بكفالة</span>
+                    </span>
+                </label>
+            </form>
+        </div>
         {% endif %}
-    </form>
+    </div>
 </div>
 <script>
 (function () {
