@@ -62,14 +62,16 @@ body.hr-app .hr-sidebar .hr-nav__head {
 body.hr-app .hr-sidebar .hr-nav__head::before {
     content: "";
     position: absolute;
-    inset: 0 0 -12px 0;
+    /* يمتد للأعلى فوق حشوة .hr-nav حتى لا يظهر أي صف متمرّر فوق العنوان أو تحته */
+    inset: -1.25rem 0 0 0;
     z-index: -1;
     pointer-events: none;
-    background: linear-gradient(to bottom, var(--sb-bg) 0%, var(--sb-bg) 75%, rgba(236, 236, 240, 0) 100%);
+    background: var(--sb-bg);
+    border-bottom: 0.5px solid var(--sb-hairline);
 }
 body.hr-app .hr-sidebar--mobile-drawer .hr-nav__head::before {
-    inset: auto 0 -12px 0;
-    height: calc(100vh + 12px);
+    inset: auto 0 0 0;
+    height: 100vh;
 }
 body.hr-app .hr-sidebar .hr-sidebar-brand-bar__logo {
     border-radius: 10px;
