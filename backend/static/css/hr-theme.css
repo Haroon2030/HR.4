@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   لون العلامة — نيلي غامق (مصدر واحد للشريط، الأزرار، التبويبات، رؤوس الجداول)
+   ───────────────────────────────────────────────────────────────────────
+   يُحمَّل بعد hr-ui.css وقبل hr-sidebar-glass.css و hr-buttons.css.
+   يغيّر متغيّرات hr-ui.css الأصلية (--hr-sidebar-* و --hr-action-btn-*) فيتبعها
+   كل ما بُني عليها، ويعيد تلوين القليل المكتوب بقيم ثابتة (التبويبات، الرؤوس).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+body.hr-app {
+    --brand-950: #1d1342;
+    --brand-900: #221650;
+    --brand-800: #2b1b5e;   /* لون الشريط */
+    --brand-700: #3a2580;
+    --brand-glow: #482d98;  /* التوهّج السفلي */
+    --brand-tint: #4b32a8;  /* الأزرار الممتلئة على خلفية فاتحة (تباين أبيض ≈ 8:1) */
+    --brand-tint-hover: #3d2790;
+    --brand-ink: #43309a;   /* نص الأزرار الخفيفة والروابط */
+    --brand-soft: rgba(75, 50, 168, 0.10);
+    --brand-soft-hover: rgba(75, 50, 168, 0.17);
+
+    --hr-sidebar-canvas: var(--brand-800);
+    --hr-sidebar-bg: var(--brand-800);
+    --hr-sidebar-bg-soft: var(--brand-900);
+    --hr-sidebar-accent: #8b7bd8;
+
+    /* أزرار الشريط العلوي وما يتبع القاعدة العامة في hr-ui.css */
+    --hr-action-btn-bg: var(--brand-800);
+    --hr-action-btn-bg-hover: var(--brand-700);
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: 0 1px 2px rgba(29, 19, 66, 0.22);
+    --hr-action-btn-shadow-hover: 0 2px 6px rgba(29, 19, 66, 0.26);
+    --hr-action-btn-fg: #ffffff;
+}
+
+/* ── شريط التبويبات ───────────────────────────────────────────────────── */
+body.hr-app .hr-page-tabs__bar,
+body.hr-app .hr-tabs__bar,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar,
+body.hr-app .hr-page-tabs > nav[role="tablist"] {
+    background:
+        linear-gradient(to right, var(--brand-800) 25%, rgba(43, 27, 94, 0)) left center / 2.2rem 100% no-repeat local,
+        linear-gradient(to left, var(--brand-800) 25%, rgba(43, 27, 94, 0)) right center / 2.2rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, rgba(10, 6, 30, 0.55), rgba(10, 6, 30, 0)) left center / 0.9rem 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, rgba(10, 6, 30, 0.55), rgba(10, 6, 30, 0)) right center / 0.9rem 100% no-repeat scroll,
+        linear-gradient(180deg, var(--brand-800) 0%, var(--brand-900) 100%) !important;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+body.hr-app .hr-page-tabs__bar .hr-tab-btn,
+body.hr-app .hr-tabs__bar .hr-tab-btn,
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn,
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn {
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-weight: 600 !important;
+}
+body.hr-app .hr-page-tabs__bar .hr-tab-btn:is(.is-active, .hr-tab--active, [aria-selected="true"]),
+body.hr-app .hr-tabs__bar .hr-tab-btn:is(.is-active, .hr-tab--active, [aria-selected="true"]),
+body.hr-app nav[role="tablist"].hr-page-tabs__bar .hr-tab-btn:is(.is-active, .hr-tab--active, [aria-selected="true"]),
+body.hr-app .hr-page-tabs > nav[role="tablist"] .hr-tab-btn:is(.is-active, .hr-tab--active, [aria-selected="true"]) {
+    color: var(--brand-800) !important;
+    font-weight: 700 !important;
+    box-shadow: inset 0 3px 0 var(--brand-tint) !important;
+}
+body.hr-app :is(.hr-page-tabs__bar, .hr-tabs__bar, .hr-page-tabs > nav[role="tablist"]) .hr-tab-btn:is(.is-active, .hr-tab--active, [aria-selected="true"]) :is(span, small, b) {
+    color: var(--brand-800) !important;
+}
+body.hr-app :is(.hr-page-tabs__bar, .hr-tabs__bar, .hr-page-tabs > nav[role="tablist"]) .hr-tab-btn:is(.is-active, .hr-tab--active, [aria-selected="true"]) :is(svg, i[data-lucide]) {
+    color: var(--brand-tint) !important;
+    stroke: var(--brand-tint) !important;
+}
+
+/* ── رؤوس الجداول ──────────────────────────────────────────────────────
+   كل جداول الشاشة. تُستثنى النماذج المطبوعة (جداول بأنماط مضمّنة و .st-form)
+   حتى تبقى بتصميمها الرسمي، ولا يُطبَّق على الطباعة. */
+@media screen {
+    body.hr-app .hr-main table:not([style]):not(.st-form) > thead > tr > th {
+        background: var(--brand-800) !important;
+        color: rgba(255, 255, 255, 0.92) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        font-weight: 600 !important;
+    }
+    body.hr-app .hr-main table:not([style]):not(.st-form) > thead > tr > th :is(span, a, small, b, div, button, label) {
+        color: inherit !important;
+    }
+    body.hr-app .hr-main table:not([style]):not(.st-form) > thead > tr > th :is(svg, i[data-lucide]) {
+        color: rgba(255, 255, 255, 0.7) !important;
+        stroke: currentColor !important;
+    }
+    /* حواف دائرية لرأس الجدول عند بداية البطاقة */
+    body.hr-app .hr-main table:not([style]):not(.st-form) > thead > tr:first-child > th:first-child {
+        border-start-start-radius: 10px;
+    }
+    body.hr-app .hr-main table:not([style]):not(.st-form) > thead > tr:first-child > th:last-child {
+        border-start-end-radius: 10px;
+    }
+}

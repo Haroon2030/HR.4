@@ -1,0 +1,304 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   الأزرار الموحّدة — لغة تصميم Apple
+   ───────────────────────────────────────────────────────────────────────
+   تُحمَّل بعد hr-ui.css. قاعدة "توحيد أزرار الموقع" في hr-ui.css تلوّن كل زر
+   عبر متغيّرات --hr-action-btn-*؛ هنا نضبط تلك المتغيّرات لكل نمط بدل تكديس
+   ألوان جديدة، فتنتقل القيمة تلقائياً للأيقونات والنصوص الداخلية.
+
+   الشكل: كبسولة واحدة بثلاثة مقاسات فقط (36 / 30 / 26px، و44px للإجراء البطل).
+   الهرمية (بدل لون واحد لكل شيء):
+     1. ممتلئ   — الإجراء الرئيسي في الشاشة (حفظ، إضافة، بحث)
+     2. ملوّن   — إجراء ثانوي: خلفية بلون العلامة 10% ونص بلونها
+     3. محايد   — إلغاء/رجوع/تصفية: رمادي هادئ
+     4. نصّي    — رابط بلا خلفية
+     + إتلافي   — أحمر (حذف/رفض)، ونجاح أخضر للاعتماد فقط
+   ═══════════════════════════════════════════════════════════════════════ */
+
+body.hr-app {
+    --btn-tint: var(--brand-tint, #4b32a8);
+    --btn-tint-hover: var(--brand-tint-hover, #3d2790);
+    --btn-tint-ink: var(--brand-ink, #43309a);
+    --btn-tint-soft: var(--brand-soft, rgba(75, 50, 168, 0.10));
+    --btn-tint-soft-hover: var(--brand-soft-hover, rgba(75, 50, 168, 0.17));
+    --btn-neutral-soft: rgba(15, 23, 42, 0.06);
+    --btn-neutral-soft-hover: rgba(15, 23, 42, 0.10);
+    --btn-neutral-ink: #1e293b;
+    --btn-red: #d92d20;
+    --btn-red-hover: #b42318;
+    --btn-red-ink: #b42318;
+    --btn-red-soft: rgba(217, 45, 32, 0.09);
+    --btn-red-soft-hover: rgba(217, 45, 32, 0.15);
+    --btn-green: #15803d;
+    --btn-green-hover: #116932;
+    --btn-green-ink: #15803d;
+    --btn-green-soft: rgba(21, 128, 61, 0.10);
+    --btn-green-soft-hover: rgba(21, 128, 61, 0.16);
+    --btn-shadow-filled: 0 1px 2px rgba(29, 19, 66, 0.20);
+    --btn-ease: cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+/* ── الشكل الموحّد ─────────────────────────────────────────────────────── */
+/* التكرار .hr-btn.hr-btn يرفع التخصيص فوق قواعد السياقات القديمة
+   (.hr-filter-form .hr-btn …) دون !important */
+body.hr-app .hr-btn.hr-btn,
+body.hr-app .hr-btn-print.hr-btn-print,
+body.hr-app .pr2-btn.pr2-btn,
+body.hr-app .hr-glass-back-btn.hr-glass-back-btn--labeled,
+body.hr-app .hr-payroll-action-btn.hr-payroll-action-btn,
+body.hr-app .hr-recipient-link-btn.hr-recipient-link-btn,
+body.hr-app .hr-location-picker__action.hr-location-picker__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 36px;
+    height: auto;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border-width: 0;
+    font-size: 0.875rem;
+    font-weight: 600 !important;
+    line-height: 1.2;
+    letter-spacing: 0;
+    white-space: nowrap;
+    text-decoration: none !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transform: none;
+    transition:
+        background-color 0.18s var(--btn-ease),
+        color 0.18s var(--btn-ease),
+        box-shadow 0.18s var(--btn-ease),
+        transform 0.12s var(--btn-ease),
+        opacity 0.18s var(--btn-ease);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* المقاسات */
+body.hr-app .hr-btn.hr-btn--sm,
+body.hr-app .hr-btn-print.hr-btn-print--sm,
+body.hr-app .hr-pagination__controls > .hr-pagination__btn.hr-btn,
+body.hr-app .hr-recipient-link-btn.hr-recipient-link-btn,
+body.hr-app .hr-location-picker__action.hr-location-picker__action {
+    min-height: 30px;
+    padding: 0 0.8rem;
+    font-size: 0.8125rem;
+}
+body.hr-app .hr-btn.hr-btn--xs {
+    min-height: 26px;
+    padding: 0 0.65rem;
+    font-size: 0.75rem;
+}
+body.hr-app .hr-btn.hr-btn--lg,
+body.hr-app .pr2-btn.pr2-btn--cta {
+    min-height: 44px;
+    padding: 0 1.5rem;
+    font-size: 1rem;
+}
+
+/* أيقونات داخل الأزرار: مقاس واحد */
+body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn) :is(svg, .hr-btn__icon, .hr-btn-print__icon) {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+body.hr-app .hr-btn.hr-btn--sm :is(svg, .hr-btn__icon),
+body.hr-app .hr-btn.hr-btn--xs :is(svg, .hr-btn__icon) {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+body.hr-app .hr-btn-print__icon-wrap {
+    background: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+/* أزرار الأيقونة فقط: دائرة */
+body.hr-app .hr-btn.hr-btn--icon,
+body.hr-app .hr-btn-print.hr-btn-print--icon-only {
+    width: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    height: 30px;
+    padding: 0;
+}
+
+/* الضغط: انكماش خفيف بدل الرفع للأعلى */
+body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn, .hr-act, .hr-glass-back-btn, .hr-payroll-action-btn, .hr-recipient-link-btn):active:not(:disabled):not(.is-disabled) {
+    transform: scale(0.97);
+}
+body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn, .hr-glass-back-btn):hover:not(:disabled) {
+    transform: none;
+}
+
+/* التركيز من لوحة المفاتيح */
+body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn, .hr-act, .hr-glass-back-btn, .hr-payroll-action-btn, .hr-recipient-link-btn):focus-visible {
+    outline: 2px solid var(--btn-tint);
+    outline-offset: 2px;
+}
+
+/* ── 2. ملوّن خفيف: الإجراء الثانوي (الافتراضي لأي زر بلا نمط) ──────────── */
+body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn, .hr-payroll-action-btn, .hr-glass-back-btn, .hr-act, .hr-payroll-icon-btn, .hr-payroll-row-actions__btn, .hr-recipient-link-btn),
+body.hr-app :is(.hr-btn--outline, .hr-btn--soft-primary, .hr-btn--glass-sky, .pr2-btn--ghost) {
+    --hr-action-btn-bg: var(--btn-tint-soft);
+    --hr-action-btn-bg-hover: var(--btn-tint-soft-hover);
+    --hr-action-btn-fg: var(--btn-tint-ink);
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: none;
+    --hr-action-btn-shadow-hover: none;
+}
+/* ── 1. ممتلئ: الإجراء الرئيسي ──────────────────────────────────────────── */
+body.hr-app :is(
+    .hr-btn--primary, .hr-btn--dark, .hr-btn--indigo, .hr-btn--purple, .hr-btn--sky,
+    .hr-btn--amber, .hr-btn--orange, .hr-btn--glass-primary, .hr-btn-dark,
+    .pr2-btn--primary, .pr2-btn--cta, .pr2-btn--warn, .hr-location-picker__action
+) {
+    --hr-action-btn-bg: var(--btn-tint);
+    --hr-action-btn-bg-hover: var(--btn-tint-hover);
+    --hr-action-btn-fg: #fff;
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: var(--btn-shadow-filled);
+    --hr-action-btn-shadow-hover: var(--btn-shadow-filled);
+}
+
+/* اعتماد/نجاح: أخضر ممتلئ */
+body.hr-app .hr-btn--success {
+    --hr-action-btn-bg: var(--btn-green);
+    --hr-action-btn-bg-hover: var(--btn-green-hover);
+    --hr-action-btn-fg: #fff;
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: var(--btn-shadow-filled);
+    --hr-action-btn-shadow-hover: var(--btn-shadow-filled);
+}
+
+/* إتلافي ممتلئ */
+body.hr-app :is(.hr-btn--danger, .hr-btn--rose) {
+    --hr-action-btn-bg: var(--btn-red);
+    --hr-action-btn-bg-hover: var(--btn-red-hover);
+    --hr-action-btn-fg: #fff;
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: var(--btn-shadow-filled);
+    --hr-action-btn-shadow-hover: var(--btn-shadow-filled);
+}
+
+/* تصدير Excel وما شابه: أخضر خفيف (ثانوي) */
+body.hr-app :is(.hr-btn--soft-emerald, .hr-btn--glass-emerald, .pr2-btn--success) {
+    --hr-action-btn-bg: var(--btn-green-soft);
+    --hr-action-btn-bg-hover: var(--btn-green-soft-hover);
+    --hr-action-btn-fg: var(--btn-green-ink);
+}
+body.hr-app :is(.hr-btn--soft-rose, .hr-act--delete, .hr-act--reject, .hr-act--revoke) {
+    --hr-action-btn-bg: var(--btn-red-soft);
+    --hr-action-btn-bg-hover: var(--btn-red-soft-hover);
+    --hr-action-btn-fg: var(--btn-red-ink);
+}
+body.hr-app .hr-act--approve {
+    --hr-action-btn-bg: var(--btn-green-soft);
+    --hr-action-btn-bg-hover: var(--btn-green-soft-hover);
+    --hr-action-btn-fg: var(--btn-green-ink);
+}
+
+/* ── 3. محايد: إلغاء / رجوع / تصفية ثانوية ─────────────────────────────── */
+body.hr-app :is(.hr-btn--muted, .hr-btn--soft-slate, .hr-btn--glass-slate, .hr-btn--secondary, .hr-glass-back-btn, .hr-btn-print) {
+    --hr-action-btn-bg: var(--btn-neutral-soft);
+    --hr-action-btn-bg-hover: var(--btn-neutral-soft-hover);
+    --hr-action-btn-fg: var(--btn-neutral-ink);
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: none;
+    --hr-action-btn-shadow-hover: none;
+}
+
+/* ── 4. نصّي: بلا خلفية ─────────────────────────────────────────────────── */
+body.hr-app .hr-btn--ghost {
+    --hr-action-btn-bg: transparent;
+    --hr-action-btn-bg-hover: var(--btn-tint-soft);
+    --hr-action-btn-fg: var(--btn-tint-ink);
+    --hr-action-btn-border: transparent;
+    --hr-action-btn-border-hover: transparent;
+    --hr-action-btn-shadow: none;
+    --hr-action-btn-shadow-hover: none;
+}
+
+/* أزرار خارج قاعدة hr-ui.css العامة: تطبّق المتغيّرات نفسها */
+body.hr-app :is(.pr2-btn, .hr-recipient-link-btn, .hr-location-picker__action) {
+    background: var(--hr-action-btn-bg) !important;
+    color: var(--hr-action-btn-fg) !important;
+    border-color: transparent !important;
+    box-shadow: var(--hr-action-btn-shadow) !important;
+}
+body.hr-app :is(.pr2-btn, .hr-recipient-link-btn, .hr-location-picker__action):hover:not(:disabled) {
+    background: var(--hr-action-btn-bg-hover) !important;
+    box-shadow: var(--hr-action-btn-shadow-hover) !important;
+}
+body.hr-app :is(.pr2-btn, .hr-recipient-link-btn, .hr-location-picker__action) :is(svg, span) {
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+/* الحالة المعطّلة: نفس النمط بشفافية، لا لون رمادي مختلف */
+body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn, .hr-act):is(:disabled, .is-disabled, [aria-disabled="true"]) {
+    opacity: 0.4;
+    box-shadow: none !important;
+}
+
+/* ── أزرار إجراءات الجداول (عرض/تعديل/حذف): دوائر ملوّنة خفيفة ─────────── */
+body.hr-app .hr-act {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    border-radius: 999px;
+    border-width: 0;
+    transition: background-color 0.18s var(--btn-ease), transform 0.12s var(--btn-ease);
+}
+body.hr-app .hr-act :is(svg, i[data-lucide], .hr-act__icon) {
+    width: 15px;
+    height: 15px;
+}
+
+/* زر الرجوع (أيقونة): دائرة محايدة بنفس عائلة الأزرار */
+body.hr-app .hr-glass-back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border-width: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+body.hr-app .hr-glass-back-btn.hr-glass-back-btn--labeled {
+    width: auto;
+}
+
+/* ── الجوّال: أهداف لمس أكبر ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+    body.hr-app .hr-btn.hr-btn,
+    body.hr-app .hr-btn-print.hr-btn-print,
+    body.hr-app .pr2-btn.pr2-btn {
+        min-height: 40px;
+    }
+    body.hr-app .hr-btn.hr-btn--sm,
+    body.hr-app .hr-btn.hr-btn--xs {
+        min-height: 36px;
+    }
+    body.hr-app .pr2-btn.pr2-btn--cta {
+        min-height: 48px;
+    }
+    body.hr-app .hr-act,
+    body.hr-app .hr-btn.hr-btn--icon {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.hr-app :is(.hr-btn, .hr-btn-print, .pr2-btn, .hr-act, .hr-glass-back-btn):active {
+        transform: none !important;
+    }
+}

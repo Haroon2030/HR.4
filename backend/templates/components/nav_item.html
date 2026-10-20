@@ -2,7 +2,7 @@
 <a
     href="{% if external_href %}{{ external_href }}{% else %}{% url url %}{% endif %}"
     class="hr-nav-link {% if not external_href %}{% if path_prefix and path_prefix in request.path %}is-active{% elif current_view == url or current_url == url or current_url == related_url %}is-active{% endif %}{% endif %}"
-    {% if external_href %}target="_blank" rel="noopener noreferrer"{% endif %}
+    {% if external_href %}target="_blank" rel="noopener noreferrer"{% elif path_prefix and path_prefix in request.path %}aria-current="page"{% elif current_view == url or current_url == url or current_url == related_url %}aria-current="page"{% endif %}
 >
     <span class="hr-nav-icon" aria-hidden="true"><i data-lucide="{{ icon }}" class="w-4 h-4"></i></span>
     {% if force_show_label %}

@@ -1,7 +1,7 @@
 {# رأس مجموعة في الشريط الجانبي: label, icon, always_show, badge, [href, active] #}
 {% if href %}
 <div class="hr-nav-section hr-nav-section--toggle" {% if not always_show %}x-show="sidebarOpen" x-cloak{% endif %}>
-    <a href="{{ href }}" class="hr-nav-group__head hr-nav-group__head--link{% if active %} is-active{% endif %}">
+    <a href="{{ href }}" class="hr-nav-group__head hr-nav-group__head--link{% if active %} is-active{% endif %}"{% if active %} aria-current="page"{% endif %}>
         <span class="hr-nav-group__title">
             {% if icon %}<i data-lucide="{{ icon }}" class="hr-nav-group__icon" aria-hidden="true"></i>{% endif %}
             <span class="hr-nav-label">{{ label }}</span>

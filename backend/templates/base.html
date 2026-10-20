@@ -234,6 +234,9 @@
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
     <link href="/static/css/hr-ui.css?v=20261019-navcells" rel="stylesheet">
     <link href="/static/css/hr-motion.css?v=20260711-welcome" rel="stylesheet">
+    <link href="/static/css/hr-theme.css?v=20261020-indigo1" rel="stylesheet">
+    <link href="/static/css/hr-sidebar-glass.css?v=20261020-light1" rel="stylesheet">
+    <link href="/static/css/hr-buttons.css?v=20261020-btn2" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="hr-app min-h-screen"{% if user.is_authenticated and session_idle_timeout %} data-session-idle-seconds="{{ session_idle_timeout }}"{% endif %}>
@@ -272,6 +275,7 @@
             <!-- Desktop Sidebar -->
             <aside
                 id="hrDesktopSidebar"
+                aria-label="القائمة الرئيسية"
                 class="hr-sidebar hidden md:flex transition-all duration-300 flex-col min-h-0 shrink-0 hr-sidebar--expanded"
                 :class="sidebarOpen ? 'hr-sidebar--expanded' : 'hr-sidebar--collapsed'"
             >
