@@ -689,6 +689,16 @@ class EmployeeStatementForm(forms.ModelForm):
         fields = ['statement_type', 'title', 'statement_date', 'content',
                   'deduction_amount', 'employee_email', 'hr_email']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # حقل مبلغ الخصم مخفي (وليس محذوفاً) لغير المخالفات فيُرسَل فارغاً،
+        # والتاريخ الفارغ يُستبدل بتاريخ اليوم — فلا يُشترطان على مستوى الحقل.
+        self.fields['deduction_amount'].required = False
+        self.fields['statement_date'].required = False
+
+    def clean_deduction_amount(self):
+        return self.cleaned_data.get('deduction_amount') or Decimal('0')
+
     def clean_title(self):
         v = (self.cleaned_data.get('title') or '').strip()
         if not v:

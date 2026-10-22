@@ -29,6 +29,33 @@ def _redirect_employee_warnings_tab(employee_id: int):
     return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee_id})}?tab=warnings#employee-tab-panel')
 
 
+def _statement_files(request):
+    """ملفات الطلب بعد إعادة تسمية المرفق، أو (None, سبب الرفض) إن كان المرفق غير مقبول."""
+    from django.core.exceptions import ValidationError
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+    from apps.core.validators import validate_employee_upload
+
+    files = request.FILES.copy()
+    upload = request.FILES.get('document')
+    renamed = apply_uploaded_file_rename(request, 'document')
+    if upload is not None and renamed is None:
+        try:
+            validate_employee_upload(upload)
+        except ValidationError as exc:
+            return None, f'المرفق: {exc.messages[0]}'
+    if renamed is not None:
+        files['document'] = renamed
+    return files, None
+
+
+def _report_form_errors(request, form):
+    """رسائل الأخطاء مع اسم الحقل حتى يعرف المستخدم ما الذي يجب تصحيحه."""
+    for name, errs in form.errors.items():
+        field = form.fields.get(name)
+        label = field.label if field is not None and field.label else ''
+        messages.error(request, f'{label}: {errs[0]}' if label else errs[0])
+
+
 @login_required
 @permission_required('employees.edit')
 @employee_branch_access_required
@@ -39,21 +66,19 @@ def add_employee_statement(request, employee_id):
     from django.conf import settings as dj_settings
     from apps.employees.models import Employee, EmployeeStatement
     from apps.employees.forms import EmployeeStatementForm
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
     if request.method != 'POST':
         return redirect('web:view_employee', employee_id=employee.id)
 
-    files = request.FILES.copy()
-    renamed = apply_uploaded_file_rename(request, 'document')
-    if renamed is not None:
-        files['document'] = renamed
+    files, upload_error = _statement_files(request)
+    if upload_error:
+        messages.error(request, upload_error)
+        return redirect('web:view_employee', employee_id=employee.id)
 
     form = EmployeeStatementForm(request.POST, files)
     if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
+        _report_form_errors(request, form)
         return redirect('web:view_employee', employee_id=employee.id)
 
     cd = form.cleaned_data
@@ -172,7 +197,6 @@ def edit_employee_statement(request, employee_id, statement_id):
     from apps.employees.models import Employee, EmployeeStatement
     from apps.employees.forms import EmployeeStatementForm
     from apps.employees.services.employee_record_locks import statement_is_editable
-    from apps.core.services.file_helpers import apply_uploaded_file_rename
 
     employee = get_object_or_404(Employee, id=employee_id)
     statement = get_object_or_404(EmployeeStatement, id=statement_id, employee_id=employee.id)
@@ -187,15 +211,14 @@ def edit_employee_statement(request, employee_id, statement_id):
     if request.method != 'POST':
         return _redirect_employee_warnings_tab(employee.id)
 
-    files = request.FILES.copy()
-    renamed = apply_uploaded_file_rename(request, 'document')
-    if renamed is not None:
-        files['document'] = renamed
+    files, upload_error = _statement_files(request)
+    if upload_error:
+        messages.error(request, upload_error)
+        return _redirect_employee_warnings_tab(employee.id)
 
     form = EmployeeStatementForm(request.POST, files, instance=statement)
     if not form.is_valid():
-        for err in form.errors.values():
-            messages.error(request, err[0])
+        _report_form_errors(request, form)
         return _redirect_employee_warnings_tab(employee.id)
 
     statement = form.save(commit=False)
