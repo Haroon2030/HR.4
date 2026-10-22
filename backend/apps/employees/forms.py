@@ -452,10 +452,9 @@ class EmploymentRequestForm(forms.ModelForm):
 
 
 # الحقول الإلزامية لإكمال الموافقة النهائية من الأخصائي
-# (البريد الإلكتروني إلزامي شرطياً لمن على كفالة/سعودي — يُتحقَّق في
-#  validate_employee_data_complete وليس هنا)
+# (رقم الجوال والبريد الإلكتروني اختياريان)
 EMPLOYMENT_REQUEST_REQUIRED_FIELDS = [
-    'id_number', 'phone', 'employee_number',
+    'id_number', 'employee_number',
     'nationality', 'profession',
     'hire_date',
     'basic_salary',

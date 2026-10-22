@@ -36,7 +36,6 @@ def _notify_user(user, req, *, title, message='', icon='user-plus',
 _REQUIRED_EMPLOYEE_FIELDS = [
     # نصوص أساسية
     ('رقم الهوية', 'id_number', 'str'),
-    ('رقم الجوال', 'phone', 'str'),
     ('الرقم الوظيفي', 'employee_number', 'str'),
     # FKs
     ('الجنسية', 'nationality_id', 'fk'),
@@ -75,10 +74,6 @@ def validate_employee_data_complete(req):
                 missing.append(label)
     from apps.employees.services.contract_rules import is_saudi_nationality, is_valid_saudi_insurance_rate
     is_saudi = is_saudi_nationality(getattr(req, 'nationality', None))
-    # البريد الإلكتروني إلزامي فقط لمن على كفالة أو سعودي الجنسية
-    if getattr(req, 'sponsorship_id', None) or is_saudi:
-        if not (getattr(req, 'email', None) or '').strip():
-            missing.append('البريد الإلكتروني')
     if is_saudi:
         if not is_valid_saudi_insurance_rate(getattr(req, 'insurance_deduction_rate', None)):
             missing.append('نسبة خصم التأمينات (GOSI)')
@@ -94,7 +89,7 @@ def validate_employee_data_complete(req):
 
 EMP_REQ_TAB_REQUIRED = {
     'main': frozenset({
-        'name', 'id_number', 'phone', 'employee_number', 'hire_date',
+        'name', 'id_number', 'employee_number', 'hire_date',
     }),
     'org': frozenset({'nationality', 'profession'}),
     'salary': frozenset({
@@ -140,15 +135,11 @@ def employment_request_tab_status(req):
     )
     is_saudi = is_saudi_nationality(getattr(req, 'nationality', None))
 
-    # البريد الإلكتروني إلزامي فقط لمن على كفالة أو سعودي الجنسية
-    email_ok = True
-    if getattr(req, 'sponsorship_id', None) or is_saudi:
-        email_ok = _str_ok('email')
-
+    # رقم الجوال والبريد الإلكتروني اختياريان
     status = {
         'main': 'complete' if all([
-            _str_ok('name'), _str_ok('id_number'), _str_ok('phone'),
-            email_ok, _str_ok('employee_number'), _date_ok('hire_date'),
+            _str_ok('name'), _str_ok('id_number'),
+            _str_ok('employee_number'), _date_ok('hire_date'),
         ]) else 'incomplete',
         'org': 'complete' if all([
             _fk_ok('nationality_id'), _fk_ok('profession_id'),
