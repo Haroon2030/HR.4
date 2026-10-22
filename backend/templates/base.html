@@ -232,8 +232,8 @@
     </style>
 
     <!-- طبقة التصميم — بعد ألوان Tailwind المخصصة -->
-    <link href="/static/css/hr-ui.css?v=20261019-navcells" rel="stylesheet">
-    <link href="/static/css/hr-motion.css?v=20260711-welcome" rel="stylesheet">
+    <link href="/static/css/hr-ui.css?v=20261020-prune2" rel="stylesheet">
+    <link href="/static/css/hr-motion.css?v=20261020-prune2" rel="stylesheet">
     <link href="/static/css/hr-theme.css?v=20261020-indigo1" rel="stylesheet">
     <link href="/static/css/hr-sidebar-glass.css?v=20261020-light1" rel="stylesheet">
     <link href="/static/css/hr-buttons.css?v=20261020-btn2" rel="stylesheet">
@@ -556,6 +556,38 @@
                         Alpine.initTree(evt.detail.target);
                     }
                 }
+            });
+
+            // لوحة الإشعارات: الجلسة المنتهية تُحوِّل لصفحة الدخول بدل حقنها داخل اللوحة،
+            // وفشل الطلب يُظهر رسالة مع "إعادة المحاولة" بدل مؤشر تحميل لا ينتهي.
+            function hrIsNotifPanel(el) {
+                return el && el.classList && el.classList.contains('hr-notif-panel');
+            }
+            document.body.addEventListener('htmx:beforeSwap', function (evt) {
+                if (!hrIsNotifPanel(evt.detail.target)) return;
+                var url = evt.detail.xhr && evt.detail.xhr.responseURL;
+                if (url && url.indexOf('/login') !== -1) {
+                    evt.detail.shouldSwap = false;
+                    window.location.href = url;
+                }
+            });
+            function hrNotifPanelFailed(evt) {
+                var panel = evt.detail && evt.detail.elt;
+                if (!hrIsNotifPanel(panel)) return;
+                panel.innerHTML =
+                    '<div class="flex flex-col items-center justify-center gap-3 py-8 px-4 text-center text-sm">' +
+                    '<span>تعذّر تحميل الإشعارات</span>' +
+                    '<button type="button" class="hr-btn hr-btn--sm">إعادة المحاولة</button>' +
+                    '</div>';
+                panel.querySelector('button').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    panel.innerHTML = '<div class="flex items-center justify-center py-8">' +
+                        '<span class="hr-notif-dropdown-panel__spinner" aria-hidden="true"></span></div>';
+                    htmx.trigger(panel, 'notif-open');
+                });
+            }
+            ['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach(function (name) {
+                document.body.addEventListener(name, hrNotifPanelFailed);
             });
 
             var messagesContainer = document.getElementById('django-messages');

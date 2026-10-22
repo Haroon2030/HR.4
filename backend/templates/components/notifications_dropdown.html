@@ -43,7 +43,7 @@
          role="dialog"
          aria-label="قائمة الإشعارات"
          hx-get="{% url 'web:notifications_dropdown' %}"
-         hx-trigger="notif-open once"
+         hx-trigger="notif-open"
          hx-target="this"
          hx-swap="innerHTML">
         <div class="hr-notif-dropdown-panel__placeholder">
@@ -82,7 +82,7 @@
              role="dialog"
              aria-label="قائمة الإشعارات"
              hx-get="{% url 'web:notifications_dropdown' %}"
-             hx-trigger="notif-open once"
+             hx-trigger="notif-open"
              hx-target="this"
              hx-swap="innerHTML">
             <div class="hr-notif-dropdown-panel__placeholder">

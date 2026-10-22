@@ -14,7 +14,6 @@
 
 /* ── الشريط الجانبي ── */
 .hr-nav-link,
-.hr-nav-link--btn,
 .hr-nav-sublink {
     transition: background var(--hr-dur) ease, color var(--hr-dur) ease;
 }
@@ -34,11 +33,6 @@
 
 .hr-act {
     transition: background var(--hr-dur) ease, color var(--hr-dur) ease, border-color var(--hr-dur) ease !important;
-}
-
-/* ── بطاقات KPI فقط (بدون transform) ── */
-.hr-main a.hr-kpi {
-    transition: border-color var(--hr-dur) ease, background var(--hr-dur) ease;
 }
 
 /* ── HTMX ── */
@@ -161,9 +155,4 @@
 .hr-toast-welcome__name {
     color: #047857;
     font-weight: 900;
-}
-
-/* ── الرأس عند التمرير (بدون blur) ── */
-.hr-header.is-scrolled {
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
