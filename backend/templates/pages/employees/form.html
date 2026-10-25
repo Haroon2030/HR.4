@@ -230,6 +230,7 @@
                                 <button type="button" id="btn_extract_contract"
                                         class="hr-glass-input px-4 py-2 text-sm font-bold rounded-lg whitespace-nowrap"
                                         style="background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: white; border: none; cursor: pointer;"
+                                        data-api-url="{% url 'web:parse_employment_contract' %}"
                                         title="استخراج البيانات من العقد PDF">
                                     📄 استخراج البيانات
                                 </button>
@@ -328,7 +329,8 @@
                 const formData = new FormData();
                 formData.append('commencement_document', file);
 
-                const response = await fetch('{% url "web:parse_employment_contract" %}', {
+                const apiUrl = btn.getAttribute('data-api-url');
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     body: formData,
                     headers: {
