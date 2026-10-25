@@ -79,6 +79,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/barcode-label/',web_views.employee_barcode_print, name='employee_barcode_print'),
     path('employees/<int:employee_id>/barcode-label/zpl/', web_views.employee_barcode_zpl, name='employee_barcode_zpl'),
     path('employees/add/', web_views.add_employee, name='add_employee'),                                     # إضافة موظف (نموذج مختصر)
+    path('employees/parse-contract/', web_views.parse_employment_contract, name='parse_employment_contract'),  # استخراج البيانات من عقد PDF
     path('employees/create/', web_views.create_employee_full, name='create_employee_full'),                   # إنشاء موظف (نموذج كامل)
     path('employees/<int:employee_id>/', web_views.view_employee, name='view_employee'),                      # عرض ملف الموظف
     path('employees/<int:employee_id>/biometric-settings/', web_views.save_employee_biometric_settings, name='save_employee_biometric_settings'),

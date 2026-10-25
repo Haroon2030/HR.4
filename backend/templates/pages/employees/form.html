@@ -221,7 +221,22 @@
                 </header>
                 <div class="hr-employee-create-section__grid">
                     <div class="hr-employee-create-field hr-employee-create-field--full">
-                        {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' required=True %}
+                        <div class="flex items-start gap-3">
+                            <div class="flex-1 min-w-0">
+                                {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' required=True %}
+                            </div>
+                            {% if user.is_superuser or user|has_permission:'employees.add' %}
+                            <div class="pt-8">
+                                <button type="button" id="btn_extract_contract"
+                                        class="hr-glass-input px-4 py-2 text-sm font-bold rounded-lg whitespace-nowrap"
+                                        style="background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: white; border: none; cursor: pointer;"
+                                        title="استخراج البيانات من العقد PDF">
+                                    📄 استخراج البيانات
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div id="extract_status" class="mt-2 p-3 rounded-lg hidden" role="alert"></div>
                     </div>
                 </div>
             </section>
@@ -278,6 +293,128 @@
         };
         kind.addEventListener('change', sync);
         sync();
+    })();
+
+    // استخراج البيانات من عقد PDF
+    (function () {
+        const btn = document.getElementById('btn_extract_contract');
+        const statusDiv = document.getElementById('extract_status');
+        const commencementInput = document.querySelector('input[name="commencement_document"]');
+
+        if (!btn) return;
+
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            // التحقق من وجود ملف
+            if (!commencementInput || !commencementInput.files || !commencementInput.files[0]) {
+                _showStatus('⚠️ اختر ملف عقد أولاً', 'warning');
+                return;
+            }
+
+            const file = commencementInput.files[0];
+
+            // التحقق من نوع الملف
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                _showStatus('⚠️ الملف يجب أن يكون PDF', 'warning');
+                return;
+            }
+
+            _showStatus('🔄 جاري استخراج البيانات...', 'info');
+            btn.disabled = true;
+
+            try {
+                // إرسال الملف للـ API
+                const formData = new FormData();
+                formData.append('commencement_document', file);
+
+                const response = await fetch('{% url "web:parse_employment_contract" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'خطأ في معالجة الملف');
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                // ملء الحقول
+                _fillFields(result.data);
+
+                // عرض التحذيرات إن وجدت
+                if (result.warnings && result.warnings.length > 0) {
+                    _showStatus('✅ تم الاستخراج بنجاح ⚠️\n' + result.warnings.join('\n'), 'success-warning');
+                } else {
+                    _showStatus('✅ تم استخراج البيانات بنجاح!', 'success');
+                }
+
+            } catch (err) {
+                _showStatus('❌ ' + (err.message || 'خطأ غير معروف'), 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        function _showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'mt-2 p-3 rounded-lg';
+            statusDiv.classList.remove('hidden');
+
+            if (type === 'success') {
+                statusDiv.style.background = '#d1fae5';
+                statusDiv.style.color = '#065f46';
+                statusDiv.style.border = '1px solid #6ee7b7';
+            } else if (type === 'error') {
+                statusDiv.style.background = '#fee2e2';
+                statusDiv.style.color = '#7f1d1d';
+                statusDiv.style.border = '1px solid #fca5a5';
+            } else if (type === 'warning') {
+                statusDiv.style.background = '#fef3c7';
+                statusDiv.style.color = '#78350f';
+                statusDiv.style.border = '1px solid #fcd34d';
+            } else if (type === 'info') {
+                statusDiv.style.background = '#dbeafe';
+                statusDiv.style.color = '#0c2340';
+                statusDiv.style.border = '1px solid #93c5fd';
+            } else if (type === 'success-warning') {
+                statusDiv.style.background = '#fef3c7';
+                statusDiv.style.color = '#78350f';
+                statusDiv.style.border = '1px solid #fcd34d';
+            }
+        }
+
+        function _fillFields(data) {
+            const fields = {
+                'id_create_name': data.name,
+                'id_create_name_en': data.name_en || '',
+                'id_create_id_number': data.id_number,
+                'id_create_phone': data.phone,
+                'id_create_email': data.email || '',
+                'id_create_basic_salary': data.basic_salary,
+                'id_create_hire_date': data.hire_date,
+                'id_create_gender': data.gender,
+            };
+
+            for (const [id, value] of Object.entries(fields)) {
+                const input = document.getElementById(id);
+                if (input && value) {
+                    // عدم الكتابة فوق البيانات المدخلة بالفعل
+                    if (!input.value) {
+                        input.value = value;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            }
+        }
     })();
 </script>
 {% endblock %}

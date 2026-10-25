@@ -3,15 +3,21 @@ Django Template Views - واجهة الويب
 نظام إدارة الموارد البشرية
 """
 from datetime import datetime
+import tempfile
+import os
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 from apps.core.models import Branch
 from apps.cost_centers.models import CostCenter
 from apps.departments.models import Department
+from apps.employees.services.document_parser import extract_employment_contract_data
+from apps.core.validators import validate_employee_upload
 
 
 # =============================================================================
@@ -579,4 +585,95 @@ def delete_employee(request, employee_id):
         messages.success(request, f'تم حذف الموظف "{name}"')
     return redirect('web:list_employees')
 
+
+# =============================================================================
+# استخراج البيانات من عقد التوظيف
+# =============================================================================
+
+@login_required
+@require_http_methods(['POST'])
+@permission_required('employees.add')
+def parse_employment_contract(request):
+    """
+    API endpoint لاستخراج البيانات من عقد توظيف PDF.
+
+    POST /employees/parse-contract/
+    Content-Type: multipart/form-data
+    File: commencement_document (PDF)
+
+    الرد:
+    {
+        'success': bool,
+        'error': str | None,
+        'data': {...},
+        'warnings': [str]
+    }
+    """
+    if 'commencement_document' not in request.FILES:
+        return JsonResponse({
+            'success': False,
+            'error': 'لم يتم رفع ملف',
+            'data': None,
+            'warnings': []
+        }, status=400)
+
+    file_obj = request.FILES['commencement_document']
+
+    # التحقق من الملف
+    try:
+        validate_employee_upload(file_obj)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'data': None,
+            'warnings': []
+        }, status=400)
+
+    # حفظ الملف مؤقتاً واستخراج البيانات
+    temp_file = None
+    try:
+        # إنشاء ملف مؤقت
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            for chunk in file_obj.chunks():
+                tmp.write(chunk)
+            temp_file = tmp.name
+
+        # استخراج البيانات
+        result = extract_employment_contract_data(temp_file)
+
+        # تحويل Decimal إلى str للـ JSON
+        if result['data']:
+            result['data'] = _convert_decimals_for_json(result['data'])
+
+        return JsonResponse(result)
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'خطأ في معالجة الملف: {str(e)}',
+            'data': None,
+            'warnings': []
+        }, status=500)
+
+    finally:
+        # حذف الملف المؤقت
+        if temp_file and os.path.exists(temp_file):
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+
+
+def _convert_decimals_for_json(data: dict) -> dict:
+    """تحويل Decimal إلى str لـ JSON serialization."""
+    from decimal import Decimal
+
+    for key, value in data.items():
+        if isinstance(value, Decimal):
+            data[key] = str(value)
+        elif isinstance(value, dict):
+            data[key] = _convert_decimals_for_json(value)
+
+    return data
 
