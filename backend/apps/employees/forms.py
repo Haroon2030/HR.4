@@ -372,7 +372,11 @@ class EmploymentRequestForm(forms.ModelForm):
             'name', 'name_en', 'id_number', 'phone', 'gender', 'nationality',
             'branch', 'administration', 'department', 'cost_center',
             'sponsorship', 'basic_salary', 'hire_date', 'start_kind', 'commencement_document',
+            'email', 'birth_date_hijri',
+            'housing_allowance', 'transport_allowance', 'other_allowance',
         ]
+
+    _ALLOWANCE_FIELDS = ('housing_allowance', 'transport_allowance', 'other_allowance')
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
@@ -421,6 +425,26 @@ class EmploymentRequestForm(forms.ModelForm):
         if salary is None or salary <= 0:
             raise ValidationError('الراتب الأساسي مطلوب ويجب أن يكون أكبر من صفر.')
         return salary
+
+    def _clean_allowance(self, field_name):
+        value = self.cleaned_data.get(field_name)
+        if value is None:
+            return 0  # الحقل فارغ → القيمة الافتراضية (لا بدل)
+        if value < 0:
+            raise ValidationError('قيمة البدل لا يمكن أن تكون سالبة.')
+        return value
+
+    def clean_housing_allowance(self):
+        return self._clean_allowance('housing_allowance')
+
+    def clean_transport_allowance(self):
+        return self._clean_allowance('transport_allowance')
+
+    def clean_other_allowance(self):
+        return self._clean_allowance('other_allowance')
+
+    def clean_birth_date_hijri(self):
+        return _clean_hijri_date(self.cleaned_data.get('birth_date_hijri'))
 
     def clean_administration(self):
         administration = self.cleaned_data.get('administration')

@@ -640,7 +640,10 @@ def parse_employment_contract(request):
             temp_file = tmp.name
 
         # استخراج البيانات
-        result = extract_employment_contract_data(temp_file)
+        result = extract_employment_contract_data(temp_file, file_obj.name)
+
+        if result['data']:
+            result['data']['nationality_id'] = _resolve_nationality_id(result['data'].get('nationality'))
 
         # تحويل Decimal إلى str للـ JSON
         if result['data']:
@@ -663,6 +666,17 @@ def parse_employment_contract(request):
                 os.unlink(temp_file)
             except:
                 pass
+
+
+def _resolve_nationality_id(label):
+    """ربط جنسية العقد (مثل Saudi) بسجل الجنسية في جدول الإعداد."""
+    from apps.employees.services.document_parser import NATIONALITY_EN_TO_AR
+    from apps.setup.models import Nationality
+    if not label:
+        return None
+    arabic = NATIONALITY_EN_TO_AR.get(label.strip().lower(), label.strip())
+    row = Nationality.objects.filter(is_active=True, is_deleted=False, name=arabic).first()
+    return row.id if row else None
 
 
 def _convert_decimals_for_json(data: dict) -> dict:

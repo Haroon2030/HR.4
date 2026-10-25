@@ -209,3 +209,87 @@ class ParseEmploymentContractViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
         data = response.json()
         self.assertFalse(data['success'])
+
+
+class ArabicRepairTests(TestCase):
+    """إصلاح النص العربي المخزّن بترتيب بصري وأحرف العرض."""
+
+    def test_clean_visual_arabic_is_reversed(self):
+        from apps.employees.services.document_parser import _repair_arabic
+        visual = 'ﺪﻤﺤﻣ'  # «محمد» بأحرف العرض بترتيب بصري
+        self.assertEqual(_repair_arabic(visual), 'محمد')
+
+    def test_damaged_arabic_returns_none(self):
+        from apps.employees.services.document_parser import _repair_arabic
+        self.assertIsNone(_repair_arabic('ﺪﻤﺤﻣ\x00'))
+        self.assertIsNone(_repair_arabic('ﺪﻤﺤﻣ\ufffd'))
+
+    def test_latin_text_untouched(self):
+        from apps.employees.services.document_parser import _repair_arabic
+        self.assertEqual(_repair_arabic('John Doe'), 'John Doe')
+
+    def test_name_from_filename(self):
+        from apps.employees.services.document_parser import _name_from_filename
+        self.assertEqual(_name_from_filename('عبدالله محمد العجلان.pdf'), 'عبدالله محمد العجلان')
+        self.assertIsNone(_name_from_filename('contract_123.pdf'))
+        self.assertIsNone(_name_from_filename('عقد.pdf'))
+        self.assertIsNone(_name_from_filename(None))
+
+
+class TransliterationAndNationalityTests(TestCase):
+    def test_transliterate_common_names(self):
+        from apps.employees.services.document_parser import transliterate_arabic_name
+        self.assertEqual(transliterate_arabic_name('عبدالله محمد'), 'Abdullah Mohammed')
+        self.assertEqual(transliterate_arabic_name('خالد بن سعود'), 'Khalid bin Saud')
+        self.assertEqual(transliterate_arabic_name(''), '')
+        self.assertEqual(transliterate_arabic_name('John'), '')
+
+    def test_resolve_nationality_id(self):
+        from apps.core.web_views.employees import _resolve_nationality_id
+        from apps.setup.models import Nationality
+        row = Nationality.objects.create(code='T-SA', name='السعودية')
+        self.assertEqual(_resolve_nationality_id('Saudi'), row.id)
+        self.assertIsNone(_resolve_nationality_id('Martian'))
+        self.assertIsNone(_resolve_nationality_id(''))
+
+
+class OcrNameTests(TestCase):
+    def test_ocr_regex_extracts_name_and_drops_labels(self):
+        """يتحقق من تنظيف مخرجات Tesseract (الاسم فقط بلا العناوين)."""
+        from unittest import mock
+        from apps.employees.services import document_parser as dp
+        raw = 'اسم العامل: عبدالله محمد \u200eEmployee name:\u200f\r\n'
+        done = mock.Mock(stdout=raw.encode('utf-8'))
+        with mock.patch.object(dp.subprocess, 'run', return_value=done):
+            self.assertEqual(dp._ocr_row('tesseract', mock.Mock(save=lambda p: open(p, 'wb').close())),
+                             'عبدالله محمد')
+
+    def test_ocr_missing_binary_returns_none(self):
+        from unittest import mock
+        from apps.employees.services import document_parser as dp
+        with mock.patch.object(dp, '_find_tesseract', return_value=None):
+            self.assertIsNone(dp._ocr_employee_name('nope.pdf'))
+
+
+class AddEmployeeExtraFieldsTests(TestCase):
+    def test_birth_hijri_extraction(self):
+        from apps.employees.services.document_parser import _extract_birth_hijri
+        self.assertEqual(_extract_birth_hijri('Birth date: 1426/08/05 :x'), '1426/08/05')
+        self.assertIsNone(_extract_birth_hijri('Birth date: soon'))
+
+    def _form(self, **extra):
+        from apps.employees.forms import EmploymentRequestForm
+        data = {'name': 'اختبار', 'basic_salary': '3200', **extra}
+        pdf = SimpleUploadedFile('c.pdf', b'%PDF-1.4\n%%EOF', content_type='application/pdf')
+        return EmploymentRequestForm(data, {'commencement_document': pdf})
+
+    def test_form_accepts_email_hijri_and_allowances(self):
+        form = self._form(email='a@b.com', birth_date_hijri='1426/08/05',
+                          housing_allowance='800', transport_allowance='400', other_allowance='')
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['housing_allowance'], Decimal('800'))
+        self.assertEqual(form.cleaned_data['other_allowance'], 0)  # فارغ → صفر
+
+    def test_form_rejects_negative_allowance_and_bad_hijri(self):
+        self.assertFalse(self._form(housing_allowance='-5').is_valid())
+        self.assertFalse(self._form(birth_date_hijri='soon').is_valid())

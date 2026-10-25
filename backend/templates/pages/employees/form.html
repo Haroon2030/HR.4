@@ -83,6 +83,22 @@
                                value="{{ request.POST.phone|default:'' }}">
                     </div>
                     <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_email">البريد الإلكتروني</label>
+                        <input type="email" id="id_create_email" name="email"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               autocomplete="off" dir="ltr"
+                               placeholder="name@example.com"
+                               value="{{ request.POST.email|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_birth_date_hijri">تاريخ الميلاد (هجري)</label>
+                        <input type="text" id="id_create_birth_date_hijri" name="birth_date_hijri"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               inputmode="numeric" autocomplete="off" dir="ltr" maxlength="10"
+                               placeholder="1411/07/09"
+                               value="{{ request.POST.birth_date_hijri|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field">
                         <label class="hr-employee-create-field__label" for="id_create_gender">الجنس</label>
                         <select id="id_create_gender" name="gender" class="hr-glass-input hr-employee-create-field__input">
                             <option value="">— اختر الجنس —</option>
@@ -192,7 +208,7 @@
                     </span>
                     <div>
                         <h2 class="hr-employee-create-section__title">الراتب</h2>
-                        <p class="hr-employee-create-section__subtitle">الراتب الأساسي المقترح — تُستكمل البدلات عند الاعتماد النهائي</p>
+                        <p class="hr-employee-create-section__subtitle">الراتب الأساسي المقترح مع البدلات الأساسية — وباقي البدلات عند الاعتماد النهائي</p>
                     </div>
                 </header>
                 <div class="hr-employee-create-section__grid">
@@ -205,6 +221,27 @@
                                min="0.01" step="0.01" inputmode="decimal" dir="ltr"
                                placeholder="0.00"
                                value="{{ request.POST.basic_salary|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field" data-extracted-only{% if request.POST.housing_allowance or request.POST.transport_allowance or request.POST.other_allowance %}{% else %} style="display:none"{% endif %}>
+                        <label class="hr-employee-create-field__label" for="id_create_housing_allowance">بدل السكن</label>
+                        <input type="number" id="id_create_housing_allowance" name="housing_allowance"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               min="0" step="0.01" inputmode="decimal" dir="ltr" placeholder="0.00"
+                               value="{{ request.POST.housing_allowance|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field" data-extracted-only{% if request.POST.housing_allowance or request.POST.transport_allowance or request.POST.other_allowance %}{% else %} style="display:none"{% endif %}>
+                        <label class="hr-employee-create-field__label" for="id_create_transport_allowance">بدل المواصلات</label>
+                        <input type="number" id="id_create_transport_allowance" name="transport_allowance"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               min="0" step="0.01" inputmode="decimal" dir="ltr" placeholder="0.00"
+                               value="{{ request.POST.transport_allowance|default:'' }}">
+                    </div>
+                    <div class="hr-employee-create-field" data-extracted-only{% if request.POST.housing_allowance or request.POST.transport_allowance or request.POST.other_allowance %}{% else %} style="display:none"{% endif %}>
+                        <label class="hr-employee-create-field__label" for="id_create_other_allowance">بدلات أخرى</label>
+                        <input type="number" id="id_create_other_allowance" name="other_allowance"
+                               class="hr-glass-input hr-employee-create-field__input"
+                               min="0" step="0.01" inputmode="decimal" dir="ltr" placeholder="0.00"
+                               value="{{ request.POST.other_allowance|default:'' }}">
                     </div>
                 </div>
             </section>
@@ -349,7 +386,8 @@
                     throw new Error(result.error);
                 }
 
-                // ملء الحقول
+                // ملء الحقول وإظهار حقول البدلات (مخفية قبل الاستخراج)
+                document.querySelectorAll('[data-extracted-only]').forEach((el) => { el.style.display = ''; });
                 _fillFields(result.data);
 
                 // عرض التحذيرات إن وجدت
@@ -394,6 +432,10 @@
             }
         }
 
+        function _positive(value) {
+            return Number(value) > 0 ? value : '';
+        }
+
         function _fillFields(data) {
             const fields = {
                 'id_create_name': data.name,
@@ -404,6 +446,11 @@
                 'id_create_basic_salary': data.basic_salary,
                 'id_create_hire_date': data.hire_date,
                 'id_create_gender': data.gender,
+                'id_create_nationality': data.nationality_id,
+                'id_create_birth_date_hijri': data.birth_date_hijri,
+                'id_create_housing_allowance': _positive(data.salary_details && data.salary_details.housing),
+                'id_create_transport_allowance': _positive(data.salary_details && data.salary_details.transportation),
+                'id_create_other_allowance': _positive(data.salary_details && data.salary_details.other),
             };
 
             for (const [id, value] of Object.entries(fields)) {
