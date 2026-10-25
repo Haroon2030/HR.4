@@ -293,3 +293,14 @@ class AddEmployeeExtraFieldsTests(TestCase):
     def test_form_rejects_negative_allowance_and_bad_hijri(self):
         self.assertFalse(self._form(housing_allowance='-5').is_valid())
         self.assertFalse(self._form(birth_date_hijri='soon').is_valid())
+
+
+class SuperuserOnlyTests(TestCase):
+    def test_non_superuser_with_add_permission_gets_403(self):
+        user = User.objects.create_user('plainhr', password='pass12345')
+        c = Client()
+        c.force_login(user)
+        pdf = SimpleUploadedFile('c.pdf', b'%PDF-1.4\n%%EOF', content_type='application/pdf')
+        response = c.post('/employees/parse-contract/', {'commencement_document': pdf})
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()['success'])

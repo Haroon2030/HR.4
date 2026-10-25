@@ -592,7 +592,6 @@ def delete_employee(request, employee_id):
 
 @login_required
 @require_http_methods(['POST'])
-@permission_required('employees.add')
 def parse_employment_contract(request):
     """
     API endpoint لاستخراج البيانات من عقد توظيف PDF.
@@ -609,6 +608,10 @@ def parse_employment_contract(request):
         'warnings': [str]
     }
     """
+    # ميزة محصورة بالسوبر أدمن (الزر مخفي لغيره، والفحص هنا يمنع الاستدعاء المباشر)
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'غير مصرّح', 'data': None, 'warnings': []}, status=403)
+
     if 'commencement_document' not in request.FILES:
         return JsonResponse({
             'success': False,

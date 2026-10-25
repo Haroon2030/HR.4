@@ -262,7 +262,7 @@
                             <div class="flex-1 min-w-0">
                                 {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' required=True %}
                             </div>
-                            {% if user.is_superuser or user|has_permission:'employees.add' %}
+                            {% if user.is_superuser %}
                             <div class="pt-8">
                                 <button type="button" id="btn_extract_contract"
                                         class="hr-glass-input px-4 py-2 text-sm font-bold rounded-lg whitespace-nowrap"
