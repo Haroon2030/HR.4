@@ -7,8 +7,8 @@ from decimal import Decimal
 from django.conf import settings
 
 from apps.core.salary_month import (
-    ANNUAL_LEAVE_DAYS_FIRST_TIER,
     calendar_month_last_day,
+    leave_rates,
     LEAVE_DAYS_QUANT,
     STANDARD_YEAR_DAYS,
 )
@@ -85,9 +85,10 @@ def compute_period_leave_accrual_days(
         first_days = (tier_end - start).days
         later_days = (as_of - tier_end).days + 1
 
+    first_rate, later_rate = leave_rates(getattr(employee, 'annual_leave_days', None))
     accrued = (
-        Decimal(first_days) * ANNUAL_LEAVE_DAYS_FIRST_TIER
-        + Decimal(later_days) * Decimal('30')
+        Decimal(first_days) * first_rate
+        + Decimal(later_days) * later_rate
     ) / year_days
     return accrued.quantize(LEAVE_DAYS_QUANT)
 

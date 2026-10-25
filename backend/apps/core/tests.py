@@ -232,7 +232,7 @@ class TerminateExecutorTests(_BaseExecutorTests):
 
 
 class SettlementPendingStatusTests(_BaseExecutorTests):
-    def test_create_end_of_service_marks_employee_suspended(self):
+    def test_create_end_of_service_does_not_suspend_employee(self):
         action = create_pending_action(
             action_type='end_of_service',
             employee=self.employee,
@@ -243,10 +243,10 @@ class SettlementPendingStatusTests(_BaseExecutorTests):
             requested_by=self.requester,
         )
         self.employee.refresh_from_db()
-        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
-        self.assertEqual(action.payload['status_before_settlement'], Employee.Status.ACTIVE)
+        self.assertEqual(self.employee.status, Employee.Status.ACTIVE)
+        self.assertNotIn('status_before_settlement', action.payload)
 
-    def test_create_terminate_marks_employee_suspended(self):
+    def test_create_terminate_does_not_suspend_employee(self):
         create_pending_action(
             action_type='terminate',
             employee=self.employee,
@@ -257,7 +257,7 @@ class SettlementPendingStatusTests(_BaseExecutorTests):
             requested_by=self.requester,
         )
         self.employee.refresh_from_db()
-        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
+        self.assertEqual(self.employee.status, Employee.Status.ACTIVE)
 
     def test_duplicate_open_settlement_raises(self):
         create_pending_action(
@@ -274,18 +274,36 @@ class SettlementPendingStatusTests(_BaseExecutorTests):
                 requested_by=self.requester,
             )
 
-    def test_revert_restores_previous_status_on_delete(self):
+    def test_revert_restores_previous_status_for_legacy_request(self):
+        """طلب قديم أوقف الموظف وحفظ حالته السابقة — يُعاد عند الحذف."""
+        action = create_pending_action(
+            action_type='terminate',
+            employee=self.employee,
+            payload={'end_date': '2026-06-01', 'end_reason': 'تصفية',
+                     'status_before_settlement': Employee.Status.ACTIVE},
+            requested_by=self.requester,
+        )
+        self.employee.status = Employee.Status.SUSPENDED
+        self.employee.save(update_fields=['status'])
+        revert_employee_settlement_pending_status(action)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.status, Employee.Status.ACTIVE)
+
+    def test_revert_keeps_manual_suspension(self):
+        """حذف طلب تصفية جديد لا يلغي توقيفاً تمّ بالزر."""
         action = create_pending_action(
             action_type='terminate',
             employee=self.employee,
             payload={'end_date': '2026-06-01', 'end_reason': 'تصفية'},
             requested_by=self.requester,
         )
+        self.employee.status = Employee.Status.SUSPENDED
+        self.employee.save(update_fields=['status'])
         revert_employee_settlement_pending_status(action)
         self.employee.refresh_from_db()
-        self.assertEqual(self.employee.status, Employee.Status.ACTIVE)
+        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
 
-    def test_execute_end_of_service_sets_terminated_after_suspended(self):
+    def test_execute_end_of_service_sets_terminated(self):
         action = create_pending_action(
             action_type='end_of_service',
             employee=self.employee,
@@ -297,7 +315,7 @@ class SettlementPendingStatusTests(_BaseExecutorTests):
             requested_by=self.requester,
         )
         self.employee.refresh_from_db()
-        self.assertEqual(self.employee.status, Employee.Status.SUSPENDED)
+        self.assertEqual(self.employee.status, Employee.Status.ACTIVE)
 
         action.status = PendingAction.Status.APPROVED
         action.save(update_fields=['status'])

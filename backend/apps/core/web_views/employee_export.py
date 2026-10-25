@@ -251,7 +251,7 @@ def _secure_xlsx_response(payload: bytes, filename: str) -> HttpResponse:
 
 
 @login_required
-@permission_required('employees.view')
+@permission_required('employees.export')
 @ratelimit(key='user', rate='20/h', method='GET', block=True, group='ns_emp_export')
 def export_non_sponsored_employees_excel(request):
     """تصدير موظفين بدون كفالة — أعمدة مربوطة بحقول بيانات الموظف في الموقع."""
@@ -370,7 +370,7 @@ def export_non_sponsored_employees_excel(request):
 
 
 @login_required
-@permission_required('employees.add')
+@permission_required('employees.import')
 @require_POST
 @ratelimit(key='user', rate='10/h', method='POST', block=True, group='ns_emp_import')
 def import_non_sponsored_employees_excel(request):
@@ -443,7 +443,7 @@ def import_non_sponsored_employees_excel(request):
 
 
 @login_required
-@permission_required('employees.add')
+@permission_required('employees.import')
 @require_POST
 @ratelimit(key='user', rate='10/h', method='POST', block=True, group='sp_emp_import')
 def import_sponsored_employees_excel(request):
@@ -561,7 +561,7 @@ def _sponsored_cell_value(employee: Employee, key: str):
 
 
 @login_required
-@permission_required('employees.view')
+@permission_required('employees.export')
 @ratelimit(key='user', rate='20/h', method='GET', block=True, group='sp_emp_export')
 def export_sponsored_employees_excel(request):
     """تصدير موظفي الكفالة بنفس أعمدة «استيراد بكفالة» (تصدير ثم تعديل ثم استيراد)."""

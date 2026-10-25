@@ -1014,3 +1014,29 @@ def end_of_service_employee(request, employee_id):
         return redirect('web:view_employee', employee_id=employee.id)
     messages.success(request, 'تم رفع طلب تصفية نهاية الخدمة لمدير الموارد.')
     return redirect('web:view_employee', employee_id=employee.id)
+
+
+@login_required
+@permission_required('employees.view')
+@employee_branch_access_required
+def toggle_employee_suspension(request, employee_id):
+    """توقيف الموظف / إلغاء توقيفه — مدير الموارد البشرية والسوبر أدمن فقط."""
+    from apps.employees.models import Employee
+    from apps.employees.services import suspension
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    if request.method != 'POST':
+        return redirect('web:view_employee', employee_id=employee.id)
+    if not suspension.user_can_suspend_employees(request.user):
+        messages.error(request, 'توقيف الموظف متاح لمدير الموارد البشرية والسوبر أدمن فقط.')
+        return redirect('web:view_employee', employee_id=employee.id)
+    try:
+        suspended = suspension.toggle_employee_suspension(employee)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect('web:view_employee', employee_id=employee.id)
+    if suspended:
+        messages.success(request, 'تم توقيف الموظف.')
+    else:
+        messages.success(request, 'تم إلغاء توقيف الموظف — أصبح على رأس العمل.')
+    return redirect('web:view_employee', employee_id=employee.id)

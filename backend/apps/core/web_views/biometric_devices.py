@@ -684,3 +684,68 @@ def biometric_enrollment_save(request):
         )
     from django.urls import reverse
     return redirect('web:biometric_devices')
+
+
+
+# ═══ استيراد / تصدير ربط البصمة بالموظفين (Excel) ═══
+
+@permission_required(ATTENDANCE_SCREEN_DEVICES_VIEW)
+def biometric_enrollments_export(request):
+    """تصدير روابط البصمة النشطة (جهاز + رقم المستخدم ↔ الموظف) إلى Excel."""
+    from django.utils import timezone
+
+    from apps.attendance.services.enrollment_excel import build_enrollments_workbook_bytes
+    from apps.core.services.access_control import get_accessible_branch_ids
+    from apps.core.web_views.employee_export import _secure_xlsx_response
+
+    allowed = get_accessible_branch_ids(request.user)
+    payload = build_enrollments_workbook_bytes(
+        allowed_branch_ids=set(allowed) if allowed is not None else None,
+    )
+    return _secure_xlsx_response(
+        payload, f'biometric_enrollments_{timezone.localdate():%Y%m%d}.xlsx',
+    )
+
+
+@permission_required('attendance.manage')
+@require_POST
+def biometric_enrollments_import(request):
+    """استيراد روابط البصمة من Excel (نفس أعمدة التصدير)."""
+    import logging
+
+    from apps.attendance.services.enrollment_excel import import_enrollments_from_upload
+    from apps.core.services.access_control import get_accessible_branch_ids
+    from apps.employees.services.non_sponsored_import import ImportValidationError
+
+    back = redirect(request.POST.get('next') if request.POST.get('next') in (
+        '/attendance/daily/', '/setup/biometric-devices/',
+    ) else 'web:biometric_devices')
+
+    uploaded = request.FILES.get('excel_file')
+    if not uploaded:
+        messages.error(request, 'يرجى اختيار ملف Excel للاستيراد.')
+        return back
+    allowed = get_accessible_branch_ids(request.user)
+    try:
+        summary = import_enrollments_from_upload(
+            uploaded, request=request,
+            allowed_branch_ids=set(allowed) if allowed is not None else None,
+        )
+    except ImportValidationError as exc:
+        messages.error(request, str(exc))
+        return back
+    except Exception:
+        logging.getLogger(__name__).exception('biometric enrollments import failed user=%s', request.user.pk)
+        messages.error(request, 'تعذّر استيراد الملف. تأكد من صحة Excel وأعد المحاولة.')
+        return back
+
+    if summary.created or summary.updated:
+        messages.success(request, f'تم الاستيراد: ربط جديد {summary.created}، تحديث {summary.updated}.')
+    if summary.unchanged:
+        messages.info(request, f'{summary.unchanged} ربط بدون تغيير.')
+    if summary.errors:
+        details = ' | '.join(f'صف {r.row_number}: {r.message}' for r in summary.results[:5])
+        messages.error(request, f'تعذّر استيراد {summary.errors} صفاً — {details}')
+    if not (summary.created or summary.updated or summary.unchanged or summary.errors):
+        messages.warning(request, 'لا توجد صفوف للاستيراد في الملف.')
+    return back

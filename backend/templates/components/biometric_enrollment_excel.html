@@ -1,0 +1,51 @@
+{# تصدير/استيراد ربط البصمة بالموظفين — next_path: الصفحة التي يعود إليها الاستيراد #}
+{% load custom_tags %}
+{% if user|has_permission:'attendance_screen_devices.view' %}
+<a href="{% url 'web:biometric_enrollments_export' %}" class="hr-btn hr-btn--outline"
+   title="تصدير ربط أرقام البصمة بالموظفين (Excel)">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hr-btn__icon" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+    <span>تصدير ربط البصمة</span>
+</a>
+{% endif %}
+{% if user|has_permission:'attendance.manage' %}
+<form method="post" action="{% url 'web:biometric_enrollments_import' %}" enctype="multipart/form-data"
+      class="inline-flex m-0" hx-boost="false" data-enroll-import-form>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_path }}">
+    <input type="file" name="excel_file" id="enroll-import-file-{{ next_path|slugify }}" class="sr-only"
+           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+           aria-label="ملف Excel لاستيراد ربط البصمة" data-enroll-import-file>
+    <label for="enroll-import-file-{{ next_path|slugify }}" class="hr-btn hr-btn--outline m-0 cursor-pointer"
+           title="استيراد ربط أرقام البصمة بالموظفين (Excel)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hr-btn__icon" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+        <span>استيراد ربط البصمة</span>
+    </label>
+</form>
+<script>
+(function () {
+    document.querySelectorAll('[data-enroll-import-file]').forEach(function (input) {
+        if (input.dataset.bound) return;
+        input.dataset.bound = '1';
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            if (!/\.xlsx$/i.test(file.name)) {
+                alert('يُقبل ملف Excel بصيغة .xlsx فقط.');
+                input.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert('حجم الملف يتجاوز 5 ميغابايت.');
+                input.value = '';
+                return;
+            }
+            if (window.confirm('استيراد ربط البصمة من «' + file.name + '»؟\nيُنشأ أو يُحدَّث الربط حسب الملف، ولا يُنقل رقم مربوط بموظف آخر.')) {
+                input.form.submit();
+            } else {
+                input.value = '';
+            }
+        });
+    });
+})();
+</script>
+{% endif %}

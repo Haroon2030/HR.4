@@ -121,6 +121,7 @@
     </form>
 
     <div class="hr-emp-actions">
+        {% if user|has_permission:'employees.export' %}
         <div class="hr-emp-actions__group" role="group" aria-label="تصدير Excel">
             <span class="hr-emp-actions__title">تصدير</span>
             <a href="{{ no_sponsorship_export_url }}"
@@ -140,7 +141,8 @@
                 <span>Excel بكفالة</span>
             </a>
         </div>
-        {% if user|has_permission:'employees.add' %}
+        {% endif %}
+        {% if user|has_permission:'employees.import' %}
         <div class="hr-emp-actions__group" role="group" aria-label="استيراد Excel">
             <span class="hr-emp-actions__title">استيراد</span>
             <form method="post"

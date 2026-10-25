@@ -113,6 +113,16 @@
                         <p class="text-[10px] text-slate-500 mt-1">المتبقي قبل تاريخ الاحتساب (إن وُجد).</p>
                     </div>
                     <div class="hr-form-field">
+                        <label class="block text-xs font-bold text-slate-800 mb-1" for="annual-leave-days">أيام الإجازة السنوية</label>
+                        <select id="annual-leave-days" name="annual_leave_days"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                            {% for value, label in employee.ANNUAL_LEAVE_DAYS_CHOICES %}
+                            <option value="{{ value }}"{% if value == employee.annual_leave_days %} selected{% endif %}>{{ label }} / سنة</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-[10px] text-slate-500 mt-1">يُحسب بها الرصيد والتصفية النهائية (بعد 5 سنوات: الأعلى منها ومن 30).</p>
+                    </div>
+                    <div class="hr-form-field">
                         <label class="block text-xs font-bold text-slate-800 mb-1">تاريخ الاحتساب (من)</label>
                         <input type="date" name="leave_accrual_start_date"
                                value="{{ employee.leave_accrual_start_date|date:'Y-m-d' }}"
@@ -147,6 +157,10 @@
                     <div>
                         <div class="text-xs font-bold text-slate-600 mb-1">الرصيد الافتتاحي (أيام)</div>
                         <div class="text-sm font-bold text-slate-800">{{ employee.opening_leave_days|floatformat:2|default:"0.00" }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-600 mb-1">أيام الإجازة السنوية</div>
+                        <div class="text-sm font-bold text-slate-800">{{ employee.annual_leave_days }} يوم / سنة</div>
                     </div>
                     <div>
                         <div class="text-xs font-bold text-slate-600 mb-1">تاريخ الاحتساب</div>

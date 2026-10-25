@@ -22,6 +22,8 @@
             <div><dt class="text-slate-500 text-xs">الإدارة</dt><dd class="font-semibold text-slate-900">{{ obj.administration.name|default:"—" }}</dd></div>
             <div><dt class="text-slate-500 text-xs">القسم</dt><dd class="font-semibold text-slate-900">{{ obj.department.name|default:"—" }}</dd></div>
             <div><dt class="text-slate-500 text-xs">مركز التكلفة</dt><dd class="font-semibold text-slate-900">{{ obj.cost_center.name|default:"—" }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">نوع المباشرة</dt><dd class="font-semibold text-slate-900">{{ obj.get_start_kind_display }}</dd></div>
+            <div><dt class="text-slate-500 text-xs">{% if obj.start_kind == 'after_leave' %}تاريخ العودة من الإجازة{% else %}تاريخ المباشرة{% endif %}</dt><dd class="font-semibold text-slate-900">{{ obj.hire_date|date:"Y/m/d"|default:"—" }}</dd></div>
             <div><dt class="text-slate-500 text-xs">الراتب الأساسي</dt><dd class="font-semibold text-slate-900">{{ obj.basic_salary|format_amount }}</dd></div>
             <div><dt class="text-slate-500 text-xs">مقدّم الطلب</dt><dd class="font-semibold text-slate-900">{% if obj.requested_by %}{{ obj.requested_by.get_full_name|default:obj.requested_by.username }}{% else %}—{% endif %}</dd></div>
             <div><dt class="text-slate-500 text-xs">أسند إلى</dt><dd class="font-semibold text-slate-900">{% if obj.assigned_officer %}{{ obj.assigned_officer.get_full_name|default:obj.assigned_officer.username }}{% else %}—{% endif %}</dd></div>

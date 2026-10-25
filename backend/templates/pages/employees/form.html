@@ -100,7 +100,14 @@
                         </select>
                     </div>
                     <div class="hr-employee-create-field">
-                        <label class="hr-employee-create-field__label" for="id_create_hire_date">تاريخ المباشرة</label>
+                        <label class="hr-employee-create-field__label" for="id_create_start_kind">نوع المباشرة</label>
+                        <select id="id_create_start_kind" name="start_kind" class="hr-glass-input hr-employee-create-field__input">
+                            <option value="new"{% if request.POST.start_kind != 'after_leave' %} selected{% endif %}>مباشرة جديدة</option>
+                            <option value="after_leave"{% if request.POST.start_kind == 'after_leave' %} selected{% endif %}>عودة من إجازة</option>
+                        </select>
+                    </div>
+                    <div class="hr-employee-create-field">
+                        <label class="hr-employee-create-field__label" for="id_create_hire_date" id="id_create_hire_date_label" data-label-new="تاريخ المباشرة" data-label-after-leave="تاريخ العودة من الإجازة">تاريخ المباشرة</label>
                         <input type="date" id="id_create_hire_date" name="hire_date"
                                class="hr-glass-input hr-employee-create-field__input"
                                dir="ltr"
@@ -260,6 +267,17 @@
             const next = fields[fields.indexOf(el) + 1];
             if (next) next.focus();
         }, true);
+    })();
+    // نوع المباشرة: «عودة من إجازة» يغيّر مسمّى حقل التاريخ إلى تاريخ العودة
+    (function () {
+        const kind = document.getElementById('id_create_start_kind');
+        const label = document.getElementById('id_create_hire_date_label');
+        if (!kind || !label) return;
+        const sync = () => {
+            label.textContent = kind.value === 'after_leave' ? label.dataset.labelAfterLeave : label.dataset.labelNew;
+        };
+        kind.addEventListener('change', sync);
+        sync();
     })();
 </script>
 {% endblock %}

@@ -15,6 +15,7 @@
             </h1>
         </div>
         <div class="flex flex-wrap gap-2">
+            {% include "components/biometric_enrollment_excel.html" with next_path="/setup/biometric-devices/" %}
             {% if user|has_permission:'attendance.manage' %}
             {% include "components/hr_btn.html" with label="إضافة جهاز" type="button" variant="primary" icon="plus" x_click="openDeviceForm()" %}
             {% endif %}

@@ -41,7 +41,7 @@
                         </td>
                         <td class="hr-employees-table__td hr-employees-table__td--actions">
                             {% url 'web:view_employee' emp.id as act_view %}
-                            {% url 'web:edit_employee' emp.id as act_edit %}
+                            {% if user|has_permission:'employees.edit_profile' %}{% url 'web:edit_employee' emp.id as act_edit %}{% endif %}
                             {% if request.user.is_superuser or request.user.profile.role.role_type == 'admin' %}
                             {% url 'web:delete_employee' emp.id as act_del %}
                             {% include "components/table_actions.html" with view_url=act_view view_title="عرض البيانات" edit_url=act_edit edit_title="تعديل" delete_url=act_del delete_confirm="هل أنت متأكد من حذف الموظف ؟" %}

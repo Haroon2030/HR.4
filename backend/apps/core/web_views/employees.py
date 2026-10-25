@@ -365,8 +365,11 @@ def view_employee(request, employee_id):
         load_all_tabs=False,
     )
 
+    from apps.employees.services.suspension import user_can_suspend_employees
+
     ctx = enrich_employee_page_context(request.user, {
         'employee': employee,
+        'can_suspend_employee': user_can_suspend_employees(request.user),
         **tab_data,
     }, requested_tab=requested_tab)
 
@@ -470,7 +473,16 @@ def save_employee_leave_settings(request, employee_id):
         messages.error(request, 'تاريخ نهاية الاحتساب يجب أن يكون بعد تاريخ البداية.')
         return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
 
+    annual_raw = (request.POST.get('annual_leave_days') or '').strip()
+    valid_annual = {value for value, _ in Employee.ANNUAL_LEAVE_DAYS_CHOICES}
+    if annual_raw and (not annual_raw.isdigit() or int(annual_raw) not in valid_annual):
+        messages.error(request, 'أيام الإجازة السنوية يجب أن تكون بين 21 و30.')
+        return redirect(f'{reverse("web:view_employee", kwargs={"employee_id": employee.id})}?tab=leaves')
+
     update_fields = ['opening_leave_days', 'leave_accrual_start_date', 'leave_accrual_end_date', 'updated_at']
+    if annual_raw:
+        employee.annual_leave_days = int(annual_raw)
+        update_fields.append('annual_leave_days')
     employee.opening_leave_days = opening
     employee.leave_accrual_start_date = accrual_start
     employee.leave_accrual_end_date = accrual_end if accrual_start else None

@@ -93,6 +93,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/leaves/<int:leave_id>/delete/', web_views.delete_employee_leave, name='delete_employee_leave'),
     path('employees/<int:employee_id>/terminate/', web_views.terminate_employee, name='terminate_employee'),                    # طلب تصفية
     path('employees/<int:employee_id>/reactivate/', web_views.reactivate_employee, name='reactivate_employee'),                # إعادة تفعيل
+    path('employees/<int:employee_id>/suspension/', web_views.toggle_employee_suspension, name='toggle_employee_suspension'),  # توقيف / إلغاء توقيف (مدير الموارد)
     path('employees/<int:employee_id>/salary-adjust/', web_views.adjust_employee_salary, name='adjust_employee_salary'),        # تعديل راتب
     path('employees/<int:employee_id>/transfer/', web_views.transfer_employee, name='transfer_employee'),                       # نقل موظف
     path('employees/<int:employee_id>/schedule/', web_views.set_work_schedule, name='set_work_schedule'),                       # جدول الدوام
@@ -288,6 +289,8 @@ urlpatterns = [
         name='biometric_device_generate_agent_key',
     ),
     path('attendance/enrollments/save/', web_views.biometric_enrollment_save, name='biometric_enrollment_save'),
+    path('attendance/enrollments/export/', web_views.biometric_enrollments_export, name='biometric_enrollments_export'),
+    path('attendance/enrollments/import/', web_views.biometric_enrollments_import, name='biometric_enrollments_import'),
     path('attendance/records/', web_views.attendance_records_list, name='attendance_records'),
     path('attendance/records/pull/', web_views.attendance_records_pull, name='attendance_records_pull'),
     path('attendance/records/reclassify/', web_views.attendance_records_reclassify, name='attendance_records_reclassify'),

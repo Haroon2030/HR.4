@@ -662,9 +662,13 @@
             }
             if (val) {
                 if (isDate) {
-                    // Try to format to YYYY-MM-DD if it's a date
-                    let d = new Date(val);
-                    if (!isNaN(d)) {
+                    // YYYY/MM/DD أو YYYY-MM-DD تُقرأ كما هي — التحويل عبر toISOString (UTC)
+                    // كان يُرجع اليوم السابق في توقيت السعودية (UTC+3)
+                    const ymd = val.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+                    let d = ymd ? null : new Date(val);
+                    if (ymd) {
+                        inp.value = ymd[1] + '-' + ymd[2].padStart(2, '0') + '-' + ymd[3].padStart(2, '0');
+                    } else if (!isNaN(d)) {
                         inp.value = d.toISOString().split('T')[0];
                     } else {
                         inp.type = 'text'; // Fallback if invalid date format

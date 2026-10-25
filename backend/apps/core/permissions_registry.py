@@ -69,6 +69,8 @@ OPERATION_NAMES = {
     'edit_salary': 'تعديل الراتب',
     'request_salary_adjust': 'تقديم طلب تعديل راتب',
     'export': 'تصدير',
+    'import': 'استيراد',
+    'edit_profile': 'زر تعديل / إكمال بيانات الموظف',
     'process': 'معالجة',
     'manage_roles': 'إدارة الأدوار',
     'view_reports': 'عرض التقارير',

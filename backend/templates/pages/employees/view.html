@@ -85,9 +85,21 @@
             </div>
             {% endif %}{% endif %}
 
-            {% if user|has_permission:'employees.edit' %}
+            {% if user|has_permission:'employees.edit_profile' %}
             {% url 'web:edit_employee' employee.id as edit_employee_url %}
             {% include "components/hr_btn.html" with href=edit_employee_url label="تعديل / إكمال البيانات" variant="glass-primary" icon="pencil" %}
+            {% endif %}
+
+            {% if can_suspend_employee and employee.status != 'terminated' %}
+            <form method="post" action="{% url 'web:toggle_employee_suspension' employee.id %}" class="inline-flex" hx-boost="false"
+                  {% if employee.status == 'suspended' %}data-hr-confirm="إلغاء توقيف الموظف وإعادته على رأس العمل؟" data-hr-confirm-ok="إلغاء التوقيف" data-hr-confirm-variant="primary"{% else %}data-hr-confirm="توقيف الموظف؟ تتحول حالته إلى «موقوف» حتى إلغاء التوقيف." data-hr-confirm-ok="توقيف" data-hr-confirm-variant="danger"{% endif %}>
+                {% csrf_token %}
+                {% if employee.status == 'suspended' %}
+                <button type="submit" class="hr-btn hr-btn--soft-emerald"><i data-lucide="user-check" class="hr-btn__icon"></i> إلغاء التوقيف</button>
+                {% else %}
+                <button type="submit" class="hr-btn hr-btn--soft-rose"><i data-lucide="user-x" class="hr-btn__icon"></i> توقيف الموظف</button>
+                {% endif %}
+            </form>
             {% endif %}
         </div>
     </div>
@@ -120,14 +132,14 @@
         </div>
     </div>
     {% elif employee.status == 'suspended' %}
-    <!-- بانر الوقف (تصفية قيد الموافقة) -->
+    <!-- بانر الوقف (بزر مدير الموارد البشرية) -->
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
         <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
             <i data-lucide="user-x" class="w-5 h-5 text-amber-600"></i>
         </div>
         <div class="flex-1">
             <div class="font-bold text-amber-900 text-sm mb-1">الموظف موقوف</div>
-            <p class="text-xs text-amber-800">يوجد طلب تصفية قيد الموافقة — الحالة ستتحول إلى «منتهي الخدمة» بعد اعتماد الطلب وتنفيذه.</p>
+            <p class="text-xs text-amber-800">أوقفه مدير الموارد البشرية — يبقى موقوفاً حتى إلغاء التوقيف.</p>
         </div>
     </div>
     {% endif %}
@@ -622,12 +634,12 @@
 
                 <div x-show="terminatedBy === 'article_80'" x-cloak class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
                     <i data-lucide="info" class="w-3.5 h-3.5 inline-block"></i>
-                    المادة 80: رصيد إجازات فقط — 21 يوم/سنة أول 5 سنوات، 30 يوم/سنة من السنة السادسة — بدون مكافأة نهاية خدمة.
+                    المادة 80: رصيد إجازات فقط — <span x-text="annualLeaveDays">21</span> يوم/سنة أول 5 سنوات، <span x-text="laterLeaveDays">30</span> يوم/سنة من السنة السادسة — بدون مكافأة نهاية خدمة.
                 </div>
 
                 <div x-show="terminatedBy === 'probation_end'" x-cloak class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
                     <i data-lucide="info" class="w-3.5 h-3.5 inline-block"></i>
-                    نهاية فترة التجربة: رصيد إجازات فقط — 21 يوم/سنة — بدون مكافأة نهاية خدمة.
+                    نهاية فترة التجربة: رصيد إجازات فقط — <span x-text="annualLeaveDays">21</span> يوم/سنة — بدون مكافأة نهاية خدمة.
                 </div>
 
                 <div x-show="terminatedBy === 'article_77' || terminatedBy === 'article_74'" x-cloak>
@@ -1589,6 +1601,7 @@ window.employeeEosCalculator = function() {
         remainingLeave: Number(n.remaining_leave_days) || 0,
         usedLeaveDays: Number(n.used_leave_days) || 0,
         accruedLeaveDays: Number(n.accrued_leave_days) || 0,
+        annualLeaveDays: Number(n.annual_leave_days) || 21,
         hasSponsor: !!n.has_sponsor,
         pendingLoansTotal: Number(n.pending_loans_total) || 0,
         pendingAbsences: Array.isArray(n.pending_absences) ? n.pending_absences : [],
@@ -1618,13 +1631,31 @@ window.employeeEosCalculator = function() {
             }
             return Math.max(months, 0);
         },
+        // أيام الشهر الجزئي بعد آخر شهر مكتمل (يطابق partial_month_leave_days في الخادم)
+        partialMonthDays(hireIso, endIso, months) {
+            var hire = this.parseLocalDate(hireIso);
+            var end = this.parseLocalDate(endIso);
+            if (!hire || !end) return 0;
+            var y = hire.getFullYear() + Math.floor((hire.getMonth() + months) / 12);
+            var m = (hire.getMonth() + months) % 12;
+            var lastDay = new Date(y, m + 1, 0).getDate();
+            var anchor = new Date(y, m, Math.min(hire.getDate(), lastDay));
+            return Math.max(0, Math.round((end - anchor) / 86400000));
+        },
+        // استحقاق الموظف السنوي (21–30) أول 5 سنوات، وبعدها الأعلى منه ومن 30
+        // (يطابق leave_rates / accrued_leave_days_with_partial_month في الخادم)
+        get laterLeaveDays() { return Math.max(this.annualLeaveDays, 30); },
+        // الأشهر المكتملة × (الاستحقاق ÷ 12) + أيام الشهر الجزئي × الاستحقاق ÷ 360
         monthlyAccruedLeaveDays(flat21Only) {
             if (!this.hasSponsor || !this.hireDate || !this.endDate) return 0;
+            var first = this.annualLeaveDays, later = this.laterLeaveDays;
             var months = this.completedServiceMonths(this.hireDate, this.endDate);
-            if (months <= 0) return 0;
-            if (flat21Only) return +(months * 1.75).toFixed(2);
-            if (months <= 60) return +(months * 1.75).toFixed(2);
-            return +((60 * 1.75) + ((months - 60) * 2.5)).toFixed(2);
+            var partial = this.partialMonthDays(this.hireDate, this.endDate, months);
+            var full;
+            if (flat21Only || months <= 60) full = months * first / 12;
+            else full = (5 * first) + ((months - 60) * later / 12);
+            var annual = (flat21Only || months < 60) ? first : later;
+            return +(full + partial * annual / 360).toFixed(2);
         },
         get serviceDays() {
             if (!this.hireDate || !this.endDate) return 0;
@@ -1662,8 +1693,8 @@ window.employeeEosCalculator = function() {
         },
         get leaveSectionLabel() {
             if (this.terminatedBy === 'article_80') return 'رصيد الإجازة (المادة 80)';
-            if (this.terminatedBy === 'probation_end') return 'رصيد الإجازة (نهاية فترة التجربة — 21 يوم/سنة)';
-            return 'مستحقات الإجازة (21 يوم/سنة)';
+            if (this.terminatedBy === 'probation_end') return 'رصيد الإجازة (نهاية فترة التجربة — ' + this.annualLeaveDays + ' يوم/سنة)';
+            return 'مستحقات الإجازة (' + this.annualLeaveDays + ' يوم/سنة)';
         },
         get eosCalcType() {
             if (this.terminatedBy === 'article_77' || this.terminatedBy === 'article_74') return this.articleParty;

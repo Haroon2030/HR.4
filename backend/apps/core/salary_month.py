@@ -100,41 +100,96 @@ def service_years_30day(service_days: int) -> Decimal:
     return (Decimal(service_days) / Decimal(STANDARD_YEAR_DAYS)).quantize(Decimal('0.0001'))
 
 
+def leave_rates(annual_days=None) -> tuple[Decimal, Decimal]:
+    """(أيام السنة أول 5 سنوات، أيام السنة بعدها) — بعد 5 سنوات الأعلى من الاستحقاق و30."""
+    first = Decimal(annual_days or ANNUAL_LEAVE_DAYS_FIRST_TIER)
+    return first, max(first, ANNUAL_LEAVE_DAYS_AFTER_FIVE)
+
+
+def _fmt_days(value: Decimal) -> str:
+    """1.75 / 2.5 / 2.08 — بدون أصفار زائدة."""
+    return format(value.quantize(LEAVE_DAYS_QUANT).normalize(), 'f')
+
+
 def accrued_annual_leave_days(
     hire_date: date,
     as_of: date,
     *,
     flat_21_only: bool = False,
+    annual_days=None,
 ) -> Decimal:
     """
-    أيام الإجازة المستحقة:
-    - أشهر الخدمة المكتملة × 1.75 (أول 5 سنوات / 60 شهراً)
-    - بعدها: 105 يوم + الأشهر الزائدة × 2.5
-    - نهاية التجربة (flat_21_only): 1.75/شهر دائماً
+    أيام الإجازة المستحقة (annual_days = استحقاق الموظف السنوي، الافتراضي 21):
+    - أشهر الخدمة المكتملة × (annual_days ÷ 12) أول 5 سنوات / 60 شهراً
+    - بعدها: annual_days × 5 + الأشهر الزائدة × (الأعلى من annual_days و30) ÷ 12
+    - نهاية التجربة (flat_21_only): annual_days ÷ 12 لكل شهر دائماً
     """
     months = completed_employment_months(hire_date, as_of)
     if months <= 0:
         return Decimal('0.00')
+    first, later = leave_rates(annual_days)
 
     if flat_21_only or months <= FIRST_TIER_MONTHS:
-        return (Decimal(months) * MONTHLY_LEAVE_ACCRUAL_DAYS).quantize(LEAVE_DAYS_QUANT)
+        return (Decimal(months) * first / 12).quantize(LEAVE_DAYS_QUANT)
 
     extra_months = months - FIRST_TIER_MONTHS
-    accrued = FIRST_TIER_LEAVE_CAP + (Decimal(extra_months) * MONTHLY_LEAVE_AFTER_FIVE_YEARS)
+    accrued = first * 5 + Decimal(extra_months) * later / 12
     return accrued.quantize(LEAVE_DAYS_QUANT)
 
 
-def leave_accrual_formula_label(*, flat_21_only: bool = False, months: int = 0) -> str:
+def add_calendar_months(d: date, months: int) -> date:
+    """تاريخ بعد عدد من الأشهر التقويمية (يُقصّ اليوم لآخر الشهر عند الحاجة)."""
+    years, month_index = divmod(d.month - 1 + months, 12)
+    year = d.year + years
+    month = month_index + 1
+    return date(year, month, min(d.day, monthrange(year, month)[1]))
+
+
+def partial_month_leave_days(hire_date: date, as_of: date) -> int:
+    """أيام الشهر الجزئي الأخير بعد آخر شهر خدمة مكتمل (لا تُسقَط في التصفية)."""
+    months = completed_employment_months(hire_date, as_of)
+    anchor = add_calendar_months(hire_date, months)
+    return max((as_of - anchor).days, 0)
+
+
+def accrued_leave_days_with_partial_month(
+    hire_date: date,
+    as_of: date,
+    *,
+    flat_21_only: bool = False,
+    annual_days=None,
+) -> Decimal:
+    """
+    أيام الإجازة المستحقة للتصفية: الأشهر المكتملة × (الاستحقاق ÷ 12)
+    + أيام الشهر الجزئي × الاستحقاق ÷ 360 — فلا يضيع الشهر غير المكتمل،
+    وتبقى السنة الكاملة = الاستحقاق السنوي بالضبط (21 افتراضياً).
+    """
+    if as_of <= hire_date:
+        return Decimal('0.00')
+    months = completed_employment_months(hire_date, as_of)
+    full = accrued_annual_leave_days(
+        hire_date, as_of, flat_21_only=flat_21_only, annual_days=annual_days,
+    )
+    partial = partial_month_leave_days(hire_date, as_of)
+    first, later = leave_rates(annual_days)
+    annual = first if (flat_21_only or months < FIRST_TIER_MONTHS) else later
+    return (full + Decimal(partial) * annual / Decimal(STANDARD_YEAR_DAYS)).quantize(LEAVE_DAYS_QUANT)
+
+
+def leave_accrual_formula_label(*, flat_21_only: bool = False, months: int = 0, annual_days=None) -> str:
     """نص قاعدة الاستحقاق للعرض في التقارير."""
+    first, later = leave_rates(annual_days)
+    first_txt = _fmt_days(first)
+    monthly = _fmt_days(first / 12)
     if flat_21_only:
-        return f'21 يوم/سنة = {MONTHLY_LEAVE_ACCRUAL_DAYS} يوم/شهر (شهر = {STANDARD_MONTH_DAYS} يوماً)'
+        return f'{first_txt} يوم/سنة = {monthly} يوم/شهر (شهر = {STANDARD_MONTH_DAYS} يوماً)'
     if months <= FIRST_TIER_MONTHS:
         return (
-            f'21 يوم/سنة = {MONTHLY_LEAVE_ACCRUAL_DAYS} يوم/شهر '
+            f'{first_txt} يوم/سنة = {monthly} يوم/شهر '
             f'(أول 5 سنوات — شهر = {STANDARD_MONTH_DAYS} يوماً)'
         )
     return (
-        f'{FIRST_TIER_LEAVE_CAP} يوم (5 سنوات) + {MONTHLY_LEAVE_AFTER_FIVE_YEARS} يوم/شهر '
+        f'{_fmt_days(first * 5)} يوم (5 سنوات) + {_fmt_days(later / 12)} يوم/شهر '
         f'× الأشهر الزائدة'
     )
 

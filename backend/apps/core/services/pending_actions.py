@@ -813,26 +813,17 @@ def _open_settlement_pending_action_qs(employee):
     )
 
 
-def mark_employee_settlement_pending(employee, *, payload: dict) -> dict:
-    """عند تقديم طلب تصفية — يُوقَف الموظف حتى اكتمال الموافقات والتنفيذ."""
-    from apps.employees.models import Employee
-
-    payload = dict(payload or {})
-    if employee.status == Employee.Status.TERMINATED:
-        return payload
-
-    payload.setdefault('status_before_settlement', employee.status)
-    if employee.status != Employee.Status.SUSPENDED:
-        employee.status = Employee.Status.SUSPENDED
-        employee.save(update_fields=['status', 'updated_at'])
-    return payload
-
-
 def revert_employee_settlement_pending_status(action) -> None:
-    """إلغاء وقف الموظف عند حذف طلب تصفية غير مُنفَّذ."""
+    """إلغاء وقف الموظف عند حذف طلب تصفية غير مُنفَّذ.
+
+    طلبات التصفية لم تعد تُوقِف الموظف (التوقيف بزر مدير الموارد فقط)؛ هذا يخص
+    الطلبات القديمة التي أوقفته وحفظت حالته السابقة في status_before_settlement.
+    """
     from apps.employees.models import Employee
 
     if action.executed_at or not _is_settlement_pending_action(action.action_type):
+        return
+    if 'status_before_settlement' not in (action.payload or {}):
         return
 
     employee = action.employee
@@ -855,7 +846,6 @@ def create_pending_action(*, action_type, employee, payload, requested_by, attac
     if _is_settlement_pending_action(action_type):
         if _open_settlement_pending_action_qs(employee).exists():
             raise ValueError('يوجد طلب تصفية قيد الموافقة لهذا الموظف بالفعل.')
-        payload = mark_employee_settlement_pending(employee, payload=payload)
 
     routing = snapshot_routing_fields(employee)
     return PendingAction.objects.create(

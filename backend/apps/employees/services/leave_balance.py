@@ -9,10 +9,13 @@ from django.utils import timezone
 
 from apps.core.salary_month import (
     accrued_annual_leave_days,
+    accrued_leave_days_with_partial_month,
     completed_employment_months,
     daily_rate_from_total,
     employment_service_days,
     leave_accrual_formula_label,
+    leave_rates,
+    partial_month_leave_days,
     LEAVE_DAYS_QUANT,
 )
 from apps.employees.services.migration_balance import (
@@ -54,7 +57,7 @@ def compute_employee_accrued_leave_days(employee, *, as_of: date | None = None) 
 
     if not employee.hire_date:
         return Decimal('0.00')
-    return accrued_annual_leave_days(employee.hire_date, end)
+    return accrued_annual_leave_days(employee.hire_date, end, annual_days=employee.annual_leave_days)
 
 
 def sum_annual_leave_days_taken(employee, *, since: date | None = None) -> Decimal:
@@ -116,7 +119,9 @@ def leave_balance_breakdown(employee, *, as_of: date | None = None) -> dict:
         else Decimal('0.00')
     )
     if not uses_migration and employee.hire_date and employee.sponsorship_id:
-        period_accrual = accrued_annual_leave_days(employee.hire_date, end)
+        period_accrual = accrued_annual_leave_days(
+            employee.hire_date, end, annual_days=employee.annual_leave_days,
+        )
 
     total = compute_employee_accrued_leave_days(employee, as_of=end)
     used = resolve_used_leave_days(employee)
@@ -165,7 +170,11 @@ def settlement_leave_for_employee(
             if accrual_start
             else 0
         )
-        rule = 'بالأيام: 21 يوم ÷ 360 لكل يوم (أول 5 سنوات) ثم 30 ÷ 360'
+        first_rate, later_rate = leave_rates(employee.annual_leave_days)
+        rule = (
+            f'بالأيام: {first_rate} يوم ÷ 360 لكل يوم'
+            + ('' if flat_21_only else f' (أول 5 سنوات) ثم {later_rate} ÷ 360')
+        )
         prefix = f'{title} — ' if title else ''
         remaining = (accrued - used).quantize(LEAVE_DAYS_QUANT)
         if remaining < 0:
@@ -187,22 +196,28 @@ def settlement_leave_for_employee(
     if not employee.hire_date:
         return Decimal('0'), used, Decimal('0'), Decimal('0'), 'لا يوجد تاريخ مباشرة — لم يُحسب رصيد الإجازة'
 
+    # الأشهر المكتملة + أيام الشهر الجزئي الأخير (لا يُسقَط في التصفية)
     months = completed_employment_months(employee.hire_date, end)
-    accrued = accrued_annual_leave_days(employee.hire_date, end, flat_21_only=flat_21_only)
+    partial_days = partial_month_leave_days(employee.hire_date, end)
+    annual_days = employee.annual_leave_days
+    accrued = accrued_leave_days_with_partial_month(
+        employee.hire_date, end, flat_21_only=flat_21_only, annual_days=annual_days,
+    )
     remaining = (accrued - used).quantize(LEAVE_DAYS_QUANT)
     if remaining < 0:
         remaining = Decimal('0.00')
 
     daily = daily_rate_from_total(employee.total_salary)
     amount = (remaining * daily).quantize(Decimal('0.01'))
-    rule = leave_accrual_formula_label(flat_21_only=flat_21_only, months=months)
+    rule = leave_accrual_formula_label(flat_21_only=flat_21_only, months=months, annual_days=annual_days)
     prefix = f'{title} — ' if title else ''
-    from apps.core.salary_month import MONTHLY_LEAVE_ACCRUAL_DAYS, MONTHLY_LEAVE_AFTER_FIVE_YEARS
-    rate = MONTHLY_LEAVE_ACCRUAL_DAYS if (flat_21_only or months <= 60) else MONTHLY_LEAVE_AFTER_FIVE_YEARS
+    first_rate, later_rate = leave_rates(annual_days)
+    rate = ((first_rate if (flat_21_only or months <= 60) else later_rate) / 12).quantize(Decimal('0.01')).normalize()
     text = (
         f'{prefix}رصيد إجازات\n'
         f'قاعدة الاستحقاق: {rule}\n'
-        f'أشهر الخدمة المكتملة: {months} (معدل {rate} يوم/شهر)\n'
+        f'أشهر الخدمة المكتملة: {months} (معدل {rate} يوم/شهر)'
+        f' + {partial_days} يوم من الشهر الجزئي\n'
         f'المستحق: {accrued} يوم − المستخدم: {used} = {remaining} يوم\n'
         f'أجر اليوم: الراتب ÷ 30 = {daily} ر.س\n'
         f'رصيد الإجازة: {remaining} يوم × {daily} = {amount} ر.س'

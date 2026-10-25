@@ -35,6 +35,7 @@
             <a href="{% url 'web:attendance_report_export' %}?from={{ day|date:'Y-m-d' }}&to={{ day|date:'Y-m-d' }}{% if branch_id %}&branch={{ branch_id }}{% endif %}"
                class="hr-btn hr-btn--outline">تصدير Excel</a>
             <a href="{% url 'web:attendance_records' %}" class="hr-btn hr-btn--outline">سجلات البصمة</a>
+            {% include "components/biometric_enrollment_excel.html" with next_path="/attendance/daily/" %}
         </div>
     </div>
 

@@ -13800,3 +13800,30 @@ body.hr-app .hr-sidebar--collapsed .hr-sidebar-panel .hr-nav-group__body .hr-nav
         background: #fafafa;
     }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   فلترة طلبات العمليات — عمود (جوال) / عمودان (لوحي) / صف واحد (شاشة عريضة)
+   ══════════════════════════════════════════════════════════════ */
+body.hr-app .hr-ops-filter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem 0.75rem;
+    align-items: end;
+}
+body.hr-app .hr-ops-filter__field { min-width: 0; }
+body.hr-app .hr-ops-filter__field select,
+body.hr-app .hr-ops-filter__field input[type="date"] { width: 100%; }
+body.hr-app .hr-ops-filter__actions { display: flex; gap: 0.5rem; }
+body.hr-app .hr-ops-filter__actions .hr-btn { flex: 1 1 auto; }
+@media (min-width: 640px) {
+    body.hr-app .hr-ops-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    body.hr-app .hr-ops-filter__actions { grid-column: 1 / -1; }
+}
+@media (min-width: 1100px) {
+    body.hr-app .hr-ops-filter {
+        grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1.25fr)) auto;
+    }
+    body.hr-app .hr-ops-filter__actions { grid-column: auto; }
+    body.hr-app .hr-ops-filter__actions .hr-btn { flex: 0 0 auto; }
+}

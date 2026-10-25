@@ -7,6 +7,8 @@
     <h3>بيانات نهاية الخدمة</h3>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
+        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{{ employee.hire_date|date:"Y/m/d"|default:"" }}</span></div>
+        <div class="field"><span class="label">الراتب:</span><span class="blank">{% if employee.total_salary %}{{ employee.total_salary|floatformat:"2u" }} ر.س{% endif %}</span></div>
         <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank">{{ employee.end_date|date:"Y/m/d"|default:"" }}</span></div>
         <div class="field"><span class="label">مدة الخدمة:</span><span class="blank">{{ service_duration|default:"" }}</span></div>
     </div>
@@ -32,6 +34,17 @@
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">رصيد الإجازات المتبقي ({{ leave_days|default:employee.remaining_leave_days }} يوم)</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ leave_comp|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">مكافأة نهاية الخدمة</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ eosb_amount|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">بدل تذكرة سفر</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
+            {% for n in "123" %}
+            <tr style="background:#fef3c7;">
+                <td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">خصم {{ n }}</td>
+                <td class="hr-form-table-cell--amount" style="padding:4px 8px; border:1px solid #cbd5e1; text-align:center;">
+                    <input type="number" min="0" step="0.01" inputmode="decimal" class="blank hr-form-amount" data-fs-deduction aria-label="مبلغ خصم {{ n }}" style="width:100%; text-align:center;">
+                </td>
+                <td style="padding:4px 8px; border:1px solid #cbd5e1;">
+                    <input type="text" class="blank" aria-label="بيان خصم {{ n }}" placeholder="البيان" style="width:100%;">
+                </td>
+            </tr>
+            {% endfor %}
             <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">السلف والقروض</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ loans_deduction|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr style="background:#fef3c7;"><td style="padding:8px; border:1px solid #cbd5e1; font-weight:700;">غيابات / خصومات</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ absences_deduction|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr style="background:#fef3c7;">
@@ -56,7 +69,7 @@
                     {% endif %}
                 </td>
             </tr>
-            <tr style="background:#dcfce7;"><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; color:#166534;">صافي المستحق للموظف</td><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; text-align:center;">{{ total_entitlement|default:"" }}</td><td style="padding:10px; border:1px solid #cbd5e1;"></td></tr>
+            <tr style="background:#dcfce7;"><td style="padding:10px; border:1px solid #cbd5e1; font-weight:800; color:#166534;">صافي المستحق للموظف</td><td id="fs-net-total" data-base="{{ total_entitlement|default:'' }}" style="padding:10px; border:1px solid #cbd5e1; font-weight:800; text-align:center;">{{ total_entitlement|default:"" }}</td><td style="padding:10px; border:1px solid #cbd5e1;"></td></tr>
         </tbody>
     </table>
 
@@ -65,6 +78,28 @@
         <span class="blank" style="padding-bottom: 4px;"></span>
     </div>
 </div>
+
+<script>
+    // الخصومات اليدوية (خصم 1–3) تُطرح من صافي المستحق المحسوب في الخادم
+    (function () {
+        var cell = document.getElementById('fs-net-total');
+        if (!cell) return;
+        var toNum = function (v) {
+            var n = parseFloat(String(v || '').replace(/[^\d.\-]/g, ''));
+            return isNaN(n) ? 0 : n;
+        };
+        var base = toNum(cell.dataset.base);
+        var hasBase = String(cell.dataset.base || '').trim() !== '';
+        var inputs = document.querySelectorAll('[data-fs-deduction]');
+        function update() {
+            var deductions = 0;
+            inputs.forEach(function (inp) { deductions += Math.max(0, toNum(inp.value)); });
+            if (!hasBase && deductions === 0) { cell.textContent = ''; return; }
+            cell.textContent = (base - deductions).toFixed(2);
+        }
+        inputs.forEach(function (inp) { inp.addEventListener('input', update); });
+    })();
+</script>
 
 <div class="signatures">
     <div class="sig-box">

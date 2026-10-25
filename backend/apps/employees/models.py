@@ -152,6 +152,14 @@ class EmploymentRequest(BaseModel):
 
     # تواريخ
     hire_date = models.DateField("تاريخ المباشرة", null=True, blank=True)
+    class StartKind(models.TextChoices):
+        NEW = 'new', 'مباشرة جديدة'
+        AFTER_LEAVE = 'after_leave', 'عودة من إجازة'
+
+    start_kind = models.CharField(
+        "نوع المباشرة", max_length=12, choices=StartKind.choices, default=StartKind.NEW,
+        help_text="مباشرة جديدة، أو عودة من إجازة (يصبح تاريخ المباشرة هو تاريخ العودة).",
+    )
     medical_insurance_expiry_date = models.DateField(
         "تاريخ انتهاء التأمين الطبي", null=True, blank=True,
         help_text="تاريخ تجديد بوليصة التأمين الصحي للموظف.",
@@ -404,6 +412,14 @@ class Employee(BaseModel):
         decimal_places=2,
         default=0,
         help_text="المتبقي من النظام القديم عند تاريخ الانتقال.",
+    )
+    ANNUAL_LEAVE_DAYS_CHOICES = [(d, f'{d} يوم') for d in range(21, 31)]
+    annual_leave_days = models.PositiveSmallIntegerField(
+        "أيام الإجازة السنوية",
+        choices=ANNUAL_LEAVE_DAYS_CHOICES,
+        default=21,
+        help_text="استحقاق الإجازة السنوي (21–30) — يُستخدم في رصيد الإجازة والتصفية النهائية. "
+                  "بعد 5 سنوات يُطبَّق الأعلى منه ومن 30.",
     )
     opening_eosb_amount = models.DecimalField(
         "مخصص نهاية خدمة افتتاحي (ر.س)",

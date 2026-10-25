@@ -268,6 +268,61 @@ def _wrap_hire(r, user):
     )
 
 
+def _pending_list_filters(request) -> dict:
+    """قراءة قيم الفلترة من الرابط (القيم غير الصالحة تُتجاهل)."""
+    from datetime import date
+
+    def _date(raw):
+        try:
+            return date.fromisoformat((raw or '').strip()[:10]) if raw else None
+        except ValueError:
+            return None
+
+    valid_types = {'hire', *PendingAction.ActionType.values}
+    type_ = (request.GET.get('type') or '').strip()
+    branch = (request.GET.get('branch') or '').strip()
+    date_from = _date(request.GET.get('date_from'))
+    date_to = _date(request.GET.get('date_to'))
+    return {
+        'type': type_ if type_ in valid_types else '',
+        'branch': branch if branch.isdigit() else '',
+        'date_from': date_from,
+        'date_to': date_to,
+        'date_from_raw': date_from.isoformat() if date_from else '',
+        'date_to_raw': date_to.isoformat() if date_to else '',
+    }
+
+
+def _apply_pending_list_filters(qs, qs_hire, filters):
+    """طلبات العمليات + طلبات التوظيف بنفس الفلاتر."""
+    if filters['type'] == 'hire':
+        qs = qs.none()
+    elif filters['type']:
+        qs = qs.filter(action_type=filters['type'])
+        qs_hire = qs_hire.none()
+    if filters['branch']:
+        qs = qs.filter(branch_id=int(filters['branch']))
+        qs_hire = qs_hire.filter(branch_id=int(filters['branch']))
+    if filters['date_from']:
+        qs = qs.filter(requested_at__date__gte=filters['date_from'])
+        qs_hire = qs_hire.filter(created_at__date__gte=filters['date_from'])
+    if filters['date_to']:
+        qs = qs.filter(requested_at__date__lte=filters['date_to'])
+        qs_hire = qs_hire.filter(created_at__date__lte=filters['date_to'])
+    return qs, qs_hire
+
+
+def _filter_branch_choices(user):
+    """الفروع المتاحة للمستخدم فقط في قائمة الفلترة."""
+    from apps.core.models import Branch
+    from apps.core.services.access_control import filter_branches_queryset
+
+    return list(
+        filter_branches_queryset(user, Branch.objects.filter(is_active=True, is_deleted=False))
+        .order_by('name').values_list('id', 'name')
+    )
+
+
 @login_required
 def list_pending_actions(request):
     from apps.employees.models import EmploymentRequest
@@ -305,6 +360,10 @@ def list_pending_actions(request):
     else:
         qs = base
         qs_hire = base_hire
+
+    # ─ الفلترة: نوع الطلب، الفرع، فترة تاريخ الطلب (على مستوى قاعدة البيانات) ─
+    filters = _pending_list_filters(request)
+    qs, qs_hire = _apply_pending_list_filters(qs, qs_hire, filters)
 
     # ─ دمج وفرز موحّد بلا أي حد أقصى: لا يُخفى أي طلب عن المستخدم ─────
     # الفرز والترقيم على مفاتيح خفيفة (id + تاريخ) ثم تُحمَّل صفوف الصفحة فقط.
@@ -395,8 +454,21 @@ def list_pending_actions(request):
         'mine': pa_agg['c_mine'] + hr_agg['c_mine'],
     }
 
+    from urllib.parse import urlencode
+    filter_qs = urlencode({
+        k: v for k, v in (
+            ('tab', tab), ('q', q), ('type', filters['type']), ('branch', filters['branch']),
+            ('date_from', filters['date_from_raw']), ('date_to', filters['date_to_raw']),
+        ) if v
+    })
+
     return render(request, 'pages/pending_actions/list.html', {
         'actions': page_rows,
+        'filters': filters,
+        'filters_active': any(filters[k] for k in ('type', 'branch', 'date_from_raw', 'date_to_raw')),
+        'filter_qs': filter_qs,
+        'type_choices': [('hire', 'توظيف جديد'), *PendingAction.ActionType.choices],
+        'filter_branches': _filter_branch_choices(request.user),
         'page_obj': page_obj,
         'paginator': paginator,
         'total_rows': total_rows,

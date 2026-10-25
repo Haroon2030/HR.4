@@ -371,7 +371,7 @@ class EmploymentRequestForm(forms.ModelForm):
         fields = [
             'name', 'name_en', 'id_number', 'phone', 'gender', 'nationality',
             'branch', 'administration', 'department', 'cost_center',
-            'sponsorship', 'basic_salary', 'hire_date', 'commencement_document',
+            'sponsorship', 'basic_salary', 'hire_date', 'start_kind', 'commencement_document',
         ]
 
     def __init__(self, *args, user=None, **kwargs):
