@@ -174,6 +174,7 @@ def load_employee_view_context(
         from apps.employees.services.leave_balance import leave_balance_breakdown
         ctx['leave_timeline'] = _load_leave_timeline(employee)
         ctx['leave_breakdown'] = leave_balance_breakdown(employee)
+        ctx['sick_leave_summary'] = sick_leave_summary(employee)
 
     if need('contract') or need('main'):
         from apps.employees.services.contract_rules import (
@@ -280,6 +281,25 @@ def _parse_iso_date(value):
         return date.fromisoformat(str(value)[:10])
     except (ValueError, TypeError):
         return None
+
+
+def sick_leave_summary(employee: Employee, today: date | None = None) -> dict:
+    """ما أخذه الموظف من الإجازات المرضية: العدد والأيام الكلية، وأيام السنة الميلادية الحالية."""
+    from django.db.models import Count, Sum
+    from apps.employees.models import EmployeeLeave
+
+    today = today or timezone.localdate()
+    sick = EmployeeLeave.objects.filter(
+        employee_id=employee.pk, leave_type=EmployeeLeave.LeaveType.SICK,
+    )
+    total = sick.aggregate(count=Count('id'), days=Sum('days'))
+    this_year = sick.filter(date_from__year=today.year).aggregate(days=Sum('days'))
+    return {
+        'count': total['count'] or 0,
+        'days': total['days'] or Decimal('0'),
+        'year': today.year,
+        'year_days': this_year['days'] or Decimal('0'),
+    }
 
 
 def _load_leave_timeline(employee: Employee) -> list[dict]:

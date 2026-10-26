@@ -203,7 +203,7 @@
                     </p>
                 </div>
                 {% endif %}
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                         <div class="text-xs font-bold text-emerald-700 mb-1">الرصيد المستحق</div>
                         <div class="text-lg font-bold text-emerald-800">{{ employee.accrued_leave_days|floatformat:2 }} يوم</div>
@@ -225,6 +225,15 @@
                         <div class="text-xs font-bold text-primary-700 mb-1">الرصيد المتبقي</div>
                         <div class="text-lg font-bold text-primary-800">{{ employee.remaining_leave_days|floatformat:2 }} يوم</div>
                     </div>
+                    {% if sick_leave_summary %}
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="text-xs font-bold text-amber-700 mb-1">الإجازات المرضية المأخوذة</div>
+                        <div class="text-lg font-bold text-amber-800">{{ sick_leave_summary.days|floatformat:"1u" }} يوم</div>
+                        <div class="text-[10px] text-amber-700 mt-1">
+                            {{ sick_leave_summary.count }} إجازة · {{ sick_leave_summary.year }}: {{ sick_leave_summary.year_days|floatformat:"1u" }} يوم
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="mb-1">
                     <div class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2">
@@ -345,6 +354,17 @@
                                             </button>
                                             {% else %}
                                             <span class="text-slate-300 text-xs">—</span>
+                                            {% endif %}
+                                            {% if row.document_url %}
+                                            <button type="button"
+                                                    class="hr-act hr-act--view"
+                                                    data-hr-media-open
+                                                    data-hr-media-url="{{ row.document_url }}"
+                                                    data-hr-media-title="الملف المرفوع — {{ row.leave_type_display }}"
+                                                    title="استعراض الملف المرفوع"
+                                                    aria-label="استعراض الملف المرفوع">
+                                                <i data-lucide="paperclip" class="hr-act__icon"></i>
+                                            </button>
                                             {% endif %}
                                             {% if row.leave_id %}
                                             <a href="{% url 'web:print_leave_form' employee.id row.leave_id %}" target="_blank" rel="noopener"
