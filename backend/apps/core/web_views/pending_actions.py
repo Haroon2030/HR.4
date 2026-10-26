@@ -43,6 +43,15 @@ def _user_display(user):
 # قائمة الطلبات (مفلترة حسب الدور)
 # =============================================================================
 
+# كل ما يُعدّ «قيد المراجعة» (لم يُعتمد ولم يُرتجع ولم يُرفض)
+OPEN_ACTION_STATUSES = (
+    PendingAction.Status.PENDING_BRANCH,
+    PendingAction.Status.PENDING_GM,
+    PendingAction.Status.PENDING_OFFICER,
+    PendingAction.Status.PENDING_ACCOUNTANT,
+)
+OPEN_HIRE_STATUSES = ('pending', 'pending_branch', 'pending_gm', 'pending_officer')
+
 TAB_FILTERS = {
     'inbox': None,
     'pending_branch': PendingAction.Status.PENDING_BRANCH,
@@ -223,8 +232,24 @@ def _wrap_action(a, user):
         updated_at=a.updated_at,
         resubmit_count=a.resubmit_count or 0,
         detail_url=reverse('web:pending_action_detail', args=[a.id]),
+        can_act=bool(a.current_stage) and _can_act_at_stage(user, a, a.current_stage),
+        act_url=reverse('web:pending_action_detail', args=[a.id]) + '?panel=approve',
         delete_url=reverse('web:delete_pending_action', args=[a.id]) if can_del else '',
         delete_confirm=delete_confirm,
+    )
+
+
+def _can_act_on_hire(user, r) -> bool:
+    """هل للمستخدم إجراء متاح الآن على طلب التوظيف (حسب مرحلته)؟"""
+    from apps.core.services.workflow_access import (
+        can_first_approve_employment_request,
+        can_gm_approve_employment_request,
+        can_officer_act_employment_request,
+    )
+    return bool(
+        can_first_approve_employment_request(user, r)
+        or can_gm_approve_employment_request(user, r)
+        or can_officer_act_employment_request(user, r)
     )
 
 
@@ -263,6 +288,8 @@ def _wrap_hire(r, user):
         updated_at=r.updated_at,
         resubmit_count=0,
         detail_url=reverse('web:employment_request_detail', args=[r.id]),
+        can_act=_can_act_on_hire(user, r),
+        act_url=reverse('web:employment_request_detail', args=[r.id]) + '#decision-card',
         delete_url=reverse('web:delete_employment_request', args=[r.id]) if can_del else '',
         delete_confirm=delete_confirm,
     )
@@ -331,12 +358,16 @@ def list_pending_actions(request):
         messages.error(request, 'لا تملك صلاحية عرض طلبات العمليات.')
         return redirect('web:dashboard')
 
-    tab = request.GET.get('tab', 'inbox')
+    tab = request.GET.get('tab', 'review')
     base = _user_visible_actions(request.user)
     base_hire = _user_visible_hire_requests(request.user)
 
     # ─ فلترة كل نموذج حسب التبويب ────────────────────────────────
-    if tab == 'inbox':
+    if tab == 'review':
+        # كل ما قيد المراجعة (بغضّ النظر عن صاحب الدور الحالي)
+        qs = base.filter(status__in=OPEN_ACTION_STATUSES)
+        qs_hire = base_hire.filter(status__in=OPEN_HIRE_STATUSES)
+    elif tab == 'inbox':
         qs = _inbox_for(request.user, base)
         qs_hire = _inbox_for_hire(request.user, base_hire)
     elif tab == 'mine':
@@ -351,6 +382,9 @@ def list_pending_actions(request):
     elif tab == 'pending_officer':
         qs = base.filter(status=PendingAction.Status.PENDING_OFFICER)
         qs_hire = base_hire.filter(status=EmploymentRequest.Status.PENDING_OFFICER)
+    elif tab == 'rejected':
+        qs = base.none()  # الإجراءات السريعة لا رفض نهائي لها (تُرتجع)
+        qs_hire = base_hire.filter(status=EmploymentRequest.Status.REJECTED)
     elif tab == 'returned':
         qs = base.filter(status=PendingAction.Status.RETURNED)
         qs_hire = base_hire.none()  # EmploymentRequest ليس له حالة "مرتجع"
@@ -431,6 +465,7 @@ def list_pending_actions(request):
         c_branch=Count('id', filter=Q(status=PendingAction.Status.PENDING_BRANCH)),
         c_gm=Count('id', filter=Q(status=PendingAction.Status.PENDING_GM)),
         c_officer=Count('id', filter=Q(status=PendingAction.Status.PENDING_OFFICER)),
+        c_open=Count('id', filter=Q(status__in=OPEN_ACTION_STATUSES)),
         c_returned=Count('id', filter=Q(status=PendingAction.Status.RETURNED)),
         c_approved=Count('id', filter=Q(status=PendingAction.Status.APPROVED)),
         c_mine=Count('id', filter=Q(requested_by=request.user)),
@@ -439,17 +474,21 @@ def list_pending_actions(request):
         c_branch=Count('id', filter=Q(status=EmploymentRequest.Status.PENDING_BRANCH)),
         c_gm=Count('id', filter=Q(status=EmploymentRequest.Status.PENDING_GM)),
         c_officer=Count('id', filter=Q(status=EmploymentRequest.Status.PENDING_OFFICER)),
+        c_open=Count('id', filter=Q(status__in=OPEN_HIRE_STATUSES)),
         c_approved=Count('id', filter=Q(status=EmploymentRequest.Status.APPROVED)),
+        c_rejected=Count('id', filter=Q(status=EmploymentRequest.Status.REJECTED)),
         c_mine=Count('id', filter=Q(requested_by=request.user)),
     )
     from apps.core.services.sidebar_counts import get_sidebar_counts
 
     counts = {
+        'review': pa_agg['c_open'] + hr_agg['c_open'],
         'inbox': get_sidebar_counts(request.user)['pending_for_me_count'],
         'pending_branch': pa_agg['c_branch'] + hr_agg['c_branch'],
         'pending_gm': pa_agg['c_gm'] + hr_agg['c_gm'],
         'pending_officer': pa_agg['c_officer'] + hr_agg['c_officer'],
         'returned': pa_agg['c_returned'],
+        'rejected': hr_agg['c_rejected'],
         'approved': pa_agg['c_approved'] + hr_agg['c_approved'],
         'mine': pa_agg['c_mine'] + hr_agg['c_mine'],
     }
@@ -527,8 +566,16 @@ def pending_action_detail(request, action_id):
     ):
         settlement = settlement_panel_context(action)
 
+    # ?panel=approve|return يفتح كتلة القرار مباشرة (من زر «اعتماد» في القائمة)
+    auto_panel = request.GET.get('panel')
+    if auto_panel not in ('approve', 'return') or not can_act:
+        auto_panel = None
+    elif settlement and not settlement['signed_url']:
+        auto_panel = None  # التصفية تحتاج الملف الموقّع أولاً
+
     return render(request, 'pages/pending_actions/detail.html', {
         'action': action,
+        'auto_panel': auto_panel,
         'settlement': settlement,
         'officers': officers,
         'can_act': can_act,

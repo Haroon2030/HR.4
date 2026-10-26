@@ -171,13 +171,13 @@ class ApprovalRoutingTests(TestCase):
         self.assertFalse(self.admin_manager.managed_branches.exists())
 
         self.client.force_login(self.admin_manager)
-        response = self.client.get(reverse('web:list_employment_requests'))
+        response = self.client.get(reverse('web:list_pending_actions') + '?tab=review&type=hire')
 
         self.assertEqual(response.status_code, 200)
-        rows = {r.id: r for r in response.context['requests']}
+        rows = {r.id: r for r in response.context['actions'] if r.kind == 'hire'}
         self.assertIn(own_req.id, rows)
         self.assertNotIn(other_req.id, rows)
-        self.assertTrue(rows[own_req.id].can_first_approve)
+        self.assertTrue(rows[own_req.id].can_act)
 
     def test_administration_manager_can_approve_hire_from_list(self):
         from django.urls import reverse

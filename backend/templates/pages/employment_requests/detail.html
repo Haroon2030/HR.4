@@ -34,5 +34,67 @@
             <p><span class="text-slate-500">ملاحظات مدير الموارد:</span> {{ obj.gm_notes|default:"—" }}</p>
         </div>
     </div>
+
+    <div id="decision-card" class="bg-white rounded-xl shadow-sm border border-primary-200 p-4">
+        <h3 class="text-sm font-bold text-primary-800 mb-3 pb-2 border-b border-primary-100">
+            <i data-lucide="zap" class="w-4 h-4 inline-block ml-1"></i> اتخاذ قرار
+        </h3>
+
+        <div class="flex flex-wrap items-center gap-3">
+            {% if obj.status == 'pending_branch' or obj.status == 'pending' %}
+                {% if can_first_approve %}
+                <form method="POST" action="{% url 'web:approve_employment_request' obj.id %}" class="inline"
+                      onsubmit="return confirm('الموافقة وتحويل الطلب لمدير الموارد؟');">
+                    {% csrf_token %}
+                    {% include "components/hr_btn.html" with label="موافقة وتحويل لمدير الموارد" type="submit" variant="purple" icon="check" %}
+                </form>
+                {% endif %}
+
+            {% elif obj.status == 'pending_gm' %}
+                {% if can_gm_approve %}
+                <form method="POST" action="{% url 'web:gm_approve_employment_request' obj.id %}" class="flex flex-wrap items-center gap-2"
+                      onsubmit="return this.assigned_officer.value && confirm('الموافقة وإسناد الطلب لأخصائي الموارد المختار؟');">
+                    {% csrf_token %}
+                    <select name="assigned_officer" required class="px-3 py-2 text-sm border border-slate-300 rounded-lg" aria-label="أخصائي الموارد">
+                        <option value="">اختر أخصائي...</option>
+                        {% for o in hr_officers %}
+                            <option value="{{ o.id }}">{{ o.get_full_name|default:o.username }}</option>
+                        {% endfor %}
+                    </select>
+                    {% include "components/hr_btn.html" with label="موافقة وإسناد" type="submit" variant="indigo" icon="check" %}
+                </form>
+                {% endif %}
+
+            {% elif obj.status == 'pending_officer' %}
+                {% if can_officer_act %}
+                <a href="{% url 'web:edit_employment_request' obj.id %}" class="hr-btn hr-btn--outline">
+                    <i data-lucide="pencil" class="w-4 h-4"></i> تعديل البيانات
+                </a>
+                <form method="POST" action="{% url 'web:officer_approve_employment_request' obj.id %}" class="inline"
+                      onsubmit="return confirm('الموافقة النهائية وإضافة الموظف لقائمة العاملين؟');">
+                    {% csrf_token %}
+                    {% include "components/hr_btn.html" with label="موافقة نهائية" type="submit" variant="purple" icon="check" %}
+                </form>
+                {% endif %}
+
+            {% elif obj.status == 'approved' %}
+                <span class="px-3 py-1 text-sm font-semibold rounded bg-emerald-100 text-emerald-700">مكتمل</span>
+            {% else %}
+                <span class="px-3 py-1 text-sm font-semibold rounded bg-red-100 text-red-700">مرفوض</span>
+            {% endif %}
+
+            {% if can_reject and obj.status != 'approved' and obj.status != 'rejected' %}
+            <form method="POST" action="{% url 'web:reject_employment_request' obj.id %}" class="inline"
+                  onsubmit="return confirm('إلغاء هذا الطلب نهائياً؟');">
+                {% csrf_token %}
+                {% include "components/hr_btn.html" with label="رفض الطلب" type="submit" variant="danger" icon="x" %}
+            </form>
+            {% endif %}
+        </div>
+
+        {% if obj.status != 'approved' and obj.status != 'rejected' and not can_first_approve and not can_gm_approve and not can_officer_act %}
+            <p class="text-xs text-slate-500">لا يوجد إجراء متاح لك على هذا الطلب في مرحلته الحالية.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

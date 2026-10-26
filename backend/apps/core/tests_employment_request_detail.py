@@ -44,7 +44,7 @@ class EmploymentRequestDetailTests(TestCase):
 
     def test_branch_manager_cannot_open_request_past_branch_stage(self):
         resp = self.client.get(reverse('web:employment_request_detail', args=[self.officer_stage.id]), follow=True)
-        self.assertRedirects(resp, reverse('web:list_employment_requests'))
+        self.assertRedirects(resp, reverse('web:list_pending_actions'))
         self.assertContains(resp, 'ليس ضمن ما تستطيع الاطلاع عليه')
 
     def test_operations_inbox_and_detail_use_the_same_rule(self):

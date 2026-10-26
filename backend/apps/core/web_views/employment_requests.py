@@ -69,65 +69,25 @@ def _hire_visibility_q(user):
     return cond
 
 
+# كانت لهذه الصفحة قائمة مستقلة؛ صارت طلبات التوظيف جزءاً من قائمة طلبات العمليات الموحّدة.
+# الإبقاء على المسار يحفظ الروابط القديمة (إشعارات، واتساب، لوحة التحكم).
+_LEGACY_STATUS_TO_TAB = {
+    'pending': 'review',
+    'pending_branch': 'pending_branch',
+    'pending_gm': 'pending_gm',
+    'pending_officer': 'pending_officer',
+    'approved': 'approved',
+    'rejected': 'rejected',
+}
+
+
 @login_required
 def list_employment_requests(request):
-    """قائمة طلبات التوظيف — تظهر بحسب دور المستخدم والمرحلة."""
-    from apps.core.services.workflow_access import can_view_operations
-    from apps.employees.models import EmploymentRequest
+    """تحويل إلى القائمة الموحّدة مع مرشّح «توظيف جديد» والتبويب المقابل للحالة."""
+    from urllib.parse import urlencode
 
-    if not can_view_operations(request.user):
-        messages.error(request, 'لا تملك صلاحية عرض طلبات التوظيف.')
-        return redirect('web:dashboard')
-
-    qs = EmploymentRequest.objects.select_related(
-        'branch', 'administration', 'department', 'cost_center', 'requested_by',
-        'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer',
-        'housing', 'bank',
-    )
-
-    user = request.user
-    is_branch = _is_branch_manager(user)
-    is_gm = _is_general_manager(user)
-    is_officer = _is_hr_officer(user)
-
-    visible = _hire_visibility_q(user)
-    if visible is not None:
-        qs = qs.filter(visible).distinct()
-
-    status = request.GET.get('status', 'pending')
-    if status == 'pending':
-        qs = qs.filter(status__in=[
-            EmploymentRequest.Status.PENDING_BRANCH,
-            EmploymentRequest.Status.PENDING_GM,
-            EmploymentRequest.Status.PENDING_OFFICER,
-            EmploymentRequest.Status.PENDING,
-        ])
-    elif status in {'approved', 'rejected', 'pending_branch',
-                    'pending_gm', 'pending_officer'}:
-        qs = qs.filter(status=status)
-
-    from django.core.paginator import Paginator
-
-    paginator = Paginator(qs.order_by('-created_at'), 25)
-    page_obj = paginator.get_page(request.GET.get('page') or 1)
-    for row in page_obj.object_list:
-        row.first_stage_label = resolve_first_approver(row).stage_label
-        row.can_first_approve = can_first_approve_employment_request(user, row)
-        row.can_gm_approve = can_gm_approve_employment_request(user, row)
-        row.can_officer_act = can_officer_act_employment_request(user, row)
-        row.can_reject = user_can_reject_employment_request(user, row)
-
-    return render(request, 'pages/employment_requests/list.html', {
-        'requests': page_obj.object_list,
-        'page_obj': page_obj,
-        'paginator': paginator,
-        'current_status': status,
-        'is_branch_manager': is_branch,
-        'is_general_manager': is_gm,
-        'is_hr_officer': is_officer,
-        'hr_officers': get_hr_officers() if stage_permission_required(user, PendingAction.Stage.GM) else [],
-        'first_stage_tab_label': first_stage_tab_label(user),
-    })
+    tab = _LEGACY_STATUS_TO_TAB.get(request.GET.get('status', 'pending'), 'review')
+    return redirect(reverse('web:list_pending_actions') + '?' + urlencode({'tab': tab, 'type': 'hire'}))
 
 
 @login_required
@@ -149,11 +109,18 @@ def employment_request_detail(request, request_id):
     visible = _hire_visibility_q(request.user)
     if visible is not None and not EmploymentRequest.objects.filter(pk=obj.pk).filter(visible).exists():
         messages.error(request, 'هذا الطلب ليس ضمن ما تستطيع الاطلاع عليه.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
     obj.first_stage_label = resolve_first_approver(obj).stage_label
+    user = request.user
+    can_gm = can_gm_approve_employment_request(user, obj)
     return render(request, 'pages/employment_requests/detail.html', {
         'obj': obj,
-        'list_url': reverse('web:list_employment_requests'),
+        'list_url': reverse('web:list_pending_actions') + '?type=hire',
+        'can_first_approve': can_first_approve_employment_request(user, obj),
+        'can_gm_approve': can_gm,
+        'can_officer_act': can_officer_act_employment_request(user, obj),
+        'can_reject': user_can_reject_employment_request(user, obj),
+        'hr_officers': get_hr_officers() if can_gm else [],
     })
 
 
@@ -171,10 +138,10 @@ def approve_employment_request(request, request_id):
 
     if not can_first_approve_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية مراجعة هذا الطلب')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     if request.method != 'POST':
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     notes = request.POST.get('review_notes', '')
     try:
@@ -185,7 +152,7 @@ def approve_employment_request(request, request_id):
         )
     except ValueError as e:
         messages.error(request, str(e))
-    return redirect('web:list_employment_requests')
+    return redirect('web:list_pending_actions')
 
 
 @login_required
@@ -194,22 +161,22 @@ def gm_approve_employment_request(request, request_id):
     emp_req = _get_request_or_404(request_id)
 
     if request.method != 'POST':
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     from apps.employees.models import EmploymentRequest
     if emp_req.status != EmploymentRequest.Status.PENDING_GM:
         messages.error(request, 'لا يمكن الموافقة على هذا الطلب في مرحلته الحالية.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     if not can_gm_approve_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية الموافقة كمدير عام.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     officer_id = request.POST.get('assigned_officer')
     notes = request.POST.get('review_notes', '')
     if not officer_id:
         messages.error(request, 'يجب اختيار أخصائي موارد لإسناد الطلب إليه')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     officer = User.objects.filter(id=officer_id).first()
     try:
@@ -220,7 +187,7 @@ def gm_approve_employment_request(request, request_id):
         )
     except ValueError as e:
         messages.error(request, str(e))
-    return redirect('web:list_employment_requests')
+    return redirect('web:list_pending_actions')
 
 
 @login_required
@@ -229,11 +196,11 @@ def officer_approve_employment_request(request, request_id):
     emp_req = _get_request_or_404(request_id)
 
     if request.method != 'POST':
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     if not can_officer_act_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية التنفيذ.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     notes = request.POST.get('review_notes', '')
     try:
@@ -244,7 +211,7 @@ def officer_approve_employment_request(request, request_id):
         )
     except ValueError as e:
         messages.error(request, str(e))
-    return redirect('web:list_employment_requests')
+    return redirect('web:list_pending_actions')
 
 
 @login_required
@@ -257,10 +224,10 @@ def reject_employment_request(request, request_id):
 
     if not user_can_reject_employment_request(user, emp_req):
         messages.error(request, 'لا تملك صلاحية رفض/إرجاع هذا الطلب.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     if request.method != 'POST':
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     notes = request.POST.get('review_notes', '')
     try:
@@ -268,7 +235,7 @@ def reject_employment_request(request, request_id):
         messages.success(request, f'تم رفض طلب "{emp_req.name}"')
     except ValueError as e:
         messages.error(request, str(e))
-    return redirect('web:list_employment_requests')
+    return redirect('web:list_pending_actions')
 
 
 @login_required
@@ -311,12 +278,12 @@ def edit_employment_request(request, request_id):
     # تحقق من المرحلة
     if emp_req.status != EmploymentRequest.Status.PENDING_OFFICER:
         messages.error(request, 'لا يمكن تعديل البيانات في هذه المرحلة.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     # تحقق من الإسناد + صلاحية التنفيذ
     if not can_officer_act_employment_request(request.user, emp_req):
         messages.error(request, 'لا تملك صلاحية تعديل بيانات هذا الطلب.')
-        return redirect('web:list_employment_requests')
+        return redirect('web:list_pending_actions')
 
     active_tab = 'main'
     tab_status = svc.employment_request_tab_status(emp_req)
@@ -326,7 +293,7 @@ def edit_employment_request(request, request_id):
         if action == 'save_assignment':
             if not can_assign_employment_officer(request.user, emp_req):
                 messages.error(request, 'لا تملك صلاحية حفظ الإسناد.')
-                return redirect('web:list_employment_requests')
+                return redirect('web:list_pending_actions')
             officer_id = request.POST.get('assigned_officer')
             if not officer_id:
                 messages.error(request, 'يجب اختيار أخصائي موارد لحفظ الإسناد.')
@@ -376,7 +343,7 @@ def edit_employment_request(request, request_id):
                         request,
                         f'تم حفظ البيانات والموافقة النهائية على "{emp_req.name}".',
                     )
-                    return redirect('web:list_employment_requests')
+                    return redirect('web:list_pending_actions')
                 except ValueError as e:
                     messages.error(request, str(e))
             else:

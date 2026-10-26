@@ -39,6 +39,67 @@ class BranchOrAdministrationRuleTests(TestCase):
         self.assertTrue(_form(branch=self.branch.pk, administration=self.administration.pk).is_valid())
 
 
+class HireRowActionLinkTests(TestCase):
+    def test_approve_link_opens_request_page_on_decision_card(self):
+        from django.urls import reverse
+        from apps.core.web_views.pending_actions import _wrap_hire
+
+        admin = User.objects.create_user('hireadmin', password='x', is_superuser=True)
+        req = EmploymentRequest.objects.create(
+            name='مرشح', status=EmploymentRequest.Status.PENDING_GM,
+        )
+        row = _wrap_hire(req, admin)
+        self.assertEqual(
+            row.act_url, reverse('web:employment_request_detail', args=[req.id]) + '#decision-card',
+        )
+        self.assertTrue(row.can_act)  # السوبر أدمن يستطيع التصرف في مرحلة مدير الموارد
+
+
+class UnifiedHireFlowTests(TestCase):
+    """طلبات التوظيف تُدار من القائمة الموحّدة وصفحة الطلب، والقائمة القديمة تحوّل إليها."""
+
+    def setUp(self):
+        from django.test import Client
+        self.admin = User.objects.create_user('uadmin', password='x', is_superuser=True)
+        self.client = Client()
+        self.client.force_login(self.admin)
+
+    def _req(self, status):
+        return EmploymentRequest.objects.create(name=f'مرشح {status}', status=status)
+
+    def test_legacy_list_redirects_to_unified_list(self):
+        from django.urls import reverse
+        base = reverse('web:list_pending_actions')
+        cases = {
+            '': 'review', '?status=pending_gm': 'pending_gm', '?status=approved': 'approved',
+            '?status=rejected': 'rejected', '?status=unknown': 'review',
+        }
+        for query, tab in cases.items():
+            resp = self.client.get(reverse('web:list_employment_requests') + query)
+            self.assertRedirects(resp, f'{base}?tab={tab}&type=hire')
+
+    def test_decision_card_shows_forms_for_each_stage(self):
+        from django.urls import reverse
+        expectations = {
+            EmploymentRequest.Status.PENDING_BRANCH: 'approve_employment_request',
+            EmploymentRequest.Status.PENDING_GM: 'gm_approve_employment_request',
+            EmploymentRequest.Status.PENDING_OFFICER: 'officer_approve_employment_request',
+        }
+        for status, url_name in expectations.items():
+            req = self._req(status)
+            page = self.client.get(reverse('web:employment_request_detail', args=[req.id]))
+            self.assertContains(page, 'id="decision-card"')
+            self.assertContains(page, reverse(f'web:{url_name}', args=[req.id]))
+            self.assertContains(page, reverse('web:reject_employment_request', args=[req.id]))
+
+    def test_rejected_tab_lists_rejected_hires(self):
+        from django.urls import reverse
+        self._req(EmploymentRequest.Status.REJECTED)
+        page = self.client.get(reverse('web:list_pending_actions') + '?tab=rejected')
+        self.assertEqual(page.context['counts']['rejected'], 1)
+        self.assertContains(page, 'مرشح rejected')
+
+
 class SkipFirstStageTests(TestCase):
     def setUp(self):
         company = Company.objects.create(name='شركة')

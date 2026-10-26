@@ -11,9 +11,12 @@
         </div>
     </div>
 
-    {% include "components/operations_tabs.html" %}
-
     {% include "components/page_tabs_start.html" with aria_label="تصفية طلبات العمليات" %}
+        <a href="?tab=review" role="tab" class="hr-tab-btn{% if tab == 'review' %} is-active{% endif %}">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>قيد المراجعة (الكل)</span>
+            {% if counts.review %}<span class="hr-tab-badge">{{ counts.review }}</span>{% endif %}
+        </a>
         <a href="?tab=inbox" role="tab" class="hr-tab-btn{% if tab == 'inbox' %} is-active{% endif %}">
             <i data-lucide="inbox" class="w-4 h-4"></i>
             <span>بانتظار إجرائي</span>
@@ -33,6 +36,11 @@
             <i data-lucide="clipboard-check" class="w-4 h-4"></i>
             <span>أخصائي الموارد</span>
             {% if counts.pending_officer %}<span class="hr-tab-badge">{{ counts.pending_officer }}</span>{% endif %}
+        </a>
+        <a href="?tab=rejected" role="tab" class="hr-tab-btn hr-tab-btn--rose{% if tab == 'rejected' %} is-active{% endif %}">
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
+            <span>مرفوضة</span>
+            {% if counts.rejected %}<span class="hr-tab-badge">{{ counts.rejected }}</span>{% endif %}
         </a>
         <a href="?tab=returned" role="tab" class="hr-tab-btn hr-tab-btn--rose{% if tab == 'returned' %} is-active{% endif %}">
             <i data-lucide="undo-2" class="w-4 h-4"></i>
@@ -135,6 +143,11 @@
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.requested_by_name }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.updated_at|date:"Y-m-d H:i" }}</td>
                         <td class="px-3 py-2 text-left whitespace-nowrap">
+                            {% if a.can_act and a.status != 'approved' %}
+                            <a href="{{ a.act_url }}" class="hr-act hr-act--approve" title="فتح شاشة الموافقة والاعتماد" aria-label="اعتماد الطلب {{ a.id }}">
+                                <i data-lucide="check" class="hr-act__icon"></i>
+                            </a>
+                            {% endif %}
                             {% include "components/table_actions.html" with view_url=a.detail_url view_title="فتح الطلب" delete_url=a.delete_url delete_confirm=a.delete_confirm delete_title="حذف الطلب" %}
                         </td>
                     </tr>

@@ -3,7 +3,7 @@
 {% block page_title %}تفاصيل طلب #{{ action.id }}{% endblock %}
 
 {% block content %}
-<div class="space-y-4 max-w-5xl mx-auto" x-data="{ panel: null }">
+<div class="space-y-4 max-w-5xl mx-auto" x-data="{ panel: {% if auto_panel %}'{{ auto_panel }}'{% else %}null{% endif %} }"{% if auto_panel %} x-init="$nextTick(() => document.getElementById('decision-card')?.scrollIntoView({ block: 'center' }))"{% endif %}>
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
@@ -136,7 +136,7 @@
 
             <!-- Action Panel -->
             {% if can_act or can_resubmit %}
-            <div class="bg-white rounded-xl shadow-sm border border-primary-200 p-4">
+            <div id="decision-card" class="bg-white rounded-xl shadow-sm border border-primary-200 p-4">
                 <h3 class="text-sm font-bold text-primary-800 mb-3 pb-2 border-b border-primary-100">
                     <i data-lucide="zap" class="w-4 h-4 inline-block ml-1"></i> اتخاذ قرار
                 </h3>

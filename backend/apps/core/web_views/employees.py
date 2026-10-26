@@ -265,7 +265,7 @@ def add_employee(request):
                 )
             else:
                 messages.success(request, f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الإدارة/الفرع للمراجعة')
-            return redirect('web:list_employment_requests')
+            return redirect('web:list_pending_actions')
         for err in form.errors.values():
             messages.error(request, err[0])
 
