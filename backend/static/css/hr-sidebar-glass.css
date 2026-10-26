@@ -147,6 +147,14 @@ body.hr-app .hr-sidebar .hr-nav-link:hover:not(.is-active),
 body.hr-app .hr-sidebar .hr-nav-group__head--link:hover:not(.is-active) {
     background: var(--sb-hover) !important;
 }
+/* عند التمرير: يبقى النص داكناً (قواعد hr-ui.css القديمة تجعله أبيض على خلفية فاتحة) */
+body.hr-app .hr-sidebar .hr-sidebar-panel .hr-nav-link:hover:not(.is-active),
+body.hr-app .hr-sidebar .hr-sidebar-panel .hr-nav-link:hover:not(.is-active) .hr-nav-text,
+body.hr-app .hr-sidebar .hr-sidebar-panel .hr-nav-group__body .hr-nav-link:hover:not(.is-active),
+body.hr-app .hr-sidebar .hr-sidebar-panel .hr-nav-group__body .hr-nav-link:hover:not(.is-active) .hr-nav-text,
+body.hr-app .hr-sidebar .hr-sidebar-panel .hr-nav-group__head--link:hover:not(.is-active) .hr-nav-label {
+    color: var(--sb-label) !important;
+}
 body.hr-app .hr-sidebar :is(.hr-nav-link, .hr-nav-group__head--link):active {
     transform: scale(0.985);
 }
