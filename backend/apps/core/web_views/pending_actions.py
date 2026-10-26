@@ -86,7 +86,7 @@ def _user_visible_actions(user):
     )
 
     qs = PendingAction.objects.select_related(
-        'employee', 'branch', 'administration', 'requested_by',
+        'employee', 'employee__department', 'branch', 'administration', 'requested_by',
         'branch_reviewed_by', 'gm_reviewed_by', 'assigned_officer', 'returned_by',
     )
     # مدير الموارد (المدير العام) يرى كل الطلبات المرفوعة، تابعة لإدارة أو غير مرتبطة.
@@ -162,7 +162,7 @@ def _user_visible_hire_requests(user):
     from apps.employees.models import EmploymentRequest
 
     qs = EmploymentRequest.objects.select_related(
-        'branch', 'administration', 'requested_by', 'branch_reviewed_by',
+        'branch', 'department', 'administration', 'requested_by', 'branch_reviewed_by',
         'gm_reviewed_by', 'assigned_officer',
     )
     visible = _hire_visibility_q(user)
@@ -222,6 +222,7 @@ def _wrap_action(a, user):
         employee_name=a.employee.name if a.employee_id else '-',
         branch_name=a.branch.name if a.branch_id else '-',
         administration_name=a.administration.name if a.administration_id else '-',
+        department_name=a.employee.department.name if a.employee_id and a.employee.department_id else '-',
         first_stage_label=first.stage_label,
         status=a.status,
         status_display=a.get_status_display(),
@@ -285,6 +286,7 @@ def _wrap_hire(r, user):
         employee_name=r.name,
         branch_name=r.branch.name if r.branch_id else '-',
         administration_name=r.administration.name if r.administration_id else '-',
+        department_name=r.department.name if r.department_id else '-',
         first_stage_label=first.stage_label,
         status=r.status,
         status_display=r.get_status_display(),
