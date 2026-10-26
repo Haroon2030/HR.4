@@ -9,7 +9,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">طلبات التوظيف</h1>
-            <p class="text-slate-500 text-xs">دورة الموافقات: {{ first_stage_tab_label|default:"موافقة أولى" }} ← مدير الموارد البشرية ← أخصائي الموارد</p>
+            <p class="text-slate-500 text-xs">دورة الموافقات: مدير الإدارة/الفرع ← مدير الموارد ← أخصائي الموارد</p>
         </div>
     </div>
 
@@ -30,7 +30,7 @@
         </a>
         <a href="?status=pending_officer" role="tab" class="hr-tab-btn hr-tab-btn--indigo{% if current_status == 'pending_officer' %} is-active{% endif %}">
             <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-            <span>الأخصائي</span>
+            <span>أخصائي الموارد</span>
         </a>
         <a href="?status=approved" role="tab" class="hr-tab-btn hr-tab-btn--emerald{% if current_status == 'approved' %} is-active{% endif %}">
             <i data-lucide="check-circle" class="w-4 h-4"></i>
@@ -69,7 +69,7 @@
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.department.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs text-slate-500">{{ r.administration.name|default:"-" }}</td>
                         <td class="px-3 py-2 text-xs hr-col-approval-stage">
-                            {% include "components/approval_workflow_track.html" with track=r first_stage_label=r.first_stage_label gm_label="مدير الموارد" officer_label="الأخصائي" %}
+                            {% include "components/approval_workflow_track.html" with track=r first_stage_label=r.first_stage_label gm_label="مدير الموارد" officer_label="أخصائي الموارد" %}
                         </td>
                         <td class="px-3 py-2 text-xs">
                             {% if r.commencement_document %}

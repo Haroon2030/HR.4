@@ -144,6 +144,8 @@ urlpatterns = [
     path('pending-actions/<int:action_id>/accountant-approve/', web_views.accountant_approve_action, name='accountant_approve_action'),
     path('pending-actions/<int:action_id>/gm-final-approve/', web_views.gm_final_approve_action, name='gm_final_approve_action'),
     path('pending-actions/<int:action_id>/officer-approve/', web_views.officer_approve_action, name='officer_approve_action'),  # تنفيذ موظف الموارد
+    path('pending-actions/<int:action_id>/settlement-edit/', web_views.settlement_edit_action, name='settlement_edit_action'),  # تعديل خصومات التصفية قبل الموافقة
+    path('pending-actions/<int:action_id>/settlement-signed/', web_views.settlement_signed_upload, name='settlement_signed_upload'),  # رفع التصفية الموقّعة
     path('pending-actions/<int:action_id>/return/', web_views.return_pending_action, name='return_pending_action'),            # إرجاع للتعديل
     path('pending-actions/<int:action_id>/resubmit/', web_views.resubmit_pending_action, name='resubmit_pending_action'),      # إعادة إرسال
 

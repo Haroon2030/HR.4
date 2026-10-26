@@ -277,9 +277,13 @@ class AddEmployeeExtraFieldsTests(TestCase):
         self.assertEqual(_extract_birth_hijri('Birth date: 1426/08/05 :x'), '1426/08/05')
         self.assertIsNone(_extract_birth_hijri('Birth date: soon'))
 
+    def setUp(self):
+        company = Company.objects.create(name='شركة الحقول')
+        self.branch = Branch.objects.create(name='فرع الحقول', code='EXF', company=company)
+
     def _form(self, **extra):
         from apps.employees.forms import EmploymentRequestForm
-        data = {'name': 'اختبار', 'basic_salary': '3200', **extra}
+        data = {'name': 'اختبار', 'basic_salary': '3200', 'branch': self.branch.pk, **extra}
         pdf = SimpleUploadedFile('c.pdf', b'%PDF-1.4\n%%EOF', content_type='application/pdf')
         return EmploymentRequestForm(data, {'commencement_document': pdf})
 
@@ -291,8 +295,12 @@ class AddEmployeeExtraFieldsTests(TestCase):
         self.assertEqual(form.cleaned_data['other_allowance'], 0)  # فارغ → صفر
 
     def test_form_rejects_negative_allowance_and_bad_hijri(self):
-        self.assertFalse(self._form(housing_allowance='-5').is_valid())
-        self.assertFalse(self._form(birth_date_hijri='soon').is_valid())
+        negative = self._form(housing_allowance='-5')
+        self.assertFalse(negative.is_valid())
+        self.assertIn('housing_allowance', negative.errors)
+        bad_hijri = self._form(birth_date_hijri='soon')
+        self.assertFalse(bad_hijri.is_valid())
+        self.assertIn('birth_date_hijri', bad_hijri.errors)
 
 
 class SuperuserOnlyTests(TestCase):

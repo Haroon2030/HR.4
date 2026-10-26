@@ -536,6 +536,11 @@ class PendingAction(BaseModel):
         "مرفق", upload_to='pending_actions/', null=True, blank=True,
         validators=DOCUMENT_VALIDATORS,
     )
+    signed_settlement = models.FileField(
+        "التصفية الموقّعة", upload_to='pending_actions/signed/', null=True, blank=True,
+        validators=DOCUMENT_VALIDATORS,
+        help_text="ملف التصفية بعد توقيع المدير المالي — إلزامي قبل الموافقة النهائية.",
+    )
 
     # ── تتبّع الإنشاء ──
     requested_by = models.ForeignKey(

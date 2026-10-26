@@ -518,8 +518,18 @@ def pending_action_detail(request, action_id):
         and can_resubmit_operation(request.user)
     )
 
+    from apps.core.services.pending_actions import SETTLEMENT_PENDING_ACTION_TYPES
+    settlement = None
+    if (
+        can_act and current_stage == PendingAction.Stage.OFFICER
+        and action.action_type in SETTLEMENT_PENDING_ACTION_TYPES
+        and not action.executed_at
+    ):
+        settlement = settlement_panel_context(action)
+
     return render(request, 'pages/pending_actions/detail.html', {
         'action': action,
+        'settlement': settlement,
         'officers': officers,
         'can_act': can_act,
         'can_resubmit': can_resubmit,
@@ -730,3 +740,158 @@ def delete_pending_action(request, action_id):
     action.delete()
     messages.success(request, f'تم حذف الطلب {label}.')
     return redirect('web:list_pending_actions')
+
+
+# =============================================================================
+# تعديل التصفية قبل الموافقة النهائية + رفع الملف الموقّع
+# =============================================================================
+
+def _settlement_end_date(action):
+    from datetime import date as _date
+    raw = (action.payload or {}).get('end_date')
+    try:
+        return _date.fromisoformat(str(raw)[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def _settlement_base_financials(action):
+    """البنود المحسوبة تلقائياً (قبل أي تعديل) — None إن تعذّر تحديد تاريخ التصفية."""
+    from apps.employees.services.settlement_financials import compute_settlement_financials
+    end_date = _settlement_end_date(action)
+    if end_date is None:
+        return None
+    return compute_settlement_financials(action.employee, end_date)
+
+
+def settlement_panel_context(action):
+    """بيانات لوحة «تعديل التصفية» في صفحة الطلب."""
+    from apps.employees.services.settlement_override import (
+        DEDUCTION_FIELDS, MANUAL_KINDS, apply_override_to_financials, get_override,
+    )
+    base = _settlement_base_financials(action)
+    override = get_override(action.payload)
+    rows = []
+    if base is not None:
+        current = apply_override_to_financials(base, override)
+        for field, label in DEDUCTION_FIELDS:
+            rows.append({
+                'field': field,
+                'label': label,
+                'value': current.get(field) or 0,
+                'auto': base.get(field) or 0,
+                'edited': field in override,
+            })
+    signed = action.signed_settlement
+    return {
+        'rows': rows,
+        'manual_items': list(override.get('manual_items') or []),
+        'manual_kinds': MANUAL_KINDS,
+        'reason': override.get('reason', ''),
+        'edited_by': override.get('edited_by', ''),
+        'edited_at': override.get('edited_at', ''),
+        'has_override': bool(override),
+        'signed_url': signed.url if signed else '',
+        'signed_name': signed.name.rsplit('/', 1)[-1] if signed else '',
+        'preview_url': (
+            reverse('web:hr_form_print', args=['final_settlement', action.employee_id])
+            + f'?action={action.id}'
+        ),
+    }
+
+
+def _settlement_guard(request, action_id):
+    """يقفل الطلب ويتحقق أن المستخدم هو موظف الموارد المخوّل وأن الطلب تصفية قيد المراجعة."""
+    from apps.core.services.pending_actions import SETTLEMENT_PENDING_ACTION_TYPES
+    action = _locked(action_id)
+    if _deny_if_action_not_visible(request, action):
+        return action, redirect('web:list_pending_actions')
+    if not _can_act_at_stage(request.user, action, PendingAction.Stage.OFFICER):
+        messages.error(request, 'لا تملك صلاحية تعديل هذا الطلب.')
+        return action, redirect('web:list_pending_actions')
+    if action.action_type not in SETTLEMENT_PENDING_ACTION_TYPES:
+        messages.error(request, 'هذا الإجراء متاح لطلبات التصفية فقط.')
+        return action, redirect('web:pending_action_detail', action_id=action_id)
+    if action.status != PendingAction.Status.PENDING_OFFICER or action.executed_at:
+        messages.error(request, 'لا يمكن تعديل التصفية بعد تنفيذها أو خارج مرحلة موظف الموارد.')
+        return action, redirect('web:pending_action_detail', action_id=action_id)
+    return action, None
+
+
+@login_required
+def settlement_edit_action(request, action_id):
+    """يحفظ تعديل أخصائي الموارد على خصومات التصفية (ويُبطل الملف الموقّع السابق)."""
+    if request.method != 'POST':
+        return redirect('web:pending_action_detail', action_id=action_id)
+    from apps.employees.services.settlement_override import OVERRIDE_KEY, parse_override_post
+    try:
+        with transaction.atomic():
+            action, denied = _settlement_guard(request, action_id)
+            if denied:
+                return denied
+            base = _settlement_base_financials(action)
+            if base is None:
+                messages.error(request, 'تعذّر تحديد تاريخ التصفية من الطلب.')
+                return redirect('web:pending_action_detail', action_id=action_id)
+            override, errors = parse_override_post(request.POST, request.user, base)
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+                return redirect('web:pending_action_detail', action_id=action_id)
+            payload = dict(action.payload or {})
+            previous = payload.get(OVERRIDE_KEY) or {}
+            ignore = ('edited_at',)
+            changed = (
+                {k: v for k, v in override.items() if k not in ignore}
+                != {k: v for k, v in previous.items() if k not in ignore}
+            )
+            if override:
+                payload[OVERRIDE_KEY] = override
+            else:
+                payload.pop(OVERRIDE_KEY, None)
+            action.payload = payload
+            update_fields = ['payload']
+            if changed and action.signed_settlement:
+                # الأرقام تغيّرت بعد التوقيع → الملف الموقّع القديم لم يعد مطابقاً
+                action.signed_settlement = None
+                update_fields.append('signed_settlement')
+                messages.warning(
+                    request,
+                    'تغيّرت أرقام التصفية، فأُلغي الملف الموقّع السابق — '
+                    'اطبع التصفية ووقّعها ثم ارفعها من جديد.',
+                )
+            action.save(update_fields=update_fields)
+        messages.success(
+            request,
+            'تم حفظ تعديل التصفية.' if override else 'أُعيدت أرقام التصفية إلى القيم التلقائية.',
+        )
+    except Exception as e:
+        messages.error(request, log_web_action_error('settlement_edit_action', e))
+    return redirect('web:pending_action_detail', action_id=action_id)
+
+
+@login_required
+def settlement_signed_upload(request, action_id):
+    """يرفع التصفية الموقّعة من المدير المالي — شرط للموافقة النهائية."""
+    if request.method != 'POST':
+        return redirect('web:pending_action_detail', action_id=action_id)
+    from django.core.exceptions import ValidationError
+    from apps.core.validators import validate_employee_upload
+    upload = request.FILES.get('signed_file')
+    if not upload:
+        messages.error(request, 'اختر ملف التصفية الموقّع أولاً.')
+        return redirect('web:pending_action_detail', action_id=action_id)
+    try:
+        validate_employee_upload(upload)
+        with transaction.atomic():
+            action, denied = _settlement_guard(request, action_id)
+            if denied:
+                return denied
+            action.signed_settlement = upload
+            action.save(update_fields=['signed_settlement'])
+        messages.success(request, 'تم رفع التصفية الموقّعة — يمكنك الآن الموافقة النهائية.')
+    except ValidationError as e:
+        messages.error(request, ' '.join(e.messages))
+    except Exception as e:
+        messages.error(request, log_web_action_error('settlement_signed_upload', e))
+    return redirect('web:pending_action_detail', action_id=action_id)

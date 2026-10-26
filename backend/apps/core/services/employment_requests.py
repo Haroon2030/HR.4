@@ -218,6 +218,30 @@ def branch_approve(req, user, notes=''):
     return req
 
 
+@transaction.atomic
+def skip_first_stage_if_unrouted(req):
+    """طلب بلا مدير إدارة ولا مدير فرع فعّال (إدارة بلا مدير مثلاً) → يتجاوز المرحلة الأولى
+    إلى مدير الموارد حتى لا يبقى معلّقاً بلا جهة موافقة. يُرجع True إن تجاوزها."""
+    from apps.employees.models import EmploymentRequest
+    if req.status not in {EmploymentRequest.Status.PENDING_BRANCH, EmploymentRequest.Status.PENDING}:
+        return False
+    if resolve_first_approver(req).recipient is not None:
+        return False
+
+    req.status = EmploymentRequest.Status.PENDING_GM
+    req.branch_notes = 'تجاوز المرحلة الأولى تلقائياً: لا يوجد مدير إدارة/فرع محدَّد لهذا الطلب.'
+    req.save(update_fields=['status', 'branch_notes'])
+    _notify_general_managers(
+        req,
+        title=f'طلب توظيف بانتظار موافقتك — {req.name}',
+        message='لا يوجد مدير إدارة/فرع محدَّد فانتقل الطلب إليك مباشرة.',
+        icon='user-cog', color=Notification.Color.AMBER,
+    )
+    from apps.core.services.whatsapp import workflow_notifier
+    workflow_notifier.notify_whatsapp_pending_gm(req)
+    return True
+
+
 def _validate_hr_officer_user(officer) -> None:
     from apps.core.models import Role
 

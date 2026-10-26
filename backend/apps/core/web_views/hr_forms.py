@@ -114,6 +114,15 @@ def _parse_final_settlement_statement(content: str) -> dict:
     if absences:
         ctx['absences_deduction'] = absences.group(1)
 
+    for key, pattern in (
+        ('penalties_deduction', r'خصم مخالفات غير محتسبة:\s*([\d\.]+)'),
+        ('cash_shortages_deduction', r'خصم عجز كاشير غير محتسب:\s*([\d\.]+)'),
+        ('overpaid_salary_recovery', r'استرداد راتب صُرف زيادة في مسير مُرحَّل:\s*([\d\.]+)'),
+    ):
+        found = re.search(pattern, text)
+        if found:
+            ctx[key] = found.group(1)
+
     srv = re.search(r'مدة الخدمة:\s*([^\n]+)', text)
     if srv:
         ctx['service_duration'] = srv.group(1).strip()
@@ -178,6 +187,24 @@ def _custody_final_settlement_context(employee) -> dict:
     if has_value:
         ctx['custody_total_estimated'] = str(total.quantize(Decimal('0.01')))
     return ctx
+
+
+def _settlement_action_for_form(request, employee):
+    """طلب التصفية الذي تُطبَّق تعديلاته على النموذج: المحدَّد بـ ?action= (إن كان مرئياً للمستخدم)،
+    وإلا آخر طلب تصفية منفَّذ للموظف."""
+    from apps.core.models import PendingAction
+    from apps.core.services.pending_actions import SETTLEMENT_PENDING_ACTION_TYPES
+    from apps.core.web_views.pending_actions import _user_visible_actions
+
+    base = PendingAction.objects.filter(
+        employee=employee, action_type__in=SETTLEMENT_PENDING_ACTION_TYPES,
+    )
+    action_id = request.GET.get('action')
+    if action_id and action_id.isdigit():
+        return base.filter(
+            id=int(action_id), id__in=_user_visible_actions(request.user).values('id'),
+        ).first()
+    return base.filter(executed_at__isnull=False).order_by('-id').first()
 
 
 def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
@@ -642,6 +669,8 @@ def hr_form_print(request, form_type, employee_id):
         ).order_by('code', 'name')
 
     if form_type == 'final_settlement':
+        # ثلاثة صفوف «خصم» فارغة افتراضياً؛ يملؤها تعديل أخصائي الموارد إن وُجد
+        context['deduction_slots'] = [{'amount': '', 'label': ''}] * 3
         stmt_id = request.GET.get('stmt_id')
         if stmt_id and stmt_id.isdigit():
             stmt = employee.statements_log.filter(id=stmt_id).first()
@@ -652,7 +681,28 @@ def hr_form_print(request, form_type, employee_id):
 
         if stmt and (stmt.content or '').strip():
             context.update(_parse_final_settlement_statement(stmt.content))
+        settlement_action = _settlement_action_for_form(request, employee)
+        if settlement_action is not None and not employee.end_date:
+            # معاينة قبل التنفيذ: تاريخ التصفية من الطلب (في الذاكرة فقط، لا يُحفظ)
+            from datetime import date as _date
+            try:
+                employee.end_date = _date.fromisoformat(str(settlement_action.payload.get('end_date'))[:10])
+            except (TypeError, ValueError):
+                pass
         _apply_final_settlement_fallbacks(employee, context)
+        if settlement_action is not None:
+            from apps.employees.services.settlement_override import (
+                apply_override_to_form_context, get_override,
+            )
+            override = get_override(settlement_action.payload)
+            if override and employee.end_date:
+                # نفس الأرقام التي رآها الأخصائي في لوحة التعديل (الخصومات التلقائية الأخرى)
+                from apps.employees.services.settlement_financials import compute_settlement_financials
+                auto = compute_settlement_financials(employee, employee.end_date)
+                for key in ('penalties_deduction', 'cash_shortages_deduction', 'overpaid_salary_recovery'):
+                    if auto.get(key) and auto[key] > 0:
+                        context.setdefault(key, str(auto[key]))
+            apply_override_to_form_context(context, override)
         context.update(_custody_final_settlement_context(employee))
 
     if form_type == 'warning_notice':

@@ -40,6 +40,8 @@ class SettlementWorkflowTests(TestCase):
         action.refresh_from_db()
         self.assertEqual(action.status, PendingAction.Status.PENDING_OFFICER)
 
+        action.signed_settlement = 'pending_actions/signed/test.pdf'  # شرط الموافقة النهائية
+        action.save(update_fields=['signed_settlement'])
         svc.officer_approve(action, self.officer)
         action.refresh_from_db()
         self.emp.refresh_from_db()
@@ -95,6 +97,8 @@ class SponsoredSettlementWorkflowTests(TestCase):
         self.assertEqual(action.status, PendingAction.Status.PENDING_GM)
 
         svc.gm_approve_and_assign(action, self.gm, self.officer)
+        action.signed_settlement = 'pending_actions/signed/test.pdf'  # شرط الموافقة النهائية
+        action.save(update_fields=['signed_settlement'])
         svc.officer_approve(action, self.officer)
         action.refresh_from_db()
         self.assertEqual(action.status, PendingAction.Status.PENDING_ACCOUNTANT)

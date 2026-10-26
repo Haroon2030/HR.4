@@ -559,15 +559,25 @@ def _execute_end_of_service(action, executor):
         net_settlement_total,
     )
 
-    financials = compute_settlement_financials(employee, end_date)
+    from apps.employees.services.settlement_override import (
+        apply_override_to_financials,
+        get_override,
+    )
+
+    financials = apply_override_to_financials(
+        compute_settlement_financials(employee, end_date),
+        get_override(action.payload),
+    )
+    manual_deductions = financials.get('manual_deductions') or Decimal('0')
+    manual_additions = financials.get('manual_additions') or Decimal('0')
     prorated_salary = financials['prorated_salary']
     loans_deduction = financials['loans_deduction']
     absences_deduction = financials['absences_deduction']
     penalties_deduction = financials.get('penalties_deduction') or Decimal('0')
     shortages_deduction = financials.get('cash_shortages_deduction') or Decimal('0')
     overpaid_recovery = financials.get('overpaid_salary_recovery') or Decimal('0')
-    other_deductions = penalties_deduction + shortages_deduction + overpaid_recovery
-    gross_entitlement = eosb + leave_comp + penalty + prorated_salary
+    other_deductions = penalties_deduction + shortages_deduction + overpaid_recovery + manual_deductions
+    gross_entitlement = eosb + leave_comp + penalty + prorated_salary + manual_additions
     total_entitlement = net_settlement_total(
         eosb=eosb,
         leave_comp=leave_comp,
@@ -666,6 +676,9 @@ def _execute_end_of_service(action, executor):
         content += f'خصم عجز كاشير غير محتسب: {shortages_deduction} ر.س\n'
     if overpaid_recovery > 0:
         content += f'استرداد راتب صُرف زيادة في مسير مُرحَّل: {overpaid_recovery} ر.س\n'
+    for item in financials.get('manual_items') or []:
+        kind_label = 'استحقاق إضافي' if item.get('kind') == 'addition' else 'خصم'
+        content += f"{kind_label} (يدوي) — {item.get('label')}: {item.get('amount')} ر.س\n"
     content += (
         f'───────────────────\n'
         f'إجمالي المستحقات (قبل الخصم): {gross_entitlement} ر.س\n'
@@ -1073,6 +1086,10 @@ def officer_approve(action, user, notes=''):
         raise ValueError('هذا الطلب ليس في مرحلة موظف الموارد.')
     if action.assigned_officer_id != user.id and not user.is_superuser:
         raise ValueError('هذا الطلب غير مُسند إليك.')
+    if action.action_type in SETTLEMENT_PENDING_ACTION_TYPES and not action.signed_settlement:
+        raise ValueError(
+            'ارفع ملف التصفية الموقّع من المدير المالي أولاً — لا تتم الموافقة النهائية بدونه.'
+        )
 
     action.status = PendingAction.Status.APPROVED
     action.officer_reviewed_at = timezone.now()

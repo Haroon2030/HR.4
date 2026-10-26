@@ -14,8 +14,8 @@
         </div>
         <div>
             {% if action.status == 'pending_branch' %}<span class="px-3 py-1 rounded bg-amber-100 text-amber-800 text-sm font-semibold">⏳ بانتظار {{ first_decision.stage_label }}</span>
-            {% elif action.status == 'pending_gm' %}<span class="px-3 py-1 rounded bg-indigo-100 text-indigo-800 text-sm font-semibold">⏳ بانتظار المدير العام</span>
-            {% elif action.status == 'pending_officer' %}<span class="px-3 py-1 rounded bg-purple-100 text-purple-800 text-sm font-semibold">⏳ بانتظار موظف الموارد</span>
+            {% elif action.status == 'pending_gm' %}<span class="px-3 py-1 rounded bg-indigo-100 text-indigo-800 text-sm font-semibold">⏳ بانتظار مدير الموارد</span>
+            {% elif action.status == 'pending_officer' %}<span class="px-3 py-1 rounded bg-purple-100 text-purple-800 text-sm font-semibold">⏳ بانتظار أخصائي الموارد</span>
             {% elif action.status == 'returned' %}<span class="px-3 py-1 rounded bg-rose-100 text-rose-800 text-sm font-semibold">↩ مُرتجَع للتعديل</span>
             {% elif action.status == 'approved' %}<span class="px-3 py-1 rounded bg-emerald-100 text-emerald-800 text-sm font-semibold">✓ مُنفَّذ</span>
             {% endif %}
@@ -121,6 +121,11 @@
                         {% include "components/media_preview_btn.html" with url=action.attachment.url title="مرفق الإجراء" label="عرض المرفق" btn_class="text-primary-600 hover:text-primary-700 text-sm inline-flex items-center gap-1 font-semibold" icon="paperclip" icon_class="w-4 h-4" %}
                     </div>
                 {% endif %}
+                {% if action.signed_settlement %}
+                    <div class="mt-3 pt-3 border-t border-slate-100">
+                        {% include "components/media_preview_btn.html" with url=action.signed_settlement.url title="التصفية الموقّعة" label="عرض التصفية الموقّعة" btn_class="text-emerald-700 hover:text-emerald-800 text-sm inline-flex items-center gap-1 font-semibold" icon="file-signature" icon_class="w-4 h-4" %}
+                    </div>
+                {% endif %}
                 {% if action.execution_error %}
                     <div class="mt-3 px-3 py-2 bg-red-50 text-red-700 text-xs rounded border border-red-200">
                         <i data-lucide="alert-triangle" class="w-3 h-3 inline-block"></i>
@@ -214,8 +219,122 @@
                 {% endif %}
 
                 {% if can_act and current_stage == 'officer' %}
+                    {% if settlement %}
+                    <div class="mb-4 space-y-4" id="settlement-panel">
+                        <form method="POST" action="{% url 'web:settlement_edit_action' action.id %}"
+                              class="p-3 rounded-lg border border-amber-200 bg-amber-50/40 space-y-3"
+                              x-data="{ extra: 0 }" hx-boost="false">
+                            {% csrf_token %}
+                            <div class="flex items-center justify-between gap-2">
+                                <h4 class="text-sm font-bold text-slate-800">
+                                    <i data-lucide="calculator" class="w-4 h-4 inline-block ml-1"></i>
+                                    تعديل التصفية قبل التوقيع
+                                </h4>
+                                {% if settlement.has_override %}
+                                    <span class="text-xs text-amber-700 font-semibold">
+                                        معدَّلة{% if settlement.edited_by %} بواسطة {{ settlement.edited_by }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-xs text-slate-500">
+                                عدّل الخصومات أو أضف بنداً يدوياً، احفظ، ثم اطبع التصفية ووقّعها عند المدير المالي وارفعها هنا.
+                                المكافأة والإجازات تبقى بحسب النظام.
+                            </p>
+                            {% if settlement.rows %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {% for row in settlement.rows %}
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1" for="ov_{{ row.field }}">
+                                        {{ row.label }}
+                                        <span class="font-normal text-slate-400">(تلقائي: {{ row.auto|floatformat:"2u" }})</span>
+                                    </label>
+                                    <input type="number" step="0.01" min="0" dir="ltr" inputmode="decimal"
+                                           id="ov_{{ row.field }}" name="ov_{{ row.field }}"
+                                           value="{{ row.value|floatformat:"2u" }}"
+                                           class="w-full px-3 py-2 border rounded-lg text-sm {% if row.edited %}border-amber-400 bg-amber-50{% else %}border-slate-300{% endif %}">
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div class="space-y-2">
+                                <div class="text-xs font-semibold text-slate-600">بنود يدوية (اترك الصف فارغاً لحذفه)</div>
+                                {% for item in settlement.manual_items %}
+                                <div class="grid grid-cols-12 gap-2">
+                                    <input type="text" name="manual_label" value="{{ item.label }}" maxlength="120" placeholder="البيان"
+                                           class="col-span-6 px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <input type="number" step="0.01" min="0" dir="ltr" name="manual_amount" value="{{ item.amount }}" placeholder="المبلغ"
+                                           class="col-span-3 px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <select name="manual_kind" class="col-span-3 px-2 py-2 border border-slate-300 rounded-lg text-sm">
+                                        <option value="deduction" {% if item.kind != 'addition' %}selected{% endif %}>خصم</option>
+                                        <option value="addition" {% if item.kind == 'addition' %}selected{% endif %}>استحقاق إضافي</option>
+                                    </select>
+                                </div>
+                                {% endfor %}
+                                <template x-for="n in extra" :key="n">
+                                    <div class="grid grid-cols-12 gap-2">
+                                        <input type="text" name="manual_label" maxlength="120" placeholder="البيان"
+                                               class="col-span-6 px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                        <input type="number" step="0.01" min="0" dir="ltr" name="manual_amount" placeholder="المبلغ"
+                                               class="col-span-3 px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                        <select name="manual_kind" class="col-span-3 px-2 py-2 border border-slate-300 rounded-lg text-sm">
+                                            <option value="deduction">خصم</option>
+                                            <option value="addition">استحقاق إضافي</option>
+                                        </select>
+                                    </div>
+                                </template>
+                                <button type="button" @click="extra++" x-show="extra < 5"
+                                        class="text-xs font-semibold text-primary-600 hover:text-primary-700">
+                                    + إضافة بند يدوي
+                                </button>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" for="ov_reason">سبب التعديل (إلزامي عند أي تغيير)</label>
+                                <textarea id="ov_reason" name="ov_reason" rows="2" maxlength="500"
+                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">{{ settlement.reason }}</textarea>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                {% include "components/hr_btn.html" with label="حفظ التعديل" type="submit" variant="indigo" size="sm" %}
+                                <a href="{{ settlement.preview_url }}" target="_blank" rel="noopener"
+                                   class="text-sm font-semibold text-primary-600 hover:text-primary-700 inline-flex items-center gap-1">
+                                    <i data-lucide="printer" class="w-4 h-4"></i> معاينة وطباعة التصفية
+                                </a>
+                            </div>
+                        </form>
+
+                        <form method="POST" action="{% url 'web:settlement_signed_upload' action.id %}" enctype="multipart/form-data"
+                              class="p-3 rounded-lg border border-slate-200 space-y-2" hx-boost="false">
+                            {% csrf_token %}
+                            <h4 class="text-sm font-bold text-slate-800">
+                                <i data-lucide="file-signature" class="w-4 h-4 inline-block ml-1"></i>
+                                التصفية الموقّعة (شرط للموافقة النهائية)
+                            </h4>
+                            {% if settlement.signed_url %}
+                                <div class="text-xs text-emerald-700 font-semibold">
+                                    <i data-lucide="check-circle-2" class="w-3 h-3 inline-block"></i>
+                                    مرفوع: <a href="{{ settlement.signed_url }}" target="_blank" rel="noopener" class="underline">{{ settlement.signed_name }}</a>
+                                    — يمكنك استبداله بملف جديد.
+                                </div>
+                            {% else %}
+                                <div class="text-xs text-amber-700 font-semibold">لم يُرفع ملف موقّع بعد — زر الموافقة النهائية معطّل.</div>
+                            {% endif %}
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" name="signed_file" required accept=".pdf,.jpg,.jpeg,.png"
+                                       class="text-sm file:ml-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700">
+                                {% include "components/hr_btn.html" with label="رفع الملف" type="submit" variant="secondary" size="sm" %}
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
-                        {% include "components/hr_btn.html" with label="موافقة وتنفيذ نهائي" type="button" variant="purple" icon="check" x_click="panel='approve'" %}
+                        {% if settlement and not settlement.signed_url %}
+                            <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                ارفع التصفية الموقّعة أولاً لتفعيل «موافقة وتنفيذ نهائي»
+                            </span>
+                        {% else %}
+                            {% include "components/hr_btn.html" with label="موافقة وتنفيذ نهائي" type="button" variant="purple" icon="check" x_click="panel='approve'" %}
+                        {% endif %}
                         {% include "components/hr_btn.html" with label="إرجاع للتعديل" type="button" variant="danger" icon="undo-2" x_click="panel='return'" %}
                     </div>
                     <form method="POST" action="{% url 'web:officer_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">
@@ -272,7 +391,7 @@
                 <!-- 3. GM -->
                 <li>
                     <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.gm_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
-                    <p class="text-xs font-bold {% if action.gm_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">المدير العام</p>
+                    <p class="text-xs font-bold {% if action.gm_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">مدير الموارد</p>
                     {% if action.gm_reviewed_at %}
                         <p class="text-xs text-slate-500">{% if action.gm_reviewed_by %}{{ action.gm_reviewed_by.get_full_name|default:action.gm_reviewed_by.username }}{% else %}—{% endif %}</p>
                         <p class="text-xs text-slate-400">{{ action.gm_reviewed_at|date:"Y-m-d H:i" }}</p>
@@ -285,7 +404,7 @@
                 <!-- 4. Officer -->
                 <li>
                     <div class="absolute -right-2 w-4 h-4 rounded-full {% if action.officer_reviewed_at %}bg-emerald-500{% else %}bg-slate-300{% endif %} border-2 border-white"></div>
-                    <p class="text-xs font-bold {% if action.officer_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">موظف الموارد</p>
+                    <p class="text-xs font-bold {% if action.officer_reviewed_at %}text-slate-800{% else %}text-slate-400{% endif %}">أخصائي الموارد</p>
                     {% if action.officer_reviewed_at %}
                         <p class="text-xs text-slate-500">{% if action.assigned_officer %}{{ action.assigned_officer.get_full_name|default:action.assigned_officer.username }}{% else %}—{% endif %}</p>
                         <p class="text-xs text-slate-400">{{ action.officer_reviewed_at|date:"Y-m-d H:i" }}</p>

@@ -257,7 +257,14 @@ def add_employee(request):
             obj = form.save(commit=False)
             obj.requested_by = request.user
             obj.save()
-            messages.success(request, f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الإدارة/الفرع للمراجعة')
+            from apps.core.services.employment_requests import skip_first_stage_if_unrouted
+            if skip_first_stage_if_unrouted(obj):
+                messages.success(
+                    request,
+                    f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الموارد مباشرة (لا يوجد مدير إدارة/فرع محدَّد)',
+                )
+            else:
+                messages.success(request, f'تم إرسال طلب توظيف "{obj.name}" إلى مدير الإدارة/الفرع للمراجعة')
             return redirect('web:list_employment_requests')
         for err in form.errors.values():
             messages.error(request, err[0])

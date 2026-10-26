@@ -446,6 +446,16 @@ class EmploymentRequestForm(forms.ModelForm):
     def clean_birth_date_hijri(self):
         return _clean_hijri_date(self.cleaned_data.get('birth_date_hijri'))
 
+    def clean(self):
+        cleaned = super().clean()
+        # يكفي فرع أو إدارة أو كلاهما — بدونهما لا توجد جهة يُوجَّه إليها الطلب
+        if (
+            not cleaned.get('branch') and not cleaned.get('administration')
+            and 'branch' not in self.errors and 'administration' not in self.errors
+        ):
+            self.add_error('branch', 'اختر الفرع أو الإدارة (أحدهما على الأقل) ليُوجَّه الطلب لمن يوافق عليه.')
+        return cleaned
+
     def clean_administration(self):
         administration = self.cleaned_data.get('administration')
         if administration is None and self.user is not None:

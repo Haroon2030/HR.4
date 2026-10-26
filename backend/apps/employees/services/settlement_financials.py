@@ -147,5 +147,6 @@ def net_settlement_total(
         + Decimal(leave_comp or 0)
         + Decimal(penalty or 0)
         + Decimal(financials.get('prorated_salary') or 0)
+        + Decimal(financials.get('manual_additions') or 0)
     )
     return _quantize(gross - Decimal(financials.get('total_deductions') or 0))
