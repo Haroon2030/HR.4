@@ -42,6 +42,7 @@ class EmploymentRequest(BaseModel):
         PENDING_OFFICER = 'pending_officer', 'بانتظار أخصائي الموارد'
         APPROVED = 'approved', 'مقبول'
         REJECTED = 'rejected', 'مرفوض'
+        RETURNED = 'returned', 'مرتجع للتعديل'
 
     name = models.CharField("اسم الموظف", max_length=200)
     name_en = models.CharField("الاسم بالإنجليزية", max_length=200, blank=True)
@@ -86,6 +87,15 @@ class EmploymentRequest(BaseModel):
     )
     reviewed_at = models.DateTimeField("تاريخ المراجعة", null=True, blank=True)
     review_notes = models.TextField("ملاحظات المراجعة", blank=True)
+
+    # إرجاع الطلب لمقدّمه للتعديل (سبب إلزامي) ثم إعادة إرساله
+    returned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='returned_employment_requests', verbose_name="أرجعه",
+    )
+    returned_at = models.DateTimeField("تاريخ الإرجاع", null=True, blank=True)
+    return_notes = models.TextField("سبب الإرجاع", blank=True)
+    resubmit_count = models.PositiveIntegerField("مرات إعادة الإرسال", default=0)
 
     # ─ دورة الموافقات متعدّدة المراحل ───────────────────────────
     branch_reviewed_by = models.ForeignKey(

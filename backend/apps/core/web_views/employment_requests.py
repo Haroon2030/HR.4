@@ -115,6 +115,10 @@ def employment_request_detail(request, request_id):
     can_gm = can_gm_approve_employment_request(user, obj)
     return render(request, 'pages/employment_requests/detail.html', {
         'obj': obj,
+        'can_resubmit': (
+            obj.status == EmploymentRequest.Status.RETURNED
+            and (obj.requested_by_id == user.id or user.is_superuser)
+        ),
         'list_url': reverse('web:list_pending_actions') + '?type=hire',
         'can_first_approve': can_first_approve_employment_request(user, obj),
         'can_gm_approve': can_gm,
@@ -229,7 +233,10 @@ def reject_employment_request(request, request_id):
     if request.method != 'POST':
         return redirect('web:list_pending_actions')
 
-    notes = request.POST.get('review_notes', '')
+    notes = _decision_notes(request)
+    if not notes:
+        messages.error(request, 'اكتب سبب الرفض — إلزامي.')
+        return redirect('web:employment_request_detail', request_id=emp_req.id)
     try:
         svc.reject(emp_req, user, notes=notes)
         messages.success(request, f'تم رفض طلب "{emp_req.name}"')
@@ -411,3 +418,105 @@ def edit_employment_request(request, request_id):
         'saudi_nationality_ids': saudi_nationality_ids(),
     })
 
+
+def _decision_notes(request) -> str:
+    return (request.POST.get('review_notes') or '').strip()
+
+
+@login_required
+def return_employment_request(request, request_id):
+    """إرجاع الطلب لمن رفعه للتعديل — السبب إلزامي ويصل للمُقدِّم."""
+    emp_req = _get_request_or_404(request_id)
+    user = request.user
+
+    from apps.core.services.workflow_access import user_can_reject_employment_request
+
+    if not user_can_reject_employment_request(user, emp_req):
+        messages.error(request, 'لا تملك صلاحية رفض/إرجاع هذا الطلب.')
+        return redirect('web:list_pending_actions')
+    if request.method != 'POST':
+        return redirect('web:employment_request_detail', request_id=emp_req.id)
+
+    try:
+        svc.return_for_edit(emp_req, user, _decision_notes(request))
+        messages.success(request, f'أُرجع طلب "{emp_req.name}" لمقدّمه للتعديل مع السبب.')
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect('web:employment_request_detail', request_id=emp_req.id)
+    return redirect('web:list_pending_actions')
+
+
+def _prefill_from_request(obj):
+    """بيانات الطلب بصيغة POST ليملأ بها قالب النموذج الحقول (القالب يقرأ request.POST)."""
+    from django.http import QueryDict
+
+    values = {
+        'name': obj.name, 'name_en': obj.name_en, 'id_number': obj.id_number, 'phone': obj.phone,
+        'email': obj.email, 'birth_date_hijri': obj.birth_date_hijri, 'gender': obj.gender,
+        'start_kind': obj.start_kind,
+        'hire_date': obj.hire_date.isoformat() if obj.hire_date else '',
+        'nationality': obj.nationality_id or '', 'branch': obj.branch_id or '',
+        'department': obj.department_id or '', 'administration': obj.administration_id or '',
+        'cost_center': obj.cost_center_id or '', 'sponsorship': obj.sponsorship_id or '',
+        'sponsorship_type': 'sponsored' if obj.sponsorship_id else 'none',
+        'basic_salary': obj.basic_salary, 'housing_allowance': obj.housing_allowance,
+        'transport_allowance': obj.transport_allowance, 'other_allowance': obj.other_allowance,
+    }
+    data = QueryDict(mutable=True)
+    for key, value in values.items():
+        if value is None or value == '':
+            continue
+        data[key] = str(value)
+    return data
+
+
+@login_required
+def edit_returned_employment_request(request, request_id):
+    """مقدّم الطلب يعدّل بيانات طلبه المُرتجَع ثم يعيد إرساله."""
+    from apps.core.services.file_helpers import apply_uploaded_file_rename
+    from apps.core.web_views.employees import employment_request_form_context
+    from apps.employees.forms import EmploymentRequestForm
+    from apps.employees.models import EmploymentRequest
+
+    obj = _get_request_or_404(request_id)
+    user = request.user
+    if obj.status != EmploymentRequest.Status.RETURNED:
+        messages.error(request, 'التعديل متاح للطلب المُرتجَع فقط.')
+        return redirect('web:employment_request_detail', request_id=obj.id)
+    if obj.requested_by_id != user.id and not user.is_superuser:
+        messages.error(request, 'فقط مقدّم الطلب يستطيع تعديله.')
+        return redirect('web:employment_request_detail', request_id=obj.id)
+
+    if request.method == 'POST':
+        files = request.FILES.copy()
+        renamed = apply_uploaded_file_rename(request, 'commencement_document')
+        if renamed is not None:
+            files['commencement_document'] = renamed
+        form = EmploymentRequestForm(request.POST, files, instance=obj, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم حفظ التعديل — راجع البيانات ثم اضغط «إعادة إرسال الطلب».')
+            return redirect('web:employment_request_detail', request_id=obj.id)
+        for err in form.errors.values():
+            messages.error(request, err[0])
+    else:
+        request.POST = _prefill_from_request(obj)
+
+    return render(request, 'pages/employees/form.html', employment_request_form_context(
+        user, editing_request=obj, doc_required=False,
+    ))
+
+
+@login_required
+def resubmit_employment_request(request, request_id):
+    """إعادة إرسال الطلب المُرتجَع بعد التعديل."""
+    emp_req = _get_request_or_404(request_id)
+    if request.method != 'POST':
+        return redirect('web:employment_request_detail', request_id=emp_req.id)
+    try:
+        svc.resubmit(emp_req, request.user)
+        messages.success(request, f'أُعيد إرسال طلب "{emp_req.name}" للموافقة.')
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect('web:employment_request_detail', request_id=emp_req.id)
+    return redirect('web:list_pending_actions')

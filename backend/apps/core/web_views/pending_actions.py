@@ -197,6 +197,9 @@ def _inbox_for_hire(user, qs):
     elif _is_hr_officer(user):
         f |= Q(status=EmploymentRequest.Status.PENDING_OFFICER, assigned_officer=user)
         has_filter = True
+    # الطلب المُرتجَع ينتظر مقدّمه ليعدّله ويعيد إرساله
+    f |= Q(status=EmploymentRequest.Status.RETURNED, requested_by=user)
+    has_filter = True
     return qs.filter(f) if has_filter else qs.none()
 
 
@@ -246,8 +249,15 @@ def _can_act_on_hire(user, r) -> bool:
         can_gm_approve_employment_request,
         can_officer_act_employment_request,
     )
+    from apps.employees.models import EmploymentRequest
+
+    awaiting_requester = (
+        r.status == EmploymentRequest.Status.RETURNED
+        and (r.requested_by_id == user.id or user.is_superuser)
+    )
     return bool(
-        can_first_approve_employment_request(user, r)
+        awaiting_requester
+        or can_first_approve_employment_request(user, r)
         or can_gm_approve_employment_request(user, r)
         or can_officer_act_employment_request(user, r)
     )
@@ -387,7 +397,7 @@ def list_pending_actions(request):
         qs_hire = base_hire.filter(status=EmploymentRequest.Status.REJECTED)
     elif tab == 'returned':
         qs = base.filter(status=PendingAction.Status.RETURNED)
-        qs_hire = base_hire.none()  # EmploymentRequest ليس له حالة "مرتجع"
+        qs_hire = base_hire.filter(status=EmploymentRequest.Status.RETURNED)
     elif tab == 'approved':
         qs = base.filter(status=PendingAction.Status.APPROVED)
         qs_hire = base_hire.filter(status=EmploymentRequest.Status.APPROVED)
@@ -477,6 +487,7 @@ def list_pending_actions(request):
         c_open=Count('id', filter=Q(status__in=OPEN_HIRE_STATUSES)),
         c_approved=Count('id', filter=Q(status=EmploymentRequest.Status.APPROVED)),
         c_rejected=Count('id', filter=Q(status=EmploymentRequest.Status.REJECTED)),
+        c_returned=Count('id', filter=Q(status=EmploymentRequest.Status.RETURNED)),
         c_mine=Count('id', filter=Q(requested_by=request.user)),
     )
     from apps.core.services.sidebar_counts import get_sidebar_counts
@@ -487,7 +498,7 @@ def list_pending_actions(request):
         'pending_branch': pa_agg['c_branch'] + hr_agg['c_branch'],
         'pending_gm': pa_agg['c_gm'] + hr_agg['c_gm'],
         'pending_officer': pa_agg['c_officer'] + hr_agg['c_officer'],
-        'returned': pa_agg['c_returned'],
+        'returned': pa_agg['c_returned'] + hr_agg['c_returned'],
         'rejected': hr_agg['c_rejected'],
         'approved': pa_agg['c_approved'] + hr_agg['c_approved'],
         'mine': pa_agg['c_mine'] + hr_agg['c_mine'],

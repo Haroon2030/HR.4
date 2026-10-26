@@ -32,6 +32,21 @@
         <div class="border-t border-slate-100 pt-4 space-y-2 text-sm">
             <p><span class="text-slate-500">ملاحظات مدير الفرع:</span> {{ obj.branch_notes|default:"—" }}</p>
             <p><span class="text-slate-500">ملاحظات مدير الموارد:</span> {{ obj.gm_notes|default:"—" }}</p>
+            {% if obj.return_notes %}
+            <p class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
+                <span class="font-bold">{% if obj.status == 'returned' %}سبب الإرجاع{% else %}سبب آخر إرجاع{% endif %}:</span>
+                <span class="whitespace-pre-line">{{ obj.return_notes }}</span>
+                <span class="block text-xs text-amber-700 mt-1">
+                    {% if obj.returned_by %}{{ obj.returned_by.get_full_name|default:obj.returned_by.username }}{% endif %}
+                    {% if obj.returned_at %} · {{ obj.returned_at|date:"Y-m-d H:i" }}{% endif %}
+                </span>
+            </p>
+            {% endif %}
+            {% if obj.status == 'rejected' and obj.review_notes %}
+            <p class="rounded-lg border border-red-200 bg-red-50 p-3 text-red-900">
+                <span class="font-bold">سبب الرفض:</span> <span class="whitespace-pre-line">{{ obj.review_notes }}</span>
+            </p>
+            {% endif %}
         </div>
     </div>
 
@@ -79,20 +94,51 @@
 
             {% elif obj.status == 'approved' %}
                 <span class="px-3 py-1 text-sm font-semibold rounded bg-emerald-100 text-emerald-700">مكتمل</span>
+            {% elif obj.status == 'returned' %}
+                <span class="px-3 py-1 text-sm font-semibold rounded bg-amber-100 text-amber-800">مرتجع لمقدّم الطلب للتعديل</span>
             {% else %}
                 <span class="px-3 py-1 text-sm font-semibold rounded bg-red-100 text-red-700">مرفوض</span>
             {% endif %}
 
-            {% if can_reject and obj.status != 'approved' and obj.status != 'rejected' %}
-            <form method="POST" action="{% url 'web:reject_employment_request' obj.id %}" class="inline"
-                  onsubmit="return confirm('إلغاء هذا الطلب نهائياً؟');">
-                {% csrf_token %}
-                {% include "components/hr_btn.html" with label="رفض الطلب" type="submit" variant="danger" icon="x" %}
-            </form>
+            {% if can_resubmit %}
+                <a href="{% url 'web:edit_returned_employment_request' obj.id %}" class="hr-btn hr-btn--outline">
+                    <i data-lucide="pencil" class="w-4 h-4"></i> تعديل البيانات
+                </a>
+                <form method="POST" action="{% url 'web:resubmit_employment_request' obj.id %}" class="inline"
+                      onsubmit="return confirm('إعادة إرسال الطلب للموافقة من البداية؟');">
+                    {% csrf_token %}
+                    {% include "components/hr_btn.html" with label="إعادة إرسال الطلب" type="submit" variant="purple" icon="send" %}
+                </form>
             {% endif %}
         </div>
 
-        {% if obj.status != 'approved' and obj.status != 'rejected' and not can_first_approve and not can_gm_approve and not can_officer_act %}
+        {% if can_reject and obj.status != 'approved' and obj.status != 'rejected' and obj.status != 'returned' %}
+        <div x-data="{ open: false }" class="mt-3">
+            <button type="button" @click="open = !open" class="hr-btn hr-btn--danger" :aria-expanded="open">
+                <i data-lucide="x" class="w-4 h-4"></i> رفض الطلب
+            </button>
+            <form method="POST" x-show="open" x-cloak class="mt-3 space-y-2" hx-boost="false">
+                {% csrf_token %}
+                <label class="block text-xs font-semibold text-slate-600" for="review_notes">
+                    سبب الرفض / الإرجاع <span class="text-rose-600">(إلزامي — يظهر لمن رفع الطلب)</span>
+                </label>
+                <textarea id="review_notes" name="review_notes" rows="3" required minlength="3" maxlength="1000"
+                          class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          placeholder="اكتب سبب الرفض ليتمكّن مقدّم الطلب من التعديل"></textarea>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="submit" formaction="{% url 'web:return_employment_request' obj.id %}" class="hr-btn hr-btn--outline">
+                        <i data-lucide="undo-2" class="w-4 h-4"></i> إرجاع لمقدّم الطلب للتعديل
+                    </button>
+                    <button type="submit" formaction="{% url 'web:reject_employment_request' obj.id %}" class="hr-btn hr-btn--danger"
+                            onclick="return confirm('رفض الطلب نهائياً بلا إمكانية إعادة إرساله؟');">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i> رفض نهائي
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if obj.status != 'approved' and obj.status != 'rejected' and obj.status != 'returned' and not can_first_approve and not can_gm_approve and not can_officer_act %}
             <p class="text-xs text-slate-500">لا يوجد إجراء متاح لك على هذا الطلب في مرحلته الحالية.</p>
         {% endif %}
     </div>

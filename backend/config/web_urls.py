@@ -130,6 +130,9 @@ urlpatterns = [
     path('employment-requests/<int:request_id>/gm-approve/', web_views.gm_approve_employment_request, name='gm_approve_employment_request'),  # موافقة المدير العام
     path('employment-requests/<int:request_id>/officer-approve/', web_views.officer_approve_employment_request, name='officer_approve_employment_request'),  # تنفيذ الأخصائي
     path('employment-requests/<int:request_id>/edit/', web_views.edit_employment_request, name='edit_employment_request'),                  # تعديل الطلب
+    path('employment-requests/<int:request_id>/return/', web_views.return_employment_request, name='return_employment_request'),        # إرجاع للتعديل بسبب
+    path('employment-requests/<int:request_id>/edit-returned/', web_views.edit_returned_employment_request, name='edit_returned_employment_request'),
+    path('employment-requests/<int:request_id>/resubmit/', web_views.resubmit_employment_request, name='resubmit_employment_request'),
     path('employment-requests/<int:request_id>/reject/', web_views.reject_employment_request, name='reject_employment_request'),            # رفض الطلب
     path('employment-requests/<int:request_id>/delete/', web_views.delete_employment_request, name='delete_employment_request'),            # حذف الطلب
 

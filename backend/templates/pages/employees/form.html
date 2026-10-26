@@ -8,8 +8,13 @@
             {% url 'web:list_employees' as employees_list_url %}
             {% include 'components/glass_back_link.html' with back_url=employees_list_url aria_label='رجوع لقائمة الموظفين' %}
             <div class="min-w-0">
+                {% if editing_request %}
+                <h1 class="text-2xl font-bold text-slate-900">تعديل طلب توظيف مُرتجَع</h1>
+                <p class="text-slate-500 text-sm mt-0.5">عدّل البيانات بحسب السبب، احفظ، ثم أعد إرسال الطلب من صفحته</p>
+                {% else %}
                 <h1 class="text-2xl font-bold text-slate-900">إضافة موظف جديد</h1>
                 <p class="text-slate-500 text-sm mt-0.5">سجّل البيانات الأساسية ثم أكمل التفاصيل من صفحة التعديل</p>
+                {% endif %}
             </div>
         </div>
         <div class="hr-employee-create-page__steps" aria-hidden="true">
@@ -18,6 +23,19 @@
             <span>2</span>
         </div>
     </div>
+
+    {% if editing_request %}
+    <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm" role="alert">
+        <p class="font-bold text-amber-900 mb-1">
+            <i data-lucide="undo-2" class="w-4 h-4 inline-block ml-1"></i> سبب الإرجاع
+        </p>
+        <p class="text-amber-900 whitespace-pre-line">{{ editing_request.return_notes|default:"—" }}</p>
+        <p class="text-xs text-amber-700 mt-2">
+            {% if editing_request.returned_by %}أرجعه: {{ editing_request.returned_by.get_full_name|default:editing_request.returned_by.username }}{% endif %}
+            {% if editing_request.returned_at %} · {{ editing_request.returned_at|date:"Y-m-d H:i" }}{% endif %}
+        </p>
+    </div>
+    {% endif %}
 
     <form method="post" enctype="multipart/form-data"
           class="hr-glass-form hr-employee-create-form hr-glass-panel rounded-xl overflow-hidden">
@@ -260,7 +278,14 @@
                     <div class="hr-employee-create-field hr-employee-create-field--full">
                         <div class="flex items-start gap-3">
                             <div class="flex-1 min-w-0">
-                                {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' required=True %}
+                                {% include 'components/file_upload.html' with name='commencement_document' label='مستند المباشرة' required=doc_required %}
+                                {% if editing_request and editing_request.commencement_document %}
+                                <p class="text-xs text-slate-500 mt-1">
+                                    الملف الحالي:
+                                    <a href="{{ editing_request.commencement_document.url }}" target="_blank" rel="noopener" class="text-primary-600 underline">عرض</a>
+                                    — اختر ملفاً جديداً فقط لاستبداله.
+                                </p>
+                                {% endif %}
                             </div>
                             {% if user.is_superuser %}
                             <div class="pt-8">
@@ -284,7 +309,11 @@
         <div class="hr-employee-create-form__footer">
             {% url 'web:list_employees' as list_employees_href %}
             {% include "components/hr_btn.html" with href=list_employees_href label="إلغاء" variant="glass-slate" extra_class="px-4 py-2 text-sm" %}
+            {% if editing_request %}
+            {% include "components/hr_btn.html" with label="حفظ التعديل" type="submit" variant="glass-primary" icon="save" extra_class="px-4 py-2 text-sm" %}
+            {% else %}
             {% include "components/hr_btn.html" with label="حفظ الموظف" type="submit" variant="glass-primary" icon="save" extra_class="px-4 py-2 text-sm" %}
+            {% endif %}
         </div>
     </form>
 </div>

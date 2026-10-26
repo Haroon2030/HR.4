@@ -442,3 +442,81 @@ def notify_branch_on_create(req):
         icon='user-plus',
         color=Notification.Color.PRIMARY,
     )
+
+
+def _returnable_statuses():
+    from apps.employees.models import EmploymentRequest
+    return {
+        EmploymentRequest.Status.PENDING,
+        EmploymentRequest.Status.PENDING_BRANCH,
+        EmploymentRequest.Status.PENDING_GM,
+        EmploymentRequest.Status.PENDING_OFFICER,
+    }
+
+
+@transaction.atomic
+def return_for_edit(req, user, notes):
+    """إرجاع الطلب لمن رفعه للتعديل (سبب إلزامي) — يعيد إرساله بعد التعديل."""
+    from apps.employees.models import EmploymentRequest
+
+    if req.status not in _returnable_statuses():
+        raise ValueError('لا يمكن إرجاع طلب ليس قيد المراجعة.')
+    notes = (notes or '').strip()
+    if not notes:
+        raise ValueError('اكتب سبب الإرجاع — إلزامي.')
+
+    req.status = EmploymentRequest.Status.RETURNED
+    req.returned_by = user
+    req.returned_at = timezone.now()
+    req.return_notes = notes
+    req.save(update_fields=['status', 'returned_by', 'returned_at', 'return_notes'])
+
+    if req.requested_by_id:
+        who = user.get_full_name() or user.get_username()
+        _notify_user(
+            req.requested_by, req,
+            title=f'أُرجع إليك طلب التوظيف — {req.name}',
+            message=f'السبب: {notes} • أرجعه {who}',
+            icon='undo-2', color=Notification.Color.AMBER,
+        )
+    return req
+
+
+@transaction.atomic
+def resubmit(req, user):
+    """مقدّم الطلب يعيد إرساله بعد التعديل → يبدأ دورة الموافقات من جديد."""
+    from apps.employees.models import EmploymentRequest
+
+    if req.status != EmploymentRequest.Status.RETURNED:
+        raise ValueError('لا يمكن إعادة إرسال طلب غير مُرتجَع.')
+    if req.requested_by_id != user.id and not user.is_superuser:
+        raise ValueError('فقط مقدّم الطلب يمكنه إعادة إرساله.')
+
+    req.status = EmploymentRequest.Status.PENDING_BRANCH
+    req.resubmit_count = (req.resubmit_count or 0) + 1
+    # تُصفَّر صناديق المراحل السابقة؛ سبب الإرجاع يبقى للسجل
+    req.branch_reviewed_by = None
+    req.branch_reviewed_at = None
+    req.branch_notes = ''
+    req.gm_reviewed_by = None
+    req.gm_reviewed_at = None
+    req.gm_notes = ''
+    req.assigned_officer = None
+    req.assigned_at = None
+    req.officer_reviewed_at = None
+    req.save(update_fields=[
+        'status', 'resubmit_count',
+        'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
+        'gm_reviewed_by', 'gm_reviewed_at', 'gm_notes',
+        'assigned_officer', 'assigned_at', 'officer_reviewed_at',
+    ])
+
+    if not skip_first_stage_if_unrouted(req):
+        notify_on_first_stage(
+            req,
+            title=f'طلب توظيف مُعاد إرساله بانتظار موافقتك — {req.name}',
+            message=f'الفرع: {req.branch.name if req.branch else "—"}',
+            icon='user-plus',
+            color=Notification.Color.PRIMARY,
+        )
+    return req

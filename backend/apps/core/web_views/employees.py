@@ -269,19 +269,25 @@ def add_employee(request):
         for err in form.errors.values():
             messages.error(request, err[0])
 
+    return render(request, 'pages/employees/form.html', employment_request_form_context(request.user))
+
+
+def employment_request_form_context(user, **extra):
+    """سياق نموذج طلب التوظيف (الإضافة وتعديل الطلب المُرتجَع)."""
     from apps.core.services.access_control import (
         filter_administrations_for_user,
         filter_branches_queryset,
         get_scoped_administration_ids,
     )
+    from apps.setup.models import Nationality, Sponsorship
 
-    administrations = list(filter_administrations_for_user(request.user, _administrations_qs()))
-    administration_locked = get_scoped_administration_ids(request.user) is not None
+    administrations = list(filter_administrations_for_user(user, _administrations_qs()))
+    administration_locked = get_scoped_administration_ids(user) is not None
     default_administration_id = (
         administrations[0].pk if administration_locked and len(administrations) == 1 else None
     )
-    return render(request, 'pages/employees/form.html', {
-        'branches': filter_branches_queryset(request.user, Branch.objects.filter(is_active=True)),
+    return {
+        'branches': filter_branches_queryset(user, Branch.objects.filter(is_active=True)),
         'departments': Department.objects.all(),
         'cost_centers': CostCenter.objects.all(),
         'sponsorships': Sponsorship.objects.filter(is_active=True).order_by('company_name'),
@@ -289,7 +295,9 @@ def add_employee(request):
         'administrations': administrations,
         'administration_locked': administration_locked,
         'default_administration_id': default_administration_id,
-    })
+        'doc_required': True,  # مستند المباشرة إلزامي عند الإضافة
+        **extra,
+    }
 
 
 # =============================================================================
