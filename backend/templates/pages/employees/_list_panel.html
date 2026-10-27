@@ -7,6 +7,7 @@
                     <tr>
                         <th class="hr-employees-table__th hr-employees-table__th--num" scope="col">#</th>
                         <th class="hr-employees-table__th" scope="col">اسم الموظف</th>
+                        <th class="hr-employees-table__th" scope="col">الرقم الوظيفي</th>
                         <th class="hr-employees-table__th" scope="col">الجنسية</th>
                         <th class="hr-employees-table__th" scope="col">الفرع</th>
                         <th class="hr-employees-table__th" scope="col">القسم</th>
@@ -27,6 +28,7 @@
                                 </div>
                             </div>
                         </td>
+                        <td class="hr-employees-table__td">{{ emp.employee_number|default:"—" }}</td>
                         <td class="hr-employees-table__td">
                             <span class="hr-employees-table__chip">{{ emp.nationality.name|default:"—" }}</span>
                         </td>
@@ -52,7 +54,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="hr-employees-table__empty">
+                        <td colspan="8" class="hr-employees-table__empty">
                             <i data-lucide="users" class="w-9 h-9 mx-auto mb-2 opacity-40"></i>
                             <p>لا يوجد موظفون مطابقون</p>
                         </td>
