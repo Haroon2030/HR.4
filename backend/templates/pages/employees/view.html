@@ -779,6 +779,14 @@
                                     <span class="text-slate-500">راتب حتى التوقف</span>
                                     <span class="font-bold text-emerald-700" x-text="proratedSalary.toFixed(2) + ' ر.س'"></span>
                                 </div>
+                                <div x-show="paidSameMonth > 0" class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">صُرف مسبقاً (مسير مُرحَّل)</span>
+                                    <span class="font-bold text-slate-700" x-text="paidSameMonth.toFixed(2) + ' ر.س'"></span>
+                                </div>
+                                <div x-show="overpaidRecovery > 0" class="flex justify-between bg-white rounded px-2 py-1.5">
+                                    <span class="text-slate-500">استرداد راتب صُرف زيادة</span>
+                                    <span class="font-bold text-amber-700" x-text="'− ' + overpaidRecovery.toFixed(2) + ' ر.س'"></span>
+                                </div>
                                 <div x-show="loansDeduction > 0" class="flex justify-between bg-white rounded px-2 py-1.5">
                                     <span class="text-slate-500">خصم سلف</span>
                                     <span class="font-bold text-amber-700" x-text="'− ' + loansDeduction.toFixed(2) + ' ر.س'"></span>
@@ -1605,6 +1613,7 @@ window.employeeEosCalculator = function() {
         hasSponsor: !!n.has_sponsor,
         pendingLoansTotal: Number(n.pending_loans_total) || 0,
         pendingAbsences: Array.isArray(n.pending_absences) ? n.pending_absences : [],
+        paidByMonth: n.paid_salary_by_month || {},
         resetCalculator() {
             var fresh = employeeModalJs();
             this.hireDate = fresh.hire_date || '';
@@ -1782,7 +1791,18 @@ window.employeeEosCalculator = function() {
         get penaltyAmount() {
             return this.terminatedBy === 'article_77' ? +(this.totalSalary * 2).toFixed(2) : 0;
         },
-        get proratedSalary() {
+        get paidSameMonth() {
+            if (!this.endDate) return 0;
+            return Number(this.paidByMonth[this.endDate.slice(0, 7)]) || 0;
+        },
+        get paidLaterMonths() {
+            if (!this.endDate) return 0;
+            var key = this.endDate.slice(0, 7), self = this;
+            return Object.keys(this.paidByMonth).reduce(function(acc, k) {
+                return k > key ? acc + (Number(self.paidByMonth[k]) || 0) : acc;
+            }, 0);
+        },
+        get entitledSalary() {
             if (!this.endDate || !this.hireDate || this.totalSalary <= 0) return 0;
             var end = this.parseLocalDate(this.endDate);
             if (!end) return 0;
@@ -1798,6 +1818,12 @@ window.employeeEosCalculator = function() {
             var monthDays = 30;
             var payableDays = Math.min(calendarDays, monthDays);
             return +(this.totalSalary * payableDays / monthDays).toFixed(2);
+        },
+        get proratedSalary() {
+            return +Math.max(this.entitledSalary - this.paidSameMonth, 0).toFixed(2);
+        },
+        get overpaidRecovery() {
+            return +(Math.max(this.paidSameMonth - this.entitledSalary, 0) + this.paidLaterMonths).toFixed(2);
         },
         get loansDeduction() { return +(this.pendingLoansTotal || 0).toFixed(2); },
         get absencesDeduction() {
@@ -1818,7 +1844,7 @@ window.employeeEosCalculator = function() {
             return +(this.eosb + this.leaveComp + this.penaltyAmount + this.proratedSalary).toFixed(2);
         },
         get grandTotal() {
-            return +(this.grossEntitlements - this.loansDeduction - this.absencesDeduction).toFixed(2);
+            return +(this.grossEntitlements - this.loansDeduction - this.absencesDeduction - this.overpaidRecovery).toFixed(2);
         },
         get totalSummaryText() {
             var parts = [];
@@ -1829,6 +1855,7 @@ window.employeeEosCalculator = function() {
             var ded = [];
             if (this.loansDeduction > 0) ded.push('سلف ' + this.loansDeduction.toFixed(2));
             if (this.absencesDeduction > 0) ded.push('غياب ' + this.absencesDeduction.toFixed(2));
+            if (this.overpaidRecovery > 0) ded.push('استرداد راتب مصروف زيادة ' + this.overpaidRecovery.toFixed(2));
             var text = parts.join(' + ');
             if (ded.length) text += ' − ' + ded.join(' − ');
             if (this.isLeaveOnlySettlement && this.hasSponsor) {

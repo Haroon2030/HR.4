@@ -166,3 +166,17 @@ class SettlementCasesTests(FinanceBase):
         fin = self._settle(e, date(2026, 4, 1))
         net = net_settlement_total(eosb=D('0'), leave_comp=D('0'), penalty=D('0'), financials=fin)
         self.assertEqual(net, -DAY * 29)
+
+    # ── مسير موحّد (كل الفروع) ────────────────────────────────────────────
+    def test_consolidated_locked_run_counts_as_paid(self):
+        from apps.employees.services.employee_view_data import _paid_salary_by_month
+        from apps.payroll.services.engine import build_consolidated_payroll_run
+        e = self.emp(rate='0')
+        cons = build_consolidated_payroll_run(
+            [self.branch], 2026, 4, self.user, salary_mode='transfer', sponsorship_id=self.sp.id,
+        )
+        lock_payroll_run(cons, self.user)
+        fin = self._settle(e, date(2026, 4, 27))
+        self.assertEqual(fin['salary_already_paid'], GROSS)
+        self.assertEqual(fin['overpaid_salary_recovery'], DAY * 3)
+        self.assertEqual(_paid_salary_by_month(e), {'2026-04': float(GROSS)})

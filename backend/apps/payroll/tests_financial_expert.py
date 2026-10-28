@@ -717,6 +717,18 @@ class AdvancedOperationalScenarioTests(FinanceBase):
         fin = compute_settlement_financials(e, date(2026, 4, 20))
         self.assertEqual(fin['prorated_salary'], D('0.00'))
 
+    def test_settlement_recovers_days_paid_after_early_stop(self):
+        """الشهر 30 يوماً: صُرف كاملاً ثم توقف يوم 27 → يُسترد راتب 3 أيام، ونافذة الموظف تعرف ما صُرف."""
+        from apps.employees.services.employee_view_data import _paid_salary_by_month
+        from apps.employees.services.settlement_financials import compute_settlement_financials
+        e = self.emp(rate='0')
+        lock_payroll_run(self.build(2026, 4), self.user)
+        fin = compute_settlement_financials(e, date(2026, 4, 27))
+        self.assertEqual(fin['prorated_salary'], D('0.00'))
+        self.assertEqual(fin['overpaid_salary_recovery'], (fin['salary_already_paid'] - fin['entitled_salary']))
+        self.assertEqual(fin['overpaid_salary_recovery'], (e.total_salary * 3 / 30).quantize(D('0.01')))
+        self.assertEqual(_paid_salary_by_month(e), {'2026-04': float(fin['salary_already_paid'])})
+
     def test_settlement_deducts_pending_penalties_and_cash_shortages(self):
         """جزاءات وعجز كاشير لم تُحتسب في مسير بعد يجب أن تُخصم من التصفية."""
         from apps.employees.services.settlement_financials import compute_settlement_financials

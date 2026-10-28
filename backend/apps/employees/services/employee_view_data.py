@@ -253,6 +253,7 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
             'cash_amount': _modal_js_float(employee.cash_amount),
             'pending_loans_total': _modal_js_float(pending_loans_deduction(employee)),
         })
+        payload['paid_salary_by_month'] = _paid_salary_by_month(employee)
         payload['pending_absences'] = [
             {
                 'date': a.absence_date.isoformat(),
@@ -264,6 +265,24 @@ def _build_employee_modal_js(employee: Employee, user) -> dict:
             ).order_by('absence_date')
         ]
     return payload
+
+
+def _paid_salary_by_month(employee) -> dict:
+    """ما صُرف فعلاً في مسيرات مُرحَّلة لكل شهر ({'2026-10': مبلغ}) — لحساب التصفية دون صرفه ثانيةً."""
+    from django.db.models import Sum
+
+    from apps.payroll.models import PayrollLine, PayrollRun
+    from apps.payroll.services.engine import PAYING_RUN_KINDS
+
+    rows = PayrollLine.objects.filter(
+        employee=employee,
+        run__status=PayrollRun.Status.LOCKED,
+        run__run_kind__in=PAYING_RUN_KINDS,
+    ).values('run__period_year', 'run__period_month').annotate(total=Sum('gross_salary'))
+    return {
+        f"{r['run__period_year']}-{int(r['run__period_month']):02d}": _modal_js_float(r['total'])
+        for r in rows
+    }
 
 
 def _user_display_name(user) -> str:
