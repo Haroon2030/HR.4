@@ -87,7 +87,7 @@
                             {% if d.pull_pending %}<span class="zk-dev-sub text-amber-700">طلب سحب بانتظار الفرع</span>{% endif %}
                         </td>
                         <td class="text-slate-600">
-                            {{ d.last_sync_at|date:"Y-m-d H:i"|default:"—" }}
+                            {{ d.last_sync_at|date:"d-m-Y H:i"|default:"—" }}
                             <span class="zk-dev-sub">{{ d.punch_count }} بصمة{% if d.last_ingest_log and d.last_ingest_log.status != 'success' %} · <span class="text-red-700">آخر رفع فشل</span>{% endif %}</span>
                         </td>
                         {% if user|has_permission:'attendance.manage' %}

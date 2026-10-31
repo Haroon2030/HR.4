@@ -6,7 +6,7 @@
 <div class="section">
     <h3>تفاصيل تصفية العهدة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ التصفية:</span><span class="blank">{% if custody %}{{ custody.returned_at|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ التصفية:</span><span class="blank">{% if custody %}{{ custody.returned_at|date:"d-m-Y" }}{% endif %}</span></div>
         <div class="field"><span class="label">سبب التصفية:</span><span class="blank">{% if custody %}{{ custody.return_notes }}{% endif %}</span></div>
         <div class="field">
             <span class="label">جهة الاستلام:</span>

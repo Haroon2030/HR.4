@@ -6,7 +6,7 @@
 <div class="section">
     <h3>تفاصيل العهدة المُستلَمة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ الاستلام:</span><span class="blank">{% if custody %}{{ custody.received_at|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ الاستلام:</span><span class="blank">{% if custody %}{{ custody.received_at|date:"d-m-Y" }}{% endif %}</span></div>
         <div class="field">
             <span class="label">جهة التسليم:</span>
             <select class="blank-select" aria-label="جهة التسليم">

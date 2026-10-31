@@ -6,7 +6,7 @@
     data-text="{{ row.search_text|truncatechars:160|escapejs }}">
     <td class="px-3 py-2 align-top">
         <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-            <span>{{ row.event_date|date:"Y-m-d" }}</span>
+            <span>{{ row.event_date|date:"d-m-Y" }}</span>
             <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
             <span class="text-slate-500">{{ row.event_time|date:"H:i" }}</span>
         </div>

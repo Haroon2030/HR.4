@@ -101,7 +101,7 @@
                             <a href="{% url 'web:view_employee' s.employee_id %}" class="font-semibold text-primary-700 hover:underline">{{ s.employee.name }}</a>
                         </td>
                         <td class="px-3 py-2 text-slate-600">{{ s.branch.name }}</td>
-                        <td class="px-3 py-2 font-bold text-slate-800">{{ s.shortage_date|date:"Y/m/d" }}</td>
+                        <td class="px-3 py-2 font-bold text-slate-800">{{ s.shortage_date|date:"d-m-Y" }}</td>
                         <td class="px-3 py-2 font-bold text-rose-700">{{ s.amount|format_amount }} ر.س</td>
                         <td class="px-3 py-2 text-xs">
                             {% if s.applied_to_payroll %}

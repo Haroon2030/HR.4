@@ -121,7 +121,7 @@ class Command(BaseCommand):
         logger.info(
             'بدء تقرير العمليات المجدول — report_date=%s now=%s — مستلمون: %s',
             report_date.isoformat(),
-            now.strftime('%Y-%m-%d %H:%M:%S'),
+            now.strftime('%d-%m-%Y %H:%M:%S'),
             len(target_roles),
         )
 

@@ -1138,7 +1138,7 @@
                     <select name="custody_id" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-rose-500 focus:border-rose-500 bg-white">
                         <option value="">— اختر عهدة —</option>
                         {% for c in active_custodies %}
-                        <option value="{{ c.id }}">{{ c.item_name }} — استُلمت {{ c.received_at|date:"Y/m/d" }}{% if c.quantity > 1 %} (×{{ c.quantity }}){% endif %}</option>
+                        <option value="{{ c.id }}">{{ c.item_name }} — استُلمت {{ c.received_at|date:"d-m-Y" }}{% if c.quantity > 1 %} (×{{ c.quantity }}){% endif %}</option>
                         {% empty %}
                         <option value="" disabled>لا توجد عهد نشطة</option>
                         {% endfor %}

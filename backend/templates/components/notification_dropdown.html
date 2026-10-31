@@ -62,7 +62,7 @@
                         {% endif %}
                     </div>
                     {% if n.message %}<p class="hr-notif-panel-content__message">{{ n.message }}</p>{% endif %}
-                    <p class="hr-notif-panel-content__time">{{ n.created_at|date:"Y-m-d H:i" }}</p>
+                    <p class="hr-notif-panel-content__time">{{ n.created_at|date:"d-m-Y H:i" }}</p>
                 </div>
                 {% if not n.is_read %}
                 <span class="hr-notif-panel-content__dot" title="غير مقروء"></span>

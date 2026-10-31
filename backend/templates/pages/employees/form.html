@@ -32,7 +32,7 @@
         <p class="text-amber-900 whitespace-pre-line">{{ editing_request.return_notes|default:"—" }}</p>
         <p class="text-xs text-amber-700 mt-2">
             {% if editing_request.returned_by %}أرجعه: {{ editing_request.returned_by.get_full_name|default:editing_request.returned_by.username }}{% endif %}
-            {% if editing_request.returned_at %} · {{ editing_request.returned_at|date:"Y-m-d H:i" }}{% endif %}
+            {% if editing_request.returned_at %} · {{ editing_request.returned_at|date:"d-m-Y H:i" }}{% endif %}
         </p>
     </div>
     {% endif %}

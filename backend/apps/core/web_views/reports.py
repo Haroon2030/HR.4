@@ -553,7 +553,7 @@ def _build_attendance_devices_status(req):
             d.branch.name if d.branch_id else '—',
             d.address_label,
             d.get_connection_status_display() + ('' if d.is_active else ' (معطّل)'),
-            timezone.localtime(d.last_sync_at).strftime('%Y-%m-%d %H:%M') if d.last_sync_at else '—',
+            timezone.localtime(d.last_sync_at).strftime('%d-%m-%Y %H:%M') if d.last_sync_at else '—',
             d.punch_count,
         ])
     return {'columns': columns, 'rows': rows, 'note': 'الحالة الحالية للأجهزة وقت إصدار التقرير (لا تتأثر بفترة التقرير)'}

@@ -164,11 +164,11 @@
                     </div>
                     <div>
                         <div class="text-xs font-bold text-slate-600 mb-1">تاريخ الاحتساب</div>
-                        <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_start_date|date:"Y-m-d"|default:"—" }}</div>
+                        <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_start_date|date:"d-m-Y"|default:"—" }}</div>
                     </div>
                     <div>
                         <div class="text-xs font-bold text-slate-600 mb-1">نهاية الاحتساب</div>
-                        <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_end_date|date:"Y-m-d"|default:"—" }}</div>
+                        <div class="text-sm font-bold text-slate-800" dir="ltr">{{ employee.leave_accrual_end_date|date:"d-m-Y"|default:"—" }}</div>
                     </div>
                 </div>
                 {% endif %}
@@ -185,7 +185,7 @@
                             <span class="font-bold">{{ leave_breakdown.opening_days|floatformat:2 }} يوم</span>
                         </div>
                         <div>
-                            <span class="text-sky-600 block">تراكم من {{ leave_breakdown.leave_accrual_start|date:"Y-m-d" }}</span>
+                            <span class="text-sky-600 block">تراكم من {{ leave_breakdown.leave_accrual_start|date:"d-m-Y" }}</span>
                             <span class="font-bold">{{ leave_breakdown.period_accrual_days|floatformat:2 }} يوم</span>
                         </div>
                         <div>
@@ -199,7 +199,7 @@
                     </div>
                     <p class="text-[10px] text-sky-700 mt-1">
                         مكافأة نهاية الخدمة عند التصفية تُحسب من تاريخ المباشرة:
-                        <strong>{{ leave_breakdown.hire_date|date:"Y-m-d"|default:"—" }}</strong>
+                        <strong>{{ leave_breakdown.hire_date|date:"d-m-Y"|default:"—" }}</strong>
                     </p>
                 </div>
                 {% endif %}
@@ -209,9 +209,9 @@
                         <div class="text-lg font-bold text-emerald-800">{{ employee.accrued_leave_days|floatformat:2 }} يوم</div>
                         <div class="text-[10px] text-emerald-600 mt-1">
                             {% if employee.leave_accrual_start_date %}
-                            افتتاحي + تراكم من {{ employee.leave_accrual_start_date|date:"Y-m-d" }}
+                            افتتاحي + تراكم من {{ employee.leave_accrual_start_date|date:"d-m-Y" }}
                             {% elif employee.hire_date %}
-                            من تاريخ المباشرة {{ employee.hire_date|date:"Y-m-d" }}
+                            من تاريخ المباشرة {{ employee.hire_date|date:"d-m-Y" }}
                             {% else %}
                             —
                             {% endif %}
@@ -302,7 +302,7 @@
                                         x-show="leaveRowVisible($el)">
                                         <td class="px-3 py-2 align-top">
                                             <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-                                                <span>{{ row.sort_at|date:"Y-m-d" }}</span>
+                                                <span>{{ row.sort_at|date:"d-m-Y" }}</span>
                                                 <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
                                                 <span class="text-slate-500">{{ row.sort_at|date:"H:i" }}</span>
                                             </div>
@@ -331,9 +331,9 @@
                                             {% endif %}
                                         </td>
                                         <td class="px-3 py-2 align-top text-xs text-slate-700 whitespace-nowrap">
-                                            {% if row.date_from %}{{ row.date_from|date:"Y-m-d" }}{% else %}—{% endif %}
+                                            {% if row.date_from %}{{ row.date_from|date:"d-m-Y" }}{% else %}—{% endif %}
                                             <span class="text-slate-300 mx-1">→</span>
-                                            {% if row.date_to %}{{ row.date_to|date:"Y-m-d" }}{% else %}—{% endif %}
+                                            {% if row.date_to %}{{ row.date_to|date:"d-m-Y" }}{% else %}—{% endif %}
                                         </td>
                                         <td class="px-3 py-2 align-top text-xs font-bold text-slate-800">{{ row.days }}</td>
                                         <td class="px-3 py-2 align-top text-center">
@@ -348,7 +348,7 @@
                                                     data-hr-text-detail-title="ملاحظات الإجازة — {{ row.leave_type_display }}"
                                                     data-hr-text-detail-label="الملاحظات"
                                                     data-hr-text-detail-content-id="leave-note-content-{{ forloop.counter }}"
-                                                    data-hr-text-detail-meta='[{"label":"من","value":"{% if row.date_from %}{{ row.date_from|date:"Y-m-d" }}{% else %}—{% endif %}","valueClass":"mono"},{"label":"إلى","value":"{% if row.date_to %}{{ row.date_to|date:"Y-m-d" }}{% else %}—{% endif %}","valueClass":"mono"},{"label":"الأيام","value":"{{ row.days }}"},{"label":"الحالة","value":"{{ row.status_label|escapejs }}"}]'
+                                                    data-hr-text-detail-meta='[{"label":"من","value":"{% if row.date_from %}{{ row.date_from|date:"d-m-Y" }}{% else %}—{% endif %}","valueClass":"mono"},{"label":"إلى","value":"{% if row.date_to %}{{ row.date_to|date:"d-m-Y" }}{% else %}—{% endif %}","valueClass":"mono"},{"label":"الأيام","value":"{{ row.days }}"},{"label":"الحالة","value":"{{ row.status_label|escapejs }}"}]'
                                                     {% if row.document_url %}data-hr-text-detail-attachment="{{ row.document_url }}"{% endif %}>
                                                 <i data-lucide="eye" class="hr-act__icon"></i>
                                             </button>
@@ -392,8 +392,8 @@
                                                         @click="$dispatch('open-leave-edit', {
                                                             id: {{ row.leave_id }},
                                                             leave_type: '{{ row.leave_type }}',
-                                                            date_from: '{% if row.date_from %}{{ row.date_from|date:'Y-m-d' }}{% endif %}',
-                                                            date_to: '{% if row.date_to %}{{ row.date_to|date:'Y-m-d' }}{% endif %}',
+                                                            date_from: '{% if row.date_from %}{{ row.date_from|date:'d-m-Y' }}{% endif %}',
+                                                            date_to: '{% if row.date_to %}{{ row.date_to|date:'d-m-Y' }}{% endif %}',
                                                             notes: '{{ row.notes|escapejs }}'
                                                         })">
                                                     <i data-lucide="pencil" class="hr-act__icon"></i>
@@ -593,7 +593,7 @@
                                     data-text="{{ st.title|truncatechars:80|escapejs }} {{ st.content|truncatechars:120|escapejs }}">
                                     <td class="px-3 py-2 align-top">
                                         <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-                                            <span>{{ st.statement_date|date:"Y-m-d" }}</span>
+                                            <span>{{ st.statement_date|date:"d-m-Y" }}</span>
                                             <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
                                             <span class="text-slate-500">{{ st.created_at|date:"H:i" }}</span>
                                         </div>
@@ -627,7 +627,7 @@
                                             {% include "components/archive_row_detail_btn.html" with title=st.title content=st.content modal_uid=st.id %}
                                             {% endif %}
                                             {% if st.email_sent_at %}
-                                            <span class="shrink-0 inline-flex items-center gap-0.5 text-emerald-600" title="أُرسل بالبريد في {{ st.email_sent_at|date:'Y-m-d H:i' }}">
+                                            <span class="shrink-0 inline-flex items-center gap-0.5 text-emerald-600" title="أُرسل بالبريد في {{ st.email_sent_at|date:'d-m-Y H:i' }}">
                                                 <i data-lucide="mail-check" class="w-3.5 h-3.5"></i>
                                             </span>
                                             {% elif st.email_error %}
@@ -668,7 +668,7 @@
                                                         id: {{ st.id }},
                                                         statement_type: '{{ st.statement_type }}',
                                                         title: '{{ st.title|escapejs }}',
-                                                        statement_date: '{{ st.statement_date|date:'Y-m-d' }}',
+                                                        statement_date: '{{ st.statement_date|date:'d-m-Y' }}',
                                                         content: '{{ st.content|escapejs }}',
                                                         deduction_amount: '{{ st.deduction_amount|default:'0' }}'
                                                     })">
@@ -784,7 +784,7 @@
                                 <td class="px-3 py-2"><div class="font-bold text-slate-800">{{ c.item_name }}</div>{% if c.item_details %}<div class="text-xs text-slate-500">{{ c.item_details|truncatechars:60 }}</div>{% endif %}</td>
                                 <td class="px-3 py-2">{{ c.quantity }}</td>
                                 <td class="px-3 py-2">{{ c.estimated_value|default:"—" }}</td>
-                                <td class="px-3 py-2">{{ c.received_at|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2">{{ c.received_at|date:"d-m-Y" }}</td>
                                 <td class="px-3 py-2">
                                     {% if c.status == 'active' %}
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">بالحوزة</span>
@@ -792,7 +792,7 @@
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">مُعادة</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-3 py-2 text-xs">{{ c.returned_at|date:"Y/m/d"|default:"—" }}</td>
+                                <td class="px-3 py-2 text-xs">{{ c.returned_at|date:"d-m-Y"|default:"—" }}</td>
                                 <td class="px-3 py-2 text-xs">
                                     {% if c.document %}{% include "components/media_preview_btn.html" with url=c.document.url title="مستند الاستلام" label="استلام" btn_class="inline-flex items-center gap-0.5 text-primary-600 font-semibold" %}{% endif %}
                                     {% if c.return_document %}{% if c.document %} · {% endif %}{% include "components/media_preview_btn.html" with url=c.return_document.url title="مستند الإعادة" label="إعادة" btn_class="inline-flex items-center gap-0.5 text-primary-600 font-semibold" %}{% endif %}
@@ -831,7 +831,7 @@
                     <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
                     <div>
                         <p class="font-bold mb-1">قواعد عقد السعودي</p>
-                        <p>من بداية السنة الرابعة ({{ contract_fourth_year_start|date:"Y/m/d" }}) يتحول العقد تلقائياً إلى غير محدد المدة.</p>
+                        <p>من بداية السنة الرابعة ({{ contract_fourth_year_start|date:"d-m-Y" }}) يتحول العقد تلقائياً إلى غير محدد المدة.</p>
                         {% if employee.contract_type == 'unlimited' %}
                         <p class="mt-1 text-emerald-800 font-bold">العقد الحالي: غير محدد المدة</p>
                         {% endif %}
@@ -919,8 +919,8 @@
                                         <i data-lucide="printer" class="hr-act__icon"></i>
                                     </a>
                                 </td>
-                                <td class="px-3 py-2">{{ l.issued_at|date:"Y/m/d" }}</td>
-                                <td class="px-3 py-2 text-xs">{{ l.first_deduction_date|date:"Y/m/d"|default:"—" }}</td>
+                                <td class="px-3 py-2">{{ l.issued_at|date:"d-m-Y" }}</td>
+                                <td class="px-3 py-2 text-xs">{{ l.first_deduction_date|date:"d-m-Y"|default:"—" }}</td>
                                 <td class="px-3 py-2">
                                     {% if l.status == 'active' %}
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">قيد السداد</span>
@@ -949,8 +949,8 @@
                                                     installments: {{ l.installments }},
                                                     reason: '{{ l.reason|escapejs }}',
                                                     notes: '{{ l.notes|escapejs }}',
-                                                    issued_at: '{{ l.issued_at|date:'Y-m-d' }}',
-                                                    first_deduction_date: '{{ l.first_deduction_date|date:'Y-m-d'|default:'' }}',
+                                                    issued_at: '{{ l.issued_at|date:'d-m-Y' }}',
+                                                    first_deduction_date: '{{ l.first_deduction_date|date:'d-m-Y'|default:'' }}',
                                                     locked: {% if l.is_financially_locked %}true{% else %}false{% endif %}
                                                 })">
                                             <i data-lucide="pencil" class="hr-act__icon"></i>
@@ -1018,7 +1018,7 @@
                             {% for a in absences %}
                             <tr class="hover:bg-slate-50">
                                 <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ a.serial_number|default:"—" }}</td>
-                                <td class="px-3 py-2 font-bold text-slate-800">{{ a.absence_date|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ a.absence_date|date:"d-m-Y" }}</td>
                                 <td class="px-3 py-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700">{{ a.days }}</span></td>
                                 <td class="px-3 py-2 text-xs text-slate-600">{{ a.month_days }}</td>
                                 <td class="px-3 py-2 text-xs">{{ a.total_salary_snapshot }}</td>
@@ -1033,7 +1033,7 @@
                                             aria-label="عرض سبب الغياب"
                                             data-hr-text-detail-open
                                             data-hr-text-detail-icon="user-minus"
-                                            data-hr-text-detail-title="سبب الغياب — {{ a.absence_date|date:'Y/m/d' }}"
+                                            data-hr-text-detail-title="سبب الغياب — {{ a.absence_date|date:'d-m-Y' }}"
                                             data-hr-text-detail-label="السبب"
                                             data-hr-text-detail-content-id="absence-reason-content-{{ a.id }}"
                                             data-hr-text-detail-print-url="{% url 'web:print_absence_form' employee.id a.id %}"
@@ -1062,7 +1062,7 @@
                                                 aria-label="تعديل الغياب"
                                                 @click="$dispatch('open-absence-edit', {
                                                     id: {{ a.id }},
-                                                    absence_date: '{{ a.absence_date|date:'Y-m-d' }}',
+                                                    absence_date: '{{ a.absence_date|date:'d-m-Y' }}',
                                                     days: {{ a.days }},
                                                     reason: '{{ a.reason|escapejs }}',
                                                     notes: '{{ a.notes|escapejs }}'
@@ -1123,7 +1123,7 @@
                             {% for cs in cash_shortages %}
                             <tr class="hover:bg-slate-50">
                                 <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ cs.serial_number|default:"—" }}</td>
-                                <td class="px-3 py-2 font-bold text-slate-800">{{ cs.shortage_date|date:"Y/m/d" }}</td>
+                                <td class="px-3 py-2 font-bold text-slate-800">{{ cs.shortage_date|date:"d-m-Y" }}</td>
                                 <td class="px-3 py-2 text-slate-600">{{ cs.branch.name }}</td>
                                 <td class="px-3 py-2 font-bold text-rose-700">{{ cs.amount|format_amount }} ر.س</td>
                                 <td class="px-3 py-2 text-xs">
@@ -1194,7 +1194,7 @@
                                 <tr class="archive-row hover:bg-slate-50 transition-colors" x-show="archiveRowVisible($el)" data-type="hire" data-ts="{{ employee.employment_request.created_at|date:'c' }}" data-text="إنشاء طلب توظيف للموظف {{ employee.employment_request.review_notes|default:''|truncatechars:80|escapejs }}">
                                     <td class="px-3 py-2 align-top">
                                         <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-                                            <span>{{ employee.employment_request.created_at|date:"Y-m-d" }}</span>
+                                            <span>{{ employee.employment_request.created_at|date:"d-m-Y" }}</span>
                                             <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
                                             <span class="text-slate-500">{{ employee.employment_request.created_at|date:"H:i" }}</span>
                                         </div>
@@ -1225,7 +1225,7 @@
                                 <tr class="archive-row hover:bg-slate-50 transition-colors" x-show="archiveRowVisible($el)" data-type="hire" data-ts="{{ employee.employment_request.reviewed_at|date:'c' }}" data-text="تم اعتماد طلب التوظيف">
                                     <td class="px-3 py-2 align-top">
                                         <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-                                            <span>{{ employee.employment_request.reviewed_at|date:"Y-m-d" }}</span>
+                                            <span>{{ employee.employment_request.reviewed_at|date:"d-m-Y" }}</span>
                                             <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
                                             <span class="text-slate-500">{{ employee.employment_request.reviewed_at|date:"H:i" }}</span>
                                         </div>
@@ -1257,7 +1257,7 @@
                                     data-text="{{ st.title|truncatechars:80|escapejs }} {{ st.content|truncatechars:120|escapejs }}">
                                     <td class="px-3 py-2 align-top">
                                         <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-                                            <span>{{ st.statement_date|date:"Y-m-d" }}</span>
+                                            <span>{{ st.statement_date|date:"d-m-Y" }}</span>
                                             <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
                                             <span class="text-slate-500">{{ st.created_at|date:"H:i" }}</span>
                                         </div>
@@ -1444,11 +1444,11 @@
                 {% if employee.leave_accrual_start_date %}
                 <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
                     مخصص EOSB يتراكم من تاريخ المباشرة
-                    <strong dir="ltr">{{ employee.hire_date|date:"Y-m-d"|default:"—" }}</strong>
+                    <strong dir="ltr">{{ employee.hire_date|date:"d-m-Y"|default:"—" }}</strong>
                     — رصيد إجازة افتتاحي:
                     <strong>{{ employee.opening_leave_days|floatformat:2 }}</strong> يوم
                     — احتساب الإجازة من
-                    <strong dir="ltr">{{ employee.leave_accrual_start_date|date:"Y-m-d" }}</strong>
+                    <strong dir="ltr">{{ employee.leave_accrual_start_date|date:"d-m-Y" }}</strong>
                 </p>
                 {% endif %}
 
@@ -1472,7 +1472,7 @@
                             <tbody class="divide-y divide-slate-100">
                                 {% for a in accruals %}
                                 <tr class="hover:bg-slate-50 transition-colors">
-                                    <td class="px-4 py-3 text-xs text-slate-800 font-mono">{{ a.date|date:"Y-m-d" }}</td>
+                                    <td class="px-4 py-3 text-xs text-slate-800 font-mono">{{ a.date|date:"d-m-Y" }}</td>
                                     <td class="px-4 py-3 text-xs font-bold
                                         {% if a.transaction_type == 'monthly' %}text-indigo-600
                                         {% elif a.transaction_type == 'leave_taken' %}text-rose-600
@@ -1579,7 +1579,7 @@
                                         <div>
                                             <h3 class="font-bold text-slate-800 text-base">{{ st.title|default:"تصفية حساب" }}</h3>
                                             <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                                                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"Y-m-d H:i" }}</span>
+                                                <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> {{ st.created_at|date:"d-m-Y H:i" }}</span>
                                                 {% if st.created_by %}<span class="flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> {{ st.created_by.get_full_name|default:st.created_by.username }}</span>{% endif %}
                                             </div>
                                         </div>

@@ -12,8 +12,8 @@
         <div class="field" style="grid-column: 1 / -1;"><span class="label">المبلغ كتابةً:</span><span class="blank">{% if loan %}{{ loan_amount_words }}{% endif %}</span></div>
         <div class="field"><span class="label">عدد أشهر السداد:</span><span class="blank">{% if loan %}{{ loan.installments }}{% endif %}</span></div>
         <div class="field"><span class="label">قيمة القسط الشهري:</span><span class="blank">{% if loan %}{{ loan_monthly_text }} ر.س{% endif %}</span></div>
-        <div class="field"><span class="label">تاريخ الصرف:</span><span class="blank">{% if loan %}{{ loan.issued_at|date:"Y/m/d" }}{% endif %}</span></div>
-        <div class="field"><span class="label">تاريخ بدء الخصم:</span><span class="blank">{% if loan %}{{ loan.first_deduction_date|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ الصرف:</span><span class="blank">{% if loan %}{{ loan.issued_at|date:"d-m-Y" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ بدء الخصم:</span><span class="blank">{% if loan %}{{ loan.first_deduction_date|date:"d-m-Y" }}{% endif %}</span></div>
         <div class="field"><span class="label">طريقة الاستلام:</span><span class="blank"></span></div>
     </div>
 

@@ -18,10 +18,10 @@
     </div>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 16px;">
-        <div class="field"><span class="label">تاريخ بداية الإجازة:</span><span class="blank">{% if leave %}{{ leave.date_from|date:"Y/m/d" }}{% endif %}</span></div>
-        <div class="field"><span class="label">تاريخ نهاية الإجازة:</span><span class="blank">{% if leave %}{{ leave.date_to|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ بداية الإجازة:</span><span class="blank">{% if leave %}{{ leave.date_from|date:"d-m-Y" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ نهاية الإجازة:</span><span class="blank">{% if leave %}{{ leave.date_to|date:"d-m-Y" }}{% endif %}</span></div>
         <div class="field"><span class="label">عدد الأيام:</span><span class="blank">{% if leave %}{{ leave_days_text }}{% endif %}</span></div>
-        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{% if leave_return_date %}{{ leave_return_date|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{% if leave_return_date %}{{ leave_return_date|date:"d-m-Y" }}{% endif %}</span></div>
     </div>
 
     <div class="field" style="margin-top:8px;">

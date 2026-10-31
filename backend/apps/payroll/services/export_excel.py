@@ -168,7 +168,7 @@ def build_payroll_run_workbook(run):
     line_pairs = [(run, line) for line in payroll_lines_select_related(run.lines).order_by('employee__name')]
     meta_note = (
         f'{run.branch.name if run.branch_id else ""} — {run.period_label} — '
-        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
+        f'تصدير {timezone.localtime(timezone.now()).strftime("%d-%m-%Y %H:%M")}'
     )
     _write_payroll_sheet(ws, line_pairs, meta_note=meta_note)
     return wb
@@ -243,7 +243,7 @@ def build_payroll_detailed_run_workbook(run):
     company_name = run.company.name if run.company_id else 'شركة'
     meta_note = (
         f'{company_name} — {run.period_label} — مسير تفصيلي — '
-        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
+        f'تصدير {timezone.localtime(timezone.now()).strftime("%d-%m-%Y %H:%M")}'
     )
     _write_payroll_sheet(
         ws,
@@ -273,7 +273,7 @@ def build_payroll_detailed_runs_workbook(runs):
     companies = ', '.join(dict.fromkeys(r.company.name for r in runs if r.company_id))[:120]
     meta_note = (
         f'{companies or "مسير تفصيلي"} — {runs[0].period_label} — مسير تفصيلي — '
-        f'تصدير {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}'
+        f'تصدير {timezone.localtime(timezone.now()).strftime("%d-%m-%Y %H:%M")}'
     )
     _write_payroll_sheet(ws, pairs, meta_note=meta_note, resolve_value=_resolve_detailed_export_row)
     return wb
@@ -469,7 +469,7 @@ def build_payroll_full_workbook(*, transfer_runs, cash_runs, detailed_runs, peri
     transfer_runs, cash_runs = list(transfer_runs), list(cash_runs)
     if not transfer_runs and not cash_runs:
         raise ValueError('لا توجد مسيرات للتصدير.')
-    stamp = timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')
+    stamp = timezone.localtime(timezone.now()).strftime('%d-%m-%Y %H:%M')
     transfer_pairs = _payroll_line_pairs_for_runs(transfer_runs)
     cash_pairs = _payroll_line_pairs_for_runs(cash_runs)
     all_pairs = transfer_pairs + cash_pairs

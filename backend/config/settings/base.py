@@ -267,6 +267,7 @@ LANGUAGES = [
 TIME_ZONE = env('TIME_ZONE', default='Asia/Riyadh')
 CELERY_TIMEZONE = TIME_ZONE
 USE_I18N = True     # تفعيل الترجمة
+FORMAT_MODULE_PATH = ['config.formats']  # التاريخ: يوم-شهر-سنة (31-10-2026) في كل الموقع
 USE_TZ = True       # تفعيل المنطقة الزمنية
 
 # ══════════════════════════════════════════════════════════════════════════════

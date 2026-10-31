@@ -26,7 +26,7 @@
 <div class="section">
     <h3>تفاصيل المخالفة</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ المخالفة:</span><span class="blank">{% if statement %}{{ statement.statement_date|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ المخالفة:</span><span class="blank">{% if statement %}{{ statement.statement_date|date:"d-m-Y" }}{% endif %}</span></div>
         <div class="field"><span class="label">مكان وقوعها:</span><span class="blank"></span></div>
     </div>
 

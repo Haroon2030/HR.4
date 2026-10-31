@@ -32,7 +32,7 @@
         <div class="hr-glass-panel rounded-xl p-4 border border-primary-200/60" style="background:rgba(59,130,246,0.08);">
             <p class="text-xs font-bold text-primary-800 m-0">آخر بصمة</p>
             {% if fp.last_punch %}
-            <p class="text-lg font-bold mt-1 mb-0">{{ fp.last_punch.local_punched_at|date:"Y-m-d" }}</p>
+            <p class="text-lg font-bold mt-1 mb-0">{{ fp.last_punch.local_punched_at|date:"d-m-Y" }}</p>
             <p class="text-sm font-bold m-0" dir="ltr">{{ fp.last_punch.local_punched_at|time:"H:i:s" }}</p>
             <p class="text-xs mt-2 m-0">
                 <span class="px-2 py-0.5 rounded bg-white/80 border">{{ fp.last_punch.get_punch_type_display }}</span>
@@ -140,7 +140,7 @@
             <tbody class="divide-y divide-slate-100">
                 {% for p in fp.punches %}
                 <tr class="hover:bg-white/60 {% if fp.last_punch and p.id == fp.last_punch.id %}bg-primary-50/50{% endif %}">
-                    <td class="px-3 py-2 font-bold">{{ p.local_punched_at|date:"Y-m-d" }}</td>
+                    <td class="px-3 py-2 font-bold">{{ p.local_punched_at|date:"d-m-Y" }}</td>
                     <td class="px-3 py-2 font-mono" dir="ltr">{{ p.local_punched_at|time:"H:i:s" }}</td>
                     <td class="px-3 py-2">
                         {% if p.punch_type == 'in' %}<span class="text-emerald-700 font-bold">دخول</span>

@@ -74,7 +74,7 @@ _LEAVE_LABELS = dict(EmployeeLeave.LeaveType.choices)
 def _fmt_dt(value) -> str:
     if not value:
         return '—'
-    return timezone.localtime(value).strftime('%Y-%m-%d %H:%M')
+    return timezone.localtime(value).strftime('%d-%m-%Y %H:%M')
 
 
 def _money(value) -> str:

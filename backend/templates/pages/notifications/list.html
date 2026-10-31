@@ -53,7 +53,7 @@
                             {% endif %}
                         </div>
                         {% if n.message %}<p class="text-sm text-slate-600 mt-0.5">{{ n.message }}</p>{% endif %}
-                        <p class="text-xs text-slate-400 mt-1">{{ n.created_at|date:"Y-m-d H:i" }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ n.created_at|date:"d-m-Y H:i" }}</p>
                     </div>
                     {% if not n.is_read %}<span class="w-2.5 h-2.5 bg-primary-500 rounded-full flex-shrink-0 mt-2"></span>{% endif %}
                 </a>

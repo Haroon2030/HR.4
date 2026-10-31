@@ -80,7 +80,7 @@
                                 </td>
                                 <td class="px-4 py-3 font-semibold text-slate-800">{{ t.title }}</td>
                                 <td class="px-4 py-3 text-slate-500 text-xs hidden md:table-cell">{{ t.subtitle }}</td>
-                                <td class="px-4 py-3 text-slate-500 text-xs hidden md:table-cell whitespace-nowrap">{{ t.date|date:"Y-m-d H:i" }}</td>
+                                <td class="px-4 py-3 text-slate-500 text-xs hidden md:table-cell whitespace-nowrap">{{ t.date|date:"d-m-Y H:i" }}</td>
                                 <td class="px-4 py-3 text-center">
                                     <a href="{{ t.action_url }}" class="px-3 py-1.5 text-xs font-medium text-white bg-{{ t.action_color }}-600 hover:bg-{{ t.action_color }}-700 rounded-lg inline-flex items-center gap-1">
                                         <i data-lucide="{{ t.action_icon }}" class="w-3.5 h-3.5"></i> {{ t.action_label }}

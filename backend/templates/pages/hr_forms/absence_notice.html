@@ -9,7 +9,7 @@
 <div class="section">
     <h3>بيانات الغياب</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ الغياب:</span><span class="blank">{% if absence %}{{ absence.absence_date|date:"Y/m/d" }}{% endif %}</span></div>
+        <div class="field"><span class="label">تاريخ الغياب:</span><span class="blank">{% if absence %}{{ absence.absence_date|date:"d-m-Y" }}{% endif %}</span></div>
         <div class="field"><span class="label">عدد أيام الغياب:</span><span class="blank">{% if absence %}{{ absence.days }} {% if absence.days == 1 %}يوم{% elif absence.days == 2 %}يومان{% elif absence.days <= 10 %}أيام{% else %}يوماً{% endif %}{% endif %}</span></div>
         <div class="field"><span class="label">رقم السجل:</span><span class="blank">{% if absence %}{{ absence.serial_number|default:"—" }}{% endif %}</span></div>
         <div class="field"><span class="label">المستند المرفق:</span><span class="blank">{% if absence %}{% if absence.document %}مرفق{% else %}لا يوجد{% endif %}{% endif %}</span></div>

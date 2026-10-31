@@ -128,7 +128,7 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for row in alerts %}
                     <tr class="hover:bg-rose-50/40 transition-colors">
-                        <td class="px-3 py-2 font-mono text-xs">{{ row.work_date|date:"Y-m-d" }}</td>
+                        <td class="px-3 py-2 font-mono text-xs">{{ row.work_date|date:"d-m-Y" }}</td>
                         <td class="px-3 py-2">
                             <a href="{% url 'web:view_employee' row.employee_id %}?tab=fingerprint#fingerprint"
                                class="font-bold text-slate-800 hover:text-primary-700">{{ row.employee_name }}</a>

@@ -32,7 +32,7 @@
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-3 py-2 align-top">
                             <div class="text-xs font-mono text-slate-800 whitespace-nowrap">
-                                <span>{{ st.statement_date|date:"Y-m-d" }}</span>
+                                <span>{{ st.statement_date|date:"d-m-Y" }}</span>
                                 <span class="text-slate-300 mx-1" aria-hidden="true">·</span>
                                 <span class="text-slate-500">{{ st.created_at|date:"H:i" }}</span>
                             </div>
@@ -76,7 +76,7 @@
                                     data-hr-text-detail-title="{{ st.title|escape }}"
                                     data-hr-text-detail-label="التفاصيل"
                                     {% if st.content %}data-hr-text-detail-html-id="salary-detail-html-{{ st.id }}"{% endif %}
-                                    data-hr-text-detail-meta='[{"label":"التاريخ","value":"{{ st.statement_date|date:"Y-m-d" }}","valueClass":"mono"},{"label":"الوقت","value":"{{ st.created_at|date:"H:i" }}","valueClass":"mono"},{"label":"المنفّذ","value":"{% if st.created_by %}{{ st.created_by.get_full_name|default:st.created_by.username|escapejs }}{% else %}—{% endif %}","span":"2"}]'
+                                    data-hr-text-detail-meta='[{"label":"التاريخ","value":"{{ st.statement_date|date:"d-m-Y" }}","valueClass":"mono"},{"label":"الوقت","value":"{{ st.created_at|date:"H:i" }}","valueClass":"mono"},{"label":"المنفّذ","value":"{% if st.created_by %}{{ st.created_by.get_full_name|default:st.created_by.username|escapejs }}{% else %}—{% endif %}","span":"2"}]'
                                     {% if st.document %}data-hr-text-detail-attachment="{{ st.document.url }}"{% endif %}>
                                 <i data-lucide="eye" class="hr-act__icon"></i>
                             </button>

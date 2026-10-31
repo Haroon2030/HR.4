@@ -41,14 +41,14 @@ class OfficialRecordFormTests(TestCase):
         self.assertIn('5000.00', html)
         self.assertIn('خمسة آلاف ريال سعودي فقط لا غير', html)
         self.assertIn('ظرف طارئ', html)
-        self.assertIn('2026/07/01', html)
+        self.assertIn('01-07-2026', html)
         self.assertIn('موظف تجريبي', html)
 
     def test_absence_form_is_prefilled_from_the_absence(self):
         response = self.client.get(reverse('web:print_absence_form', args=[self.employee.id, self.absence.id]))
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertIn('2026/09/01', html)
+        self.assertIn('01-09-2026', html)
         self.assertIn('يومان', html)
         self.assertIn('ظرف عائلي', html)
         self.assertIn('تم التبليغ هاتفياً', html)
@@ -108,9 +108,9 @@ class OfficialRecordFormsMoreTests(TestCase):
         response = self.client.get(reverse('web:print_leave_form', args=[self.employee.id, self.leave.id]))
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertIn('2026/09/01', html)
-        self.assertIn('2026/09/03', html)
-        self.assertIn('2026/09/04', html)  # تاريخ المباشرة = اليوم التالي لنهاية الإجازة
+        self.assertIn('01-09-2026', html)
+        self.assertIn('03-09-2026', html)
+        self.assertIn('04-09-2026', html)  # تاريخ المباشرة = اليوم التالي لنهاية الإجازة
         self.assertIn('مراجعة طبيب', html)
         self.assertRegex(html, r'<span class="box" data-checked></span> إجازة مرضية')
 
@@ -118,12 +118,12 @@ class OfficialRecordFormsMoreTests(TestCase):
         receipt = self.client.get(reverse('web:print_custody_form', args=[self.employee.id, self.custody.id]))
         self.assertEqual(receipt.status_code, 200)
         self.assertIn('لابتوب', receipt.content.decode())
-        self.assertIn('2026/05/01', receipt.content.decode())
+        self.assertIn('01-05-2026', receipt.content.decode())
         clearance = self.client.get(
             reverse('web:print_custody_form', args=[self.employee.id, self.custody.id]) + '?kind=clearance'
         )
         self.assertEqual(clearance.status_code, 200)
-        self.assertIn('2026/09/10', clearance.content.decode())
+        self.assertIn('10-09-2026', clearance.content.decode())
         self.assertIn('انتهاء المشروع', clearance.content.decode())
 
     def test_warning_and_generic_statement_forms(self):

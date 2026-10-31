@@ -104,13 +104,13 @@
                 
                 <div class="space-y-1">
                     <p class="text-xs font-semibold text-slate-500 uppercase">تاريخ الانضمام</p>
-                    <p class="text-sm text-slate-900">{{ user_obj.date_joined|date:"d/m/Y - h:i A" }}</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.date_joined|date:"d-m-Y - h:i A" }}</p>
                 </div>
                 
                 {% if user_obj.last_login %}
                 <div class="space-y-1">
                     <p class="text-xs font-semibold text-slate-500 uppercase">آخر تسجيل دخول</p>
-                    <p class="text-sm text-slate-900">{{ user_obj.last_login|date:"d/m/Y - h:i A" }}</p>
+                    <p class="text-sm text-slate-900">{{ user_obj.last_login|date:"d-m-Y - h:i A" }}</p>
                 </div>
                 {% endif %}
             </div>

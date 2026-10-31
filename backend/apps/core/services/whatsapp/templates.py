@@ -13,7 +13,7 @@ def _fmt_date(value) -> str:
     if not value:
         return '—'
     if hasattr(value, 'strftime'):
-        return value.strftime('%Y-%m-%d')
+        return value.strftime('%d-%m-%Y')
     return str(value)
 
 

@@ -20,7 +20,7 @@
         if (!iso) return '';
         var p = iso.split('-');
         if (p.length !== 3) return '';
-        return p[0] + '/' + p[1] + '/' + p[2];
+        return p[2] + '-' + p[1] + '-' + p[0];
     }
 
     function parseIso(iso) {
@@ -359,7 +359,7 @@
         var display = document.createElement('input');
         display.type = 'text';
         display.className = 'hr-date-picker__display';
-        display.placeholder = input.getAttribute('data-placeholder') || 'YYYY/MM/DD';
+        display.placeholder = input.getAttribute('data-placeholder') || 'DD-MM-YYYY';
         display.autocomplete = 'off';
         display.inputMode = 'numeric';
         display.dir = 'ltr';

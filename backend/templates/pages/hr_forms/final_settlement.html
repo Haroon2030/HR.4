@@ -7,11 +7,14 @@
     <h3>بيانات نهاية الخدمة</h3>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{{ employee.hire_date|date:"Y/m/d"|default:"" }}</span></div>
+        <div class="field"><span class="label">تاريخ المباشرة:</span><span class="blank">{{ employee.hire_date|date:"d-m-Y"|default:"" }}</span></div>
         <div class="field"><span class="label">الراتب:</span><span class="blank">{% if employee.total_salary %}{{ employee.total_salary|floatformat:"2u" }} ر.س{% endif %}</span></div>
-        <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank">{{ employee.end_date|date:"Y/m/d"|default:"" }}</span></div>
+        <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank">{{ employee.end_date|date:"d-m-Y"|default:"" }}</span></div>
         <div class="field"><span class="label">مدة الخدمة:</span><span class="blank">{{ service_duration|default:"" }}</span></div>
     </div>
+    {% if employee.hire_date and employee.end_date and employee.hire_date > employee.end_date %}
+    <p class="no-print" style="margin-top:8px; padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-size:12px; border-radius:6px;">تنبيه: تاريخ المباشرة ({{ employee.hire_date|date:"d-m-Y" }}) بعد تاريخ نهاية الخدمة، فلا تُحسب مدة الخدمة ولا الراتب المستحق. صحّح تاريخ المباشرة في بيانات الموظف ثم أعد فتح النموذج.</p>
+    {% endif %}
 
     <div style="margin-top: 12px;">
         <span class="label" style="font-weight:600; color:#334155;">سبب الإنهاء:</span>
@@ -30,7 +33,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td style="padding:8px; border:1px solid #cbd5e1;">الراتب حتى تاريخ</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ prorated_salary|default:employee.total_salary|floatformat:2 }}</td><td style="padding:8px; border:1px solid #cbd5e1;">{% if employee.end_date %}{{ employee.end_date|date:"Y/m/d" }}{% endif %}</td></tr>
+            <tr><td style="padding:8px; border:1px solid #cbd5e1;">الراتب حتى تاريخ</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ prorated_salary|default:employee.total_salary|floatformat:2 }}</td><td style="padding:8px; border:1px solid #cbd5e1;">{% if employee.end_date %}{{ employee.end_date|date:"d-m-Y" }}{% endif %}</td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">رصيد الإجازات المتبقي ({{ leave_days|default:employee.remaining_leave_days }} يوم)</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ leave_comp|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">مكافأة نهاية الخدمة</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">{{ eosb_amount|default:"" }}</td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>
             <tr><td style="padding:8px; border:1px solid #cbd5e1;">بدل تذكرة سفر</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;"></td><td style="padding:8px; border:1px solid #cbd5e1;"></td></tr>

@@ -111,7 +111,7 @@ def export_employee_salary_excel(request, employee_id):
 
     # تاريخ الإصدار
     ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=n)
-    c = ws.cell(row=2, column=1, value=f"تاريخ الإصدار: {timezone.now().strftime('%Y-%m-%d %H:%M')}")
+    c = ws.cell(row=2, column=1, value=f"تاريخ الإصدار: {timezone.now().strftime('%d-%m-%Y %H:%M')}")
     c.font = Font(name='Arial', size=10, italic=True, color='64748B')
     c.alignment = center
     ws.row_dimensions[2].height = 22

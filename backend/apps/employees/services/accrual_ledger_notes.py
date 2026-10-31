@@ -221,7 +221,7 @@ def _monthly_display_context(ledger) -> dict | None:
         'period': f'{run.period_month}/{run.period_year}',
         'meta': [
             {'label': 'مسير الرواتب', 'value': f'#{ledger.payroll_run_id}', 'mono': True},
-            {'label': 'تاريخ القيد', 'value': calc['month_end'].strftime('%Y-%m-%d'), 'mono': True},
+            {'label': 'تاريخ القيد', 'value': calc['month_end'].strftime('%d-%m-%Y'), 'mono': True},
             {'label': 'أيام الشهر', 'value': str(month_days), 'mono': True},
         ],
         'sections': [
@@ -311,9 +311,9 @@ def _initial_display_context(ledger) -> dict | None:
     return {
         'kind': 'structured',
         'operation': 'رصيد افتتاحي',
-        'period': f'حتى {as_of.strftime("%Y-%m-%d")}',
+        'period': f'حتى {as_of.strftime("%d-%m-%Y")}',
         'meta': [
-            {'label': 'تاريخ المباشرة', 'value': emp.hire_date.strftime('%Y-%m-%d'), 'mono': True},
+            {'label': 'تاريخ المباشرة', 'value': emp.hire_date.strftime('%d-%m-%Y'), 'mono': True},
             {'label': 'مدة الخدمة', 'value': f'{service_days} يوم ({service_years} سنة)', 'mono': True},
         ],
         'sections': [

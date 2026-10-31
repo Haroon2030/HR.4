@@ -146,7 +146,7 @@ class _OfficialPDF(FPDF):
         _draw_segments(self, self.w - _MARGIN, y, 5, ['صفحة', str(self.page_no()), 'من', total])
         self.set_font('NotoArabic', '', 8)
         self.set_xy(_MARGIN, y)
-        self.cell(40, 5, self.meta.issued_at.strftime('%Y-%m-%d %H:%M'), align='L')
+        self.cell(40, 5, self.meta.issued_at.strftime('%d-%m-%Y %H:%M'), align='L')
 
 
 def _fit(pdf: FPDF, text: str, width: float) -> str:

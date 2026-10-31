@@ -41,11 +41,11 @@ def _status_payload(settings_obj: EvolutionWhatsAppSettings, request) -> dict:
         'webhook_enabled': settings_obj.webhook_enabled,
         'qrcode_base64': qrcode,
         'last_webhook_at': (
-            timezone.localtime(settings_obj.last_webhook_at).strftime('%Y-%m-%d %H:%M')
+            timezone.localtime(settings_obj.last_webhook_at).strftime('%d-%m-%Y %H:%M')
             if settings_obj.last_webhook_at else ''
         ),
         'last_status_sync_at': (
-            timezone.localtime(settings_obj.last_status_sync_at).strftime('%Y-%m-%d %H:%M')
+            timezone.localtime(settings_obj.last_status_sync_at).strftime('%d-%m-%Y %H:%M')
             if settings_obj.last_status_sync_at else ''
         ),
         'manager_url': f'{(settings_obj.api_url or "").rstrip("/")}/manager' if settings_obj.api_url else '',

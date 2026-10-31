@@ -6,5 +6,6 @@
         <div class="row"><span class="label">الرقم الوظيفي:</span><span class="value">{{ employee.employee_number|default:"—" }}</span></div>
         <div class="row"><span class="label">رقم الهوية:</span><span class="value">{{ employee.id_number|default:"—" }}</span></div>
         <div class="row"><span class="label">الجنسية:</span><span class="value">{{ employee.nationality.name|default:"—" }}</span></div>
+        <div class="row"><span class="label">القسم:</span><span class="value">{{ employee.department.name|default:"—" }}</span></div>
     </div>
 </div>

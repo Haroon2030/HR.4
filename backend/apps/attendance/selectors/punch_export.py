@@ -51,7 +51,7 @@ def format_punch_table_row(
     local = timezone.localtime(punched_at)
     return [
         index,
-        local.strftime('%Y-%m-%d'),
+        local.strftime('%d-%m-%Y'),
         local.strftime('%H:%M:%S'),
         str(device_record_uid or '—'),
         str(device_user_id),

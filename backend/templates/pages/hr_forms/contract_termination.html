@@ -6,7 +6,7 @@
 <div class="section">
     <h3>تفاصيل إنهاء العقد</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 24px;">
-        <div class="field"><span class="label">تاريخ مباشرة العمل:</span><span class="blank">{{ employee.hire_date|date:"Y/m/d"|default:"............" }}</span></div>
+        <div class="field"><span class="label">تاريخ مباشرة العمل:</span><span class="blank">{{ employee.hire_date|date:"d-m-Y"|default:"............" }}</span></div>
         <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank"></span></div>
         <div class="field"><span class="label">رقم العقد:</span><span class="blank"></span></div>
         <div class="field"><span class="label">مدة الإشعار:</span><span class="blank"></span></div>

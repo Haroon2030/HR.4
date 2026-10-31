@@ -143,7 +143,7 @@
                             {% if a.resubmit_count %}<span class="text-xs text-slate-400 ms-2">إعادة إرسال #{{ a.resubmit_count }}</span>{% endif %}
                         </td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.requested_by_name }}</td>
-                        <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.updated_at|date:"Y-m-d H:i" }}</td>
+                        <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ a.updated_at|date:"d-m-Y H:i" }}</td>
                         <td class="px-3 py-2 text-left whitespace-nowrap">
                             {% if a.can_act and a.status != 'approved' %}
                             <a href="{{ a.act_url }}" class="hr-act hr-act--approve" title="فتح شاشة الموافقة والاعتماد" aria-label="اعتماد الطلب {{ a.id }}">

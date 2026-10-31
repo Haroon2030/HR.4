@@ -215,6 +215,12 @@ def _apply_final_settlement_fallbacks(employee, context: dict) -> None:
     if not context.get('leave_days') and leave_days is not None:
         context['leave_days'] = leave_days
 
+    if not context.get('service_duration') and employee.hire_date and employee.end_date:
+        # مدة الخدمة تلقائياً من تاريخ المباشرة إلى نهاية الخدمة (سنة = 360 يوماً كبقية النظام)
+        from apps.core.salary_month import employment_service_days
+        days = employment_service_days(employee.hire_date, employee.end_date)
+        context['service_duration'] = f'{days} يوم ({days / 360:.2f} سنة)'
+
     loans = _active_loans_total_str(employee)
     if loans:
         context.setdefault('loans_deduction', loans)
@@ -395,7 +401,7 @@ def _salary_certificate_form_context(employee) -> dict:
     """تعبئة تلقائية لحقول تعريف الراتب من ملف الموظف."""
     hire_date = ''
     if employee.hire_date:
-        hire_date = employee.hire_date.strftime('%Y/%m/%d')
+        hire_date = employee.hire_date.strftime('%d-%m-%Y')
 
     other_fixed = (
         Decimal(employee.other_allowance or 0)

@@ -181,7 +181,7 @@
                 <tbody>
                     {% for p in page_obj %}
                     <tr class="{% if not p.employee_id %}zk-row-warn{% endif %}">
-                        <td class="zk-mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
+                        <td class="zk-mono">{{ p.local_punched_at|date:"d-m-Y" }}</td>
                         <td class="zk-mono">{{ p.local_punched_at|date:"H:i" }}</td>
                         <td>
                             {% if p.employee %}

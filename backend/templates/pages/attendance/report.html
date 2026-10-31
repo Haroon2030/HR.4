@@ -226,7 +226,7 @@
                     {% for p in punches_page.object_list %}
                     <tr class="{% if not p.employee_id %}row-warn{% endif %}">
                         <td class="text-center mono text-slate-500">{{ punches_page.start_index|add:forloop.counter0 }}</td>
-                        <td class="mono">{{ p.local_punched_at|date:"Y-m-d" }}</td>
+                        <td class="mono">{{ p.local_punched_at|date:"d-m-Y" }}</td>
                         <td class="mono">{{ p.local_punched_at|date:"H:i:s" }}</td>
                         <td>
                             {% if p.employee_id %}

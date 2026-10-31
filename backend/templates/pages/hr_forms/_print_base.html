@@ -664,7 +664,8 @@
                 if (isDate) {
                     // YYYY/MM/DD أو YYYY-MM-DD تُقرأ كما هي — التحويل عبر toISOString (UTC)
                     // كان يُرجع اليوم السابق في توقيت السعودية (UTC+3)
-                    const ymd = val.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+                    const dmy = val.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+                    const ymd = dmy ? [null, dmy[3], dmy[2], dmy[1]] : val.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
                     let d = ymd ? null : new Date(val);
                     if (ymd) {
                         inp.value = ymd[1] + '-' + ymd[2].padStart(2, '0') + '-' + ymd[3].padStart(2, '0');
@@ -711,6 +712,58 @@
         if (new URLSearchParams(window.location.search).get('auto_print') === '1') {
             window.addEventListener('load', () => setTimeout(() => window.print(), 400));
         }
+    </script>
+    <script>
+        // ── عرض كل حقول التاريخ بصيغة يوم-شهر-سنة (31-10-2026) ──────────────
+        // الحقل الأصلي type=date يبقى مخفياً وبقيمة ISO (تقرؤها سكربتات النماذج)،
+        // ويُعرض بدلاً منه حقل نصي dd-mm-yyyy يُزامَن معه في الاتجاهين.
+        (function () {
+            const toDisplay = iso => {
+                const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+                return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+            };
+            const toIso = txt => {
+                const m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/.exec((txt || '').trim());
+                if (!m) return '';
+                const d = +m[1], mo = +m[2], y = +m[3];
+                const dt = new Date(y, mo - 1, d);
+                if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return '';
+                return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            };
+            const valueDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            document.querySelectorAll('input[type="date"]').forEach(native => {
+                const proxy = document.createElement('input');
+                proxy.type = 'text';
+                proxy.className = native.className;
+                proxy.placeholder = 'DD-MM-YYYY';
+                proxy.maxLength = 10;
+                proxy.inputMode = 'numeric';
+                proxy.setAttribute('dir', 'ltr');
+                proxy.setAttribute('aria-label', native.getAttribute('aria-label') || 'تاريخ');
+                proxy.value = toDisplay(native.value);
+                native.style.display = 'none';
+                native.after(proxy);
+                // تعديل native.value برمجياً (من سكربتات النماذج) يُحدّث العرض
+                Object.defineProperty(native, 'value', {
+                    configurable: true,
+                    get() { return valueDesc.get.call(native); },
+                    set(v) { valueDesc.set.call(native, v); proxy.value = toDisplay(valueDesc.get.call(native)); },
+                });
+                proxy.addEventListener('input', () => {
+                    let digits = proxy.value.replace(/[^0-9]/g, '').slice(0, 8);
+                    let out = digits.slice(0, 2);
+                    if (digits.length > 2) out += '-' + digits.slice(2, 4);
+                    if (digits.length > 4) out += '-' + digits.slice(4);
+                    proxy.value = out;
+                    const iso = toIso(out);
+                    if (iso || !out) {
+                        valueDesc.set.call(native, iso);
+                        native.dispatchEvent(new Event('input', { bubbles: true }));
+                        native.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            });
+        })();
     </script>
     {% block form_scripts %}{% endblock %}
 </body>

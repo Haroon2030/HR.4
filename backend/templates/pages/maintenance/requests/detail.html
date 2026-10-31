@@ -11,7 +11,7 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">طلب #{{ req.id }} — {{ req.title }}</h1>
-            <p class="text-sm text-slate-500">{{ req.branch.name }} • {{ req.requested_at|date:"Y/m/d H:i" }}</p>
+            <p class="text-sm text-slate-500">{{ req.branch.name }} • {{ req.requested_at|date:"d-m-Y H:i" }}</p>
         </div>
         {% maintenance_status_badge req %}
     </div>

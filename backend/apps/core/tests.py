@@ -844,7 +844,7 @@ class HRFormPrintViewTests(TestCase):
         self.assertIn('سعودي', html)
         self.assertIn('1234567890', html)
         self.assertIn('فني كيمرات', html)
-        self.assertIn('2024/03/15', html)
+        self.assertIn('15-03-2024', html)
         self.assertIn('4000.00', html)
         self.assertIn('200.00', html)
         self.assertIn('100.00', html)
