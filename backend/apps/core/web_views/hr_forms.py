@@ -695,8 +695,9 @@ def hr_form_print(request, form_type, employee_id):
                 apply_override_to_form_context, get_override,
             )
             override = get_override(settlement_action.payload)
-            if override and employee.end_date:
-                # نفس الأرقام التي رآها الأخصائي في لوحة التعديل (الخصومات التلقائية الأخرى)
+            if employee.end_date:
+                # الخصومات التلقائية الأخرى (مخالفات، عجز، راتب مصروف زيادة) تظهر في النموذج
+                # دائماً، سواء عدّلها الأخصائي أم لا، وبنفس أرقام لوحة التعديل
                 from apps.employees.services.settlement_financials import compute_settlement_financials
                 auto = compute_settlement_financials(employee, employee.end_date)
                 for key in ('penalties_deduction', 'cash_shortages_deduction', 'overpaid_salary_recovery'):

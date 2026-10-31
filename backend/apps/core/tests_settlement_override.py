@@ -121,6 +121,15 @@ class FormSlotsTests(TestCase):
         self.assertEqual(ctx['net_base'], '800.00')
         self.assertEqual([i['label'] for i in ctx['manual_additions_items']], ['مكافأة'])
 
+    def test_auto_recovery_shows_in_form_without_any_override(self):
+        """استرداد راتب صُرف زيادة يظهر في النموذج المطبوع ويُخصم من الصافي حتى بلا تعديل يدوي."""
+        ctx = dict(self.CTX, leave_comp='466.68', prorated_salary='0', loans_deduction='',
+                   overpaid_salary_recovery='833.33')
+        ctx = apply_override_to_form_context(ctx, {})
+        self.assertEqual(ctx['deduction_slots'][0]['amount'], '833.33')
+        self.assertEqual(ctx['deduction_slots'][0]['label'], 'استرداد راتب صُرف زيادة')
+        self.assertEqual(ctx['total_entitlement'], '-366.65')
+
     def test_more_than_three_entries_are_merged_into_last_row(self):
         override = {
             'manual_items': [{'label': f'بند{i}', 'amount': '10.00', 'kind': 'deduction'} for i in range(1, 5)],

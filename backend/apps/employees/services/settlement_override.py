@@ -137,8 +137,7 @@ def apply_override_to_financials(financials, override):
 
 def apply_override_to_form_context(context, override):
     """يطبّق التعديل على سياق نموذج التصفية المطبوع ويعيد حساب الصافي."""
-    if not override:
-        return context
+    override = override or {}
 
     def num(key):
         try:
