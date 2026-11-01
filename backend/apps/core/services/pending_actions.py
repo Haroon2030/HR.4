@@ -861,7 +861,7 @@ def create_pending_action(*, action_type, employee, payload, requested_by, attac
             raise ValueError('يوجد طلب تصفية قيد الموافقة لهذا الموظف بالفعل.')
 
     routing = snapshot_routing_fields(employee)
-    return PendingAction.objects.create(
+    action = PendingAction.objects.create(
         action_type=action_type,
         employee=employee,
         branch=routing['branch'],
@@ -870,6 +870,49 @@ def create_pending_action(*, action_type, employee, payload, requested_by, attac
         attachment=attachment,
         requested_by=requested_by,
     )
+    skip_first_stage_for_submitter(action)
+    return action
+
+
+def skip_first_stage_for_submitter(action) -> bool:
+    """أخصائي إدخال البيانات ← مباشرة لتعميد مدير الموارد؛ الموارد البشرية ← يُعمَّد تلقائياً باسمه.
+
+    لا يشمل عجز الكاشير (مساره محاسب الفرع وينفَّذ بعده). يُرجع True إن تجاوز المرحلة الأولى.
+    """
+    from apps.core.models import PendingAction
+    from apps.core.services.approval_routing import submitter_shortcut_mode
+
+    if action.status != PendingAction.Status.PENDING_BRANCH:
+        return False
+    if action.action_type == PendingAction.ActionType.CASH_SHORTAGE:
+        return False
+    mode = submitter_shortcut_mode(action.requested_by)
+    if not mode:
+        return False
+
+    action.status = PendingAction.Status.PENDING_GM
+    if mode == 'hr':
+        action.branch_reviewed_by = action.requested_by
+        action.branch_reviewed_at = timezone.now()
+        action.branch_notes = 'تعميد تلقائي: الطلب مرفوع من الموارد البشرية.'
+    else:
+        action.branch_notes = 'رفع مباشر لتعميد مدير الموارد: الطلب مرفوع من أخصائي.'
+    action.save(update_fields=['status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'])
+    requester = action.requested_by
+    _notify().notify_general_managers(
+        action,
+        title=f'طلب جديد بانتظار موافقتك — {action.get_action_type_display()}',
+        message=f'الموظف: {action.employee.name} • مقدّم الطلب: '
+                f'{requester.get_full_name() or requester.username}',
+        icon='user-cog', color='amber',
+    )
+    try:
+        from apps.core.services.whatsapp import workflow_notifier
+        workflow_notifier.notify_whatsapp_pending_gm(action)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('WhatsApp notify failed for action %s', action.pk)
+    return True
 
 
 @transaction.atomic
@@ -1249,6 +1292,8 @@ def resubmit_action(action, user):
         'officer_reviewed_at', 'officer_notes',
     ])
 
+    if skip_first_stage_for_submitter(action):
+        return action
     notify_on_first_stage(
         action,
         title=f'طلب مُعاد بعد التعديل — {action.get_action_type_display()}',
@@ -1264,8 +1309,8 @@ def notify_branch_on_create(action):
     from apps.core.models import PendingAction
     from apps.core.services.whatsapp import workflow_notifier
 
-    if action.status == PendingAction.Status.APPROVED:
-        return
+    if action.status != PendingAction.Status.PENDING_BRANCH:
+        return  # اكتمل أو تجاوز التعميد الأول (رفع أخصائي/موارد بشرية)
 
     workflow_notifier.notify_whatsapp_request_created(action)
     notify_on_first_stage(

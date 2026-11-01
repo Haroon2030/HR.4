@@ -4,7 +4,8 @@
     الجهاز | رقم المستخدم على الجهاز | الاسم على الجهاز | الرقم الوظيفي | رقم الهوية | اسم الموظف
 
 الاستيراد يحدّد الموظف بـ «الرقم الوظيفي» ثم «رقم الهوية» (واحد منهما يكفي)،
-والجهاز باسمه (يمكن حذف العمود إن وُجد جهاز واحد فقط).
+والجهاز باسمه (يمكن حذف العمود إن وُجد جهاز واحد فقط) مع تجاهل فروق الكتابة (ة/ه، ى/ي، أ/ا).
+إن غاب «رقم المستخدم على الجهاز» (أو العمود نفسه) يُعتمد الرقم الوظيفي رقماً للمستخدم على الجهاز.
 قواعد الأمان: لا يُنقل رقم مستخدم مربوط بموظف آخر (يُتخطّى ويُبلَّغ عنه)،
 وكل تغيير يُسجَّل في سجل تدقيق الربط نفسه الذي تستعمله شاشة الأجهزة.
 """
@@ -61,6 +62,14 @@ HEADER_ALIASES = {
 }
 
 
+def _norm_name(value: str) -> str:
+    """توحيد اسم الجهاز للمطابقة: ة=ه، ى=ي، همزات الألف=ا، بلا مسافات زائدة أو تشكيل."""
+    text = ''.join(ch for ch in (value or '') if ch not in 'ًٌٍَُِّْـ')
+    for src, dst in (('أ', 'ا'), ('إ', 'ا'), ('آ', 'ا'), ('ة', 'ه'), ('ى', 'ي')):
+        text = text.replace(src, dst)
+    return ' '.join(text.split()).casefold()
+
+
 @dataclass
 class RowResult:
     row_number: int
@@ -76,6 +85,7 @@ class ImportSummary:
     skipped: int = 0
     errors: int = 0
     results: list[RowResult] = field(default_factory=list)
+    unknown_devices: dict[str, int] = field(default_factory=dict)  # اسم جهاز غير موجود ← عدد صفوفه
 
     _COUNTERS = {
         'created': 'created', 'updated': 'updated', 'unchanged': 'unchanged',
@@ -147,17 +157,34 @@ def _get(row, mapping: dict[str, int], key: str) -> Any:
     return row[idx] if idx is not None and idx < len(row) else None
 
 
-def _resolve_device(name: str, devices_by_name: dict[str, list], only_device):
-    if not name:
-        if only_device is None:
-            raise ValueError('اسم الجهاز مطلوب (يوجد أكثر من جهاز).')
+class UnknownDevice(ValueError):
+    def __init__(self, name: str):
+        super().__init__(f'جهاز غير موجود: «{name}».')
+        self.name = name
+
+
+def _resolve_device(name: str, devices_by_name: dict[str, list], only_device, employee=None, devices=()):
+    """الجهاز بالاسم دون تشدد: مطابقة موحّدة ← احتواء الاسم ← جهاز فرع الموظف الوحيد."""
+    if only_device is not None and not name:
         return only_device
-    matches = devices_by_name.get(name.casefold(), [])
-    if not matches:
-        raise ValueError(f'جهاز غير موجود: «{name}».')
-    if len(matches) > 1:
-        raise ValueError(f'يوجد أكثر من جهاز بالاسم «{name}» — غيّر الاسم ليصبح فريداً.')
-    return matches[0]
+    key = _norm_name(name)
+    if key:
+        matches = devices_by_name.get(key, [])
+        if len(matches) > 1:
+            raise ValueError(f'يوجد أكثر من جهاز بالاسم «{name}» — غيّر الاسم ليصبح فريداً.')
+        if matches:
+            return matches[0]
+        partial = [d for d in devices if key in _norm_name(d.name or '') or _norm_name(d.name or '') in key]
+        if len(partial) == 1:
+            return partial[0]
+    # اسم الجهاز في الملف غائب أو غير مطابق: جهاز فرع الموظف إن كان وحيداً
+    if employee is not None and employee.branch_id:
+        by_branch = [d for d in devices if d.branch_id == employee.branch_id]
+        if len(by_branch) == 1:
+            return by_branch[0]
+    if not name:
+        raise ValueError('اسم الجهاز مطلوب (يوجد أكثر من جهاز).')
+    raise UnknownDevice(name)
 
 
 def _resolve_employee(number: str, id_number: str, by_number: dict, by_id: dict):
@@ -187,18 +214,16 @@ def import_enrollments_from_workbook(wb, *, request, allowed_branch_ids=None) ->
     except StopIteration:
         return summary
     mapping = _parse_headers(header)
-    if 'device_user_id' not in mapping:
-        raise ImportValidationError('العمود «رقم المستخدم على الجهاز» غير موجود في الملف.')
     if 'employee_number' not in mapping and 'id_number' not in mapping:
         raise ImportValidationError('يلزم عمود «الرقم الوظيفي» أو «رقم الهوية».')
+    if 'device_user_id' not in mapping and 'employee_number' not in mapping:
+        raise ImportValidationError('يلزم عمود «رقم المستخدم على الجهاز» أو «الرقم الوظيفي».')
 
     devices = list(BiometricDevice.objects.filter(is_deleted=False))
     devices_by_name: dict[str, list] = {}
     for d in devices:
-        devices_by_name.setdefault((d.name or '').strip().casefold(), []).append(d)
+        devices_by_name.setdefault(_norm_name(d.name or ''), []).append(d)
     only_device = devices[0] if len(devices) == 1 else None
-    if 'device' not in mapping and only_device is None:
-        raise ImportValidationError('يوجد أكثر من جهاز — أضف عمود «الجهاز».')
 
     employees = Employee.objects.filter(is_deleted=False).only(
         'id', 'name', 'employee_number', 'id_number', 'branch_id',
@@ -220,18 +245,21 @@ def import_enrollments_from_workbook(wb, *, request, allowed_branch_ids=None) ->
         if row is None or all(c is None or str(c).strip() == '' for c in row):
             continue
         try:
-            device = _resolve_device(_cell_str(_get(row, mapping, 'device')), devices_by_name, only_device)
-
-            raw_id = _cell_str(_get(row, mapping, 'device_user_id'))
-            if not raw_id.isdigit() or int(raw_id) <= 0:
-                raise ValueError(f'رقم المستخدم على الجهاز غير صالح: «{raw_id}».')
-            device_user_id = int(raw_id)
-
+            employee_number = _cell_str(_get(row, mapping, 'employee_number'))
             employee = _resolve_employee(
-                _cell_str(_get(row, mapping, 'employee_number')),
+                employee_number,
                 _cell_str(_get(row, mapping, 'id_number')),
                 by_number, by_id,
             )
+            device = _resolve_device(
+                _cell_str(_get(row, mapping, 'device')), devices_by_name, only_device,
+                employee=employee, devices=devices,
+            )
+            # رقم المستخدم على الجهاز يطابق رقم الموظف عند عدم ذكره
+            raw_id = _cell_str(_get(row, mapping, 'device_user_id')) or (employee.employee_number or '').strip()
+            if not raw_id.isdigit() or int(raw_id) <= 0:
+                raise ValueError(f'رقم المستخدم على الجهاز غير صالح: «{raw_id}».')
+            device_user_id = int(raw_id)
             if allowed_branch_ids is not None and employee.branch_id not in allowed_branch_ids:
                 raise ValueError(f'الموظف «{employee.name}» خارج الفروع المتاحة لك.')
 
@@ -251,6 +279,9 @@ def import_enrollments_from_workbook(wb, *, request, allowed_branch_ids=None) ->
 
             action, message = _apply_link(request, device, device_user_id, employee, name)
             summary.add(offset, action, message)
+        except UnknownDevice as exc:
+            summary.unknown_devices[exc.name] = summary.unknown_devices.get(exc.name, 0) + 1
+            summary.errors += 1  # يُعرض مجمّعاً بالاسم لا بصف
         except ValueError as exc:
             summary.add(offset, 'error', str(exc))
         except Exception:

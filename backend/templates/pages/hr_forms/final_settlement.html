@@ -11,6 +11,9 @@
         <div class="field"><span class="label">الراتب:</span><span class="blank">{% if employee.total_salary %}{{ employee.total_salary|floatformat:"2u" }} ر.س{% endif %}</span></div>
         <div class="field"><span class="label">تاريخ نهاية الخدمة:</span><span class="blank">{{ employee.end_date|date:"d-m-Y"|default:"" }}</span></div>
         <div class="field"><span class="label">مدة الخدمة:</span><span class="blank">{{ service_duration|default:"" }}</span></div>
+        {% if employee.sponsorship_id %}
+        <div class="field" style="grid-column: 1 / -1;"><span class="label">رقم الآيبان:</span>{% include "pages/hr_forms/_employee_iban_field.html" %}</div>
+        {% endif %}
     </div>
     {% if employee.hire_date and employee.end_date and employee.hire_date > employee.end_date %}
     <p class="no-print" style="margin-top:8px; padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-size:12px; border-radius:6px;">تنبيه: تاريخ المباشرة ({{ employee.hire_date|date:"d-m-Y" }}) بعد تاريخ نهاية الخدمة، فلا تُحسب مدة الخدمة ولا الراتب المستحق. صحّح تاريخ المباشرة في بيانات الموظف ثم أعد فتح النموذج.</p>

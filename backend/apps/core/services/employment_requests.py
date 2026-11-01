@@ -9,7 +9,9 @@ from django.utils import timezone
 
 from apps.core.models import Notification
 from apps.core.services import notifications as notif
-from apps.core.services.approval_routing import notify_on_first_stage, resolve_first_approver
+from apps.core.services.approval_routing import (
+    notify_on_first_stage, resolve_first_approver, submitter_shortcut_mode,
+)
 
 
 # ─── روابط ──────────────────────────────────────────────────────────────────
@@ -225,6 +227,25 @@ def skip_first_stage_if_unrouted(req):
     from apps.employees.models import EmploymentRequest
     if req.status not in {EmploymentRequest.Status.PENDING_BRANCH, EmploymentRequest.Status.PENDING}:
         return False
+    mode = submitter_shortcut_mode(req.requested_by)
+    if mode:
+        req.status = EmploymentRequest.Status.PENDING_GM
+        if mode == 'hr':
+            req.branch_reviewed_by = req.requested_by
+            req.branch_reviewed_at = timezone.now()
+            req.branch_notes = 'تعميد تلقائي: الطلب مرفوع من الموارد البشرية.'
+        else:
+            req.branch_notes = 'رفع مباشر لتعميد مدير الموارد: الطلب مرفوع من أخصائي.'
+        req.save(update_fields=['status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'])
+        _notify_general_managers(
+            req,
+            title=f'طلب توظيف بانتظار موافقتك — {req.name}',
+            message='رُفع إليك مباشرة دون مرحلة التعميد الأولى.',
+            icon='user-cog', color=Notification.Color.AMBER,
+        )
+        from apps.core.services.whatsapp import workflow_notifier
+        workflow_notifier.notify_whatsapp_pending_gm(req)
+        return True
     if resolve_first_approver(req).recipient is not None:
         return False
 
@@ -432,8 +453,13 @@ def reject(req, user, notes=''):
 
 def notify_branch_on_create(req):
     """يُستدعى مرة واحدة عند إنشاء طلب توظيف جديد."""
+    from apps.employees.models import EmploymentRequest
     from apps.core.services.whatsapp import workflow_notifier
 
+    if skip_first_stage_if_unrouted(req) or req.status not in {
+        EmploymentRequest.Status.PENDING_BRANCH, EmploymentRequest.Status.PENDING,
+    }:
+        return  # تجاوز التعميد الأول (أو تغيّرت الحالة) فلا إشعار للمرحلة الأولى
     workflow_notifier.notify_whatsapp_request_created(req)
     notify_on_first_stage(
         req,

@@ -132,6 +132,27 @@ def first_stage_tab_label(user) -> str:
     return 'موافقة أولى'
 
 
+def submitter_shortcut_mode(user) -> str | None:
+    """اختصار مرحلة التعميد الأولى حسب دور مقدّم الطلب:
+
+    - 'specialist': أخصائي إدخال البيانات → يذهب طلبه مباشرة لمدير الموارد.
+    - 'hr': مدير/أخصائي الموارد → يُعمَّد طلبه تلقائياً باسمه ثم يذهب لمدير الموارد.
+    - None: بقية الأدوار تمرّ بمسار التعميد الأول المعتاد.
+    """
+    from apps.core.models import Role
+
+    if not user or not getattr(user, 'pk', None):
+        return None
+    _profile, role = _profile_and_role(user)
+    if not role:
+        return None
+    if role.role_type == Role.RoleType.SPECIALIST:
+        return 'specialist'
+    if role.role_type in (Role.RoleType.HR_MANAGER, Role.RoleType.HR_OFFICER):
+        return 'hr'
+    return None
+
+
 def snapshot_routing_fields(employee) -> dict:
     """لقطة مسار الموافقة عند إنشاء الطلب."""
     return {

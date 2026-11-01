@@ -99,6 +99,29 @@ class EnrollmentExcelTests(TestCase):
         self.assertEqual(BiometricEnrollmentAuditLog.objects.filter(action='create').count(), 2)
         self.assertTrue(any('ربط جديد 2' in m for m in self._messages(r)))
 
+    def test_device_name_variants_and_user_id_defaults_to_employee_number(self):
+        """«جهاز» بدل «جهاز» بكتابة مختلفة (ة/ه) يُطابَق، ورقم المستخدم الفارغ = الرقم الوظيفي."""
+        dev = BiometricDevice.objects.create(name='المنصورة', ip_address='10.0.0.9', branch=self.branch)
+        Employee.objects.filter(pk=self.emp1.pk).update(employee_number='555')
+        r = self._import(_xlsx([['المنصوره', None, '', '555', '']]))
+        self.assertTrue(EmployeeBiometricEnrollment.objects.filter(
+            device=dev, device_user_id=555, employee=self.emp1,
+        ).exists())
+        self.assertFalse([m for m in self._messages(r) if 'تعذّر' in m or 'غير موجود' in m])
+
+    def test_unknown_device_name_falls_back_to_employee_branch_device(self):
+        """اسم الجهاز لا يلزم أن يطابق: يُستعمل جهاز فرع الموظف الوحيد."""
+        self._import(_xlsx([['الاداره', 5, '', 'E1', '']]))
+        self.assertTrue(EmployeeBiometricEnrollment.objects.filter(device=self.device, employee=self.emp1).exists())
+
+    def test_unknown_devices_are_reported_grouped_by_name(self):
+        BiometricDevice.objects.create(name='جهاز 2', ip_address='10.0.0.2', branch=self.branch)
+        r = self._import(_xlsx([['الدمام', 7, '', 'E1', ''], ['الدمام', 8, '', 'E2', '']]))
+        msgs = [m for m in self._messages(r) if 'أجهزة غير موجودة' in m]
+        self.assertEqual(len(msgs), 1)
+        self.assertIn('«الدمام» (2 صفاً)', msgs[0])
+        self.assertEqual(EmployeeBiometricEnrollment.objects.count(), 0)
+
     def test_reimport_is_idempotent(self):
         rows = [['جهاز 1', 5, 'Ali', 'E1', None]]
         self._import(_xlsx(rows))
@@ -126,6 +149,7 @@ class EnrollmentExcelTests(TestCase):
         self.assertEqual([l.device_user_id for l in links], [9])
 
     def test_bad_rows_reported_good_rows_saved(self):
+        BiometricDevice.objects.create(name='جهاز 2', ip_address='10.0.0.2', branch=self.branch)  # فرع بجهازين: لا بديل تلقائي
         r = self._import(_xlsx([
             ['جهاز 1', 5, '', 'E1', None],
             ['جهاز غير موجود', 6, '', 'E2', None],
@@ -134,8 +158,8 @@ class EnrollmentExcelTests(TestCase):
         ]))
         self.assertEqual(EmployeeBiometricEnrollment.objects.filter(is_deleted=False).count(), 1)
         text = ' '.join(self._messages(r))
-        self.assertIn('تعذّر استيراد 3', text)
-        self.assertIn('جهاز غير موجود', text)
+        self.assertIn('تعذّر استيراد 2', text)
+        self.assertIn('«جهاز غير موجود» (1 صفاً)', text)
 
     def test_duplicate_number_in_file_rejected(self):
         self._import(_xlsx([['جهاز 1', 5, '', 'E1', None], ['جهاز 1', 5, '', 'E2', None]]))
@@ -147,7 +171,7 @@ class EnrollmentExcelTests(TestCase):
 
     def test_missing_columns_and_wrong_file(self):
         r = self._import(_xlsx([[1]], headers=['شيء']))
-        self.assertTrue(any('رقم المستخدم' in m for m in self._messages(r)))
+        self.assertTrue(any('الرقم الوظيفي' in m for m in self._messages(r)))
         r = self._import(SimpleUploadedFile('x.txt', b'hello'))
         self.assertTrue(any('xlsx' in m for m in self._messages(r)))
         self.assertFalse(EmployeeBiometricEnrollment.objects.exists())

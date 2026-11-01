@@ -743,9 +743,14 @@ def biometric_enrollments_import(request):
         messages.success(request, f'تم الاستيراد: ربط جديد {summary.created}، تحديث {summary.updated}.')
     if summary.unchanged:
         messages.info(request, f'{summary.unchanged} ربط بدون تغيير.')
+    if summary.unknown_devices:
+        names = '، '.join(f'«{n}» ({c} صفاً)' for n, c in sorted(summary.unknown_devices.items()))
+        messages.error(request, f'أجهزة غير موجودة في النظام (أضفها أو صحّح الاسم في الملف): {names}')
     if summary.errors:
-        details = ' | '.join(f'صف {r.row_number}: {r.message}' for r in summary.results[:5])
-        messages.error(request, f'تعذّر استيراد {summary.errors} صفاً — {details}')
+        other = [r for r in summary.results if not r.message.startswith('جهاز غير موجود')]
+        if other:
+            details = ' | '.join(f'صف {r.row_number}: {r.message}' for r in other[:5])
+            messages.error(request, f'تعذّر استيراد {summary.errors - sum(summary.unknown_devices.values())} صفاً — {details}')
     if not (summary.created or summary.updated or summary.unchanged or summary.errors):
         messages.warning(request, 'لا توجد صفوف للاستيراد في الملف.')
     return back
