@@ -1,8 +1,11 @@
 """واجهة إدارة أجهزة البصمة."""
+from datetime import timedelta
+
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.utils import timezone
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
@@ -97,6 +100,22 @@ def _device_users_querystring(filters: dict, *, extra: dict | None = None) -> st
 
 
 LINK_SCREEN_PATH = '/setup/biometric-link/'
+
+# أكثر من هذه المدة بلا مزامنة (الوكيل يرسل كل ~5 دقائق) ⇒ الجهاز يُعدّ منقطعاً
+STALE_SYNC_AFTER = timedelta(hours=2)
+
+
+def stale_sync_label(device, now=None) -> str:
+    """نص «منذ كذا» إن انقطعت مزامنة جهاز فعّال عن الحد؛ وإلا نص فارغ."""
+    if not device.is_active or not device.last_sync_at:
+        return ''
+    age = (now or timezone.now()) - device.last_sync_at
+    if age <= STALE_SYNC_AFTER:
+        return ''
+    days = age.days
+    if days >= 1:
+        return f'منذ {days} يوم'
+    return f'منذ {int(age.total_seconds() // 3600)} ساعة'
 
 
 def _link_back(request) -> str:
@@ -240,7 +259,9 @@ def _biometric_dashboard(request, *, link_only):
             ).values_list('device_id', flat=True),
         )
 
+    now = timezone.now()
     for device in devices:
+        device.stale_label = stale_sync_label(device, now)
         device.last_ingest_log = last_ingest_by_device.get(device.pk)
         device.pull_pending = device.pk in pending_pull_device_ids
 

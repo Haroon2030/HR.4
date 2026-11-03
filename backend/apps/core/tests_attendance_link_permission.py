@@ -75,3 +75,25 @@ class LinkScreenSeparateFromDevicesTests(TestCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse('web:biometric_link')).status_code, 302)
         self.assertEqual(self.client.get(reverse('web:biometric_devices')).status_code, 200)
+
+
+class DeviceStaleSyncLabelTests(TestCase):
+    def test_label_only_when_active_device_is_overdue(self):
+        from datetime import timedelta
+        from types import SimpleNamespace
+
+        from django.utils import timezone
+
+        from apps.core.web_views.biometric_devices import stale_sync_label
+
+        now = timezone.now()
+        fresh = SimpleNamespace(is_active=True, last_sync_at=now - timedelta(minutes=10))
+        old = SimpleNamespace(is_active=True, last_sync_at=now - timedelta(hours=5))
+        week = SimpleNamespace(is_active=True, last_sync_at=now - timedelta(days=7))
+        off = SimpleNamespace(is_active=False, last_sync_at=now - timedelta(days=7))
+        never = SimpleNamespace(is_active=True, last_sync_at=None)
+        self.assertEqual(stale_sync_label(fresh, now), '')
+        self.assertEqual(stale_sync_label(old, now), 'منذ 5 ساعة')
+        self.assertEqual(stale_sync_label(week, now), 'منذ 7 يوم')
+        self.assertEqual(stale_sync_label(off, now), '')
+        self.assertEqual(stale_sync_label(never, now), '')

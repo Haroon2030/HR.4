@@ -80,7 +80,9 @@
                             <span class="zk-dev-sub">{% if d.branch %}{{ d.branch.name }} · {% endif %}<bdi dir="ltr">{{ d.address_label }}</bdi></span>
                         </td>
                         <td>
-                            {% if d.connection_status == 'online' %}
+                            {% if d.stale_label %}
+                            <span class="inline-flex items-center gap-1 text-amber-700" title="لم يصل رفع من وكيل الفرع {{ d.stale_label }} — تأكد أن run_agent.bat يعمل على حاسوب الفرع"><span class="w-2 h-2 rounded-full bg-amber-500"></span>متوقف {{ d.stale_label }}</span>
+                            {% elif d.connection_status == 'online' %}
                             <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>متصل</span>
                             {% elif d.connection_status == 'error' %}
                             <span class="inline-flex items-center gap-1 text-red-700" title="{{ d.last_error }}"><span class="w-2 h-2 rounded-full bg-red-500"></span>خطأ في الاتصال</span>
