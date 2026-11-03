@@ -52,6 +52,7 @@ class CoreConfig(AppConfig):
         register_module('cash_shortages', name='عجز الكاشير', icon='banknote', order=13)
         register_permission('cash_shortages.view')
         register_permission('cash_shortages.add')
+        register_permission('employees.quick_add')
         register_employee_tab_permissions()
         register_hr_form_permissions()
         import apps.core.signals  # noqa: F401

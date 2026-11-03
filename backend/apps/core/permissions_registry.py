@@ -67,10 +67,13 @@ OPERATION_NAMES = {
     'edit_ledger': 'تعديل سجل الحركة',
     'delete_ledger': 'حذف سجل الحركة',
     'edit_salary': 'تعديل الراتب',
+    'view_salary': 'عرض الراتب',
     'request_salary_adjust': 'تقديم طلب تعديل راتب',
+    'link_employee': 'ربط موظف بجهاز البصمة',
     'export': 'تصدير',
     'import': 'استيراد',
     'edit_profile': 'زر تعديل / إكمال بيانات الموظف',
+    'quick_add': 'زر الإضافة السريعة في ملف الموظف',
     'process': 'معالجة',
     'manage_roles': 'إدارة الأدوار',
     'view_reports': 'عرض التقارير',
@@ -96,6 +99,8 @@ OPERATION_SHORT_LABELS = {
     'workers_add': 'إضافة عامل',
     'workers_edit': 'تعديل عامل',
     'workers_delete': 'حذف عامل',
+    'quick_add': 'إضافة سريعة',
+    'link_employee': 'ربط بصمة',
 }
 
 # الـ registry الفعلي: {module_code: {'name', 'icon', 'order', 'operations': set()}}

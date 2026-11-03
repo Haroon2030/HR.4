@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from apps.core.permissions_registry import register_module, register_permission
 
+ATTENDANCE_LINK_EMPLOYEE = 'attendance.link_employee'  # ربط موظف بجهاز البصمة (أخصائي ومدير الموارد)
 ATTENDANCE_SCREEN_DEVICES_VIEW = 'attendance_screen_devices.view'
 ATTENDANCE_SCREEN_REPORT_VIEW = 'attendance_screen_report.view'
 ATTENDANCE_SCREEN_LATE_ALERTS_VIEW = 'attendance_screen_late_alerts.view'
@@ -50,6 +51,7 @@ _SCREEN_MODULES = (
 
 def register_attendance_sub_permissions() -> None:
     """تسجيل وحدات الشاشات الفرعية في permissions_registry."""
+    register_permission(ATTENDANCE_LINK_EMPLOYEE)
     for screen in _SCREEN_MODULES:
         register_module(
             screen['code'],

@@ -31,7 +31,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            {% if employee.status == 'active' or employee.status == 'leave' %}{% if user|has_permission:'employees.edit' %}
+            {% if employee.status == 'active' or employee.status == 'leave' %}{% if user|has_permission:'employees.quick_add' %}
             <!-- زر إضافة سريعة -->
             <div class="hr-dropdown" @click.outside="quickOpen = false">
                 <button type="button" @click="quickOpen = !quickOpen"

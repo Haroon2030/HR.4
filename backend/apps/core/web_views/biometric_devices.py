@@ -34,7 +34,7 @@ from apps.attendance.services.zk_client import (
 )
 from apps.attendance.validators import cloud_pull_blocked_message
 from apps.core.decorators import permission_required
-from apps.attendance.sub_permissions import ATTENDANCE_SCREEN_DEVICES_VIEW
+from apps.attendance.sub_permissions import ATTENDANCE_LINK_EMPLOYEE, ATTENDANCE_SCREEN_DEVICES_VIEW
 from apps.core.models import Branch
 from apps.core.filter_utils import parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids, filter_employees_queryset_for_user
@@ -496,7 +496,7 @@ def biometric_device_sync_users(request, device_id):
     return redirect('web:biometric_devices')
 
 
-@permission_required('attendance.manage')
+@permission_required(ATTENDANCE_LINK_EMPLOYEE)
 @require_POST
 def biometric_enrollment_save(request):
     employee_id = request.POST.get('employee_id')
@@ -707,7 +707,7 @@ def biometric_enrollments_export(request):
     )
 
 
-@permission_required('attendance.manage')
+@permission_required(ATTENDANCE_LINK_EMPLOYEE)
 @require_POST
 def biometric_enrollments_import(request):
     """استيراد روابط البصمة من Excel (نفس أعمدة التصدير)."""

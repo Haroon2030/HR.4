@@ -185,7 +185,7 @@
                         <th class="text-right px-3 py-2 font-medium">الاسم على الجهاز</th>
                         <th class="text-right px-3 py-2 font-medium">البطاقة</th>
                         <th class="text-right px-3 py-2 font-medium">موظف HR</th>
-                        {% if user|has_permission:'attendance.manage' %}
+                        {% if user|has_permission:'attendance.link_employee' %}
                         <th class="text-right px-3 py-2 font-medium"></th>
                         {% endif %}
                     </tr>
@@ -208,7 +208,7 @@
                             <span class="text-amber-600">غير مربوط</span>
                             {% endif %}
                         </td>
-                        {% if user|has_permission:'attendance.manage' %}
+                        {% if user|has_permission:'attendance.link_employee' %}
                         <td class="px-3 py-2">
                             <button type="button"
                                 @click="openEnrollForm({{ du.device_id }}, {{ du.device_user_id }}, '{{ du.device.name|escapejs }}', '{{ du.name|default:""|escapejs }}')"
@@ -218,7 +218,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{% if user|has_permission:'attendance.manage' %}7{% else %}6{% endif %}" class="px-4 py-10 text-center text-slate-500">
+                        <td colspan="{% if user|has_permission:'attendance.link_employee' %}7{% else %}6{% endif %}" class="px-4 py-10 text-center text-slate-500">
                             {% if device_users_has_filters %}
                             لا نتائج للبحث — غيّر الكلمات أو امسح الفلتر.
                             {% else %}
@@ -257,8 +257,10 @@
     <div x-show="toast" x-cloak x-transition class="hr-toast fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-md flex items-center text-sm" :class="toastOk ? 'hr-toast--success' : 'hr-toast--error'" x-text="toastMsg"></div>
 
     {% include "pages/attendance/_device_modal.html" %}
-    {% if user|has_permission:'attendance.manage' %}
+    {% if user|has_permission:'attendance.link_employee' %}
     {% include "pages/attendance/_enrollment_modal.html" %}
+    {% endif %}
+    {% if user|has_permission:'attendance.manage' %}
     {% include "pages/attendance/_agent_key_modal.html" %}
     {% endif %}
 </div>
