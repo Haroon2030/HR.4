@@ -1,47 +1,106 @@
-{# نافذة ربط موظف ↔ جهاز — نفس أبعاد نافذة الجهاز #}
+{# نافذة ربط موظف ↔ رقم بصمة — مستقلة بأنماطها (لا تعتمد على نافذة الجهاز) #}
+<style>
+    .zk-enroll .zk-enroll-panel {
+        width: min(26rem, calc(100vw - 1.5rem));
+        direction: rtl;
+        text-align: right;
+        border-radius: 1.25rem;
+        overflow: visible;
+    }
+    .zk-enroll-hd {
+        display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+        padding: 1rem 1.25rem .75rem;
+    }
+    .zk-enroll-hd h3 { margin: 0; font-size: 1.0625rem; font-weight: 700; color: #0f172a; letter-spacing: -.01em; }
+    .zk-enroll-close {
+        width: 2rem; height: 2rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center;
+        color: #64748b; background: rgba(100, 116, 139, .12); border: 0; cursor: pointer; transition: background .12s ease;
+    }
+    .zk-enroll-close:hover { background: rgba(100, 116, 139, .22); }
+    .zk-enroll-body { padding: 0 1.25rem 1rem; display: flex; flex-direction: column; gap: .875rem; }
+    .zk-enroll-ctx {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem;
+        padding: .625rem .75rem; border-radius: .75rem;
+        background: rgba(79, 70, 229, .08); color: #3730a3; font-size: .8125rem; line-height: 1.5;
+    }
+    .zk-enroll-ctx strong { font-weight: 700; }
+    .zk-enroll-field > label {
+        display: block; margin-bottom: .3rem; font-size: .75rem; font-weight: 600; color: #475569;
+    }
+    .zk-enroll-field > label small { font-weight: 400; color: #94a3b8; margin-inline-start: .25rem; }
+    .zk-enroll-field select,
+    .zk-enroll-field input[type="number"] {
+        display: block; width: 100%; box-sizing: border-box; min-height: 2.5rem;
+        padding: .45rem .75rem; font-size: .875rem; border-radius: .625rem;
+    }
+    .zk-enroll-field select { direction: rtl; text-align: right; }
+    .zk-enroll-field input[type="number"] { direction: ltr; text-align: left; font-variant-numeric: tabular-nums; }
+    .zk-enroll-field .hint { margin: .3rem 0 0; font-size: .6875rem; color: #94a3b8; }
+    .zk-enroll .employee-search-picker { width: 100%; }
+    .zk-enroll .employee-search-picker > label { font-size: .75rem; font-weight: 600; color: #475569; }
+    .zk-enroll .employee-search-picker > label span { font-size: .6875rem; }
+    .zk-enroll .employee-search-picker input[type="search"],
+    .zk-enroll .employee-search-picker input[type="text"] { width: 100%; max-width: none; font-size: .875rem; }
+    .zk-enroll .employee-search-picker .absolute.z-30,
+    .zk-enroll .hr-employee-smart-search__results { z-index: 60; }
+    .zk-enroll .hr-employee-smart-search__hint,
+    .zk-enroll .zk-enroll-field .hint { font-weight: 400; font-size: .6875rem; color: #94a3b8; }
+    .zk-enroll .employee-search-picker > label span { font-weight: 400; color: #94a3b8; }
+    .zk-enroll-recent {
+        padding-top: .75rem; border-top: 1px solid rgba(100, 116, 139, .18);
+    }
+    .zk-enroll-recent > p { margin: 0 0 .375rem; font-size: .6875rem; font-weight: 600; color: #94a3b8; }
+    .zk-enroll-recent ul { margin: 0; padding: 0; list-style: none; max-height: 7rem; overflow-y: auto; }
+    .zk-enroll-recent li {
+        display: flex; align-items: baseline; justify-content: space-between; gap: .75rem;
+        padding: .25rem 0; font-size: .75rem; color: #475569;
+    }
+    .zk-enroll-recent li b { font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .zk-enroll-recent li span { color: #94a3b8; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .zk-enroll-ft {
+        display: flex; gap: .5rem; justify-content: flex-start; flex-direction: row;
+        padding: .75rem 1.25rem 1rem; border-top: 1px solid rgba(100, 116, 139, .18);
+    }
+    .zk-enroll-ft .hr-btn { min-width: 6.5rem; justify-content: center; }
+</style>
 <div
     x-show="enrollModal"
     x-cloak
     x-transition.opacity.duration.150ms
-    class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 overflow-y-auto overscroll-contain zk-enroll-modal"
+    class="hr-glass-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 overflow-y-auto overscroll-contain zk-enroll"
     @keydown.escape.window="enrollModal = false"
     role="dialog"
     aria-modal="true"
     aria-labelledby="enroll-modal-title"
 >
-    <div
-        @click.outside="enrollModal = false"
-        class="zk-modal-panel hr-glass-modal flex flex-col shrink-0 max-h-[calc(100vh-1.5rem)]"
-    >
-        <div class="flex items-center justify-between gap-1 px-2 py-1.5 border-b border-slate-200 bg-slate-50 shrink-0">
-            <div class="leading-tight min-w-0">
-                <h3 id="enroll-modal-title" class="text-[11px] font-bold text-slate-900">ربط موظف ↔ جهاز</h3>
-            </div>
-            <button type="button" @click="enrollModal = false"
-                class="shrink-0 p-0.5 rounded text-slate-400 hover:bg-slate-200" aria-label="إغلاق">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+    <div @click.outside="enrollModal = false" class="zk-enroll-panel hr-glass-modal zk-modal-panel flex flex-col shrink-0">
+        <div class="zk-enroll-hd">
+            <h3 id="enroll-modal-title">ربط موظف برقم بصمة</h3>
+            <button type="button" class="zk-enroll-close" @click="enrollModal = false" aria-label="إغلاق">
+                <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
 
-        <form method="post" action="{% url 'web:biometric_enrollment_save' %}" class="flex flex-col min-h-0 overflow-hidden"
+        <form method="post" action="{% url 'web:biometric_enrollment_save' %}"
               @submit="if (!$el.querySelector('[name=employee_id]').value) { $event.preventDefault(); alert('اختر موظفاً من القائمة أولاً'); }">
             {% csrf_token %}
             {% if link_only %}<input type="hidden" name="next" value="/setup/biometric-link/">{% endif %}
 
-            <div class="zk-modal-scroll py-2 zk-modal-body">
-                <div x-show="enrollForm.device_user_id" class="zk-modal-row mb-2 rounded border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-[10px] text-indigo-900 text-right">
-                    ربط رقم <strong class="font-mono" dir="ltr" x-text="enrollForm.device_user_id"></strong>
+            <div class="zk-enroll-body">
+                <div class="zk-enroll-ctx" x-show="enrollForm.device_user_id" x-cloak>
+                    <span>رقم</span>
+                    <strong dir="ltr" x-text="enrollForm.device_user_id"></strong>
                     <span x-show="enrollForm.user_name" x-text="'(' + enrollForm.user_name + ')'"></span>
-                    على «<span x-text="enrollForm.device_name"></span>»
+                    <span>على «<span x-text="enrollForm.device_name"></span>»</span>
                 </div>
 
-                <div class="zk-modal-row" :key="'ep-' + enrollFormKey">
-                    {% include "components/employee_search_picker.html" with label="الموظف من قائمة HR" employee_search_url=employee_search_url %}
+                <div :key="'ep-' + enrollFormKey">
+                    {% include "components/employee_search_picker.html" with label="الموظف" employee_search_url=employee_search_url %}
                 </div>
 
-                <div class="zk-modal-row">
-                    <label class="zk-modal-label">الجهاز</label>
-                    <select name="device_id" required class="zk-modal-field zk-field-rtl" x-model="enrollForm.device_id">
+                <div class="zk-enroll-field">
+                    <label for="enroll-device">الجهاز</label>
+                    <select id="enroll-device" name="device_id" required x-model="enrollForm.device_id">
                         {% for d in devices %}
                         <option value="{{ d.pk }}" {% if not d.branch_id %}disabled{% endif %}>
                             {{ d.name }}{% if d.branch %} — {{ d.branch.name }}{% else %} (حدّد الفرع أولاً){% endif %}
@@ -50,39 +109,32 @@
                     </select>
                 </div>
 
-                <div class="zk-modal-row" style="margin-bottom:0">
-                    <label class="zk-modal-label">رقم المستخدم (User ID)</label>
-                    <input type="number" name="device_user_id" min="1" required
-                        class="zk-modal-field zk-field-ltr font-mono" dir="ltr"
-                        placeholder="1" x-model="enrollForm.device_user_id">
-                    <p class="text-[9px] text-slate-400 mt-0.5 text-right w-[300px]">نفس الرقم في «مستخدمو الجهاز»</p>
+                <div class="zk-enroll-field">
+                    <label for="enroll-user-id">رقم المستخدم على الجهاز</label>
+                    <input id="enroll-user-id" type="number" name="device_user_id" min="1" required
+                           placeholder="1" x-model="enrollForm.device_user_id">
+                    <p class="hint">نفس الرقم الظاهر في «مستخدمو الأجهزة».</p>
                 </div>
 
                 {% if enrollments %}
-                <div class="zk-modal-row mt-2 pt-2 border-t border-slate-100 max-h-24 overflow-y-auto" style="margin-bottom:0">
-                    <p class="text-[9px] text-slate-500 mb-1">آخر الربط</p>
-                    <ul class="text-[9px] space-y-0.5 text-slate-600">
+                <div class="zk-enroll-recent">
+                    <p>آخر الربط</p>
+                    <ul>
                         {% for en in enrollments|slice:":5" %}
-                        <li>{{ en.employee.name }} ← {{ en.device_user_id }}{% if en.device_user_name %} ({{ en.device_user_name }}){% endif %} — {{ en.device.name }}</li>
+                        <li>
+                            <b>{{ en.employee.name }}</b>
+                            <span>{{ en.device_user_id }} · {{ en.device.name }}</span>
+                        </li>
                         {% endfor %}
                     </ul>
                 </div>
                 {% endif %}
             </div>
 
-            <div class="shrink-0 py-2 border-t border-slate-200 bg-slate-50">
-                {% include "components/modal_actions.html" with submit_label="حفظ الربط" cancel_click="enrollModal = false" %}
+            <div class="zk-enroll-ft">
+                {% include "components/hr_btn.html" with label="حفظ الربط" type="submit" variant="primary" %}
+                {% include "components/hr_btn.html" with label="إلغاء" type="button" variant="outline" x_click="enrollModal = false" %}
             </div>
         </form>
     </div>
 </div>
-
-<style>
-    .zk-enroll-modal .employee-search-picker { width: 300px; }
-    .zk-enroll-modal .employee-search-picker label { font-size: 10px; }
-    .zk-enroll-modal .employee-search-picker input[type="text"] {
-        width: 300px; max-width: 300px; box-sizing: border-box;
-        font-size: 0.75rem; padding: 0.35rem 2rem 0.35rem 0.45rem;
-    }
-    .zk-enroll-modal .employee-search-picker .absolute.z-30 { z-index: 60; }
-</style>
