@@ -18,6 +18,8 @@ from django.db.backends.mysql import base as mysql_base
 from django.db.backends.mysql.operations import DatabaseOperations as MySQLDatabaseOperations
 from django.db.backends.utils import split_tzname_delta
 
+from config.db_backends.retry import connect_with_retry
+
 
 def _format_offset(delta: timedelta) -> str:
     total = int(delta.total_seconds())
@@ -53,3 +55,10 @@ class DatabaseOperations(MySQLDatabaseOperations):
 
 class DatabaseWrapper(mysql_base.DatabaseWrapper):
     ops_class = DatabaseOperations
+
+    def get_new_connection(self, conn_params):
+        """فتح اتصال مع إعادة محاولة قصيرة عند «Too many connections» فقط."""
+        return connect_with_retry(
+            lambda: super(DatabaseWrapper, self).get_new_connection(conn_params),
+            mysql_base.Database.OperationalError,
+        )

@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 import logging
 
+from django.db.utils import OperationalError
+
 logger = logging.getLogger(__name__)
 
 _GENERIC_500_MESSAGE = 'حدث خطأ داخلي في الخادم. تم تسجيل الخطأ للمراجعة.'
@@ -48,6 +50,19 @@ def custom_api_exception_handler(exc, context):
             error_data["errors"] = errors
         
         response.data = error_data
+    elif isinstance(exc, OperationalError) and exc.args and exc.args[0] == 1040:
+        # قاعدة البيانات المشتركة امتلأت اتصالاتها لحظياً: 503 مؤقت لا 500 — العميل/الوكيل يعيد المحاولة
+        request = context.get('request')
+        logger.warning('MySQL too many connections (503) في %s', getattr(request, 'path', '?'))
+        response = Response(
+            {
+                "success": False,
+                "status_code": status.HTTP_503_SERVICE_UNAVAILABLE,
+                "message": 'الخدمة مشغولة مؤقتاً، أعد المحاولة بعد قليل.',
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        response['Retry-After'] = '30'
     else:
         # خطأ غير متوقع (500) — لا تُعرض تفاصيل تقنية للمستخدم في الإنتاج
         request = context.get('request')
