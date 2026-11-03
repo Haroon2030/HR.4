@@ -26,6 +26,7 @@
         <form method="post" action="{% url 'web:biometric_enrollment_save' %}" class="flex flex-col min-h-0 overflow-hidden"
               @submit="if (!$el.querySelector('[name=employee_id]').value) { $event.preventDefault(); alert('اختر موظفاً من القائمة أولاً'); }">
             {% csrf_token %}
+            {% if link_only %}<input type="hidden" name="next" value="/setup/biometric-link/">{% endif %}
 
             <div class="zk-modal-scroll py-2 zk-modal-body">
                 <div x-show="enrollForm.device_user_id" class="zk-modal-row mb-2 rounded border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-[10px] text-indigo-900 text-right">

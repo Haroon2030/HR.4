@@ -41,6 +41,7 @@ PERMISSION_TREE_CONFIG: list[dict] = [
                     'attendance_screen_report',
                     'attendance_screen_late_alerts',
                     'attendance_screen_records',
+                    'attendance_screen_link',
                 ],
             },
         ],

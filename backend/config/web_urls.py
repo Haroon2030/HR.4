@@ -283,6 +283,7 @@ urlpatterns = [
     # 12. أجهزة البصمة والحضور
     # ══════════════════════════════════════════════════════════════
     path('setup/biometric-devices/', web_views.biometric_devices_dashboard, name='biometric_devices'),
+    path('setup/biometric-link/', web_views.biometric_link_dashboard, name='biometric_link'),
     path('attendance/devices/', RedirectView.as_view(pattern_name='web:biometric_devices', query_string=True)),
     path('attendance/devices/save/', web_views.biometric_device_save, name='biometric_device_save'),
     path('attendance/devices/<int:device_id>/delete/', web_views.biometric_device_delete, name='biometric_device_delete'),

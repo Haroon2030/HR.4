@@ -84,6 +84,7 @@ class Command(BaseCommand):
             {'code': 'attendance_screen_report.view', 'name': 'الحضور — تقرير البصمة', 'module': 'attendance_screen_report'},
             {'code': 'attendance_screen_late_alerts.view', 'name': 'الحضور — إنذار تأخير البصمة', 'module': 'attendance_screen_late_alerts'},
             {'code': 'attendance_screen_records.view', 'name': 'الحضور — سجلات الحضور', 'module': 'attendance_screen_records'},
+            {'code': 'attendance_screen_link.view', 'name': 'الحضور — ربط البصمة', 'module': 'attendance_screen_link'},
             
             # ═══════════════════════════════════════════════════════════
             # الرواتب (Payroll)

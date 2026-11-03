@@ -33,8 +33,12 @@ from apps.attendance.services.zk_client import (
     sync_device_users,
 )
 from apps.attendance.validators import cloud_pull_blocked_message
-from apps.core.decorators import permission_required
-from apps.attendance.sub_permissions import ATTENDANCE_LINK_EMPLOYEE, ATTENDANCE_SCREEN_DEVICES_VIEW
+from apps.core.decorators import any_permission_required, permission_required
+from apps.attendance.sub_permissions import (
+    ATTENDANCE_LINK_EMPLOYEE,
+    ATTENDANCE_SCREEN_DEVICES_VIEW,
+    ATTENDANCE_SCREEN_LINK_VIEW,
+)
 from apps.core.models import Branch
 from apps.core.filter_utils import parse_multi_filter_ids
 from apps.core.web_views._helpers import _user_accessible_branch_ids, filter_employees_queryset_for_user
@@ -92,8 +96,26 @@ def _device_users_querystring(filters: dict, *, extra: dict | None = None) -> st
     return urlencode(pairs, doseq=True)
 
 
+LINK_SCREEN_PATH = '/setup/biometric-link/'
+
+
+def _link_back(request) -> str:
+    """وجهة العودة بعد الحفظ/الاستيراد: شاشة «ربط البصمة» إن بدأ منها المستخدم."""
+    return 'web:biometric_link' if request.POST.get('next') == LINK_SCREEN_PATH else 'web:biometric_devices'
+
+
 @permission_required(ATTENDANCE_SCREEN_DEVICES_VIEW)
 def biometric_devices_dashboard(request):
+    return _biometric_dashboard(request, link_only=False)
+
+
+@permission_required(ATTENDANCE_SCREEN_LINK_VIEW)
+def biometric_link_dashboard(request):
+    """شاشة «ربط البصمة»: مستخدمو الأجهزة وربطهم بالموظفين فقط — بدون إدارة الأجهزة."""
+    return _biometric_dashboard(request, link_only=True)
+
+
+def _biometric_dashboard(request, *, link_only):
     from django.http import Http404
 
     branch_filter_ids = _parse_branch_filter(request)
@@ -241,6 +263,7 @@ def biometric_devices_dashboard(request):
         'link_device_id': link_device_id,
         'link_user_id': link_user_id,
         'link_device_user': link_device_user,
+        'link_only': link_only,
     })
 
 
@@ -505,7 +528,7 @@ def biometric_enrollment_save(request):
 
     if not all([employee_id, device_id, device_user_id]):
         messages.error(request, 'اختر الموظف والجهاز ورقم المستخدم على الجهاز.')
-        return redirect('web:biometric_devices')
+        return redirect(_link_back(request))
 
     device_user_name = ''
     try:
@@ -524,18 +547,18 @@ def biometric_enrollment_save(request):
     ).first()
     if not employee:
         messages.error(request, 'الموظف غير موجود أو ليس لديك صلاحية عليه.')
-        return redirect('web:biometric_devices')
+        return redirect(_link_back(request))
 
     device = get_device_for_user(request.user, int(device_id))
     if not device.branch_id:
         messages.error(request, 'يجب تعيين فرع للجهاز قبل الربط.')
-        return redirect('web:biometric_devices')
+        return redirect(_link_back(request))
     if employee.branch_id and device.branch_id and employee.branch_id != device.branch_id:
         messages.error(
             request,
             f'الموظف تابع لفرع «{employee.branch.name}» والجهاز لفرع «{device.branch.name}» — يجب أن يتطابقا.',
         )
-        return redirect('web:biometric_devices')
+        return redirect(_link_back(request))
 
     if not employee.branch_id and device.branch_id:
         employee.branch_id = device.branch_id
@@ -561,7 +584,7 @@ def biometric_enrollment_save(request):
 
             prev_name = escape(existing_user_link.employee.name)
             new_name = escape(employee.name)
-            cancel_url = reverse('web:biometric_devices')
+            cancel_url = reverse(_link_back(request))
             save_url = reverse('web:biometric_enrollment_save')
             csrf = escape(request.POST.get('csrfmiddlewaretoken', ''))
             return HttpResponse(
@@ -585,6 +608,7 @@ def biometric_enrollment_save(request):
     <input type="hidden" name="device_id" value="{escape(str(device_id))}">
     <input type="hidden" name="device_user_id" value="{escape(str(device_user_id))}">
     <input type="hidden" name="force_relink" value="1">
+    <input type="hidden" name="next" value="{escape(request.POST.get('next', ''))}">
     <div style="display:flex;gap:.75rem;justify-content:flex-end">
       <a href="{cancel_url}" style="padding:.5rem 1.25rem;border-radius:.5rem;border:1px solid #e2e8f0;color:#475569;font-size:.875rem;text-decoration:none">إلغاء</a>
       <button type="submit" style="padding:.5rem 1.25rem;border-radius:.5rem;background:#dc2626;color:#fff;border:none;font-size:.875rem;cursor:pointer">نعم، أعد الربط</button>
@@ -651,7 +675,7 @@ def biometric_enrollment_save(request):
             )
     except Exception as exc:
         messages.error(request, f'فشل حفظ الربط: {exc}')
-        return redirect('web:biometric_devices')
+        return redirect(_link_back(request))
 
     if previous_employee and previous_employee.pk == int(employee_id):
         audit_action = BiometricEnrollmentAuditLog.Action.UPDATE
@@ -683,13 +707,13 @@ def biometric_enrollment_save(request):
             f'تم ربط «{employee.name}» برقم {device_user_id} على الجهاز.',
         )
     from django.urls import reverse
-    return redirect('web:biometric_devices')
+    return redirect(_link_back(request))
 
 
 
 # ═══ استيراد / تصدير ربط البصمة بالموظفين (Excel) ═══
 
-@permission_required(ATTENDANCE_SCREEN_DEVICES_VIEW)
+@any_permission_required(ATTENDANCE_SCREEN_DEVICES_VIEW, ATTENDANCE_SCREEN_LINK_VIEW)
 def biometric_enrollments_export(request):
     """تصدير روابط البصمة النشطة (جهاز + رقم المستخدم ↔ الموظف) إلى Excel."""
     from django.utils import timezone
@@ -718,7 +742,7 @@ def biometric_enrollments_import(request):
     from apps.employees.services.non_sponsored_import import ImportValidationError
 
     back = redirect(request.POST.get('next') if request.POST.get('next') in (
-        '/attendance/daily/', '/setup/biometric-devices/',
+        '/attendance/daily/', '/setup/biometric-devices/', LINK_SCREEN_PATH,
     ) else 'web:biometric_devices')
 
     uploaded = request.FILES.get('excel_file')

@@ -30,6 +30,9 @@
 {% if user|has_permission:'attendance_screen_records.view' %}
 {% include "components/nav_item.html" with url="web:attendance_records" path_prefix="/attendance/records" icon="list" label="سجلات البصمة" force_show_label=always_show %}
 {% endif %}
+{% if user|has_permission:'attendance_screen_link.view' %}
+{% include "components/nav_item.html" with url="web:biometric_link" path_prefix="/setup/biometric-link" icon="link" label="ربط البصمة" force_show_label=always_show %}
+{% endif %}
 </div>
 </div>
 {% endif %}
