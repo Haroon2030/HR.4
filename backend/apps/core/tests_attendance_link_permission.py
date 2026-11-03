@@ -30,9 +30,12 @@ class AttendanceLinkPermissionTests(TestCase):
         importlib.import_module(
             'apps.core.migrations.0062_attendance_link_employee_permission'
         ).forward(django_apps, None)
+        importlib.import_module(
+            'apps.core.migrations.0064_link_employee_to_devices_screen'
+        ).forward(django_apps, None)
         for user, expected in ((officer, True), (manager, True), (legacy, True), (other, False)):
             user = User.objects.get(pk=user.pk)
-            self.assertEqual(has_permission(user, 'attendance.link_employee'), expected, user.username)
+            self.assertEqual(has_permission(user, 'attendance_screen_devices.link_employee'), expected, user.username)
 
     def test_save_endpoint_requires_link_permission(self):
         officer = self._user('lk_officer2', Role.RoleType.SPECIALIST)

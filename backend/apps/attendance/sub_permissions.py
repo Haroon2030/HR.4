@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from apps.core.permissions_registry import register_module, register_permission
 
-ATTENDANCE_LINK_EMPLOYEE = 'attendance.link_employee'  # ربط موظف بجهاز البصمة (أخصائي ومدير الموارد)
+ATTENDANCE_LINK_EMPLOYEE = 'attendance_screen_devices.link_employee'  # ربط موظف بجهاز البصمة — ضمن شاشة أجهزة البصمة
 ATTENDANCE_SCREEN_DEVICES_VIEW = 'attendance_screen_devices.view'
 ATTENDANCE_SCREEN_REPORT_VIEW = 'attendance_screen_report.view'
 ATTENDANCE_SCREEN_LATE_ALERTS_VIEW = 'attendance_screen_late_alerts.view'

@@ -29,7 +29,7 @@ class SalaryAdjustRequestPermissionTests(TestCase):
         profile.branch = cls.branch
         profile.save(update_fields=['role', 'branch'])
         cls.role = role
-        for code in ('employees.view', 'employees.edit'):
+        for code in ('employees.view', 'employees.edit', 'employees.quick_add'):
             role.permissions.add(Permission.objects.get(code=code))
 
     def _user(self):

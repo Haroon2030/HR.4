@@ -33,6 +33,10 @@ class SettlementWorkflowTests(TestCase):
             payload={'end_date': date.today().isoformat(), 'end_reason': 'x'},
             requested_by=self.requester,
         )
+        # بدون كفالة أيضاً: يبدأ بتعميد مدير الفرع/الإدارة
+        self.assertEqual(action.status, PendingAction.Status.PENDING_BRANCH)
+        svc.branch_approve(action, self.gm)
+        action.refresh_from_db()
         self.assertEqual(action.status, PendingAction.Status.PENDING_GM)
         self.assertFalse(action.executed_at)
 
@@ -143,3 +147,37 @@ class BranchManagerByRoleRoutingTests(TestCase):
         self.assertEqual(decision.recipient, mgr)
         self.assertTrue(user_can_first_approve(mgr, action))
         self.assertIn(action, _inbox_for(mgr, _user_visible_actions(mgr)))
+
+
+class HrManagerSkipsBranchEndorsementTests(TestCase):
+    """تصفية بدون كفالة: مدير الموارد يتخطى تعميد مدير الفرع ويظهر معمَّداً."""
+
+    def _user(self, name, role_type):
+        role = Role.objects.create(name=f'R {name}', role_type=role_type, is_system_role=True)
+        user = User.objects.create_user(username=name, password='x')
+        profile = UserProfile.objects.get(user=user)
+        profile.role = role
+        profile.save(update_fields=['role', 'updated_at'])
+        return User.objects.select_related('profile__role').get(pk=user.pk)
+
+    def test_hr_manager_can_endorse_in_branch_stage_and_is_recorded(self):
+        from apps.core.web_views._helpers import _can_act_at_stage
+
+        hr_manager = self._user('hrm_skip', Role.RoleType.HR_MANAGER)
+        other = self._user('rnd_user', Role.RoleType.EMPLOYEE)
+        requester = User.objects.create_user(username='req_skip', password='x')
+        emp = Employee.objects.create(name='موظف', hire_date=date.today() - timedelta(days=400))
+        action = svc.submit_settlement_for_approval(
+            action_type='terminate', employee=emp,
+            payload={'end_date': date.today().isoformat()}, requested_by=requester,
+        )
+        self.assertEqual(action.status, PendingAction.Status.PENDING_BRANCH)
+        self.assertTrue(_can_act_at_stage(hr_manager, action, PendingAction.Stage.BRANCH))
+        self.assertFalse(_can_act_at_stage(other, action, PendingAction.Stage.BRANCH))
+
+        svc.branch_approve(action, hr_manager)
+        action.refresh_from_db()
+        self.assertEqual(action.status, PendingAction.Status.PENDING_GM)
+        self.assertEqual(action.branch_reviewed_by, hr_manager)
+        self.assertIsNotNone(action.branch_reviewed_at)
+        self.assertIn('تخطي', action.branch_notes)

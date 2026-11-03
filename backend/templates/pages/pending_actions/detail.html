@@ -155,9 +155,15 @@
 
                 {% if can_act and current_stage == 'branch' %}
                     <div class="flex flex-wrap items-center gap-2 mb-3">
+                        {% if skipping_branch %}
+                        {% with approve_label="تعميد (تخطي "|add:first_decision.stage_label|add:")" %}
+                        {% include "components/hr_btn.html" with label=approve_label type="button" variant="success" icon="check" x_click="panel='approve'" %}
+                        {% endwith %}
+                        {% else %}
                         {% with approve_label="موافقة كـ "|add:first_decision.stage_label %}
                         {% include "components/hr_btn.html" with label=approve_label type="button" variant="success" icon="check" x_click="panel='approve'" %}
                         {% endwith %}
+                        {% endif %}
                         {% include "components/hr_btn.html" with label="إرجاع للتعديل" type="button" variant="danger" icon="undo-2" x_click="panel='return'" %}
                     </div>
                     <form method="POST" action="{% url 'web:branch_approve_action' action.id %}" x-show="panel=='approve'" x-cloak class="space-y-2 mt-3">

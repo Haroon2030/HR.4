@@ -956,7 +956,8 @@ def submit_settlement_for_approval(*, action_type, employee, payload, requested_
     """تصفية موظف.
 
     على كفالة: رفع → تعميد → مدير الموارد → أخصائي (تنفيذ) → المحاسب → مدير الموارد (اعتماد نهائي).
-    بدون كفالة: رفع → مدير الموارد → أخصائي (تنفيذ) → مدير الموارد (اعتماد نهائي).
+    بدون كفالة: رفع → تعميد → مدير الموارد → أخصائي (تنفيذ) → مدير الموارد (اعتماد نهائي).
+    مدير الموارد يستطيع تخطي التعميد (يُسجَّل معمَّداً باسمه).
     """
     from apps.core.models import PendingAction
 
@@ -969,32 +970,9 @@ def submit_settlement_for_approval(*, action_type, employee, payload, requested_
         requested_by=requested_by,
         attachment=attachment,
     )
-    if employee.sponsorship_id:
-        # تصفية على كفالة: تعميد أولاً (مدير الإدارة/الفرع) ثم مدير الموارد
-        notify_branch_on_create(action)
-        return action
-    # بدون كفالة: لا مرحلة تعميد — مباشرة لمدير الموارد
-    action.status = PendingAction.Status.PENDING_GM
-    action.branch_reviewed_by = requested_by
-    action.branch_reviewed_at = timezone.now()
-    action.branch_notes = 'رفع مباشر لمدير الموارد'
-    action.save(update_fields=[
-        'status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes',
-    ])
-    notif = _notify()
-    notif.notify_general_managers(
-        action,
-        title=f'طلب تصفية بانتظار موافقتك — {action.get_action_type_display()}',
-        message=f'الموظف: {employee.name} • مقدّم الطلب: '
-                f'{requested_by.get_full_name() or requested_by.username}',
-        icon='user-cog', color='amber',
-    )
-    try:
-        from apps.core.services.whatsapp import workflow_notifier
-        workflow_notifier.notify_whatsapp_pending_gm(action)
-    except Exception:
-        import logging
-        logging.getLogger(__name__).exception('WhatsApp notify failed for settlement %s', action.pk)
+    # تعميد أولاً (مدير الإدارة/الفرع) ثم مدير الموارد — على كفالة وبدونها.
+    # إن كان مقدّم الطلب من الموارد/أخصائياً فقد تجاوز create_pending_action هذه المرحلة.
+    notify_branch_on_create(action)
     return action
 
 
@@ -1035,6 +1013,7 @@ def gm_final_approve(action, user, notes=''):
 def branch_approve(action, user, notes=''):
     """المرحلة الأولى (إدارة/فرع/محاسب) توافق → GM أو تنفيذ فوري لعجز الكاشير."""
     from apps.core.models import PendingAction
+    from apps.core.services.approval_routing import user_can_first_approve
     from apps.employees.services.cash_shortage_access import user_can_approve_cash_shortage
 
     if action.status != PendingAction.Status.PENDING_BRANCH:
@@ -1060,6 +1039,13 @@ def branch_approve(action, user, notes=''):
                 icon='check-circle', color='emerald',
             )
         return action
+
+    if (
+        action.action_type in SETTLEMENT_PENDING_ACTION_TYPES
+        and not user_can_first_approve(user, action)
+    ):
+        prefix = 'تعميد بتخطي مدير الفرع: اعتمده مدير الموارد مباشرة.'
+        notes = f'{prefix} {notes}'.strip() if notes else prefix
 
     action.status = PendingAction.Status.PENDING_GM
     action.branch_reviewed_by = user

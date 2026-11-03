@@ -164,6 +164,14 @@ def _can_act_at_stage(user, action, stage):
     if user.is_superuser:
         return True
 
+    if (
+        stage == PendingAction.Stage.BRANCH
+        and action.action_type in ('end_of_service', 'terminate')
+        and _is_general_manager(user)
+    ):
+        # مدير الموارد يتخطى تعميد مدير الفرع/الإدارة في التصفية (يُسجَّل معمَّداً باسمه)
+        return True
+
     if not stage_permission_required(user, stage):
         return False
 

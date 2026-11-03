@@ -166,6 +166,7 @@ class SettlementEditFlowTests(TestCase):
         profile.role = officer_role
         profile.save(update_fields=['role', 'updated_at'])
         officer = User.objects.select_related('profile__role').get(pk=officer.pk)
+        svc.branch_approve(self.action, self.admin)
         svc.gm_approve_and_assign(self.action, self.admin, officer)
         self.action.refresh_from_db()
         self.client = Client()

@@ -586,7 +586,15 @@ def pending_action_detail(request, action_id):
     elif settlement and not settlement['signed_url']:
         auto_panel = None  # التصفية تحتاج الملف الموقّع أولاً
 
+    from apps.core.services.approval_routing import user_can_first_approve
+    skipping_branch = bool(
+        can_act and current_stage == PendingAction.Stage.BRANCH
+        and action.action_type in SETTLEMENT_PENDING_ACTION_TYPES
+        and not user_can_first_approve(request.user, action)
+    )
+
     return render(request, 'pages/pending_actions/detail.html', {
+        'skipping_branch': skipping_branch,
         'action': action,
         'auto_panel': auto_panel,
         'settlement': settlement,
