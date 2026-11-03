@@ -181,3 +181,41 @@ class HrManagerSkipsBranchEndorsementTests(TestCase):
         self.assertEqual(action.branch_reviewed_by, hr_manager)
         self.assertIsNotNone(action.branch_reviewed_at)
         self.assertIn('تخطي', action.branch_notes)
+
+
+class OperationsVisibilityScopeTests(TestCase):
+    """أخصائي الموارد يرى ما أُسند إليه وما رفعه بنفسه؛ مقدّم الطلب يرى طلباته فقط."""
+
+    def _user(self, name, role_type):
+        role = Role.objects.create(name=f'V {name}', role_type=role_type, is_system_role=True)
+        user = User.objects.create_user(username=name, password='x')
+        profile = UserProfile.objects.get(user=user)
+        profile.role = role
+        profile.save(update_fields=['role', 'updated_at'])
+        return User.objects.select_related('profile__role').get(pk=user.pk)
+
+    def test_officer_sees_only_assigned_and_submitter_only_own(self):
+        from apps.core.web_views.pending_actions import _user_visible_actions
+
+        officer = self._user('vis_officer', Role.RoleType.HR_OFFICER)
+        submitter = self._user('vis_sub', Role.RoleType.EMPLOYEE)
+        other = User.objects.create_user(username='vis_other', password='x')
+        emp = Employee.objects.create(name='موظف', hire_date=date.today() - timedelta(days=400))
+        mine = PendingAction.objects.create(
+            action_type='leave', employee=emp, payload={}, requested_by=officer,
+        )
+        assigned = PendingAction.objects.create(
+            action_type='leave', employee=emp, payload={}, requested_by=other,
+            status=PendingAction.Status.PENDING_OFFICER, assigned_officer=officer,
+        )
+        unrelated = PendingAction.objects.create(
+            action_type='leave', employee=emp, payload={}, requested_by=other,
+        )
+        own_sub = PendingAction.objects.create(
+            action_type='leave', employee=emp, payload={}, requested_by=submitter,
+        )
+        seen = set(_user_visible_actions(officer).values_list('pk', flat=True))
+        self.assertEqual(seen, {assigned.pk, mine.pk})
+        seen = set(_user_visible_actions(submitter).values_list('pk', flat=True))
+        self.assertEqual(seen, {own_sub.pk})
+        self.assertNotIn(unrelated.pk, seen)

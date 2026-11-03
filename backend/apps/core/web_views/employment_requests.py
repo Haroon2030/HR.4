@@ -56,6 +56,9 @@ def _hire_visibility_q(user):
 
     if user.is_superuser or _is_general_manager(user):
         return None
+    if _is_hr_officer(user):
+        # أخصائي الموارد: ما أُسند إليه + ما رفعه بنفسه
+        return Q(assigned_officer=user) | Q(requested_by=user)
     cond = Q(requested_by=user)
     first_q = first_stage_pending_q(
         user,
@@ -64,8 +67,6 @@ def _hire_visibility_q(user):
     )
     if first_q.children:
         cond |= first_q
-    if _is_hr_officer(user):
-        cond |= Q(assigned_officer=user)
     return cond
 
 

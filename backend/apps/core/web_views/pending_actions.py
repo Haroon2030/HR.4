@@ -103,14 +103,16 @@ def _user_visible_actions(user):
             )
         return qs.filter(filters).distinct()
 
+    if _is_hr_officer(user):
+        # أخصائي الموارد: ما أُسند إليه + ما رفعه بنفسه
+        return qs.filter(Q(assigned_officer=user) | Q(requested_by=user))
+
     filters = Q(requested_by=user)
     managed_ids, managed_admin_ids = _managed_scope_for_user(user)
     if managed_ids:
         filters |= Q(branch_id__in=managed_ids)
     if managed_admin_ids:
         filters |= Q(administration_id__in=managed_admin_ids)
-    if _is_hr_officer(user):
-        filters |= Q(assigned_officer=user)
     return qs.filter(filters).distinct()
 
 

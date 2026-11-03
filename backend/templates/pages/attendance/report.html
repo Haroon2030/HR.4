@@ -165,7 +165,7 @@
                             <a href="{% url 'web:view_employee' row.employee_id %}" class="hr-report-link">{{ row.employee_name }}</a>
                             {% if row.employee_number != '—' %}<span class="hr-report-sub" dir="ltr">#{{ row.employee_number }}</span>{% endif %}
                             {% elif row.device_user_id %}
-                            <a href="{% url 'web:biometric_devices' %}?link_device={{ row.device_id }}&link_user={{ row.device_user_id }}" class="hr-report-link text-amber-800">ربط: {{ row.device_user_name }}</a>
+                            {% if user|has_permission:'attendance_screen_link.view' %}<a href="{% url 'web:biometric_link' %}?link_device={{ row.device_id }}&link_user={{ row.device_user_id }}" class="hr-report-link text-amber-800">ربط: {{ row.device_user_name }}</a>{% else %}<span class="text-amber-800 font-bold">{{ row.device_user_name }}</span>{% endif %}
                             {% else %}
                             <span class="text-amber-800 font-bold">{{ row.device_user_name }}</span>
                             {% endif %}
@@ -232,7 +232,7 @@
                             {% if p.employee_id %}
                             <a href="{% url 'web:view_employee' p.employee_id %}" class="hr-report-link">{{ p.employee.name }}</a>
                             {% else %}
-                            <a href="{% url 'web:biometric_devices' %}?link_device={{ p.device_id }}&link_user={{ p.device_user_id }}" class="hr-report-badge hr-report-badge-warn">ربط HR</a>
+                            {% if user|has_permission:'attendance_screen_link.view' %}<a href="{% url 'web:biometric_link' %}?link_device={{ p.device_id }}&link_user={{ p.device_user_id }}" class="hr-report-badge hr-report-badge-warn">ربط HR</a>{% else %}<span class="hr-report-badge hr-report-badge-warn">غير مربوط</span>{% endif %}
                             <span class="hr-report-sub" dir="ltr">User {{ p.device_user_id }}</span>
                             {% endif %}
                         </td>

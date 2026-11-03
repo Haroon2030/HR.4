@@ -108,7 +108,7 @@
                             <span class="font-semibold text-slate-900">{{ r.device_user_name|default:"مستخدم على الجهاز" }}</span>
                             <span class="dly-sub">
                                 {{ r.device_name }} ·
-                                <a href="{% url 'web:biometric_devices' %}?link_device={{ r.device_id }}&link_user={{ r.device_user_id }}" class="text-primary-700 hover:underline">ربط بموظف</a>
+                                {% if user|has_permission:'attendance_screen_link.view' %}<a href="{% url 'web:biometric_link' %}?link_device={{ r.device_id }}&link_user={{ r.device_user_id }}" class="text-primary-700 hover:underline">ربط بموظف</a>{% else %}<span class="text-amber-700">غير مربوط</span>{% endif %}
                             </span>
                             {% endif %}
                         </td>
