@@ -811,6 +811,9 @@ def _notify(*args, **kwargs):
 
 SETTLEMENT_PENDING_ACTION_TYPES = frozenset({'end_of_service', 'terminate'})
 
+# أنواع يستطيع مدير الموارد فيها تخطي تعميد مدير الفرع/الإدارة (يُسجَّل معمَّداً باسمه)
+GM_SKIP_BRANCH_TYPES = SETTLEMENT_PENDING_ACTION_TYPES | frozenset({'loan_request'})
+
 
 def _is_settlement_pending_action(action_type: str) -> bool:
     return action_type in SETTLEMENT_PENDING_ACTION_TYPES
@@ -875,7 +878,7 @@ def create_pending_action(*, action_type, employee, payload, requested_by, attac
 
 
 def skip_first_stage_for_submitter(action) -> bool:
-    """أخصائي إدخال البيانات ← مباشرة لتعميد مدير الموارد؛ الموارد البشرية ← يُعمَّد تلقائياً باسمه.
+    """منفّذ الموارد ← مباشرة لتعميد مدير الموارد؛ مدير الموارد ← يُعمَّد تلقائياً باسمه.
 
     لا يشمل عجز الكاشير (مساره محاسب الفرع وينفَّذ بعده). يُرجع True إن تجاوز المرحلة الأولى.
     """
@@ -896,7 +899,7 @@ def skip_first_stage_for_submitter(action) -> bool:
         action.branch_reviewed_at = timezone.now()
         action.branch_notes = 'تعميد تلقائي: الطلب مرفوع من الموارد البشرية.'
     else:
-        action.branch_notes = 'رفع مباشر لتعميد مدير الموارد: الطلب مرفوع من أخصائي.'
+        action.branch_notes = 'رفع مباشر لتعميد مدير الموارد: الطلب مرفوع من منفّذ الموارد.'
     action.save(update_fields=['status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'])
     requester = action.requested_by
     _notify().notify_general_managers(
@@ -1041,7 +1044,7 @@ def branch_approve(action, user, notes=''):
         return action
 
     if (
-        action.action_type in SETTLEMENT_PENDING_ACTION_TYPES
+        action.action_type in GM_SKIP_BRANCH_TYPES
         and not user_can_first_approve(user, action)
     ):
         prefix = 'تعميد بتخطي مدير الفرع: اعتمده مدير الموارد مباشرة.'

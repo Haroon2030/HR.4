@@ -159,6 +159,7 @@ def _can_act_at_stage(user, action, stage):
     يتطلب صلاحية operations.* المناسبة + نطاق الدور/الفرع.
     """
     from apps.core.models import PendingAction
+    from apps.core.services.pending_actions import GM_SKIP_BRANCH_TYPES
     from apps.core.services.workflow_access import stage_permission_required
 
     if user.is_superuser:
@@ -166,10 +167,10 @@ def _can_act_at_stage(user, action, stage):
 
     if (
         stage == PendingAction.Stage.BRANCH
-        and action.action_type in ('end_of_service', 'terminate')
+        and action.action_type in GM_SKIP_BRANCH_TYPES
         and _is_general_manager(user)
     ):
-        # مدير الموارد يتخطى تعميد مدير الفرع/الإدارة في التصفية (يُسجَّل معمَّداً باسمه)
+        # مدير الموارد يتخطى تعميد مدير الفرع/الإدارة في التصفية والسلف (يُسجَّل معمَّداً باسمه)
         return True
 
     if not stage_permission_required(user, stage):

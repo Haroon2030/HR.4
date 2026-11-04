@@ -589,9 +589,10 @@ def pending_action_detail(request, action_id):
         auto_panel = None  # التصفية تحتاج الملف الموقّع أولاً
 
     from apps.core.services.approval_routing import user_can_first_approve
+    from apps.core.services.pending_actions import GM_SKIP_BRANCH_TYPES
     skipping_branch = bool(
         can_act and current_stage == PendingAction.Stage.BRANCH
-        and action.action_type in SETTLEMENT_PENDING_ACTION_TYPES
+        and action.action_type in GM_SKIP_BRANCH_TYPES
         and not user_can_first_approve(request.user, action)
     )
 

@@ -135,9 +135,10 @@ def first_stage_tab_label(user) -> str:
 def submitter_shortcut_mode(user) -> str | None:
     """اختصار مرحلة التعميد الأولى حسب دور مقدّم الطلب:
 
-    - 'specialist': أخصائي إدخال البيانات → يذهب طلبه مباشرة لمدير الموارد.
-    - 'hr': مدير/أخصائي الموارد → يُعمَّد طلبه تلقائياً باسمه ثم يذهب لمدير الموارد.
-    - None: بقية الأدوار تمرّ بمسار التعميد الأول المعتاد.
+    - 'specialist': منفّذ/أخصائي الموارد البشرية → يذهب طلبه مباشرة لتعميد مدير الموارد.
+    - 'hr': مدير الموارد → يُعمَّد طلبه تلقائياً باسمه.
+    - None: بقية الأدوار (ومنها موظف الرفع في الفروع) تمرّ بمسار التعميد الأول المعتاد
+      (مدير الإدارة إن رُبط الطلب بإدارة، وإلا مدير الفرع).
     """
     from apps.core.models import Role
 
@@ -146,9 +147,9 @@ def submitter_shortcut_mode(user) -> str | None:
     _profile, role = _profile_and_role(user)
     if not role:
         return None
-    if role.role_type == Role.RoleType.SPECIALIST:
+    if role.role_type == Role.RoleType.HR_OFFICER:
         return 'specialist'
-    if role.role_type in (Role.RoleType.HR_MANAGER, Role.RoleType.HR_OFFICER):
+    if role.role_type == Role.RoleType.HR_MANAGER:
         return 'hr'
     return None
 

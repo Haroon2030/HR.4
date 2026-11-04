@@ -235,7 +235,7 @@ def skip_first_stage_if_unrouted(req):
             req.branch_reviewed_at = timezone.now()
             req.branch_notes = 'تعميد تلقائي: الطلب مرفوع من الموارد البشرية.'
         else:
-            req.branch_notes = 'رفع مباشر لتعميد مدير الموارد: الطلب مرفوع من أخصائي.'
+            req.branch_notes = 'رفع مباشر لتعميد مدير الموارد: الطلب مرفوع من منفّذ الموارد.'
         req.save(update_fields=['status', 'branch_reviewed_by', 'branch_reviewed_at', 'branch_notes'])
         _notify_general_managers(
             req,
